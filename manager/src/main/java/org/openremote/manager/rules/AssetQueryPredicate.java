@@ -27,6 +27,7 @@ import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.filter.*;
+import org.openremote.model.util.TimeUtil;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.NameValueHolder;
@@ -197,9 +198,23 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
         if (condition.getItems().size() > 0) {
 
             condition.getItems().stream()
-                .forEach(p -> {
-                    attributePredicates.add((Predicate<AttributeInfo>)(Predicate)asPredicate(currentMillisProducer, p));
+                .forEach(p -> {         
+                    Predicate<AttributeInfo> wrappedPredicate = attributeInfo -> {
 
+                        // Check timestamp not updated for condition
+                        if (p.timestampOlderThan != null) {
+                            long currentTime = currentMillisProducer.get();
+                            long durationMillis = TimeUtil.parseTimeDuration(p.timestampOlderThan);
+                            if (attributeInfo.getTimestamp() > currentTime - durationMillis) {
+                                return false;
+                            }
+                        }
+                        
+                        Predicate<NameValueHolder<?>> basePredicates = asPredicate(currentMillisProducer, p);
+                        return basePredicates.test(attributeInfo);
+                    };
+                    attributePredicates.add(wrappedPredicate);
+          
                     AtomicReference<Predicate<AttributeInfo>> metaPredicate = new AtomicReference<>(nameValueHolder -> true);
                     AtomicReference<Predicate<AttributeInfo>> oldValuePredicate = new AtomicReference<>(value -> true);
 

@@ -1,0 +1,829 @@
+{
+    "name": "Exported on Wed Jan 29 2025 13:38:35 GMT+0100 (Central European Standard Time)",
+    "description": "",
+    "connections": [
+        {
+            "from": "l8m0Xfblk1",
+            "to": "Plw-23m3UD"
+        },
+        {
+            "from": "l8m0Xfblk1",
+            "to": "_UbNW2NMZX"
+        },
+        {
+            "from": "l8m0Xfblk1",
+            "to": "OfMXeFICP3"
+        },
+        {
+            "from": "l8m0Xfblk1",
+            "to": "n38uQmyS0P"
+        },
+        {
+            "from": "l8m0Xfblk1",
+            "to": "u6vgHGdXVB"
+        },
+        {
+            "from": "Et-AtVtMwq",
+            "to": "Plw-23m3UD"
+        },
+        {
+            "from": "Et-AtVtMwq",
+            "to": "_UbNW2NMZX"
+        },
+        {
+            "from": "Et-AtVtMwq",
+            "to": "OfMXeFICP3"
+        },
+        {
+            "from": "Et-AtVtMwq",
+            "to": "n38uQmyS0P"
+        },
+        {
+            "from": "Et-AtVtMwq",
+            "to": "u6vgHGdXVB"
+        },
+        {
+            "from": "PcQTq9ZA6E",
+            "to": "Plw-23m3UD"
+        },
+        {
+            "from": "PcQTq9ZA6E",
+            "to": "_UbNW2NMZX"
+        },
+        {
+            "from": "PcQTq9ZA6E",
+            "to": "OfMXeFICP3"
+        },
+        {
+            "from": "PcQTq9ZA6E",
+            "to": "n38uQmyS0P"
+        },
+        {
+            "from": "PcQTq9ZA6E",
+            "to": "u6vgHGdXVB"
+        },
+        {
+            "from": "EYXgtqN36x",
+            "to": "Plw-23m3UD"
+        },
+        {
+            "from": "EYXgtqN36x",
+            "to": "_UbNW2NMZX"
+        },
+        {
+            "from": "EYXgtqN36x",
+            "to": "OfMXeFICP3"
+        },
+        {
+            "from": "EYXgtqN36x",
+            "to": "n38uQmyS0P"
+        },
+        {
+            "from": "EYXgtqN36x",
+            "to": "u6vgHGdXVB"
+        },
+        {
+            "from": "noi4wpQvru",
+            "to": "Zqdu4EY1vr"
+        },
+        {
+            "from": "aKvoI1ygc6",
+            "to": "63kPcJOI7o"
+        },
+        {
+            "from": "dNQT0-Z0nn",
+            "to": "jhZ_G8S_2J"
+        },
+        {
+            "from": "5si-rF0I5r",
+            "to": "YVe6YE__jE"
+        },
+        {
+            "from": "yxeE5JsXuj",
+            "to": "wnPWAkU5HT"
+        },
+        {
+            "from": "4smGpfRo3R",
+            "to": "4usCwdHKjX"
+        },
+        {
+            "from": "yzZWignuWs",
+            "to": "4lSI8fHHgW"
+        },
+        {
+            "from": "1lNBEX5i1v",
+            "to": "rJQPUZ9N4I"
+        }
+    ],
+    "nodes": [
+        {
+            "inputs": [
+                {
+                    "name": "a",
+                    "type": "NUMBER_ARRAY",
+                    "nodeId": "W73OlWW4q",
+                    "id": "Plw-23m3UD"
+                }
+            ],
+            "internals": [],
+            "name": "SUM_PROCESSOR",
+            "displayCharacter": "Σ",
+            "outputs": [
+                {
+                    "name": "b",
+                    "type": "NUMBER",
+                    "nodeId": "W73OlWW4q",
+                    "id": "noi4wpQvru"
+                }
+            ],
+            "type": "PROCESSOR",
+            "position": {
+                "x": -127.5,
+                "y": -524
+            },
+            "size": {
+                "x": 0,
+                "y": 0
+            },
+            "id": "W73OlWW4q"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "a",
+                    "type": "NUMBER_ARRAY",
+                    "nodeId": "BR-YrMi9b",
+                    "id": "_UbNW2NMZX"
+                }
+            ],
+            "internals": [],
+            "name": "MIN_PROCESSOR",
+            "displayCharacter": "min",
+            "outputs": [
+                {
+                    "name": "b",
+                    "type": "NUMBER",
+                    "nodeId": "BR-YrMi9b",
+                    "id": "aKvoI1ygc6"
+                }
+            ],
+            "type": "PROCESSOR",
+            "position": {
+                "x": -127.61328125,
+                "y": -440
+            },
+            "size": {
+                "x": 0,
+                "y": 0
+            },
+            "id": "BR-YrMi9b"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "a",
+                    "type": "NUMBER_ARRAY",
+                    "nodeId": "bPmyCC-xc",
+                    "id": "OfMXeFICP3"
+                }
+            ],
+            "internals": [],
+            "name": "AVERAGE_PROCESSOR",
+            "displayCharacter": "avg",
+            "outputs": [
+                {
+                    "name": "b",
+                    "type": "NUMBER",
+                    "nodeId": "bPmyCC-xc",
+                    "id": "dNQT0-Z0nn"
+                }
+            ],
+            "type": "PROCESSOR",
+            "position": {
+                "x": -128.55859375,
+                "y": -338
+            },
+            "size": {
+                "x": 0,
+                "y": 0
+            },
+            "id": "bPmyCC-xc"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "a",
+                    "type": "NUMBER_ARRAY",
+                    "nodeId": "pohnl4n9v",
+                    "id": "n38uQmyS0P"
+                }
+            ],
+            "internals": [],
+            "name": "MEDIAN_PROCESSOR",
+            "displayCharacter": "med",
+            "outputs": [
+                {
+                    "name": "b",
+                    "type": "NUMBER",
+                    "nodeId": "pohnl4n9v",
+                    "id": "5si-rF0I5r"
+                }
+            ],
+            "type": "PROCESSOR",
+            "position": {
+                "x": -130.953125,
+                "y": -256
+            },
+            "size": {
+                "x": 0,
+                "y": 0
+            },
+            "id": "pohnl4n9v"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "a",
+                    "type": "NUMBER_ARRAY",
+                    "nodeId": "RQnaJ-QfH",
+                    "id": "u6vgHGdXVB"
+                }
+            ],
+            "internals": [],
+            "name": "MAX_PROCESSOR",
+            "displayCharacter": "max",
+            "outputs": [
+                {
+                    "name": "b",
+                    "type": "NUMBER",
+                    "nodeId": "RQnaJ-QfH",
+                    "id": "yxeE5JsXuj"
+                }
+            ],
+            "type": "PROCESSOR",
+            "position": {
+                "x": -129.39453125,
+                "y": -170
+            },
+            "size": {
+                "x": 0,
+                "y": 0
+            },
+            "id": "RQnaJ-QfH"
+        },
+        {
+            "inputs": [],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%HISTORIC_ATTRIBUTE%"
+                    }
+                }
+            ],
+            "name": "DERIVATIVE",
+            "outputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "VBhSCyRYr",
+                    "id": "4smGpfRo3R"
+                }
+            ],
+            "type": "INPUT",
+            "position": {
+                "x": -541.9568426145001,
+                "y": -82.97627790822276
+            },
+            "size": {
+                "x": 137.516,
+                "y": 32
+            },
+            "id": "VBhSCyRYr"
+        },
+        {
+            "inputs": [],
+            "internals": [
+                {
+                    "name": "attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%HISTORIC_ATTRIBUTE%"
+                    }
+                },
+                {
+                    "name": "time_period",
+                    "picker": {
+                        "type": "DATE"
+                    },
+                    "breakType": "SPACER",
+                    "value": 15
+                },
+                {
+                    "name": "time_unit",
+                    "picker": {
+                        "type": "DROPDOWN",
+                        "options": [
+                            {
+                                "name": "seconds ago",
+                                "value": "SECONDS"
+                            },
+                            {
+                                "name": "minutes ago",
+                                "value": "MINUTES"
+                            },
+                            {
+                                "name": "hours ago",
+                                "value": "HOURS"
+                            },
+                            {
+                                "name": "days ago",
+                                "value": "DAYS"
+                            },
+                            {
+                                "name": "months ago",
+                                "value": "MONTHS"
+                            }
+                        ]
+                    },
+                    "value": "MINUTES",
+                    "breakType": "SPACER"
+                }
+            ],
+            "name": "HISTORIC_VALUE",
+            "outputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "LO0c5186r",
+                    "id": "1lNBEX5i1v"
+                }
+            ],
+            "type": "INPUT",
+            "position": {
+                "x": -577.3570576098139,
+                "y": 146.96923787161813
+            },
+            "size": {
+                "x": 137.516,
+                "y": 32
+            },
+            "id": "LO0c5186r"
+        },
+        {
+            "inputs": [],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%HISTORIC_ATTRIBUTE%"
+                    }
+                }
+            ],
+            "name": "READ_ATTRIBUTE",
+            "outputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "1ZUXhXToL",
+                    "id": "l8m0Xfblk1"
+                }
+            ],
+            "type": "INPUT",
+            "position": {
+                "x": -545.890625,
+                "y": -554
+            },
+            "size": {
+                "x": 137.516,
+                "y": 32
+            },
+            "id": "1ZUXhXToL"
+        },
+        {
+            "inputs": [],
+            "internals": [
+                {
+                    "name": "value",
+                    "picker": {
+                        "type": "NUMBER"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": 2
+                }
+            ],
+            "name": "NUMBER_INPUT",
+            "outputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "hVLL4d3dT",
+                    "id": "Et-AtVtMwq"
+                }
+            ],
+            "type": "INPUT",
+            "position": {
+                "x": -562.390625,
+                "y": -444.25
+            },
+            "size": {
+                "x": 139,
+                "y": 17.5
+            },
+            "id": "hVLL4d3dT"
+        },
+        {
+            "inputs": [],
+            "internals": [
+                {
+                    "name": "value",
+                    "picker": {
+                        "type": "NUMBER"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": 3
+                }
+            ],
+            "name": "NUMBER_INPUT",
+            "outputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "nkUEfHIsP",
+                    "id": "PcQTq9ZA6E"
+                }
+            ],
+            "type": "INPUT",
+            "position": {
+                "x": -548.390625,
+                "y": -340.25
+            },
+            "size": {
+                "x": 139,
+                "y": 17.5
+            },
+            "id": "nkUEfHIsP"
+        },
+        {
+            "inputs": [],
+            "internals": [
+                {
+                    "name": "value",
+                    "picker": {
+                        "type": "NUMBER"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": 4
+                }
+            ],
+            "name": "NUMBER_INPUT",
+            "outputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "Qwy6F603D",
+                    "id": "EYXgtqN36x"
+                }
+            ],
+            "type": "INPUT",
+            "position": {
+                "x": -551.390625,
+                "y": -197.25
+            },
+            "size": {
+                "x": 139,
+                "y": 17.5
+            },
+            "id": "Qwy6F603D"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "hhsFex9CE",
+                    "id": "Zqdu4EY1vr"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%SUM_OUTPUT%"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": 18.08840397765998,
+                "y": -641.166580246977
+            },
+            "size": {
+                "x": 140.75,
+                "y": 32
+            },
+            "id": "hhsFex9CE"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "I27p6YNGk",
+                    "id": "63kPcJOI7o"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%MIN_OUTPUT%"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": 26.747163280400965,
+                "y": -522.4178812379586
+            },
+            "size": {
+                "x": 153.211,
+                "y": 32
+            },
+            "id": "I27p6YNGk"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "eEObE676S",
+                    "id": "4usCwdHKjX"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%DER_OUTPUT%"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": 42.82771627120554,
+                "y": -80.82115679817173
+            },
+            "size": {
+                "x": 136.602,
+                "y": 32
+            },
+            "id": "eEObE676S"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "f5NXYVriM",
+                    "id": "jhZ_G8S_2J"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%AVG_OUTPUT%"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": 34.16895696846465,
+                "y": -420.9867008344222
+            },
+            "size": {
+                "x": 165.641,
+                "y": 32
+            },
+            "id": "f5NXYVriM"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "XV3NU2kxf",
+                    "id": "YVe6YE__jE"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%MED_OUTPUT%"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": 32.93199135378739,
+                "y": -314.6076579721765
+            },
+            "size": {
+                "x": 173.43,
+                "y": 32
+            },
+            "id": "XV3NU2kxf"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "akKivqz-8",
+                    "id": "wnPWAkU5HT"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%MAX_OUTPUT%"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": 35.40592258314193,
+                "y": -215.6504087979945
+            },
+            "size": {
+                "x": 177.32,
+                "y": 32
+            },
+            "id": "akKivqz-8"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "yZpr9Bye_",
+                    "id": "4lSI8fHHgW"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%INT_OUTPUT%"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": 53.960406803300955,
+                "y": 60.19292327503819
+            },
+            "size": {
+                "x": 161.641,
+                "y": 32
+            },
+            "id": "yZpr9Bye_"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "ZYHIQquuW",
+                    "id": "rJQPUZ9N4I"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%HISTORIC_VALUE_OUTPUT%"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": 57.671303647332756,
+                "y": 185.12648810663788
+            },
+            "size": {
+                "x": 106.289,
+                "y": 32
+            },
+            "id": "ZYHIQquuW"
+        },
+        {
+            "inputs": [],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%HISTORIC_ATTRIBUTE%"
+                    }
+                }
+            ],
+            "name": "INTEGRAL",
+            "outputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "ebpcqYFB7",
+                    "id": "yzZWignuWs"
+                }
+            ],
+            "type": "INPUT",
+            "position": {
+                "x": -541.0200538564685,
+                "y": 25.557886064074456
+            },
+            "size": {
+                "x": 137.516,
+                "y": 32
+            },
+            "id": "ebpcqYFB7"
+        }
+    ]
+}
