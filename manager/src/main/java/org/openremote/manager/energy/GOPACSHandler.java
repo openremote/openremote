@@ -24,7 +24,9 @@ import org.lfenergy.shapeshifter.core.common.xsd.XsdSchemaProvider;
 import org.lfenergy.shapeshifter.core.common.xsd.XsdValidator;
 import org.lfenergy.shapeshifter.core.model.IncomingUftpMessage;
 import org.lfenergy.shapeshifter.core.model.OutgoingUftpMessage;
+import org.lfenergy.shapeshifter.core.model.SigningDetails;
 import org.lfenergy.shapeshifter.core.model.UftpParticipant;
+import org.lfenergy.shapeshifter.core.model.UftpRoleInformation;
 import org.lfenergy.shapeshifter.core.service.UftpParticipantService;
 import org.lfenergy.shapeshifter.core.service.crypto.LazySodiumBase64Pool;
 import org.lfenergy.shapeshifter.core.service.crypto.LazySodiumFactory;
@@ -32,6 +34,7 @@ import org.lfenergy.shapeshifter.core.service.crypto.UftpCryptoService;
 import org.lfenergy.shapeshifter.core.service.handler.UftpPayloadHandler;
 import org.lfenergy.shapeshifter.core.service.participant.ParticipantResolutionService;
 import org.lfenergy.shapeshifter.core.service.receiving.UftpReceivedMessageService;
+import org.lfenergy.shapeshifter.core.service.sending.UftpSendMessageService;
 import org.lfenergy.shapeshifter.core.service.serialization.UftpSerializer;
 import org.lfenergy.shapeshifter.core.service.validation.UftpValidationService;
 import org.openremote.agent.protocol.http.AbstractHTTPServerProtocol;
@@ -69,8 +72,9 @@ import static org.openremote.model.syslog.SyslogCategory.API;
 public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService {
 
     private static final Logger LOG = SyslogCategory.getLogger(API, GOPACSHandler.class);
-    public static final String OR_GOPACS_PRIVATE_KEY_FILE = "OR_GOPACS_PRIVATE_KEY_FILE";
-
+    public static final String GOPACS_PRIVATE_KEY_FILE = "GOPACS_PRIVATE_KEY_FILE";
+    public static final String GOPACS_PARTICIPANT_URL = "GOPACS_PARTICIPANT_URL";
+    public static final String DEFAULT_GOPACS_PARTICIPANT_URL = "https://capacity-limit-contracts.gopacs-services.eu";
 
     protected static final UftpSerializer serializer = new UftpSerializer(new XmlSerializer(), new XsdValidator(new XsdSchemaProvider(new XsdFactory(new XsdSchemaFactoryPool()))));
 
@@ -89,12 +93,13 @@ public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService
     protected final WebService webService;
 
     protected final ResteasyClient client;
-    protected final GOPACSClientResource goPacsClientResource;
     protected final GOPACSAddressBookResource goPacsAddressBookResource;
     protected final GOPACSServerResource gopacsServerResource;
 
+    protected final ParticipantResolutionService participantResolutionService;
     protected final UftpValidationService uftpValidationService;
     protected final UftpReceivedMessageService uftpReceivedMessageService;
+    protected final UftpSendMessageService uftpSendMessageService;
     protected final UftpCryptoService cryptoService;
     protected final String privateKey;
 
@@ -131,21 +136,23 @@ public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService
 
         this.client = createClient(org.openremote.container.Container.EXECUTOR);
 
-        this.goPacsClientResource = client.target("https://clc-message-broker.acc.gopacs-services.eu").proxy(GOPACSClientResource.class);
-        this.goPacsAddressBookResource = client.target("https://capacity-limit-contracts.acc.gopacs-services.eu").proxy(GOPACSAddressBookResource.class);
+        String addressBookUrl = container.getConfig().getOrDefault(GOPACS_PARTICIPANT_URL, DEFAULT_GOPACS_PARTICIPANT_URL);
+        this.goPacsAddressBookResource = client.target(addressBookUrl).proxy(GOPACSAddressBookResource.class);
         this.gopacsServerResource = new GOPACSServerResourceImpl(this::processRawMessage);
 
-        this.cryptoService = new UftpCryptoService(new ParticipantResolutionService(this), new LazySodiumFactory(), new LazySodiumBase64Pool());
+        this.participantResolutionService = new ParticipantResolutionService(this);
+        this.cryptoService = new UftpCryptoService(participantResolutionService, new LazySodiumFactory(), new LazySodiumBase64Pool());
         this.uftpValidationService = new UftpValidationService(new ArrayList<>());
-        this.uftpReceivedMessageService = new UftpReceivedMessageService(new UftpValidationService(new ArrayList<>()), this);
+        this.uftpReceivedMessageService = new UftpReceivedMessageService(uftpValidationService, this);
+        this.uftpSendMessageService = new UftpSendMessageService(serializer, cryptoService, participantResolutionService, uftpValidationService);
 
 
-        String goPacsPrivateKeyFile = container.getConfig().get(OR_GOPACS_PRIVATE_KEY_FILE);
+        String goPacsPrivateKeyFile = container.getConfig().get(GOPACS_PRIVATE_KEY_FILE);
         if (TextUtil.isNullOrEmpty(goPacsPrivateKeyFile)) {
-            throw new RuntimeException(OR_GOPACS_PRIVATE_KEY_FILE + " not defined, can not send use GOPACS.");
+            throw new RuntimeException(GOPACS_PRIVATE_KEY_FILE + " not defined, can not send use GOPACS.");
         }
         if (!Files.isReadable(Paths.get(goPacsPrivateKeyFile))) {
-            throw new RuntimeException(OR_GOPACS_PRIVATE_KEY_FILE + " invalid path or file not readable: " + goPacsPrivateKeyFile);
+            throw new RuntimeException(GOPACS_PRIVATE_KEY_FILE + " invalid path or file not readable: " + goPacsPrivateKeyFile);
         }
         // Read the private key from file
         try {
@@ -313,7 +320,7 @@ public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService
 
     @Override
     public void notifyNewOutgoingMessage(OutgoingUftpMessage<? extends PayloadMessageType> message) {
-        LOG.fine("Sending message: " + message);
+        LOG.fine("Notifying message: " + message);
         var messageType = message.payloadMessage().getClass();
         if (!FlexRequestResponse.class.isAssignableFrom(messageType)) {
             return;
@@ -321,15 +328,13 @@ public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService
 
         var flexRequestResponse = (FlexRequestResponse) message.payloadMessage();
 
-        String payloadXml = serializer.toXml(flexRequestResponse);
-        SignedMessage signedMessage = cryptoService.signMessage(payloadXml, message.sender(), this.privateKey);
-        String transportXml = serializer.toXml(signedMessage);
-
-        LOG.fine("Transporting message: " + transportXml);
-
-        goPacsClientResource.outMessage(transportXml);
-
-        LOG.fine("Finished sending message: " + message);
+        try {
+            LOG.fine("Sending message: " + message);
+            uftpSendMessageService.attemptToSendMessage(message.payloadMessage(), new SigningDetails(message.sender(), this.privateKey, new UftpParticipant(flexRequestResponse.getRecipientDomain(), UftpRoleInformation.getRecipientRoleBySenderRole(message.sender().role()))));
+            LOG.fine("Finished sending message: " + message);
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Failed to send message", e);
+        }
     }
 
     protected void processRawMessage(String transportXml) {
