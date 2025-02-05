@@ -4,8 +4,8 @@ apply plugin: "signing"
 
 sourceSets.main.resources.srcDirs += layout.buildDirectory.dir('classes/main')
 
-jar {
-    archivesBaseName = "openremote-${project.name}"
+base {
+    archivesName = "openremote-${project.name}"
 }
 
 java {
@@ -51,8 +51,8 @@ publishing {
         maven {
             if (!version.endsWith('-LOCAL')) {
                 credentials {
-                    username findProperty("publishUsername")
-                    password findProperty("publishPassword")
+                    username = findProperty("publishUsername")
+                    password = findProperty("publishPassword")
                 }
             }
             url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")

@@ -8,6 +8,7 @@ public enum PickerType {
     DOUBLE_DROPDOWN,
     CHECKBOX,
     ASSET_ATTRIBUTE,
-    COLOR
+    COLOR,
+    DATE
 }
 
