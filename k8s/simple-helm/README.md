@@ -28,7 +28,7 @@ kubectl apply -f openremote-secret.yaml
 
 Install the different charts in order
 ```bash
-helm install psql postgresql
+helm install postgresql postgresql
 helm install keycloak keycloak
 helm install manager manager
 ```

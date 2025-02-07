@@ -124,7 +124,7 @@ or:
     accountTheme: "openremote"
     welcomeTheme: "keycloak"
   postgresql:
-    host: "psql-postgresql"
+    host: "postgresql"
     port: "5432"
     database: "openremote"
     schema: "public"

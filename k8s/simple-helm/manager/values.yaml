@@ -148,7 +148,7 @@ or:
     path: "auth"
   dbVendor: "postgres"
   postgresql:
-    host: "psql-postgresql"
+    host: "postgresql"
     port: "5432"
     database: "openremote"
     schema: "openremote"
