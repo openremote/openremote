@@ -64,14 +64,14 @@ ingress:
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: or.openremote.io
+    - host: localhost
       paths:
         - path: /auth
           pathType: Prefix
   tls:
     - hosts:
-        - or.openremote.io
-      secretName: or-manager-tls
+        - localhost
+      secretName: ""
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
@@ -115,7 +115,7 @@ tolerations: []
 affinity: {}
 
 or:
-  hostname: "or.openremote.io"
+  hostname: "localhost"
   port: "-1"
   timeZone: "Europe/Amsterdam"
   keycloak:
