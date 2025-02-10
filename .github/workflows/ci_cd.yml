@@ -602,13 +602,13 @@ jobs:
           version: latest
           install: true
 
-      - name: Set up JDK 17 and gradle cache
+      - name: Set up JDK 21 and gradle cache
         id: java
         if: ${{ steps.install-command.outputs.value != '' || steps.test-backend-command.outputs.value != '' }}
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
           cache: 'gradle'
 
       - name: Get yarn cache directory path

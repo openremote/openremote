@@ -20,8 +20,13 @@
 package org.openremote.manager;
 
 import org.openremote.container.Container;
+import org.openremote.container.util.LogUtil;
 
 public class Main {
+
+    static {
+        LogUtil.initialiseJUL();
+    }
 
     public static void main(String[] args) throws Exception {
 

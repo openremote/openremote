@@ -8,6 +8,7 @@ import jakarta.ws.rs.client.ClientRequestFilter
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import net.fortuna.ical4j.model.Recur
+import net.fortuna.ical4j.transform.recurrence.Frequency
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.MailUtil
 import org.openremote.manager.notification.LocalizedNotificationHandler
@@ -576,7 +577,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         version = ruleset.version
         def validityStart = Instant.ofEpochMilli(getClockTimeOf(container)).plus(2, ChronoUnit.HOURS)
         def validityEnd = Instant.ofEpochMilli(getClockTimeOf(container)).plus(4, ChronoUnit.HOURS)
-        def recur = new Recur(Recur.Frequency.DAILY, 3)
+        def recur = new Recur<>(Frequency.DAILY, 3)
         recur.setInterval(2)
         def calendarEvent = new CalendarEvent(
                 Date.from(validityStart),
@@ -1555,7 +1556,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a schedule is added to the rule to enable it 2 hours after sunset each day"
-        ruleset.setValidity(new CalendarEvent(sunTimes.getSet().plusHours(2).toDate(), sunTimes.getSet().plusHours(12).toDate(), new Recur(Recur.Frequency.DAILY, 5)))
+        ruleset.setValidity(new CalendarEvent(sunTimes.getSet().plusHours(2).toDate(), sunTimes.getSet().plusHours(12).toDate(), new Recur<>(Frequency.DAILY, 5)))
         ruleset = rulesetStorageService.merge(ruleset)
 
         then: "the rule should become paused in the engine"
