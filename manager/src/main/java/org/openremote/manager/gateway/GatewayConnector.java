@@ -547,7 +547,7 @@ public class GatewayConnector {
             // Returned asset order may not match request order so re-order
             returnedAssets = returnedAssets.stream()
                 .sorted(Comparator.comparingInt(a -> syncAssetIds.indexOf(a.getId())))
-                .collect(Collectors.toList());
+                .toList();
 
             // Merge returned assets ensuring the latest version of each is merged
             returnedAssets.stream()

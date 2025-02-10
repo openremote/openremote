@@ -21,7 +21,6 @@ package org.openremote.manager.gateway;
 
 import io.netty.channel.ChannelHandler;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.http.client.utils.URIBuilder;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.container.message.MessageBrokerService;
@@ -259,8 +258,14 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
             client.addMessageConsumer(message -> onCentralManagerMessage(connection, message));
 
-            realmAssetEventConsumer = assetEvent ->
+            realmAssetEventConsumer = assetEvent -> {
+                if (connection.getAssetSyncRules() != null) {
+                    // Apply sync rules to the asset
+                    assetEvent = ValueUtil.clone(assetEvent);
+                    applySyncRules(assetEvent.getAsset(), connection.getAssetSyncRules());
+                }
                 sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, assetEvent));
+            };
 
             // Subscribe to Asset<?> and attribute events of local realm and pass through to connected manager
             clientEventService.addSubscription(
@@ -268,8 +273,19 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 new AssetFilter<AssetEvent>().setRealm(connection.getLocalRealm()),
                 realmAssetEventConsumer);
 
-            realmAttributeEventConsumer = attributeEvent ->
+            realmAttributeEventConsumer = attributeEvent -> {
+                if (connection.getAssetSyncRules() != null) {
+                    // Apply sync rules to the event meta
+                    attributeEvent = ValueUtil.clone(attributeEvent);
+                    attributeEvent.setMeta(attributeEvent.getMeta() != null ? attributeEvent.getMeta() : new MetaMap());
+                    applySyncRuleToMeta(
+                            attributeEvent.getName(),
+                            attributeEvent.getMeta(),
+                            connection.getAssetSyncRules().getOrDefault(attributeEvent.getAssetType(),
+                            connection.getAssetSyncRules().get("*")));
+                }
                 sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, attributeEvent));
+            };
 
             clientEventService.addSubscription(
                 AttributeEvent.class,
@@ -397,8 +413,6 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     }
 
     protected void onCentralManagerMessage(GatewayConnection connection, String message) {
-        LOG.severe("ONCENTRALMANAGERMESSAGE");
-
         SharedEvent event = messageFromString(message, SharedEvent.MESSAGE_PREFIX, SharedEvent.class);
 
         if (event != null) {
@@ -568,31 +582,37 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
      */
     protected Asset<?> applySyncRules(Asset<?> asset, Map<String, GatewayAssetSyncRule> assetSyncRules) {
 
-        if(asset == null || assetSyncRules == null) return asset;
-
-        if(!(assetSyncRules.containsKey(asset.getType()) || assetSyncRules.containsKey("*"))) return asset;
-
+        if (asset == null || assetSyncRules == null) {
+            return asset;
+        }
 
         GatewayAssetSyncRule syncRule = assetSyncRules.getOrDefault(asset.getType(), assetSyncRules.get("*"));
-        List<? extends Attribute<?>> attrs = asset.getAttributes().stream()
+
+        if (syncRule == null) {
+            return asset;
+        }
+
+        List<Attribute<?>> attributes = asset.getAttributes().stream()
                 .filter(it -> syncRule.excludeAttributes == null || !syncRule.excludeAttributes.contains(it.getName()))
+                .peek(attribute -> applySyncRuleToMeta(asset.getType(), attribute.getMeta(), syncRule)).toList();
 
-                .map(it -> {
-                    Optional<List<String>> restrictions = Optional.ofNullable(syncRule.excludeAttributeMeta.getOrDefault(it.getName(), syncRule.excludeAttributeMeta.get("*")));
-                    return new MutablePair<Attribute<?>, Optional<List<String>>>(it, restrictions);
-                })
-
-                .map(it -> {
-                    it.left = it.left.setMeta(
-                            new MetaMap(it.getLeft().getMeta().stream()
-                                    .filter(meta -> it.getRight().isPresent() && !it.getRight().get().contains(meta.getName()))
-                                    .toList()
-                            )
-                    );
-                    return it.left;
-                })
-                .toList();
-        asset.setAttributes(attrs.toArray(Attribute[]::new));
+        asset.setAttributes(attributes);
         return asset;
+    }
+
+    protected void applySyncRuleToMeta(String attributeName, MetaMap meta, GatewayAssetSyncRule syncRule) {
+        if (syncRule.excludeAttributeMeta != null && !meta.isEmpty()) {
+            List<String> excludeMetaRules = syncRule.excludeAttributeMeta.getOrDefault(attributeName, syncRule.excludeAttributeMeta.get("*"));
+            if (excludeMetaRules != null && !excludeMetaRules.isEmpty()) {
+                meta.keySet().removeIf(metaItemName ->
+                        !excludeMetaRules.contains(metaItemName));
+            }
+        }
+        if (syncRule.addAttributeMeta != null) {
+            MetaMap addMetaRules = syncRule.addAttributeMeta.getOrDefault(attributeName, syncRule.addAttributeMeta.get("*"));
+            if (addMetaRules != null && !addMetaRules.isEmpty()) {
+                meta.addAll(addMetaRules);
+            }
+        }
     }
 }
