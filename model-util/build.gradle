@@ -10,14 +10,26 @@ repositories {
 }
 
 dependencies {
-    implementation resolveProject(":model")
-    implementation resolveProject(":agent")
+    implementation project(":model")
+    implementation project(":agent")
     implementation "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
+}
+
+base {
+    archivesName = "openremote-${project.name}"
 }
 
 jar {
     from sourceSets.main.allJava
-    archivesBaseName = "openremote-${project.name}"
+}
+
+javadoc {
+    failOnError = false
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
 
 publishing {
@@ -27,8 +39,8 @@ publishing {
             artifactId = "openremote-${project.name}"
             from components.java
             pom {
-                name = 'OpenRemote Model'
-                description = 'Provides core model classes used within OpenRemote; add maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
+                name = 'OpenRemote Model Util'
+                description = 'Provides utilities for building the typescript model used within OpenRemote and custom projects'
                 url = 'https://github.com/openremote/openremote'
                 licenses {
                     license {
@@ -58,8 +70,8 @@ publishing {
         maven {
             if (!version.endsWith('-LOCAL')) {
                 credentials {
-                    username findProperty("publishUsername")
-                    password findProperty("publishPassword")
+                    username = findProperty("publishUsername")
+                    password = findProperty("publishPassword")
                 }
             }
             url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
@@ -70,6 +82,8 @@ publishing {
 signing {
     def signingKey = findProperty("signingKey")
     def signingPassword = findProperty("signingPassword")
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign publishing.publications.maven
+    if (signingKey && signingPassword) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign publishing.publications.maven
+    }
 }

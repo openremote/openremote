@@ -7,10 +7,11 @@ import {Store} from "@reduxjs/toolkit";
 import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
 import {when} from "lit/directives/when.js";
 import {until} from "lit/directives/until.js";
+import {map} from 'lit/directives/map.js';
 import {guard} from "lit/directives/guard.js";
 import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {ClientRole, Role, User, UserAssetLink, UserQuery} from "@openremote/model";
+import {ClientRole, Credential, Role, User, UserAssetLink, UserQuery} from "@openremote/model";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export function pageAccountProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
@@ -148,10 +149,13 @@ export class PageAccount extends Page<AppStateKeyed>  {
     @state()
     protected _invalid = false;
 
-    @query("#password")
+    @state()
+    protected _passwordPolicy: string[] = [];
+
+    @query("#new-password")
     protected _passwordElem?: OrMwcInput;
 
-    @query("#repeatPassword")
+    @query("#new-repeatPassword")
     protected _repeatPasswordElem?: OrMwcInput;
 
     static get styles() {
@@ -164,6 +168,11 @@ export class PageAccount extends Page<AppStateKeyed>  {
 
     public stateChanged(_state: AppStateKeyed) {
     }
+
+    public connectedCallback() {
+        super.connectedCallback();
+        this._getPasswordPolicy();
+        }
 
     protected render(): TemplateResult | void {
 
@@ -236,21 +245,21 @@ export class PageAccount extends Page<AppStateKeyed>  {
                 <div class="column">
                     <!-- user details -->
                     <h5>${i18next.t("details")}</h5>
-                    <or-mwc-input id="username" class="validate"
+                    <or-mwc-input id="new-username" class="validate"
                                   .label="${i18next.t("username")}"
                                   .type="${InputType.TEXT}"
                                   ?required="${!registrationEmailAsUsername}"
                                   .disabled="${true}"
-                                  minLength="3" maxLength="255" pattern="[A-Za-z0-9\\-_]+"
+                                  minLength="3" maxLength="255" pattern="[A-Za-z0-9\-_+@.ßçʊ]+"
                                   .validationMessage="${i18next.t("invalidUsername")}"
-                                  .value="${user?.username}"
+                                  .value="${user?.username}" autocomplete="false"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.username = e.detail.value;
                                       onchange?.(user, true, this._isInvalid());
                                   }}"
                     ></or-mwc-input>
                     <!-- if identity provider is set to use email as username, make it required -->
-                    <or-mwc-input id="email" class="validate"
+                    <or-mwc-input id="new-email" class="validate"
                                   .label="${i18next.t("email")}"
                                   .type="${InputType.EMAIL}"
                                   ?required="${registrationEmailAsUsername}"
@@ -258,30 +267,30 @@ export class PageAccount extends Page<AppStateKeyed>  {
                                   .disabled="${!user || (!!user?.id && registrationEmailAsUsername)}"
                                   pattern="^[\\w\\.\\-]+@([\\w\\-]+\\.)+[\\w]{2,4}$"
                                   .validationMessage="${i18next.t("invalidEmail")}"
-                                  .value="${user?.email}"
+                                  .value="${user?.email}" autocomplete="false"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.email = e.detail.value;
                                       onchange?.(user, true, this._isInvalid());
                                   }}"
                     ></or-mwc-input>
-                    <or-mwc-input id="firstName" class="validate"
+                    <or-mwc-input id="new-firstName" class="validate"
                                   .label="${i18next.t("firstName")}"
                                   .type="${InputType.TEXT}"
                                   ?readonly="${readonly}"
                                   .disabled="${!user}"
-                                  minLength="5"
+                                  minLength="5" autocomplete="false"
                                   .value="${user?.firstName}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.firstName = e.detail.value;
                                       onchange?.(user, true, this._isInvalid());
                                   }}"
                     ></or-mwc-input>
-                    <or-mwc-input id="surname" class="validate"
+                    <or-mwc-input id="new-surname" class="validate"
                                   .label="${i18next.t("surname")}"
                                   .type="${InputType.TEXT}"
                                   ?readonly="${readonly}"
                                   .disabled="${!user}"
-                                  minLength="1"
+                                  minLength="1" autocomplete="false"
                                   .value="${user?.lastName}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.lastName = e.detail.value;
@@ -291,31 +300,33 @@ export class PageAccount extends Page<AppStateKeyed>  {
                 </div>
                 <div class="column">
                     <h5>${i18next.t("password")}</h5>
-                    <or-mwc-input id="password" class="validate"
+                    <or-mwc-input id="new-password" class="validate"
                                   .label="${i18next.t("password")}"
                                   .type="${InputType.PASSWORD}"
                                   ?readonly="${readonly}"
                                   .disabled="${!user}"
-                                  min="1"
+                                  min="1" autocomplete="false"
                                   @or-mwc-input-changed="${(_e: OrInputChangedEvent) => {
                                       const changed = this._onPasswordChanged(user);
                                       onchange?.(user, changed, this._isInvalid());
                                   }}"
                     ></or-mwc-input>
-                    <or-mwc-input id="repeatPassword"
+                    <or-mwc-input id="new-repeatPassword"
                                   .label="${i18next.t("repeatPassword")}"
                                   .type="${InputType.PASSWORD}"
                                   helperPersistent
                                   ?readonly="${readonly}"
                                   .disabled="${!user}"
-                                  min="1"
+                                  min="1" autocomplete="false"
                                   @or-mwc-input-changed="${(_e: OrInputChangedEvent) => {
                                       const changed = this._onPasswordChanged(user);
                                       onchange?.(user, changed, this._isInvalid());
                                   }}"
                     ></or-mwc-input>
+                    ${when(this._passwordPolicy, () => until(this._getPasswordPolicyTemplate(user, this._passwordPolicy)))}
                 </div>
             </div>
+
         `;
     }
 
@@ -430,15 +441,89 @@ export class PageAccount extends Page<AppStateKeyed>  {
     protected async _updateUser(user: UserModel): Promise<void> {
         await manager.rest.api.UserResource.update(manager.getRealm(), user).then(() => {
             if(user.password) {
-                const credentials = {value: user.password};
-                manager.rest.api.UserResource.resetPassword(manager.getRealm(), user.id, credentials);
+                const credentials = {value: user.password} as Credential;
+                manager.rest.api.UserResource.resetPassword(manager.getRealm(), user.id, credentials)
+                    .then(() => {
+                        showSnackbar(undefined, "saveUserSucceeded");
+                        })
+                    .catch(() => {
+                        showSnackbar(undefined, "saveUserFailed");
+                    });
+                this._dirty = false;
             }
-            this._dirty = false;
-            showSnackbar(undefined, "saveUserSucceeded");
-
-        }).catch(e => {
-            console.error(e);
-            showSnackbar(undefined, "saveUserFailed");
-        });
+        })
     }
+
+    /**
+     * Function that formats the password policy from the currently authenticated realm.
+     */
+    protected async _getPasswordPolicy(): Promise<void> {
+        await manager.rest.api.RealmResource.get(manager.getRealm()).then((response) => {
+            this._passwordPolicy = response.data.passwordPolicy ?? this._passwordPolicy;
+            })
+        }
+
+   /**
+    * Function that formats the password policy into a displayable html format.
+    */
+   protected async _getPasswordPolicyTemplate(user: UserModel, passwordPolicy = this._passwordPolicy): Promise<TemplateResult> {
+       const policyMap = new Map(passwordPolicy.map(policyStr => {
+           const name = policyStr.split("(")[0];
+           const value = policyStr.split("(")[1].split(")")[0];
+           return [name, value];
+       }));
+   const policies = Array.from(policyMap.keys());
+       const policyTexts: TemplateResult[] = [];
+
+       // Minimum / maximum length warning
+       if(policies.includes("length") && policies.includes("maxLength")) {
+           policyTexts.push(html`<or-translate value="password-policy-invalid-length" .options="${{ 0: policyMap.get("length"), 1: policyMap.get("maxLength") }}"></or-translate>`);
+       } else if(policies.includes("length")) {
+           policyTexts.push(html`<or-translate value="password-policy-invalid-length-too-short" .options="${{ 0: policyMap.get("length") }}"></or-translate>`);
+       } else if(policies.includes("maxLength")) {
+           policyTexts.push(html`<or-translate value="password-policy-invalid-length-too-long" .options="${{ 0: policyMap.get("maxLength") }}"></or-translate>`);
+       }
+
+       // Special characters
+       if(policies.includes("specialChars")) {
+           const value = policyMap.get("specialChars");
+           const translation = value == "1" ? "password-policy-special-chars-single" : "password-policy-special-chars";
+           policyTexts.push(html`<or-translate value="${translation}" .options="${{ 0: value }}"></or-translate>`);
+       }
+
+       // Digits/numbers
+       if(policies.includes("digits")) {
+           const value = policyMap.get("digits");
+           const translation = value == "1" ? "password-policy-digits-single" : "password-policy-digits";
+           policyTexts.push(html`<or-translate value="${translation}" .options="${{ 0: value }}"></or-translate>`);
+       }
+
+       // Uppercase / lowercase letters
+       if(policies.includes("upperCase")) {
+           const value = policyMap.get("upperCase");
+           const translation = value == "1" ? "password-policy-uppercase-single" : "password-policy-uppercase";
+           policyTexts.push(html`<or-translate value="${translation}" .options="${{ 0: value }}"></or-translate>`);
+       }
+
+       // Warn for recently used passwords
+       if(policies.includes("passwordHistory")) {
+           policyTexts.push(html`<or-translate value="password-policy-recently-used"></or-translate>`);
+       }
+
+       // Cannot be username and/or email
+       if(policies.includes("notUsername") && policies.includes("notEmail")) {
+           policyTexts.push(html`<or-translate value="password-policy-not-email-username"></or-translate>`);
+       } else if(policies.includes("notUsername")) {
+           policyTexts.push(html`<or-translate value="password-policy-not-username"></or-translate>`);
+       } else if(policies.includes("notEmail")) {
+           policyTexts.push(html`<or-translate value="password-policy-not-email"></or-translate>`);
+       }
+
+       return html`
+           <ul>
+               ${map(policyTexts, text => html`<li>${text}</li>`)}
+           </ul>
+       `;
+   }
+
 }

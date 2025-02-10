@@ -4,7 +4,7 @@ import {AssetWidgetSettings} from "../util/or-asset-widget";
 import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {MapWidgetConfig} from "../widgets/map-widget";
-import {LngLatLike} from "@openremote/or-map";
+import {AttributeMarkerColours, LngLatLike, MapMarkerColours} from "@openremote/or-map";
 import "../panels/assettypes-panel";
 import "../panels/thresholds-panel";
 import {LngLat} from "maplibre-gl"; // TODO: Replace this import
@@ -12,7 +12,7 @@ import {when} from "lit/directives/when.js";
 import {AssetTypeSelectEvent, AssetTypesFilterConfig, AttributeNamesSelectEvent} from "../panels/assettypes-panel";
 import manager from "@openremote/core";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {ThresholdChangeEvent} from "../panels/thresholds-panel";
+import {BoolColorsChangeEvent, ThresholdChangeEvent} from "../panels/thresholds-panel";
 
 const styling = css`
   .switchMwcInputContainer {
@@ -97,9 +97,12 @@ export class MapSettings extends AssetWidgetSettings {
                 <!-- List of customizable thresholds -->
                 ${when(this.widgetConfig.assetIds.length > 0, () => html`
                     <settings-panel displayName="thresholds" expanded="${true}">
-                        <thresholds-panel .thresholds="${this.widgetConfig.thresholds}" .valueType="${this.widgetConfig.valueType}" style="padding-bottom: 12px;"
+                        <thresholds-panel .thresholds="${this.widgetConfig.thresholds}" 
+                                        .boolColors="${this.widgetConfig.boolColors}" 
+                                        .valueType="${this.widgetConfig.valueType}" style="padding-bottom: 12px;"
                                           .min="${this.widgetConfig.min}" .max="${this.widgetConfig.max}"
-                                          @threshold-change="${(ev: ThresholdChangeEvent) => this.onThresholdsChange(ev)}">
+                                          @threshold-change="${(ev: ThresholdChangeEvent) => this.onThresholdsChange(ev)}"
+                                          @bool-colors-change="${(ev: BoolColorsChangeEvent) => this.onBoolColorsChange(ev)}">
                         </thresholds-panel>
                     </settings-panel>
                 `)}
@@ -179,6 +182,11 @@ export class MapSettings extends AssetWidgetSettings {
 
     protected onThresholdsChange(ev: ThresholdChangeEvent) {
         this.widgetConfig.thresholds = ev.detail;
+        this.notifyConfigUpdate();
+    }
+
+    protected onBoolColorsChange(ev: BoolColorsChangeEvent) {
+        this.widgetConfig.boolColors = ev.detail as MapMarkerColours;
         this.notifyConfigUpdate();
     }
 

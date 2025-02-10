@@ -101,6 +101,8 @@ export class FlowEditor extends translate(i18next)(LitElement) implements RuleVi
                 --input-color-h: hsl(222, 58%, 54%);
                 --processor-color-h: hsl(102, 48%, 49%);
                 --output-color-h: hsl(282, 58%, 54%);
+                
+                overflow: hidden;
             }`];
     }
 
@@ -123,7 +125,7 @@ export class FlowEditor extends translate(i18next)(LitElement) implements RuleVi
 
         return html`
         ${(this.showTopbar ? html`<top-bar .application="${this}" style="grid-area: topbar"></top-bar>` : ``)}
-        <node-panel .application="${this}" style="grid-area: node-panel" .nodes= "${integration.nodes}"></node-panel>
+        <node-panel .application="${this}" style="grid-area: node-panel; overflow:auto;" .nodes= "${integration.nodes}"></node-panel>
         <editor-workspace .application="${this}" id="workspace" style="grid-area: workspace"></editor-workspace>
         <context-menu></context-menu>
         <popup-modal id="popup-modal"></popup-modal>

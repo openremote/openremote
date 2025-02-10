@@ -1,12 +1,17 @@
 apply plugin: "java-library"
 
+configurations {
+    managerRuntime
+}
+
 dependencies {
-    api resolveProject(":setup")
+    api project(":setup")
+    managerRuntime(project(path: ':manager', configuration: 'runtime'))
 }
 
 task license {
     doLast {
-        def toConcatenate = isCustomProject() ? files("${project(":openremote").projectDir}/LICENSE.txt", "${rootDir}/LICENSE.txt") : files("${rootDir}/LICENSE.txt")
+        def toConcatenate = files("${rootDir}/LICENSE.txt")
         def outputFileName = "${buildDir}/image/manager/app/LICENSE.txt"
         def output = new File(outputFileName)
         if (output.exists()) {
