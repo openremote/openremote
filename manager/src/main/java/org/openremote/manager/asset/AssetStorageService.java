@@ -1772,7 +1772,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                 if (attributePredicate.meta != null && attributePredicate.meta.length > 0) {
                     String metaJsonObjName = jsonObjName + "_AM" + metaIndex++;
-                    selectInserter.accept(" LEFT JOIN jsonb_each(" + jsonObjName + ".VALUE #> '{meta}') as " + metaJsonObjName + " ON true");
+                    selectInserter.accept(" LEFT JOIN jsonb_each(jsonb_strip_nulls(" + jsonObjName + ".VALUE) #> '{meta}') as " + metaJsonObjName + " ON true");
                     sb.append(" and (");
                     addNameValuePredicates(Arrays.asList(attributePredicate.meta.clone()), sb, binders, metaJsonObjName, selectInserter, true, timeProvider);
                     sb.append(")");
