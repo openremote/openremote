@@ -164,9 +164,11 @@ repositories {
         url = "https://s01.oss.sonatype.org/content/repositories/snapshots"
     }
     maven {
-        url "https://repo.jenkins-ci.org/releases/"
+        url = "https://repo.jenkins-ci.org/releases/"
     }
-    maven { url 'https://jitpack.io' }
+    maven {
+        url = 'https://jitpack.io'
+    }
 }
 
 // Eclipse needs help
