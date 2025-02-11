@@ -869,10 +869,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         }
     }
 
-    public GatewayConnector getGatewayConnectorById(String gatewayAssetId) {
-        return gatewayConnectorMap.get(gatewayAssetId.toLowerCase(Locale.ROOT));
-    }
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +

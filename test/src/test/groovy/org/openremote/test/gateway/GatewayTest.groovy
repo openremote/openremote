@@ -17,6 +17,7 @@ import org.openremote.manager.gateway.*
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.Constants
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetEvent
 import org.openremote.model.asset.AssetsEvent
@@ -36,7 +37,6 @@ import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.model.security.User
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
-import org.openremote.model.value.MetaItemType
 import org.openremote.model.value.ValueFormat
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
@@ -195,12 +195,12 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                         new Attribute<>("temp", NUMBER).addOrReplaceMeta(
                                 new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agentAssetIds[i - 1])
                                         .setPath("")),
-                                new MetaItem<>(UNITS, units(UNITS_CELSIUS))
+                                new MetaItem<>(UNITS, Constants.units(UNITS_CELSIUS))
                         ),
                         new Attribute<>("tempSetpoint", NUMBER).addMeta(
                                 new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agentAssetIds[i - 1])
                                         .setPath("")),
-                                new MetaItem<>(UNITS, units(UNITS_CELSIUS))
+                                new MetaItem<>(UNITS, Constants.units(UNITS_CELSIUS))
                         )
                 )
 
@@ -411,12 +411,12 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("temp", NUMBER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agentAssetIds[0])
                                 .setPath("")),
-                        new MetaItem<>(UNITS, units(UNITS_CELSIUS))
+                        new MetaItem<>(UNITS, Constants.units(UNITS_CELSIUS))
                 ),
                 new Attribute<>("tempSetpoint", NUMBER).addMeta(
                         new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agentAssetIds[0])
                                 .setPath("")),
-                        new MetaItem<>(UNITS, units(UNITS_CELSIUS))
+                        new MetaItem<>(UNITS, Constants.units(UNITS_CELSIUS))
                 )
         )
 
@@ -440,7 +440,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         building1Room5Asset.addAttributes(
                 new Attribute<>("co2Level", POSITIVE_INTEGER, 500)
                         .addMeta(
-                                new MetaItem<>(UNITS, units(UNITS_PART_PER_MILLION)),
+                                new MetaItem<>(UNITS, Constants.units(UNITS_PART_PER_MILLION)),
                                 new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agentAssetIds[0]).setPath(""))
                         )
         )
@@ -643,12 +643,12 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("temp", NUMBER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agentAssetIds[1])
                                 .setPath("")),
-                        new MetaItem<>(UNITS, units(UNITS_CELSIUS))
+                        new MetaItem<>(UNITS, Constants.units(UNITS_CELSIUS))
                 ),
                 new Attribute<>("tempSetpoint", NUMBER).addMeta(
                         new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agentAssetIds[1])
                                 .setPath("")),
-                        new MetaItem<>(UNITS, units(UNITS_CELSIUS))
+                        new MetaItem<>(UNITS, Constants.units(UNITS_CELSIUS))
                 )
         )
 
@@ -879,6 +879,25 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         then: "an exception should be thrown"
         thrown(IllegalStateException)
 
+        when: "an asset with a type unknown on the central instance is added on the gateway"
+        // We simulate this as both edge and central are in the same instance here in the test
+        def msgEvent = new AssetEvent(
+                AssetEvent.Cause.CREATE,
+                new BuildingAsset("UnknownAssetType")
+                        .setId(UniqueIdentifierGenerator.generateId()),
+                null
+        )
+        msgEvent.asset.type = "CustomBuildingAsset"
+        gatewayClientService.sendCentralManagerMessage(gatewayConnection.getLocalRealm(), gatewayClientService.messageToString(SharedEvent.MESSAGE_PREFIX, msgEvent))
+
+        then: "it should be added to the central instance as a thing asset"
+        conditions.eventually {
+            def mirroredCustomAssetType = assetStorageService.find(mapAssetId(gateway.id, msgEvent.asset.id, false))
+            assert mirroredCustomAssetType != null
+            assert mirroredCustomAssetType instanceof UnknownAsset
+            assert mirroredCustomAssetType.type == "CustomBuildingAsset"
+        }
+
         when: "an attribute is updated on the gateway client"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(microphone2.id, "test", "newValue"))
 
@@ -1097,7 +1116,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
     }
 
-    def "GatewayAssetSyncRules test"() {
+    def "Verify GatewayAssetSyncRules"() {
 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 30, delay: 0.2)
@@ -1222,332 +1241,4 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert mirroredLight.getAttribute(Asset.NOTES).isPresent()
         }
     }
-
-    def "Verify gateway client service2"() {
-
-        given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 30, delay: 0.2)
-        def delayedConditions = new PollingConditions(initialDelay: 1, delay: 1, timeout: 10)
-        def container = startContainer(defaultConfig(), defaultServices())
-        def timerService = container.getService(TimerService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def gatewayService = container.getService(GatewayService.class)
-        def gatewayClientService = container.getService(GatewayClientService.class)
-        def agentService = container.getService(AgentService.class)
-        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
-        def clientEventService = container.getService(ClientEventService.class)
-
-        and: "an authenticated admin user"
-        def accessToken = authenticate(
-                container,
-                MASTER_REALM,
-                KEYCLOAK_CLIENT_ID,
-                MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
-
-
-        and: "the gateway client resource"
-        def gatewayClientResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(GatewayClientResource.class)
-
-        expect: "the system should settle down"
-        conditions.eventually {
-            assert noEventProcessedIn(assetProcessingService, 300)
-        }
-
-        when: "a gateway is provisioned in this manager in the building realm"
-        GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Test gateway")
-                .setRealm(managerTestSetup.realmBuildingName))
-
-        then: "a set of credentials should have been created for this gateway and be stored against the gateway for easy reference"
-        conditions.eventually {
-            gateway = assetStorageService.find(gateway.getId(), true) as GatewayAsset
-            assert !isNullOrEmpty(gateway.getClientId().orElse(null))
-            assert !isNullOrEmpty(gateway.getClientSecret().orElse(null))
-        }
-
-        and: "a gateway connector should have been created for this gateway"
-        conditions.eventually {
-            assert gatewayService.gatewayConnectorMap.size() == 1
-            assert gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT)).gatewayId == gateway.getId()
-        }
-
-        when: "a gateway client connection is created to connect the city realm to the gateway in the building realm"
-        def gatewayConnection = new GatewayConnection(
-                managerTestSetup.realmCityName,
-                "127.0.0.1",
-                serverPort,
-                managerTestSetup.realmBuildingName,
-                gateway.getClientId().orElse(""),
-                gateway.getClientSecret().orElse(""),
-                false,
-                null,
-                null,
-                false
-        )
-        gatewayClientResource.setConnection(null, managerTestSetup.realmCityName, gatewayConnection)
-
-        then: "the gateway client should become connected"
-        conditions.eventually {
-            assert gatewayClientService.clientRealmMap.get(managerTestSetup.realmCityName) != null
-        }
-
-        and: "the gateway asset connection status should become CONNECTED"
-        conditions.eventually {
-            gateway = assetStorageService.find(gateway.getId())
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
-        }
-
-        and: "the assets should have been created under the gateway asset"
-        conditions.eventually {
-            def gatewayAssets = assetStorageService.findAll(new AssetQuery().parents(gateway.id).recursive(true))
-            def cityAssets = assetStorageService.findAll(new AssetQuery().realm(new RealmPredicate(managerTestSetup.realmCityName)))
-            assert gatewayAssets.size() == cityAssets.size()
-        }
-
-        when: "the gateway client is abruptly disconnected"
-        // Overwrite the client connection status to prevent reconnection
-        gatewayClientService.clientRealmMap.get(managerTestSetup.realmCityName).connectionStatus = ConnectionStatus.DISCONNECTED
-        gatewayClientService.clientRealmMap.get(managerTestSetup.realmCityName).channel.close()
-
-        then: "the gateway asset connection status should become DISCONNECTED"
-        conditions.eventually {
-            gateway = assetStorageService.find(gateway.getId())
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.DISCONNECTED
-        }
-
-        when: "the connection is reestablished"
-        gatewayClientService.clientRealmMap.get(managerTestSetup.realmCityName).connect()
-
-        then: "the gateway asset connection status should become CONNECTED"
-        conditions.eventually {
-            gateway = assetStorageService.find(gateway.getId())
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
-        }
-
-        when: "a gateway client asset is modified"
-        MicrophoneAsset microphone1 = assetStorageService.find(managerTestSetup.microphone1Id)
-        microphone1.setName("Microphone 1 Updated")
-        microphone1.addAttributes(
-                new Attribute<>("test", NUMBER, 100d)
-        )
-        microphone1 = assetStorageService.merge(microphone1)
-
-        then: "the mirrored asset under the gateway should have also been updated"
-        conditions.eventually {
-            def mirroredMicrophone = assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.microphone1Id, false))
-            assert mirroredMicrophone != null
-            assert mirroredMicrophone.getAttributes().get(MicrophoneAsset.SOUND_LEVEL).flatMap { it.getMetaItem(READ_ONLY) }.flatMap { it.getValue() }.orElse(false)
-            assert mirroredMicrophone.getAttribute("test").isPresent()
-            assert mirroredMicrophone.getAttribute("test").flatMap { it.getValue() }.orElse(0d) == 100d
-        }
-
-        when: "a gateway client asset is added"
-        MicrophoneAsset microphone2 = new MicrophoneAsset("Microphone 2")
-                .setRealm(managerTestSetup.realmCityName)
-                .setParentId(managerTestSetup.area1Id)
-                .addAttributes(
-                        new Attribute<>("test", TEXT, "testValue")
-                )
-        microphone2 = assetStorageService.merge(microphone2)
-
-        then: "the new asset should have been created in the gateway and also mirrored under the gateway asset"
-        assert microphone2.id != null
-        conditions.eventually {
-            def mirroredMicrophone2 = assetStorageService.find(mapAssetId(gateway.id, microphone2.id, false))
-            assert mirroredMicrophone2 != null
-            assert mirroredMicrophone2.getAttributes().get(MicrophoneAsset.SOUND_LEVEL).isPresent()
-            assert mirroredMicrophone2.getAttribute("test").flatMap { it.getValue() }.orElse("") == "testValue"
-        }
-
-        when: "an asset with a type unknown on the central instance is added on the gateway"
-        // We simulate this as both edge and central are in the same instance here in the test
-        def msgEvent = new AssetEvent(
-                AssetEvent.Cause.CREATE,
-                new BuildingAsset("UnknownAssetType")
-                    .setId(UniqueIdentifierGenerator.generateId()),
-                null
-        )
-        msgEvent.asset.type = "CustomBuildingAsset"
-        gatewayClientService.sendCentralManagerMessage(gatewayConnection.getLocalRealm(), gatewayClientService.messageToString(SharedEvent.MESSAGE_PREFIX, msgEvent))
-
-        then: "it should be added to the central instance as a thing asset"
-        conditions.eventually {
-            def mirroredCustomAssetType = assetStorageService.find(mapAssetId(gateway.id, msgEvent.asset.id, false))
-            assert mirroredCustomAssetType != null
-            assert mirroredCustomAssetType instanceof UnknownAsset
-            assert mirroredCustomAssetType.type == "CustomBuildingAsset"
-        }
-
-        when: "an attempt is made to add an asset under the gateway asset"
-        def microphone3 = ValueUtil.clone(microphone1)
-                .setName("Microphone 3")
-                .setId(null)
-                .setRealm(managerTestSetup.realmBuildingName)
-                .setParentId(mapAssetId(gateway.id, managerTestSetup.area1Id, false))
-        microphone3 = assetStorageService.merge(microphone3)
-
-        then: "an exception should be thrown"
-        thrown(IllegalStateException)
-
-        when: "an attribute is updated on the gateway client"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(microphone2.id, "test", "newValue"))
-
-        then: "the mirrored asset attribute should also be updated"
-        conditions.eventually {
-            def mirroredMicrophone2 = assetStorageService.find(mapAssetId(gateway.id, microphone2.id, false))
-            assert mirroredMicrophone2 != null
-            assert mirroredMicrophone2.getAttribute("test").flatMap { it.getValue() }.orElse("") == "newValue"
-        }
-
-        when: "time advances"
-        advancePseudoClock(1, TimeUnit.SECONDS, container)
-
-        and: "a mirrored asset attribute is updated"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(mapAssetId(gateway.id, microphone2.id, false), "test", "newerValue"))
-
-        then: "the attribute should be updated on the gateway client and the mirrored asset"
-        conditions.eventually {
-            microphone2 = assetStorageService.find(microphone2.id)
-            def mirroredMicrophone2 = assetStorageService.find(mapAssetId(gateway.id, microphone2.id, false))
-            assert microphone2 != null
-            assert mirroredMicrophone2 != null
-            assert microphone2.getAttribute("test").flatMap { it.getValue() }.orElse("") == "newerValue"
-            assert mirroredMicrophone2.getAttribute("test").flatMap { it.getValue() }.orElse("") == "newerValue"
-        }
-
-        when: "we subscribe to attribute events"
-        List<AttributeEvent> attributeEvents = new CopyOnWriteArrayList<>()
-        Consumer<AttributeEvent> eventConsumer = { attributeEvent ->
-            attributeEvents.add(attributeEvent)
-        }
-        clientEventService.addSubscription(AttributeEvent.class, null, eventConsumer)
-
-        and: "an attribute with an attribute link is updated on the gateway"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light2Id, LightAsset.ON_OFF, true))
-
-        then: "only four attribute events should have been generated, one for each of light1 and light2 and one for each of their mirrored assets below the gateway asset"
-        delayedConditions.eventually {
-            assert attributeEvents.size() == 4
-            assert attributeEvents.any { it.id == managerTestSetup.light2Id && it.name == LightAsset.ON_OFF.name && it.value.orElse(false) }
-            assert attributeEvents.any { it.id == managerTestSetup.light1Id && it.name == LightAsset.ON_OFF.name && it.value.orElse(false) }
-            assert attributeEvents.any { it.id == mapAssetId(gateway.id, managerTestSetup.light2Id, false) && it.name == LightAsset.ON_OFF.name && it.value.orElse(false) }
-            assert attributeEvents.any { it.id == mapAssetId(gateway.id, managerTestSetup.light1Id, false) && it.name == LightAsset.ON_OFF.name && it.value.orElse(false) }
-        }
-
-        when: "a gateway client asset is deleted"
-        def deleted = assetStorageService.delete(Collections.singletonList(managerTestSetup.microphone1Id))
-
-        then: "the client asset should have been deleted and also the mirrored asset under the gateway should also be deleted"
-        assert deleted
-        conditions.eventually {
-            assert assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.microphone1Id, false)) == null
-        }
-
-        when: "attribute filters are added to the gateway connection and persisted"
-        gatewayConnection.setAttributeFilters([
-                new GatewayAttributeFilter().setMatcher(new AssetQuery().types(LightAsset.class)).setValueChange(true),
-                new GatewayAttributeFilter().setMatcher(new AssetQuery().types(PeopleCounterAsset.class).attributeNames(PeopleCounterAsset.COUNT_TOTAL.name, PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE.name))
-                        .setDelta(1.5d),
-                new GatewayAttributeFilter().setMatcher(new AssetQuery().names("Microphone 2")).setDuration("PT1M"),
-                // Ignore any other attribute
-                new GatewayAttributeFilter().setSkipAlways(true)
-        ])
-        def oldClient = gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm())
-        gatewayClientResource.setConnection(null, managerTestSetup.realmCityName, gatewayConnection)
-
-        then: "the gateway connection IO client should have been replaced and synchronisation should be complete"
-        conditions.eventually {
-            assert gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm()) != null
-            assert gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm()) != oldClient
-            GatewayConnector connector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
-            assert connector != null
-            assert !connector.initialSyncInProgress
-            assert attributeEvents.any { it.id == gateway.id && it.value.get() == ConnectionStatus.CONNECTED }
-        }
-
-        when: "an attribute event occurs in the edge gateway realm for an attribute with a value change filter and the attribute value has not changed"
-        attributeEvents.clear()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light2Id, LightAsset.ON_OFF, true))
-
-        then: "the value should not have been forwarded to the central instance"
-        delayedConditions.eventually {
-            assert attributeEvents.any { it.id == managerTestSetup.light2Id && it.name == LightAsset.ON_OFF.name && it.value.orElse(false) }
-            assert !attributeEvents.any { it.id == mapAssetId(gateway.id, managerTestSetup.light2Id, false) && it.name == LightAsset.ON_OFF.name }
-        }
-
-        when: "an attribute event occurs in the edge gateway realm for an attribute with a value change filter and the attribute value has changed"
-        attributeEvents.clear()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light2Id, LightAsset.ON_OFF, false))
-
-        then: "the value should now have been forwarded to the central instance"
-        conditions.eventually {
-            def mirroredLight2 = assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.light2Id, false))
-            assert mirroredLight2 != null
-            assert !mirroredLight2.getAttribute(LightAsset.ON_OFF).flatMap { it.getValue() }.orElse(true)
-            assert attributeEvents.any { it.id == managerTestSetup.light2Id && it.name == LightAsset.ON_OFF.name && !it.value.orElse(true) }
-            assert attributeEvents.any { it.id == mapAssetId(gateway.id, managerTestSetup.light2Id, false) && it.name == LightAsset.ON_OFF.name && !it.value.orElse(true) }
-        }
-
-        when: "an attribute event occurs in the edge gateway realm for an attribute with a delta filter and the attribute value has changed by less than delta"
-        attributeEvents.clear()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.peopleCounter1AssetId, PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE, 0.5d))
-
-        then: "the value should not have been forwarded to the central instance"
-        delayedConditions.eventually {
-            assert attributeEvents.any { it.id == managerTestSetup.peopleCounter1AssetId && it.name == PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE.name && Math.abs(it.value.orElse(0d) - 0.5d) < 0.000001d }
-            assert !attributeEvents.any { it.id == mapAssetId(gateway.id, managerTestSetup.peopleCounter1AssetId, false) && it.name == PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE.name }
-        }
-
-        when: "an attribute event occurs in the edge gateway realm for an attribute with a delta filter and the attribute value has changed by more than delta"
-        attributeEvents.clear()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.peopleCounter1AssetId, PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE, -1.1d))
-
-        then: "the value should have been forwarded to the central instance"
-        conditions.eventually {
-            assert attributeEvents.any { it.id == managerTestSetup.peopleCounter1AssetId && it.name == PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE.name && Math.abs(it.value.orElse(0d) + 1.1d) < 0.000001d }
-            assert attributeEvents.any { it.id == mapAssetId(gateway.id, managerTestSetup.peopleCounter1AssetId, false) && it.name == PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE.name && Math.abs(it.value.orElse(0d) + 1.1d) < 0.000001d }
-        }
-
-        when: "an attribute event occurs in the edge gateway realm for an attribute with a duration filter"
-        attributeEvents.clear()
-        microphone2 = assetStorageService.find(microphone2.id)
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(microphone2.id, MicrophoneAsset.SOUND_LEVEL, 50d))
-
-        then: "the value should have been forwarded to the central instance (as no prior value has been sent since the filter was created)"
-        conditions.eventually {
-            assert attributeEvents.any { it.id == microphone2.id && it.name == MicrophoneAsset.SOUND_LEVEL.name && Math.abs(it.value.orElse(0d) - 50d) < 0.000001d }
-            assert attributeEvents.any { it.id == mapAssetId(gateway.id, microphone2.id, false) && it.name == MicrophoneAsset.SOUND_LEVEL.name && Math.abs(it.value.orElse(0d) - 50d) < 0.000001d }
-        }
-
-        when: "an attribute event occurs in the edge gateway realm for the same attribute before the duration filter has elapsed"
-        attributeEvents.clear()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(microphone2.id, MicrophoneAsset.SOUND_LEVEL, 60d))
-
-        then: "the value should not have been forwarded to the central instance"
-        delayedConditions.eventually {
-            assert attributeEvents.any { it.id == microphone2.id && it.name == MicrophoneAsset.SOUND_LEVEL.name && Math.abs(it.value.orElse(0d) - 60d) < 0.000001d }
-            assert !attributeEvents.any { it.id == mapAssetId(gateway.id, microphone2.id, false) && it.name == MicrophoneAsset.SOUND_LEVEL.name }
-        }
-
-        when: "an attribute event occurs in the edge gateway realm for an attribute that matches the catch all and skip filter"
-        attributeEvents.clear()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.area1Id, Asset.NOTES, "Some test notes"))
-
-        then: "the value should not have been forwarded to the central instance"
-        delayedConditions.eventually {
-            assert attributeEvents.any { it.id == managerTestSetup.area1Id && it.name == Asset.NOTES.name && "Some test notes".equals(it.value.orElse(null)) }
-            assert !attributeEvents.any { it.id == mapAssetId(gateway.id, managerTestSetup.area1Id, false) && it.name == Asset.NOTES.name }
-        }
-
-        cleanup: "Remove any subscriptions created"
-        if (clientEventService != null) {
-            clientEventService.removeSubscription(eventConsumer)
-        }
-        if (gateway != null) {
-            assetStorageService.delete([gateway.id])
-        }
-    }
-
 }

@@ -8,8 +8,8 @@ import java.util.Objects;
 
 /**
  * A sync rule lists any {@link org.openremote.model.attribute.Attribute}s and/or
- * {@link org.openremote.model.attribute.MetaItem}s that should be stripped from a given asset type before it is sent
- * to the central instance
+ * {@link org.openremote.model.attribute.MetaItem}s that should be removed and/or added  from/to a given asset type
+ * before it is sent to the central instance
  */
 public class GatewayAssetSyncRule {
     /**
