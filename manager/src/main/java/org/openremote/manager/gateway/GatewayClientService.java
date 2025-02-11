@@ -38,10 +38,7 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.MetaMap;
+import org.openremote.model.attribute.*;
 import org.openremote.model.auth.OAuthClientCredentialsGrant;
 import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.EventSubscription;
@@ -270,7 +267,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
             clientEventService.addSubscription(
                 AttributeEvent.class,
-                getOutboundAttribueEventFilter(connection),
+                getOutboundAttributeEventFilter(connection),
                 realmAttributeEventConsumer);
 
             client.connect();
@@ -296,6 +293,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
     protected void sendAttributeEvent(GatewayConnection connection, AttributeEvent event) {
         if (connection.getAssetSyncRules() != null) {
+            // Attribute exclusion from sync rules has already been applied
             // Apply sync rules to the event meta
             event = ValueUtil.clone(event);
             event.setMeta(event.getMeta() != null ? event.getMeta() : new MetaMap());
@@ -308,7 +306,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, event));
     }
 
-    protected EventFilter<AttributeEvent> getOutboundAttribueEventFilter(GatewayConnection gatewayConnection) {
+    protected EventFilter<AttributeEvent> getOutboundAttributeEventFilter(GatewayConnection gatewayConnection) {
 
         // Convert filters to predicates for efficiency
         List<Pair<AssetQueryPredicate, GatewayAttributeFilter>> predicatesWithFilters;
@@ -386,6 +384,15 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
                     return false;
                 }).orElse(true);
+
+            // Skip any events for attributes excluded by sync rules
+            if (allowEvent && gatewayConnection.getAssetSyncRules() != null) {
+                GatewayAssetSyncRule syncRule = gatewayConnection.getAssetSyncRules().getOrDefault(ev.getAssetType(), gatewayConnection.getAssetSyncRules().get("*"));
+                if (syncRule != null && syncRule.excludeAttributes != null && syncRule.excludeAttributes.contains(ev.getName())) {
+                    LOG.finer(() -> "Attribute event excluded due to sync rule: " + ev);
+                    allowEvent = false;
+                }
+            }
 
             return allowEvent ? ev : null;
         };
@@ -598,7 +605,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
         List<Attribute<?>> attributes = asset.getAttributes().stream()
                 .filter(it -> syncRule.excludeAttributes == null || !syncRule.excludeAttributes.contains(it.getName()))
-                .peek(attribute -> applySyncRuleToMeta(asset.getType(), attribute.getMeta(), syncRule)).toList();
+                .peek(attribute -> applySyncRuleToMeta(attribute.getName(), attribute.getMeta(), syncRule)).toList();
 
         asset.setAttributes(attributes);
         return asset;
@@ -611,12 +618,11 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         if (syncRule.excludeAttributeMeta != null && !meta.isEmpty()) {
             List<String> excludeMetaRules = syncRule.excludeAttributeMeta.getOrDefault(attributeName, syncRule.excludeAttributeMeta.get("*"));
             if (excludeMetaRules != null && !excludeMetaRules.isEmpty()) {
-                meta.keySet().removeIf(metaItemName ->
-                        !excludeMetaRules.contains(metaItemName));
+                meta.keySet().removeIf(excludeMetaRules::contains);
             }
         }
         if (syncRule.addAttributeMeta != null) {
-            MetaMap addMetaRules = syncRule.addAttributeMeta.getOrDefault(attributeName, syncRule.addAttributeMeta.get("*"));
+            Map<String, MetaItem<?>> addMetaRules = syncRule.addAttributeMeta.getOrDefault(attributeName, syncRule.addAttributeMeta.get("*"));
             if (addMetaRules != null && !addMetaRules.isEmpty()) {
                 meta.addAll(addMetaRules);
             }

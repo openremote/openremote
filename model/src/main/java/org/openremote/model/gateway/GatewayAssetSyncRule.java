@@ -30,6 +30,33 @@ public class GatewayAssetSyncRule {
      */
     public Map<String, MetaMap> addAttributeMeta;
 
+    public List<String> getExcludeAttributes() {
+        return excludeAttributes;
+    }
+
+    public GatewayAssetSyncRule setExcludeAttributes(List<String> excludeAttributes) {
+        this.excludeAttributes = excludeAttributes;
+        return this;
+    }
+
+    public Map<String, List<String>> getExcludeAttributeMeta() {
+        return excludeAttributeMeta;
+    }
+
+    public GatewayAssetSyncRule setExcludeAttributeMeta(Map<String, List<String>> excludeAttributeMeta) {
+        this.excludeAttributeMeta = excludeAttributeMeta;
+        return this;
+    }
+
+    public Map<String, MetaMap> getAddAttributeMeta() {
+        return addAttributeMeta;
+    }
+
+    public GatewayAssetSyncRule setAddAttributeMeta(Map<String, MetaMap> addAttributeMeta) {
+        this.addAttributeMeta = addAttributeMeta;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -26,6 +26,7 @@ import org.openremote.model.asset.impl.*
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
+import org.openremote.model.attribute.MetaMap
 import org.openremote.model.auth.OAuthClientCredentialsGrant
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.gateway.*
@@ -36,6 +37,7 @@ import org.openremote.model.security.User
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.MetaItemType
+import org.openremote.model.value.ValueFormat
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Ignore
@@ -1094,8 +1096,8 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             client.close()
         }
     }
-    def "GatewayAssetSyncRules test"() {
 
+    def "GatewayAssetSyncRules test"() {
 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 30, delay: 0.2)
@@ -1127,7 +1129,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert noEventProcessedIn(assetProcessingService, 300)
         }
 
-        when: "a gateway is provisioned in this manager in the building realm"
+        when: "a gateway asset is provisioned in this manager in the building realm"
         GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Test gateway")
                 .setRealm(managerTestSetup.realmBuildingName))
 
@@ -1155,17 +1157,32 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 false,
                 null,
                 [
-                        "*" : [
-                                excludeAttributeMeta: [
-                                        "*" : [
-                                                "attributeLinks",
-                                                "accessPublicRead",
-                                                "accessPublicWrite",
-                                                "accessRestrictedRead",
-                                                "accessRestrictedWrite"
-                                        ]
+                        "*" : new GatewayAssetSyncRule().setExcludeAttributeMeta([
+                                "*": [
+                                    ACCESS_PUBLIC_READ.name,
+                                    ACCESS_PUBLIC_WRITE.name,
+                                    STORE_DATA_POINTS.name
                                 ]
-                        ]
+                        ]).setAddAttributeMeta([
+                                "*": new MetaMap([
+                                    new MetaItem<>(ACCESS_RESTRICTED_READ, true)
+                                ])
+                        ]).setExcludeAttributes([
+                                Asset.NOTES.name
+                        ]),
+                        "LightAsset" : new GatewayAssetSyncRule().setExcludeAttributeMeta([
+                                "*": [
+                                        ATTRIBUTE_LINKS.name,
+                                        ACCESS_PUBLIC_WRITE.name,
+                                        FORMAT.name
+                                ]
+                        ]).setAddAttributeMeta([
+                                "onOff" : new MetaMap([
+                                        new MetaItem<>(FORMAT, ValueFormat.BOOLEAN_AS_PRESSED_RELEASED())
+                                ])
+                        ]).setExcludeAttributes([
+                                LightAsset.COLOUR_RGB.name
+                        ])
                 ] as Map<String, GatewayAssetSyncRule>,
                 false
         )
@@ -1189,26 +1206,20 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert gatewayAssets.size() == cityAssets.size()
         }
 
-        when: "a gateway client asset is added"
-        ShipAsset ship1 = new ShipAsset("Ship 1")
-                .setRealm(managerTestSetup.realmCityName)
-                .setParentId(managerTestSetup.area1Id)
-                .addOrReplaceAttributes(new Attribute<Double>(ShipAsset.SPEED, 10D).addOrReplaceMeta(
-                        new MetaItem<?>(MetaItemType.ACCESS_PUBLIC_READ, true),
-                        new MetaItem<?>(MetaItemType.ACCESS_PUBLIC_WRITE, true),
-                        new MetaItem<?>(MetaItemType.ACCESS_RESTRICTED_WRITE, true),
-                ))
-
-        ship1 = assetStorageService.merge(ship1)
-
-        then: "the new asset should have been created in the gateway and also mirrored under the gateway asset"
-        assert ship1.id != null
+        and: "the asset sync rules should have been applied"
         conditions.eventually {
-            ShipAsset mirroredShip1 = assetStorageService.find(mapAssetId(gateway.id, ship1.id, false)) as ShipAsset
-            assert mirroredShip1 != null
-            assert mirroredShip1.getAttributes().get(ShipAsset.SPEED).isPresent()
-            assert mirroredShip1.getAttribute(ShipAsset.SPEED).flatMap { it.getValue() }.orElse(0) == 10D
-            assert mirroredShip1.getAttribute(ShipAsset.SPEED).get().getMeta().size() == 0
+            def mirroredMicrophone = assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.microphone1Id, false))
+            def mirroredLight = assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.light1Id, false))
+            assert mirroredMicrophone != null
+            assert mirroredLight != null
+            assert mirroredMicrophone.getAttributes().get(MicrophoneAsset.SOUND_LEVEL).flatMap { it.getMetaItem(READ_ONLY) }.flatMap { it.getValue() }.orElse(false)
+            assert mirroredMicrophone.getAttributes().get(MicrophoneAsset.SOUND_LEVEL).flatMap { it.getMetaItem(ACCESS_RESTRICTED_READ) }.flatMap { it.getValue() }.orElse(false)
+            assert !mirroredMicrophone.getAttributes().get(MicrophoneAsset.SOUND_LEVEL).flatMap { it.getMetaItem(STORE_DATA_POINTS) }.flatMap { it.getValue() }.orElse(false)
+            assert mirroredMicrophone.getAttributes().get(MicrophoneAsset.LOCATION).flatMap { it.getMetaItem(ACCESS_RESTRICTED_READ) }.flatMap { it.getValue() }.orElse(false)
+            assert !mirroredMicrophone.getAttribute(Asset.NOTES).isPresent()
+            assert mirroredLight.getAttributes().get(LightAsset.ON_OFF).flatMap { it.getMetaItem(FORMAT) }.flatMap { it.getValue() }.map {it.asPressedReleased}.orElse(false) == ValueFormat.BOOLEAN_AS_PRESSED_RELEASED().asPressedReleased
+            assert !mirroredLight.getAttribute(LightAsset.COLOUR_RGB).isPresent()
+            assert mirroredLight.getAttribute(Asset.NOTES).isPresent()
         }
     }
 
