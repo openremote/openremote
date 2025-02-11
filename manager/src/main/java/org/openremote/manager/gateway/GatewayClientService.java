@@ -258,14 +258,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
             client.addMessageConsumer(message -> onCentralManagerMessage(connection, message));
 
-            realmAssetEventConsumer = assetEvent -> {
-                if (connection.getAssetSyncRules() != null) {
-                    // Apply sync rules to the asset
-                    assetEvent = ValueUtil.clone(assetEvent);
-                    applySyncRules(assetEvent.getAsset(), connection.getAssetSyncRules());
-                }
-                sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, assetEvent));
-            };
+            realmAssetEventConsumer = assetEvent -> sendAssetEvent(connection, assetEvent);
 
             // Subscribe to Asset<?> and attribute events of local realm and pass through to connected manager
             clientEventService.addSubscription(
@@ -273,19 +266,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 new AssetFilter<AssetEvent>().setRealm(connection.getLocalRealm()),
                 realmAssetEventConsumer);
 
-            realmAttributeEventConsumer = attributeEvent -> {
-                if (connection.getAssetSyncRules() != null) {
-                    // Apply sync rules to the event meta
-                    attributeEvent = ValueUtil.clone(attributeEvent);
-                    attributeEvent.setMeta(attributeEvent.getMeta() != null ? attributeEvent.getMeta() : new MetaMap());
-                    applySyncRuleToMeta(
-                            attributeEvent.getName(),
-                            attributeEvent.getMeta(),
-                            connection.getAssetSyncRules().getOrDefault(attributeEvent.getAssetType(),
-                            connection.getAssetSyncRules().get("*")));
-                }
-                sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, attributeEvent));
-            };
+            realmAttributeEventConsumer = attributeEvent -> sendAttributeEvent(connection, attributeEvent);
 
             clientEventService.addSubscription(
                 AttributeEvent.class,
@@ -302,6 +283,29 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         }
 
         return null;
+    }
+
+    protected void sendAssetEvent(GatewayConnection connection, AssetEvent event) {
+        if (connection.getAssetSyncRules() != null) {
+            // Apply sync rules to the asset
+            event = ValueUtil.clone(event);
+            applySyncRules(event.getAsset(), connection.getAssetSyncRules());
+        }
+        sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, event));
+    }
+
+    protected void sendAttributeEvent(GatewayConnection connection, AttributeEvent event) {
+        if (connection.getAssetSyncRules() != null) {
+            // Apply sync rules to the event meta
+            event = ValueUtil.clone(event);
+            event.setMeta(event.getMeta() != null ? event.getMeta() : new MetaMap());
+            applySyncRuleToMeta(
+                    event.getName(),
+                    event.getMeta(),
+                    connection.getAssetSyncRules().getOrDefault(event.getAssetType(),
+                            connection.getAssetSyncRules().get("*")));
+        }
+        sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, event));
     }
 
     protected EventFilter<AttributeEvent> getOutboundAttribueEventFilter(GatewayConnection gatewayConnection) {
@@ -601,6 +605,9 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     }
 
     protected void applySyncRuleToMeta(String attributeName, MetaMap meta, GatewayAssetSyncRule syncRule) {
+        if (syncRule == null) {
+            return;
+        }
         if (syncRule.excludeAttributeMeta != null && !meta.isEmpty()) {
             List<String> excludeMetaRules = syncRule.excludeAttributeMeta.getOrDefault(attributeName, syncRule.excludeAttributeMeta.get("*"));
             if (excludeMetaRules != null && !excludeMetaRules.isEmpty()) {

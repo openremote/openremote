@@ -141,7 +141,7 @@ public class GatewayConnector {
 
         synchronized (this.sessionId) {
             if (getSessionId() != null) {
-                disconnect();
+                disconnect(GatewayDisconnectEvent.Reason.ALREADY_CONNECTED);
             }
             this.sessionId.set(sessionId);
         }
@@ -186,9 +186,12 @@ public class GatewayConnector {
         publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED));
     }
 
-    protected void disconnect() {
+    protected void disconnect(GatewayDisconnectEvent.Reason reason) {
         synchronized (this.sessionId) {
             if (isConnected()) {
+                if (disabled) {
+                    sendMessageToGateway(new GatewayDisconnectEvent(reason));
+                }
                 requestDisconnect.run();
                 disconnected(getSessionId());
             }
@@ -373,7 +376,7 @@ public class GatewayConnector {
 
     protected void setDisabled(boolean disabled) {
         this.disabled = disabled;
-        this.disconnect();
+        disconnect(GatewayDisconnectEvent.Reason.DISABLED);
     }
 
     protected String getSessionId() {
@@ -385,22 +388,26 @@ public class GatewayConnector {
     }
 
     synchronized protected void onGatewayEvent(SharedEvent e) {
-
-        if (initialSyncInProgress) {
-            if (e instanceof AssetsEvent) {
-                onSyncAssetsResponse((AssetsEvent) e);
-            } else if (e instanceof AttributeEvent) {
-                cachedAttributeEvents.add((AttributeEvent) e);
-            } else if (e instanceof AssetEvent) {
-                cachedAssetEvents.add((AssetEvent) e);
-            }
-        } else {
-            synchronized (eventConsumerMap) {
-                Consumer<SharedEvent> consumer = eventConsumerMap.get(e.getClass());
-                if (consumer != null) {
-                    consumer.accept(e);
+        try {
+            if (initialSyncInProgress) {
+                if (e instanceof AssetsEvent) {
+                    onSyncAssetsResponse((AssetsEvent) e);
+                } else if (e instanceof AttributeEvent) {
+                    cachedAttributeEvents.add((AttributeEvent) e);
+                } else if (e instanceof AssetEvent) {
+                    cachedAssetEvents.add((AssetEvent) e);
+                }
+            } else {
+                synchronized (eventConsumerMap) {
+                    Consumer<SharedEvent> consumer = eventConsumerMap.get(e.getClass());
+                    if (consumer != null) {
+                        consumer.accept(e);
+                    }
                 }
             }
+        } catch (Exception ex) {
+            LOG.log(Level.WARNING, ex, () -> "An error occurred while processing a gateway event: event=" + e + ", connector=" + this);
+            disconnect(GatewayDisconnectEvent.Reason.SYNC_ERROR);
         }
     }
 
@@ -652,20 +659,8 @@ public class GatewayConnector {
     synchronized protected void onAssetEvent(AssetEvent e) {
 
         switch (e.getCause()) {
-            case CREATE, READ, UPDATE -> {
-                try {
-                    saveAssetLocally(e.getAsset());
-                } catch (Exception ex) {
-                    LOG.log(Level.SEVERE, "Updating/creating asset failed: " + e.getId() + ": " + this, ex);
-                }
-            }
-            case DELETE -> {
-                try {
-                    deleteAssetsLocally(Collections.singletonList(mapAssetId(gatewayId, e.getId(), false)));
-                } catch (Exception ex) {
-                    LOG.log(Level.SEVERE, "Removing obsolete asset failed: " + e.getId() + ": " + this, ex);
-                }
-            }
+            case CREATE, READ, UPDATE -> saveAssetLocally(e.getAsset());
+            case DELETE -> deleteAssetsLocally(Collections.singletonList(mapAssetId(gatewayId, e.getId(), false)));
         }
     }
 

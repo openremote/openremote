@@ -26,7 +26,6 @@ import org.openremote.model.asset.impl.*
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
-import org.openremote.model.attribute.MetaMap
 import org.openremote.model.auth.OAuthClientCredentialsGrant
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.gateway.*
@@ -37,7 +36,6 @@ import org.openremote.model.security.User
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.MetaItemType
-import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Ignore
@@ -1350,6 +1348,25 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert mirroredMicrophone2 != null
             assert mirroredMicrophone2.getAttributes().get(MicrophoneAsset.SOUND_LEVEL).isPresent()
             assert mirroredMicrophone2.getAttribute("test").flatMap { it.getValue() }.orElse("") == "testValue"
+        }
+
+        when: "an asset with a type unknown on the central instance is added on the gateway"
+        // We simulate this as both edge and central are in the same instance here in the test
+        def msgEvent = new AssetEvent(
+                AssetEvent.Cause.CREATE,
+                new BuildingAsset("UnknownAssetType")
+                    .setId(UniqueIdentifierGenerator.generateId()),
+                null
+        )
+        msgEvent.asset.type = "CustomBuildingAsset"
+        gatewayClientService.sendCentralManagerMessage(gatewayConnection.getLocalRealm(), gatewayClientService.messageToString(SharedEvent.MESSAGE_PREFIX, msgEvent))
+
+        then: "it should be added to the central instance as a thing asset"
+        conditions.eventually {
+            def mirroredCustomAssetType = assetStorageService.find(mapAssetId(gateway.id, msgEvent.asset.id, false))
+            assert mirroredCustomAssetType != null
+            assert mirroredCustomAssetType instanceof UnknownAsset
+            assert mirroredCustomAssetType.type == "CustomBuildingAsset"
         }
 
         when: "an attempt is made to add an asset under the gateway asset"
