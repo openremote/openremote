@@ -381,12 +381,12 @@ export class PageGateway extends Page<AppStateKeyed>  {
                 <div class="gateway-sharing-control"  style="${controlStyling}">
                     <or-mwc-input .label="${i18next.t("gateway.assetSyncRulesEnable")}" .type="${InputType.CHECKBOX}"
                                   ?disabled="${controlsDisabled}" .value="${this._metaItemRestrictionsChecked}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onMetaItemRestrictionsUpdate(!!e.detail.value)}"
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onAssetSyncRulesUpdated(!!e.detail.value)}"
                     ></or-mwc-input>
                     <div class="gateway-sharing-control-child">
                         <or-mwc-input .type="${InputType.JSON_OBJECT}" ?disabled="${!this._metaItemRestrictionsChecked}" 
                                       .value="${controlsDisabled ? undefined : this._syncRules}" style="width: 500px;"
-                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onMetaItemRestrictionsUpdate(e.detail.value)}"
+                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onAssetSyncRulesUpdated(e.detail.value)}"
                                       .label="${i18next.t('gateway.assetSyncRulesInput')}"
                         ></or-mwc-input>
                         <or-translate value=""></or-translate>
@@ -480,33 +480,39 @@ export class PageGateway extends Page<AppStateKeyed>  {
     }
 
     /**
-     * HTML callback for when the "Configuration Item Restrictions" updates.
+     * HTML callback for when the GatewayAssetSyncRules updates.
      */
-    protected _onMetaItemRestrictionsUpdate(value?: { [index: string]: GatewayAssetSyncRule } | boolean) {
-        if(this._connection.assetSyncRules == undefined && value == undefined){
-            this._syncRules = this._getDefaultGatewayAssetSyncRule();
+    protected _onAssetSyncRulesUpdated(value?: { [index: string]: GatewayAssetSyncRule } | boolean) {
+        if (this._connection.assetSyncRules === undefined && value === undefined) {
+            this._syncRules = this._getDefaultGatewayAssetSyncRules();
         }
-        if(typeof value === "boolean"){
-            console.log("TOGGLE: "+value)
+        if (typeof value === "boolean") {
             this._metaItemRestrictionsChecked = value;
-        }else {
-            console.log("EXCLUDEATTRIBUTEMETA: "+value)
+        } else {
             this._syncRules = value;
             this._updateSyncRules(this._syncRules);
         }
     }
 
-
-    protected  _getDefaultGatewayAssetSyncRule(): { [index: string]: GatewayAssetSyncRule }  {
+    protected  _getDefaultGatewayAssetSyncRules(): { [index: string]: GatewayAssetSyncRule }  {
         return {
             "*" : {
                 excludeAttributeMeta: {
                     "*": [
-                        "attributeLinks",
                         "accessPublicRead",
                         "accessPublicWrite",
                         "accessRestrictedRead",
                         "accessRestrictedWrite"
+                    ]
+                },
+                addAttributeMeta: {
+                    "*": {
+                        "storeDataPoints": true
+                    }
+                },
+                excludeAttributes: {
+                    "*": [
+                        "notes"
                     ]
                 }
             }
@@ -543,7 +549,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
 
         this._setConnection(connectionResponse.data);
         this._connectionStatus = statusResponse.data;
-        this._syncRules = this._getDefaultGatewayAssetSyncRule();
+        this._syncRules = this._getDefaultGatewayAssetSyncRules();
         this._loading = false;
     }
 
