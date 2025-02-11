@@ -179,7 +179,7 @@ function inputTypeSupportsHelperText(inputType: InputType) {
 }
 
 function inputTypeSupportsLabel(inputType: InputType) {
-    return inputTypeSupportsHelperText(inputType) || inputType === InputType.CHECKBOX;
+    return inputTypeSupportsHelperText(inputType) || inputType === InputType.CHECKBOX || inputType === InputType.BUTTON_MOMENTARY;
 }
 
 export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
@@ -225,7 +225,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                     inputType = InputType.CHECKBOX;
                 }
 
-                if (format && format.asMomentary) {
+                if (format && format.asMomentary || (Util.getMetaValue(WellknownMetaItems.MOMENTARY, valueHolder, valueHolderDescriptor) === true) ) {
                     inputType = InputType.BUTTON_MOMENTARY;
                 }
                 break;
@@ -1184,7 +1184,12 @@ export class OrMwcInput extends LitElement {
 
                     const isMomentary = this.type === InputType.BUTTON_MOMENTARY;
                     const isIconButton = !this.action && !this.label;
-                    let classes = {
+                    // If no action, label or icons are given, show as a circle.
+                    if (isIconButton && !this.iconTrailing && !this.icon ) {
+                        this.icon = "circle"
+                        }
+
+                    const classes = {
                         "mdc-icon-button": isIconButton,
                         "mdc-fab": !isIconButton && this.action,
                         "mdc-fab--extended": !isIconButton && this.action && !!this.label,
@@ -1192,7 +1197,7 @@ export class OrMwcInput extends LitElement {
                         "mdc-button": !isIconButton && !this.action,
                         "mdc-button--raised": !isIconButton && !this.action && this.raised,
                         "mdc-button--unelevated": !isIconButton && !this.action && this.unElevated,
-                        "mdc-button--outlined": !isIconButton && !this.action && this.outlined,
+                        "mdc-button--outlined": !isIconButton && !this.action && (this.outlined || isMomentary),
                         "mdc-button--rounded": !isIconButton && !this.action && this.rounded,                        
                         "mdc-button--fullwidth": this.fullWidth,
                     };
@@ -1441,7 +1446,7 @@ export class OrMwcInput extends LitElement {
                             "mdc-slider": true,
                             "mdc-slider--range": this.continuous,
                             "mdc-slider--discreet": !this.continuous,
-                            "mdc-slider--disabled": this.disabled
+                            "mdc-slider--disabled": this.disabled || this.readonly
                         };
 
                         inputElem = html`

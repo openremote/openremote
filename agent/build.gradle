@@ -31,7 +31,9 @@ dependencies {
 
     api "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
 
-    api "com.github.weliem:blessed-bluez:$bluetoothVersion"
+    api("com.github.weliem:blessed-bluez:$bluetoothVersion") {
+        exclude group: "com.github.weliem.blessed-bluez", module: "blessed-test"
+    }
 
     implementation "dev.failsafe:failsafe:$failsafeVersion"
 
@@ -91,8 +93,8 @@ publishing {
         maven {
             if (!version.endsWith('-LOCAL')) {
                 credentials {
-                    username findProperty("publishUsername")
-                    password findProperty("publishPassword")
+                    username = findProperty("publishUsername")
+                    password = findProperty("publishPassword")
                 }
             }
             url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
