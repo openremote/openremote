@@ -348,6 +348,7 @@
   "gatewayHeaderItem": "Manager interconnect",
   "gateway": {
     "": "Manager interconnect",
+    "connectionDetails": "Connectie details",
     "limit_sharing_is_custom_error": "Een aangepaste configuratie is ingesteld. Klik op JSON om deze aan te passen. Maak de configuratie leeg om de velden hieronder te gebruiken.",
     "limit_sharing_attribute": "Begrens welke attributen van asset types worden gedeeld",
     "limit_sharing_types_selected": "asset types geselecteerd",
@@ -377,7 +378,6 @@
   },
   "tunnels": "tunnels",
   "tunnel": "tunnel",
-  "connectionDetails": "CONNECTIE DETAILS",
   "secured": "Beveiligd",
   "clientSecret": "Client wachtwoord",
   "clientId": "Client ID",

@@ -236,8 +236,10 @@
     "GROOVY": "Groovy",
     "JAVASCRIPT": "JavaScript"
   },
-  "gatewayConnection": "إدارة الإتصال الداخلي ",
-  "connectionDetails": "معلومات الإتصال",
+  "gateway": {
+    "": "إدارة الإتصال الداخلي ",
+    "connectionDetails": "معلومات الإتصال"
+  },
   "secured": "محمي",
   "clientSecret": "كلمة سر المستخدم",
   "clientId": "الرقم التعريقي للمستخدم",
