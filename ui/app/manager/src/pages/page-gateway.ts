@@ -379,7 +379,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                     </div>
                 </div>
                 <div class="gateway-sharing-control"  style="${controlStyling}">
-                    <or-mwc-input .label="${i18next.t("gateway.meta_item_restrictions")}" .type="${InputType.CHECKBOX}"
+                    <or-mwc-input .label="${i18next.t("gateway.assetSyncRulesEnable")}" .type="${InputType.CHECKBOX}"
                                   ?disabled="${controlsDisabled}" .value="${this._metaItemRestrictionsChecked}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onMetaItemRestrictionsUpdate(!!e.detail.value)}"
                     ></or-mwc-input>
@@ -387,7 +387,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                         <or-mwc-input .type="${InputType.JSON_OBJECT}" ?disabled="${!this._metaItemRestrictionsChecked}" 
                                       .value="${controlsDisabled ? undefined : this._syncRules}" style="width: 500px;"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onMetaItemRestrictionsUpdate(e.detail.value)}"
-                                      .label="${i18next.t('gateway.meta_item_restrictions_input')}"
+                                      .label="${i18next.t('gateway.assetSyncRulesInput')}"
                         ></or-mwc-input>
                         <or-translate value=""></or-translate>
                     </div>

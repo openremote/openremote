@@ -353,8 +353,8 @@
     "limit_sharing_attribute_selected": "attributes selected",
     "limit_sharing_rate": "Limit the rate of how often attribute value updates are shared",
     "limit_sharing_rate_suffix": "minutes interval",
-    "meta_item_restrictions": "Exclude specific Configuration Items from being sent to the main instance",
-    "meta_item_restrictions_input": "Enter Configuration Items"
+    "assetSyncRulesEnable": "Enable asset sync rules",
+    "assetSyncRulesInput": "Asset sync rules"
   },
   "gatewayTunnel": "Gateway tunnel",
   "gatewayTunnels": {
