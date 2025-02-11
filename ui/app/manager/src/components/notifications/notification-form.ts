@@ -177,7 +177,7 @@ export class NotificationForm extends LitElement {
     @state()
     protected _closeButtonText?: string;
 
-    //TO DO ADD CHECKBOX HERE 
+    //TO DO: visual element for openInBrowser check
     @state()
     protected _openInBrowser?: boolean;
 
