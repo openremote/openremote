@@ -199,7 +199,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                         // ping/pong frames so we can't be too aggressive with those connections but other clients
                         // should implement ping/pong
                         if (authContext != null && authContext.getUsername().startsWith(User.SERVICE_ACCOUNT_PREFIX)) {
-                            webSocketChannel.setIdleTimeout(30000);
+                            //webSocketChannel.setIdleTimeout(30000);
                         }
 
                         // Push auth and realm into channel for future use

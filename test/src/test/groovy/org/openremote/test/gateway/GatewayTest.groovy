@@ -1272,7 +1272,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 gateway.getClientSecret().orElse(""),
                 false,
                 null,
-                Map.of("test", new GatewayAssetSyncRule()),
+                null,
                 false
         )
         gatewayClientResource.setConnection(null, managerTestSetup.realmCityName, gatewayConnection)
