@@ -233,12 +233,6 @@ export class OrNotificationsTable extends OrMwcTable {
             'user': 'account',
             'realm': 'domain'
         };
- 
-        // return html`
-        // <a href="${details.link}" class="target-link ${details.type}-link">
-        //     ${details.name}
-        // </a>
-        // `;
 
         return html`
             <a href="${details.link}" class="target-link ${details.type}-link">
