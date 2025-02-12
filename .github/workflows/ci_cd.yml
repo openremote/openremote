@@ -356,7 +356,7 @@ jobs:
             managerTagDefault = '#ref'
 
             if not isMainRepo:
-              if not managerVersion or managerVersion.endswith("-SNAPSHOT")
+              if not managerVersion or managerVersion.endswith("-SNAPSHOT"):
                 os.system("SNAPSHOT openremote dependencies not currently supported for custom project deployment")
                 sys.exit(1)
               managerTagDefault = managerVersion
@@ -872,7 +872,6 @@ jobs:
             sys.exit(1)
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           MANAGER_DOCKER_BUILD_PATH: ${{ steps.manager-docker-command.outputs.buildPath }}
           DEPLOYMENT_DOCKER_BUILD_PATH: ${{ steps.deployment-docker-command.outputs.buildPath }}
