@@ -43,16 +43,6 @@ docker image tag updates. The file layout is:
       "managerTag": "latest", // Can use #ref or exclude this to build COMMIT specific manager docker image
       "environment": "production"
     }
-  },
-  // Configure behaviour on manager docker image update (must be triggered by schedule event from a custom project or fork)
-  "managerDockerPush": {
-    // Docker tags to monitor can only be used if not the main openremote repo (openremote/openremote)
-    "develop": {
-        // Singleton or array of deployments to execute, a deployment consists of (environment and/or managerTag see variables for explanation)
-        "deploy": {
-            "environment": "staging"
-        }      
-    }
   }
 }
 ```
