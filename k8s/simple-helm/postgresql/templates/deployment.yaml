@@ -63,6 +63,9 @@ spec:
                   key: postgresql-password
             - name: POSTGRES_MAX_CONNECTIONS
               value: "{{ .Values.or.postgresql.maxConnections }}"
+          {{- with .Values.or.env }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - mountPath: /var/lib/postgresql/data
               name: postgresql-data

@@ -119,33 +119,83 @@ tolerations: []
 affinity: {}
 
 or:
+  # Additional environment variables passed to the container
+  env: []
+  # - name: foo
+  #   value: bar
+
+  # The public HOSTNAME and SSL PORT of this manager
   hostname: "localhost"
   port: "-1"
+
+  # It is important that all services have the same timezone and are time synchronized.
+  # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts
   timeZone: "Europe/Amsterdam"
+
+  # Console applications can register for push notifications through FCM.
   firebaseConfigFile: "/deployment/manager/fcm.json"
+
+  # Developer mode (see code for usages of OR_DEV_MODE flag)
   devMode: false
+
+  # !! WARNING: This will wipe your database !!
+  # Force a full clean and setup on startup irrespective of whether there is existing data
+  # Default behaviour is false unless OR_DEV_MODE = true or openremote database doesn't already exist
   setupRunOnRestart: false
 
+  # Location of built in web content.
   appDocroot: /opt/web
+  # Location of the custom web content.
   customAppDocroot: /deployment/manager/app
+  # Location for the provisioning files
   provisioningDocroot: /deployment/manager/provisioning
+  # Redirect path when root URI is requested
   rootRedirectPath: /manager
 
+  # Map related settings.
+  # Provide a path to the map tiles database file (see https://openmaptiles.com/).
   mapTilesPath: /deployment/map/mapdata.mbtiles
+
+  # Override the map settings such as center location and zoom when opening the
+  # manager's map, as well as other style details and colours.
   mapSettingsPath: /deployment/map/mapsettings.json
 
+  # When asset attributes are enabled for rule events, each value update will be a temporary
+  # fact in rules. You can set the global default expiration time span used when no other
+  # attribute-level configuration exists. Default is 1 hour.
   ruleEventExpires: "PT1H"
+
+  # The identity provider implementation to use for managing user identities, roles, and
+  # access authorization. The default is 'keycloak' which requires a separate service but
+  # provides full multi-tenancy identity, role permissions, and user session timeouts.
+  # The 'basic' provider supports only superusers and their text passwords, managed in a
+  # simple database table, and always requires a new login when a page is reloaded.
   identityProvider: "keycloak"
+
+  # For the Keycloak identity provider, you may configure session timeouts of frontend apps. This
+  # will only be applied on newly created realms, or once on the master realm when clean setup runs.
+
+  # Validity of non-offline refresh tokens, force login when expired on web app, default is 1 day.
   identitySessionMaxMinutes: 1440
+
+  # Validity of offline refresh tokens, force login on native console app, default is 5 years.
+  # Note that production offline tokens should be valid for months or years: When the offline token
+  # expires, the native console app can no longer contact the service in the background (e.g. when
+  # processing push notifications) and will therefore fail silently until the user logs in again.
   identitySessionOfflineTimeoutMinutes: 2628000
 
+  # Enable/disable Prometheus metrics collection
   metricsEnabled: true
+  # Web server port used to host metrics endpoint
   metricsPort: 8405
 
+  # The service-internal host name and port of the keycloak identity provider; defaults:
   keycloak:
     host: "keycloak"
     port: "8080"
     path: "auth"
+
+  # Database settings
   dbVendor: "postgres"
   postgresql:
     host: "postgresql"

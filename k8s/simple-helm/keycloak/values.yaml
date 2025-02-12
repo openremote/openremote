@@ -115,14 +115,29 @@ tolerations: []
 affinity: {}
 
 or:
+  # Additional environment variables passed to the container
+  env: []
+  # - name: foo
+  #   value: bar
+
+  # Configure web server
   hostname: "localhost"
   port: "-1"
+
+  # It is important that all services are time synchronized. Bearer tokens are
+  # only valid for minutes, and authentication fails if Keycloak drifts
   timeZone: "Europe/Amsterdam"
+
   keycloak:
+    # Switch to debug to diagnose Keycloak problems; default:
     logLevel: "info"
+
+    # Default themes to use
     defaultTheme: "openremote"
     accountTheme: "openremote"
     welcomeTheme: "keycloak"
+
+  # Configure how Keycloak connects to the database
   postgresql:
     host: "postgresql"
     port: "5432"

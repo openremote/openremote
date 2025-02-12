@@ -80,6 +80,9 @@ spec:
               value: "{{ .Values.or.keycloak.accountTheme }}"
             - name: KEYCLOAK_WELCOME_THEME
               value: "{{ .Values.or.keycloak.welcomeTheme }}"
+          {{- with .Values.or.env }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           {{- with .Values.volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}

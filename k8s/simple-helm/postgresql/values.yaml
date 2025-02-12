@@ -98,7 +98,17 @@ tolerations: []
 affinity: {}
 
 or:
+  # Additional environment variables passed to the container
+  env: []
+  # - name: foo
+  #   value: bar
+
+  # It is important that all services have the same timezone and are time synchronized.
+  # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
   timeZone: "Europe/Amsterdam"
+
   postgresql:
     database: "openremote"
+    # This setting may still be overridden depending on your kernel settings so tune this and other
+    # service DB values so the actual max connections are not exhausted
     maxConnections: 50

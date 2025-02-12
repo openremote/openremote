@@ -93,8 +93,6 @@ spec:
             - name: OR_DB_CONNECTION_TIMEOUT_SECONDS
               value: "{{ .Values.or.postgresql.connectionTimeoutSeconds }}"
 
-
-
             - name: OR_KEYCLOAK_HOST
               value: "{{ .Values.or.keycloak.host }}"
             - name: OR_KEYCLOAK_PORT
@@ -130,6 +128,9 @@ spec:
               value: "{{ .Values.or.metricsEnabled }}"
             - name: OR_METRICS_PORT
               value: "{{ .Values.or.metricsPort }}"
+          {{- with .Values.or.env }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - mountPath: /storage
               name: manager-data
