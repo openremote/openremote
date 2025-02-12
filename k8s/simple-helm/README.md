@@ -69,7 +69,7 @@ TODO: port forward or service for MQTT port(s)
 
 ### Using with IDE for development
 
-Install the postgresql and keycloak charts. For keycloak, use the specific values files to configure support plain HTTP calls.
+Install the postgresql and keycloak charts. For keycloak, use the specific values files to configure support plain HTTP calls and set the HTTP port.
 ```bash
 helm install postgresql postgresql
 helm install keycloak keycloak -f keycloak/values-dev.yaml
@@ -84,8 +84,6 @@ kubectl port-forward svc/keycloak 8081:8080
 Make sure to start the manager with the `OR_KEYCLOAK_HOST` set to `localhost` (e.g. define the environment variable in your run configuration).
 
 Make sure that other ports (e.g. MQTT 1883) are not used / forwarded from pods.
-
-TODO: still not working at this stage, investigate required changes / additional steps.
 
 ### Changing hostname / adding custom certificate
 
