@@ -18,19 +18,15 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.openremote.container.util;
+package org.openremote.model.util;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.IdentifierGenerator;
 import org.openremote.model.IdentifiableEntity;
-import org.openremote.model.util.UniqueIdentifierGenerator;
 
 import java.io.Serializable;
 
-/**
- * DO NOT REMOVE; String reference in package-info.java
- */
 public class HibernateUniqueIdentifierGenerator implements IdentifierGenerator {
 
     @Override

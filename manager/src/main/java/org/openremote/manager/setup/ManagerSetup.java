@@ -39,8 +39,6 @@ import org.openremote.model.setup.Setup;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -58,7 +56,7 @@ public class ManagerSetup implements Setup {
 
     public static final String OR_PROVISIONING_DOCROOT = "OR_PROVISIONING_DOCROOT";
     public static final String OR_PROVISIONING_DOCROOT_DEFAULT = "deployment/manager/provisioning";
-    protected static final Logger LOG = LoggerFactory.getLogger(ManagerSetup.class);
+    protected static final System.Logger LOG = System.getLogger(ManagerSetup.class.getName());
     protected Path provisionDocRoot;
 
     final protected TimerService timerService;
@@ -460,17 +458,16 @@ public class ManagerSetup implements Setup {
             return;
         }
 
-        LOG.info("Provisioning assets");
+        LOG.log(System.Logger.Level.INFO, "Provisioning assets");
 
         Files.list(Paths.get(provisionDocRoot.toString(), "assets")).sorted()
                 .forEach(file -> {
                     try {
                         Asset<?> asset =  ValueUtil.JSON.readValue(file.toFile(), Asset.class);
                         asset = assetStorageService.merge(asset);
-
-                        LOG.info("Asset merged: " + asset.toString());
+                        LOG.log(System.Logger.Level.INFO, "Asset merged: " + asset);
                     } catch (IOException e) {
-                        LOG.warn("Processing of file " + file.getFileName() + " went wrong", e);
+                        LOG.log(System.Logger.Level.INFO, "Processing of file " + file.getFileName() + " went wrong", e);
                     }
                 });
 

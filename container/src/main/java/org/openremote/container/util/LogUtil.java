@@ -20,8 +20,6 @@
 package org.openremote.container.util;
 
 import org.openremote.model.util.TextUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,18 +44,18 @@ import static org.openremote.model.Container.OR_DEV_MODE;
  */
 public class LogUtil {
 
-    protected static final Logger LOG = LoggerFactory.getLogger(LogUtil.class);
+    protected static final System.Logger LOG = System.getLogger(LogUtil.class.getName());
     public static final String OR_LOGGING_CONFIG_FILE = "OR_LOGGING_CONFIG_FILE";
 
     public static void initialiseJUL() throws ExceptionInInitializerError {
 
         // Don't do anything if standard JUL system properties set
         if (!TextUtil.isNullOrEmpty(System.getProperty("java.util.logging.config.class"))) {
-            LOG.info("Using specified java.util.logging.config.class system property: " + System.getProperty("java.util.logging.config.class"));
+            LOG.log(System.Logger.Level.INFO,"Using specified java.util.logging.config.class system property: " + System.getProperty("java.util.logging.config.class"));
             return;
         }
         if (!TextUtil.isNullOrEmpty(System.getProperty("java.util.logging.config.file"))) {
-            LOG.info("Using specified java.util.logging.config.file system property: " + System.getProperty("java.util.logging.config.file"));
+            LOG.log(System.Logger.Level.INFO,"Using specified java.util.logging.config.file system property: " + System.getProperty("java.util.logging.config.file"));
             return;
         }
 
@@ -79,14 +77,14 @@ public class LogUtil {
             InputStream configFile = getFileInputStream(System.getenv(OR_LOGGING_CONFIG_FILE));
 
             if (configFile != null) {
-                LOG.info("Using logging configuration: " + System.getenv(OR_LOGGING_CONFIG_FILE));
+                LOG.log(System.Logger.Level.INFO, "Using logging configuration: " + System.getenv(OR_LOGGING_CONFIG_FILE));
                 return configFile;
             }
 
             // Look for the file on the classpath
             configFile = Thread.currentThread().getContextClassLoader().getResourceAsStream(System.getenv(OR_LOGGING_CONFIG_FILE));
             if (configFile != null) {
-                LOG.info("Using logging configuration from classpath: " + System.getenv(OR_LOGGING_CONFIG_FILE));
+                LOG.log(System.Logger.Level.INFO,"Using logging configuration from classpath: " + System.getenv(OR_LOGGING_CONFIG_FILE));
                 return configFile;
             }
         }
@@ -98,7 +96,7 @@ public class LogUtil {
         InputStream configFile = org.openremote.model.Container.class.getClassLoader().getResourceAsStream(loggingFile);
 
         if (configFile != null) {
-            LOG.info("Using built in logging configuration from classpath: " + loggingFile);
+            LOG.log(System.Logger.Level.INFO,"Using built in logging configuration from classpath: " + loggingFile);
             return configFile;
         }
 
