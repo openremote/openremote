@@ -387,27 +387,33 @@ jobs:
 
       - name: Sanitize deployments value
         id: deployments
+        shell: python
         run: |
-          isMainRepo = "$IS_MAIN_REPO" == 'true'
-          deployments=$DEPLOYMENTS
+          isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
+          deployments = os.getenv('DEPLOYMENTS')
+          eventName = os.getenv('GITHUB_EVENT_NAME')
+          refType = os.getenv('GITHUB_REF_TYPE')
+          inputTag = os.getenv('INPUT_MANAGER_TAG')
+          inputEnv = os.getenv('INPUT_ENVIRONMENT')
+          managerVersion = os.getenv('MANAGER_VERSION')
 
-          if [ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ] && [ "$GITHUB_REF_TYPE" != 'tag' ]; then
+          if eventName == 'workflow_dispatch' and refType != 'tag':
             if isMainRepo:
-              tag="$INPUT_MANAGER_TAG"
-              if [ -z "$INPUT_MANAGER_TAG" ]; then
+              tag=inputTag
+              if inputTag is None:
                 tag='#ref'
               fi
             else:
-              tag="$MANAGER_VERSION"    
-            deployments="$INPUT_ENVIRONMENT:$tag"
+              tag=managerVersion
+            deployments= f'{inputEnv}:{tag}'
           fi
           
           if isMainRepo:
-            if deployments and deployments.contains("-SNAPSHOT"):
+            if deployments and deployments.contains('-SNAPSHOT'):
               os.system("SNAPSHOT manager docker images not currently supported for custom project deployment")
               sys.exit(1)
 
-          echo "value=$deployments" >> $GITHUB_OUTPUT
+          os.system(f"echo 'value={deployments}' >> $GITHUB_OUTPUT")
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
