@@ -291,7 +291,6 @@ jobs:
           refType = os.getenv('GITHUB_REF_TYPE')
           isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
           isRelease = os.getenv('IS_RELEASE') == 'true'
-          managerVersion = os.getenv('MANAGER_VERSION')
           version = os.getenv('VERSION')
           deploys = None
           dockerPublishTags = None
@@ -322,7 +321,7 @@ jobs:
               if 'npm' in eventConfig['distribute']:
                  npmPublishTag = eventConfig['distribute']['npm']
 
-          if isMainRepo and (isRelease or (eventName != "release" and not isRelease)):
+          if isMainRepo and ((eventName == "release" and isRelease) or (eventName != "release" and not isRelease)):
 
             if dockerPublishTags is not None:
               if "$version" in dockerPublishTags:
@@ -355,21 +354,23 @@ jobs:
             deployStr = ""
             managerTagDefault = '#ref'
 
-            if not isMainRepo:
-              if not managerVersion or managerVersion.endswith("-SNAPSHOT"):
-                os.system("SNAPSHOT openremote dependencies not currently supported for custom project deployment")
-                sys.exit(1)
-              managerTagDefault = managerVersion
-
             for deploy in deploys:
               if 'environment' in deploy:
                 deployStr += deploy['environment']
               deployStr += ":"
               if 'managerTag' in deploy:
-                deployStr += deploy['managerTag']
+                if isMainRepo:
+                  deployStr += deploy['managerTag']
+                else:
+                  # Custom projects manager docker image must match the openremoteVersion from gradle.properties
+                  deployStr += "$MANAGER_VERSION"
               else:
-                os.system("echo 'Manager tag not specified so using commit SHA'")
-                deployStr += managerTagDefault
+                if isMainRepo:
+                  os.system("echo 'Manager tag not specified so using commit SHA'")
+                  deployStr += managerTagDefault
+                else:
+                  # Custom projects manager docker image must match the openremoteVersion from gradle.properties
+                  deployStr += "$MANAGER_VERSION"
 
               deployStr += ";"
 
@@ -380,24 +381,36 @@ jobs:
             os.system(f"echo 'deploys={deployStr}' >> $GITHUB_OUTPUT")
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.version }}
+          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
           IS_RELEASE: ${{ steps.get-version-details.outputs.is_release }}
           VERSION: ${{ steps.get-version-details.outputs.version }}
 
       - name: Sanitize deployments value
         id: deployments
         run: |
+          isMainRepo = "$IS_MAIN_REPO" == 'true'
           deployments=$DEPLOYMENTS
 
           if [ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ] && [ "$GITHUB_REF_TYPE" != 'tag' ]; then
-            tag="$INPUT_MANAGER_TAG"
-            if [ -z "$INPUT_MANAGER_TAG" ]; then
-              tag='#ref'
-            fi
+            if isMainRepo:
+              tag="$INPUT_MANAGER_TAG"
+              if [ -z "$INPUT_MANAGER_TAG" ]; then
+                tag='#ref'
+              fi
+            else:
+              tag="$MANAGER_VERSION"    
             deployments="$INPUT_ENVIRONMENT:$tag"
           fi
+          
+          if isMainRepo:
+            if deployments and deployments.contains("-SNAPSHOT"):
+              os.system("SNAPSHOT manager docker images not currently supported for custom project deployment")
+              sys.exit(1)
+
           echo "value=$deployments" >> $GITHUB_OUTPUT
         env:
+          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
+          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
           DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
           INPUT_ENVIRONMENT: ${{ steps.inputs-and-secrets.outputs.ENVIRONMENT }}
           INPUT_MANAGER_TAG: ${{steps.inputs-and-secrets.outputs.MANAGER_TAG }}
@@ -546,6 +559,7 @@ jobs:
           echo 'Trigger event: ${{ github.event_name }}'
           echo 'Is main repo: ${{ steps.is_main_repo.outputs.value == 'true' }}'
           echo 'Has deployment dockerfile: ${{ steps.check_deployment_dockerfile.outputs.files_exists == 'true' }}'
+          echo 'OpenRemote version: ${{ steps.is_main_repo.outputs.ref }}'
           echo 'Manager commit SHA: ${{ steps.manager-docker-command.outputs.refTag }}'
           echo 'Deployment commit SHA: ${{ steps.deployment-docker-command.outputs.refTag }}'
           echo 'Deployments: ${{ steps.deployments.outputs.value }}'
@@ -559,8 +573,6 @@ jobs:
           echo "Java version: $(java --version)"
           echo "Yarn version: $(yarn -v)"
           echo "Node version: $(node -v)"
-          echo 'Gradle cache: ${{ steps.java.outputs.cache-hit == 'true' }}'
-          echo 'Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}'
           echo "************************************************************"
           echo "************************************************************"
 
