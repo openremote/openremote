@@ -20,7 +20,7 @@ docker image tag updates. The file layout is:
       },
       // Singleton or array of deployments to execute, a deployment consists of (environment and/or managerTag see variables for explanation)
       "deploy": {
-        "managerTag": "develop", // Can use #ref or exclude this to build COMMIT specific manager docker image (i.e. don't use an image from docker hub)
+        "managerTag": "develop", // Can use #ref or exclude this to build COMMIT specific manager docker image (i.e. don't use an image from docker hub) for custom projects will always use openremoteVersion
         "environment": "staging"
       }
     },
@@ -40,7 +40,7 @@ docker image tag updates. The file layout is:
     },
     // Singleton or array of deployments to execute, a deployment consists of (environment and/or managerTag see variables for explanation)
     "deploy": {
-      "managerTag": "latest", // Can use #ref or exclude this to build COMMIT specific manager docker image
+      "managerTag": "latest", // Can use #ref or exclude this to build COMMIT specific manager docker image (i.e. don't use an image from docker hub) for custom projects will always use openremoteVersion
       "environment": "production"
     }
   }
