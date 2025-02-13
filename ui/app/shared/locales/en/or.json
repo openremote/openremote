@@ -350,14 +350,14 @@
     "": "Manager interconnect",
     "connectionDetails": "Connection details",
     "dataSharing": "Data sharing",
-    "assetSyncRules": "Asset sync rules",
+    "assetSyncRules": "Asset synchronization",
     "limit_sharing_is_custom_error": "An advanced data limiting configuration is set. To modify click the JSON button. Clear it to use the fields below.",
     "limit_sharing_attribute": "Limit data sharing by asset type attributes",
     "limit_sharing_attribute_selected": "attributes selected",
     "limit_sharing_rate": "Limit the rate of how often attribute value updates are shared",
     "limit_sharing_rate_suffix": "minutes interval",
-    "assetSyncRulesEnable": "Enable asset sync rules",
-    "assetSyncRulesInput": "Asset sync rules"
+    "assetSyncRulesEnable": "Customize asset synchronization",
+    "assetSyncRulesInput": "Synchronization config"
   },
   "gatewayTunnel": "Gateway tunnel",
   "gatewayTunnels": {
