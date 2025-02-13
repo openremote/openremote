@@ -404,11 +404,9 @@ jobs:
               tag=inputTag
               if inputTag is None:
                 tag='#ref'
-              fi
             else:
               tag=managerVersion
             deployments= f'{inputEnv}:{tag}'
-          fi
           
           if isMainRepo:
             if deployments and deployments.contains('-SNAPSHOT'):
