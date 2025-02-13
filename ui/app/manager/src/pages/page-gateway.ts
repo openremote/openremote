@@ -394,6 +394,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                     <div class="gateway-sharing-control-child">
                         <or-mwc-input .type="${InputType.JSON_OBJECT}" ?disabled="${disabled || !connection.assetSyncRules}" 
                                       .value="${connection?.assetSyncRules}"
+                                      resizevertical
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("assetSyncRules", e.detail.value)}"
                                       .label="${i18next.t('gateway.assetSyncRulesInput')}" style="width: 100%;"></or-mwc-input>
                         <or-translate value=""></or-translate>
