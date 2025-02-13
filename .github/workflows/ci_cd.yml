@@ -389,6 +389,8 @@ jobs:
         id: deployments
         shell: python
         run: |
+          import os
+
           isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
           deployments = os.getenv('DEPLOYMENTS')
           eventName = os.getenv('GITHUB_EVENT_NAME')
