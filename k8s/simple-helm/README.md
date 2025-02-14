@@ -53,6 +53,12 @@ If you use a different release name, this will impact the name of certain object
 For instance, using psql instead of postgresql as the release name will modify the service name from postgresql to psql-postgresql.  
 This service name is used in both the keycloak and manager values files to define the database hostname.
 
+### Resources (requests and limits)
+
+The values file do not define any values for memory and CPU requests or limits.  
+Although this works for local development work, it is strongly recommended to fix values for both when deploying to production.  
+Look at the commented `resources` section in the values files and provide actual values matching your deployment scenario in your custom values files.  
+
 ### Duplicated configuration
 
 Some configuration information (e.g. the database name) are duplicated between the values files of the different charts.  
@@ -62,6 +68,20 @@ We'll be looking into improving on this in the future ([Have a mechanism to depl
 That being said, we have gone of a single Opaque secret to contain all secure information applicable to all charts instead of multiple kubernetes.io/basic-auth secrets for individual credentials.  
 
 ## Additional information
+
+### Environment variables
+
+The most important configuration information has been exposed in the helm values files.  
+It is sometimes necessary to provide more configuration to the containers.  
+This is done through environment variables, as it was done before with docker compose.  
+In the values files, there is `or.env` property available to define any environment variable that will get passed to the container.  
+For instance, this snippet of values file defines a value for the KC_HOSTNAME_STRICT_HTTPS environment variable passed to the keycloak container.
+```yaml
+or:
+  env:
+    - name: KC_HOSTNAME_STRICT_HTTPS
+      value: "false"
+ ```
 
 ### Accessing MQTT
 
