@@ -1691,7 +1691,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 binders.add((em, st) -> st.setParameter(pos, query.userIds));
             }
 
-            if (level == 1 && query.access == Access.PUBLIC) {
+            if (query.access == Access.PUBLIC) {
                 sb.append(" and A.ACCESS_PUBLIC_READ is true");
             }
 
