@@ -239,7 +239,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     }
 
     protected updated(_changedProperties: PropertyValues): void {
-        if (_changedProperties.has("ruleset")) {
+        if (_changedProperties.has("ruleset") || _changedProperties.has("modified")) {
             if (this.ruleset && this.view) {
                 this._ruleValid = this.view.validate();
             }

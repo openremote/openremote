@@ -19,6 +19,8 @@
  */
 package org.openremote.model.provisioning;
 
+import java.util.Objects;
+
 public class X509ProvisioningData {
 
     protected String CACertPEM;
@@ -40,6 +42,19 @@ public class X509ProvisioningData {
     public X509ProvisioningData setIgnoreExpiryDate(boolean ignoreExpiryDate) {
         this.ignoreExpiryDate = ignoreExpiryDate;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        X509ProvisioningData that = (X509ProvisioningData) o;
+        return ignoreExpiryDate == that.ignoreExpiryDate && Objects.equals(CACertPEM, that.CACertPEM);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(CACertPEM, ignoreExpiryDate);
     }
 
     @Override

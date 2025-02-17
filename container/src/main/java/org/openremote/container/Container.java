@@ -24,11 +24,10 @@ import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.prometheus.client.CollectorRegistry;
+import io.micrometer.prometheusmetrics.PrometheusConfig;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
 import org.openremote.container.concurrent.ContainerThreadFactory;
-import org.openremote.container.util.LogUtil;
 import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -79,10 +78,6 @@ public class Container implements org.openremote.model.Container {
     protected Thread waitingThread;
     protected final Map<Class<? extends ContainerService>, ContainerService> services = new LinkedHashMap<>();
 
-    static {
-        LogUtil.initialiseJUL();
-    }
-
     /**
      * Discover {@link ContainerService}s using {@link ServiceLoader}; services are then ordered by
      * {@link ContainerService#getPriority}.
@@ -115,7 +110,7 @@ public class Container implements org.openremote.model.Container {
 
         if (metricsEnabled) {
             // TODO: Add a meter registry provider SPI to make this pluggable
-            meterRegistry = new io.micrometer.prometheus.PrometheusMeterRegistry(PrometheusConfig.DEFAULT, io.prometheus.client.CollectorRegistry.defaultRegistry, Clock.SYSTEM);
+            meterRegistry = new io.micrometer.prometheusmetrics.PrometheusMeterRegistry(PrometheusConfig.DEFAULT, PrometheusRegistry.defaultRegistry, Clock.SYSTEM);
         }
 
         int scheduledExecutorThreads = getInteger(
@@ -214,7 +209,7 @@ public class Container implements org.openremote.model.Container {
         }
 
         Metrics.globalRegistry.remove(meterRegistry);
-        CollectorRegistry.defaultRegistry.clear();
+        PrometheusRegistry.defaultRegistry.clear();
         meterRegistry = null;
         waitingThread.interrupt();
         waitingThread = null;

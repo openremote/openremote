@@ -76,6 +76,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     protected boolean disconnected = true; // Need to use this flag to cancel client reconnect task
     protected final AtomicBoolean connected = new AtomicBoolean(false); // Used for subscriptions
     protected Consumer<String> topicSubscribeFailureConsumer;
+    protected ConnectionStatus currentStatus;
 
     protected AbstractMQTT_IOClient(String host, int port, boolean secure, boolean cleanSession, UsernamePassword usernamePassword, URI websocketURI, MQTTLastWill lastWill, KeyManagerFactory keyManagerFactory, TrustManagerFactory trustManagerFactory) {
         this(UniqueIdentifierGenerator.generateId(), host, port, secure, cleanSession, usernamePassword, websocketURI, lastWill, keyManagerFactory, trustManagerFactory);
@@ -404,6 +405,10 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
      */
     protected void onConnectionStatusChanged(ConnectionStatus statusOverride) {
         ConnectionStatus status = statusOverride != null ? statusOverride : getConnectionStatus();
+        if (currentStatus == status) {
+            return;
+        }
+        currentStatus = status;
         LOG.info("Client '" + getClientUri() + "' connection status changed: " + status);
 
         connectionStatusConsumers.forEach(

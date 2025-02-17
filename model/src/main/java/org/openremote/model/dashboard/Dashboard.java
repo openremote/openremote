@@ -7,18 +7,16 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.openremote.model.util.HibernateUniqueIdentifierType;
 
 import java.util.Date;
-
-import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
 @Entity
 @Table(name = "DASHBOARD")
 public class Dashboard {
 
-    @Id
+    @Id @HibernateUniqueIdentifierType
     @Column(name = "ID", length = 22, columnDefinition = "char(22)")
-    @GeneratedValue(generator = PERSISTENCE_UNIQUE_ID_GENERATOR)
     protected String id;
 
     @Temporal(TemporalType.TIMESTAMP)

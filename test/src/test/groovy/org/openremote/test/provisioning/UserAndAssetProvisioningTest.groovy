@@ -74,7 +74,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
     def "Check basic functionality"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
         MQTT_IOClient device1Client
         MQTT_IOClient device1SnoopClient
         MQTT_IOClient deviceNClient

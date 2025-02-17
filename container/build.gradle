@@ -7,18 +7,16 @@ dependencies {
 
     api project(":model")
 
-    api "org.codehaus.groovy:groovy-all:$groovyVersion"
+    api "org.apache.groovy:groovy-all:$groovyVersion"
     api "org.craftercms:groovy-sandbox:$groovySandboxVersion"
 
     // SLF4J JUL provider
     api "org.slf4j:slf4j-jdk14:$slf4jVersion"
-    // Log4J redirect to SLF4J
-    api "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
-    api "io.undertow:undertow-servlet:$undertowVersion"
+    api "io.undertow:undertow-core:$undertowVersion"
     api "io.undertow:undertow-websockets-jsr:$undertowVersion"
     api ("org.jboss.resteasy:resteasy-undertow:$resteasyVersion") {
-        exclude group: "io.undertow",  module: "undertow-servlet-jakarta"
+        exclude group: "jakarta.servlet",  module: "undertow-servlet-jakarta"
     }
     api "org.jboss.resteasy:resteasy-client:$resteasyVersion"
     api "org.jboss.resteasy:resteasy-jackson2-provider:$resteasyVersion"
@@ -26,6 +24,8 @@ dependencies {
     api "org.jboss.resteasy:resteasy-validator-provider:$resteasyVersion"
 
     api "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
+    // This is the generic keycloak adapter that isn't kept up to date - deprecated possibly?
+    // They now only develop keycloak-jboss-adapter-core which is wildfly specific and would need some work to integrate
     api "org.keycloak:keycloak-adapter-core:$keycloakVersion"
     api "org.keycloak:keycloak-policy-enforcer:$keycloakVersion"
     api "org.keycloak:keycloak-admin-client:$keycloakVersion"
