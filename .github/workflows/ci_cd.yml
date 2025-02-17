@@ -402,14 +402,14 @@ jobs:
           if eventName == 'workflow_dispatch' and refType != 'tag':
             if isMainRepo:
               tag=inputTag
-              if inputTag is None:
+              if inputTag:
                 tag='#ref'
             else:
               tag=managerVersion
             deployments= f'{inputEnv}:{tag}'
           
           if isMainRepo:
-            if "-SNAPSHOT" in deployments:
+            if deployments and deployments.contains('-SNAPSHOT'):
               os.system("SNAPSHOT manager docker images not currently supported for custom project deployment")
               sys.exit(1)
 
