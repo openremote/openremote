@@ -24,6 +24,20 @@ export class AssetTypeSelectEvent extends CustomEvent<string> {
     }
 }
 
+export class AssetAllOfTypeSwitchEvent extends CustomEvent<boolean> {
+
+    public static readonly NAME = "alloftype-switch";
+
+    constructor (allOfType: boolean) {
+        super(AssetAllOfTypeSwitchEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: allOfType
+        });
+    }
+
+}
+
 export class AssetIdsSelectEvent extends CustomEvent<string | string[]> {
 
     public static readonly NAME = "assetids-select"
@@ -53,7 +67,8 @@ export class AttributeNamesSelectEvent extends CustomEvent<string | string[]> {
 export interface AssetTypesFilterConfig {
     assets?: {
         enabled?: boolean,
-        multi?: boolean
+        multi?: boolean,
+        allOfTypeOption?: boolean
     },
     attributes?: {
         enabled?: boolean,
@@ -83,6 +98,9 @@ export class AssettypesPanel extends LitElement {
         }
     }
 
+    @property() // Whether to include all assets of this type or if the user can choose specific assets
+    protected allOfType: boolean = false;
+
     @property() // IDs of assets; either undefined, a single entry, or multi select
     protected assetIds: undefined | string | string[];
 
@@ -107,6 +125,9 @@ export class AssettypesPanel extends LitElement {
         if (changedProps.has("assetType") && this.assetType) {
             this._attributeSelectList = this.getAttributesByType(this.assetType)!;
             this.dispatchEvent(new AssetTypeSelectEvent(this.assetType));
+        }
+        if (changedProps.has("allOfType")) {
+            this.dispatchEvent(new AssetAllOfTypeSwitchEvent(this.allOfType));
         }
         if (changedProps.has("assetIds") && this.assetIds) {
             this.dispatchEvent(new AssetIdsSelectEvent(this.assetIds));
@@ -141,12 +162,26 @@ export class AssettypesPanel extends LitElement {
                     }
                 </div>
 
+                <!-- Switch to include all assets of this type  -->
+                ${when(this.config.assets?.allOfTypeOption, () => {
+                    return html`
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span><or-translate value="allAssetsofType"></or-translate></span>
+                            <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
+                                          .value="${this.allOfType}"
+                                          .disabled="${!this.assetType}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onAssetAllOfTypeToggle(ev)}"
+                            ></or-mwc-input>
+                        </div>
+                    `;
+                })}
+
                 <!-- Select one or more assets -->
                 ${when(this.config.assets?.enabled, () => {
                     const assetIds = (typeof this.assetIds === 'string') ? [this.assetIds] : this.assetIds;
                     return html`
                         <div>
-                            <or-mwc-input .type="${InputType.BUTTON}" .label="${(this.assetIds?.length || 0) + ' ' + i18next.t('assets')}" .disabled="${!this.assetType}" fullWidth outlined comfortable style="width: 100%;"
+                            <or-mwc-input .type="${InputType.BUTTON}" .label="${(this.assetIds?.length || 0) + ' ' + i18next.t('assets')}" .disabled="${!this.assetType || this.allOfType}" fullWidth outlined comfortable style="width: 100%;"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._openAssetSelector(this.assetType!, assetIds, this.config.assets?.multi)}"
                             ></or-mwc-input>
                         </div>
@@ -243,6 +278,10 @@ export class AssettypesPanel extends LitElement {
                     .sort(Util.sortByString((attr) => attr[1]));
             }
         }
+    }
+
+    protected onAssetAllOfTypeToggle(ev: OrInputChangedEvent) {
+        this.allOfType = ev.detail.value;
     }
 
     protected _openAssetSelector(assetType: string, assetIds?: string[], multi = false) {
