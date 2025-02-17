@@ -581,7 +581,7 @@ jobs:
           echo "Node version: $(node -v)"
           echo "************************************************************"
           echo "************************************************************"
-
+          exit 1
       - name: Pull docker images
         if: ${{ steps.test-backend-command.outputs.value != '' || steps.test-ui-command.outputs.value != '' }}
         run: |
