@@ -128,7 +128,6 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def authenticatedAssetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(AssetResource.class)
         def anonymousConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name).proxy(ConsoleResource.class)
         def anonymousRulesResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name).proxy(RulesResource.class)
-        def anonymousAssetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name).proxy(AssetResource.class)
 
         when: "a console registers with an authenticated user"
         def consoleRegistration = new ConsoleRegistration(null,
