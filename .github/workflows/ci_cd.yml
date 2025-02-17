@@ -409,7 +409,7 @@ jobs:
             deployments= f'{inputEnv}:{tag}'
           
           if isMainRepo:
-            if deployments and deployments.contains('-SNAPSHOT'):
+            if "-SNAPSHOT" in deployments:
               os.system("SNAPSHOT manager docker images not currently supported for custom project deployment")
               sys.exit(1)
 
