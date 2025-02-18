@@ -63,14 +63,18 @@ public class MapService implements ContainerService {
     public static final String TILESERVER_TILE_PATH = "/styles/standard";
     public static final String OR_MAP_TILESERVER_REQUEST_TIMEOUT = "OR_MAP_TILESERVER_REQUEST_TIMEOUT";
     public static final int OR_MAP_TILESERVER_REQUEST_TIMEOUT_DEFAULT = 10000;
+    public static final String OR_PATH_PREFIX = "OR_PATH_PREFIX";
+    public static final String OR_PATH_PREFIX_DEFAULT = "";
     private static final Logger LOG = Logger.getLogger(MapService.class.getName());
     private static ConfigurationService configurationService;
+
     // Shared SQL connection is fine concurrently in SQLite
     protected Connection connection;
     protected Metadata metadata;
     protected ObjectNode mapConfig;
     protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
+    protected String pathPrefix;
 
     public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration) throws RuntimeException {
         if (mapConfig == null) {
@@ -146,6 +150,7 @@ public class MapService implements ContainerService {
 
         String tileServerHost = getString(container.getConfig(), OR_MAP_TILESERVER_HOST, OR_MAP_TILESERVER_HOST_DEFAULT);
         int tileServerPort = getInteger(container.getConfig(), OR_MAP_TILESERVER_PORT, OR_MAP_TILESERVER_PORT_DEFAULT);
+        pathPrefix = getString(container.getConfig(), OR_PATH_PREFIX, OR_PATH_PREFIX_DEFAULT);
 
         if (!TextUtil.isNullOrEmpty(tileServerHost)) {
 
@@ -286,7 +291,7 @@ public class MapService implements ContainerService {
                             }));
 
                     ArrayNode tilesArray = mapConfig.arrayNode();
-                    String tileUrl = UriBuilder.fromUri(host).replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
+                    String tileUrl = UriBuilder.fromUri(host).replacePath(pathPrefix + API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
                     tilesArray.insert(0, tileUrl);
                     vectorTilesObj.replace("tiles", tilesArray);
                 });
@@ -295,7 +300,7 @@ public class MapService implements ContainerService {
         Optional.ofNullable(settings.has("sprite") && settings.get("sprite").isTextual() ? settings.get("sprite").asText() : null).ifPresent(sprite -> {
             String spriteUri =
                     UriBuilder.fromUri(host)
-                            .replacePath(MAP_SHARED_DATA_BASE_URI)
+                            .replacePath(pathPrefix + MAP_SHARED_DATA_BASE_URI)
                             .path(sprite)
                             .build().toString();
             settings.put("sprite", spriteUri);
@@ -305,7 +310,7 @@ public class MapService implements ContainerService {
         Optional.ofNullable(settings.has("glyphs") && settings.get("glyphs").isTextual() ? settings.get("glyphs").asText() : null).ifPresent(glyphs -> {
             String glyphsUri =
                     UriBuilder.fromUri(host)
-                            .replacePath(MAP_SHARED_DATA_BASE_URI)
+                            .replacePath(pathPrefix + MAP_SHARED_DATA_BASE_URI)
                             .build().toString() + "/fonts/" + glyphs;
             settings.put("glyphs", glyphsUri);
         });
