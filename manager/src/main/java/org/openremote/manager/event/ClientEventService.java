@@ -394,7 +394,11 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             }
 
             Consumer<T> consumer = (Consumer<T>)eventSubscriptionConsumerPair.getValue();
-            consumer.accept(filteredEvent);
+            try {
+                consumer.accept(filteredEvent);
+            } catch (Exception e) {
+                LOG.log(WARNING, "Event subscriber has thrown an exception: " + consumer, e);
+            }
         });
     }
 

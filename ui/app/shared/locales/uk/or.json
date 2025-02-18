@@ -335,9 +335,10 @@
     "GROOVY": "Groovy",
     "JAVASCRIPT": "JavaScript"
   },
-  "gatewayConnection": "З'єднання з менеджером",
-  "gateway": "З'єднання з менеджером",
-  "connectionDetails": "Деталі підключення",
+  "gateway": {
+    "": "З'єднання з менеджером",
+    "connectionDetails": "Деталі підключення"
+  },
   "secured": "Захищено",
   "clientSecret": "Секрет клієнта",
   "clientId": "Client ID",
@@ -755,4 +756,4 @@
   "AVG": "Середнє (середнє значення)",
   "MIN": "Мінімум",
   "MAX": "Максимум"
-}
+},

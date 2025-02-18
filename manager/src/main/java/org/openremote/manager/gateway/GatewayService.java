@@ -272,7 +272,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
     @Override
     public void stop(Container container) throws Exception {
-        gatewayConnectorMap.values().forEach(GatewayConnector::disconnect);
+        gatewayConnectorMap.values().forEach(connector -> connector.disconnect(GatewayDisconnectEvent.Reason.TERMINATING));
         gatewayConnectorMap.clear();
         assetIdGatewayIdMap.clear();
         tunnelInfos.clear();
@@ -413,7 +413,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                 newSecret = identityProvider.resetSecret(event.getRealm(), gatewayServiceUser.getId(), newSecret);
 
                 // Disconnect current session
-                connector.disconnect();
+                connector.disconnect(GatewayDisconnectEvent.Reason.TERMINATING);
 
                 // Update the event value with the potentially newly generated secret
                 event.setValue(newSecret);
@@ -707,9 +707,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
                 // Check if disabled
                 boolean isNowDisabled = gateway.getDisabled().orElse(false);
-                if (isNowDisabled) {
-                    connector.sendMessageToGateway(new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
-                }
                 connector.setDisabled(isNowDisabled);
 
                 if (persistenceEvent.hasPropertyChanged("attributes")) {
@@ -742,7 +739,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                 connector = gatewayConnectorMap.remove(gateway.getId().toLowerCase(Locale.ROOT));
 
                 if (connector != null) {
-                    connector.disconnect();
+                    connector.disconnect(GatewayDisconnectEvent.Reason.UNRECOGNISED);
                 }
 
                 removeGatewayServiceUser(gateway);

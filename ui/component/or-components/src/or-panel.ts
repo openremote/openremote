@@ -20,7 +20,7 @@ const style = css`
         --internal-or-panel-heading-color: var(--or-panel-heading-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
         --internal-or-panel-heading-font-size: var(--or-panel-heading-font-size, larger);
         --internal-or-panel-heading-font-weight: var(--or-panel-heading-font-weight, bolder);
-        
+        --internal-or-panel-heading-text-transform: var(--or-panel-heading-text-transform, unset);
         display: block;
     }
 
@@ -48,6 +48,7 @@ const style = css`
         font-size: var(--internal-or-panel-heading-font-size);
         font-weight: var(--internal-or-panel-heading-font-weight);
         color: var(--internal-or-panel-heading-color);
+        text-transform: var(--internal-or-panel-heading-text-transform);
     }
 `;
 

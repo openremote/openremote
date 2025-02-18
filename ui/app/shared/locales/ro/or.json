@@ -330,9 +330,10 @@
     "GROOVY": "Groovy",
     "JAVASCRIPT": "JavaScript"
   },
-  "gatewayConnection": "Interconectare manager",
-  "gateway": "Interconectare manager",
-  "connectionDetails": "DETALIILE CONEXIUNII",
+  "gateway": {
+    "": "Interconectare manager",
+    "connectionDetails": "DETALIILE CONEXIUNII"
+  },
   "secured": "Securizat",
   "clientSecret": "Codul secret al Clientului",
   "clientId": "ID-ul Clientului",
@@ -713,4 +714,4 @@
   "saveRealmSucceeded": "Domeniul a fost salvat cu succes!",
   "userDisconnected": "Deconectare cu succes!",
   "userDisconnectFailed": "Deconectare eșuată"
-}
+},

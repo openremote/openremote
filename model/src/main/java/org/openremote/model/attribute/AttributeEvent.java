@@ -272,6 +272,11 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return meta;
     }
 
+    public AttributeEvent setMeta(MetaMap meta) {
+        this.meta = meta;
+        return this;
+    }
+
     @JsonIgnore
     @Override
     public String getName() {
