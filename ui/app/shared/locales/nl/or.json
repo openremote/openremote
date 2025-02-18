@@ -345,7 +345,6 @@
     "JAVASCRIPT": "JavaScript"
   },
   "gatewayConnection": "Manager interconnect",
-  "gatewayHeaderItem": "Manager interconnect",
   "gateway": {
     "": "Manager interconnect",
     "limit_sharing_is_custom_error": "Een aangepaste configuratie is ingesteld. Klik op JSON om deze aan te passen. Maak de configuratie leeg om de velden hieronder te gebruiken.",
@@ -354,9 +353,8 @@
     "limit_sharing_rate": "Begrens hoevaak attribuut waarden worden bijgewerkt",
     "limit_sharing_rate_suffix": "minuten interval"
   },
-  "gatewayTunnel": "Gateway tunnel",
+  "gatewayTunnel": "Gateway tunnels",
   "gatewayTunnels": {
-    "": "Gateway tunnels",
     "start": "Start",
     "open": "Open",
     "stop": "Stop",

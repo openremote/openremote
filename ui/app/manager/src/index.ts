@@ -90,7 +90,7 @@ export const DefaultHeaderMainMenu: {[name: string]: HeaderItem} = {
 };
 
 export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
-    gateway: headerItemGatewayConnection(orApp),
+    gatewayConnection: headerItemGatewayConnection(orApp),
     gatewayTunnel: headerItemGatewayTunnel(orApp),
     language: headerItemLanguage(orApp),
     logs: headerItemLogs(orApp),
@@ -100,7 +100,7 @@ export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
     realms: headerItemRealms(orApp),
     export: headerItemExport(orApp),
     provisioning: headerItemProvisioning(orApp),
-    configuration: headerItemConfiguration(orApp),
+    appearance: headerItemConfiguration(orApp),
     logout: headerItemLogout(orApp)
 };
 
@@ -114,30 +114,17 @@ export const DefaultRealmConfig: RealmAppConfig = {
     header: DefaultHeaderConfig
 };
 
-export const DefaultAppConfig: AppConfig<RootState> = {
-    pages: DefaultPagesConfig,
-    superUserHeader: DefaultHeaderConfig,
-    realms: {
-        default: DefaultRealmConfig
-    }
-};
-
 // Try and load the app config from JSON and if anything is found amalgamate it with default
 const configURL =  (MANAGER_URL ?? "") + "/api/master/configuration/manager";
 
-fetch(configURL).then(async (result) => {
-    if (!result.ok || result.status === 204) {
-        return DefaultAppConfig;
+fetch(configURL).then<ManagerAppConfig>(async (result) => {
+    let appConfig: ManagerAppConfig;
+
+    if (result.status === 200) {
+        appConfig = await result.json() as ManagerAppConfig;
     }
 
-    const appConfig = await result.json() as ManagerAppConfig;
-
-    if (appConfig === null) {
-        return DefaultAppConfig;
-    }
-
-    return appConfig;
-
+    return {...appConfig};
 }).then((appConfig: ManagerAppConfig) => {
 
     // Set locales and load path
