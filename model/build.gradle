@@ -11,7 +11,9 @@ dependencies {
     api "org.hibernate.orm:hibernate-core:$hibernateVersion"
     api "org.hibernate.validator:hibernate-validator:$hibernateValidatorVersion"
     api "jakarta.el:jakarta.el-api:$javaxELAPIVersion"
-
+    api ("org.jboss.resteasy:resteasy-undertow:$resteasyVersion") {
+        exclude group: "io.undertow",  module: "undertow-servlet-jakarta"
+    }
     api "jakarta.annotation:jakarta.annotation-api:$javaxAnnotationsVersion"
     api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxrsSpecVersion"
 

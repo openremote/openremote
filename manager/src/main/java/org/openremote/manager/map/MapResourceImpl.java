@@ -20,16 +20,21 @@
 package org.openremote.manager.map;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Context;
+
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.manager.MapRealmConfig;
+import org.openremote.model.manager.MapConfig;
 import org.openremote.model.map.MapResource;
+import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-
-import java.util.Map;
 
 public class MapResourceImpl extends WebResource implements MapResource {
 
@@ -42,7 +47,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public Object saveSettings(RequestParams requestParams, Map<String, MapRealmConfig> mapConfig) {
+    public Object saveSettings(RequestParams requestParams, MapConfig mapConfig) {
         return mapService.saveMapConfig(mapConfig);
     }
 
@@ -70,5 +75,40 @@ public class MapResourceImpl extends WebResource implements MapResource {
         } else {
             throw new WebApplicationException(Response.Status.NO_CONTENT);
         }
+    }
+
+    @Override
+    public Response uploadMap(@Context HttpServletRequest request) {
+        try (InputStream stream = request.getInputStream()) {
+            boolean isSaved = mapService.saveUploadedFile(stream);
+            ObjectNode response = ValueUtil.JSON
+                .createObjectNode()
+                .put("map-custom", isSaved);
+
+            if (isSaved) {
+                return Response.ok("File uploaded successfully").build();
+            }
+            return Response.status(Response.Status.BAD_REQUEST).entity(response).build();
+        } catch (IOException error) {
+            throw new WebApplicationException("{\"map-custom\": false}", Response.Status.BAD_REQUEST);
+        }
+    }
+
+    @Override
+    public Response isMapCustom() {
+        ObjectNode response = ValueUtil.JSON
+            .createObjectNode()
+            .put("map-custom", mapService.isCustomUploadedFile());
+
+        return Response.ok().entity(response).build();
+    }
+
+    @Override
+    public Response deleteMap(@Context HttpServletRequest request) {
+        boolean deleted = mapService.deleteUploadedFile();
+        if (deleted) {
+            return Response.noContent().build();
+        }
+        return Response.status(400).build();
     }
 }
