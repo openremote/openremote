@@ -649,7 +649,10 @@ export class OrTreeMenu extends LitElement {
     }
 
     /**
-     *
+     * Utility function that sorts the list of {@link nodes} based on the given {@link sortBy} method.
+     * @param nodes - List of nodes to be sorted
+     * @param sortBy - Sorting option
+     * @param groupFirst - Whether to prioritize group nodes, and place them on the top of the list.
      */
     protected _sortNodes(nodes: TreeNode[], sortBy?: TreeMenuSorting, groupFirst = false): TreeNode[] {
         console.debug("Sorting nodes in the tree menu...");
