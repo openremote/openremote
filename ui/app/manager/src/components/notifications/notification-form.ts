@@ -1,11 +1,14 @@
 import { LitElement, html, css, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import {when} from "lit/directives/when.js";
 import { OrMwcInput, InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import manager, { DefaultColor3 } from "@openremote/core";
 import { User, Asset, SentNotification, PushNotificationMessage } from "@openremote/model";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { live } from "lit/directives/live.js";
+import { OrAssetTree, OrAssetTreeSelectionEvent } from "@openremote/or-asset-tree";
+import "@openremote/or-asset-tree";
 
 export interface NotificationFormData {
     name: string;
@@ -74,6 +77,7 @@ export class NotificationForm extends LitElement {
         /* Grid styles */
 
         .formGridContainer {
+            position: relative;
             display: grid; 
             grid-template-columns: 2fr 1fr;  
             grid-template-areas: 
@@ -85,7 +89,7 @@ export class NotificationForm extends LitElement {
             min-height: 100%;
             }
 
-        .targetContainer { grid-area: targetContainer; }
+        .targetContainer { grid-area: targetContainer; position: relative; z-index: 3;}
         .messageContentContainer { 
             grid-area: messageContentContainer; 
             display: flex;
@@ -107,6 +111,16 @@ export class NotificationForm extends LitElement {
             display: flex;
             align-items: center;
             min-height: 36px;
+        }
+
+        .target-area {
+            position: relative;
+            z-index: 1;
+        }
+
+        or-mwc-input {
+            position: relative;
+            z-index: 2;
         }
 
         h5 {
@@ -169,6 +183,9 @@ export class NotificationForm extends LitElement {
     protected _selectedTarget?: string;
 
     @state()
+    protected _selectedAssetIds: string[] = [];
+
+    @state()
     protected _actionUrl?: string;
 
     @state()
@@ -177,7 +194,6 @@ export class NotificationForm extends LitElement {
     @state()
     protected _closeButtonText?: string;
 
-    //TO DO: visual element for openInBrowser check
     @state()
     protected _openInBrowser?: boolean;
 
@@ -192,8 +208,6 @@ export class NotificationForm extends LitElement {
 
     @property({type: Object})
     public notification?: SentNotification;
-
-    
 
     updated(changedProps: Map<string, any>) {
         if (changedProps.has('notification') && this.notification) {
@@ -280,13 +294,13 @@ export class NotificationForm extends LitElement {
                 if (!this._assets) {
                     await this._loadAssets();
                 }
-                this._targetOptions = (this._assets || []).map(asset => ({
-                    text: asset.name,
-                    value: asset.id
-                }));
-                if (this._targetOptions.length > 0) {
-                    this._selectedTarget = this._targetOptions[0].value;
-                }
+                // this._targetOptions = (this._assets || []).map(asset => ({
+                //     text: asset.name,
+                //     value: asset.id
+                // }));
+                // if (this._targetOptions.length > 0) {
+                //     this._selectedTarget = this._targetOptions[0].value;
+                // }
                 break;
 
             case "REALM":
@@ -301,6 +315,12 @@ export class NotificationForm extends LitElement {
         }
         
         await this.requestUpdate();
+    }
+
+    protected _onAssetSelectionChanged(e: OrAssetTreeSelectionEvent) {
+        this._selectedAssetIds = e.detail.newNodes.map(node => node.asset.id);
+        this._selectedTarget = this._selectedAssetIds[0];
+        this.requestUpdate();
     }
 
     private _onFieldChanged(fieldId: string, value: any) {
@@ -399,6 +419,7 @@ export class NotificationForm extends LitElement {
         };
     }
 
+
     protected render() {
         const inputDisabled = this.disabled || this.readonly;        
 
@@ -407,6 +428,7 @@ export class NotificationForm extends LitElement {
 
                 <div class="formGridContainer">
                     <div class="targetContainer">
+                    
                         <h5>${i18next.t("Target")}</h5>
                          <or-mwc-input 
                             label="${i18next.t("Target type")}"
@@ -418,28 +440,41 @@ export class NotificationForm extends LitElement {
                             .value="${this._selectedTargetType}"
                             @or-mwc-input-changed="${this._onTargetTypeChanged}">
                         </or-mwc-input>
-
-                        <or-mwc-input 
-                            label="${i18next.t("Target")}"
-                            type="${InputType.SELECT}"
-                            ?disabled="${inputDisabled || !this._targetOptions}"
-                            required
-                            id="target"
-                            .value="${this._selectedTarget}"
-                            .options="${this._targetOptions.map(o => [o.value, o.text])}"
-                            .searchProvider="${(search?: string) => {
-                            // Filter options based on search text
-                            if (!search) return Promise.resolve(this._targetOptions.map(o => [o.value, o.text]));
-                            return Promise.resolve(
-                                this._targetOptions
-                                    .filter(o => o.text.toLowerCase().includes(search.toLowerCase()))
-                                    .map(o => [o.value, o.text])
-                            );
-                        }}"
-                        searchLabel="Search targets"
-                            @or-mwc-input-changed="${this._onTargetSelected}">
-                        </or-mwc-input>
-
+                    
+                        <div class="target-area">
+                        ${when(this._selectedTargetType === "ASSET", 
+                            () => html`
+                            <or-asset-tree
+                                id="asset-selector"
+                                .selectedIds="${this._selectedAssetIds}"
+                                .showSortBtn="${false}"
+                                expandNodes
+                                checkboxes
+                                @or-asset-tree-selection="${(e: OrAssetTreeSelectionEvent) => this._onAssetSelectionChanged(e)}"
+                            ></or-asset-tree>
+                            `,
+                            () => html`
+                            <or-mwc-input 
+                                label="${i18next.t("Target")}"
+                                type="${InputType.SELECT}"
+                                ?disabled="${inputDisabled || !this._targetOptions}"
+                                required
+                                id="target"
+                                .value="${this._selectedTarget}"
+                                .options="${this._targetOptions.map(o => [o.value, o.text])}"
+                                .searchProvider="${(search?: string) => {
+                                if (!search) return Promise.resolve(this._targetOptions.map(o => [o.value, o.text]));
+                                return Promise.resolve(
+                                    this._targetOptions
+                                        .filter(o => o.text.toLowerCase().includes(search.toLowerCase()))
+                                        .map(o => [o.value, o.text])
+                                );}}"
+                                searchLabel="Search targets"
+                                    @or-mwc-input-changed="${this._onTargetSelected}">
+                            </or-mwc-input>
+                            `
+                        )}
+                        </div>
                     </div>
                
                 <div class="messageContentContainer">
