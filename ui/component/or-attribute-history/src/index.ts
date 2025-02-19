@@ -184,6 +184,11 @@ const style = css`
         padding-left: 5px;
     }
     
+    #chart {
+        width: 100%;
+        height: 100%;
+    }
+    
     #chart-container {
         position: relative;
         min-height: 250px;
@@ -342,7 +347,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         <or-loading-indicator style="position: absolute; top: 50%; left: 50%;"></or-loading-indicator>
                     `)}
                     <div id="chart-container" style="${this._loading ? 'opacity: 0.2' : undefined}">
-                        <canvas id="chart"></canvas>
+                        <div id="chart"></div>
                     </div>
                     
                 `, () => html`
@@ -383,12 +388,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 }
 
                 this._chartOptions = {
-                    //useUTC: true,
                     animation: false,
-                    title: {
-                        text: 'Dynamic Time Series Data',
-                        left: 'center'
-                    },
+
                     tooltip: {
                         trigger: 'axis',
                         axisPointer: { type: 'cross' }
@@ -396,13 +397,12 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     toolbox: {
                         right: '10%', //margin from right of frame in pixels
                         feature: {
-                            saveAsImage: {},
-                            //restore: {},
                             dataView: {},
-                            //dataZoom: {},
                             magicType: {
-                                type: ['line', 'bar', 'stack']
+                                type: ['line', 'bar']
                             },
+                            restore: {},
+                            saveAsImage: {}
                         }
                     },
                     legend: {
@@ -410,10 +410,9 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     },
                     xAxis: {
                         type: 'time',
-                        //boundaryGap: false,
                         axisLine: { onZero: false },
                         min: this._startOfPeriod,
-                        max: this._endOfPeriod, // KLOPPEN DE TIJDEENHEDEN WEL?
+                        max: this._endOfPeriod,
                         axisLabel: {
                             //margin: 15, how much below the xAxis the labels are
                             showMinLabel: true,
@@ -462,7 +461,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             showSymbol: false,
                             data: data,
                             sampling: 'lttb',
-                            smooth: true,
                             //tooltip: {
                             //    valueFormatter: value => value + ' kW'  // adds units to tooltip
                             //},
@@ -485,8 +483,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                                 symbol: 'circle',
                                 data: [
                                     [
-                                        { name: "Now", xAxis: '2025-02-19',yAxis: 'min'  },
-                                        { name: "end", xAxis: '2025-02-19',yAxis:'max' }
+                                        { name: "Now", xAxis: new Date().toISOString() ,yAxis: 'min'  },
+                                        { name: "end", xAxis: new Date().toISOString() ,yAxis:'max' }
 
                                     ]
                                 ],
@@ -578,18 +576,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 } as ChartConfiguration<"line", ScatterDataPoint[]>;
                 */
 
-                // DIT NOG OMZETTEN NAAR SHADOWROOT
-
                 this._chart = echarts.init(this._chartElem);
-                //options.series[0].data = data;
                 this._chart.setOption(this._chartOptions);
-
-
-                //this._chart = new Chart<"line", ScatterDataPoint[]>(this._chartElem.getContext("2d")!, options);
-
-
-                //OPTIONS WORDEN NIET MEER DIRECT GEINJECTEERD, MOET JE HIER DUS ALSNOG HANDMATIG DOEN MET SHADOWROOT
-                //this._chart.series[0].data = data;
 
             } else {
                 if (changedProperties.has("_data")) {
