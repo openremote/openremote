@@ -233,7 +233,7 @@ def createTSGeneratorConfigForModel(String outputFileName, Project...customProje
                         "JsonSerializeExtension"
                 ]
                 customTypeMappings = [
-                        "com.fasterxml.jackson.databind.node.ObjectNode:{ [id: string]: any }",
+                        "com.fasterxml.jackson.databind.node.ObjectNode:{ [id: string]: unknown }",
                         "java.lang.Class<T>:string",
                         "org.openremote.model.attribute.MetaItem<T>:any"
                 ]
@@ -252,7 +252,7 @@ def createTSGeneratorConfigForClient(String outputFileName, File modelInfoJson, 
                         "cz.habarta.typescript.generator.ext.AxiosClientExtension"
                 ]
                 customTypeMappings = [
-                        "com.fasterxml.jackson.databind.node.ObjectNode:{ [id: string]: any }",
+                        "com.fasterxml.jackson.databind.node.ObjectNode:{ [id: string]: unknown }",
                         "java.lang.Class<T>:string",
                         "org.openremote.model.attribute.MetaItem<T>:any",
                         "org.openremote.model.asset.Asset<T>:Model.Asset",
@@ -302,12 +302,14 @@ def createTSGeneratorConfig(boolean outputAPIClient, String outputFileName, Proj
                 (outputAPIClient ? "org.openremote.model.**Resource" : "org.openremote.model.**")
         ] + classPatternGlobs
         customTypeNamingFunction = "function(name, simpleName) { if (name.indexOf(\"\$\") > 0) return name.substr(name.lastIndexOf(\".\")+1).replace(\"\$\",\"\"); }"
+        nullabilityDefinition = cz.habarta.typescript.generator.NullabilityDefinition.nullAndUndefinedInlineUnion
+        nullableAnnotations = ["org.checkerframework.checker.nullness.qual.Nullable"]
         excludeClassPatterns = [
                 "org.openremote.model.event.shared.*Filter**",
                 "org.openremote.model.util.**",
                 "org.openremote.model.flow.**",
                 "java.io.**",
-                "java.lang.**",
+                //"java.lang.**",
                 "org.hibernate.**",
                 "jakarta.**"
         ]

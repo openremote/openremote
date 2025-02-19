@@ -921,8 +921,8 @@ export class Manager implements EventProviderFactory {
         try {
             // Initialise keycloak
             this._keycloak = new Keycloak({
-                clientId: this._config.clientId,
-                realm: this._config.realm,
+                clientId: this._config.clientId!,
+                realm: this._config.realm!,
                 url: this._config.keycloakUrl
             });
 

@@ -345,7 +345,6 @@
     "JAVASCRIPT": "JavaScript"
   },
   "gatewayConnection": "Manager interconnect",
-  "gatewayHeaderItem": "Manager interconnect",
   "gateway": {
     "": "Manager interconnect",
     "connectionDetails": "Connectie details",
@@ -359,9 +358,8 @@
     "assetSyncRulesEnable": "Asset synchronisatie aanpassen",
     "assetSyncRulesInput": "Synchronisatie configuratie"
   },
-  "gatewayTunnel": "Gateway tunnel",
+  "gatewayTunnel": "Gateway tunnels",
   "gatewayTunnels": {
-    "": "Gateway tunnels",
     "start": "Start",
     "open": "Open",
     "stop": "Stop",

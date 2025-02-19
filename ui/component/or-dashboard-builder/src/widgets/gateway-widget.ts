@@ -334,7 +334,7 @@ export class GatewayWidget extends OrWidget {
      * Returns undefined if there is misalignment in the linked asset id or unexpected http code.
      */
    protected async _getGatewayStatus(info: GatewayTunnelInfo): Promise<string | undefined> {
-        const response =  await manager.rest.api.AssetResource.get(info.gatewayId)
+        const response =  await manager.rest.api.AssetResource.get(info.gatewayId!)
         if (response.status === 200 && response.data && response.data.attributes && response.data.attributes.gatewayStatus) {
             return response.data.attributes.gatewayStatus.value
         } else {

@@ -37,6 +37,7 @@ import { FileInfo, ManagerAppRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {when} from 'lit/directives/when.js';
 import ISO6391 from 'iso-639-1';
+import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu} from "../../../index";
 
 declare const MANAGER_URL: string
 
@@ -131,30 +132,8 @@ export class OrConfRealmCard extends LitElement {
     protected logo:string = this.realm.logo;
     protected logoMobile:string = this.realm.logoMobile;
     protected favicon:string = this.realm.favicon;
-
-    protected headerListPrimary: string[] = [
-        "map",
-        "assets",
-        "rules",
-        "insights",
-    ];
-
-
-    protected headerListSecondary: string[] = [
-        "gatewayHeaderItem",
-        "export",
-        "logs",
-        "realms",
-
-        "users",
-        "roles",
-
-        "account",
-        "language",
-        "appearance",
-        "logout"
-
-    ];
+    protected headerListPrimary: string[] = Object.keys(DefaultHeaderMainMenu);
+    protected headerListSecondary: string[] = Object.keys(DefaultHeaderSecondaryMenu);
 
     protected commonLanguages: string[] = Object.entries(DEFAULT_LANGUAGES).map(entry => ISO6391.getName(entry[0]));
     protected _languages: string[][] = [];

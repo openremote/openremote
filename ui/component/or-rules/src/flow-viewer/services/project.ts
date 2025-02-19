@@ -228,8 +228,8 @@ export class Project extends EventEmitter {
 
     private enrichConnection(c: NodeConnection): NodeConnection {
         return {
-            from: NodeUtilities.getSocketFromID(c.from, this.nodes),
-            to: NodeUtilities.getSocketFromID(c.to, this.nodes)
+            from: NodeUtilities.getSocketFromID(c.from!, this.nodes)?.id,
+            to: NodeUtilities.getSocketFromID(c.to!, this.nodes)?.id
         }
     }
 }
