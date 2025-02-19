@@ -1002,6 +1002,9 @@ export class OrRules extends translate(i18next)(LitElement) {
     protected async _onRuleSave(event: OrRulesSaveEvent) {
         await this._rulesTree?.refresh();
         await this._rulesList?.refresh();
+        if(this._viewer) {
+            this._viewer.modified = false;
+        }
         if (event.detail.success && event.detail.isNew) {
             this.selectedIds = [event.detail.ruleset.id!];
         }
