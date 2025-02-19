@@ -266,7 +266,12 @@ export class OrRuleTree extends OrTreeMenu {
      * Refreshes the tree content, and re-fetches the list of rules.
      */
     public async refresh() {
-        this.rules = undefined;
+        await this.getUpdateComplete();
+        const promise = this._loadRulesets(this.global);
+        promise.then(rulesets => {
+            this.rules = rulesets;
+        });
+        return promise;
     }
 
     /**

@@ -789,7 +789,7 @@ export const style = css`
         --or-panel-background-color: var(--internal-or-rules-panel-color);
     }
 
-    or-rule-tree {
+    or-rule-tree, or-rule-list {
         min-width: 300px;
         width: 300px;
         z-index: 2;
@@ -841,8 +841,8 @@ export class OrRules extends translate(i18next)(LitElement) {
     @state()
     protected _selectedGroup?: string;
 
-    @query("#rule-list")
-    private _rulesList?: OrRuleList;
+    /*@query("#rule-list")
+    private _rulesList?: OrRuleList;*/
 
     @query("#rule-tree")
     private _rulesTree?: OrRuleTree;
@@ -881,7 +881,6 @@ export class OrRules extends translate(i18next)(LitElement) {
             this._viewer.ruleset = undefined;
         }
         this._rulesTree?.refresh();
-        this._rulesList?.refresh();
     }
 
     protected _isReadonly(): boolean {
@@ -941,7 +940,6 @@ export class OrRules extends translate(i18next)(LitElement) {
      * @protected
      */
     protected _onNodeSelectionChanged(payload: NodeSelectEventDetail) {
-        console.log("_onNodeSelectionChanged", payload);
         const selectedNodes = payload.newNodes;
         const groupNodes = selectedNodes.filter(n => n.type === "group") as RulesetGroupNode[]; // list of selected group nodes
 
@@ -955,7 +953,7 @@ export class OrRules extends translate(i18next)(LitElement) {
         // If the user has clicked the same node so let's force reload it
         else if (Util.objectsEqual(selectedNodes, payload.oldNodes)) {
             console.debug("Force reloading rule viewer...");
-            const node = (selectedNodes[0] as any).ruleset as RulesetNode | undefined;
+            const node = (selectedNodes[0] as any)?.ruleset as RulesetNode | undefined;
             this._viewer!.ruleset = node ? {...node.ruleset} : undefined;
 
         // Otherwise, select the new rule or group.
@@ -1000,13 +998,33 @@ export class OrRules extends translate(i18next)(LitElement) {
      * @protected
      */
     protected async _onRuleSave(event: OrRulesSaveEvent) {
-        await this._rulesTree?.refresh();
-        await this._rulesList?.refresh();
-        if(this._viewer) {
-            this._viewer.modified = false;
+        if(event.detail.success) {
+
+            // Reset the modified state, which disables the "save" button
+            if(this._viewer) this._viewer.modified = false;
+
+            // Fetch the updated rules, and change the viewer to the latest version
+            const newRulesets = await this._rulesTree?.refresh();
+            this._checkForViewerUpdate(undefined, newRulesets);
+
+            // Select the ruleset if it's new
+            if (event.detail.isNew) {
+                this.selectedIds = [event.detail.ruleset.id!];
+            }
         }
-        if (event.detail.success && event.detail.isNew) {
-            this.selectedIds = [event.detail.ruleset.id!];
+    }
+
+    /**
+     * Utility function that updates the viewer with the latest changes.
+     * @param viewer - The or-rule-viewer HTML element
+     * @param updatedRulesets - List of new rulesets that have been changed
+     * @protected
+     */
+    protected _checkForViewerUpdate(viewer = this._viewer, updatedRulesets?: RulesetUnion[]) {
+        const current = viewer?.ruleset;
+        if(current) {
+            const found = updatedRulesets?.find(r => r.id === viewer?.ruleset?.id);
+            if(found) viewer!.ruleset = found;
         }
     }
 
@@ -1034,15 +1052,16 @@ export class OrRules extends translate(i18next)(LitElement) {
 
         // If the ruleset viewer has no changes, continue dragging the node, and apply changes.
         if (!isModified) {
-            (ev.detail.nodes as RuleTreeNode[]).forEach(node => {
+            const promises = (ev.detail.nodes as RuleTreeNode[]).map(node => {
                 if(node.ruleset) {
-                    moveAndSave(node.ruleset, groupId).then(() => {
-                        showSnackbar(undefined, "ruleDragSuccess");
-                    }).catch(() => {
-                        showSnackbar(undefined, "ruleDragFailed");
-                    });
+                    return moveAndSave(node.ruleset, groupId);
                 }
             });
+            Promise.all(promises)
+                .then(() => showSnackbar(undefined, "ruleDragSuccess"))
+                .catch(() => showSnackbar(undefined, "ruleDragFailed"))
+                .finally(() => this._rulesTree?.refresh().then(rulesets => this._checkForViewerUpdate(undefined, rulesets)));
+
             return;
         }
 
