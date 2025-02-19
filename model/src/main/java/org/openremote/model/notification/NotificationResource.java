@@ -145,4 +145,27 @@ public interface NotificationResource {
                                   @QueryParam("targetId") String targetId,
                                   @PathParam("notificationId") Long notificationId,
                                   JsonNode acknowledgement);
+
+     /**
+     * Development use only: Getting all notifications from the database directly for testing purposes
+     */
+    @GET
+    @Path("all")
+    @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getAllNotifications", summary = "Retrieve all notifications (development only)")
+    SentNotification[] getAllNotifications(@BeanParam RequestParams requestParams, 
+                                            @QueryParam("from") Long fromTimestamp,
+                                            @QueryParam("to") Long toTimestamp);
+    
+
+    /**
+     * Development use only: Sending notification to the database directly for testing purposes
+     */
+    @POST
+    @Path("db")
+    @Consumes(APPLICATION_JSON)
+    @Operation(operationId = "sendTestNotification", summary = "Send a notification directly to db")
+    public void createNotificationInDB(@BeanParam RequestParams requestParams,
+                          Notification notification);
+
 }
