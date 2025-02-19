@@ -124,7 +124,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
             <div id="wrapper">
                 <div id="title">
                     <or-icon icon="lan-connect"></or-icon>
-                    ${i18next.t("gatewayTunnels.")}
+                    ${i18next.t("gatewayTunnel")}
                 </div>
                 <div class="panel">
                     <div class="panel-title" style="justify-content: space-between;">
