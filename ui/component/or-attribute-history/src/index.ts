@@ -13,7 +13,7 @@ import {customElement, property, query} from "lit/decorators.js";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 import {AssetModelUtil, Attribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueDescriptor} from "@openremote/model";
-import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5} from "@openremote/core";
+import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
@@ -375,6 +375,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
         if (isChart) {
             const data = this._data.map(point => [point.x, point.y]);
+            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assetType!, this.attribute!.name!, this.attribute!);
+            const label = Util.getAttributeLabel(this.attribute!, descriptors[0], this.assetType!, true);
 
             if (!this._chart) {
                 let bgColor = this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color").trim();
@@ -389,10 +391,13 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
                 this._chartOptions = {
                     animation: false,
-
                     tooltip: {
                         trigger: 'axis',
-                        axisPointer: { type: 'cross' }
+                        axisPointer: { type: 'cross' },
+                        //formatter: (params: any[]) => {
+                        //    // Custom formatter to hide the series name in the tooltip
+                        //    return params.map(item => `${item.value}`).join('<br/>');
+                        //}
                     },
                     toolbox: {
                         right: '10%', //margin from right of frame in pixels
@@ -405,9 +410,9 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             saveAsImage: {}
                         }
                     },
-                    legend: {
-                        show: false // STAAT DEZE STANDAARD WEL AAN ???
-                    },
+                    //legend: {
+                    //    show: false // STAAT DEZE STANDAARD WEL AAN ???
+                    //},
                     xAxis: {
                         type: 'time',
                         axisLine: { onZero: false },
@@ -435,11 +440,14 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     yAxis: [
                         {
                             type: 'value',
-                            name: 'values', //<---------------------------------------
+                            name: label,
                             boundaryGap: ['0%', '0%'],
-                            scale: true
+                            scale: true,
                             //axisLabel: {
-                            //    formatter: '{value} kW' //<---------------------------------------
+                            //    formatter: (value: number) => {
+                            //        // Custom formatter to hide the series name in the yAxis label
+                            //        return value.toString(); // Ensure the formatter returns a string
+                            //    }
                             //}
                         }
                     ],
@@ -456,7 +464,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     ],
                     series: [
                         {
-                            name: 'values', //<---------------------------------------
+                            name: label,
                             type: 'line',
                             showSymbol: false,
                             data: data,
