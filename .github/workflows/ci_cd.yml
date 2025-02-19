@@ -297,6 +297,7 @@ jobs:
           mavenPublishTag = None
           npmPublishTag = None
           deployEnvironment = None
+          eventConfig = ()
 
           f = open(".ci_cd/ci_cd.json")
           data = json.load(f)
