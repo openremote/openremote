@@ -35,7 +35,7 @@ export class GatewaySettings extends WidgetSettings {
                                     ></or-mwc-input>
                                 `,
                                 complete: (gatewayAssets) => {
-                                    const options: [string, string][] = gatewayAssets.map(a => [a.id, a.name]);
+                                    const options: [string, string][] = gatewayAssets.map(a => [a.id!, a.name!]);
                                     const selected = gatewayAssets.find(a => a.id === this.widgetConfig.gatewayId);
                                     const value = selected ? [selected.id, selected.name] as [string, string] : undefined;
                                     return html`

@@ -19,11 +19,9 @@
  */
 package org.openremote.model.manager;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-
 import java.io.Serializable;
 import java.util.Map;
-@JsonInclude(JsonInclude.Include.NON_NULL)
+
 public class ManagerAppConfig implements Serializable {
     protected boolean loadLocales;
     protected Map<String, String> languages;

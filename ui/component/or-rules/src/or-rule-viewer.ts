@@ -193,7 +193,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
             case "EXECUTION_ERROR":
                 statusIcon = "alert-octagon";
                 statusClass = "iconfill-red";
-                statusText = this.ruleset.error;
+                statusText = this.ruleset.error!;
                 break;
             case "DISABLED":
                 statusIcon = "minus-circle";
