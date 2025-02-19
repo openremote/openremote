@@ -1,6 +1,6 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 declare function require(name: string): any;
-
+import * as echarts from "echarts"; // KIJKEN OF JE DE LIBRARY KUNT VERKLEINEN.
 import {
     css,
     html,
@@ -254,11 +254,12 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _tableTemplate?: TemplateResult;
 
     @query("#chart")
-    protected _chartElem!: HTMLCanvasElement;
+    protected _chartElem!: HTMLDivElement;
+    protected _chartOptions: echarts.EChartsOption = {};
     @query("#table")
     protected _tableElem!: HTMLDivElement;
     protected _table?: MDCDataTable;
-    protected _chart?: Chart<"line", ScatterDataPoint[]>;
+    protected _chart?: echarts.ECharts;
     protected _type?: ValueDescriptor;
     protected _style!: CSSStyleDeclaration;
     protected _error?: string;
@@ -368,7 +369,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         const isChart = this._type && (this._type.jsonType === "number" || this._type.jsonType === "boolean");
 
         if (isChart) {
-            const data = this._data as ScatterDataPoint[];
+            const data = this._data.map(point => [point.x, point.y]);
 
             if (!this._chart) {
                 let bgColor = this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color").trim();
@@ -381,6 +382,126 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     }
                 }
 
+                this._chartOptions = {
+                    //useUTC: true,
+                    animation: false,
+                    title: {
+                        text: 'Dynamic Time Series Data',
+                        left: 'center'
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'cross' }
+                    },
+                    toolbox: {
+                        right: '10%', //margin from right of frame in pixels
+                        feature: {
+                            saveAsImage: {},
+                            //restore: {},
+                            dataView: {},
+                            //dataZoom: {},
+                            magicType: {
+                                type: ['line', 'bar', 'stack']
+                            },
+                        }
+                    },
+                    legend: {
+                        show: false // STAAT DEZE STANDAARD WEL AAN ???
+                    },
+                    xAxis: {
+                        type: 'time',
+                        //boundaryGap: false,
+                        axisLine: { onZero: false },
+                        min: this._startOfPeriod,
+                        max: this._endOfPeriod, // KLOPPEN DE TIJDEENHEDEN WEL?
+                        axisLabel: {
+                            //margin: 15, how much below the xAxis the labels are
+                            showMinLabel: true,
+                            showMaxLabel: true,
+                            hideOverlap: true,
+                            //rotate: '30',
+                            //formatter: function (value, index) {
+                            //    var date = new Date(value);
+                            //    var time = date.getTime();
+                            //    //console.log(time);
+                            //    // Show different formats for min and max labels
+                            //    if ((new Date().getTime() - time)<60000 || (time-(new Date().getTime()- 60 * 60 * 20000))<60000 ) {  // 60000ms=60sec Deze ook nog aanpassen naar juiste input || date === (new Date().getTime()), also adjust when zooming to new zoom ends.
+                            //        return "{d}-{MMM}-'{yy} {HH}:{mm}"; // Dit aanpassen op basis van startTime en endTime.
+                            //    } else {
+                            //        return '{HH}:{mm}:{ss}'; //Dit straks aanpassen op basis van verschil tussen zoomStart en zoomEnd , als kleiner dan 10 min: seconde laten zien, als kleiner dan 1 dag, minuten laten zien. bij > 1 dag Feb-12 laten zien.
+                            //    }
+                            //}
+                        }
+                    },
+                    yAxis: [
+                        {
+                            type: 'value',
+                            name: 'values', //<---------------------------------------
+                            boundaryGap: ['0%', '0%'],
+                            scale: true
+                            //axisLabel: {
+                            //    formatter: '{value} kW' //<---------------------------------------
+                            //}
+                        }
+                    ],
+                    dataZoom: [
+                        {
+                            type: 'inside',
+                            start: 0,
+                            end: 100
+                        },
+                        {
+                            start: 0,
+                            end: 100
+                        }
+                    ],
+                    series: [
+                        {
+                            name: 'values', //<---------------------------------------
+                            type: 'line',
+                            showSymbol: false,
+                            data: data,
+                            sampling: 'lttb',
+                            smooth: true,
+                            //tooltip: {
+                            //    valueFormatter: value => value + ' kW'  // adds units to tooltip
+                            //},
+                            itemStyle: {
+                                color: 'rgb(255, 70, 131)'
+                            },
+                            areaStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    {
+                                        offset: 0,
+                                        color: 'rgb(255, 158, 68)'
+                                    },
+                                    {
+                                        offset: 1,
+                                        color: 'rgb(255, 70, 131)'
+                                    }
+                                ])
+                            },
+                            markLine: {
+                                symbol: 'circle',
+                                data: [
+                                    [
+                                        { name: "Now", xAxis: '2025-02-19',yAxis: 'min'  },
+                                        { name: "end", xAxis: '2025-02-19',yAxis:'max' }
+
+                                    ]
+                                ],
+                                lineStyle: {
+                                    color: "rgba(242, 145, 72, 1)",
+                                    type: 'solid',
+                                    width: 2
+                                }
+                            }
+                        }
+                    ]
+
+                }
+
+                /*
                 const options = {
                     type: "line",
                     data: {
@@ -455,16 +576,33 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         }
                     }
                 } as ChartConfiguration<"line", ScatterDataPoint[]>;
+                */
 
-                this._chart = new Chart<"line", ScatterDataPoint[]>(this._chartElem.getContext("2d")!, options);
+                // DIT NOG OMZETTEN NAAR SHADOWROOT
+
+                this._chart = echarts.init(this._chartElem);
+                //options.series[0].data = data;
+                this._chart.setOption(this._chartOptions);
+
+
+                //this._chart = new Chart<"line", ScatterDataPoint[]>(this._chartElem.getContext("2d")!, options);
+
+
+                //OPTIONS WORDEN NIET MEER DIRECT GEINJECTEERD, MOET JE HIER DUS ALSNOG HANDMATIG DOEN MET SHADOWROOT
+                //this._chart.series[0].data = data;
+
             } else {
                 if (changedProperties.has("_data")) {
-                    this._chart.options.scales!.x!.min = this._startOfPeriod;
-                    this._chart.options!.scales!.x!.max = this._endOfPeriod;
-                    (this._chart.options!.scales!.x! as TimeScaleOptions).time!.unit = this._timeUnits!;
-                    (this._chart.options!.scales!.x! as TimeScaleOptions).time!.stepSize = this._stepSize!;
-                    this._chart.data.datasets![0].data = data;
-                    this._chart.update();
+
+                    this._chart.setOption({
+                        xAxis: {
+                            min: this._startOfPeriod,
+                            max: this._endOfPeriod
+                        },
+                        series: [{
+                            data: data
+                        }]
+                    });
                 }
             }
         } else {
@@ -488,7 +626,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         this._tableTemplate = undefined;
 
         if (this._chart) {
-            this._chart.destroy();
+            this._chart.dispose();
             this._chart = undefined;
         }
         if (this._table) {
@@ -773,8 +911,9 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             this._loading = false;
 
             if (response.status === 200) {
-                this._data = response.data.filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
-                this._dataFirstLoaded = true;
+                this._data = response.data
+                    .filter(value => value.y !== null && value.y !== undefined)
+                    .map(point => ({ x: point.x, y: point.y } as ValueDatapoint<any>));
             }
 
         } catch (ex) {
