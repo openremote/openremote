@@ -1,6 +1,6 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 declare function require(name: string): any;
-import * as echarts from "echarts"; // KIJKEN OF JE DE LIBRARY KUNT VERKLEINEN.
+import * as echarts from "echarts"; // REDUCE LIBRARY IMPORTS TO ONLY USED CLASSES.
 import {
     css,
     html,
@@ -191,7 +191,7 @@ const style = css`
     
     #chart-container {
         position: relative;
-        min-height: 250px;
+        min-height: 300px;
     }
         
     #table-container {
@@ -375,8 +375,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
         if (isChart) {
             const data = this._data.map(point => [point.x, point.y]);
-            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assetType!, this.attribute!.name!, this.attribute!);
-            const label = Util.getAttributeLabel(this.attribute!, descriptors[0], this.assetType!, true);
+            //const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assetType!, this.attribute!.name!, this.attribute!);
+            //const label = Util.getAttributeLabel(this.attribute!, descriptors[0], this.assetType!, true);
 
             if (!this._chart) {
                 let bgColor = this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color").trim();
@@ -389,18 +389,25 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     }
                 }
 
+                type CustomTooltipFormatter = (params: any) => string;
+
+                //const tooltipFormatter: CustomTooltipFormatter = (params) => {
+                //    if (Array.isArray(params)) {
+                //        return params.map((item: any) => `${item.value}`).join('<br/>');
+                //    }
+                //    return `${params.value}`;
+                //};
+
+
                 this._chartOptions = {
                     animation: false,
                     tooltip: {
                         trigger: 'axis',
-                        axisPointer: { type: 'cross' },
-                        //formatter: (params: any[]) => {
-                        //    // Custom formatter to hide the series name in the tooltip
-                        //    return params.map(item => `${item.value}`).join('<br/>');
-                        //}
+                        axisPointer: { type: 'cross'},
+                        //formatter: tooltipFormatter,
                     },
                     toolbox: {
-                        right: '10%', //margin from right of frame in pixels
+                        right: '10%',
                         feature: {
                             dataView: {},
                             magicType: {
@@ -410,45 +417,22 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             saveAsImage: {}
                         }
                     },
-                    //legend: {
-                    //    show: false // STAAT DEZE STANDAARD WEL AAN ???
-                    //},
                     xAxis: {
                         type: 'time',
                         axisLine: { onZero: false },
                         min: this._startOfPeriod,
                         max: this._endOfPeriod,
                         axisLabel: {
-                            //margin: 15, how much below the xAxis the labels are
                             showMinLabel: true,
                             showMaxLabel: true,
                             hideOverlap: true,
-                            //rotate: '30',
-                            //formatter: function (value, index) {
-                            //    var date = new Date(value);
-                            //    var time = date.getTime();
-                            //    //console.log(time);
-                            //    // Show different formats for min and max labels
-                            //    if ((new Date().getTime() - time)<60000 || (time-(new Date().getTime()- 60 * 60 * 20000))<60000 ) {  // 60000ms=60sec Deze ook nog aanpassen naar juiste input || date === (new Date().getTime()), also adjust when zooming to new zoom ends.
-                            //        return "{d}-{MMM}-'{yy} {HH}:{mm}"; // Dit aanpassen op basis van startTime en endTime.
-                            //    } else {
-                            //        return '{HH}:{mm}:{ss}'; //Dit straks aanpassen op basis van verschil tussen zoomStart en zoomEnd , als kleiner dan 10 min: seconde laten zien, als kleiner dan 1 dag, minuten laten zien. bij > 1 dag Feb-12 laten zien.
-                            //    }
-                            //}
                         }
                     },
                     yAxis: [
                         {
                             type: 'value',
-                            name: label,
-                            boundaryGap: ['0%', '0%'],
-                            scale: true,
-                            //axisLabel: {
-                            //    formatter: (value: number) => {
-                            //        // Custom formatter to hide the series name in the yAxis label
-                            //        return value.toString(); // Ensure the formatter returns a string
-                            //    }
-                            //}
+                            boundaryGap: ['10%', '10%'],
+                            scale: true
                         }
                     ],
                     dataZoom: [
@@ -464,13 +448,14 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     ],
                     series: [
                         {
-                            name: label,
+                            name: 'label',
                             type: 'line',
                             showSymbol: false,
                             data: data,
                             sampling: 'lttb',
                             //tooltip: {
-                            //    valueFormatter: value => value + ' kW'  // adds units to tooltip
+                            //    //valueFormatter: value => value + ' kW'  // adds units to tooltip
+                            //    formatter: '{c}'
                             //},
                             itemStyle: {
                                 color: 'rgb(255, 70, 131)'
@@ -489,6 +474,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             },
                             markLine: {
                                 symbol: 'circle',
+                                silent: true,
                                 data: [
                                     [
                                         { name: "Now", xAxis: new Date().toISOString() ,yAxis: 'min'  },
@@ -497,99 +483,22 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                                     ]
                                 ],
                                 lineStyle: {
-                                    color: "rgba(242, 145, 72, 1)",
+                                    color: "rgba(54,96,138,255)",
                                     type: 'solid',
                                     width: 2
                                 }
                             }
                         }
                     ]
-
                 }
-
-                /*
-                const options = {
-                    type: "line",
-                    data: {
-                        datasets: [
-                            {
-                                data: data,
-                                backgroundColor: bgColor,
-                                borderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color"),
-                                pointBorderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-border-color"),
-                                pointBackgroundColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-color"),
-                                pointRadius: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-radius")),
-                                pointBorderWidth: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-border-width")),
-                                pointHoverBackgroundColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-color"),
-                                pointHoverBorderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-border-color"),
-                                pointHoverRadius: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-radius")),
-                                pointHoverBorderWidth: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-border-width")),
-                                pointHitRadius: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hit-radius")),
-                                fill: false
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        onResize:() => this.dispatchEvent(new OrAttributeHistoryEvent('resize')),
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                displayColors: false,
-                                xPadding: 10,
-                                yPadding: 10,
-                                titleMarginBottom: 10
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: "#cccccc"
-                                }
-                            },
-                            x: {
-                                type: "time",
-                                min: this._startOfPeriod,
-                                max: this._endOfPeriod,
-                                time: {
-                                    tooltipFormat: 'MMM D, YYYY, HH:mm:ss',
-                                    displayFormats: {
-                                        millisecond: 'HH:mm:ss.SSS',
-                                        second: 'HH:mm:ss',
-                                        minute: "HH:mm",
-                                        hour: "HH:mm",
-                                        week: "w"
-                                    },
-                                    unit: this._timeUnits,
-                                    stepSize: this._stepSize
-                                },
-                                ticks: {
-                                    color: "#000",
-                                    font: {
-                                        family: "'Open Sans', Helvetica, Arial, Lucida, sans-serif",
-                                        size: 9,
-                                        style: "normal"
-                                    }
-                                },
-                                gridLines: {
-                                    color: "#cccccc"
-                                }
-                            }
-                        }
-                    }
-                } as ChartConfiguration<"line", ScatterDataPoint[]>;
-                */
-
+                // Initialize chart
                 this._chart = echarts.init(this._chartElem);
+                // Set chart options to default
                 this._chart.setOption(this._chartOptions);
 
             } else {
                 if (changedProperties.has("_data")) {
-
+                    //Update chart data
                     this._chart.setOption({
                         xAxis: {
                             min: this._startOfPeriod,
