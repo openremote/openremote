@@ -94,7 +94,8 @@ export enum AssetQueryOperator {
     WITHIN_RADIUS = "withinRadius",
     OUTSIDE_RADIUS = "outsideRadius",
     WITHIN_RECTANGLE = "withinRectangle",
-    OUTSIDE_RECTANGLE = "outsideRectangle"
+    OUTSIDE_RECTANGLE = "outsideRectangle",
+    NOT_UPDATED_FOR = "notUpdatedFor"
 }
 
 export interface AllowedActionTargetTypes {

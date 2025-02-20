@@ -152,10 +152,10 @@ export class PageAccount extends Page<AppStateKeyed>  {
     @state()
     protected _passwordPolicy: string[] = [];
 
-    @query("#password")
+    @query("#new-password")
     protected _passwordElem?: OrMwcInput;
 
-    @query("#repeatPassword")
+    @query("#new-repeatPassword")
     protected _repeatPasswordElem?: OrMwcInput;
 
     static get styles() {

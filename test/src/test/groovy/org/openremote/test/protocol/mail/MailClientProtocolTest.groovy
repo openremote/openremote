@@ -105,12 +105,14 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
         ThingAsset asset = null
         def attributeEvents = new CopyOnWriteArrayList<AttributeEvent>()
         Consumer<AttributeEvent> eventConsumer = it -> {
+            LOG.debug("Attribute event received: " + it)
             attributeEvents.add(it)
         }
         Consumer<OutdatedAttributeEvent> outdatedEventConsumer = it -> {
+            LOG.debug("Outdated attribute event received: " + it)
             attributeEvents.add(it.event)
         }
-        clientEventService.addSubscription(AttributeEvent.class,  null, eventConsumer)
+        clientEventService.addSubscription(AttributeEvent.class, null, eventConsumer)
         clientEventService.addSubscription(OutdatedAttributeEvent.class, null, outdatedEventConsumer)
 
         and: "some mail messages exist"

@@ -122,7 +122,7 @@ class AlarmRuleTest extends Specification implements ManagerContainerTrait {
         ((RuleActionAlarm) rulesetDef.rules[0].then[0]).assigneeId = assigneeId
         rulesStr = ValueUtil.JSON.writeValueAsString(rulesetDef)
         def realmRuleset = new RealmRuleset(managerTestSetup.realmBuildingName, "CO2 Alarm Rule", Ruleset.Lang.JSON, rulesStr)
-        rulesetStorageService.merge(realmRuleset)
+        realmRuleset = rulesetStorageService.merge(realmRuleset)
 
         then: "the ruleset should reach the engine"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
@@ -138,7 +138,7 @@ class AlarmRuleTest extends Specification implements ManagerContainerTrait {
 
     def "rule in realm with alarm action creates an alarm with severity '#severity', assignee '#assigneeId' and '#emailNotifications' emailNotifications based on attribute event"() {
         def realmRuleset = createAlarmRule(severity, assigneeId)
-
+getLOG()
         when: "the room linked attribute is updated"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment2LivingroomId, "co2Level", 6000))
 
@@ -190,7 +190,9 @@ Value: 6000
         assetLink.parentAssetName == "Apartment 2"
 
         and: "the expected number e-mail notifications matches"
-        notificationMessages.size() == emailNotifications
+        conditions.eventually {
+            notificationMessages.size() == emailNotifications
+        }
 
         where:
         severity              | assigneeId                    | emailNotifications

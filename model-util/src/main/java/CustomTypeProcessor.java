@@ -69,7 +69,12 @@ public class CustomTypeProcessor implements TypeProcessor {
 
         rawClass = Utils.getRawClassOrNull(javaType);
 
-        if (javaType instanceof ParameterizedType) {
+        if (javaType instanceof ParameterizedType parameterizedType) {
+
+            // Map<String, Object> -> {[id: string]: unknown} to prevent arrays matching
+            if (rawClass == Map.class && Utils.getRawClassOrNull(parameterizedType.getActualTypeArguments()[0]) == String.class && Utils.getRawClassOrNull(parameterizedType.getActualTypeArguments()[1]) == Object.class) {
+                return new Result(new TsType.IndexedArrayType(TsType.String, TsType.Unknown));
+            }
 
             // Exclude type params
             TsIgnoreTypeParams ignoreTypeParams = rawClass.getAnnotation(TsIgnoreTypeParams.class);
@@ -82,7 +87,6 @@ public class CustomTypeProcessor implements TypeProcessor {
                 }
 
                 // Ignore specified
-                final ParameterizedType parameterizedType = (ParameterizedType) javaType;
                 List<Integer> removeIndexes = Arrays.stream(ignoreTypeParams.paramIndexes()).boxed().toList();
 
                 if (parameterizedType.getRawType() instanceof final Class<?> javaClass) {

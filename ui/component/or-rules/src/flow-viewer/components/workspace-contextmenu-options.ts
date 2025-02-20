@@ -25,7 +25,7 @@ export const createContextMenuButtons = (workspace: EditorWorkspace, e: MouseEve
         nB = nB.concat(integration.nodes.filter((n) => n.type === type).map((node) => {
             const b: ContextMenuButton = {
                 type: "button",
-                label: i18next.t(node.name!, Utilities.humanLike(node.name!)),
+                label: i18next.t("flow."+node.name!, Utilities.humanLike(node.name!)),
                 action: () => {
                     const copy = CopyMachine.copy(node);
                     copy.position = workspace.offsetToWorld({ x: e.offsetX - workspace.offsetLeft, y: e.offsetY - workspace.offsetTop });

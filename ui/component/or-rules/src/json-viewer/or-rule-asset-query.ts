@@ -142,7 +142,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.WITHIN_RECTANGLE,
             AssetQueryOperator.OUTSIDE_RECTANGLE,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
         this._queryOperatorsMap["string"] = [
             AssetQueryOperator.EQUALS,
@@ -154,7 +155,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.ENDS_WITH,
             AssetQueryOperator.NOT_ENDS_WITH,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
         this._queryOperatorsMap["number"] = [
             AssetQueryOperator.EQUALS,
@@ -166,13 +168,15 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.BETWEEN,
             AssetQueryOperator.NOT_BETWEEN,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
         this._queryOperatorsMap["boolean"] = [
             AssetQueryOperator.IS_TRUE,
             AssetQueryOperator.IS_FALSE,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
         this._queryOperatorsMap["array"] = [
             AssetQueryOperator.CONTAINS,
@@ -184,13 +188,15 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.LENGTH_LESS_THAN,
             AssetQueryOperator.LENGTH_GREATER_THAN,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
         this._queryOperatorsMap["object"] = [
             AssetQueryOperator.CONTAINS_KEY,
             AssetQueryOperator.NOT_CONTAINS_KEY,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
     }
 
@@ -238,6 +244,25 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     }
 
     protected attributePredicateValueEditorTemplate(assetDescriptor: AssetDescriptor, asset: Asset | undefined, attributePredicate: AttributePredicate) {
+        const operator = this.getOperator(attributePredicate);
+
+        if (operator === AssetQueryOperator.NOT_UPDATED_FOR) {
+            const duration = attributePredicate.timestampOlderThan ? 
+                moment.duration(attributePredicate.timestampOlderThan) : undefined;
+            return html`
+                <or-mwc-input type="${InputType.NUMBER}" 
+                              min="0"
+                              .value="${duration?.asMinutes()}"
+                              label="${i18next.t("rulesEditorDuration")}"
+                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                  const minutes = ev.detail.value;
+                                  const newDuration = moment.duration(minutes, "minutes");
+                                  attributePredicate.timestampOlderThan = minutes > 0 ? 
+                                      newDuration.toISOString() : undefined;
+                                  this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+                              }}">
+                </or-mwc-input>`;
+        }
 
         const valuePredicate = attributePredicate.value;
 
@@ -249,7 +274,6 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const assetType = getAssetTypeFromQuery(this.query);
         const attribute = asset && asset.attributes && attributeName ? asset.attributes[attributeName] : undefined;
         const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetType, attributeName, attribute);
-
 
         // @ts-ignore
         const value = valuePredicate ? valuePredicate.value : undefined;
@@ -288,6 +312,14 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     }
 
     protected attributeDurationTemplate(durationMap: Map<number, string | undefined>, index: number, onAdd: (index: number) => void, onChange: (index: number, duration: string | undefined) => void) {
+        const attributePredicate = this.query.attributes?.items?.[index];
+        const operator = attributePredicate ? this.getOperator(attributePredicate) : undefined;
+        
+        // Don't show duration button if NOT_UPDATED_FOR is selected
+        if (operator === AssetQueryOperator.NOT_UPDATED_FOR) {
+            return html``;
+        }
+
         if(durationMap.has(index)) {
             const isoDuration = durationMap.get(index);
             const duration = isoDuration ? moment.duration(isoDuration) : undefined;
@@ -529,8 +561,16 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     }
 
     protected getOperator(attributePredicate: AttributePredicate): string | undefined {
+        if (!attributePredicate) {
+            return;
+        }
 
-        if (!attributePredicate || !attributePredicate.value) {
+        // Check for timestampOlderThan, it's independent of value predicate
+        if (attributePredicate.timestampOlderThan !== undefined) {
+            return AssetQueryOperator.NOT_UPDATED_FOR;
+        }
+
+        if (!attributePredicate.value) {
             return;
         }
 
@@ -591,6 +631,20 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         }
     }
 
+    protected updateDurationMap(index: number): void {
+        if (this.duration) {
+            // re-assign durations by filtering out the index and adjusting remaining indices
+            const newDurationEntries = Array.from(this.duration.entries())
+                .filter(([k, _]) => k !== index)
+                .map(([k, v]) => {
+                    const newIndex = k > index ? k - 1 : k;
+                    return [newIndex, v] as [number, string | undefined]; // adjust indices after the removed index
+                });
+
+            this.duration = new Map<number, string | undefined>(newDurationEntries);
+        }
+    }
+
     protected setOperator(assetDescriptor: AssetDescriptor, attribute: Attribute<any> | undefined, attributeName: string, attributePredicate: AttributePredicate, operator: string | undefined) {
 
         if (!this.query
@@ -616,6 +670,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             this.requestUpdate();
             return;
         }
+
+        attributePredicate.timestampOlderThan = undefined;
 
         const valueDescriptor = descriptors[1];
         let predicate: ValuePredicateUnion | undefined;
@@ -794,6 +850,13 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                     match: AssetQueryMatch.CONTAINS
                 };
             }
+            // operator without value predicate - since timestamp is being used rather than attribute value
+            case AssetQueryOperator.NOT_UPDATED_FOR:
+                attributePredicate.timestampOlderThan = "";
+
+                const index = this.query.attributes.items.indexOf(attributePredicate);
+                this.updateDurationMap(index);
+                break;
         }
 
         attributePredicate.value = predicate;
@@ -823,18 +886,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const index = group.items!.indexOf(attributePredicate);
         if (index >= 0) {
             group.items!.splice(index, 1);
-
-            if (this.duration) {
-                // re-assign durations
-                const newDurationEntries = Array.from(this.duration.entries())
-                    .filter(([k, _]) => k !== index)  // filter out the index
-                    .map(([k, v]) => {
-                        const newIndex = k > index ? k - 1 : k;
-                        return [newIndex, v] as [number, string | undefined]; // adjust indices after the removed index
-                    })
-
-                this.duration = new Map<number, string | undefined>(newDurationEntries);
-            }
+            this.updateDurationMap(index);
         }
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();

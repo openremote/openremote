@@ -3,7 +3,7 @@ import {until} from "lit/directives/until.js";
 import {customElement, property, state} from "lit/decorators.js";
 import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail, ValueInputProvider} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
-import {Asset, Attribute, NameValueHolder, AssetModelUtil} from "@openremote/model";
+import {Asset, Attribute, NameValueHolder, AssetModelUtil, WellknownMetaItems} from "@openremote/model";
 import { DefaultColor5, DefaultColor3, DefaultColor2, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {OrIcon} from "@openremote/or-icon";
@@ -344,6 +344,9 @@ export class OrEditAssetPanel extends LitElement {
             };
         };
 
+        // Booleans formatted asMomentary should be read-only in modify mode
+        const formattedAsMomentary = attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.MOMENTARY) || (attribute.meta.hasOwnProperty(WellknownMetaItems.FORMAT) && attribute.meta[WellknownMetaItems.FORMAT]?.asMomentary));
+
         const template = html`
             <tr class="mdc-data-table__row">
                 <td class="padded-cell mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
@@ -351,7 +354,7 @@ export class OrEditAssetPanel extends LitElement {
                 <td class="padded-cell overflow-visible mdc-data-table__cell">
                     <or-attribute-input ${ref(attributeInputRef)} 
                                         .comfortable="${true}" .assetType="${assetType}" .label=${null} 
-                                        .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" 
+                                        .readonly="${formattedAsMomentary}" .attribute="${attribute}" .assetId="${this.asset.id!}" 
                                         disableWrite disableSubscribe disableButton compact 
                                         @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
                 </td>

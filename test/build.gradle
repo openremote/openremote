@@ -13,21 +13,22 @@ apply plugin: "signing"
 
 dependencies {
 
-    // SLF4J facade
-    testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
-
     testImplementation project(":setup").sourceSets.integration.output
     testFixturesApi project(":manager")
 
-    testFixturesImplementation "org.codehaus.groovy:groovy:$groovyVersion"
+    testFixturesImplementation "org.apache.groovy:groovy-all:$groovyVersion"
+    testFixturesImplementation "org.apache.groovy:groovy-test:$groovyVersion"
     testFixturesApi platform("org.spockframework:spock-bom:$spockVersion")
     testFixturesApi 'org.spockframework:spock-core'
 
     // optional dependencies for using Spock
     testFixturesRuntimeOnly "net.bytebuddy:byte-buddy:$byteBuddyVersion" // allows mocking of classes (in addition to interfaces)
-    testFixturesRuntimeOnly "org.objenesis:objenesis:$objenesisVersion"      // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
+    testFixturesRuntimeOnly "org.objenesis:objenesis:$objenesisVersion" // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
 
-    testImplementation "com.github.calimero:calimero-server:$calimeroVersion"
+    testImplementation("com.github.calimero:calimero-server:$calimeroVersion") {
+        // Has a dependency on the SLF4J simple provider
+        exclude group: "org.slf4j"
+    }
 
     testImplementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
     testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
@@ -46,23 +47,27 @@ test {
     testLogging {
 
         // set options for log level LIFECYCLE
-        events TestLogEvent.FAILED,
+        events = [
+                TestLogEvent.FAILED,
                 TestLogEvent.PASSED,
                 TestLogEvent.SKIPPED
-        exceptionFormat TestExceptionFormat.FULL
-        showExceptions true
-        showCauses true
-        showStackTraces true
+        ]
+        exceptionFormat = TestExceptionFormat.FULL
+        showExceptions = true
+        showCauses = true
+        showStackTraces = true
 
         // set options for log level DEBUG and INFO
         debug {
-            events TestLogEvent.STARTED,
+            events = [
+                    TestLogEvent.STARTED,
                     TestLogEvent.FAILED,
                     TestLogEvent.PASSED,
                     TestLogEvent.SKIPPED,
                     TestLogEvent.STANDARD_OUT,
                     TestLogEvent.STANDARD_ERROR
-            exceptionFormat TestExceptionFormat.FULL
+            ]
+            exceptionFormat = TestExceptionFormat.FULL
         }
         info.events = debug.events
         info.exceptionFormat = debug.exceptionFormat
@@ -124,8 +129,8 @@ publishing {
         maven {
             if (!version.endsWith('-LOCAL')) {
                 credentials {
-                    username findProperty("publishUsername")
-                    password findProperty("publishPassword")
+                    username = findProperty("publishUsername")
+                    password = findProperty("publishPassword")
                 }
             }
             url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
