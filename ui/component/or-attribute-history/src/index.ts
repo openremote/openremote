@@ -410,7 +410,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         right: '9%',
                         top: '5%',
                         feature: {
-                            dataView: {},
+                            dataView: {readOnly: true},
                             magicType: {
                                 type: ['line', 'bar']
                             },
@@ -501,6 +501,10 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 this._chart = init(this._chartElem);
                 // Set chart options to default
                 this._chart.setOption(this._chartOptions);
+                // Make chart responsive
+                window.addEventListener("resize", () => this._chart!.resize());
+                const resizeObserver = new ResizeObserver(() => this._chart!.resize());
+                resizeObserver.observe(this._chartElem);
 
             } else {
                 if (changedProperties.has("_data")) {
