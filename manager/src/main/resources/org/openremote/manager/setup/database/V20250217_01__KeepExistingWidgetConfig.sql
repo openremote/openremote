@@ -7,25 +7,25 @@ WITH json_data AS (
         id,
         template,
         COALESCE(
-                jsonb_set(
-                        template,
-                        '{widgets}',
-                        (
-                            SELECT jsonb_agg(
-                                           jsonb_set(
-                                                   widget,
-                                                   '{widgetConfig,allOfType}',
-                                                   CASE
-                                                       WHEN (widget ->> 'widgetTypeId') = 'map' THEN 'true'::jsonb
-                                                       WHEN (widget ->> 'widgetTypeId') = 'table' THEN 'false'::jsonb
-                                                       ELSE widget -> 'widgetConfig' -> 'allOfType'
-                                                       END
-                                           )
-                                   )
-                            FROM jsonb_array_elements(template -> 'widgets') AS widget
+            jsonb_set(
+                template,
+                '{widgets}',
+                (
+                    SELECT jsonb_agg(
+                        jsonb_set(
+                            widget,
+                            '{widgetConfig,allOfType}',
+                            CASE
+                                WHEN (widget ->> 'widgetTypeId') = 'map' THEN 'true'::jsonb
+                                WHEN (widget ->> 'widgetTypeId') = 'table' THEN 'false'::jsonb
+                                ELSE widget -> 'widgetConfig' -> 'allOfType'
+                            END
                         )
-                ),
-                template
+                    )
+                    FROM jsonb_array_elements(template -> 'widgets') AS widget
+                )
+            ),
+            template
         ) AS updated_json
     FROM dashboard
 )
