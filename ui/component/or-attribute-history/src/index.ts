@@ -1,6 +1,6 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 declare function require(name: string): any;
-import * as echarts from "echarts"; // REDUCE LIBRARY IMPORTS TO ONLY USED CLASSES.
+import * as echarts from "echarts"; // REDUCE LIBRARY IMPORTS TO ONLY USED CLASSES. marklinecomponent , EChartsOption, ECharts, EChartsResponsiveOption, EChartsSeriesType, EChartsTitleOption, EChartsToolboxFeature, EChartsXAxisOption, EChartsYAxisOption
 import {
     css,
     html,
@@ -109,7 +109,7 @@ const style = css`
         --internal-or-attribute-history-controls-margin: var(--or-attribute-history-controls-margin, 10px 0);
         --internal-or-attribute-history-controls-justify-content: var(--or-attribute-history-controls-justify-content, flex-end);
         --internal-or-attribute-history-graph-fill-color: var(--or-attribute-history-graph-fill-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
-        --internal-or-attribute-history-graph-fill-opacity: var(--or-attribute-history-graph-fill-opacity, 1);       
+        --internal-or-attribute-history-graph-fill-opacity: var(--or-attribute-history-graph-fill-opacity, 0.25);       
         --internal-or-attribute-history-graph-line-color: var(--or-attribute-history-graph-line-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
         --internal-or-attribute-history-graph-point-color: var(--or-attribute-history-graph-point-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
         --internal-or-attribute-history-graph-point-border-color: var(--or-attribute-history-graph-point-border-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
@@ -191,7 +191,7 @@ const style = css`
     
     #chart-container {
         position: relative;
-        min-height: 300px;
+        min-height: 350px;
     }
         
     #table-container {
@@ -374,9 +374,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         const isChart = this._type && (this._type.jsonType === "number" || this._type.jsonType === "boolean");
 
         if (isChart) {
+
             const data = this._data.map(point => [point.x, point.y]);
-            //const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assetType!, this.attribute!.name!, this.attribute!);
-            //const label = Util.getAttributeLabel(this.attribute!, descriptors[0], this.assetType!, true);
 
             if (!this._chart) {
                 let bgColor = this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color").trim();
@@ -389,25 +388,28 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     }
                 }
 
-                type CustomTooltipFormatter = (params: any) => string;
-
-                //const tooltipFormatter: CustomTooltipFormatter = (params) => {
-                //    if (Array.isArray(params)) {
-                //        return params.map((item: any) => `${item.value}`).join('<br/>');
-                //    }
-                //    return `${params.value}`;
-                //};
-
-
                 this._chartOptions = {
                     animation: false,
+                    grid: {
+                        show: true,
+                        backgroundColor: this._style.getPropertyValue("--internal-or-asset-viewer-panel-color"),
+                        borderColor: this._style.getPropertyValue("--internal-or-attribute-history-text-color")
+                    },
+                    backgroundColor: this._style.getPropertyValue("--internal-or-asset-viewer-panel-color"),
                     tooltip: {
                         trigger: 'axis',
                         axisPointer: { type: 'cross'},
-                        //formatter: tooltipFormatter,
+                        formatter: (params: any) => {
+                            if (Array.isArray(params) && params.length > 0) {
+                                const yValue = params[0].value[1];
+                                return yValue !== undefined ? yValue.toString() : '';
+                            }
+                            return ''
+                            }
                     },
                     toolbox: {
-                        right: '10%',
+                        right: '9%',
+                        top: '5%',
                         feature: {
                             dataView: {},
                             magicType: {
@@ -419,7 +421,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     },
                     xAxis: {
                         type: 'time',
-                        axisLine: { onZero: false },
+                        axisLine: { onZero: false, lineStyle: {color: this._style.getPropertyValue("--internal-or-attribute-history-text-color")}},
+                        splitLine: {show:true},
                         min: this._startOfPeriod,
                         max: this._endOfPeriod,
                         axisLabel: {
@@ -428,13 +431,13 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             hideOverlap: true,
                         }
                     },
-                    yAxis: [
+                    yAxis:
                         {
                             type: 'value',
+                            axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-attribute-history-text-color")}},
                             boundaryGap: ['10%', '10%'],
                             scale: true
-                        }
-                    ],
+                        },
                     dataZoom: [
                         {
                             type: 'inside',
@@ -443,7 +446,33 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         },
                         {
                             start: 0,
-                            end: 100
+                            end: 100,
+                            backgroundColor: bgColor,
+                            fillerColor: bgColor,
+                            dataBackground: {
+                                areaStyle: {
+                                    color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color")
+                                }
+                            },
+                            selectedDataBackground: {
+                                areaStyle: {
+                                    color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color"),
+                                }
+                            },
+                            moveHandleStyle: {
+                                color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color")
+                            },
+                            emphasis: {
+                                moveHandleStyle: {
+                                    color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color")
+                                },
+                                handleLabel: {
+                                    show: true
+                                }
+                            },
+                            handleLabel: {
+                                show: false
+                            }
                         }
                     ],
                     series: [
@@ -453,37 +482,15 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             showSymbol: false,
                             data: data,
                             sampling: 'lttb',
-                            //tooltip: {
-                            //    //valueFormatter: value => value + ' kW'  // adds units to tooltip
-                            //    formatter: '{c}'
-                            //},
                             itemStyle: {
-                                color: 'rgb(255, 70, 131)'
-                            },
-                            areaStyle: {
-                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                                    {
-                                        offset: 0,
-                                        color: 'rgb(255, 158, 68)'
-                                    },
-                                    {
-                                        offset: 1,
-                                        color: 'rgb(255, 70, 131)'
-                                    }
-                                ])
+                                color: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color")
                             },
                             markLine: {
                                 symbol: 'circle',
                                 silent: true,
-                                data: [
-                                    [
-                                        { name: "Now", xAxis: new Date().toISOString() ,yAxis: 'min'  },
-                                        { name: "end", xAxis: new Date().toISOString() ,yAxis:'max' }
-
-                                    ]
-                                ],
+                                data: [ { name: 'now', xAxis: new Date().toISOString(), label: {formatter: '{b}'}} ],
                                 lineStyle: {
-                                    color: "rgba(54,96,138,255)",
+                                    color: this._style.getPropertyValue("--internal-or-attribute-history-text-color"),
                                     type: 'solid',
                                     width: 2
                                 }
