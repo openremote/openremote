@@ -52,7 +52,7 @@ export function headerItemGatewayTunnel<S extends AppStateKeyed, A extends AnyAc
         icon: "lan-connect",
         value: "gateway-tunnel",
         href: "gateway-tunnel",
-        text: "gatewayTunnels.",
+        text: "gatewayTunnel",
         roles: ["write:admin", "read:admin"]
     }
 }

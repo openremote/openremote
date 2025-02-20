@@ -19,6 +19,7 @@
  */
 package org.openremote.model.rules.json;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.SunPositionTrigger;
 
@@ -46,7 +47,7 @@ public class RuleCondition {
     /**
      * Map of attribute and ISO8601 duration expression (e.g. PT1H)
      */
-    public Map<Integer, String> duration;
+    public Map<Integer, @Nullable String> duration;
 
     /**
      * CRON expression in UTC (e.g. *&#47;5 * * * *)

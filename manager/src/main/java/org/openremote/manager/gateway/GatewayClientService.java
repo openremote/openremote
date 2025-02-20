@@ -38,8 +38,7 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.*;
 import org.openremote.model.auth.OAuthClientCredentialsGrant;
 import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.EventSubscription;
@@ -256,8 +255,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
             client.addMessageConsumer(message -> onCentralManagerMessage(connection, message));
 
-            realmAssetEventConsumer = assetEvent ->
-                sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, assetEvent));
+            realmAssetEventConsumer = assetEvent -> sendAssetEvent(connection, assetEvent);
 
             // Subscribe to Asset<?> and attribute events of local realm and pass through to connected manager
             clientEventService.addSubscription(
@@ -265,12 +263,11 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 new AssetFilter<AssetEvent>().setRealm(connection.getLocalRealm()),
                 realmAssetEventConsumer);
 
-            realmAttributeEventConsumer = attributeEvent ->
-                sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, attributeEvent));
+            realmAttributeEventConsumer = attributeEvent -> sendAttributeEvent(connection, attributeEvent);
 
             clientEventService.addSubscription(
                 AttributeEvent.class,
-                getOutboundAttribueEventFilter(connection),
+                getOutboundAttributeEventFilter(connection),
                 realmAttributeEventConsumer);
 
             client.connect();
@@ -285,7 +282,31 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         return null;
     }
 
-    protected EventFilter<AttributeEvent> getOutboundAttribueEventFilter(GatewayConnection gatewayConnection) {
+    protected void sendAssetEvent(GatewayConnection connection, AssetEvent event) {
+        if (connection.getAssetSyncRules() != null) {
+            // Apply sync rules to the asset
+            event = ValueUtil.clone(event);
+            applySyncRules(event.getAsset(), connection.getAssetSyncRules());
+        }
+        sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, event));
+    }
+
+    protected void sendAttributeEvent(GatewayConnection connection, AttributeEvent event) {
+        if (connection.getAssetSyncRules() != null) {
+            // Attribute exclusion from sync rules has already been applied
+            // Apply sync rules to the event meta
+            event = ValueUtil.clone(event);
+            event.setMeta(event.getMeta() != null ? event.getMeta() : new MetaMap());
+            applySyncRuleToMeta(
+                    event.getName(),
+                    event.getMeta(),
+                    connection.getAssetSyncRules().getOrDefault(event.getAssetType(),
+                            connection.getAssetSyncRules().get("*")));
+        }
+        sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, event));
+    }
+
+    protected EventFilter<AttributeEvent> getOutboundAttributeEventFilter(GatewayConnection gatewayConnection) {
 
         // Convert filters to predicates for efficiency
         List<Pair<AssetQueryPredicate, GatewayAttributeFilter>> predicatesWithFilters;
@@ -363,6 +384,15 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
                     return false;
                 }).orElse(true);
+
+            // Skip any events for attributes excluded by sync rules
+            if (allowEvent && gatewayConnection.getAssetSyncRules() != null) {
+                GatewayAssetSyncRule syncRule = gatewayConnection.getAssetSyncRules().getOrDefault(ev.getAssetType(), gatewayConnection.getAssetSyncRules().get("*"));
+                if (syncRule != null && syncRule.excludeAttributes != null && syncRule.excludeAttributes.contains(ev.getName())) {
+                    LOG.finer(() -> "Attribute event excluded due to sync rule: " + ev);
+                    allowEvent = false;
+                }
+            }
 
             return allowEvent ? ev : null;
         };
@@ -461,6 +491,9 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 // Force realm to be the one that this client is associated with
                 query.realm(new RealmPredicate(connection.getLocalRealm()));
                 List<Asset<?>> assets = assetStorageService.findAll(readAssets.getAssetQuery());
+                assets = assets.stream()
+                        .map(it -> this.applySyncRules(it, connection.getAssetSyncRules()))
+                        .collect(Collectors.toList());
                 AssetsEvent responseEvent = new AssetsEvent(assets);
                 responseEvent.setMessageID(event.getMessageID());
                 sendCentralManagerMessage(
@@ -543,5 +576,56 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
         GatewayIOClient client = clientRealmMap.get(realm);
         return client != null ? client.getConnectionStatus() : null;
+    }
+
+    /**
+     *
+     * If the assetSyncRules affect this AssetType:
+     * 1) Filter out the attributes that have been defined in GatewayAssetSyncRule.<assetType>.excludeAttributes
+     * 2) Find the metaItem exclusions, with the specific attibuteName having priority over the wildcard. If none are found, Use Optional.Empty
+     * 3) Put the attribute and the List of excluded metaItems in a Tuple (MutablePair)
+     * 4) Filter out any excluded metaItems by using Attribute.setMeta(Attribute.getMeta)
+     * 5)
+     *
+     * @param asset Asset to filter
+     * @param assetSyncRules Asset Sync Rules as found in GatewayConnection
+     * @return The asset as given, with attributes and metaItems stripped out as instructed by the assetSyncRules
+     */
+    protected Asset<?> applySyncRules(Asset<?> asset, Map<String, GatewayAssetSyncRule> assetSyncRules) {
+
+        if (asset == null || assetSyncRules == null) {
+            return asset;
+        }
+
+        GatewayAssetSyncRule syncRule = assetSyncRules.getOrDefault(asset.getType(), assetSyncRules.get("*"));
+
+        if (syncRule == null) {
+            return asset;
+        }
+
+        List<Attribute<?>> attributes = asset.getAttributes().stream()
+                .filter(it -> syncRule.excludeAttributes == null || !syncRule.excludeAttributes.contains(it.getName()))
+                .peek(attribute -> applySyncRuleToMeta(attribute.getName(), attribute.getMeta(), syncRule)).toList();
+
+        asset.setAttributes(attributes);
+        return asset;
+    }
+
+    protected void applySyncRuleToMeta(String attributeName, MetaMap meta, GatewayAssetSyncRule syncRule) {
+        if (syncRule == null) {
+            return;
+        }
+        if (syncRule.excludeAttributeMeta != null && !meta.isEmpty()) {
+            List<String> excludeMetaRules = syncRule.excludeAttributeMeta.getOrDefault(attributeName, syncRule.excludeAttributeMeta.get("*"));
+            if (excludeMetaRules != null && !excludeMetaRules.isEmpty()) {
+                meta.keySet().removeIf(excludeMetaRules::contains);
+            }
+        }
+        if (syncRule.addAttributeMeta != null) {
+            Map<String, MetaItem<?>> addMetaRules = syncRule.addAttributeMeta.getOrDefault(attributeName, syncRule.addAttributeMeta.get("*"));
+            if (addMetaRules != null && !addMetaRules.isEmpty()) {
+                meta.addAll(addMetaRules);
+            }
+        }
     }
 }
