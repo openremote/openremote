@@ -1,6 +1,6 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 declare function require(name: string): any;
-import * as echarts from "echarts"; // REDUCE LIBRARY IMPORTS TO ONLY USED CLASSES. marklinecomponent , EChartsOption, ECharts, EChartsResponsiveOption, EChartsSeriesType, EChartsTitleOption, EChartsToolboxFeature, EChartsXAxisOption, EChartsYAxisOption
+import {ECharts, EChartsOption, init} from "echarts";
 import {
     css,
     html,
@@ -13,12 +13,11 @@ import {customElement, property, query} from "lit/decorators.js";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 import {AssetModelUtil, Attribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueDescriptor} from "@openremote/model";
-import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
+import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import "@openremote/or-chart";
-import {Chart, ScatterDataPoint, ChartConfiguration, TimeUnit, TimeScaleOptions} from "chart.js";
 import "chartjs-adapter-moment";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {MDCDataTable} from "@material/data-table";
@@ -260,17 +259,17 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
     @query("#chart")
     protected _chartElem!: HTMLDivElement;
-    protected _chartOptions: echarts.EChartsOption = {};
+    protected _chartOptions: EChartsOption = {};
     @query("#table")
     protected _tableElem!: HTMLDivElement;
     protected _table?: MDCDataTable;
-    protected _chart?: echarts.ECharts;
+    protected _chart?: ECharts;
     protected _type?: ValueDescriptor;
     protected _style!: CSSStyleDeclaration;
     protected _error?: string;
     protected _startOfPeriod?: number;
     protected _endOfPeriod?: number;
-    protected _timeUnits?: TimeUnit;
+    //protected _timeUnits?: TimeUnit; Chart.js legacy
     protected _stepSize?: number;
     protected _updateTimestampTimer?: number;
     protected _dataAbortController?: AbortController;
@@ -498,8 +497,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         }
                     ]
                 }
-                // Initialize chart
-                this._chart = echarts.init(this._chartElem);
+                // Initialize echarts instance
+                this._chart = init(this._chartElem);
                 // Set chart options to default
                 this._chart.setOption(this._chartOptions);
 
@@ -790,7 +789,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             const lowerCaseInterval = interval.toLowerCase();
             this._startOfPeriod = moment(this.toTimestamp).subtract(1, this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
             this._endOfPeriod = moment(this.toTimestamp).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
-            this._timeUnits =  lowerCaseInterval as TimeUnit;
+            //this._timeUnits =  lowerCaseInterval as TimeUnit; Chart.js legacy
             this._stepSize = stepSize;
 
             const isChart = this._type && (this._type.jsonType === "number" || this._type.jsonType === "boolean");
