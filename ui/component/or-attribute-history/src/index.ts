@@ -414,7 +414,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             magicType: {
                                 type: ['line', 'bar']
                             },
-                            restore: {},
                             saveAsImage: {}
                         }
                     },
