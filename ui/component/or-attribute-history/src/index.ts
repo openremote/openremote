@@ -1,6 +1,6 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 declare function require(name: string): any;
-
+import {ECharts, EChartsOption, init} from "echarts";
 import {
     css,
     html,
@@ -18,7 +18,6 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import "@openremote/or-chart";
-import {Chart, ScatterDataPoint, ChartConfiguration, TimeUnit, TimeScaleOptions} from "chart.js";
 import "chartjs-adapter-moment";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {MDCDataTable} from "@material/data-table";
@@ -109,7 +108,7 @@ const style = css`
         --internal-or-attribute-history-controls-margin: var(--or-attribute-history-controls-margin, 10px 0);
         --internal-or-attribute-history-controls-justify-content: var(--or-attribute-history-controls-justify-content, flex-end);
         --internal-or-attribute-history-graph-fill-color: var(--or-attribute-history-graph-fill-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
-        --internal-or-attribute-history-graph-fill-opacity: var(--or-attribute-history-graph-fill-opacity, 1);       
+        --internal-or-attribute-history-graph-fill-opacity: var(--or-attribute-history-graph-fill-opacity, 0.25);       
         --internal-or-attribute-history-graph-line-color: var(--or-attribute-history-graph-line-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
         --internal-or-attribute-history-graph-point-color: var(--or-attribute-history-graph-point-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
         --internal-or-attribute-history-graph-point-border-color: var(--or-attribute-history-graph-point-border-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
@@ -184,9 +183,14 @@ const style = css`
         padding-left: 5px;
     }
     
+    #chart {
+        width: 100%;
+        height: 100%;
+    }
+    
     #chart-container {
         position: relative;
-        min-height: 250px;
+        min-height: 350px;
     }
         
     #table-container {
@@ -254,17 +258,18 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _tableTemplate?: TemplateResult;
 
     @query("#chart")
-    protected _chartElem!: HTMLCanvasElement;
+    protected _chartElem!: HTMLDivElement;
+    protected _chartOptions: EChartsOption = {};
     @query("#table")
     protected _tableElem!: HTMLDivElement;
     protected _table?: MDCDataTable;
-    protected _chart?: Chart<"line", ScatterDataPoint[]>;
+    protected _chart?: ECharts;
     protected _type?: ValueDescriptor;
     protected _style!: CSSStyleDeclaration;
     protected _error?: string;
     protected _startOfPeriod?: number;
     protected _endOfPeriod?: number;
-    protected _timeUnits?: TimeUnit;
+    //protected _timeUnits?: TimeUnit; Chart.js legacy
     protected _stepSize?: number;
     protected _updateTimestampTimer?: number;
     protected _dataAbortController?: AbortController;
@@ -341,7 +346,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         <or-loading-indicator style="position: absolute; top: 50%; left: 50%;"></or-loading-indicator>
                     `)}
                     <div id="chart-container" style="${this._loading ? 'opacity: 0.2' : undefined}">
-                        <canvas id="chart"></canvas>
+                        <div id="chart"></div>
                     </div>
                     
                 `, () => html`
@@ -368,7 +373,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         const isChart = this._type && (this._type.jsonType === "number" || this._type.jsonType === "boolean");
 
         if (isChart) {
-            const data = this._data as ScatterDataPoint[];
+
+            const data = this._data.map(point => [point.x, point.y]);
 
             if (!this._chart) {
                 let bgColor = this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color").trim();
@@ -381,90 +387,136 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     }
                 }
 
-                const options = {
-                    type: "line",
-                    data: {
-                        datasets: [
-                            {
-                                data: data,
-                                backgroundColor: bgColor,
-                                borderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color"),
-                                pointBorderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-border-color"),
-                                pointBackgroundColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-color"),
-                                pointRadius: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-radius")),
-                                pointBorderWidth: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-border-width")),
-                                pointHoverBackgroundColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-color"),
-                                pointHoverBorderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-border-color"),
-                                pointHoverRadius: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-radius")),
-                                pointHoverBorderWidth: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-border-width")),
-                                pointHitRadius: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hit-radius")),
-                                fill: false
-                            }
-                        ]
+                this._chartOptions = {
+                    animation: false,
+                    grid: {
+                        show: true,
+                        backgroundColor: this._style.getPropertyValue("--internal-or-asset-viewer-panel-color"),
+                        borderColor: this._style.getPropertyValue("--internal-or-attribute-history-text-color")
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        onResize:() => this.dispatchEvent(new OrAttributeHistoryEvent('resize')),
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                displayColors: false,
-                                xPadding: 10,
-                                yPadding: 10,
-                                titleMarginBottom: 10
+                    backgroundColor: this._style.getPropertyValue("--internal-or-asset-viewer-panel-color"),
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'cross'},
+                        formatter: (params: any) => {
+                            if (Array.isArray(params) && params.length > 0) {
+                                const yValue = params[0].value[1];
+                                return yValue !== undefined ? yValue.toString() : '';
                             }
+                            return ''
+                            }
+                    },
+                    toolbox: {
+                        right: '9%',
+                        top: '5%',
+                        feature: {
+                            dataView: {readOnly: true},
+                            magicType: {
+                                type: ['line', 'bar']
+                            },
+                            saveAsImage: {}
+                        }
+                    },
+                    xAxis: {
+                        type: 'time',
+                        axisLine: { onZero: false, lineStyle: {color: this._style.getPropertyValue("--internal-or-attribute-history-text-color")}},
+                        splitLine: {show:true},
+                        min: this._startOfPeriod,
+                        max: this._endOfPeriod,
+                        axisLabel: {
+                            showMinLabel: true,
+                            showMaxLabel: true,
+                            hideOverlap: true,
+                        }
+                    },
+                    yAxis:
+                        {
+                            type: 'value',
+                            axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-attribute-history-text-color")}},
+                            boundaryGap: ['10%', '10%'],
+                            scale: true
                         },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: "#cccccc"
+                    dataZoom: [
+                        {
+                            type: 'inside',
+                            start: 0,
+                            end: 100
+                        },
+                        {
+                            start: 0,
+                            end: 100,
+                            backgroundColor: bgColor,
+                            fillerColor: bgColor,
+                            dataBackground: {
+                                areaStyle: {
+                                    color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color")
                                 }
                             },
-                            x: {
-                                type: "time",
-                                min: this._startOfPeriod,
-                                max: this._endOfPeriod,
-                                time: {
-                                    tooltipFormat: 'MMM D, YYYY, HH:mm:ss',
-                                    displayFormats: {
-                                        millisecond: 'HH:mm:ss.SSS',
-                                        second: 'HH:mm:ss',
-                                        minute: "HH:mm",
-                                        hour: "HH:mm",
-                                        week: "w"
-                                    },
-                                    unit: this._timeUnits,
-                                    stepSize: this._stepSize
+                            selectedDataBackground: {
+                                areaStyle: {
+                                    color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color"),
+                                }
+                            },
+                            moveHandleStyle: {
+                                color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color")
+                            },
+                            emphasis: {
+                                moveHandleStyle: {
+                                    color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color")
                                 },
-                                ticks: {
-                                    color: "#000",
-                                    font: {
-                                        family: "'Open Sans', Helvetica, Arial, Lucida, sans-serif",
-                                        size: 9,
-                                        style: "normal"
-                                    }
-                                },
-                                gridLines: {
-                                    color: "#cccccc"
+                                handleLabel: {
+                                    show: true
+                                }
+                            },
+                            handleLabel: {
+                                show: false
+                            }
+                        }
+                    ],
+                    series: [
+                        {
+                            name: 'label',
+                            type: 'line',
+                            showSymbol: false,
+                            data: data,
+                            sampling: 'lttb',
+                            itemStyle: {
+                                color: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color")
+                            },
+                            markLine: {
+                                symbol: 'circle',
+                                silent: true,
+                                data: [ { name: 'now', xAxis: new Date().toISOString(), label: {formatter: '{b}'}} ],
+                                lineStyle: {
+                                    color: this._style.getPropertyValue("--internal-or-attribute-history-text-color"),
+                                    type: 'solid',
+                                    width: 2
                                 }
                             }
                         }
-                    }
-                } as ChartConfiguration<"line", ScatterDataPoint[]>;
+                    ]
+                }
+                // Initialize echarts instance
+                this._chart = init(this._chartElem);
+                // Set chart options to default
+                this._chart.setOption(this._chartOptions);
+                // Make chart responsive
+                window.addEventListener("resize", () => this._chart!.resize());
+                const resizeObserver = new ResizeObserver(() => this._chart!.resize());
+                resizeObserver.observe(this._chartElem);
 
-                this._chart = new Chart<"line", ScatterDataPoint[]>(this._chartElem.getContext("2d")!, options);
             } else {
                 if (changedProperties.has("_data")) {
-                    this._chart.options.scales!.x!.min = this._startOfPeriod;
-                    this._chart.options!.scales!.x!.max = this._endOfPeriod;
-                    (this._chart.options!.scales!.x! as TimeScaleOptions).time!.unit = this._timeUnits!;
-                    (this._chart.options!.scales!.x! as TimeScaleOptions).time!.stepSize = this._stepSize!;
-                    this._chart.data.datasets![0].data = data;
-                    this._chart.update();
+                    //Update chart data
+                    this._chart.setOption({
+                        xAxis: {
+                            min: this._startOfPeriod,
+                            max: this._endOfPeriod
+                        },
+                        series: [{
+                            data: data
+                        }]
+                    });
                 }
             }
         } else {
@@ -488,7 +540,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         this._tableTemplate = undefined;
 
         if (this._chart) {
-            this._chart.destroy();
+            this._chart.dispose();
             this._chart = undefined;
         }
         if (this._table) {
@@ -740,7 +792,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             const lowerCaseInterval = interval.toLowerCase();
             this._startOfPeriod = moment(this.toTimestamp).subtract(1, this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
             this._endOfPeriod = moment(this.toTimestamp).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
-            this._timeUnits =  lowerCaseInterval as TimeUnit;
+            //this._timeUnits =  lowerCaseInterval as TimeUnit; Chart.js legacy
             this._stepSize = stepSize;
 
             const isChart = this._type && (this._type.jsonType === "number" || this._type.jsonType === "boolean");
@@ -773,8 +825,9 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             this._loading = false;
 
             if (response.status === 200) {
-                this._data = response.data.filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
-                this._dataFirstLoaded = true;
+                this._data = response.data
+                    .filter(value => value.y !== null && value.y !== undefined)
+                    .map(point => ({ x: point.x, y: point.y } as ValueDatapoint<any>));
             }
 
         } catch (ex) {
