@@ -1,5 +1,6 @@
 const util = require("@openremote/util");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const webpack = require("webpack");
 
 module.exports = (env, argv) => {
@@ -41,6 +42,13 @@ module.exports = (env, argv) => {
         config.performance = {
             hints: false
         };
+    }
+
+    if (IS_DEV_SERVER) {
+        console.log("Webpack bundle analyzer URL: http://127.0.0.1:8888")
+        config.plugins.push(new BundleAnalyzerPlugin({
+            openAnalyzer: false
+        }))
     }
 
     // Add a custom base URL to resolve the config dir to the path of the dev server not root
