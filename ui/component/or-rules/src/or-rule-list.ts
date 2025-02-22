@@ -466,7 +466,9 @@ export class OrRuleList extends translate(i18next)(LitElement) {
             newNodes: selectedNodes
         })).then((detail) => {
             if (detail.allow) {
-                this.selectedIds = detail.detail.newNodes.map((node) => node.ruleset.id!);
+                this.selectedIds = detail.detail.newNodes
+                    .filter(n => n.type === "rule")
+                    .map((node) => (node as RulesetNode).ruleset.id!);
             }
         });
     }

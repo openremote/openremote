@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig",
+  "compilerOptions": {
+    "outDir": "./lib",
+    "rootDir": "src"
+  },
+  "include": [
+    "./src"
+  ],
+  "references": [
+    { "path": "../core" },
+    { "path": "../rest" },
+    { "path": "../model" },
+    { "path": "../or-mwc-components" },
+    { "path": "../or-translate" }
+]
+}
