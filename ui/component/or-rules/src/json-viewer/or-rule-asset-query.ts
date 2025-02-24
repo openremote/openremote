@@ -844,12 +844,12 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                         negated: value === AssetQueryOperator.NOT_CONTAINS
                     };
                 } else if (valueDescriptor.jsonType === "string") {
-                predicate = {
-                    predicateType: "string",
-                    negate: value === AssetQueryOperator.NOT_CONTAINS,
-                    match: AssetQueryMatch.CONTAINS
-                };
-            }
+                    predicate = {
+                        predicateType: "string",
+                        negate: value === AssetQueryOperator.NOT_CONTAINS,
+                        match: AssetQueryMatch.CONTAINS
+                    };
+                }
                 break;
             // operator without value predicate - since timestamp is being used rather than attribute value
             case AssetQueryOperator.NOT_UPDATED_FOR:
