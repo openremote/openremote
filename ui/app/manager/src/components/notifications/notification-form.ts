@@ -280,7 +280,7 @@ export class NotificationForm extends LitElement {
         this._targetOptions = [];
         
         switch (type) {
-            case "USER":
+            case "User":
                 if (!this._users) {
                     await this._loadUsers();
                 }
@@ -290,20 +290,13 @@ export class NotificationForm extends LitElement {
                 }));
                 break;
                 
-            case "ASSET":
+            case "Asset":
                 if (!this._assets) {
                     await this._loadAssets();
                 }
-                // this._targetOptions = (this._assets || []).map(asset => ({
-                //     text: asset.name,
-                //     value: asset.id
-                // }));
-                // if (this._targetOptions.length > 0) {
-                //     this._selectedTarget = this._targetOptions[0].value;
-                // }
                 break;
 
-            case "REALM":
+            case "Realm":
                 if (!this._realms) {
                     await this._loadRealms();
                 }
@@ -433,7 +426,7 @@ export class NotificationForm extends LitElement {
                          <or-mwc-input 
                             label="${i18next.t("Target type")}"
                             type="${InputType.SELECT}"
-                            .options="${["USER", "ASSET", "REALM"]}"
+                            .options="${["User", "Asset", "Realm"]}"
                             ?disabled="${inputDisabled}"
                             required
                             id="targetType"
@@ -442,7 +435,7 @@ export class NotificationForm extends LitElement {
                         </or-mwc-input>
                     
                         <div class="target-area">
-                        ${when(this._selectedTargetType === "ASSET", 
+                        ${when(this._selectedTargetType === "Asset", 
                             () => html`
                             <or-asset-tree
                                 id="asset-selector"
