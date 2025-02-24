@@ -849,8 +849,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                     negate: value === AssetQueryOperator.NOT_CONTAINS,
                     match: AssetQueryMatch.CONTAINS
                 };
-                break;
             }
+            break;
             // operator without value predicate - since timestamp is being used rather than attribute value
             case AssetQueryOperator.NOT_UPDATED_FOR:
                 attributePredicate.timestampOlderThan = "";
