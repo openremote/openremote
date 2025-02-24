@@ -1,6 +1,7 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 declare function require(name: string): any;
 import {ECharts, EChartsOption, init} from "echarts";
+import _ from "lodash";
 import {
     css,
     html,
@@ -252,6 +253,9 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _loading: boolean = false;
 
     @property()
+    protected _zoomChanged: boolean = false;
+
+    @property()
     protected _data?: ValueDatapoint<any>[];
 
     @property()
@@ -269,6 +273,10 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _error?: string;
     protected _startOfPeriod?: number;
     protected _endOfPeriod?: number;
+    protected _queryStartOfPeriod?: number;
+    protected _queryEndOfPeriod?: number;
+    protected zoomStartPercentageOld: number = 0;
+    protected zoomEndPercentageOld: number = 100;
     //protected _timeUnits?: TimeUnit; Chart.js legacy
     protected _stepSize?: number;
     protected _updateTimestampTimer?: number;
@@ -311,6 +319,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             this._data = undefined;
             this._loadData();
         }
+
+
 
         return super.shouldUpdate(_changedProperties);
     }
@@ -500,14 +510,16 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 this._chart = init(this._chartElem);
                 // Set chart options to default
                 this._chart.setOption(this._chartOptions);
-                // Make chart responsive
+                // Make chart size responsive
                 window.addEventListener("resize", () => this._chart!.resize());
                 const resizeObserver = new ResizeObserver(() => this._chart!.resize());
                 resizeObserver.observe(this._chartElem);
+                // Add event listener for zooming
+                this._chart!.on('datazoom', _.debounce((params: any) => { this._onZoomChange(params); }, 1500));
 
             } else {
                 if (changedProperties.has("_data")) {
-                    //Update chart data
+                    //Update chart to data from set period
                     this._chart.setOption({
                         xAxis: {
                             min: this._startOfPeriod,
@@ -712,8 +724,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         ];
     }
 
-    protected async _loadData() {
-        if (this._data || !this.assetType || !this.assetId || (!this.attribute && !this.attributeRef) || !this.period || !this.toTimestamp) {
+    protected async _loadData()  {
+        if ( (this._data && !this._zoomChanged) || !this.assetType || !this.assetId || (!this.attribute && !this.attributeRef) || !this.period || !this.toTimestamp) {
             return;
         }
 
@@ -790,10 +802,14 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             }
 
             const lowerCaseInterval = interval.toLowerCase();
-            this._startOfPeriod = moment(this.toTimestamp).subtract(1, this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
-            this._endOfPeriod = moment(this.toTimestamp).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
-            //this._timeUnits =  lowerCaseInterval as TimeUnit; Chart.js legacy
-            this._stepSize = stepSize;
+
+            if (!this._zoomChanged) {
+                // Set start and end of period based on the selected period
+                this._startOfPeriod = moment(this.toTimestamp).subtract(1, this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
+                this._endOfPeriod = moment(this.toTimestamp).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
+                this._queryStartOfPeriod = this._startOfPeriod;
+                this._queryEndOfPeriod = this._endOfPeriod;
+            }
 
             const isChart = this._type && (this._type.jsonType === "number" || this._type.jsonType === "boolean");
             let response;
@@ -803,8 +819,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     attributeName,
                     {
                         type: "lttb",
-                        fromTimestamp: this._startOfPeriod,
-                        toTimestamp: this._endOfPeriod,
+                        fromTimestamp: this._queryStartOfPeriod,
+                        toTimestamp: this._queryEndOfPeriod,
                         amountOfPoints: 100
                     },
                     { signal: this._dataAbortController.signal }
@@ -823,6 +839,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             }
 
             this._loading = false;
+            this._zoomChanged = false;
 
             if (response.status === 200) {
                 this._data = response.data
@@ -865,6 +882,38 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 this.toTimestamp = newMoment.toDate()
         }, timeout);
     }
-    
+
+    protected _onZoomChange(params: any) {
+
+        this._zoomChanged = true;
+
+        const { start: zoomStartPercentage, end: zoomEndPercentage } = params.batch[0];
+
+        //DIT KAN VEEL KORTER DOOR SUBSTITUTIE
+
+        const zoomStartTime = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomStartPercentage / 100);
+        const zoomEndTime = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomEndPercentage / 100);
+
+        this._queryStartOfPeriod = zoomStartTime;
+        this._queryEndOfPeriod = zoomEndTime;
+
+
+            this._loadData().then(() => {
+                const data = this._data!.map(point => [point.x, point.y]);
+
+                this._chart!.setOption({
+                    xAxis: {
+                        min: this._startOfPeriod,
+                        max: this._endOfPeriod
+                    },
+                    series: [{
+                        data: data
+                    }]
+                });
+            });
+
+        this.zoomStartPercentageOld = zoomStartPercentage;
+        this.zoomEndPercentageOld = zoomEndPercentage;
+    }
     
 }
