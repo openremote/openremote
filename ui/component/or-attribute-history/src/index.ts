@@ -164,7 +164,7 @@ const style = css`
     }
     
     #time-picker {
-        width: 150px;
+        width: 130px;
         padding: 0 5px;
     }
 
@@ -180,7 +180,7 @@ const style = css`
     }
     
     #ending-date {
-        width: 200px;
+        width: 220px;
         padding-left: 5px;
     }
     
@@ -275,10 +275,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _endOfPeriod?: number;
     protected _queryStartOfPeriod?: number;
     protected _queryEndOfPeriod?: number;
-    protected zoomStartPercentageOld: number = 0;
-    protected zoomEndPercentageOld: number = 100;
-    //protected _timeUnits?: TimeUnit; Chart.js legacy
-    protected _stepSize?: number;
     protected _updateTimestampTimer?: number;
     protected _dataAbortController?: AbortController;
 
@@ -520,15 +516,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             } else {
                 if (changedProperties.has("_data")) {
                     //Update chart to data from set period
-                    this._chart.setOption({
-                        xAxis: {
-                            min: this._startOfPeriod,
-                            max: this._endOfPeriod
-                        },
-                        series: [{
-                            data: data
-                        }]
-                    });
+                    this._updateChartData();
                 }
             }
         } else {
@@ -776,28 +764,22 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
 
             let interval: DatapointInterval = DatapointInterval.HOUR;
-            let stepSize = 1;
 
             switch (this.period) {
                 case "hour":
                     interval = DatapointInterval.MINUTE;
-                    stepSize = 5;
                     break;
                 case "day":
                     interval = DatapointInterval.HOUR;
-                    stepSize = 1;
                     break;
                 case "week":
                     interval = DatapointInterval.HOUR;
-                    stepSize = 6;
                     break;
                 case "month":
                     interval = DatapointInterval.DAY;
-                    stepSize = 1;
                     break;
                 case "year":
                     interval = DatapointInterval.MONTH;
-                    stepSize = 1;
                     break;
             }
 
@@ -884,36 +866,30 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     }
 
     protected _onZoomChange(params: any) {
-
         this._zoomChanged = true;
-
         const { start: zoomStartPercentage, end: zoomEndPercentage } = params.batch[0];
+        //Define the start and end of the period based on the zoomed area
+        this._queryStartOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomStartPercentage / 100);
+        this._queryEndOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomEndPercentage / 100);
 
-        //DIT KAN VEEL KORTER DOOR SUBSTITUTIE
+       this._loadData().then(() => {
+              this._updateChartData();
+       });
 
-        const zoomStartTime = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomStartPercentage / 100);
-        const zoomEndTime = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomEndPercentage / 100);
+    }
 
-        this._queryStartOfPeriod = zoomStartTime;
-        this._queryEndOfPeriod = zoomEndTime;
+    protected _updateChartData(){
+        const data = this._data!.map(point => [point.x, point.y]);
 
-
-            this._loadData().then(() => {
-                const data = this._data!.map(point => [point.x, point.y]);
-
-                this._chart!.setOption({
-                    xAxis: {
-                        min: this._startOfPeriod,
-                        max: this._endOfPeriod
-                    },
-                    series: [{
-                        data: data
-                    }]
-                });
-            });
-
-        this.zoomStartPercentageOld = zoomStartPercentage;
-        this.zoomEndPercentageOld = zoomEndPercentage;
+        this._chart!.setOption({
+            xAxis: {
+                min: this._startOfPeriod,
+                max: this._endOfPeriod
+            },
+            series: [{
+                data: data
+            }]
+        });
     }
     
 }
