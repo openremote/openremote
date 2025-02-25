@@ -251,8 +251,10 @@
     "GROOVY": "Groovy",
     "JAVASCRIPT": "JavaScript"
   },
-  "gatewayConnection": "管理器互联",
-  "connectionDetails": "连接详情",
+  "gateway": {
+    "": "管理器互联",
+    "connectionDetails": "连接详情"
+  },
   "secured": "安全",
   "clientSecret": "客户端密钥",
   "clientId": "客户端标识",

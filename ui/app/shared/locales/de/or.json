@@ -270,8 +270,10 @@
     "GROOVY": "Groovy",
     "JAVASCRIPT": "JavaScript"
   },
-  "gatewayConnection": "Manager verbindung",
-  "connectionDetails": "VERBINDUNGSDETAILS",
+  "gateway": {
+    "": "Manager verbindung",
+    "connectionDetails": "Verbindungsdetails"
+  },
   "secured": "Gesichert",
   "clientSecret": "Client secret",
   "clientId": "Client ID",

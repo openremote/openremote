@@ -249,8 +249,10 @@
     "GROOVY": "Groovy",
     "JAVASCRIPT": "JavaScript"
   },
-  "gatewayConnection": "Manager del gateway",
-  "connectionDetails": "DETTAGLI DELLA CONNESSIONE",
+  "gateway": {
+    "": "Manager del gateway",
+    "connectionDetails": "DETTAGLI DELLA CONNESSIONE"
+  },
   "secured": "Assicurato",
   "clientSecret": "Segreto del cliente",
   "clientId": "ID Client",
@@ -466,4 +468,4 @@
     "attributeValueLabel": "Attribute value",
     "assetTypeDoesNotExist": "Filter : Asset type does not exist"
   }
-}
+},
