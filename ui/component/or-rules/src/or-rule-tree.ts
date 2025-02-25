@@ -230,7 +230,7 @@ export class OrRuleTree extends OrTreeMenu {
             id: group,
             label: group,
             children: rules.filter(r => (r.meta as any)?.groupId === group).map(rule => ({
-                id: rule.id,
+                id: rule.id?.toString(),
                 ruleset: rule,
                 label: rule.name
             }) as RuleTreeNode)
@@ -238,7 +238,7 @@ export class OrRuleTree extends OrTreeMenu {
 
         const ungroupedRules = rules.filter(r => !r.meta?.groupId);
         const ungroupedNodes = ungroupedRules.map(rule => ({
-            id: rule.id,
+            id: rule.id?.toString(),
             ruleset: rule,
             label: rule.name
         } as RuleTreeNode));

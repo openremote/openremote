@@ -1158,11 +1158,11 @@ export class OrRules extends translate(i18next)(LitElement) {
         let promise;
         switch (ruleset.type) {
             case "asset": {
-                promise = manager.rest.api.RulesResource.updateAssetRuleset(ruleset.id, ruleset); break;
+                promise = manager.rest.api.RulesResource.updateAssetRuleset(ruleset.id!, ruleset); break;
             } case "global": {
-                promise = manager.rest.api.RulesResource.updateGlobalRuleset(ruleset.id, ruleset); break;
+                promise = manager.rest.api.RulesResource.updateGlobalRuleset(ruleset.id!, ruleset); break;
             } case "realm": {
-                promise = manager.rest.api.RulesResource.updateRealmRuleset(ruleset.id, ruleset); break;
+                promise = manager.rest.api.RulesResource.updateRealmRuleset(ruleset.id!, ruleset); break;
             } default: {
                 break;
             }
