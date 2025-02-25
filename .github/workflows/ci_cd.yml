@@ -267,6 +267,7 @@ jobs:
       - name: Get version details
         id: get-version-details
         run: |
+          set -o pipefail # exit build with error when pipes fail
           ./gradlew currentVersion | tee /tmp/currentVersion
           versionWithQualifier=$(grep "Project version" /tmp/currentVersion | sed 's#Project version: ##')
           version=$(sed -E 's#-.+##' <<< $versionWithQualifier)
@@ -291,6 +292,7 @@ jobs:
           refType = os.getenv('GITHUB_REF_TYPE')
           isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
           isRelease = os.getenv('IS_RELEASE') == 'true'
+          managerVersion = os.getenv('MANAGER_VERSION')
           version = os.getenv('VERSION')
           deploys = None
           dockerPublishTags = None
@@ -331,7 +333,7 @@ jobs:
               else:
                 dockerPublishTags = dockerPublishTags.replace("$version", version)
                 firstDockerTag = dockerPublishTags.split(",")[0]
-          
+
               os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
               os.system(f" echo 'Manager tags to push to docker hub: {dockerPublishTags}'")
               dockerPublishTags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", dockerPublishTags.split(",")))
@@ -364,14 +366,14 @@ jobs:
                   deployStr += deploy['managerTag']
                 else:
                   # Custom projects manager docker image must match the openremoteVersion from gradle.properties
-                  deployStr += "$MANAGER_VERSION"
+                  deployStr += managerVersion
               else:
                 if isMainRepo:
                   os.system("echo 'Manager tag not specified so using commit SHA'")
                   deployStr += managerTagDefault
                 else:
                   # Custom projects manager docker image must match the openremoteVersion from gradle.properties
-                  deployStr += "$MANAGER_VERSION"
+                  deployStr += managerVersion
 
               deployStr += ";"
 
@@ -408,7 +410,7 @@ jobs:
             else:
               tag=managerVersion
             deployments=f'{inputEnv}:{tag}'
-          
+
           if not isMainRepo:
             if "-SNAPSHOT" in deployments:
               os.system("SNAPSHOT manager docker images not currently supported for custom project deployment")
