@@ -1,6 +1,7 @@
 package org.openremote.test.assets
 
 import net.fortuna.ical4j.model.Recur
+import net.fortuna.ical4j.transform.recurrence.*
 import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetProcessingService
@@ -815,7 +816,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         def start = calendar.getTime()
         calendar.add(Calendar.HOUR, 2)
         def end = calendar.getTime()
-        def recur = new Recur(Recur.DAILY, 5)
+        def recur = new Recur(Frequency.DAILY, 5)
         recur.setInterval(2)
 
         lobby.addAttributes(
@@ -823,7 +824,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
         lobby = assetStorageService.merge(lobby)
 
-        recur = new Recur(Recur.DAILY, 3)
+        recur = new Recur(Frequency.DAILY, 3)
         recur.setInterval(2)
 
         floor.addAttributes(

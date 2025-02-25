@@ -261,6 +261,26 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         }
 
         // ------------------------------------
+        // Test logging of outdated data points
+        // ------------------------------------
+
+        when: "a simulated sensor receives a new outdated value"
+        simulatorProtocol.updateSensor(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName), true, getClockTimeOf(container)-5000)
+
+        then: "the datapoint should be stored"
+        conditions.eventually {
+            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
+            assert datapoints.any {it.timestamp == getClockTimeOf(container)-5000 && (it.value as Boolean)}
+        }
+
+        and: "the attribute should not be updated"
+        conditions.eventually {
+            def thing = assetStorageService.find(managerTestSetup.thingId, true)
+            assert !thing.getAttribute(thingLightToggleAttributeName).flatMap { it.getValue(Boolean.class) }.orElse(true)
+            assert thing.getAttribute(thingLightToggleAttributeName).flatMap {it.getTimestamp()}.orElse(0) == getClockTimeOf(container)
+        }
+
+        // ------------------------------------
         // Test purging of data points
         // ------------------------------------
 

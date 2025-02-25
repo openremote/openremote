@@ -475,9 +475,9 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         this._loading = false;
 
         if (response.status === 200) {
-            // Get page count
-            this._pageCount = this._getPageCount(response);
             this._data = response.data;
+             // Get page count
+            this._pageCount = this._getPageCount(response);
         }
     }
 
@@ -485,10 +485,13 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         const linkHeaders = response.headers["link"] as any;
         if (linkHeaders) {
             const links = linkParser.parse(linkHeaders);
-            const lastLink = links.rel("last");
-            if (lastLink) {
+            let lastLink = links.rel("last");
+            if (Array.isArray(lastLink) && lastLink.length > 0) {
+                lastLink = lastLink[0];
+            }
+            if (lastLink && lastLink.uri) {
                 const url = new URL(lastLink.uri);
-                return Util.getQueryParameters(url.search)['page'] as number;
+                return parseInt(Util.getQueryParameters(url.search)['page']);
             }
         }
     }

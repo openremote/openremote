@@ -750,8 +750,8 @@ export class PageUsers extends Page<AppStateKeyed> {
     }
 
     protected _onPasswordChanged(user: UserModel, suffix: string) {
-        const passwordComponent = this.shadowRoot.getElementById("password-" + suffix) as OrMwcInput;
-        const repeatPasswordComponent = this.shadowRoot.getElementById("repeatPassword-" + suffix) as OrMwcInput;
+        const passwordComponent = this.shadowRoot.getElementById("new-password-" + suffix) as OrMwcInput;
+        const repeatPasswordComponent = this.shadowRoot.getElementById("new-repeatPassword-" + suffix) as OrMwcInput;
 
         if (repeatPasswordComponent.value !== passwordComponent.value) {
             const error = i18next.t("passwordMismatch");
@@ -857,7 +857,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                   .label="${i18next.t("username")}"
                                   .type="${InputType.TEXT}" minLength="3" maxLength="255" 
                                   ?required="${isServiceUser || !this._registrationEmailAsUsername}"
-                                  pattern="[A-Za-z0-9\-_+@.ßçʊ]+"
+                                  pattern="[A-Za-z0-9_+@.\-ßçʊÇʊ]+"
                                   .value="${user.username}" autocomplete="false"
                                   .validationMessage="${i18next.t("invalidUsername")}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
@@ -1068,7 +1068,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                               if (error) {
                                                   this.updateComplete.then(() => {
                                                       showSnackbar(undefined, error.text);
-                                                      if (error.status == 403) {
+                                                      if (error.status === 403) {
                                                           const elem = this.shadowRoot.getElementById('username-' + suffix) as OrMwcInput;
                                                           elem.setCustomValidity(error.text);
                                                           (elem.shadowRoot.getElementById("elem") as HTMLInputElement).reportValidity(); // manually reporting was required since we're not editing the username at all.

@@ -79,7 +79,7 @@ export class NodePanel extends translate(i18next)(LitElement)  {
 
             <div class="category"><span>${i18next.t("processors", "Processors")}</span> 
                 <div class="small-node-grid">
-                    ${this.nodes.filter((n) => n.type === NodeType.PROCESSOR && n.displayCharacter).map((n) => this.nodeTemplate(n))}
+                    ${this.nodes.filter((n) => n.type === NodeType.PROCESSOR && n.displayCharacter).sort((a, b) => a.priority! - b.priority!).map((n) => this.nodeTemplate(n))}
                 </div>
                 ${this.nodes.filter((n) => n.type === NodeType.PROCESSOR && !n.displayCharacter).map((n) => this.nodeTemplate(n))}
             </div>

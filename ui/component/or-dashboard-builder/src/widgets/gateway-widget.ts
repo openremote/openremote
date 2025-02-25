@@ -62,6 +62,9 @@ export class GatewayWidget extends OrWidget {
     @state()
     protected _activeTunnel?: GatewayTunnelInfo;
 
+    @state()
+    protected _isReady = false;
+
     protected _startedByUser = false;
 
     protected _refreshTimer?: number = undefined;
@@ -86,6 +89,7 @@ export class GatewayWidget extends OrWidget {
 
     refreshContent(force: boolean): void {
         this.widgetConfig = JSON.parse(JSON.stringify(this.widgetConfig)) as GatewayWidgetConfig;
+        this._readyCheck(this.widgetConfig);
     }
 
     static get styles() {
@@ -113,11 +117,12 @@ export class GatewayWidget extends OrWidget {
     protected firstUpdated(changedProps: PropertyValues) {
         if(this.widgetConfig) {
 
+            const tunnelInfo = this._getTunnelInfoByConfig(this.widgetConfig);
+            this._readyCheck(this.widgetConfig);
             // Apply a timeout of 500 millis, so the tunnel has time to close upon disconnectedCallback() of a different widget.
             setTimeout(() => {
 
                 // Check if the tunnel is already active upon widget initialization
-                const tunnelInfo = this._getTunnelInfoByConfig(this.widgetConfig);
                 this._getActiveTunnel(tunnelInfo).then(info => {
                     if(info) {
                         console.log("Existing tunnel found!", info);
@@ -135,7 +140,8 @@ export class GatewayWidget extends OrWidget {
     }
 
     protected render(): TemplateResult {
-        const disabled = this.getEditMode?.() || !this._isConfigComplete(this.widgetConfig);
+        const tunnelInfo = this._getTunnelInfoByConfig(this.widgetConfig);
+        const disabled = this.getEditMode?.() || !this._isConfigComplete(this.widgetConfig) || !this._isReady;
         return html`
             <div id="gateway-widget-wrapper">
                 <div id="gateway-widget-container">
@@ -165,7 +171,7 @@ export class GatewayWidget extends OrWidget {
                             `;
                         } else {
                             return html`
-                                <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('gatewayTunnels.start')}" outlined .disabled="${disabled}"
+                                <or-mwc-input .type="${InputType.BUTTON}" label="${disabled ? i18next.t('gatewayTunnels.offline') : i18next.t('gatewayTunnels.start')}" outlined .disabled="${disabled}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onStartTunnelClick(ev)}"
                                 ></or-mwc-input>
                             `;
@@ -322,6 +328,30 @@ export class GatewayWidget extends OrWidget {
             return response.data;
         }
     }
+
+    /**
+     * Internal function that requests the Manager API for the gatewayStatus of the gatewayId asset in {@link GatewayTunnelInfo}.
+     * Returns undefined if there is misalignment in the linked asset id or unexpected http code.
+     */
+   protected async _getGatewayStatus(info: GatewayTunnelInfo): Promise<string | undefined> {
+        const response =  await manager.rest.api.AssetResource.get(info.gatewayId!)
+        if (response.status === 200 && response.data && response.data.attributes && response.data.attributes.gatewayStatus) {
+            return response.data.attributes.gatewayStatus.value
+        } else {
+            return undefined;
+             }
+    }
+
+    /**
+     * Function that tries to check the gateway status and sets the ready flag to true only if connected.
+     */
+    protected _readyCheck(config: GatewayWidgetConfig): void {
+        const tunnelInfo = this._getTunnelInfoByConfig(config);
+        //Check if the gateway is actually in a status to accept connections
+        this._getGatewayStatus(tunnelInfo).then(status => {
+            this._isReady = (status === "CONNECTED");
+            });
+   }
 
     /**
      * Function that tries to destroy the currently active tunnel.

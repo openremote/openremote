@@ -96,7 +96,7 @@ export class OrRuleActionNotification extends LitElement {
         if(this.action.notification) {
             const message = this.action.notification.message;
             if(message?.type === "localized") {
-                const locale = this.config?.notifications?.[manager.displayRealm]?.defaultLanguage || this.config?.notifications?.["default"]?.defaultLanguage || manager.config.defaultLanguage;
+                const locale = this.config?.notifications?.[manager.displayRealm]?.defaultLanguage || this.config?.notifications?.default?.defaultLanguage || manager.config.defaultLanguage!;
                 const msg = message.languages?.[locale]; // if localized, we use the default language
                 if(msg?.type === "push") {
                     this.action.notification.name = msg.title;

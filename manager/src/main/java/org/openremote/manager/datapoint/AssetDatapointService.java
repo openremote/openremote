@@ -2,6 +2,7 @@ package org.openremote.manager.datapoint;
 
 import org.openremote.agent.protocol.ProtocolDatapointService;
 import org.openremote.container.timer.TimerService;
+import org.openremote.manager.asset.OutdatedAttributeEvent;
 import org.openremote.model.datapoint.DatapointQueryTooLargeException;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingException;
@@ -111,6 +112,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
         ClientEventService clientEventService = container.getService(ClientEventService.class);
         clientEventService.addSubscription(AttributeEvent.class, null, this::onAttributeEvent);
+        clientEventService.addSubscription(OutdatedAttributeEvent.class, null, this::onOutdatedAttributeEvent);
     }
 
     public static boolean attributeIsStoreDatapoint(MetaHolder attributeInfo) {
@@ -125,6 +127,11 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                 throw new AssetProcessingException(AttributeWriteFailure.STATE_STORAGE_FAILED, "Failed to insert or update asset data point for attribute: " + attributeEvent, e);
             }
         }
+    }
+
+    public void onOutdatedAttributeEvent(OutdatedAttributeEvent outdatedAttributeEvent) {
+        // Store the outdated event for historical analysis
+        onAttributeEvent(outdatedAttributeEvent.getEvent());
     }
 
     @Override

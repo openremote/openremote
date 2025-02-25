@@ -162,7 +162,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             assert rulesService.globalEngine.get().deployments.size() == 3
             assert rulesService.globalEngine.get().running
             assert !rulesService.globalEngine.get().isError()
-            assert rulesService.globalEngine.get().error instanceof RuntimeException
+            assert rulesService.globalEngine.get().getError() instanceof RuntimeException
             assert rulesService.globalEngine.get().deployments.values().any({ it.name == "Some global demo rules" && it.status == DEPLOYED})
             assert rulesService.globalEngine.get().deployments.values().any({ it.name == "Some more global rules" && it.status == DEPLOYED})
             assert rulesService.globalEngine.get().deployments.values().any({ it.name == "Some broken global rules" && it.status == COMPILATION_ERROR})
@@ -176,7 +176,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             assert rulesService.globalEngine.get().deployments.size() == 2
             assert rulesService.globalEngine.get().running
             assert !rulesService.globalEngine.get().isError()
-            assert rulesService.globalEngine.get().error == null
+            assert rulesService.globalEngine.get().getError() == null
             assert rulesService.globalEngine.get().deployments.values().any({ it.name == "Some global demo rules" && it.status == DEPLOYED })
             assert rulesService.globalEngine.get().deployments.values().any({ it.name == "Some more global rules" && it.status == DEPLOYED })
         }

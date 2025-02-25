@@ -5,21 +5,20 @@
 
 package org.openremote.model.flow;
 
-import jakarta.persistence.*;
-import org.openremote.model.IdentifiableEntity;
-
+import jakarta.persistence.Column;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-
-import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
+import org.openremote.model.IdentifiableEntity;
+import org.openremote.model.util.HibernateUniqueIdentifierType;
 
 
 @MappedSuperclass
 public class FlowObject implements IdentifiableEntity<FlowObject> {
 
-    @Id
+    @Id @HibernateUniqueIdentifierType
     @Column(name = "ID")
-    @GeneratedValue(generator = PERSISTENCE_UNIQUE_ID_GENERATOR)
     public String id;
 
     @NotNull

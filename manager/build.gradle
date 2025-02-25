@@ -27,13 +27,7 @@ dependencies {
     implementation "org.openjdk.nashorn:nashorn-core:$nashornVersion"
     implementation "org.apache.camel:camel-undertow:$camelVersion"
 
-    implementation ("io.netty:netty-codec-http") {
-        version {
-            strictly "$nettyVersion"
-        }
-    }
-
-    // Exposed via MQTT API
+    // Indirect dep from org.apache.activemq:artemis-mqtt-protocol
     api ("io.netty:netty-codec-mqtt") {
         version {
             strictly "$nettyVersion"
@@ -57,7 +51,6 @@ dependencies {
     }
 
     implementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
     implementation "io.prometheus:simpleclient_httpserver:$prometheusVersion"
 
     implementation "com.github.mwiede:jsch:$jSchVersion"
@@ -159,8 +152,8 @@ publishing {
         maven {
             if (!version.endsWith('-LOCAL')) {
                 credentials {
-                    username findProperty("publishUsername")
-                    password findProperty("publishPassword")
+                    username = findProperty("publishUsername")
+                    password = findProperty("publishPassword")
                 }
             }
             url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
