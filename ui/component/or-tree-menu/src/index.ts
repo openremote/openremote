@@ -541,11 +541,15 @@ export class OrTreeMenu extends LitElement {
      */
     protected _selectNode(node?: OrTreeNode, notify = true) {
         if(node) {
+            if(notify) {
+                const selected = [...this._findSelectedTreeNodes()];
+                const treeNode = this._getTreeNodeFromTree(node);
+                if(treeNode) selected.push(treeNode);
+                const success = this._dispatchSelectEvent(selected); // Dispatch a "select" event, and return when cancelled by a consumer
+                if(!success) return;
+            }
             node.selected = true;
             this._lastSelectedNode = node;
-            if(notify) {
-                this._notifyNodesSelect();
-            }
         }
     }
 
@@ -558,30 +562,38 @@ export class OrTreeMenu extends LitElement {
      * @protected
      */
     protected _selectNodesBetween(nodes: OrTreeNode[], index1: number, index2: number, notify = true) {
-        // console.debug(`Selecting nodes between ${index1} and ${index2} in`, nodes);
+        const selectedNodes: OrTreeNode[] = [];
         if(index1 < index2) {
             for(let x = index1; x <= index2; x++) {
-                this._selectNode(nodes[x], false);
+                selectedNodes.push(nodes[x]);
             }
-            if(notify) this._notifyNodesSelect();
-
         } else if(index1 > index2) {
             for(let x = index2; x <= index1; x++) {
-                this._selectNode(nodes[x], false);
+                selectedNodes.push(nodes[x]);
             }
-            if(notify) this._notifyNodesSelect();
         }
+        // Dispatch a "select" event with the new nodes. If cancelled, we will not select the nodes.
+        if(notify) {
+            const nodes = selectedNodes.map(n => this._getTreeNodeFromTree(n)).filter(n => n) as TreeNode[];
+            const success = this._notifyNodesSelect(nodes);
+            if(!success) return;
+        }
+        // Select the nodes
+        selectedNodes.forEach((node) => this._selectNode(node));
     }
 
     /**
      * Function that notifies parent HTMLElements that a tree node got selected.
      * It dispatches the OrTreeSelectEvent, which includes a list of the selected nodes.
+     * @returns a 'success' boolean whether the event was cancelled or not
      * @protected
      */
-    protected async _notifyNodesSelect() {
+    protected async _notifyNodesSelect(selectedNodes?: TreeNode[]) {
         await this.getUpdateComplete(); // await render to include the latest changes.
-        const selectedNodes = this._findSelectedTreeNodes();
-        this._dispatchSelectEvent(selectedNodes);
+        if(!selectedNodes) {
+            selectedNodes = this._findSelectedTreeNodes();
+        }
+        return this._dispatchSelectEvent(selectedNodes);
     }
 
     /**
@@ -633,10 +645,11 @@ export class OrTreeMenu extends LitElement {
     /**
      * Utility function for sending a "select" event, so consumers of this component are aware a new node has been selected.
      * @param selectedNodes - List of selected nodes to include in the event payload.
+     * @returns a 'success' boolean whether the event was cancelled or not.
      * @protected
      */
-    protected _dispatchSelectEvent(selectedNodes?: TreeNode[]) {
-        this.dispatchEvent(new OrTreeSelectEvent(selectedNodes || []));
+    protected _dispatchSelectEvent(selectedNodes?: TreeNode[]): boolean {
+        return this.dispatchEvent(new OrTreeSelectEvent(selectedNodes || []));
     }
 
     /**

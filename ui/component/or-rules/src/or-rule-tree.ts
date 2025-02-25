@@ -12,7 +12,7 @@ import {
     OrRules,
     OrRulesAddEvent,
     OrRulesRequestAddEvent,
-    OrRulesRequestDeleteEvent, OrRulesRequestGroupEvent,
+    OrRulesRequestDeleteEvent, OrRulesRequestGroupEvent, OrRulesRequestSelectionEvent,
     OrRulesSelectionEvent,
     RulesConfig,
     RulesetGroupNode,
@@ -118,7 +118,7 @@ export class OrRuleTree extends OrTreeMenu {
         }
     }
 
-    _getSingleNodeSlotTemplate(node: RuleTreeNode): TemplateResult {
+    protected _getSingleNodeSlotTemplate(node: RuleTreeNode): TemplateResult {
         return html`
             <or-icon slot="prefix" icon="${this._getRulesetLangIcon(node.ruleset?.lang)}"></or-icon>
             <span>${node.label}</span>
@@ -128,7 +128,7 @@ export class OrRuleTree extends OrTreeMenu {
         `;
     }
 
-    _getGroupNodeSlotTemplate(node: RuleTreeNode): TemplateResult {
+    protected _getGroupNodeSlotTemplate(node: RuleTreeNode): TemplateResult {
         let icon;
         const childrenStatus = (node.children as RuleTreeNode[] | undefined)?.map(child => child.ruleset?.status).filter(status => status) as RulesetStatus[];
         const hasError = childrenStatus?.find(c => [RulesetStatus.LOOP_ERROR, RulesetStatus.EXECUTION_ERROR, RulesetStatus.COMPILATION_ERROR].includes(c)) || false;
@@ -144,7 +144,7 @@ export class OrRuleTree extends OrTreeMenu {
         `;
     }
 
-    _getHeaderTemplate(): TemplateResult {
+    protected _getHeaderTemplate(): TemplateResult {
         return html`
             ${when(manager.isSuperUser(), () => html`
                 <div id="rules-tree-global-header">
@@ -265,13 +265,26 @@ export class OrRuleTree extends OrTreeMenu {
         return Promise.all(promises);
     }
 
-    _selectNode(node?: OrTreeNode, notify: boolean = true) {
+    /**
+     * Public function that allows consumers to select a ruleset in the tree.
+     * It finds the tree node in the UI, and selects it.
+     * @param ruleset - ruleset in the tree to be selected
+     * @param silent - skips the modal of 'discard changes' and does not dispatch an event
+     */
+    public selectRuleset(ruleset: RulesetUnion, silent = false) {
+        const rulesetNode = this.nodes.find(n => n.ruleset === ruleset);
+        if(rulesetNode) {
+            const uiNode = this._getUiNodeFromTree(rulesetNode);
+            if(uiNode) this._selectNode(uiNode, !silent);
+        }
+    }
+
+    protected _selectNode(node?: OrTreeNode, notify = true) {
         super._selectNode(node, notify);
         this._anySelected = this._findSelectedTreeNodes().length > 0;
     }
 
-    _dispatchSelectEvent(selectedNodes?: RuleTreeNode[]) {
-        super._dispatchSelectEvent(selectedNodes);
+    protected _dispatchSelectEvent(selectedNodes?: RuleTreeNode[]): boolean {
 
         const lastSelected = this._lastSelectedNode ? this._getTreeNodeFromTree(this._lastSelectedNode) as RuleTreeNode : undefined;
 
@@ -279,10 +292,16 @@ export class OrRuleTree extends OrTreeMenu {
         const newSelected = (!selectedNodes || selectedNodes.length > 1) ? undefined : selectedNodes[0];
 
         const isGroupNode = (node?: RuleTreeNode) => !!node?.children;
-        this.dispatchEvent(new OrRulesSelectionEvent({
-            oldNodes: lastSelected ? isGroupNode(lastSelected) ? [{type: "group", groupId: lastSelected.id} as RulesetGroupNode] : [{type: "rule", ruleset: lastSelected.ruleset!, selected: false} as RulesetNode] : [],
-            newNodes: newSelected ? isGroupNode(newSelected) ? [{type: "group", groupId: newSelected.id} as RulesetGroupNode] : [{type: "rule", ruleset: newSelected.ruleset!, selected: true} as RulesetNode] : []
-        }));
+        const oldNodes = lastSelected ? isGroupNode(lastSelected) ? [{type: "group", groupId: lastSelected.id} as RulesetGroupNode] : [{type: "rule", ruleset: lastSelected.ruleset!, selected: false} as RulesetNode] : [];
+        const newNodes = newSelected ? isGroupNode(newSelected) ? [{type: "group", groupId: newSelected.id} as RulesetGroupNode] : [{type: "rule", ruleset: newSelected.ruleset!, selected: true} as RulesetNode] : [];
+
+        // Ask for consumers if selection is allowed. If event.preventDefault() is called, we cancel the selection
+        const success = this.dispatchEvent(new OrRulesRequestSelectionEvent({oldNodes: oldNodes, newNodes: newNodes}));
+        if(!success) return false;
+
+        // If succeeded, actually sent the "select" event.
+        this.dispatchEvent(new OrRulesSelectionEvent({oldNodes: oldNodes, newNodes: newNodes}));
+        return super._dispatchSelectEvent(selectedNodes);
     }
 
     /**

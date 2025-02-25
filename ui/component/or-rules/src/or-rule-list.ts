@@ -461,16 +461,15 @@ export class OrRuleList extends translate(i18next)(LitElement) {
             selectedNodes.splice(index, 1);
         }
 
-        Util.dispatchCancellableEvent(this, new OrRulesRequestSelectionEvent({
+        const success = this.dispatchEvent(new OrRulesRequestSelectionEvent({
             oldNodes: this._selectedNodes,
             newNodes: selectedNodes
-        })).then((detail) => {
-            if (detail.allow) {
-                this.selectedIds = detail.detail.newNodes
-                    .filter(n => n.type === "rule")
-                    .map((node) => (node as RulesetNode).ruleset.id!);
-            }
-        });
+        }));
+        if(success) {
+            this.selectedIds = selectedNodes
+                .filter(n => n.type === "rule")
+                .map((node) => (node as RulesetNode).ruleset.id!);
+        }
     }
 
     protected _onCopyClicked() {

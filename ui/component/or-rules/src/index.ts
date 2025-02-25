@@ -582,7 +582,7 @@ export interface NodeSelectEventDetail {
     newNodes: RulesetBaseNode[];
 }
 
-export class OrRulesRequestSelectionEvent extends CustomEvent<RequestEventDetail<NodeSelectEventDetail>> {
+export class OrRulesRequestSelectionEvent extends CustomEvent<NodeSelectEventDetail> {
 
     public static readonly NAME = "or-rules-request-selection";
 
@@ -590,10 +590,8 @@ export class OrRulesRequestSelectionEvent extends CustomEvent<RequestEventDetail
         super(OrRulesRequestSelectionEvent.NAME, {
             bubbles: true,
             composed: true,
-            detail: {
-                detail: request,
-                allow: true
-            }
+            cancelable: true,
+            detail: request
         });
     }
 }
@@ -886,16 +884,12 @@ export class OrRules extends translate(i18next)(LitElement) {
         return this.readonly || !manager.hasRole(ClientRole.WRITE_RULES);
     }
 
-    protected _confirmContinue(action: () => void) {
+    protected _confirmContinue(action: (ok: boolean) => void) {
         if (this._viewer?.modified) {
             showOkCancelDialog(i18next.t("loseChanges"), i18next.t("confirmContinueRulesetModified"), i18next.t("discard"))
-                .then((ok) => {
-                    if (ok) {
-                        action();
-                    }
-                });
+                .then((ok) => action(ok));
         } else {
-            action();
+            action(true);
         }
     }
 
@@ -913,12 +907,19 @@ export class OrRules extends translate(i18next)(LitElement) {
         }
 
         // Prevent the initial request
-        event.detail.allow = false;
+        event.preventDefault();
         console.debug("Prevented new rule selection; prompting user changes have been made.");
 
         // Prompt user to "discard changes", and continue the selection afterwards
-        this._confirmContinue(() => {
-            this._onNodeSelectionChanged(event.detail.detail);
+        this._confirmContinue((ok) => {
+            if(ok) {
+                this._onNodeSelectionChanged(event.detail);
+                event.detail.newNodes.filter(n => n.type === "rule")
+                    .forEach(n => this._rulesTree?.selectRuleset((n as RulesetNode).ruleset, true));
+            } else {
+                event.detail.oldNodes.filter(n => n.type === "rule")
+                    .forEach(n => this._rulesTree?.selectRuleset((n as RulesetNode).ruleset, true));
+            }
         });
     }
 
@@ -1068,21 +1069,23 @@ export class OrRules extends translate(i18next)(LitElement) {
         ev.preventDefault(); // prevent the initial rule dragging
 
         // Prompt the user to "discard changes"
-        this._confirmContinue(() => {
-            (ev.detail.nodes as RuleTreeNode[]).forEach(node => {
-                if (node.ruleset) {
-                    moveAndSave(node.ruleset, groupId)?.then(() => {
-                        this._rulesTree?.moveNodesToGroup([node], ev.detail.groupNode); // move the nodes again, as the initial event got cancelled.
-                        showSnackbar(undefined, "ruleDragSuccess!");
-                    }).catch(() => {
-                        showSnackbar(undefined, "ruleDragFailed");
-                    });
-                } else if (node.ruleset) {
-                    console.warn("Could not add rule to group; could not find ruleset.");
-                } else if (groupId) {
-                    console.warn("Could not add rule to group; could not find group ID.");
-                }
-            });
+        this._confirmContinue((ok) => {
+            if(ok) {
+                (ev.detail.nodes as RuleTreeNode[]).forEach(node => {
+                    if (node.ruleset) {
+                        moveAndSave(node.ruleset, groupId)?.then(() => {
+                            this._rulesTree?.moveNodesToGroup([node], ev.detail.groupNode); // move the nodes again, as the initial event got cancelled.
+                            showSnackbar(undefined, "ruleDragSuccess!");
+                        }).catch(() => {
+                            showSnackbar(undefined, "ruleDragFailed");
+                        });
+                    } else if (node.ruleset) {
+                        console.warn("Could not add rule to group; could not find ruleset.");
+                    } else if (groupId) {
+                        console.warn("Could not add rule to group; could not find group ID.");
+                    }
+                });
+            }
         });
     }
 
