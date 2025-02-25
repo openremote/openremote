@@ -20,6 +20,8 @@ import "@openremote/or-asset-tree";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
+import {ECharts, EChartsOption, init} from "echarts";
+import _ from "lodash";
 import {
     Chart,
     ChartConfiguration,
@@ -55,7 +57,7 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import { when } from "lit/directives/when.js";
 import {createRef, Ref, ref } from "lit/directives/ref.js";
 
-Chart.register(LineController, ScatterController, LineElement, PointElement, LinearScale, TimeScale, Title, Filler, Legend, Tooltip, ChartAnnotation);
+//Chart.register(LineController, ScatterController, LineElement, PointElement, LinearScale, TimeScale, Title, Filler, Legend, Tooltip, ChartAnnotation);
 
 export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
 
@@ -421,15 +423,15 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _loading: boolean = false;
 
     @property()
-    protected _data?: ChartDataset<"line", ScatterDataPoint[]>[] = undefined;
+    protected _data?: ValueDatapoint<any>[];
 
     @property()
     protected _tableTemplate?: TemplateResult;
 
     @query("#chart")
-    protected _chartElem!: HTMLCanvasElement;
-
-    protected _chart?: Chart;
+    protected _chartElem!: HTMLDivElement;
+    protected _chartOptions: EChartsOption = {};
+    protected _chart?: ECharts;
     protected _style!: CSSStyleDeclaration;
     protected _startOfPeriod?: number;
     protected _endOfPeriod?: number;
@@ -437,6 +439,16 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _stepSize?: number;
     protected _latestError?: string;
     protected _dataAbortController?: AbortController;
+    protected _seriesTemplate = {
+        name: 'label',
+        type: 'line',
+        showSymbol: false,
+        data: {},
+        sampling: 'lttb',
+        itemStyle: {
+            color: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color")
+            }
+        }
 
     constructor() {
         super();
@@ -473,7 +485,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         if (reloadData) {
             this._data = undefined;
             if (this._chart) {
-                this._chart.destroy();
+                this._chart.dispose();
                 this._chart = undefined;
             }
             this._loadData();
@@ -486,98 +498,190 @@ export class OrChart extends translate(i18next)(LitElement) {
         const now = moment().toDate().getTime();
 
         if (!this._chart) {
-            const options = {
-                type: "line",
-                data: {
-                    datasets: this._data
+
+            const data =
+
+
+            this._chartOptions = {
+                animation: false,
+                grid: {
+                    show: true,
+                    backgroundColor: this._style.getPropertyValue("--internal-or-asset-viewer-panel-color"),
+                    borderColor: this._style.getPropertyValue("--internal-or-attribute-history-text-color")
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    onResize: throttle(() => { this.dispatchEvent(new OrChartEvent("resize")); this.applyChartResponsiveness(); }, 200),
-                    showLines: true,
-                    plugins: {
-                        legend: {
-                            display: false
+                backgroundColor: this._style.getPropertyValue("--internal-or-asset-viewer-panel-color"),
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'cross'},
+                    //formatter: (params: any) => {
+                    //    if (Array.isArray(params) && params.length > 0) {
+                    //        const yValue = params[0].value[1];
+                    //        return yValue !== undefined ? yValue.toString() : '';
+                    //    }
+                    //    return ''
+                    //}
+                },
+                toolbox: {
+                    right: '9%',
+                    top: '5%',
+                    feature: {
+                        dataView: {readOnly: true},
+                        magicType: {
+                            type: ['line', 'bar']
                         },
-                        tooltip: {
-                            mode: "x",
-                            intersect: false,
-                            xPadding: 10,
-                            yPadding: 10,
-                            titleMarginBottom: 10,
-                            callbacks: {
-                                label: (tooltipItem: any) => tooltipItem.dataset.label + ': ' + tooltipItem.formattedValue + tooltipItem.dataset.unit,
-                            }
-                        },
-                        annotation: {
-                            annotations: [
-                                {
-                                    type: "line",
-                                    xMin: now,
-                                    xMax: now,
-                                    borderColor: "#275582",
-                                    borderWidth: 2
-                                }
-                            ]
-                        },
+                        saveAsImage: {}
+                    }
+                },
+                xAxis: {
+                    type: 'time',
+                    axisLine: { onZero: false, lineStyle: {color: this._style.getPropertyValue("--internal-or-attribute-history-text-color")}},
+                    splitLine: {show:true},
+                    min: this._startOfPeriod,
+                    max: this._endOfPeriod,
+                    axisLabel: {
+                        showMinLabel: true,
+                        showMaxLabel: true,
+                        hideOverlap: true,
+                    }
+                },
+                yAxis:
+                    {
+                        type: 'value',
+                        axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-attribute-history-text-color")}},
+                        boundaryGap: ['10%', '10%'],
+                        scale: true
                     },
-                    hover: {
-                        mode: 'x',
-                        intersect: false
+                dataZoom: [
+                    {
+                        type: 'inside',
+                        start: 0,
+                        end: 100
                     },
-                    scales: {
-                        y: {
-                            ticks: {
-                                beginAtZero: true
-                            },
-                            grid: {
-                                color: "#cccccc"
+                    {
+                        start: 0,
+                        end: 100,
+                        backgroundColor: bgColor,
+                        fillerColor: bgColor,
+                        dataBackground: {
+                            areaStyle: {
+                                color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color")
                             }
                         },
-                        y1: {
-                            display: this.rightAxisAttributes.length > 0,
-                            position: 'right',
-                            ticks: {
-                                beginAtZero: true
-                            },
-                            grid: {
-                                drawOnChartArea: false
+                        selectedDataBackground: {
+                            areaStyle: {
+                                color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color"),
                             }
                         },
-                        x: {
-                            type: "time",
-                            min: this._startOfPeriod,
-                            max: this._endOfPeriod,
-                            time: {
-                                tooltipFormat: 'MMM D, YYYY, HH:mm:ss',
-                                displayFormats: {
-                                    millisecond: 'HH:mm:ss.SSS',
-                                    second: 'HH:mm:ss',
-                                    minute: "HH:mm",
-                                    hour: (this._endOfPeriod && this._startOfPeriod && this._endOfPeriod - this._startOfPeriod > 86400000) ? "MMM DD, HH:mm" : "HH:mm",
-                                    day: "MMM DD",
-                                    week: "w"
-                                },
-                                unit: this._timeUnits,
-                                stepSize: this._stepSize
+                        moveHandleStyle: {
+                            color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color")
+                        },
+                        emphasis: {
+                            moveHandleStyle: {
+                                color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color")
                             },
-                            ticks: {
-                                autoSkip: true,
-                                color: "#000",
-                                font: {
-                                    family: "'Open Sans', Helvetica, Arial, Lucida, sans-serif",
-                                    size: 9,
-                                    style: "normal"
-                                }
-                            },
-                            gridLines: {
-                                color: "#cccccc"
+                            handleLabel: {
+                                show: true
                             }
+                        },
+                        handleLabel: {
+                            show: false
                         }
                     }
-                }
-            } as ChartConfiguration<"line", ScatterDataPoint[]>;
+                ],
+                series: [data]
+            }
+            //const options = {
+            //    type: "line",
+            //    data: {
+            //        datasets: this._data
+            //    },
+            //    options: {
+            //        responsive: true,
+            //        maintainAspectRatio: false,
+            //        onResize: throttle(() => { this.dispatchEvent(new OrChartEvent("resize")); this.applyChartResponsiveness(); }, 200),
+            //        showLines: true,
+            //        plugins: {
+            //            legend: {
+            //                display: false
+            //            },
+            //            tooltip: {
+            //                mode: "x",
+            //                intersect: false,
+            //                xPadding: 10,
+            //                yPadding: 10,
+            //                titleMarginBottom: 10,
+            //                callbacks: {
+            //                    label: (tooltipItem: any) => tooltipItem.dataset.label + ': ' + tooltipItem.formattedValue + tooltipItem.dataset.unit,
+            //                }
+            //            },
+            //            annotation: {
+            //                annotations: [
+            //                    {
+            //                        type: "line",
+            //                        xMin: now,
+            //                        xMax: now,
+            //                        borderColor: "#275582",
+            //                        borderWidth: 2
+            //                    }
+            //                ]
+            //            },
+            //        },
+            //        hover: {
+            //            mode: 'x',
+            //            intersect: false
+            //        },
+            //        scales: {
+            //            y: {
+            //                ticks: {
+            //                    beginAtZero: true
+            //                },
+            //                grid: {
+            //                    color: "#cccccc"
+            //                }
+            //            },
+            //            y1: {
+            //                display: this.rightAxisAttributes.length > 0,
+            //                position: 'right',
+            //                ticks: {
+            //                    beginAtZero: true
+            //                },
+            //                grid: {
+            //                    drawOnChartArea: false
+            //                }
+            //            },
+            //            x: {
+            //                type: "time",
+            //                min: this._startOfPeriod,
+            //                max: this._endOfPeriod,
+            //                time: {
+            //                    tooltipFormat: 'MMM D, YYYY, HH:mm:ss',
+            //                    displayFormats: {
+            //                        millisecond: 'HH:mm:ss.SSS',
+            //                        second: 'HH:mm:ss',
+            //                        minute: "HH:mm",
+            //                        hour: (this._endOfPeriod && this._startOfPeriod && this._endOfPeriod - this._startOfPeriod > 86400000) ? "MMM DD, HH:mm" : "HH:mm",
+            //                        day: "MMM DD",
+            //                        week: "w"
+            //                    },
+            //                    unit: this._timeUnits,
+            //                    stepSize: this._stepSize
+            //                },
+            //                ticks: {
+            //                    autoSkip: true,
+            //                    color: "#000",
+            //                    font: {
+            //                        family: "'Open Sans', Helvetica, Arial, Lucida, sans-serif",
+            //                        size: 9,
+            //                        style: "normal"
+            //                    }
+            //                },
+            //                gridLines: {
+            //                    color: "#cccccc"
+            //                }
+            //            }
+            //        }
+            //    }
+            //} as ChartConfiguration<"line", ScatterDataPoint[]>;
 
             const mergedOptions = Util.mergeObjects(options, this.chartOptions, false);
 
