@@ -30,6 +30,17 @@ const styling = css`
     .iconfill-red {
         --or-icon-fill: var(--internal-or-rules-list-icon-color-error);
     }
+
+    #rules-tree-global-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 15px;
+        min-height: 48px;
+        background: var(--or-app-color3, #4c4c4c);
+        color: var(--or-app-color7, white);
+        --or-icon-fill: var(--or-app-color7, white);
+    }
 `;
 
 export interface RuleTreeNode extends TreeNode {
@@ -129,6 +140,13 @@ export class OrRuleTree extends OrTreeMenu {
 
     _getHeaderTemplate(): TemplateResult {
         return html`
+            ${when(manager.isSuperUser(), () => html`
+                <div id="rules-tree-global-header">
+                    <or-translate value="realmRules"></or-translate>
+                    <or-mwc-input type=${InputType.SWITCH} @or-mwc-input-changed=${this._onGlobalSwitch}></or-mwc-input>
+                    <or-translate value="globalRules"></or-translate>
+                </div>
+            `)}
             <div id="tree-header">
                 <h3 id="tree-header-title">
                     <or-translate value=${this.menuTitle}></or-translate>
@@ -142,6 +160,15 @@ export class OrRuleTree extends OrTreeMenu {
                 </div>
             </div>
         `;
+    }
+
+    /**
+     * HTML callback on when the global switch is toggled.
+     * It normally toggles between 'global' and 'realm' rulesets when the user is a superuser.
+     */
+    protected _onGlobalSwitch(ev: OrInputChangedEvent) {
+        this.global = ev.detail.value;
+        this.refresh();
     }
 
     /**
