@@ -75,6 +75,12 @@ export class OrRuleTree extends OrTreeMenu {
     @property({type: Boolean})
     public global = false;
 
+    /**
+     * Sets every element in the tree to readonly mode
+     */
+    @property({type: Boolean})
+    public readonly = false;
+
     nodes: RuleTreeNode[] = [];
     draggable = true;
     selection = TreeMenuSelection.MULTI;
@@ -152,7 +158,8 @@ export class OrRuleTree extends OrTreeMenu {
                     <or-translate value=${this.menuTitle}></or-translate>
                 </h3>
                 <div id="tree-header-actions">
-                    ${when(this._anySelected, () => html`
+                    ${when(this._anySelected && !this.readonly, () => html`
+                        <or-mwc-input type=${InputType.BUTTON} icon="content-copy" @or-mwc-input-changed=${this._onCopyClicked}></or-mwc-input>
                         <or-mwc-input type=${InputType.BUTTON} icon="delete" @or-mwc-input-changed=${this._onDeleteClicked}></or-mwc-input>
                     `)}
                     ${this._getAddActionTemplate()}
@@ -169,6 +176,40 @@ export class OrRuleTree extends OrTreeMenu {
     protected _onGlobalSwitch(ev: OrInputChangedEvent) {
         this.global = ev.detail.value;
         this.refresh();
+    }
+
+    /**
+     * HTML callback on when the 'copy' menu option is pressed.
+     * The function duplicates the current selected rule, and shows it inside the viewer window.
+     * @protected
+     */
+    protected _onCopyClicked(_ev: OrInputChangedEvent) {
+        const selected = this._findSelectedTreeNodes() as RuleTreeNode[];
+        if (selected.length !== 1) {
+            return;
+        }
+
+        const node = selected[0];
+        const ruleset = JSON.parse(JSON.stringify(node.ruleset)) as RulesetUnion;
+        delete ruleset.lastModified;
+        delete ruleset.createdOn;
+        delete ruleset.status;
+        delete ruleset.error;
+        delete ruleset.id;
+        ruleset.name = ruleset.name + " copy";
+
+        if (this.config && this.config.rulesetCopyHandler && !this.config.rulesetCopyHandler(ruleset)) {
+            return;
+        }
+
+        Util.dispatchCancellableEvent(this, new OrRulesRequestAddEvent({
+            ruleset: ruleset,
+            sourceRuleset: node.ruleset
+        })).then((detail) => {
+            if (detail.allow) {
+                this.dispatchEvent(new OrRulesAddEvent(detail.detail));
+            }
+        });
     }
 
     /**

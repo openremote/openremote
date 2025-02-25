@@ -863,9 +863,8 @@ export class OrRules extends translate(i18next)(LitElement) {
     }
 
     protected render() {
-
         return html`
-            <or-rule-tree id="rule-tree"></or-rule-tree>
+            <or-rule-tree id="rule-tree" ?readonly=${this._isReadonly()}></or-rule-tree>
             <!--<or-rule-list id="rule-list" .config="${this.config}" .language="${this.language}" .selectedIds="${this.selectedIds}"></or-rule-list>-->
             ${cache(when(this._selectedGroup, () => html`
                 <or-rule-group-viewer .group="${this._selectedGroup}" .readonly="${this._isReadonly()}"></or-rule-group-viewer>
