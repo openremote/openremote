@@ -101,6 +101,7 @@
   "rulesEditorAddAttribute": "Voeg attribute toe",
   "rulesEditorAddGroup": "Groep",
   "rulesEditorAddAction": "Voeg actie toe",
+  "rulesEditorDefaultGroup": "Nieuwe Groep",
   "rulesEditorDuration": "Tijdsduur (min)",
   "sortBy": "Sorteren op",
   "assetType": "Asset type",

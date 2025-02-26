@@ -55,7 +55,6 @@ export enum RuleTreeSorting {
 export class OrRuleTree extends OrTreeMenu {
 
     public static DEFAULT_ALLOWED_LANGUAGES = [RulesetLang.JSON, RulesetLang.GROOVY, RulesetLang.JAVASCRIPT, RulesetLang.FLOW];
-    public static DEFAULT_GROUP_NAME = "New Group"
 
     /**
      * List of rules visible in the tree menu
@@ -437,7 +436,8 @@ export class OrRuleTree extends OrTreeMenu {
      */
     protected _onGroupAddClick() {
         this._deselectAllNodes();
-        this.dispatchEvent(new OrRulesRequestGroupEvent(OrRuleTree.DEFAULT_GROUP_NAME));
+        const groupName = i18next.t('rulesEditorDefaultGroup') || "Group name"
+        this.dispatchEvent(new OrRulesRequestGroupEvent(groupName));
     }
 
     /**

@@ -102,6 +102,7 @@
   "rulesEditorAddAttribute": "Add attribute",
   "rulesEditorAddGroup": "Add group",
   "rulesEditorAddAction": "Add action",
+  "rulesEditorDefaultGroup": "New Group",
   "rulesEditorDuration": "Duration (min)",
   "sortBy": "Sort by",
   "assetType": "Asset type",
