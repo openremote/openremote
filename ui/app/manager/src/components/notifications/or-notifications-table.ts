@@ -13,10 +13,10 @@ export interface NotificationTableRow extends TableRow {
     }
 }
 
-export class NotificationTableClickEvent extends CustomEvent<{notificationId: string}> {
+export class NotificationTableClickEvent extends CustomEvent<{notificationId: number}> {
     static readonly NAME="or-notification-selected";
 
-    constructor(notificationId: string) {
+    constructor(notificationId: number) {
             super(NotificationTableClickEvent.NAME, {
                 detail: {notificationId},
                 bubbles: true, 
