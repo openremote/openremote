@@ -945,7 +945,7 @@ export class OrRules extends translate(i18next)(LitElement) {
 
         // If any group has been selected
         if(groupNodes.length === 1) {
-            this._viewer!.ruleset = undefined; // clear viewer, since a group is selected instead
+            if(this._viewer) this._viewer.ruleset = undefined; // clear viewer, since a group is selected instead
             this._selectedGroup = groupNodes[0].groupId;
             return;
         }

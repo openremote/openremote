@@ -1,8 +1,8 @@
 import {i18next, translate} from "@openremote/or-translate";
-import {html, LitElement } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import {html, LitElement, PropertyValues } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
 import {style} from "./or-rule-viewer";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
 import {OrRulesGroupNameChangeEvent} from "./index";
 
 @customElement("or-rule-group-viewer")
@@ -20,15 +20,25 @@ export class OrRuleGroupViewer extends translate(i18next)(LitElement) {
     @state()
     protected _modified = false;
 
+    @query("#rule-name")
+    protected _groupNameInput?: OrMwcInput;
+
     static get styles() {
         return [style];
+    }
+
+    willUpdate(changedProps: PropertyValues) {
+        if(changedProps.has("group")) {
+            this._groupNameInput?.focus(); // regain focus on the input (if lost)
+        }
+        return super.willUpdate(changedProps);
     }
 
     render() {
         return html`
             <div id="main-wrapper" class="wrapper">
                 <div id="rule-header">
-                    <or-mwc-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleGroupName")}"
+                    <or-mwc-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleGroupName")}" focused
                                   .value="${this.group}" ?disabled="${this.readonly}" required minlength="3" maxlength="255"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"
                     ></or-mwc-input>
