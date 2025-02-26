@@ -47,12 +47,6 @@ export class NotificationService {
                 return [];
             }
 
-            console.log("Notifications response:", {
-                total: response.data.length,
-                data: response.data.slice(0, 3), // log first few for sanity check
-                status: response.status
-            });
-
             return response.data;
         } catch (err: unknown) {
             const error = err as AxiosError;
@@ -66,7 +60,6 @@ export class NotificationService {
             // const response = await manager.rest.api.NotificationResource.sendNotification(
             //     notification
             // );
-            console.log("ATTEMPTING TO SEND NOTIF:", notification);
             const response = await manager.rest.api.NotificationResource.createNotificationInDB(
                 notification
             );
@@ -276,7 +269,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     @property()
-    public realm?: string;
+    protected realm?: string;
 
     @state()
     protected _data?: SentNotification[];
@@ -346,27 +339,29 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     public stateChanged(state: AppStateKeyed): void {
+        console.log("current realm as seen from stateChanged", this.realm);
+        console.log("app.state.realm", state.app.realm);
         if (state.app.page == "notifications") {
+            console.log("stateChanged notification condition met", this.realm);
             if (this.realm === undefined || this.realm == state.app.realm) {
-                // No realm change but might need reset
-                if (!this.creationState) {
-                    this.reset();
-                }
+                console.log("stateChanged realm condition met", this.realm);
+                this._loadData();
             } 
-            else {
-                this.realm = state.app.realm;
-                this.requestUpdate('realm');
-            }
+            this.realm = state.app.realm;
+            
+            this.requestUpdate('realm');
+            
+            this._loadData();
+            console.log("this.realm after loadData()", this.realm);
         }
     }
 
     protected async _loadData() {
-        console.log("_loadData called with realm:", this.realm);
+        console.log("LoadData triggered");
         if (this._loading || !this.realm) {
             return;
         }
         this._loading = true;
-        console.log("Loading data for realm:", this.realm);
 
         try {
             const fromDate = this._isFilteredDate ? this._fromDate : undefined;
@@ -390,8 +385,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
                 this._selectedSource = " "
             }
 
-            console.log("getNotifications called for time range:", this._fromDate, this._toDate)
-
             this._data = await this.notificationService.getNotifications(
                 this.realm, 
                 fromDate, 
@@ -400,7 +393,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
             this.requestUpdate();
         } catch (err: unknown) {
-            const error = err as AxiosError
+            const error = err as AxiosError;
             console.error("Notification load failed with error:", error);
         if (error.response) {
             console.error("Error response:", {
@@ -432,6 +425,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
                 hasTargetType: !!formData?.targetType,
                 hasTarget: !!formData?.target
             });
+            showSnackbar(undefined, i18next.t("Failed to create notification, missing required fields."));
             return null;
         }
         return formData;
@@ -481,18 +475,11 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
             const response = await this.notificationService.sendNotification(notification);
 
-            showSnackbar(undefined, i18next.t("Creating notification success."));
+            showSnackbar(undefined, i18next.t("Successfully created notification."));
             dialog.close();
         } catch (error) {
             console.error("Error creating notification:", error);
-            if (error.response) {
-                console.error("Error response:", {
-                    status: error.response.status,
-                    data: error.response.data,
-                    headers: error.response.headers
-                });
-            }
-            showSnackbar(undefined, i18next.t("Creating notification failure."));
+            showSnackbar(undefined, i18next.t("Failed to create notification: ", error));
         } finally {
             await this._loadData();
         }
@@ -520,19 +507,23 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     protected reset(): void {
+        console.log("Reset() triggered");
         this._data = undefined;
         this.requestUpdate();
     }
 
-    public shouldUpdate(changedProperties: PropertyValues): boolean {
+    public shouldUpdateOld(changedProperties: PropertyValues): boolean {
         if (changedProperties.has("realm") && changedProperties.get("realm") != undefined) {
             this.reset();
 
             const tableContainer = this.shadowRoot?.querySelector("#table-container");
+            console.log("In shouldUpdate, here's table container BEFORE shady innerHTML manip:", tableContainer);
             if (tableContainer) {
                 tableContainer.innerHTML = '';
                 this.requestUpdate();
             }
+
+            console.log("In shouldUpdate, here's table container after shady innerHTML manip:", tableContainer);
         }
 
         if (!this._data) {
@@ -542,10 +533,26 @@ export class PageNotifications extends Page<AppStateKeyed> {
         return super.shouldUpdate(changedProperties);
     }
 
+    public shouldUpdate(changedProperties: PropertyValues): boolean {
+        console.log("Current realm before if block", this.realm);
+        if (changedProperties.has("realm")) {
+            this.realm = manager.displayRealm;
+            console.log("Realm set to", this.realm);
+            console.log("From manager displayRealm", manager.displayRealm);
+            this.reset();
+        }
+
+        if (!this._data && !this._loading && this.realm) {
+            this._loadData();
+        }
+
+        return super.shouldUpdate(changedProperties);
+    }
+
     public connectedCallback(): void {
         super.connectedCallback();
-        console.log("page notifications connected");
-        this.realm = this.getState().app.realm;
+        
+        this.realm = manager.displayRealm;
         if (!this._data) {
             this._loadData();
         }
@@ -625,11 +632,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     protected getNotificationsTable() {
-        console.log("Rendering notifications table with data:", {
-            dataLength: this._data?.length,
-            realm: this.realm
-        });
-
         return html`
             <or-notifications-table 
                 .notifications=${this._getFilteredNotifications() || []}
@@ -696,7 +698,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
         const notificationId = e.detail.notificationId;
 
         const notification = this._data.find(n=> n.id === notificationId);
-        // if no notif. return
+
         if (!notification) {
             console.warn(`No notification found with id ${notificationId}`);
             return;
