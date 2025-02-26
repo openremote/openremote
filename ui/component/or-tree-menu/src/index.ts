@@ -487,7 +487,9 @@ export class OrTreeMenu extends LitElement {
     protected _onDragDropGroup(ev: DragEvent, groupNode?: TreeNode) {
         if(this.draggable) {
             ev.preventDefault();
-            (ev.currentTarget as HTMLElement).removeAttribute("drophover");
+
+            // Remove "hover background" from the group node in the UI
+            if(groupNode) this._getUiNodeFromTree(groupNode)?.removeAttribute("drophover");
 
             const nodesToMove: TreeNode[] = [];
 
