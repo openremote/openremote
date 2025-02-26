@@ -7,6 +7,7 @@
   "asset": "Asset",
   "asset_plural": "Assets",
   "assets": "Assets",
+  "allAssetsofType": "All assets of this type",
   "attribute": "Attribute",
   "attributes": "Attributes",
   "attribute_plural": "Attributes",
@@ -345,18 +346,21 @@
     "JAVASCRIPT": "JavaScript"
   },
   "gatewayConnection": "Manager interconnect",
-  "gatewayHeaderItem": "Manager interconnect",
   "gateway": {
     "": "Manager interconnect",
+    "connectionDetails": "Connection details",
+    "dataSharing": "Data sharing",
+    "assetSyncRules": "Asset synchronization",
     "limit_sharing_is_custom_error": "An advanced data limiting configuration is set. To modify click the JSON button. Clear it to use the fields below.",
     "limit_sharing_attribute": "Limit data sharing by asset type attributes",
     "limit_sharing_attribute_selected": "attributes selected",
     "limit_sharing_rate": "Limit the rate of how often attribute value updates are shared",
-    "limit_sharing_rate_suffix": "minutes interval"
+    "limit_sharing_rate_suffix": "minutes interval",
+    "assetSyncRulesEnable": "Customize asset synchronization",
+    "assetSyncRulesInput": "Synchronization config"
   },
-  "gatewayTunnel": "Gateway tunnel",
+  "gatewayTunnel": "Gateway tunnels",
   "gatewayTunnels": {
-    "": "Gateway tunnels",
     "settings": "Gateway settings",
     "start": "Start",
     "open": "Open",
@@ -379,8 +383,6 @@
   },
   "tunnels": "tunnels",
   "tunnel": "tunnel",
-  "connectionDetails": "CONNECTION DETAILS",
-  "dataSharing": "DATA SHARING",
   "secured": "Secured",
   "clientSecret": "Client secret",
   "clientId": "Client ID",

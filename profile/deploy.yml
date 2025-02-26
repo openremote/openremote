@@ -102,6 +102,10 @@ services:
       PROXY_HOST_REDIRECT_10_NAME:
       PROXY_HOST_REDIRECT_10_TARGET:
 
+      # The proxy removes path prefixes when configured before sending the request to the manager or keycloak.
+      #MANAGER_PATH_PREFIX: /openremote
+      #KEYCLOAK_PATH_PREFIX: /keycloak
+
     # Expose public services (web server, MQTT broker)
     ports:
       - "80:80" # HTTP for letsencrypt cert generation and in general it redirects to 443 for HTTPS
@@ -350,6 +354,9 @@ services:
 
       # API key for the API of ForecastSolar: https://forecast.solar
       # OR_FORECAST_SOLAR_API_KEY
+
+      # When using path based proxying this prefix is added to the URLs returned via the REST API.
+      # OR_PATH_PREFIX: /openremote
 
       # Custom JVM options (override default manager options)
   #OR_JAVA_OPTS: ${OR_JAVA_OPTS:--Xms500m -Xmx2g

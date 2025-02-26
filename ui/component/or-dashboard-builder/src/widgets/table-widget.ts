@@ -13,6 +13,7 @@ import "@openremote/or-mwc-components/or-mwc-table";
 
 export interface TableWidgetConfig extends WidgetConfig {
     assetType?: string
+    allOfType?: boolean,
     assetIds: string[]
     attributeNames: string[],
     tableSize: number,
@@ -22,6 +23,7 @@ export interface TableWidgetConfig extends WidgetConfig {
 function getDefaultConfig(): TableWidgetConfig {
     return {
         assetType: undefined,
+        allOfType: true,
         assetIds: [],
         attributeNames: [],
         tableSize: 10,
@@ -80,16 +82,25 @@ export class TableWidget extends OrAssetWidget {
     /* --------------------------------------- */
 
     protected loadAssets() {
-        if(this.widgetConfig.assetIds.find(id => !this.isAssetLoaded(id))) {
-           this.queryAssets({
-               ids: this.widgetConfig.assetIds,
-               select: {
-                   attributes: this.widgetConfig.attributeNames
-               }
-           }).then((assets) => {
-               this.loadedAssets = assets;
-           })
-        }
+        if(this.widgetConfig.allOfType) {
+            this.queryAssets({
+                types: [this.widgetConfig.assetType!],
+                select: {
+                    attributes: this.widgetConfig.attributeNames
+                }
+            }).then((assets) => {
+                this.loadedAssets = assets;
+                })
+        } else if(this.widgetConfig.assetIds.find(id => !this.isAssetLoaded(id))) {
+               this.queryAssets({
+                   ids: this.widgetConfig.assetIds,
+                   select: {
+                       attributes: this.widgetConfig.attributeNames
+                   }
+               }).then((assets) => {
+                   this.loadedAssets = assets;
+               })
+            }
     }
 
     protected getColumns(attributeNames: string[]): TableColumn[] {
