@@ -315,7 +315,7 @@ const style = css`
         flex-direction: column;
         align-items: center;
     }
-    canvas {
+    #chart {
         width: 100% !important;
         height: 100%; !important;
     }
@@ -446,20 +446,26 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     connectedCallback() {
+        console.log('connectedCallback triggered');
         super.connectedCallback();
         this._style = window.getComputedStyle(this);
     }
 
     disconnectedCallback(): void {
+        console.log('disconnectedCallback triggered');
         super.disconnectedCallback();
         this._cleanup();
+
     }
 
     firstUpdated() {
+        console.log('firstUpdated triggered');
         this.loadSettings(false);
     }
 
     updated(changedProperties: PropertyValues) {
+        console.log('updated triggered');
+
         super.updated(changedProperties);
 
         if (changedProperties.has("realm")) {
@@ -473,110 +479,102 @@ export class OrChart extends translate(i18next)(LitElement) {
             changedProperties.has("rightAxisAttributes") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
 
         if (reloadData) {
+            console.log('reloadData triggered');
             this._data = undefined;
             if (this._chart) {
+                console.log('releadData found _chart exists so disposing');
                 this._chart.dispose();
                 this._chart = undefined;
             }
             this._loadData();
         }
 
-        if (!this._data) {
-            return;
-        }
+        //if (!this._data) {
+        //    console.log("Data is not loaded yet");
+        //    return;
+        //}
 
         const now = moment().toDate().getTime();
 
         if (!this._chart) {
 
             this._chartOptions = {
-                animation: false,
-                grid: {
-                    show: true,
-                    backgroundColor: this._style.getPropertyValue("--internal-or-asset-viewer-panel-color"),
-                    borderColor: this._style.getPropertyValue("--internal-or-attribute-history-text-color")
+                title: {
+                    text: 'Temperature Change in the Coming Week'
                 },
-                backgroundColor: this._style.getPropertyValue("--internal-or-asset-viewer-panel-color"),
                 tooltip: {
-                    trigger: 'axis',
-                    axisPointer: { type: 'cross'},
-                    //formatter: (params: any) => {
-                    //    if (Array.isArray(params) && params.length > 0) {
-                    //        const yValue = params[0].value[1];
-                    //        return yValue !== undefined ? yValue.toString() : '';
-                    //    }
-                    //    return ''
-                    //}
+                    trigger: 'axis'
                 },
+                legend: {},
                 toolbox: {
-                    right: '9%',
-                    top: '5%',
+                    show: true,
                     feature: {
-                        dataView: {readOnly: true},
-                        magicType: {
-                            type: ['line', 'bar']
+                        dataZoom: {
+                            yAxisIndex: 'none'
                         },
+                        dataView: { readOnly: false },
+                        magicType: { type: ['line', 'bar'] },
+                        restore: {},
                         saveAsImage: {}
                     }
                 },
                 xAxis: {
-                    type: 'time',
-                    axisLine: { onZero: false, lineStyle: {color: this._style.getPropertyValue("--internal-or-attribute-history-text-color")}},
-                    splitLine: {show:true},
-                    min: this._startOfPeriod,
-                    max: this._endOfPeriod,
+                    type: 'category',
+                    boundaryGap: false,
+                    data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                },
+                yAxis: {
+                    type: 'value',
                     axisLabel: {
-                        showMinLabel: true,
-                        showMaxLabel: true,
-                        hideOverlap: true,
+                        formatter: '{value} °C'
                     }
                 },
-                yAxis:
+                series: [
                     {
-                        type: 'value',
-                        axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-attribute-history-text-color")}},
-                        boundaryGap: ['10%', '10%'],
-                        scale: true
+                        name: 'Highest',
+                        type: 'line',
+                        data: [10, 11, 13, 11, 12, 12, 9],
+                        markPoint: {
+                            data: [
+                                { type: 'max', name: 'Max' },
+                                { type: 'min', name: 'Min' }
+                            ]
+                        },
+                        markLine: {
+                            data: [{ type: 'average', name: 'Avg' }]
+                        }
                     },
-                dataZoom: [
                     {
-                        type: 'inside',
-                        start: 0,
-                        end: 100
-                    },
-                    {
-                        start: 0,
-                        end: 100,
-                        //backgroundColor: bgColor,
-                        //fillerColor: bgColor,
-                        dataBackground: {
-                            areaStyle: {
-                                color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color")
-                            }
+                        name: 'Lowest',
+                        type: 'line',
+                        data: [1, -2, 2, 5, 3, 2, 0],
+                        markPoint: {
+                            data: [{ name: '周最低', value: -2, xAxis: 1, yAxis: -1.5 }]
                         },
-                        selectedDataBackground: {
-                            areaStyle: {
-                                color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color"),
-                            }
-                        },
-                        moveHandleStyle: {
-                            color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color")
-                        },
-                        emphasis: {
-                            moveHandleStyle: {
-                                color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color")
-                            },
-                            handleLabel: {
-                                show: true
-                            }
-                        },
-                        handleLabel: {
-                            show: false
+                        markLine: {
+                            data: [
+                                { type: 'average', name: 'Avg' },
+                                [
+                                    {
+                                        symbol: 'none',
+                                        x: '90%',
+                                        yAxis: 'max'
+                                    },
+                                    {
+                                        symbol: 'circle',
+                                        label: {
+                                            position: 'start',
+                                            formatter: 'Max'
+                                        },
+                                        type: 'max',
+                                        name: '最高点'
+                                    }
+                                ]
+                            ]
                         }
                     }
-                ],
-                series: [],
-            }
+                ]
+            };
             console.log(this._chartOptions);
             //const options = {
             //    type: "line",
@@ -679,16 +677,17 @@ export class OrChart extends translate(i18next)(LitElement) {
             // Set chart options to default
             this._chart.setOption(this._chartOptions);
             // Make chart size responsive
-            window.addEventListener("resize", () => this._chart!.resize());
-            const resizeObserver = new ResizeObserver(() => this._chart!.resize());
-            resizeObserver.observe(this._chartElem);
+            //window.addEventListener("resize", () => this._chart!.resize());
+            //const resizeObserver = new ResizeObserver(() => this._chart!.resize());
+            //resizeObserver.observe(this._chartElem);
             // Add event listener for zooming
             //this._chart!.on('datazoom', _.debounce((params: any) => { this._onZoomChange(params); }, 1500));
 
         } else {
             if (changedProperties.has("_data")) {
                 //Update chart to data from set period
-                this._updateChartData();
+                //this._updateChartData();
+                console.log('line 682');
             }
         }
         this.onCompleted().then(() => {
@@ -728,7 +727,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     render() {
-        const disabled = this._loading || this._latestError;
+        const disabled = false; // TEMP EDIT this._loading || this._latestError;
         return html`
             <div id="container">
                 <div id="chart-container">
@@ -878,6 +877,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     //}
 
     async loadSettings(reset: boolean) {
+        console.log('loadSettings triggered');
 
         if(this.assetAttributes == undefined || reset) {
             this.assetAttributes = [];
@@ -962,6 +962,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     async saveSettings() {
+        console.log('saveSettings triggered');
 
         if (!this.panelName) {
             return;
@@ -1064,7 +1065,9 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _cleanup() {
+        console.log('cleanup triggered');
         if (this._chart) {
+            console.log('cleanup found _chart exists so disposing');
             this._chart.dispose();
             this._chart = undefined;
             this.requestUpdate();
@@ -1088,6 +1091,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _getAttributeOptionsOld(): [string, string][] | undefined {
+        console.log('getAttributeOptionsOld triggered');
         if(!this.activeAsset || !this.activeAsset.attributes) {
             return;
         }
@@ -1167,6 +1171,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
+        console.log('loadData triggered');
         if (this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
             return;
         }
@@ -1234,6 +1239,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
 
             this._data = data;
+            console.log(data); // DEBUGGING
             this._loading = false;
 
         } catch (ex) {
@@ -1287,18 +1293,18 @@ export class OrChart extends translate(i18next)(LitElement) {
                 // If amount of data points is set, only allow a maximum of 1 points per pixel in width
                 // Otherwise, dynamically set amount of data points based on chart width (1000px = 200 data points)
                 // >-------------IS DIT NOG WEL NODIG? ECHARTS HEEFT ZELF LTTB
-                if(query.amountOfPoints) {
-                    if(this._chartElem?.clientWidth > 0) {
-                        query.amountOfPoints = Math.min(query.amountOfPoints, this._chartElem?.clientWidth)
-                    }
-                } else {
-                    if(this._chartElem?.clientWidth > 0) {
-                        query.amountOfPoints = Math.round(this._chartElem.clientWidth / 5)
-                    } else {
+                //if(query.amountOfPoints) {
+                //    if(this._chartElem?.clientWidth > 0) {
+                //        query.amountOfPoints = Math.min(query.amountOfPoints, this._chartElem?.clientWidth)
+                //    }
+                //} else {
+                //    if(this._chartElem?.clientWidth > 0) {
+                //        query.amountOfPoints = Math.round(this._chartElem.clientWidth / 5)
+                //    } else {
                         console.warn("Could not grab width of the Chart for estimating amount of data points. Using 100 points instead.")
                         query.amountOfPoints = 100;
-                    }
-                }
+                //    }
+                //}
 
             } else if(query.type === 'interval' && !query.interval) {
                 const diffInHours = (this.datapointQuery.toTimestamp! - this.datapointQuery.fromTimestamp!) / 1000 / 60 / 60;
@@ -1340,7 +1346,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     //}
 
     protected _updateChartData(){
-
+        console.log('updateChartData triggered');
         this._chart!.setOption({
             xAxis: {
                 min: this._startOfPeriod,
