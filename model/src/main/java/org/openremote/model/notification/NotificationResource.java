@@ -155,7 +155,8 @@ public interface NotificationResource {
     @Operation(operationId = "getAllNotifications", summary = "Retrieve all notifications (development only)")
     SentNotification[] getAllNotifications(@BeanParam RequestParams requestParams, 
                                             @QueryParam("from") Long fromTimestamp,
-                                            @QueryParam("to") Long toTimestamp);
+                                            @QueryParam("to") Long toTimestamp,
+                                            @QueryParam("realmId") String realmId);
     
 
     /**

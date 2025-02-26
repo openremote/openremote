@@ -229,6 +229,9 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         }
 
         try {
+            Date now = new Date();
+            String realm = getAuthenticatedRealmName();
+
             SentNotification sentNotification = new SentNotification()
             .setName(notification.getName())
             .setType(notification.getMessage().getType())
@@ -237,7 +240,9 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
             .setTarget(notification.getTargets().get(0).getType())
             .setTargetId(notification.getTargets().get(0).getId())
             .setMessage(notification.getMessage())
-            .setSentOn(new Date());
+            .setRealm(realm)
+            .setSentOn(now)
+            .setDeliveredOn(now);
 
             notificationService.persistenceService.doTransaction(em -> {em.merge(sentNotification);
             });
@@ -248,14 +253,15 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public SentNotification[] getAllNotifications(RequestParams requestParams, Long fromTimestamp, Long toTimestamp) {
+    public SentNotification[] getAllNotifications(RequestParams requestParams, Long fromTimestamp, Long toTimestamp, String realmId) {
+        
         try {
             return notificationService.getNotifications(
             null, 
             null, 
             fromTimestamp,
             toTimestamp, 
-            null, 
+            realmId != null ? Collections.singletonList(realmId) : null,
             null, 
             null).toArray(new SentNotification[0]);
         } catch (IllegalArgumentException e) {

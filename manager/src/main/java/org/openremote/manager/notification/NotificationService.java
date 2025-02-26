@@ -29,11 +29,15 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
+import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.event.shared.EventSubscription;
+import org.openremote.model.event.shared.RealmFilter;
 import org.openremote.model.notification.Notification;
+import org.openremote.model.notification.NotificationEvent;
 import org.openremote.model.notification.NotificationSendResult;
 import org.openremote.model.notification.RepeatFrequency;
 import org.openremote.model.notification.SentNotification;
@@ -69,6 +73,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     protected ManagerIdentityService identityService;
     protected MessageBrokerService messageBrokerService;
     protected ExecutorService executorService;
+    protected ClientEventService clientEventService;
     protected Map<String, NotificationHandler> notificationHandlerMap = new HashMap<>();
 
     @Override
@@ -81,6 +86,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         this.timerService = container.getService(TimerService.class);
         this.persistenceService = container.getService(PersistenceService.class);
         this.assetStorageService = container.getService(AssetStorageService.class);
+        this.clientEventService = container.getService(ClientEventService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
         this.messageBrokerService = container.getService(MessageBrokerService.class);
         executorService = container.getExecutor();
@@ -95,6 +101,21 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                         container.getService(AssetStorageService.class),
                         container.getService(ManagerIdentityService.class))
         );
+        clientEventService.addSubscriptionAuthorizer((realm, authContext, eventSubscription) -> {
+            if (!eventSubscription.isEventType(NotificationEvent.class) || authContext == null) {
+                return false;
+            }
+
+            if (!authContext.isSuperUser()) {
+                @SuppressWarnings("unchecked")
+                EventSubscription<NotificationEvent> subscription = (EventSubscription<NotificationEvent>) eventSubscription;
+                subscription.setFilter(new RealmFilter<>(authContext.getAuthenticatedRealmName()));
+            }
+
+            return true;
+        });
+
+        
     }
 
     @Override
@@ -151,6 +172,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     AtomicReference<String> sourceId = new AtomicReference<>("");
                     boolean isSuperUser = false;
                     boolean isRestrictedUser = false;
+                    AtomicReference<String> notificationRealm = new AtomicReference<>();
 
                     switch (source) {
                         case INTERNAL -> isSuperUser = true;
@@ -161,6 +183,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                 throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
                             }
                             realm = authContext.getAuthenticatedRealmName();
+                            notificationRealm.set(authContext.getAuthenticatedRealmName());
                             userId = authContext.getUserId();
                             sourceId.set(userId);
                             isSuperUser = authContext.isSuperUser();
@@ -169,6 +192,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                         case GLOBAL_RULESET -> isSuperUser = true;
                         case REALM_RULESET -> {
                             realm = exchange.getIn().getHeader(Notification.HEADER_SOURCE_ID, String.class);
+                            notificationRealm.set(realm);
                             sourceId.set(realm);
                         }
                         case ASSET_RULESET -> {
@@ -176,6 +200,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                             sourceId.set(assetId);
                             Asset<?> asset = assetStorageService.find(assetId, false);
                             realm = asset.getRealm();
+                            notificationRealm.set(realm);
                         }
                     }
 
@@ -217,6 +242,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                     .setTarget(target.getType())
                                     .setTargetId(target.getId())
                                     .setMessage(notification.getMessage())
+                                    .setRealm(notificationRealm.get())
                                     .setSentOn(Date.from(timerService.getNow()));
 
                                 sentNotification = em.merge(sentNotification);
@@ -323,9 +349,20 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
     public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
         StringBuilder builder = new StringBuilder();
-        builder.append("select n from SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
-        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, false);
+
+        builder.append("select n from SentNotification n where 1=1");
+
+        // Apply realm ownership filter if realmIds provided
+        if (realmIds != null && !realmIds.isEmpty()) {
+            processRealmOwnershipCriteria(builder, parameters, realmIds);
+            // Pass null instead of realmIds to process Criteria to skip realm target type filtering
+            processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, null, userIds, assetIds, false);
+        } else {
+            processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, false);
+        }
+
+        /*processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, false);*/
         builder.append(" order by n.sentOn asc");
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
@@ -553,5 +590,20 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         return lastSend == null ||
                 (notification.getRepeatFrequency() != RepeatFrequency.ONCE &&
                         timerService.getNow().plusSeconds(1).isAfter(getRepeatAfterTimestamp(notification, lastSend.toInstant())));
+    }
+
+    protected void processRealmOwnershipCriteria(StringBuilder builder, List<Object> parameters, List<String> realmIds) {
+        // return if no realm filtering is needed
+        boolean hasRealms = realmIds != null && !realmIds.isEmpty();
+        if (!hasRealms) {
+            return;
+        }
+
+        builder.append(" AND (")
+                .append("n.realm IN ?")
+                .append(parameters.size() + 1)
+                .append(")");
+
+        parameters.add(realmIds);
     }
 }
