@@ -379,17 +379,20 @@ public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService
     protected void sendFlexOffer(UftpParticipant recipient, FlexRequest flexRequest) {
         try {
             FlexOffer flexOffer = new FlexOffer();
+            flexOffer.setVersion("3.0.0");
+            flexOffer.setSenderDomain(flexRequest.getRecipientDomain());
+            flexOffer.setRecipientDomain(flexRequest.getSenderDomain());
+            flexOffer.setTimeStamp(OffsetDateTime.now(ZoneId.systemDefault()));
             flexOffer.setMessageID(UUID.randomUUID().toString());
-            flexOffer.setCongestionPoint(flexRequest.getCongestionPoint());
-            flexOffer.setContractID(flexRequest.getContractID());
-            flexOffer.setFlexRequestMessageID(flexRequest.getMessageID());
-            flexOffer.setPeriod(flexRequest.getPeriod());
-            flexOffer.setTimeZone(flexRequest.getTimeZone());
-            flexOffer.setExpirationDateTime(flexRequest.getExpirationDateTime());
             flexOffer.setConversationID(flexRequest.getConversationID());
             flexOffer.setISPDuration(flexRequest.getISPDuration());
-            flexOffer.setSenderDomain(flexRequest.getSenderDomain());
-            flexOffer.setRecipientDomain(flexRequest.getRecipientDomain());
+            flexOffer.setTimeZone(flexRequest.getTimeZone());
+            flexOffer.setPeriod(flexRequest.getPeriod());
+            flexOffer.setCongestionPoint(flexRequest.getCongestionPoint());
+            flexOffer.setExpirationDateTime(flexRequest.getExpirationDateTime());
+            flexOffer.setFlexRequestMessageID(flexRequest.getMessageID());
+            flexOffer.setContractID(flexRequest.getContractID());
+            flexOffer.setBaselineReference("");
             flexOffer.setCurrency("EUR");
 
             // Set ISPs based on the FlexRequest ISPs
@@ -409,7 +412,7 @@ public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService
             flexOffer.getOfferOptions().add(flexOfferOptionType);
 
             // Send the FlexOffer
-            UftpParticipant sender = new UftpParticipant(contractedEan, USEFRoleType.AGR);
+            UftpParticipant sender = new UftpParticipant(flexRequest.getRecipientDomain(), USEFRoleType.AGR);
             notifyNewOutgoingMessage(OutgoingUftpMessage.create(sender, flexOffer));
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to send FlexOffer", e);
