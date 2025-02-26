@@ -436,7 +436,7 @@ export class OrRuleTree extends OrTreeMenu {
      */
     protected _onGroupAddClick() {
         this._deselectAllNodes();
-        const groupName = i18next.t('rulesEditorDefaultGroup') || "Group name"
+        const groupName = i18next.t('ruleGroupNameDefault') || "Group name"
         this.dispatchEvent(new OrRulesRequestGroupEvent(groupName));
     }
 
