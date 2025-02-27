@@ -541,8 +541,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                 },
                 xAxis: {
                     type: 'time',
-                    axisLine: { onZero: false, lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
-                    splitLine: {show:true},
+                    axisLine: {
+                        onZero: false,
+                        lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}
+                    },
+                    splitLine: {show: true},
                     min: this._startOfPeriod,
                     max: this._endOfPeriod,
                     axisLabel: {
@@ -829,7 +832,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                     const axisNote = (this.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
                                     const bgColor = this.colors[colourIndex] || "";
                                     return html`
-                                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}">
+                                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseover="${()=> this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseout="${()=> this.removeDatasetHighlight()}">
                                             <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
                                             <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
                                                 <div style="display: flex; justify-content: space-between;">
@@ -869,34 +872,39 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    //DEFAULT ECHARTS
-    //removeDatasetHighlight(bgColor:string) {
-    //    if(this._chart && this._chart.data && this._chart.data.datasets){
-    //        this._chart.data.datasets.map((dataset, idx) => {
-    //            if (dataset.borderColor && typeof dataset.borderColor === "string" && dataset.borderColor.length === 9) {
-    //                dataset.borderColor = dataset.borderColor.slice(0, -2);
-    //                dataset.backgroundColor = dataset.borderColor;
-    //            }
-    //        });
-    //        this._chart.update();
-    //    }
-    //}
+    removeDatasetHighlight() {
+        if(this._chart){
+            console.log('removeDatasetHighlight triggered');
+            let options = this._chart.getOption();
+            if (options.series && Array.isArray(options.series)) {
+                options.series.forEach(function (series) {
+                    series.lineStyle.opacity = 1;
+                });
+            }
+            this._chart.setOption(options);
+        }
+    }
 
-    //DEFAULT ECHARTS
-    //addDatasetHighlight(assetId?:string, attrName?:string) {
-    //    if (!assetId || !attrName) return;
-    //
-    //    if(this._chart && this._chart.data && this._chart.data.datasets){
-    //        this._chart.data.datasets.map((dataset, idx) => {
-    //            if ((dataset as any).assetId === assetId && (dataset as any).attrName === attrName) {
-    //                return
-    //            }
-    //            dataset.borderColor = dataset.borderColor + "36";
-    //            dataset.backgroundColor = dataset.borderColor;
-    //        });
-    //        this._chart.update();
-    //    }
-    //}
+    addDatasetHighlight(assetId?:string, attrName?:string) {
+        if (this._chart) {
+            console.log('addDatasetHighlight triggered');
+            let options = this._chart.getOption();
+            console.log(options);
+            if (options.series && Array.isArray(options.series)) {
+                options.series.forEach(function (series) {
+                    if (series.assetId != assetId || series.attrName != attrName) {
+                        console.log('setting opacity to 0.2 was here');
+                        series.lineStyle.opacity = 0.2;
+                    }
+                });
+            }
+            console.log(options);
+            this._chart.setOption(options)
+        }
+    };
+
+
+
 
     async loadSettings(reset: boolean) {
         console.log('loadSettings triggered');
@@ -1244,7 +1252,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
                     const colourIndex = index % this.colors.length;
                     const options = { signal: this._dataAbortController?.signal };
-                    let dataset = await this._loadAttributeData(asset, attribute, this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, false, asset.name + " " + label, options);
+                    let dataset = await this._loadAttributeData(asset, attribute, this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, false, asset.name + " " + label, options, unit);
                     (dataset as any).assetId = asset.id;
                     (dataset as any).attrName = attribute.name;
                     (dataset as any).unit = unit;
@@ -1286,7 +1294,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
 
-    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string | undefined, from: number, to: number, predicted: boolean, label?: string, options?: any) {
+    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string | undefined, from: number, to: number, predicted: boolean, label?: string, options?: any, unit?: any) {
 
         const dataset = {
             name: label,
@@ -1297,9 +1305,14 @@ export class OrChart extends translate(i18next)(LitElement) {
             lineStyle: {
                 color: color,
                 type: predicted ? [2, 4] : undefined,
+                opacity: 1
             },
             itemStyle: {
                 color: color
+            },
+            tooltip: {
+                // @ts-ignore
+                valueFormatter: value => value + unit
             },
             //emphasis: {
             //    focus: 'self', //hide other lines when hovering over one
@@ -1381,7 +1394,21 @@ export class OrChart extends translate(i18next)(LitElement) {
                 min: this._startOfPeriod,
                 max: this._endOfPeriod
             },
-            series: this._data
+            series: this._data!.map(series => ({
+                ...series,
+                markLine: {
+                    symbol: 'circle',
+                    silent: true,
+                    data: [{ name: '', xAxis: new Date().toISOString(), label: { formatter: '{b}' } }],
+                    lineStyle: {
+                        color: this._style.getPropertyValue("--internal-or-chart-text-color"),
+                        type: 'solid',
+                        width: 2,
+                        opacity: 1
+                    }
+                }
+            }))
         });
+        console.log(this._data);
     }
 }
