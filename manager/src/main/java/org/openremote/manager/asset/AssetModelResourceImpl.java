@@ -31,6 +31,9 @@ import org.openremote.model.value.ValueDescriptor;
 
 import java.util.Map;
 
+/**
+ * Test
+ */
 public class AssetModelResourceImpl extends ManagerWebResource implements AssetModelResource {
 
     protected AssetModelService assetModelService;
