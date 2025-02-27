@@ -351,25 +351,14 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         StringBuilder builder = new StringBuilder();
         List<Object> parameters = new ArrayList<>();
 
+        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, false);
         builder.append("select n from SentNotification n where 1=1");
-
-        // Apply realm ownership filter if realmIds provided
-        if (realmIds != null && !realmIds.isEmpty()) {
-            processRealmOwnershipCriteria(builder, parameters, realmIds);
-            // Pass null instead of realmIds to process Criteria to skip realm target type filtering
-            processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, null, userIds, assetIds, false);
-        } else {
-            processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, false);
-        }
-
-        /*processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, false);*/
         builder.append(" order by n.sentOn asc");
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
             IntStream.rangeClosed(1, parameters.size())
                     .forEach(i -> query.setParameter(i, parameters.get(i-1)));
             return query.getResultList();
-
         });
     }
 
@@ -471,12 +460,21 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             parameters.add(userIds);
 
         } else if (hasRealms) {
-            builder.append(" AND n.target = ?")
+            builder.append(" AND (")
+                    // target filter - notifications targeting a realm
+                    .append("(n.target = ?")
                     .append(parameters.size() + 1)
                     .append(" AND n.targetId IN ?")
-                    .append(parameters.size() + 2);
+                    .append(parameters.size() + 2)
+                    .append(")")
+                    // ownership filter - notifications belonging to a realm
+                    .append(" OR n.realm IN ?")
+                    // include null realms for backward compatibility
+                    .append(" OR n.realm IS NULL")
+                    .append(")");
 
             parameters.add(Notification.TargetType.REALM);
+            parameters.add(realmIds);
             parameters.add(realmIds);
         }
     }
@@ -590,20 +588,5 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         return lastSend == null ||
                 (notification.getRepeatFrequency() != RepeatFrequency.ONCE &&
                         timerService.getNow().plusSeconds(1).isAfter(getRepeatAfterTimestamp(notification, lastSend.toInstant())));
-    }
-
-    protected void processRealmOwnershipCriteria(StringBuilder builder, List<Object> parameters, List<String> realmIds) {
-        // return if no realm filtering is needed
-        boolean hasRealms = realmIds != null && !realmIds.isEmpty();
-        if (!hasRealms) {
-            return;
-        }
-
-        builder.append(" AND (")
-                .append("n.realm IN ?")
-                .append(parameters.size() + 1)
-                .append(")");
-
-        parameters.add(realmIds);
     }
 }
