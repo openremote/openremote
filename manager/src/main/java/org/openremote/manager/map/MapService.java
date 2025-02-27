@@ -211,6 +211,10 @@ public class MapService implements ContainerService {
     }
 
     public void setData() throws ClassNotFoundException, SQLException, NullPointerException {
+        setData(null);
+    }
+
+    public void setData(Connection conn) throws ClassNotFoundException, SQLException, NullPointerException {
         Path mapTilesPath = configurationService.getMapTilesPath();
         if (mapTilesPath == null) {
             return;
@@ -230,7 +234,7 @@ public class MapService implements ContainerService {
         }
 
         Class.forName(org.sqlite.JDBC.class.getName());
-        connection = DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath);
+        connection = conn == null ? DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath) : conn;
         metadata = getMetadata(connection);
 
         if (metadata.isValid()) {
@@ -426,14 +430,27 @@ public class MapService implements ContainerService {
             while ((bytesRead = fileInputStream.read(buffer)) != -1) {
                 outputStream.write(buffer, 0, bytesRead);
             }
-            LOG.info("File uploaded successfully to: " + destinationPath.toAbsolutePath());
-            this.setData();
+
+            Class.forName(org.sqlite.JDBC.class.getName());
+            Connection connection = DriverManager.getConnection("jdbc:sqlite:" + destinationPath);
+
+            PreparedStatement query = connection.prepareStatement("PRAGMA integrity_check;");
+            ResultSet result = query.executeQuery();
+            if (!result.next() || !result.getString(1).equals("ok")) {
+                Files.deleteIfExists(destinationPath);
+                LOG.log(Level.SEVERE, "MBTiles database file corrupt");
+                return false;
+            }
+
+            this.setData(connection);
             return true;
-        } catch (IOException e) {
-            LOG.log(Level.SEVERE, "Failed to save uploaded file", e);
-            return false;
-        } catch (SQLException | ClassNotFoundException e) {
-            LOG.log(Level.SEVERE, "Failed to load uploaded file", e);
+        } catch (IOException | SQLException | ClassNotFoundException e) {
+            LOG.log(Level.SEVERE, "Failed to load database file", e);
+            try {
+                Files.deleteIfExists(destinationPath);
+            } catch (IOException deleteError){
+                LOG.log(Level.SEVERE, "Failed to delete uploaded file", deleteError);
+            }
             return false;
         }
     }
