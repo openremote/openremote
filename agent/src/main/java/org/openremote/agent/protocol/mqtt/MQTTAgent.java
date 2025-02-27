@@ -24,6 +24,7 @@ import org.openremote.agent.protocol.io.IOAgent;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
 
 import java.util.Optional;
@@ -35,6 +36,8 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
     public static final AttributeDescriptor<String> CLIENT_ID = new AttributeDescriptor<>("clientId", ValueType.TEXT);
     public static final AttributeDescriptor<Boolean> SECURE_MODE = new AttributeDescriptor<>("secureMode", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<Integer> PUBLISH_QOS = new AttributeDescriptor<>("publishQoS", ValueType.POSITIVE_INTEGER.withConstraints(new ValueConstraint.Max(2)));
+    public static final AttributeDescriptor<Integer> SUBSCRIBE_QOS = new AttributeDescriptor<>("subscribeQoS", ValueType.POSITIVE_INTEGER.withConstraints(new ValueConstraint.Max(2)));
     public static final AttributeDescriptor<String> CLIENT_CERTIFICATE_ALIAS = new AttributeDescriptor<>("certificateAlias", ValueType.TEXT);
     public static final AttributeDescriptor<Boolean> RESUME_SESSION = new AttributeDescriptor<>("resumeSession", ValueType.BOOLEAN);
     public static final AttributeDescriptor<Boolean> WEBSOCKET_MODE = new AttributeDescriptor<>("websocketMode", ValueType.BOOLEAN);
@@ -150,6 +153,24 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
 
     public MQTTAgent setLastWillRetain(boolean lastWillRetain) {
         getAttributes().getOrCreate(LAST_WILL_RETAIN).setValue(lastWillRetain);
+        return this;
+    }
+
+    public Optional<Integer> getPublishQoS() {
+        return getAttributes().getValue(PUBLISH_QOS);
+    }
+
+    public MQTTAgent setPublishQos(int publishQos) {
+        getAttributes().getOrCreate(PUBLISH_QOS).setValue(publishQos);
+        return this;
+    }
+
+    public Optional<Integer> getSubscribeQoS() {
+        return getAttributes().getValue(SUBSCRIBE_QOS);
+    }
+
+    public MQTTAgent setSubscribeQos(int subscribeQos) {
+        getAttributes().getOrCreate(SUBSCRIBE_QOS).setValue(subscribeQos);
         return this;
     }
 }
