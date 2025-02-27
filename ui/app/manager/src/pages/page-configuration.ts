@@ -358,7 +358,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                         <div class="input d-inline-flex">
                                             <or-file-uploader 
                                                 .label=${i18next.t("configuration.global.uploadMapTiles")}"
-                                                .accept="application/vnd.sqlite3"
+                                                .accept=${".mbtiles"}
                                                 @change="${(e) => this.uploadCustomMap(e)}"></or-file-uploader>
                                             ${when(this.isMapCustom, () => html`
                                                     <or-mwc-input type="${InputType.BUTTON}" iconColor="black" icon="delete" 
@@ -471,6 +471,8 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             filePromises.push(manager.rest.api.MapResource.uploadMap({
                 data: this.tilesForUpload,
                 headers: {'Content-Type': 'application/octet-stream'}
+            }).catch((reason) => {
+                console.error(reason);
             }));
         }
 
