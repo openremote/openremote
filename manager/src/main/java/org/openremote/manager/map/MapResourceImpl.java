@@ -79,6 +79,10 @@ public class MapResourceImpl extends WebResource implements MapResource {
 
     @Override
     public Response uploadMap(@Context HttpServletRequest request) {
+        if (request.getContentLength() > mapService.customMapLimit) {
+            throw new WebApplicationException("{\"map-custom\": false}", Response.Status.REQUEST_ENTITY_TOO_LARGE);
+        }
+
         try (InputStream stream = request.getInputStream()) {
             boolean isSaved = mapService.saveUploadedFile(stream);
             ObjectNode response = ValueUtil.JSON
@@ -95,9 +99,10 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public Response isMapCustom() {
+    public Response customMapInfo() {
         ObjectNode response = ValueUtil.JSON
             .createObjectNode()
+            .put("custom-map-limit", mapService.customMapLimit)
             .put("map-custom", mapService.isCustomUploadedFile());
 
         return Response.ok().entity(response).build();
