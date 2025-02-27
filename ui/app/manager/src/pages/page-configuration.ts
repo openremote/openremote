@@ -221,6 +221,8 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     @query("#managerConfig-panel")
     protected realmConfigPanel?: OrConfPanel;
 
+    protected customMapLimit: number = 10^9;
+
     private readonly urlPrefix: string = (CONFIG_URL_PREFIX || "")
 
 
@@ -230,7 +232,8 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     }
 
     public async firstUpdated() {
-        const response = await manager.rest.api.MapResource.isMapCustom();
+        const response = await manager.rest.api.MapResource.customMapInfo();
+        this.customMapLimit = response.data["custom-map-limit"]
         this.isMapCustom = response.data["map-custom"]
     }
 
@@ -357,7 +360,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                         <span><or-translate value="configuration.global.uploadMapTiles"></or-translate></span>
                                         <div class="input d-inline-flex">
                                             <or-file-uploader 
-                                                .label=${i18next.t("configuration.global.uploadMapTiles")}"
+                                                .label=${i18next.t("configuration.global.uploadMapTiles", {customMapLimit: this.customMapLimit})}"
                                                 .accept=${".mbtiles"}
                                                 @change="${(e) => this.uploadCustomMap(e)}"></or-file-uploader>
                                             ${when(this.isMapCustom, () => html`

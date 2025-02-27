@@ -66,6 +66,8 @@ public class MapService implements ContainerService {
     public static final String OR_MAP_TILESERVER_HOST_DEFAULT = null;
     public static final String OR_MAP_TILESERVER_PORT = "OR_MAP_TILESERVER_PORT";
     public static final int OR_MAP_TILESERVER_PORT_DEFAULT = 8082;
+    public static final String OR_CUSTOM_MAP_SIZE_LIMIT = "OR_CUSTOM_MAP_SIZE_LIMIT";
+    public static final int OR_CUSTOM_MAP_SIZE_LIMIT_DEFAULT = 1_000_000_000;
     public static final String RASTER_MAP_TILE_PATH = "/raster_map/tile";
     public static final String TILESERVER_TILE_PATH = "/styles/standard";
     public static final String OR_MAP_TILESERVER_REQUEST_TIMEOUT = "OR_MAP_TILESERVER_REQUEST_TIMEOUT";
@@ -78,6 +80,7 @@ public class MapService implements ContainerService {
 
     // Shared SQL connection is fine concurrently in SQLite
     protected Connection connection;
+    protected int customMapLimit = OR_CUSTOM_MAP_SIZE_LIMIT_DEFAULT;
     protected Metadata metadata;
     protected ObjectNode mapConfig;
     protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
@@ -170,6 +173,8 @@ public class MapService implements ContainerService {
         container.getService(ManagerWebService.class).addApiSingleton(
                 new MapResourceImpl(this, container.getService(ManagerIdentityService.class))
         );
+
+        customMapLimit = getInteger(container.getConfig(), OR_CUSTOM_MAP_SIZE_LIMIT, OR_CUSTOM_MAP_SIZE_LIMIT_DEFAULT);
 
         String tileServerHost = getString(container.getConfig(), OR_MAP_TILESERVER_HOST, OR_MAP_TILESERVER_HOST_DEFAULT);
         int tileServerPort = getInteger(container.getConfig(), OR_MAP_TILESERVER_PORT, OR_MAP_TILESERVER_PORT_DEFAULT);
