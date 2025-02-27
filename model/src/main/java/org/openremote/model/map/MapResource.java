@@ -82,8 +82,8 @@ public interface MapResource {
     Response uploadMap(@Context HttpServletRequest request);
 
     @GET
-    @Path("isMapCustom")
-    Response isMapCustom();
+    @Path("customMapInfo")
+    Response customMapInfo();
 
     /**
      * Removes mbtiles file

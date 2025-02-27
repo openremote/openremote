@@ -216,6 +216,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     protected isMapCustom: boolean = false;
 
     @state()
+    protected customMapLimit: number = 1e+9;
+
+    @state()
     protected tilesForUpload: File;
 
     @query("#managerConfig-panel")
@@ -230,8 +233,15 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     }
 
     public async firstUpdated() {
-        const response = await manager.rest.api.MapResource.isMapCustom();
+        const response = await manager.rest.api.MapResource.customMapInfo();
+        this.customMapLimit = response.data["custom-map-limit"]
         this.isMapCustom = response.data["map-custom"]
+    }
+
+    public humanReadableBytes(bytes: number) {
+        const unit = ['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'];
+        const exponent = Math.floor(Math.log(bytes) / Math.log(1000));
+        return (bytes / Math.pow(1000, exponent)).toFixed(2) + " " + unit[exponent];
     }
 
     // On every update..
@@ -354,10 +364,14 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
                                     <div class="custom-tile-group">
                                         <div class="subheader"><or-translate value="configuration.global.mapTiles"></or-translate></div>
-                                        <span><or-translate value="configuration.global.uploadMapTiles"></or-translate></span>
+                                        <span><or-translate value="configuration.global.uploadMapTiles" .options=${{
+                                            customMapLimit: this.humanReadableBytes(this.customMapLimit)
+                                        }}></or-translate></span>
                                         <div class="input d-inline-flex">
                                             <or-file-uploader 
-                                                .label=${i18next.t("configuration.global.uploadMapTiles")}"
+                                                .label=${i18next.t("configuration.global.uploadMapTiles", {
+                                                    customMapLimit: this.humanReadableBytes(this.customMapLimit)
+                                                })}"
                                                 .accept=${".mbtiles"}
                                                 @change="${(e) => this.uploadCustomMap(e)}"></or-file-uploader>
                                             ${when(this.isMapCustom, () => html`

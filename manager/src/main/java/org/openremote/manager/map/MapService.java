@@ -66,6 +66,8 @@ public class MapService implements ContainerService {
     public static final String OR_MAP_TILESERVER_HOST_DEFAULT = null;
     public static final String OR_MAP_TILESERVER_PORT = "OR_MAP_TILESERVER_PORT";
     public static final int OR_MAP_TILESERVER_PORT_DEFAULT = 8082;
+    public static final String OR_CUSTOM_MAP_SIZE_LIMIT = "OR_CUSTOM_MAP_SIZE_LIMIT";
+    public static final int OR_CUSTOM_MAP_SIZE_LIMIT_DEFAULT = 1_000_000_000;
     public static final String RASTER_MAP_TILE_PATH = "/raster_map/tile";
     public static final String TILESERVER_TILE_PATH = "/styles/standard";
     public static final String OR_MAP_TILESERVER_REQUEST_TIMEOUT = "OR_MAP_TILESERVER_REQUEST_TIMEOUT";
@@ -83,6 +85,7 @@ public class MapService implements ContainerService {
     protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
     protected String pathPrefix;
+    protected int customMapLimit = OR_CUSTOM_MAP_SIZE_LIMIT_DEFAULT;
 
     public ObjectNode saveMapConfig(MapConfig mapConfiguration) throws RuntimeException {
         if (mapConfig == null) {
@@ -174,6 +177,7 @@ public class MapService implements ContainerService {
         String tileServerHost = getString(container.getConfig(), OR_MAP_TILESERVER_HOST, OR_MAP_TILESERVER_HOST_DEFAULT);
         int tileServerPort = getInteger(container.getConfig(), OR_MAP_TILESERVER_PORT, OR_MAP_TILESERVER_PORT_DEFAULT);
         pathPrefix = getString(container.getConfig(), OR_PATH_PREFIX, OR_PATH_PREFIX_DEFAULT);
+        customMapLimit = getInteger(container.getConfig(), OR_CUSTOM_MAP_SIZE_LIMIT, OR_CUSTOM_MAP_SIZE_LIMIT_DEFAULT);
 
         if (!TextUtil.isNullOrEmpty(tileServerHost)) {
 
