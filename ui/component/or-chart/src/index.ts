@@ -21,7 +21,6 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {ECharts, EChartsOption, init} from "echarts";
-import _ from "lodash";
 import {
     Chart,
     ChartConfiguration,
@@ -51,7 +50,7 @@ import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {cache} from "lit/directives/cache.js";
-import {throttle} from "lodash";
+import {debounce, throttle} from "lodash";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import { when } from "lit/directives/when.js";
@@ -389,7 +388,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Object})
     public config?: OrChartConfig;
 
-    @property({type: Object}) // options that will get merged with our default chartjs configuration.
+    @property({type: Object}) // WIDGET NEED TO CONVERT TO ECHARTS OPTION FORMAT, NOW WORKAROUND IN PLACE options that will get merged with our default chartjs configuration.
     public chartOptions?: any
 
     @property({type: String})
@@ -438,8 +437,8 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _style!: CSSStyleDeclaration;
     protected _startOfPeriod?: number;
     protected _endOfPeriod?: number;
-    protected _queryStartOfPeriod?: number;
-    protected _queryEndOfPeriod?: number;
+    protected _zoomStartOfPeriod?: number;
+    protected _zoomEndOfPeriod?: number;
     protected _timeUnits?: TimeUnit;
     protected _stepSize?: number;
     protected _latestError?: string;
@@ -494,10 +493,10 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._loadData();
         }
 
-        //if (!this._data) {
-        //    console.log("Data is not loaded yet");
-        //    return;
-        //}
+        if (!this._data) {
+            console.log("Data is not loaded yet");
+            return;
+        }
 
         const now = moment().toDate().getTime();
 
@@ -519,7 +518,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                 grid: {
                     show: true,
                     backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
-                    borderColor: this._style.getPropertyValue("--internal-or-chart-text-color")
+                    borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
+                    left: '5%', // 5% padding
+                    top: '5.5%',
+                    right: '5%',
+                    bottom: '15%'
                 },
                 backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                 tooltip: {
@@ -534,8 +537,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                     //}
                 },
                 toolbox: {
-                    right: '9%',
-                    top: '5%',
+                    right: '4.5%',
+                    top: '0%',
                     feature: {
                         dataView: {readOnly: true},
                         magicType: {
@@ -559,13 +562,25 @@ export class OrChart extends translate(i18next)(LitElement) {
                         hideOverlap: true,
                     }
                 },
-                yAxis:
+                yAxis: [
                     {
                         type: 'value',
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ['10%', '10%'],
-                        scale: true
+                        scale: true,
+                        min: this.chartOptions.options.scales.y.min ? this.chartOptions.options.scales.y.min : undefined,
+                        max: this.chartOptions.options.scales.y.max ? this.chartOptions.options.scales.y.max : undefined
                     },
+                    {
+                        type: 'value',
+                        show: this.rightAxisAttributes.length > 0,
+                        axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
+                        boundaryGap: ['10%', '10%'],
+                        scale: true,
+                        min: this.chartOptions.options.scales.y1.min ? this.chartOptions.options.scales.y1.min : undefined,
+                        max: this.chartOptions.options.scales.y1.max ? this.chartOptions.options.scales.y1.max : undefined
+                    }
+                    ],
                 dataZoom: [
                     {
                         type: 'inside',
@@ -595,7 +610,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
                             },
                             handleLabel: {
-                                show: true
+                                show: false
                             }
                         },
                         handleLabel: {
@@ -605,6 +620,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 ],
                 series: [],
             };
+
             console.log(this._chartOptions);
 
             // Initialize echarts instance
@@ -616,15 +632,15 @@ export class OrChart extends translate(i18next)(LitElement) {
             const resizeObserver = new ResizeObserver(() => this._chart!.resize());
             resizeObserver.observe(this._chartElem);
             // Add event listener for zooming
-            this._chart!.on('datazoom', _.debounce((params: any) => { this._onZoomChange(params); }, 1500));
+            this._chart!.on('datazoom', debounce((params: any) => { this._onZoomChange(params); }, 1500));
 
-        } else {
-            if (changedProperties.has("_data")) {
-                //Update chart to data from set period
-                this._updateChartData();
-                console.log('line 682');
-            }
         }
+
+        if (changedProperties.has("_data")) {
+            //Update chart to data from set period
+            this._updateChartData();
+        }
+
         this.onCompleted().then(() => {
             this.dispatchEvent(new OrChartEvent('rendered'));
         });
@@ -742,7 +758,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                     const axisNote = (this.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
                                     const bgColor = this.colors[colourIndex] || "";
                                     return html`
-                                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseover="${_.debounce(() => this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name), 150)}" @mouseout="${_.debounce(() => this.removeDatasetHighlight(), 150)}">
+                                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseover="${throttle(() => this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name), 150)}" @mouseout="${()=> this.removeDatasetHighlight()}">
                                             <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
                                             <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
                                                 <div style="display: flex; justify-content: space-between;">
@@ -1123,8 +1139,12 @@ export class OrChart extends translate(i18next)(LitElement) {
         this._loading = true;
 
         const dates: [Date, Date] = this.timePresetOptions!.get(this.timePresetKey!)!(new Date());
-        this._startOfPeriod = this.timeframe ? this.timeframe[0].getTime() : dates[0].getTime();
-        this._endOfPeriod = this.timeframe ? this.timeframe[1].getTime() : dates[1].getTime();
+
+        if(!this._zoomChanged || !this._startOfPeriod || !this._endOfPeriod) {
+            // If zoom has changed, we want to keep the previous start and end of period
+            this._startOfPeriod = this.timeframe ? this.timeframe[0].getTime() : dates[0].getTime();
+            this._endOfPeriod = this.timeframe ? this.timeframe[1].getTime() : dates[1].getTime();
+        }
 
         const diffInHours = (this._endOfPeriod - this._startOfPeriod) / 1000 / 60 / 60;
         const intervalArr = this._getInterval(diffInHours);
@@ -1145,10 +1165,8 @@ export class OrChart extends translate(i18next)(LitElement) {
             if(this.dataProvider && !this._zoomChanged) {
                 await this.dataProvider(this._startOfPeriod, this._endOfPeriod, (interval.toString() as TimeUnit), stepSize).then((dataset) => {
                     dataset.forEach((set) => { data.push(set); });
-                    console.log('yo mom wasnt here');
                 });
             } else {
-                console.log('yo mom was here');
                 this._dataAbortController = new AbortController();
                 promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
 
@@ -1163,7 +1181,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     (dataset as any).assetId = asset.id;
                     (dataset as any).attrName = attribute.name;
                     (dataset as any).unit = unit;
-                    (dataset as any).yAxisID = shownOnRightAxis ? 'y1' : 'y';
+                    (dataset as any).yAxisIndex = shownOnRightAxis ? '1' : '0';
                     data.push(dataset);
 
                     dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], predictedFromTimestamp, this._endOfPeriod!, true, asset.name + " " + label + " " + i18next.t("predicted"), options);
@@ -1240,8 +1258,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                 query.fromTimestamp = this._startOfPeriod;
                 query.toTimestamp = this._endOfPeriod;
             } else {
-                query.fromTimestamp = this._queryStartOfPeriod;
-                query.toTimestamp = this._queryEndOfPeriod;
+                query.fromTimestamp = this._zoomStartOfPeriod;
+                query.toTimestamp = this._zoomEndOfPeriod;
             }
 
             console.log('query.fromTimestamp: ' + query.fromTimestamp + asset.id + attribute.name + 'Predicted: ' + predicted);
@@ -1300,8 +1318,8 @@ export class OrChart extends translate(i18next)(LitElement) {
         console.log('onZoomChange triggered');
         const { start: zoomStartPercentage, end: zoomEndPercentage } = params.batch[0];
         //Define the start and end of the period based on the zoomed area
-        this._queryStartOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomStartPercentage / 100);
-        this._queryEndOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomEndPercentage / 100);
+        this._zoomStartOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomStartPercentage / 100);
+        this._zoomEndOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomEndPercentage / 100);
         this._loadData().then(() => {
             this._updateChartData();
         });
@@ -1330,6 +1348,5 @@ export class OrChart extends translate(i18next)(LitElement) {
                 }
             }))
         });
-        console.log(this._data);
     }
 }
