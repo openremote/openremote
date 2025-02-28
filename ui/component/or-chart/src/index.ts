@@ -423,6 +423,9 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _loading: boolean = false;
 
     @property()
+    protected _zoomChanged: boolean = false;
+
+    @property()
     protected _data?: ValueDatapoint<any>[];
 
     @property()
@@ -435,6 +438,8 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _style!: CSSStyleDeclaration;
     protected _startOfPeriod?: number;
     protected _endOfPeriod?: number;
+    protected _queryStartOfPeriod?: number;
+    protected _queryEndOfPeriod?: number;
     protected _timeUnits?: TimeUnit;
     protected _stepSize?: number;
     protected _latestError?: string;
@@ -601,101 +606,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                 series: [],
             };
             console.log(this._chartOptions);
-            //const options = {
-            //    type: "line",
-            //    data: {
-            //        datasets: this._data
-            //    },
-            //    options: {
-            //        responsive: true,
-            //        maintainAspectRatio: false,
-            //        onResize: throttle(() => { this.dispatchEvent(new OrChartEvent("resize")); this.applyChartResponsiveness(); }, 200),
-            //        showLines: true,
-            //        plugins: {
-            //            legend: {
-            //                display: false
-            //            },
-            //            tooltip: {
-            //                mode: "x",
-            //                intersect: false,
-            //                xPadding: 10,
-            //                yPadding: 10,
-            //                titleMarginBottom: 10,
-            //                callbacks: {
-            //                    label: (tooltipItem: any) => tooltipItem.dataset.label + ': ' + tooltipItem.formattedValue + tooltipItem.dataset.unit,
-            //                }
-            //            },
-            //            annotation: {
-            //                annotations: [
-            //                    {
-            //                        type: "line",
-            //                        xMin: now,
-            //                        xMax: now,
-            //                        borderColor: "#275582",
-            //                        borderWidth: 2
-            //                    }
-            //                ]
-            //            },
-            //        },
-            //        hover: {
-            //            mode: 'x',
-            //            intersect: false
-            //        },
-            //        scales: {
-            //            y: {
-            //                ticks: {
-            //                    beginAtZero: true
-            //                },
-            //                grid: {
-            //                    color: "#cccccc"
-            //                }
-            //            },
-            //            y1: {
-            //                display: this.rightAxisAttributes.length > 0,
-            //                position: 'right',
-            //                ticks: {
-            //                    beginAtZero: true
-            //                },
-            //                grid: {
-            //                    drawOnChartArea: false
-            //                }
-            //            },
-            //            x: {
-            //                type: "time",
-            //                min: this._startOfPeriod,
-            //                max: this._endOfPeriod,
-            //                time: {
-            //                    tooltipFormat: 'MMM D, YYYY, HH:mm:ss',
-            //                    displayFormats: {
-            //                        millisecond: 'HH:mm:ss.SSS',
-            //                        second: 'HH:mm:ss',
-            //                        minute: "HH:mm",
-            //                        hour: (this._endOfPeriod && this._startOfPeriod && this._endOfPeriod - this._startOfPeriod > 86400000) ? "MMM DD, HH:mm" : "HH:mm",
-            //                        day: "MMM DD",
-            //                        week: "w"
-            //                    },
-            //                    unit: this._timeUnits,
-            //                    stepSize: this._stepSize
-            //                },
-            //                ticks: {
-            //                    autoSkip: true,
-            //                    color: "#000",
-            //                    font: {
-            //                        family: "'Open Sans', Helvetica, Arial, Lucida, sans-serif",
-            //                        size: 9,
-            //                        style: "normal"
-            //                    }
-            //                },
-            //                gridLines: {
-            //                    color: "#cccccc"
-            //                }
-            //            }
-            //        }
-            //    }
-            //} as ChartConfiguration<"line", ScatterDataPoint[]>;
-
-            //WAT DOET DIT ?
-            //const mergedOptions = Util.mergeObjects(options, this.chartOptions, false);
 
             // Initialize echarts instance
             this._chart = init(this._chartElem);
@@ -706,7 +616,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             const resizeObserver = new ResizeObserver(() => this._chart!.resize());
             resizeObserver.observe(this._chartElem);
             // Add event listener for zooming
-            //this._chart!.on('datazoom', _.debounce((params: any) => { this._onZoomChange(params); }, 1500));
+            this._chart!.on('datazoom', _.debounce((params: any) => { this._onZoomChange(params); }, 1500));
 
         } else {
             if (changedProperties.has("_data")) {
@@ -832,7 +742,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                     const axisNote = (this.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
                                     const bgColor = this.colors[colourIndex] || "";
                                     return html`
-                                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseover="${()=> this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseout="${()=> this.removeDatasetHighlight()}">
+                                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseover="${_.debounce(() => this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name), 150)}" @mouseout="${_.debounce(() => this.removeDatasetHighlight(), 150)}">
                                             <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
                                             <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
                                                 <div style="display: flex; justify-content: space-between;">
@@ -874,7 +784,6 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     removeDatasetHighlight() {
         if(this._chart){
-            console.log('removeDatasetHighlight triggered');
             let options = this._chart.getOption();
             if (options.series && Array.isArray(options.series)) {
                 options.series.forEach(function (series) {
@@ -887,18 +796,14 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     addDatasetHighlight(assetId?:string, attrName?:string) {
         if (this._chart) {
-            console.log('addDatasetHighlight triggered');
             let options = this._chart.getOption();
-            console.log(options);
             if (options.series && Array.isArray(options.series)) {
                 options.series.forEach(function (series) {
                     if (series.assetId != assetId || series.attrName != attrName) {
-                        console.log('setting opacity to 0.2 was here');
                         series.lineStyle.opacity = 0.2;
                     }
                 });
             }
-            console.log(options);
             this._chart.setOption(options)
         }
     };
@@ -1202,7 +1107,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     protected async _loadData() {
         console.log('loadData triggered');
-        if (this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
+        if ((this._data && !this._zoomChanged) || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
             return;
         }
 
@@ -1237,11 +1142,13 @@ export class OrChart extends translate(i18next)(LitElement) {
         let promises;
 
         try {
-            if(this.dataProvider) {
+            if(this.dataProvider && !this._zoomChanged) {
                 await this.dataProvider(this._startOfPeriod, this._endOfPeriod, (interval.toString() as TimeUnit), stepSize).then((dataset) => {
                     dataset.forEach((set) => { data.push(set); });
+                    console.log('yo mom wasnt here');
                 });
             } else {
+                console.log('yo mom was here');
                 this._dataAbortController = new AbortController();
                 promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
 
@@ -1272,6 +1179,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._data = data;
             console.log(data); // DEBUGGING
             this._loading = false;
+            this._zoomChanged = false;
 
         } catch (ex) {
             console.error(ex);
@@ -1279,6 +1187,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 return; // If request has been canceled (using AbortController); return, and prevent _loading is set to false.
             }
             this._loading = false;
+            this._zoomChanged = false;
 
             if(isAxiosError(ex)) {
                 if(ex.message.includes("timeout")) {
@@ -1321,11 +1230,23 @@ export class OrChart extends translate(i18next)(LitElement) {
             //areaStyle: fill settings
         }
 
+        console.log('load attribute data triggered');
+
         if (asset.id && attribute.name && this.datapointQuery) {
             let response: GenericAxiosResponse<ValueDatapoint<any>[]>;
             const query = JSON.parse(JSON.stringify(this.datapointQuery)); // recreating object, since the changes shouldn't apply to parent components; only or-chart itself.
-            query.fromTimestamp = this._startOfPeriod;
-            query.toTimestamp = this._endOfPeriod;
+
+            if (!this._zoomChanged) {
+                query.fromTimestamp = this._startOfPeriod;
+                query.toTimestamp = this._endOfPeriod;
+            } else {
+                query.fromTimestamp = this._queryStartOfPeriod;
+                query.toTimestamp = this._queryEndOfPeriod;
+            }
+
+            console.log('query.fromTimestamp: ' + query.fromTimestamp + asset.id + attribute.name + 'Predicted: ' + predicted);
+            console.log('query.toTimestamp: ' + query.toTimestamp + asset.id + attribute.name + 'Predicted: ' + predicted);
+
 
             if(query.type == 'lttb') {
 
@@ -1365,7 +1286,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     .map(point => ({ x: point.x, y: point.y } as ValueDatapoint<any>))
 
                 dataset.data = cheese.map(point => [point.x, point.y]);
-                dataset.showSymbol = cheese.length <=10; //Only show symbols when there are 10 or fewer data points to be shown
+                dataset.showSymbol = cheese.length <=30; //Only show symbols when there are 30 or fewer data points to be shown
             }
         }
 
@@ -1374,18 +1295,18 @@ export class OrChart extends translate(i18next)(LitElement) {
         return dataset;
     }
 
-    //protected _onZoomChange(params: any) {
-    //    this._zoomChanged = true;
-    //    const { start: zoomStartPercentage, end: zoomEndPercentage } = params.batch[0];
-    //    //Define the start and end of the period based on the zoomed area
-    //    this._queryStartOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomStartPercentage / 100);
-    //    this._queryEndOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomEndPercentage / 100);
-//
-    //    this._loadData().then(() => {
-    //        this._updateChartData();
-    //    });
-//
-    //}
+    protected _onZoomChange(params: any) {
+        this._zoomChanged = true;
+        console.log('onZoomChange triggered');
+        const { start: zoomStartPercentage, end: zoomEndPercentage } = params.batch[0];
+        //Define the start and end of the period based on the zoomed area
+        this._queryStartOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomStartPercentage / 100);
+        this._queryEndOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomEndPercentage / 100);
+        this._loadData().then(() => {
+            this._updateChartData();
+        });
+
+    }
 
     protected _updateChartData(){
         console.log('updateChartData triggered');
