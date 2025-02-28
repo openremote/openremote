@@ -265,6 +265,11 @@
   "info": "Info",
   "notSupported": "Not supported",
   "ruleName": "Rule name",
+  "ruleGroupName": "Group name",
+  "ruleGroupNameDefault": "New Group",
+  "ruleGroupDragError": "You cannot move a group.",
+  "ruleDragSuccess": "Moved successfully!",
+  "ruleDragFailed": "Failed to move. Please try again.",
   "value": "Value",
   "values": "Values",
   "and": "and",
@@ -345,6 +350,8 @@
     "GROOVY": "Groovy",
     "JAVASCRIPT": "JavaScript"
   },
+  "group": "Group",
+  "newGroup": "New group",
   "gatewayConnection": "Manager interconnect",
   "gateway": {
     "": "Manager interconnect",

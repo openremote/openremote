@@ -264,6 +264,11 @@
   "info": "Info",
   "notSupported": "Niet ondersteund",
   "ruleName": "Regel naam",
+  "ruleGroupName": "Groep naam",
+  "ruleGroupNameDefault": "Nieuwe Groep",
+  "ruleGroupDragError": "Je kunt geen groep verplaatsen.",
+  "ruleDragSuccess": "Regel verplaatst!",
+  "ruleDragFailed": "Kon regel niet verplaatsen! Probeer opnieuw.",
   "value": "Waarde",
   "values": "Waardes",
   "and": "en",
@@ -344,6 +349,8 @@
     "GROOVY": "Groovy",
     "JAVASCRIPT": "JavaScript"
   },
+  "group": "Groep",
+  "newGroup": "Nieuwe groep",
   "gatewayConnection": "Manager interconnect",
   "gateway": {
     "": "Manager interconnect",
