@@ -7,11 +7,30 @@ Web Component for displaying an asset tree. This component requires an OpenRemot
 
 ## Install
 ```bash
-npm i @openremote/or-asset-list
-yarn add @openremote/or-asset-list
+npm i @openremote/or-asset-tree
+yarn add @openremote/or-asset-tree
 ```
 
 ## Usage
+```javascript
+// Wait for OpenRemote JS library initialization
+await openremote.init({
+    managerUrl: "http://localhost:8080",
+    keycloakUrl: "http://localhost:8080/auth"
+});
+
+// Prompt login screen if necessary
+if(!manager.authenticated) {
+    manager.login();
+    return;
+}
+```
+
+```html
+<!-- Insert your HTML -->
+<or-asset-tree style="height: 400px;"></or-asset-tree>
+```
+
 For a full list of properties, methods and options refer to the TypeDoc generated [documentation]().
 
 
@@ -24,7 +43,7 @@ Internet Explorer 11 is also supported.
 [GNU AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
 [npm-image]: https://img.shields.io/npm/v/live-xxx.svg
-[npm-url]: https://npmjs.org/package/@openremote/or-asset-list
+[npm-url]: https://npmjs.org/package/@openremote/or-asset-tree
 [travis-image]: https://img.shields.io/travis/live-js/live-xxx/master.svg
 [travis-url]: https://travis-ci.org/live-js/live-xxx
 [coveralls-image]: https://img.shields.io/coveralls/live-js/live-xxx/master.svg
