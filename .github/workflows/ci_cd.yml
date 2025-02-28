@@ -606,6 +606,36 @@ jobs:
         # Ignore the failure of a step and avoid terminating the job.
         continue-on-error: true
 
+      - name: Update version in package.json files
+        id: update-package-json-files
+        run: |
+          VERSION=$(awk '{print tolower($0)}' <<< $VERSION)
+
+          QUALIFIER=$(sed -E 's/.+-([a-z]+).*/\1/g' <<< $VERSION)
+          if [ "$QUALIFIER" == "$VERSION" ]; then
+            QUALIFIER=""
+          fi
+
+          if [ "$QUALIFIER" == "" ]; then
+            TAG="latest"
+          else
+            if [ "$QUALIFIER" == "snapshot" ]; then
+              # Add a timestamp to snapshot versions
+              VERSION="$VERSION.$(date +'%Y%m%d%H%M%S')"
+            else
+              # Separate qualifiers from numbers of alpha, beta, rc versions
+              VERSION=$(sed "s/$QUALIFIER/$QUALIFIER./g" <<< $VERSION)
+            fi
+            TAG="$QUALIFIER"
+          fi
+
+          find ui -maxdepth 3 -name package.json | xargs -I{} sed -i -E "s#\"version\": \".+\",#\"version\": \"$VERSION\",#" {}
+
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        env:
+          VERSION: ${{ steps.get-version-details.outputs.version_with_qualifier }}
+
       - name: Run backend tests
         id: run-backend-tests
         if: ${{ steps.test-backend-command.outputs.value != '' }}
@@ -733,37 +763,14 @@ jobs:
       - name: Run npm publish command
         if: ${{ steps.ci-cd-output.outputs.npmTag != '' }}
         run: |
-          QUALIFIER=$(sed -E 's/.+-([A-Za-z]+).*/\1/g' <<< $VERSION)
-          if [ "$QUALIFIER" == "$VERSION" ]; then
-            QUALIFIER=""
-          fi
-
-          if [ "$QUALIFIER" == "" ]; then
-            VERSION="$VERSION"
-            TAG="latest"
-          else
-            if [ "$QUALIFIER" == "snapshot" ]; then
-              # Add a timestamp to snapshot versions
-              VERSION="$VERSION.$(date +'%Y%m%d%H%M%S')"
-            else
-              # Separate qualifiers from numbers of alpha, beta, rc versions
-              VERSION=$(sed "s/$QUALIFIER/$QUALIFIER./g" <<< $VERSION)
-            fi
-            VERSION=$(awk '{print tolower($0)}' <<< $VERSION)
-            TAG=$(awk '{print tolower($0)}' <<< $QUALIFIER)
-          fi
-
-          find ui -maxdepth 3 -name package.json | xargs -I{} sed -i -E "s#\"version\": \".+\",#\"version\": \"$VERSION\",#" {}
-          find ui -maxdepth 3 -name package.json | xargs -I{} sed -i -E 's#"(@openremote/.+)": ".+"#"\1": "workspace:*"#g' {}
-
           echo 'npmRegistries:' >> .yarnrc.yml
           echo '  "https://registry.yarnpkg.com":' >> .yarnrc.yml
           echo "    npmAuthToken: $NPM_AUTH_TOKEN" >> .yarnrc.yml
 
           yarn workspaces foreach --all --no-private --topological npm publish --tag $TAG
         env:
-          VERSION: ${{ steps.ci-cd-output.outputs.npmTag }}
           NPM_AUTH_TOKEN: ${{ steps.inputs-and-secrets.outputs._TEMP_NPM_AUTH_TOKEN }}
+          TAG: ${{ steps.update-package-json-files.outputs.tag }}
 
       - name: Run deployment docker command
         if: steps.deployment-docker-command.outputs.value != ''
