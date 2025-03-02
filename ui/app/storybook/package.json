@@ -1,0 +1,52 @@
+{
+  "name": "@openremote/storybook",
+  "version": "1.0.0",
+  "description": "OpenRemote UI Storybook",
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "exports": {
+    "./*": "./lib/*.js"
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "lib/*"
+      ]
+    }
+  },
+  "scripts": {
+    "clean": "npx tsc -b --clean && npx shx rm -rf dist",
+    "modelBuild": "npx orutil build",
+    "modelWatch": "npx orutil watch",
+    "build": "npx storybook build -o dist",
+    "info": "npx storybook info",
+    "doctor": "npx storybook doctor",
+    "serve": "npx storybook dev -p 9000 --no-open --no-version-updates --disable-telemetry",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@openremote/manager": "workspace:*",
+    "@openremote/or-app": "^1.1.0",
+    "react-code-blocks": "^0.1.6"
+  },
+  "devDependencies": {
+    "@babel/preset-react": "^7.24.7",
+    "@openremote/docs": "workspace:*",
+    "@openremote/util": "workspace:*",
+    "@storybook/addon-actions": "^8.4.7",
+    "@storybook/addon-essentials": "^8.4.7",
+    "@storybook/addon-interactions": "^8.4.7",
+    "@storybook/addon-links": "^8.4.7",
+    "@storybook/addon-webpack5-compiler-babel": "^3.0.5",
+    "@storybook/blocks": "^8.4.7",
+    "@storybook/manager-api": "^8.4.7",
+    "@storybook/test": "^8.4.7",
+    "@storybook/theming": "^8.4.7",
+    "@storybook/web-components": "^8.4.7",
+    "@storybook/web-components-webpack5": "^8.4.7",
+    "lit": "^2.0.2",
+    "react-markdown": "^9.0.3",
+    "storybook": "^8.4.7",
+    "storybook-addon-pseudo-states": "^4.0.2"
+  }
+}
