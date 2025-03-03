@@ -23,8 +23,16 @@ const styles = css`
     * {
         box-sizing: border-box;
     }
+    
+    #tree-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
 
     #tree-list {
+        flex: 1;
+        overflow: hidden auto;
         list-style: none;
         padding: 0;
         margin: 0;
