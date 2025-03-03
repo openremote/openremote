@@ -1,4 +1,4 @@
-import {OrTreeMenu, OrTreeNode, TreeMenuSelection, TreeNode} from "@openremote/or-tree-menu";
+import {OrTreeMenu, OrTreeNode, TreeMenuSelection, TreeMenuSorting, TreeNode} from "@openremote/or-tree-menu";
 import {customElement, property, state} from "lit/decorators.js";
 import {RealmRuleset, RulesetLang, RulesetStatus, RulesetUnion} from "@openremote/model";
 import {css, html, PropertyValues, TemplateResult} from "lit";
@@ -48,7 +48,7 @@ export interface RuleTreeNode extends TreeNode {
 }
 
 export enum RuleTreeSorting {
-    NAME = "name", CREATED_ON = "created_on"
+    NAME = "name", CREATED_ON = "createdOn", LANGUAGE = "language", STATUS = "status"
 }
 
 @customElement("or-rule-tree")
@@ -83,7 +83,7 @@ export class OrRuleTree extends OrTreeMenu {
     nodes: RuleTreeNode[] = [];
     draggable = true;
     selection = TreeMenuSelection.MULTI;
-    sortOptions: any[] = [RuleTreeSorting.NAME, RuleTreeSorting.CREATED_ON];
+    sortOptions: any[] = [RuleTreeSorting.NAME, RuleTreeSorting.CREATED_ON, RuleTreeSorting.STATUS, RuleTreeSorting.LANGUAGE];
     sortBy: any = RuleTreeSorting.NAME;
     groupFirst = true;
     menuTitle = "rules";
@@ -99,6 +99,8 @@ export class OrRuleTree extends OrTreeMenu {
     }
 
     protected willUpdate(changedProps: PropertyValues) {
+        console.log(changedProps);
+        console.log("Sorting by is now", this.sortBy);
         if (changedProps.has("rules")) {
             if (!this.rules) {
                 this._loadRulesets(this.global).then(rulesets => this.rules = rulesets);
@@ -438,6 +440,24 @@ export class OrRuleTree extends OrTreeMenu {
         this._deselectAllNodes();
         const groupName = i18next.t('ruleGroupNameDefault') || "Group name"
         this.dispatchEvent(new OrRulesRequestGroupEvent(groupName));
+    }
+
+    protected _getSortFunction(sortBy?: TreeMenuSorting): (a: RuleTreeNode, b: RuleTreeNode) => number {
+        const sorting = sortBy as RuleTreeSorting | undefined;
+        switch (sorting) {
+            case RuleTreeSorting.LANGUAGE: {
+                return Util.sortByString(node => node.ruleset!.lang!);
+            }
+            case RuleTreeSorting.CREATED_ON: {
+                return Util.sortByNumber(node => node.ruleset!.createdOn!);
+            }
+            case RuleTreeSorting.STATUS: {
+                return Util.sortByString(node => node.ruleset!.status!);
+            }
+            default: {
+                return super._getSortFunction(sortBy);
+            }
+        }
     }
 
     /**
