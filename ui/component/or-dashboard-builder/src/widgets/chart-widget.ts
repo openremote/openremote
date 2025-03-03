@@ -19,6 +19,8 @@ export interface ChartWidgetConfig extends WidgetConfig {
     showTimestampControls: boolean;
     defaultTimePresetKey: string;
     showLegend: boolean;
+    showZoomBar: boolean;
+    showToolBox: boolean;
 }
 
 function getDefaultTimePresetOptions(): Map<string, TimePresetCallback> {
@@ -75,7 +77,9 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
         },
         showTimestampControls: false,
         defaultTimePresetKey: preset,
-        showLegend: true
+        showLegend: true,
+        showZoomBar: true,
+        showToolBox: true
     };
 }
 
@@ -194,6 +198,8 @@ export class ChartWidget extends OrAssetWidget {
                 return html`
                     <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .rightAxisAttributes="${this.widgetConfig.rightAxisAttributes}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
+                              .showZoomBar="${(this.widgetConfig?.showZoomBar != null) ? this.widgetConfig?.showZoomBar : true}"
+                              .showToolBox="${(this.widgetConfig?.showToolBox != null) ? this.widgetConfig?.showToolBox : true}"
                               .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
                               .timePresetOptions="${getDefaultTimePresetOptions()}" .timePresetKey="${this.widgetConfig?.defaultTimePresetKey}"
                               .datapointQuery="${this.datapointQuery}" .chartOptions="${this.widgetConfig?.chartOptions}"

@@ -100,6 +100,21 @@ export class ChartSettings extends WidgetSettings {
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowLegendToggle(ev)}"
                                 ></or-mwc-input>
                             </div>
+                        
+                        <!-- Datazoombar -->
+                            <div class="switch-container">
+                                <span><or-translate value="dashboard.showZoomBar"></or-translate></span>
+                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${!this.widgetConfig.showZoomBar}"
+                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowZoomBarToggle(ev)}"
+                                ></or-mwc-input>
+                            </div>
+                        <!-- Toolbox -->
+                            <div class="switch-container">
+                                <span><or-translate value="dashboard.showToolBox"></or-translate></span>
+                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${!this.widgetConfig.showToolBox}"
+                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowToolBoxToggle(ev)}"
+                                ></or-mwc-input>
+                            </div>
                         </div>
                     </div>
                 </settings-panel>
@@ -271,6 +286,16 @@ export class ChartSettings extends WidgetSettings {
 
     protected onShowLegendToggle(ev: OrInputChangedEvent) {
         this.widgetConfig.showLegend = ev.detail.value;
+        this.notifyConfigUpdate();
+    }
+
+    protected onShowZoomBarToggle(ev: OrInputChangedEvent) {
+        this.widgetConfig.showZoomBar = ev.detail.value;
+        this.notifyConfigUpdate();
+    }
+
+    protected onShowToolBoxToggle(ev: OrInputChangedEvent) {
+        this.widgetConfig.showToolBox = ev.detail.value;
         this.notifyConfigUpdate();
     }
 

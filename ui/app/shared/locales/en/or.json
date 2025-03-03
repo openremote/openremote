@@ -738,6 +738,8 @@
     "showLegend": "Show legend",
     "showGeoJson": "Show GeoJSON overlay",
     "showValueAs": "Show value as",
+    "showZoomBar": "Show zoom bar",
+    "showToolBox": "Show toolbox",
     "customLabel": "Custom label",
     "customTimeSpan": "Custom",
     "userCanEdit": "Allow user input",

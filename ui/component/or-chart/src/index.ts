@@ -419,6 +419,12 @@ export class OrChart extends translate(i18next)(LitElement) {
     public denseLegend: boolean = false;
 
     @property()
+    public showZoomBar: boolean = true;
+
+    @property()
+    public showToolBox: boolean = true;
+
+    @property()
     protected _loading: boolean = false;
 
     @property()
@@ -498,8 +504,6 @@ export class OrChart extends translate(i18next)(LitElement) {
             return;
         }
 
-        const now = moment().toDate().getTime();
-
         if (!this._chart) {
 
             let bgColor = this._style.getPropertyValue("--internal-or-chart-graph-fill-color").trim();
@@ -513,6 +517,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
 
 
+
             this._chartOptions = {
                 animation: false,
                 grid: {
@@ -520,9 +525,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                     backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                     borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
                     left: '5%', // 5% padding
-                    top: '5.5%',
+                    //top: '5.5%',
                     right: '5%',
-                    bottom: '15%'
+                    //bottom: '15%'
                 },
                 backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                 tooltip: {
@@ -536,17 +541,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     //    return ''
                     //}
                 },
-                toolbox: {
-                    right: '4.5%',
-                    top: '0%',
-                    feature: {
-                        dataView: {readOnly: true},
-                        magicType: {
-                            type: ['line', 'bar']
-                        },
-                        saveAsImage: {}
-                    }
-                },
+                toolbox: {},
                 xAxis: {
                     type: 'time',
                     axisLine: {
@@ -560,6 +555,17 @@ export class OrChart extends translate(i18next)(LitElement) {
                         showMinLabel: true,
                         showMaxLabel: true,
                         hideOverlap: true,
+                        formatter: {
+                             year: '{yyyy}-{MMM}',
+                             month: '{yy}-{MMM}',
+                             day: '{d}-{MMM}',
+                             hour: '{HH}:{mm}',
+                             minute: '{HH}:{mm}',
+                             second: '{HH}:{mm}:{ss}',
+                             millisecond: '{d}-{MMM} {hh}:{mm}',
+                            // @ts-ignore
+                             none: '{MMM}-{dd} {hh}:{mm}'
+                        }
                     }
                 },
                 yAxis: [
@@ -568,7 +574,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ['10%', '10%'],
                         scale: true,
-                        min: this.chartOptions.options.scales.y.min ? this.chartOptions.options.scales.y.min : undefined,
+                        min: this.chartOptions.options.scales.y.min ? this.chartOptions.options.scales.y.min : undefined, //NOG FIXEN MET MERGEN VAN CHARTOPTIONS
                         max: this.chartOptions.options.scales.y.max ? this.chartOptions.options.scales.y.max : undefined
                     },
                     {
@@ -586,40 +592,59 @@ export class OrChart extends translate(i18next)(LitElement) {
                         type: 'inside',
                         start: 0,
                         end: 100
-                    },
-                    {
-                        start: 0,
-                        end: 100,
-                        backgroundColor: bgColor,
-                        fillerColor: bgColor,
-                        dataBackground: {
-                            areaStyle: {
-                                color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
-                            }
-                        },
-                        selectedDataBackground: {
-                            areaStyle: {
-                                color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color"),
-                            }
-                        },
-                        moveHandleStyle: {
-                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
-                        },
-                        emphasis: {
-                            moveHandleStyle: {
-                                color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
-                            },
-                            handleLabel: {
-                                show: false
-                            }
-                        },
-                        handleLabel: {
-                            show: false
-                        }
                     }
                 ],
                 series: [],
             };
+
+            // Add dataZoom bar if enabled
+            if(this.showZoomBar) {
+                (this._chartOptions!.dataZoom! as any[]).push({
+                    start: 0,
+                    end: 100,
+                    backgroundColor: bgColor,
+                    fillerColor: bgColor,
+                    dataBackground: {
+                        areaStyle: {
+                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
+                        }
+                    },
+                    selectedDataBackground: {
+                        areaStyle: {
+                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color"),
+                        }
+                    },
+                    moveHandleStyle: {
+                        color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
+                    },
+                    emphasis: {
+                        moveHandleStyle: {
+                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
+                        },
+                        handleLabel: {
+                            show: false
+                        }
+                    },
+                    handleLabel: {
+                        show: false
+                    }
+                })
+            }
+
+            // Add toolbox if enabled
+            if(this.showToolBox) {
+                this._chartOptions!.toolbox! = {
+                    right: '4.5%',
+                    top: '0%',
+                    feature: {
+                        dataView: {readOnly: true},
+                        magicType: {
+                            type: ['line', 'bar']
+                        },
+                        saveAsImage: {}
+                    }
+                }
+            }
 
             console.log(this._chartOptions);
 
@@ -633,6 +658,8 @@ export class OrChart extends translate(i18next)(LitElement) {
             resizeObserver.observe(this._chartElem);
             // Add event listener for zooming
             this._chart!.on('datazoom', debounce((params: any) => { this._onZoomChange(params); }, 1500));
+            // Add event listener for chart resize
+            this._chart!.on('resize', throttle(() => { this.applyChartResponsiveness(); }, 200));
 
         }
 
@@ -1296,15 +1323,15 @@ export class OrChart extends translate(i18next)(LitElement) {
                 response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(asset.id, attribute.name, query, options)
             }
 
-            let cheese: ValueDatapoint<any>[] = [];
+            let data: ValueDatapoint<any>[] = [];
 
             if (response.status === 200) {
-                cheese = response.data
+                data = response.data
                     .filter(value => value.y !== null && value.y !== undefined)
                     .map(point => ({ x: point.x, y: point.y } as ValueDatapoint<any>))
 
-                dataset.data = cheese.map(point => [point.x, point.y]);
-                dataset.showSymbol = cheese.length <=30; //Only show symbols when there are 30 or fewer data points to be shown
+                dataset.data = data.map(point => [point.x, point.y]);
+                dataset.showSymbol = data.length <=30; //Only show symbols when there are 30 or fewer data points to be shown
             }
         }
 
