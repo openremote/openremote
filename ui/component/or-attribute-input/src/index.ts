@@ -358,6 +358,9 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         `];
     }
 
+    @property({ type: Boolean })
+    public saveInProgress: boolean = false;
+
     @property({type: Object, reflect: false})
     public attribute?: Attribute<any>;
 
@@ -462,7 +465,14 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             updateDescriptors = true;
         }
 
-        if (_changedProperties.has("attribute")) {
+        // The previous saveInProgress value is used to prevent external updates becoming user changes.
+        // It intentionally relies on the old value to affectively cancel out the external change caused
+        // by re-rendering the or-attribute-input with new state. The or-edit-asset-panel expects
+        // external changes to be tracked through the changedAttributes array, however this may be
+        // cleared whenever an external change occurs. Without this check a save in progress triggers a
+        // re-render on the or-attribute-input with the emptied changedAttributes array and also new
+        // attribute state resulting in external changes becoming a user change.
+        if (_changedProperties.has("attribute") && !_changedProperties.has("saveInProgress")) {
             const oldAttr = {..._changedProperties.get("attribute") as Attribute<any>};
             const attr = this.attribute;
 

@@ -179,6 +179,9 @@ export class OrEditAssetPanel extends LitElement {
     @property({attribute: false})
     protected asset!: Asset;
 
+    @property({type: Boolean})
+    public saveInProgress?: boolean;
+
     protected attributeTemplatesAndValidators: TemplateAndValidator[] = [];
     protected changedAttributes: string[] = [];
 
@@ -353,6 +356,7 @@ export class OrEditAssetPanel extends LitElement {
                 <td class="padded-cell mdc-data-table__cell">${Util.getValueDescriptorLabel(attribute.type!)}</td>
                 <td class="padded-cell overflow-visible mdc-data-table__cell">
                     <or-attribute-input ${ref(attributeInputRef)} 
+                                        .saveInProgress="${this.saveInProgress}"
                                         .comfortable="${true}" .assetType="${assetType}" .label=${null} 
                                         .readonly="${formattedAsMomentary}" .attribute="${attribute}" .assetId="${this.asset.id!}" 
                                         disableWrite disableSubscribe disableButton compact 

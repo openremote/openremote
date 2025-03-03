@@ -1165,6 +1165,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     @property({type: Boolean})
     public readonly?: boolean;
 
+    @property({type: Boolean})
+    public saveInProgress?: boolean;
+
     @state()
     protected _assetInfo?: AssetInfo;
 
@@ -1341,7 +1344,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         if (editMode) {
             content = html`
                 <div id="edit-container">
-                    <or-edit-asset-panel id="editor" .asset="${asset}"></or-edit-asset-panel>
+                    <or-edit-asset-panel id="editor" .asset="${asset}" .saveInProgress="${this.saveInProgress}"></or-edit-asset-panel>
                 </div>
             `;
 
@@ -1467,6 +1470,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         const asset = this._assetInfo.asset;
         this.saveBtnElem.disabled = true;
         this._saveInProgress = true;
+        this.saveInProgress = true;
         this.wrapperElem.classList.add("saving");
 
         const saveResult = await saveAsset(asset);
@@ -1485,6 +1489,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             }
         }
         this._saveInProgress = false;
+        this.saveInProgress = false;
         this.dispatchEvent(new OrAssetViewerSaveEvent(saveResult));
     }
 
