@@ -28,7 +28,13 @@ const getStyles = () => css`
         display: flex;
         align-items: center;
         aspect-ratio: 1/1.25;
-        padding-left: 2px;
+        padding-left: 4px;
+        font-size: 18px;
+        color: #cccccc;
+    }
+    
+    #chevron:hover {
+        color: unset;
     }
 
     :host(:not([readonly])) > #chevron {
