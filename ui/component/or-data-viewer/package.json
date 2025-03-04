@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-data-viewer",
-  "version": "1.2.0-snapshot",
+  "version": "1.3.3",
   "description": "OpenRemote data Viewer",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
