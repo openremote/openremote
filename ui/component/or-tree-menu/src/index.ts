@@ -510,11 +510,10 @@ export class OrTreeMenu extends LitElement {
             // If selection is multi, also add all selected ones
             if(this.selection === TreeMenuSelection.MULTI) {
                 let selected = this._findSelectedTreeNodes();
-                const anyGroupSelected = !!selected.find(n => n.children);
-                if(anyGroupSelected) {
-                    showSnackbar(undefined, "ruleGroupDragError")
-                    return; // cannot select any group
-                }
+
+                // Filter out groups
+                selected = selected.filter(n => !n.children);
+
                 if(selected.length > 0) {
                     this._deselectAllNodes();
                     nodesToMove.push(...selected.filter(node => !nodesToMove.find(n => JSON.stringify(n) === JSON.stringify(node))));
