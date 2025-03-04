@@ -24,7 +24,7 @@ dependencies {
     testRuntimeOnly "net.bytebuddy:byte-buddy:$byteBuddyVersion" // allows mocking of classes (in addition to interfaces)
     testRuntimeOnly "org.objenesis:objenesis:$objenesisVersion" // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
 
-    implementation("com.github.calimero:calimero-server:$calimeroVersion") {
+    testImplementation("com.github.calimero:calimero-server:$calimeroVersion") {
         // Has a dependency on the SLF4J simple provider
         exclude group: "org.slf4j"
     }
