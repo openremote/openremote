@@ -94,6 +94,9 @@ export class OrRuleTree extends OrTreeMenu {
     @state()
     protected _selectedTypes: Set<('group' | 'ruleset')> = new Set();
 
+    // Cache of empty groups (when no rule has this groupId), so they stay during refreshes.
+    protected _cachedEmptyGroupNodes: RuleTreeNode[] = [];
+
     static get styles(): any[] {
         return [...super.styles, styling];
     }
@@ -103,7 +106,7 @@ export class OrRuleTree extends OrTreeMenu {
             if (!this.rules) {
                 this._loadRulesets(this.global).then(rulesets => this.rules = rulesets);
             } else {
-                this.nodes = this._getRuleNodes(this.rules);
+                this.nodes = [...this._getRuleNodes(this.rules), ...this._cachedEmptyGroupNodes];
             }
         }
         return super.willUpdate(changedProps);
@@ -288,12 +291,12 @@ export class OrRuleTree extends OrTreeMenu {
         }
     }
 
-    protected _dispatchSelectEvent(selectedNodes?: RuleTreeNode[]): boolean {
+    protected _dispatchSelectEvent(nodes?: RuleTreeNode[]): boolean {
 
         const lastSelected = this._lastSelectedNode ? this._getTreeNodeFromTree(this._lastSelectedNode) as RuleTreeNode : undefined;
 
         // Only select if ONE is selected
-        const newSelected = (!selectedNodes || selectedNodes.length > 1) ? undefined : selectedNodes[0];
+        const newSelected = (!nodes || nodes.length > 1) ? undefined : nodes[0];
 
         const isGroupNode = (node?: RuleTreeNode) => !!node?.children;
         const oldNodes = lastSelected ? isGroupNode(lastSelected) ? [{type: "group", groupId: lastSelected.id} as RulesetGroupNode] : [{type: "rule", ruleset: lastSelected.ruleset!, selected: false} as RulesetNode] : [];
@@ -308,11 +311,11 @@ export class OrRuleTree extends OrTreeMenu {
 
         // and update the selected types in cache
         const selectedTypes = new Set<'group' | 'ruleset'>();
-        if(selectedNodes?.find(n => isGroupNode(n))) selectedTypes.add('group');
-        if(selectedNodes?.find(n => !isGroupNode(n))) selectedTypes.add('ruleset');
+        if(nodes?.find(n => isGroupNode(n))) selectedTypes.add('group');
+        if(nodes?.find(n => !isGroupNode(n))) selectedTypes.add('ruleset');
         this._selectedTypes = selectedTypes;
 
-        return super._dispatchSelectEvent(selectedNodes);
+        return super._dispatchSelectEvent(nodes);
     }
 
     /**
@@ -323,7 +326,7 @@ export class OrRuleTree extends OrTreeMenu {
      * @protected
      */
     protected _getRuleNodes(rules: RulesetUnion[]): RuleTreeNode[] {
-        const groupList = new Set(rules.map(r => r.meta?.groupId).filter(x => x));
+        const groupList = new Set(rules.map(r => r.meta?.groupId).filter(x => x)) as Set<string>;
         const groupedNodes = Array.from(groupList).map(group => ({
             id: group,
             label: group,
@@ -364,6 +367,7 @@ export class OrRuleTree extends OrTreeMenu {
      * Refreshes the tree content, and re-fetches the list of rules.
      */
     public async refresh() {
+        this._cachedEmptyGroupNodes = this.nodes.filter(n => !!n.children && n.children.length === 0);
         await this.getUpdateComplete();
         const promise = this._loadRulesets(this.global);
         promise.then(rulesets => {
