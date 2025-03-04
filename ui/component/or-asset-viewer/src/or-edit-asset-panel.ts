@@ -204,7 +204,19 @@ export class OrEditAssetPanel extends LitElement {
 
     shouldUpdate(changedProperties: PropertyValues): boolean {
         if (changedProperties.has("asset")) {
-            this.changedAttributes = [];
+            const oldAsset = changedProperties.get("asset") as Asset;
+            if (oldAsset?.attributes) {
+                // Handles external attribute changes post saving phase.
+                this.changedAttributes = Object.values(oldAsset.attributes).filter(({ name, timestamp: oldTimestamp, value: oldValue }) => {
+                  if (this.asset.attributes && name) {
+                    const attr = this.asset.attributes[name];
+                    return !Util.objectsEqual(oldValue, attr.value) || oldTimestamp !== attr.timestamp
+                  }
+                  return false;
+                }).map(({ name }) => name!);
+            } else {
+                this.changedAttributes = [];
+            }
         }
         return super.shouldUpdate(changedProperties);
     }
