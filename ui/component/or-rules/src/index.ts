@@ -730,6 +730,7 @@ export class OrRulesGroupNameChangeEvent extends CustomEvent<{ value: string }> 
         super(OrRulesGroupNameChangeEvent.NAME, {
             bubbles: true,
             composed: true,
+            cancelable: true,
             detail: {
                 value: name
             }
@@ -1116,6 +1117,14 @@ export class OrRules extends translate(i18next)(LitElement) {
     protected _onGroupNameChange(ev: OrRulesGroupNameChangeEvent) {
         const oldValue = this._selectedGroup;
         const newValue = ev.detail.value;
+
+        // If the group name already exists, we should prevent the event from happening
+        if(this._rulesTree?.nodes.find(n => n.label === newValue)) {
+            console.warn(`The group '${newValue}' already exists. Please try again.`);
+            ev.preventDefault();
+            return;
+        }
+
         console.debug(`Renaming group '${oldValue}' to '${newValue}'`)
 
         // Change the groupId for each child rule, and prepare an HTTP API update

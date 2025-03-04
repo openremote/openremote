@@ -4,6 +4,7 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import {style} from "./or-rule-viewer";
 import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
 import {OrRulesGroupNameChangeEvent} from "./index";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 @customElement("or-rule-group-viewer")
 export class OrRuleGroupViewer extends translate(i18next)(LitElement) {
@@ -72,8 +73,12 @@ export class OrRuleGroupViewer extends translate(i18next)(LitElement) {
 
     protected _onSaveClicked(): void {
         if(this.group && !this._cannotSave()) {
-            this.dispatchEvent(new OrRulesGroupNameChangeEvent(this.group));
-            this._modified = false;
+            const success = this.dispatchEvent(new OrRulesGroupNameChangeEvent(this.group));
+            if(success) {
+                this._modified = false;
+            } else {
+                showSnackbar(undefined, 'ruleGroupExistsError');
+            }
         }
     }
 }

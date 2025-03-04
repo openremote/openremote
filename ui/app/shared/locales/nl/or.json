@@ -266,6 +266,7 @@
   "ruleName": "Regel naam",
   "ruleGroupName": "Groep naam",
   "ruleGroupNameDefault": "Nieuwe Groep",
+  "ruleGroupExistsError": "Deze groep bestaat al.",
   "ruleGroupDragError": "Je kunt geen groep verplaatsen.",
   "ruleDragSuccess": "Regel verplaatst!",
   "ruleDragFailed": "Kon regel niet verplaatsen! Probeer opnieuw.",

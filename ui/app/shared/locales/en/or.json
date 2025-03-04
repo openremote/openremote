@@ -267,6 +267,7 @@
   "ruleName": "Rule name",
   "ruleGroupName": "Group name",
   "ruleGroupNameDefault": "New Group",
+  "ruleGroupExistsError": "This group already exists.",
   "ruleGroupDragError": "You cannot move a group.",
   "ruleDragSuccess": "Moved successfully!",
   "ruleDragFailed": "Failed to move. Please try again.",
