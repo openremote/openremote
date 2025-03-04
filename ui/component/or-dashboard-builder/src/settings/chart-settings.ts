@@ -86,7 +86,7 @@ export class ChartSettings extends WidgetSettings {
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimePresetSelect(ev)}"
                             ></or-mwc-input>
                         </div>
-                        <!-- Y Min/max options -->
+                        <!-- Time range selection -->
                         <div>
                             <div class="switch-container">
                                 <span><or-translate value="dashboard.allowTimerangeSelect"></or-translate></span>
@@ -104,14 +104,14 @@ export class ChartSettings extends WidgetSettings {
                         <!-- Datazoombar -->
                             <div class="switch-container">
                                 <span><or-translate value="dashboard.showZoomBar"></or-translate></span>
-                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${!this.widgetConfig.showZoomBar}"
+                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showZoomBar}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowZoomBarToggle(ev)}"
                                 ></or-mwc-input>
                             </div>
                         <!-- Toolbox -->
                             <div class="switch-container">
                                 <span><or-translate value="dashboard.showToolBox"></or-translate></span>
-                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${!this.widgetConfig.showToolBox}"
+                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showToolBox}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowToolBoxToggle(ev)}"
                                 ></or-mwc-input>
                             </div>

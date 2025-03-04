@@ -524,10 +524,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                     show: true,
                     backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                     borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
-                    left: '5%', // 5% padding
-                    //top: '5.5%',
-                    right: '5%',
-                    //bottom: '15%'
+                    left: 50,//'5%', // 5% padding
+                    right: 50,//'5%',
+                    top: this.showToolBox ? 28 : 10,
+                    bottom: this.showZoomBar ? 68 : 20
                 },
                 backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                 tooltip: {
@@ -555,6 +555,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                         showMinLabel: true,
                         showMaxLabel: true,
                         hideOverlap: true,
+                        textStyle: {fontWeight: 'bold'},
                         formatter: {
                              year: '{yyyy}-{MMM}',
                              month: '{yy}-{MMM}',
@@ -562,9 +563,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                              hour: '{HH}:{mm}',
                              minute: '{HH}:{mm}',
                              second: '{HH}:{mm}:{ss}',
-                             millisecond: '{d}-{MMM} {hh}:{mm}',
+                             millisecond: '{d}-{MMM} {HH}:{mm}',
                             // @ts-ignore
-                             none: '{MMM}-{dd} {hh}:{mm}'
+                             none: '{MMM}-{dd} {HH}:{mm}'
                         }
                     }
                 },
@@ -634,8 +635,8 @@ export class OrChart extends translate(i18next)(LitElement) {
             // Add toolbox if enabled
             if(this.showToolBox) {
                 this._chartOptions!.toolbox! = {
-                    right: '4.5%',
-                    top: '0%',
+                    right: 45,
+                    top: 0,
                     feature: {
                         dataView: {readOnly: true},
                         magicType: {
@@ -785,7 +786,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                     const axisNote = (this.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
                                     const bgColor = this.colors[colourIndex] || "";
                                     return html`
-                                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseover="${throttle(() => this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name), 150)}" @mouseout="${()=> this.removeDatasetHighlight()}">
+                                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseenter="${() => this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseleave="${()=> this.removeDatasetHighlight()}">
                                             <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
                                             <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
                                                 <div style="display: flex; justify-content: space-between;">

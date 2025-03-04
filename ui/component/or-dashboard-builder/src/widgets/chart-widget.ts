@@ -78,8 +78,8 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
         showTimestampControls: false,
         defaultTimePresetKey: preset,
         showLegend: true,
-        showZoomBar: true,
-        showToolBox: true
+        showZoomBar: false,
+        showToolBox: false
     };
 }
 
