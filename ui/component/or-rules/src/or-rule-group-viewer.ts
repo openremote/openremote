@@ -19,7 +19,7 @@ export class OrRuleGroupViewer extends translate(i18next)(LitElement) {
     public readonly = false;
 
     @state()
-    protected _modified = false;
+    protected _lastSaved?: string;
 
     @query("#rule-name")
     protected _groupNameInput?: OrMwcInput;
@@ -40,8 +40,7 @@ export class OrRuleGroupViewer extends translate(i18next)(LitElement) {
             <div id="main-wrapper" class="wrapper">
                 <div id="rule-header">
                     <or-mwc-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleGroupName")}" focused
-                                  .value="${this.group}" ?disabled="${this.readonly}" required minlength="3" maxlength="255"
-                                  @input="${this._onGroupNameInput}"
+                                  .value="${this.group}" ?disabled="${this.readonly}" required minlength="1" maxlength="255" @input="${this._onGroupNameInput}"
                     ></or-mwc-input>
                     <div id="rule-header-controls">
                         <or-mwc-input .type="${InputType.BUTTON}" id="save-btn" label="save" raised ?disabled="${this._cannotSave()}" @or-mwc-input-changed="${this._onSaveClicked}"></or-mwc-input>
@@ -54,28 +53,24 @@ export class OrRuleGroupViewer extends translate(i18next)(LitElement) {
     protected _onGroupNameInput(ev: InputEvent) {
         const value = this._groupNameInput?.nativeValue;
         if(value) this._changeName(value);
+        this.requestUpdate();
     }
 
     protected _changeName(name: string) {
         if(name.length >= 3 && name.length <= 255) {
             this.group = name;
-            this._modified = true;
         }
     }
 
     protected _cannotSave() {
-        return this.readonly || !this.group || !this._modified || !this.valid;
-    }
-
-    public valid() {
-        return !!this.group && this.group.length >= 3 && this.group.length <= 255;
+        return this.readonly || !this._groupNameInput?.nativeValue || !this._groupNameInput?.valid || (this._groupNameInput?.nativeValue || "") === this._lastSaved;
     }
 
     protected _onSaveClicked(): void {
         if(this.group && !this._cannotSave()) {
             const success = this.dispatchEvent(new OrRulesGroupNameChangeEvent(this.group));
             if(success) {
-                this._modified = false;
+                this._lastSaved = this.group;
             } else {
                 showSnackbar(undefined, 'ruleGroupExistsError');
             }
