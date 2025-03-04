@@ -48,7 +48,6 @@ import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {OrRuleTree, RuleTreeNode} from "./or-rule-tree";
 import {OrTreeDragEvent} from "@openremote/or-tree-menu";
 import {when} from "lit/directives/when.js";
-import {cache} from "lit/directives/cache.js";
 
 export {buttonStyle} from "./style";
 
@@ -864,11 +863,11 @@ export class OrRules extends translate(i18next)(LitElement) {
         return html`
             <or-rule-tree id="rule-tree" ?readonly=${this._isReadonly()}></or-rule-tree>
             <!--<or-rule-list id="rule-list" .config="${this.config}" .language="${this.language}" .selectedIds="${this.selectedIds}"></or-rule-list>-->
-            ${cache(when(this._selectedGroup, () => html`
+            ${when(this._selectedGroup, () => html`
                 <or-rule-group-viewer .group="${this._selectedGroup}" .readonly="${this._isReadonly()}"></or-rule-group-viewer>
             `, () => html`
                 <or-rule-viewer id="rule-viewer" .config="${this.config}" .readonly="${this._isReadonly()}"></or-rule-viewer>
-            `))}
+            `)}
         `;
     }
 
