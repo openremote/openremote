@@ -92,15 +92,13 @@ export class OrRuleTree extends OrTreeMenu {
     protected _loadingPromises: Promise<boolean>[] = [];
 
     @state()
-    protected _anySelected = false;
+    protected _selectedTypes: Set<('group' | 'ruleset')> = new Set();
 
     static get styles(): any[] {
         return [...super.styles, styling];
     }
 
     protected willUpdate(changedProps: PropertyValues) {
-        console.log(changedProps);
-        console.log("Sorting by is now", this.sortBy);
         if (changedProps.has("rules")) {
             if (!this.rules) {
                 this._loadRulesets(this.global).then(rulesets => this.rules = rulesets);
@@ -159,8 +157,11 @@ export class OrRuleTree extends OrTreeMenu {
                     <or-translate value=${this.menuTitle}></or-translate>
                 </h3>
                 <div id="tree-header-actions">
-                    ${when(this._anySelected && !this.readonly, () => html`
+                    ${when((this._selectedTypes.size === 1 && this._selectedTypes.has('ruleset')) && !this.readonly, () => html`
                         <or-mwc-input type=${InputType.BUTTON} icon="content-copy" @or-mwc-input-changed=${this._onCopyClicked}></or-mwc-input>
+                        <or-mwc-input type=${InputType.BUTTON} icon="delete" @or-mwc-input-changed=${this._onDeleteClicked}></or-mwc-input>
+                    `)}
+                    ${when((this._selectedTypes.size === 1 && this._selectedTypes.has('group')) && !this.readonly, () => html`
                         <or-mwc-input type=${InputType.BUTTON} icon="delete" @or-mwc-input-changed=${this._onDeleteClicked}></or-mwc-input>
                     `)}
                     ${this._getAddActionTemplate()}
@@ -223,6 +224,13 @@ export class OrRuleTree extends OrTreeMenu {
         const selected = this._findSelectedTreeNodes() as RuleTreeNode[];
         if (selected.length > 0) {
             const selectedRules = selected.map(node => node.ruleset).filter(x => x) as RulesetUnion[];
+
+            // If groups are selected, loop through the children, and add them to the selectedRules;
+            const selectedChildNodes = selected.filter(group => group.children).flatMap(group => group.children as RuleTreeNode[]);
+            const selectedChildRules = selectedChildNodes.flatMap(node => node.ruleset ? [node.ruleset] : [])
+            selectedRules.push(...selectedChildRules);
+
+            // Transform rules into RulesetNode for consumers of the or-rule-tree
             const selectedRuleNodes = selectedRules.map(ruleset => ({ ruleset: ruleset, selected: true }) as RulesetNode);
 
             Util.dispatchCancellableEvent(this, new OrRulesRequestDeleteEvent(selectedRuleNodes))
@@ -280,11 +288,6 @@ export class OrRuleTree extends OrTreeMenu {
         }
     }
 
-    protected _selectNode(node?: OrTreeNode, notify = true) {
-        super._selectNode(node, notify);
-        this._anySelected = this._findSelectedTreeNodes().length > 0;
-    }
-
     protected _dispatchSelectEvent(selectedNodes?: RuleTreeNode[]): boolean {
 
         const lastSelected = this._lastSelectedNode ? this._getTreeNodeFromTree(this._lastSelectedNode) as RuleTreeNode : undefined;
@@ -302,6 +305,13 @@ export class OrRuleTree extends OrTreeMenu {
 
         // If succeeded, actually sent the "select" event.
         this.dispatchEvent(new OrRulesSelectionEvent({oldNodes: oldNodes, newNodes: newNodes}));
+
+        // and update the selected types in cache
+        const selectedTypes = new Set<'group' | 'ruleset'>();
+        if(selectedNodes?.find(n => isGroupNode(n))) selectedTypes.add('group');
+        if(selectedNodes?.find(n => !isGroupNode(n))) selectedTypes.add('ruleset');
+        this._selectedTypes = selectedTypes;
+
         return super._dispatchSelectEvent(selectedNodes);
     }
 

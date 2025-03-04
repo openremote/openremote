@@ -607,7 +607,7 @@ export class OrTreeMenu extends LitElement {
     }
 
     /**
-     * Utility function to detect the selected tree nodes u
+     * Utility function to detect the selected tree nodes.
      * @param uiNodes
      * @param cache
      * @protected
