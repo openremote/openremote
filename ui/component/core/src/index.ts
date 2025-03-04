@@ -91,10 +91,15 @@ export function normaliseConfig(config: ManagerConfig): ManagerConfig {
 
     if (!normalisedConfig.managerUrl || normalisedConfig.managerUrl === "") {
         // Assume manager is running on same host as this code
-        normalisedConfig.managerUrl = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ":" + window.location.port : "");
+        normalisedConfig.managerUrl = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ":" + window.location.port : "")
+            + window.location.pathname.replace(/\/[^/]+\/?$/, '');
     } else {
         // Normalise by stripping any trailing slashes
         normalisedConfig.managerUrl = normalisedConfig.managerUrl.replace(/\/+$/, "");
+    }
+
+    if (!normalisedConfig.keycloakUrl || normalisedConfig.keycloakUrl === "") {
+        normalisedConfig.keycloakUrl =  normalisedConfig.managerUrl + "/auth";
     }
 
     if (!normalisedConfig.realm || normalisedConfig.realm === "") {
@@ -921,8 +926,8 @@ export class Manager implements EventProviderFactory {
         try {
             // Initialise keycloak
             this._keycloak = new Keycloak({
-                clientId: this._config.clientId,
-                realm: this._config.realm,
+                clientId: this._config.clientId!,
+                realm: this._config.realm!,
                 url: this._config.keycloakUrl
             });
 

@@ -223,14 +223,14 @@ export class OrDashboardTree extends LitElement {
                 });
                 if (myDashboards.length > 0) {
                     const items: ListItem[] = [];
-                    myDashboards.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName) : 0).forEach(d => {
+                    myDashboards.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName!) : 0).forEach(d => {
                         items.push({icon: 'view-dashboard', text: d.displayName, value: d.id});
                     });
                     dashboardItems.push(items);
                 }
                 if (otherDashboards.length > 0) {
                     const items: ListItem[] = [];
-                    otherDashboards.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName) : 0).forEach(d => {
+                    otherDashboards.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName!) : 0).forEach(d => {
                         items.push({icon: 'view-dashboard', text: d.displayName, value: d.id});
                     });
                     dashboardItems.push(items);

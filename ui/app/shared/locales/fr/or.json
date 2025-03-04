@@ -254,8 +254,10 @@
     "GROOVY": "Groovy",
     "JAVASCRIPT": "JavaScript"
   },
-  "gatewayConnection": "Interconnexion du Manager",
-  "connectionDetails": "DÉTAILS DE CONNEXION",
+  "gateway": {
+    "": "Interconnexion du Manager",
+    "connectionDetails": "DÉTAILS DE CONNEXION"
+  },
   "secured": "Sécurisé",
   "clientSecret": "Secret du client",
   "clientId": "ID du client",
@@ -469,4 +471,4 @@
     "attributeValueLabel": "Attribute value",
     "assetTypeDoesNotExist": "Filter : Asset type does not exist"
   }
-}
+},

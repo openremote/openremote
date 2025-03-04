@@ -267,6 +267,7 @@ jobs:
       - name: Get version details
         id: get-version-details
         run: |
+          set -o pipefail # exit build with error when pipes fail
           ./gradlew currentVersion | tee /tmp/currentVersion
           versionWithQualifier=$(grep "Project version" /tmp/currentVersion | sed 's#Project version: ##')
           version=$(sed -E 's#-.+##' <<< $versionWithQualifier)
@@ -291,12 +292,14 @@ jobs:
           refType = os.getenv('GITHUB_REF_TYPE')
           isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
           isRelease = os.getenv('IS_RELEASE') == 'true'
+          managerVersion = os.getenv('MANAGER_VERSION')
           version = os.getenv('VERSION')
           deploys = None
           dockerPublishTags = None
           mavenPublishTag = None
           npmPublishTag = None
           deployEnvironment = None
+          eventConfig = ()
 
           f = open(".ci_cd/ci_cd.json")
           data = json.load(f)
@@ -330,7 +333,7 @@ jobs:
               else:
                 dockerPublishTags = dockerPublishTags.replace("$version", version)
                 firstDockerTag = dockerPublishTags.split(",")[0]
-          
+
               os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
               os.system(f" echo 'Manager tags to push to docker hub: {dockerPublishTags}'")
               dockerPublishTags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", dockerPublishTags.split(",")))
@@ -363,14 +366,14 @@ jobs:
                   deployStr += deploy['managerTag']
                 else:
                   # Custom projects manager docker image must match the openremoteVersion from gradle.properties
-                  deployStr += "$MANAGER_VERSION"
+                  deployStr += managerVersion
               else:
                 if isMainRepo:
                   os.system("echo 'Manager tag not specified so using commit SHA'")
                   deployStr += managerTagDefault
                 else:
                   # Custom projects manager docker image must match the openremoteVersion from gradle.properties
-                  deployStr += "$MANAGER_VERSION"
+                  deployStr += managerVersion
 
               deployStr += ";"
 
@@ -407,7 +410,7 @@ jobs:
             else:
               tag=managerVersion
             deployments=f'{inputEnv}:{tag}'
-          
+
           if not isMainRepo:
             if "-SNAPSHOT" in deployments:
               os.system("SNAPSHOT manager docker images not currently supported for custom project deployment")
@@ -603,6 +606,36 @@ jobs:
         # Ignore the failure of a step and avoid terminating the job.
         continue-on-error: true
 
+      - name: Update version in package.json files
+        id: update-package-json-files
+        run: |
+          VERSION=$(awk '{print tolower($0)}' <<< $VERSION)
+
+          QUALIFIER=$(sed -E 's/.+-([a-z]+).*/\1/g' <<< $VERSION)
+          if [ "$QUALIFIER" == "$VERSION" ]; then
+            QUALIFIER=""
+          fi
+
+          if [ "$QUALIFIER" == "" ]; then
+            TAG="latest"
+          else
+            if [ "$QUALIFIER" == "snapshot" ]; then
+              # Add a timestamp to snapshot versions
+              VERSION="$VERSION.$(date +'%Y%m%d%H%M%S')"
+            else
+              # Separate qualifiers from numbers of alpha, beta, rc versions
+              VERSION=$(sed "s/$QUALIFIER/$QUALIFIER./g" <<< $VERSION)
+            fi
+            TAG="$QUALIFIER"
+          fi
+
+          find ui -maxdepth 3 -name package.json | xargs -I{} sed -i -E "s#\"version\": \".+\",#\"version\": \"$VERSION\",#" {}
+
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        env:
+          VERSION: ${{ steps.get-version-details.outputs.version_with_qualifier }}
+
       - name: Run backend tests
         id: run-backend-tests
         if: ${{ steps.test-backend-command.outputs.value != '' }}
@@ -730,37 +763,14 @@ jobs:
       - name: Run npm publish command
         if: ${{ steps.ci-cd-output.outputs.npmTag != '' }}
         run: |
-          QUALIFIER=$(sed -E 's/.+-([A-Za-z]+).*/\1/g' <<< $VERSION)
-          if [ "$QUALIFIER" == "$VERSION" ]; then
-            QUALIFIER=""
-          fi
-
-          if [ "$QUALIFIER" == "" ]; then
-            VERSION="$VERSION"
-            TAG="latest"
-          else
-            if [ "$QUALIFIER" == "snapshot" ]; then
-              # Add a timestamp to snapshot versions
-              VERSION="$VERSION.$(date +'%Y%m%d%H%M%S')"
-            else
-              # Separate qualifiers from numbers of alpha, beta, rc versions
-              VERSION=$(sed "s/$QUALIFIER/$QUALIFIER./g" <<< $VERSION)
-            fi
-            VERSION=$(awk '{print tolower($0)}' <<< $VERSION)
-            TAG=$(awk '{print tolower($0)}' <<< $QUALIFIER)
-          fi
-
-          find ui -maxdepth 3 -name package.json | xargs -I{} sed -i -E "s#\"version\": \".+\",#\"version\": \"$VERSION\",#" {}
-          find ui -maxdepth 3 -name package.json | xargs -I{} sed -i -E 's#"(@openremote/.+)": ".+"#"\1": "workspace:*"#g' {}
-
           echo 'npmRegistries:' >> .yarnrc.yml
           echo '  "https://registry.yarnpkg.com":' >> .yarnrc.yml
           echo "    npmAuthToken: $NPM_AUTH_TOKEN" >> .yarnrc.yml
 
           yarn workspaces foreach --all --no-private --topological npm publish --tag $TAG
         env:
-          VERSION: ${{ steps.ci-cd-output.outputs.npmTag }}
           NPM_AUTH_TOKEN: ${{ steps.inputs-and-secrets.outputs._TEMP_NPM_AUTH_TOKEN }}
+          TAG: ${{ steps.update-package-json-files.outputs.tag }}
 
       - name: Run deployment docker command
         if: steps.deployment-docker-command.outputs.value != ''
