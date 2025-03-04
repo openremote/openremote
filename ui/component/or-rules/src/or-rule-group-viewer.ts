@@ -40,7 +40,7 @@ export class OrRuleGroupViewer extends translate(i18next)(LitElement) {
                 <div id="rule-header">
                     <or-mwc-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleGroupName")}" focused
                                   .value="${this.group}" ?disabled="${this.readonly}" required minlength="3" maxlength="255"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"
+                                  @input="${this._onGroupNameInput}"
                     ></or-mwc-input>
                     <div id="rule-header-controls">
                         <or-mwc-input .type="${InputType.BUTTON}" id="save-btn" label="save" raised ?disabled="${this._cannotSave()}" @or-mwc-input-changed="${this._onSaveClicked}"></or-mwc-input>
@@ -48,6 +48,11 @@ export class OrRuleGroupViewer extends translate(i18next)(LitElement) {
                 </div>
             </div>
         `
+    }
+
+    protected _onGroupNameInput(ev: InputEvent) {
+        const value = this._groupNameInput?.nativeValue;
+        if(value) this._changeName(value);
     }
 
     protected _changeName(name: string) {
