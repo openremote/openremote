@@ -38,7 +38,10 @@ podAnnotations: {}
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
 
-podSecurityContext: {}
+podSecurityContext:
+  runAsUser: 70
+  runAsGroup: 70
+  fsGroup: 70
   # fsGroup: 2000
 
 securityContext: {}

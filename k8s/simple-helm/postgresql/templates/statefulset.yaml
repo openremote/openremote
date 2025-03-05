@@ -68,10 +68,21 @@ spec:
           {{- end }}
           volumeMounts:
             - mountPath: /var/lib/postgresql/data
+              subPath: psql-data
               name: postgresql-data
           {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
+      initContainers:
+        - name: psql-data-ownership
+          image: alpine:latest
+          command: ['sh', '-c', 'chown -R 70:70 /var/lib/postgresql/data && chmod -R 0750 /var/lib/postgresql/data']
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              subPath: psql-data
+              name: postgresql-data
       volumes:
         - name: postgresql-data
           persistentVolumeClaim:
