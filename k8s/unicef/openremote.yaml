@@ -1,0 +1,192 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: proxy-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: manager-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgresql-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: proxy
+  template:
+    metadata:
+      labels:
+        app: proxy
+    spec:
+      containers:
+        - name: proxy
+          image: openremote/proxy:${PROXY_VERSION:-latest}
+          ports:
+            - containerPort: 80
+            - containerPort: 443
+            - containerPort: 8883
+            - containerPort: 8404
+          env:
+            - name: LE_EMAIL
+              value: "${OR_EMAIL_ADMIN:-}"
+            - name: DOMAINNAME
+              value: "${OR_HOSTNAME:-localhost}"
+            - name: DOMAINNAMES
+              value: "${OR_ADDITIONAL_HOSTNAMES:-}"
+          volumeMounts:
+            - mountPath: /deployment
+              name: proxy-data
+      volumes:
+        - name: proxy-data
+          persistentVolumeClaim:
+            claimName: proxy-data-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgresql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgresql
+  template:
+    metadata:
+      labels:
+        app: postgresql
+    spec:
+      containers:
+        - name: postgresql
+          image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgresql-data
+            - mountPath: /storage
+              name: manager-data
+      volumes:
+        - name: postgresql-data
+          persistentVolumeClaim:
+            claimName: postgresql-data-pvc
+        - name: manager-data
+          persistentVolumeClaim:
+            claimName: manager-data-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: openremote/keycloak:${KEYCLOAK_VERSION:-latest}
+          env:
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              value: "${OR_ADMIN_PASSWORD:-secret}"
+            - name: KC_HOSTNAME
+              value: "${OR_HOSTNAME:-localhost}"
+            - name: KC_HOSTNAME_PORT
+              value: "${OR_SSL_PORT:--1}"
+          volumeMounts:
+            - mountPath: /deployment
+              name: deployment-data
+      volumes:
+        - name: deployment-data
+          hostPath:
+            path: ./deployment
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: manager
+  template:
+    metadata:
+      labels:
+        app: manager
+    spec:
+      containers:
+        - name: manager
+          image: openremote/manager:${MANAGER_VERSION:-latest}
+          ports:
+            - containerPort: 8405
+          env:
+            - name: OR_SETUP_TYPE
+              value: ""
+            - name: OR_ADMIN_PASSWORD
+              value: ""
+            - name: OR_SETUP_RUN_ON_RESTART
+              value: ""
+            - name: OR_EMAIL_HOST
+              value: ""
+            - name: OR_EMAIL_USER
+              value: ""
+            - name: OR_EMAIL_PASSWORD
+              value: ""
+            - name: OR_EMAIL_X_HEADERS
+              value: ""
+            - name: OR_EMAIL_FROM
+              value: ""
+            - name: OR_EMAIL_ADMIN
+              value: ""
+            - name: OR_METRICS_ENABLED
+              value: "${OR_METRICS_ENABLED:-true}"
+            - name: OR_HOSTNAME
+              value: "${OR_HOSTNAME:-localhost}"
+            - name: OR_ADDITIONAL_HOSTNAMES
+              value: ""
+            - name: OR_SSL_PORT
+              value: "${OR_SSL_PORT:--1}"
+            - name: OR_DEV_MODE
+              value: "${OR_DEV_MODE:-false}"
+          volumeMounts:
+            - mountPath: /storage
+              name: manager-data
+      volumes:
+        - name: manager-data
+          persistentVolumeClaim:
+            claimName: manager-data-pvc

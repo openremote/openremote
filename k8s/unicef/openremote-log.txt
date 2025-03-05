@@ -1,0 +1,39 @@
+NAME READY STATUS RESTARTS AGE
+keycloak-76f75bfc74-q6qq2 0/1 CrashLoopBackOff 254 (68s ago) 21h
+manager-6b8cd864bb-v7sdf 1/1 Running 0 21h
+postgresql-77cbbc886-gnzsf 0/1 CrashLoopBackOff 254 (3m52s ago) 21h
+proxy-79fd85784f-k4d8j 1/1 Running 0 21h
+
+These are the errors in both containers
+kubectl -n openremote describe pod keycloak-76f75bfc74-q6qq2
+Containers:
+keycloak:
+Container ID: containerd://0678798243cf8b907de4539ad99e3d974706126cda26195ce8eddeaea34d92f5
+Image: openremote/keycloak:23.0.7.2
+Image ID: docker.io/openremote/keycloak@sha256:86650ed526b8111a103cc6fc9c80b753ccf2c169539da1ddb1a7fc80e4aa3550
+Port:
+Host Port:
+State: Waiting
+Reason: CrashLoopBackOff
+Last State: Terminated
+Reason: StartError
+Message: failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: failed to fulfil mount request: open /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/0678798243cf8b907de4539ad99e3d974706126cda26195ce8eddeaea34d92f5/deployment: no such file or directory: unknown
+
+kubectl -n openremote describe pod postgresql-77cbbc886-gnzsf
+Containers:
+postgresql:
+Container ID: containerd://782c56f0f457d0661eb1e3d7a07d439a7721edc0d471bb1c914513ea7c59f6a5
+Image: openremote/postgresql:15.6.0.4
+Image ID: docker.io/openremote/postgresql@sha256:b0a39e4baa12b2d02a9e694c1104edc8c0b8029f5d066cde4d373dfbf500fe22
+Port: 5432/TCP
+Host Port: 0/TCP
+State: Waiting
+Reason: CrashLoopBackOff
+Last State: Terminated
+Reason: Error
+Exit Code: 1
+Started: Tue, 14 Jan 2025 12:08:03 +0100
+Finished: Tue, 14 Jan 2025 12:08:03 +0100
+Ready: False
+Restart Count: 255
+Environment:
