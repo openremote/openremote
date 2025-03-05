@@ -4,7 +4,6 @@ import {map} from "lit/directives/map.js";
 import {when} from "lit/directives/when.js";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {Util} from "@openremote/core";
 import {OrTreeNode} from "./or-tree-node";
@@ -196,7 +195,7 @@ export class OrTreeMenu extends LitElement {
     protected _getTreeTemplate(nodes: TreeNode[]): TemplateResult {
         this._treeNodeCache = new Map(); // clear cache on every new render of the tree
         return html`
-            <ol id="tree-list">
+            <ol id="tree-list" @dragover=${this._onDragOverList} @drop=${this._onDragDropList}>
                 ${map(nodes, node => this._getNodeTemplate(node))}
             </ol>
         `;
@@ -451,6 +450,11 @@ export class OrTreeMenu extends LitElement {
         }
     }
 
+    /** HTML callback event for 'dragover' on the list element */
+    protected _onDragOverList(ev: DragEvent) {
+        if(this.draggable) ev.preventDefault();
+    }
+
     /** HTML callback event for 'dragover', so while a node is dragged over a single node */
     protected _onDragOverSingleNode(ev: DragEvent, node: TreeNode, parent?: TreeNode) {
         if(this.draggable) {
@@ -484,18 +488,21 @@ export class OrTreeMenu extends LitElement {
         if(this.draggable) (ev.currentTarget as HTMLElement).removeAttribute("drophover");
     }
 
-    /** HTML callback event for when a node is dropped onto a single node, after dragging it over */
-    protected _onDragDropSingleNode(ev: DragEvent, groupNode?: TreeNode, parent?: TreeNode) {
-        if(this.draggable) {
-            ev.preventDefault(); // allows dropping the node on this node
-            this._onDragDropGroup(ev, parent);
-        }
+    /** HTML callback event for when a node is dropped on the list level. */
+    protected _onDragDropList(ev: DragEvent) {
+        this._onDragDropGroup(ev);
     }
 
-    /** HTML callback event for when a node is dropped onto a group node, after dragging it over */
+    /** HTML callback event for when a node is dropped onto a single node, after dragging it over. */
+    protected _onDragDropSingleNode(ev: DragEvent, groupNode?: TreeNode, parent?: TreeNode) {
+        this._onDragDropGroup(ev, parent);
+    }
+
+    /** HTML callback event for when a node is dropped onto a group node, after dragging it over. */
     protected _onDragDropGroup(ev: DragEvent, groupNode?: TreeNode) {
         if(this.draggable) {
-            ev.preventDefault();
+            ev.preventDefault(); // allows dropping the node on this node
+            ev.stopPropagation();
 
             // Remove "hover background" from the group node in the UI
             if(groupNode) this._getUiNodeFromTree(groupNode)?.removeAttribute("drophover");
