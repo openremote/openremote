@@ -376,6 +376,26 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Array}) // List of AttributeRef that are shown on the right axis instead.
     public rightAxisAttributes: AttributeRef[] = [];
 
+    @property({type: Object})
+    public attributeSettings: {
+        rightAxisAttributes: AttributeRef[],
+        smoothAttributes: AttributeRef[],
+        steppedAttributes: AttributeRef[],
+        areaAttributes: AttributeRef[],
+        faintAttributes: AttributeRef[],
+        extendedAttributes: AttributeRef[],
+        colorPickedAttributes: Map<AttributeRef, string>
+    } = {
+        rightAxisAttributes: [],
+        smoothAttributes: [],
+        steppedAttributes: [],
+        areaAttributes: [],
+        faintAttributes: [],
+        extendedAttributes: [],
+        colorPickedAttributes: new Map<AttributeRef, string>()
+    };
+
+
     @property()
     public dataProvider?: (startOfPeriod: number, endOfPeriod: number, timeUnits: TimeUnit, stepSize: number) => Promise<[]>
 
@@ -486,7 +506,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         const reloadData = changedProperties.has("datapointQuery") || changedProperties.has("timePresetKey") || changedProperties.has("timeframe") ||
-            changedProperties.has("rightAxisAttributes") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
+            changedProperties.has("attributeSettings") || changedProperties.has("rightAxisAttributes") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
 
         if (reloadData) {
             console.log('reloadData triggered');
@@ -1200,19 +1220,25 @@ export class OrChart extends translate(i18next)(LitElement) {
 
                     const asset = this.assets[assetIndex];
                     const shownOnRightAxis = !!this.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const smooth = !!this.attributeSettings.smoothAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const stepped = !!this.attributeSettings.steppedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const area = !!this.attributeSettings.areaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const faint = !!this.attributeSettings.faintAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const extended = !!this.attributeSettings.extendedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const color = Array.from(this.attributeSettings.colorPickedAttributes).find(([{ name, id }]) => name === attribute.name && id === asset.id)?.[1];
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);
                     const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
                     const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
                     const colourIndex = index % this.colors.length;
                     const options = { signal: this._dataAbortController?.signal };
-                    let dataset = await this._loadAttributeData(asset, attribute, this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, false, asset.name + " " + label, options, unit);
+                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, false, smooth, stepped, area, faint, extended, asset.name + " " + label, options, unit);
                     (dataset as any).assetId = asset.id;
                     (dataset as any).attrName = attribute.name;
                     (dataset as any).unit = unit;
                     (dataset as any).yAxisIndex = shownOnRightAxis ? '1' : '0';
                     data.push(dataset);
 
-                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], predictedFromTimestamp, this._endOfPeriod!, true, asset.name + " " + label + " " + i18next.t("predicted"), options);
+                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], predictedFromTimestamp, this._endOfPeriod!, true, smooth, stepped, area, faint, extended, asset.name + " " + label + " " + i18next.t("predicted"), options);
                     data.push(dataset);
 
                 });
@@ -1249,7 +1275,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
 
-    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string | undefined, from: number, to: number, predicted: boolean, label?: string, options?: any, unit?: any) {
+    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string | undefined, from: number, to: number, predicted: boolean, smooth: boolean, stepped: boolean, area: boolean, faint: boolean, extended: boolean, label?: string, options?: any, unit?: any) {
 
         const dataset = {
             name: label,
@@ -1260,7 +1286,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             lineStyle: {
                 color: color,
                 type: predicted ? [2, 4] : undefined,
-                opacity: 1
+                opacity: faint ? 0.3 : 1,
             },
             itemStyle: {
                 color: color
@@ -1269,6 +1295,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                 // @ts-ignore
                 valueFormatter: value => value + unit
             },
+            smooth: smooth,
+            step: stepped ? 'end' : undefined,
+            areaStyle: area ? { color: color, opacity: faint ? 0.1 : 0.3 } : undefined,
+
             //emphasis: {
             //    focus: 'self', //hide other lines when hovering over one
             //},
@@ -1317,6 +1347,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                 const intervalArr = this._getInterval(diffInHours);
                 query.interval = (intervalArr[0].toString() + " " + intervalArr[1].toString()); // for example: "5 minute"
             }
+
+            //HIER EXTENDER TOEVOEGEN
 
             if(!predicted) {
                 response = await manager.rest.api.AssetDatapointResource.getDatapoints(asset.id, attribute.name, query, options)

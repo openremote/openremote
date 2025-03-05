@@ -23,7 +23,7 @@ const styling = css`
 @customElement("chart-settings")
 export class ChartSettings extends WidgetSettings {
 
-    protected readonly widgetConfig!: ChartWidgetConfig
+    protected readonly widgetConfig!: ChartWidgetConfig;
 
     protected timePresetOptions: Map<string, TimePresetCallback> = new Map<string, TimePresetCallback>();
     protected samplingOptions: Map<string, string> = new Map<string, string>();
@@ -50,20 +50,80 @@ export class ChartSettings extends WidgetSettings {
         const samplingValue = Array.from(this.samplingOptions.entries()).find((entry => entry[1] === this.widgetConfig.datapointQuery.type))![0]
         const attributeLabelCallback = (asset: Asset, attribute: Attribute<any>, attributeLabel: string) => {
             const isOnRightAxis = isMultiAxis && this.widgetConfig.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isFaint = this.widgetConfig.attributeSettings.faintAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isSmooth = this.widgetConfig.attributeSettings.smoothAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isStepped = this.widgetConfig.attributeSettings.steppedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isArea = this.widgetConfig.attributeSettings.areaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isExtended = this.widgetConfig.attributeSettings.extendedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
             return html`
                 <span>${asset.name}</span>
                 <span style="font-size:14px; color:grey;">${attributeLabel}</span>
                 ${when(isOnRightAxis, () => html`
-                    <span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;"><or-translate value="right"></or-translate></span>
+                    <div><span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;"><or-translate value="right"></or-translate></span></div>   
+                `)}
+                ${when(isFaint, () => html`
+                    <div><span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;"><or-translate value="dashboard.faint"></or-translate></span></div>
+                `)}
+                ${when(isSmooth, () => html`
+                    <div><span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;"><or-translate value="dashboard.smooth"></or-translate></span></div>
+                `)}
+                ${when(isStepped, () => html`
+                    <div><span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;"><or-translate value="dashboard.stepped"></or-translate></span></div>
+                `)}
+                ${when(isArea, () => html`
+                    <div><span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;"><or-translate value="dashboard.fill"></or-translate></span></div>
+                `)}
+                ${when(isExtended, () => html`
+                    <div><span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;"><or-translate value="dashboard.extendData"></or-translate></span></div>
                 `)}
             `
+
+            //return html`
+            //    <span>${asset.name}</span>
+            //    <span style="font-size:14px; color:grey;">${attributeLabel}</span>
+            //    ${when(isOnRightAxis, () => html`
+            //        <span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;"><or-translate value="right"></or-translate></span>
+            //    `)}
+            //`
         }
         const attributeActionCallback = (attributeRef: AttributeRef): AttributeAction[] => {
-            return [{
-                icon: this.widgetConfig.rightAxisAttributes.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
-                tooltip: i18next.t('dashboard.toggleAxis'),
-                disabled: false
-            }]
+            return [
+                {
+                  icon: 'palette',
+                  tooltip: i18next.t('dashboard.lineColor'),
+                  disabled: false
+                },
+                {
+                    icon: 'chart-bell-curve-cumulative',
+                    tooltip: i18next.t("dashboard.smooth"),
+                    disabled: false
+                },
+                {
+                    icon: 'square-wave',
+                    tooltip: i18next.t('dashboard.stepped'),
+                    disabled: false
+                },
+                {
+                    icon: 'chart-areaspline-variant',
+                    tooltip: i18next.t('dashboard.fill'),
+                    disabled: false
+                },
+                {
+                    icon: 'arrange-send-backward',
+                    tooltip: i18next.t('dashboard.faint'),
+                    disabled: false
+                },
+                {
+                    icon: 'arrow-expand-right',
+                    tooltip: i18next.t('dashboard.extendData'),
+                    disabled: false
+                },
+                {
+                    icon: this.widgetConfig.rightAxisAttributes.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
+                    tooltip: i18next.t('dashboard.toggleAxis'),
+                    disabled: false
+                }
+            ]
         }
         return html`
             <div>
@@ -236,13 +296,86 @@ export class ChartSettings extends WidgetSettings {
     // When a user clicks on ANY action in the attribute list, we want to switch between LEFT and RIGHT axis.
     // Since that is the only action, there is no need to check the ev.action variable.
     protected onAttributeAction(ev: AttributeActionEvent) {
-        if(this.widgetConfig.attributeRefs.indexOf(ev.detail.attributeRef) >= 0) {
-            if(this.widgetConfig.rightAxisAttributes.includes(ev.detail.attributeRef)) {
-                this.removeFromRightAxis(ev.detail.attributeRef);
-            } else {
-                this.addToRightAxis(ev.detail.attributeRef);
-            }
-            this.notifyConfigUpdate();
+        const { asset ,attributeRef, action } = ev.detail;
+
+        switch (action.icon) {
+            case "arrow-right-bold":
+            case "arrow-left-bold":
+                if (this.widgetConfig.attributeRefs.indexOf(attributeRef) >= 0) {
+                    if (this.widgetConfig.rightAxisAttributes.includes(attributeRef)) {
+                        this.removeFromRightAxis(attributeRef);
+                    } else {
+                        this.addToRightAxis(attributeRef);
+                    }
+                    this.notifyConfigUpdate();
+                }
+                break;
+            case "palette":    // Change color
+                const colorInput = document.createElement('input');
+                colorInput.type = 'color';
+                colorInput.style.border = 'none';
+                colorInput.style.height = '31px';
+                colorInput.style.width = '31px';
+                colorInput.style.padding = '1px 3px';
+                colorInput.style.minHeight = '22px';
+                colorInput.style.minWidth = '30px';
+                colorInput.style.cursor = 'pointer';
+                colorInput.addEventListener('change', (e: any) => {
+                    this.widgetConfig.attributeSettings.colorPickedAttributes.set(attributeRef, e.target.value);
+                    this.notifyConfigUpdate();
+                });
+                colorInput.click();
+                break;
+                //return html`
+                //    <input type="color" id="elem" style="border: none; height: 31px; width: 31px; padding: 1px 3px; min-height: 22px; min-width: 30px;cursor: pointer"
+                //           @change="${(e: any) => this.widgetConfig.attributeSettings.colorPickedAttributes.set(attributeRef, e.target.value)}"
+                //    />
+                //`;
+                //break;
+            case "chart-bell-curve-cumulative":
+                console.log('klikkerieklik');
+                if (!this.widgetConfig.attributeSettings.smoothAttributes.includes(attributeRef)) {
+                    this.widgetConfig.attributeSettings.smoothAttributes.push(attributeRef);
+                } else {
+                    this.widgetConfig.attributeSettings.smoothAttributes.splice(this.widgetConfig.attributeSettings.areaAttributes.indexOf(attributeRef), 1);
+
+                }
+                this.notifyConfigUpdate();
+                break;
+            case "square-wave":
+                if (!this.widgetConfig.attributeSettings.steppedAttributes.includes(attributeRef)) {
+                    this.widgetConfig.attributeSettings.steppedAttributes.push(attributeRef);
+                } else {
+                    this.widgetConfig.attributeSettings.steppedAttributes.splice(this.widgetConfig.attributeSettings.areaAttributes.indexOf(attributeRef), 1);
+                }
+                this.notifyConfigUpdate();
+                break;
+            case "chart-areaspline-variant":
+                if (!this.widgetConfig.attributeSettings.areaAttributes.includes(attributeRef)) {
+                    this.widgetConfig.attributeSettings.areaAttributes.push(attributeRef);
+                } else {
+                    this.widgetConfig.attributeSettings.areaAttributes.splice(this.widgetConfig.attributeSettings.areaAttributes.indexOf(attributeRef), 1);
+                }
+                this.notifyConfigUpdate();
+                break;
+            case "arrange-send-backward":
+                if (!this.widgetConfig.attributeSettings.faintAttributes.includes(attributeRef)) {
+                    this.widgetConfig.attributeSettings.faintAttributes.push(attributeRef);
+                } else {
+                    this.widgetConfig.attributeSettings.faintAttributes.splice(this.widgetConfig.attributeSettings.faintAttributes.indexOf(attributeRef), 1);
+                }
+                this.notifyConfigUpdate();
+                break;
+                case "arrow-expand-right":
+                if (!this.widgetConfig.attributeSettings.extendedAttributes.includes(attributeRef)) {
+                    this.widgetConfig.attributeSettings.extendedAttributes.push(attributeRef);
+                } else {
+                    this.widgetConfig.attributeSettings.extendedAttributes.splice(this.widgetConfig.attributeSettings.extendedAttributes.indexOf(attributeRef), 1);
+                }
+                this.notifyConfigUpdate();
+                break;
+            default:
+                console.warn('Unknown action', action);
         }
     }
 

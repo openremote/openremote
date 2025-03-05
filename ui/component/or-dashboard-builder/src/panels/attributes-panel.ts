@@ -66,7 +66,7 @@ const styling = css`
     position: relative;
     cursor: pointer;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: stretch;
     gap: 10px;
     padding: 0;
@@ -91,7 +91,7 @@ const styling = css`
     flex: 1;
     justify-content: end;
     align-items: center;
-    display: flex;
+    display: none;
     gap: 8px;
   }
 
@@ -124,6 +124,7 @@ const styling = css`
   .attribute-list-item:hover .attribute-list-item-actions {
     background: white;
     z-index: 1;
+    display: flex;  
   }
   
   .attribute-list-item:hover .button-action {
@@ -252,17 +253,19 @@ export class AttributesPanel extends LitElement {
                                     const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, true);
                                     return html`
                                         <div class="attribute-list-item">
-                                            <div class="attribute-list-item-icon">
-                                                <span>${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type))}</span>
-                                            </div>
-                                            <div class="attribute-list-item-label">
-                                                ${when(!!this.attributeLabelCallback,
+                                            <div class="attribute-list-icon-and-label">
+                                                <div class="attribute-list-item-icon">
+                                                    <span>${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type))}</span>
+                                                </div>
+                                                <div class="attribute-list-item-label">
+                                                            ${when(!!this.attributeLabelCallback,
                                                         () => this.attributeLabelCallback!(asset, attribute, label), 
                                                         () => html`
-                                                            <span>${asset.name}</span>
-                                                            <span style="font-size:14px; color:grey;">${label}</span>
-                                                        `
-                                                )}
+                                                                <span>${asset.name}</span>
+                                                                <span style="font-size:14px; color:grey;">${label}</span>
+                                                            `
+                                                )    }
+                                                </div>
                                             </div>
                                             <div class="attribute-list-item-actions">
                                                 

@@ -753,7 +753,14 @@
     "zoom": "Zoom",
     "center": "Center",
     "imageUrl": "Image URL",
-    "noImageSelected": "No image selected"
+    "noImageSelected": "No image selected",
+    "faint": "Faint",
+    "smooth": "Smooth",
+    "stepped": "Stepped",
+    "fill": "Fill",
+    "extendData": "Extend last datapoint",
+    "lineColor": "Line color"
+
   },
   "south": "South",
   "east": "East",

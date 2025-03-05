@@ -14,6 +14,15 @@ import "@openremote/or-chart";
 export interface ChartWidgetConfig extends WidgetConfig {
     attributeRefs: AttributeRef[];
     rightAxisAttributes: AttributeRef[];
+    attributeSettings: {
+        rightAxisAttributes: AttributeRef[],
+        smoothAttributes: AttributeRef[],
+        steppedAttributes: AttributeRef[],
+        areaAttributes: AttributeRef[],
+        faintAttributes: AttributeRef[],
+        extendedAttributes: AttributeRef[],
+        colorPickedAttributes: Map<AttributeRef, string>
+    },
     datapointQuery: AssetDatapointQueryUnion;
     chartOptions?: any; // ChartConfiguration<"line", ScatterDataPoint[]>
     showTimestampControls: boolean;
@@ -56,6 +65,15 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
     return {
         attributeRefs: [],
         rightAxisAttributes: [],
+        attributeSettings: {
+            rightAxisAttributes: [],
+            smoothAttributes: [],
+            steppedAttributes: [],
+            areaAttributes: [],
+            faintAttributes: [],
+            extendedAttributes: [],
+            colorPickedAttributes: new Map<AttributeRef, string>()
+        },
         datapointQuery: {
             type: "lttb",
             fromTimestamp: dates[0].getTime(),
@@ -197,6 +215,7 @@ export class ChartWidget extends OrAssetWidget {
             `, () => {
                 return html`
                     <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .rightAxisAttributes="${this.widgetConfig.rightAxisAttributes}"
+                              .attributeSettings="${this.widgetConfig?.attributeSettings != null ? this.widgetConfig.attributeSettings : {}}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
                               .showZoomBar="${(this.widgetConfig?.showZoomBar != null) ? this.widgetConfig?.showZoomBar : true}"
                               .showToolBox="${(this.widgetConfig?.showToolBox != null) ? this.widgetConfig?.showToolBox : true}"
