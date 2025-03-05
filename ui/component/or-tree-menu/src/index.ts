@@ -137,7 +137,7 @@ export class OrTreeMenu extends LitElement {
     protected _uiGroups?: NodeListOf<OrTreeGroup>;
 
     // A Map<TreeNode, unique generated ID> to easily identify which TreeNode has been used to render a TreeNodeComponent.
-    protected _treeNodeCache: Map<TreeNode, string> = new Map<TreeNode, string>;
+    protected _treeNodeCache: Map<TreeNode, string> = new Map<TreeNode, string>();
 
     // Caches the last selected component for use in multi select.
     protected _lastSelectedNode?: OrTreeNode;
@@ -194,6 +194,7 @@ export class OrTreeMenu extends LitElement {
      * @protected
      */
     protected _getTreeTemplate(nodes: TreeNode[]): TemplateResult {
+        this._treeNodeCache = new Map(); // clear cache on every new render of the tree
         return html`
             <ol id="tree-list">
                 ${map(nodes, node => this._getNodeTemplate(node))}
@@ -701,6 +702,9 @@ export class OrTreeMenu extends LitElement {
      * @protected
      */
     protected _setTreeNodeId(node: TreeNode, randomId = Math.random().toString(36).substring(2, 11)): string {
+        if(this._treeNodeCache.get(node)) {
+            return this._treeNodeCache.get(node)!;
+        }
         this._treeNodeCache.set(node, randomId);
         return randomId;
     }
