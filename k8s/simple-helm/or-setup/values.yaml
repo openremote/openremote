@@ -1,0 +1,10 @@
+# Configuration when deploying under EKS in AWS
+aws:
+  # Set enabled to true if deployed under AWS
+  enabled: false
+  # Id of the EBS volume used for manager persistent storage
+  managerVolumeId: vol-xxx
+  # Id of the EBS volume used for postgreSQL persistent storage
+  psqlVolumeId: vol-xxx
+# Root path for hostpath storage when deployed locally. On macOS, this needs to be under user's home folder
+basePath: "/Users/username/openremote"
