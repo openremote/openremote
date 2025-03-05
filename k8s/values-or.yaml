@@ -1,0 +1,34 @@
+image:
+  repository: openremote/postgresql
+  tag: latest
+  pullPolicy: Never
+#Always
+  debug: true
+auth:
+  enablePostgresUser: true
+  postgresPassword: postgres-dba
+  database: openremote
+  username: postgres
+  password: postgres
+postgresqlDataDir: /var/lib/postgresql/data
+primary:
+#  command: ["ls"]
+#  args: ["-l", "/var/lib/postgresql"]
+#  command: ["cat"]
+#  args: ["/etc/passwd"]
+#  command: ["whoami"]
+#  command: ["find"]
+#  args: ["/", "-name", "postgresql.conf"]
+#  command: ["cat"]
+#  args: ["/var/lib/postgresql/data/postgresql.conf"]
+#  command: ["egrep"]
+#  args: ["-R", "'Re-indexing'", "/"]
+#  command: [ "/bin/bash", "-c", "--" ]
+#  args: [ "while true; do sleep 30; done;" ]
+  persistence:
+    mountPath: /var/lib/postgresql
+    enabled: true
+    existingClaim: postgresql-or-pvc
+  containerSecurityContext:
+    runAsUser: 70
+    runAsGroup: 70

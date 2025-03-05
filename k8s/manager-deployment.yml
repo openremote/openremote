@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: manager
+  labels:
+    name: manager
+    app: manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: manager
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: manager
+        app: manager
+    spec:
+      containers:
+      - image: openremote/manager:latest
+        imagePullPolicy: Never
+        name: manager
+        env:
+        - name: OR_KEYCLOAK_HOST
+          value: keycloak-headless.default.svc.cluster.local
+        - name: OR_DB_HOST
+          value: acid-minimal-cluster.default.svc.cluster.local
+        - name: OR_DB_PASSWORD
+          value: inLi8A8C0rzK1BtRMF9Rk7VvxL96ZJv9BlJEyWTG4oHq5FI902iEYbFkqla16YQx

@@ -1,0 +1,27 @@
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: or-kc
+spec:
+  instances: 1
+  db:
+    vendor: postgres
+    host: or-postgresql-cluster.default.svc.cluster.local
+    database: openremote
+    usernameSecret:
+      name: keycloak-db-secret
+      key: username
+    passwordSecret:
+      name: keycloak-db-secret
+      key: password
+  http:
+    tlsSecret: example-tls-secret
+  hostname:
+    hostname: test.keycloak.org
+  proxy:
+    headers: xforwarded # double check your reverse proxy sets and overwrites the X-Forwarded-* headers
+  ingress:
+    enabled: false
+  features:
+    enabled:
+      - token-exchange
