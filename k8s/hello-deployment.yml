@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello
+  labels:
+    name: hello
+    app: hello
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: HelloWorld
+        app: hello
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: my-nginx

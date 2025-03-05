@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello
+
+spec:
+  selector:
+    app.kubernetes.io/name: HelloWorld
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: web
+      port: 80
+      targetPort: 80
+      protocol: TCP
+
