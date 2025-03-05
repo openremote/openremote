@@ -175,7 +175,10 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     AtomicReference<String> notificationRealm = new AtomicReference<>();
 
                     switch (source) {
-                        case INTERNAL -> isSuperUser = true;
+                        case INTERNAL -> {
+                            isSuperUser = true;
+                            notificationRealm.set("master");
+                        }
                         case CLIENT -> {
                             AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
                             if (authContext == null) {
@@ -242,7 +245,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                     .setTarget(target.getType())
                                     .setTargetId(target.getId())
                                     .setMessage(notification.getMessage())
-                                    .setRealm(notificationRealm.get())
+                                    .setRealm(notificationRealm.get() != null ? notificationRealm.get() : "master")
                                     .setSentOn(Date.from(timerService.getNow()));
 
                                 sentNotification = em.merge(sentNotification);
@@ -351,8 +354,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         StringBuilder builder = new StringBuilder();
         List<Object> parameters = new ArrayList<>();
 
-        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, false);
         builder.append("select n from SentNotification n where 1=1");
+        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, false);
         builder.append(" order by n.sentOn asc");
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
@@ -460,21 +463,12 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             parameters.add(userIds);
 
         } else if (hasRealms) {
-            builder.append(" AND (")
-                    // target filter - notifications targeting a realm
-                    .append("(n.target = ?")
+            builder.append(" AND n.target = ?")
                     .append(parameters.size() + 1)
                     .append(" AND n.targetId IN ?")
-                    .append(parameters.size() + 2)
-                    .append(")")
-                    // ownership filter - notifications belonging to a realm
-                    .append(" OR n.realm IN ?")
-                    // include null realms for backward compatibility
-                    .append(" OR n.realm IS NULL")
-                    .append(")");
+                    .append(parameters.size() + 2);
 
             parameters.add(Notification.TargetType.REALM);
-            parameters.add(realmIds);
             parameters.add(realmIds);
         }
     }
