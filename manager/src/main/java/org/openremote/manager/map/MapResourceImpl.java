@@ -20,8 +20,6 @@
 package org.openremote.manager.map;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.ws.rs.core.Context;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -78,7 +76,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public Response uploadMap(@Context HttpServletRequest request) {
+    public Response uploadMap() {
         if (request.getContentLength() > mapService.customMapLimit) {
             throw new WebApplicationException("{\"map-custom\": false}", Response.Status.REQUEST_ENTITY_TOO_LARGE);
         }
@@ -109,7 +107,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public Response deleteMap(@Context HttpServletRequest request) {
+    public Response deleteMap() {
         boolean deleted = mapService.deleteUploadedFile();
         if (deleted) {
             return Response.noContent().build();
