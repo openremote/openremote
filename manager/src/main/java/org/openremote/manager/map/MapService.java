@@ -95,7 +95,7 @@ public class MapService implements ContainerService {
         if (vectorTiles.hasNonNull("url")) {
             // We assume no custom tile server is configured when the URL is null.
             //
-            // The DEFAULT_VECTOR_TILES_URL in the map_settings.json file is used as placeholder. When getMapSettings is
+            // The DEFAULT_VECTOR_TILES_URL in the mapsettings.json file is used as placeholder. When getMapSettings is
             // called it omits the URL and replaces it with a tiles property containing a list of URLs that MapLibre
             // will use.
             //
