@@ -86,7 +86,7 @@ public interface MapResource {
     /**
      * Removes mbtiles file
      */
-    @POST
+    @DELETE
     @Path("deleteMap")
     @Produces("text/plain")
     @Operation(operationId = "deleteMap", summary = "Removes mbtiles file")
