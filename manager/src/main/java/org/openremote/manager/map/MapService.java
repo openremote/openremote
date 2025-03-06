@@ -93,6 +93,15 @@ public class MapService implements ContainerService {
 
         ObjectNode vectorTiles = ValueUtil.JSON.valueToTree(mapConfiguration.sources.get("vector_tiles"));
         if (vectorTiles.hasNonNull("url")) {
+            // We assume no custom tile server is configured when the URL is null.
+            //
+            // The DEFAULT_VECTOR_TILES_URL in the map_settings.json file is used as placeholder. When getMapSettings is
+            // called it omits the URL and replaces it with a tiles property containing a list of URLs that MapLibre
+            // will use.
+            //
+            // This check ensures when a custom tile server is configured that it follows the required xyz
+            // scheme see {@link MapSourceConfig.scheme}. The getMapSettings method will use the custom tile server URL
+            // in case the DEFAULT_VECTOR_TILES_URL is replaced.
             if (!vectorTiles.get("url").textValue().contains("/{z}/{x}/{y}")) {
                 throw new WebApplicationException(Response.Status.BAD_REQUEST);
             }
