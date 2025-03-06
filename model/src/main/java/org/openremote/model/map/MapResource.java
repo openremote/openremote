@@ -22,8 +22,6 @@ package org.openremote.model.map;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.manager.MapConfig;
@@ -79,7 +77,7 @@ public interface MapResource {
     @Path("upload")
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
     @Operation(operationId = "uploadMap", summary = "Saves mbtiles file")
-    Response uploadMap(@Context HttpServletRequest request);
+    Response uploadMap();
 
     @GET
     @Path("customMapInfo")
@@ -92,5 +90,5 @@ public interface MapResource {
     @Path("deleteMap")
     @Produces("text/plain")
     @Operation(operationId = "deleteMap", summary = "Removes mbtiles file")
-    Response deleteMap(@Context HttpServletRequest request);
+    Response deleteMap();
 }
