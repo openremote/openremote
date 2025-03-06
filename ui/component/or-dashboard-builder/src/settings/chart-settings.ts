@@ -25,6 +25,8 @@ export class ChartSettings extends WidgetSettings {
 
     protected readonly widgetConfig!: ChartWidgetConfig;
 
+
+
     protected timePresetOptions: Map<string, TimePresetCallback> = new Map<string, TimePresetCallback>();
     protected samplingOptions: Map<string, string> = new Map<string, string>();
 
@@ -321,17 +323,21 @@ export class ChartSettings extends WidgetSettings {
                 colorInput.style.minWidth = '30px';
                 colorInput.style.cursor = 'pointer';
                 colorInput.addEventListener('change', (e: any) => {
-                    this.widgetConfig.attributeSettings.colorPickedAttributes.set(attributeRef, e.target.value);
+                    const color = e.target.value;
+                    const existingIndex = this.widgetConfig.colorPickedAttributes.findIndex(item =>
+                        item.attributeRef.id === attributeRef.id && item.attributeRef.name === attributeRef.name
+                    );
+                    if (existingIndex >= 0) {
+                        this.widgetConfig.colorPickedAttributes[existingIndex].color = color;
+                    } else {
+                        this.widgetConfig.colorPickedAttributes.push({ attributeRef, color });
+                    }
                     this.notifyConfigUpdate();
+                    console.log("Color picked in settings: ", e.target.value);
+                    console.log('Updated widgetconfig colors: ' + JSON.stringify(this.widgetConfig.colorPickedAttributes));
                 });
                 colorInput.click();
                 break;
-                //return html`
-                //    <input type="color" id="elem" style="border: none; height: 31px; width: 31px; padding: 1px 3px; min-height: 22px; min-width: 30px;cursor: pointer"
-                //           @change="${(e: any) => this.widgetConfig.attributeSettings.colorPickedAttributes.set(attributeRef, e.target.value)}"
-                //    />
-                //`;
-                //break;
             case "chart-bell-curve-cumulative":
                 console.log('klikkerieklik');
                 if (!this.widgetConfig.attributeSettings.smoothAttributes.includes(attributeRef)) {

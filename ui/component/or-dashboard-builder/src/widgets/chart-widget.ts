@@ -14,6 +14,7 @@ import "@openremote/or-chart";
 export interface ChartWidgetConfig extends WidgetConfig {
     attributeRefs: AttributeRef[];
     rightAxisAttributes: AttributeRef[];
+    colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }>;
     attributeSettings: {
         rightAxisAttributes: AttributeRef[],
         smoothAttributes: AttributeRef[],
@@ -21,7 +22,6 @@ export interface ChartWidgetConfig extends WidgetConfig {
         areaAttributes: AttributeRef[],
         faintAttributes: AttributeRef[],
         extendedAttributes: AttributeRef[],
-        colorPickedAttributes: Map<AttributeRef, string>
     },
     datapointQuery: AssetDatapointQueryUnion;
     chartOptions?: any; // ChartConfiguration<"line", ScatterDataPoint[]>
@@ -65,6 +65,7 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
     return {
         attributeRefs: [],
         rightAxisAttributes: [],
+        colorPickedAttributes: [],
         attributeSettings: {
             rightAxisAttributes: [],
             smoothAttributes: [],
@@ -72,7 +73,6 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
             areaAttributes: [],
             faintAttributes: [],
             extendedAttributes: [],
-            colorPickedAttributes: new Map<AttributeRef, string>()
         },
         datapointQuery: {
             type: "lttb",
@@ -215,6 +215,7 @@ export class ChartWidget extends OrAssetWidget {
             `, () => {
                 return html`
                     <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .rightAxisAttributes="${this.widgetConfig.rightAxisAttributes}"
+                              .colorPickedAttributes="${this.widgetConfig?.colorPickedAttributes != null ? this.widgetConfig?.colorPickedAttributes : []}"
                               .attributeSettings="${this.widgetConfig?.attributeSettings != null ? this.widgetConfig.attributeSettings : {}}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
                               .showZoomBar="${(this.widgetConfig?.showZoomBar != null) ? this.widgetConfig?.showZoomBar : true}"

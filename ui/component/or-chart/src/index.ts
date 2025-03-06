@@ -56,8 +56,6 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import { when } from "lit/directives/when.js";
 import {createRef, Ref, ref } from "lit/directives/ref.js";
 
-//Chart.register(LineController, ScatterController, LineElement, PointElement, LinearScale, TimeScale, Title, Filler, Legend, Tooltip, ChartAnnotation);
-
 export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
 
     public static readonly NAME = "or-chart-event";
@@ -376,6 +374,9 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Array}) // List of AttributeRef that are shown on the right axis instead.
     public rightAxisAttributes: AttributeRef[] = [];
 
+    @property({type: Array})
+    public colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }> = [];
+
     @property({type: Object})
     public attributeSettings: {
         rightAxisAttributes: AttributeRef[],
@@ -384,7 +385,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         areaAttributes: AttributeRef[],
         faintAttributes: AttributeRef[],
         extendedAttributes: AttributeRef[],
-        colorPickedAttributes: Map<AttributeRef, string>
+        //colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }>;
     } = {
         rightAxisAttributes: [],
         smoothAttributes: [],
@@ -392,7 +393,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         areaAttributes: [],
         faintAttributes: [],
         extendedAttributes: [],
-        colorPickedAttributes: new Map<AttributeRef, string>()
+        //colorPickedAttributes: [],
     };
 
 
@@ -494,7 +495,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     updated(changedProperties: PropertyValues) {
-        console.log('updated triggered');
+       // console.log('updated triggered');
 
         super.updated(changedProperties);
 
@@ -505,14 +506,14 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
         }
 
-        const reloadData = changedProperties.has("datapointQuery") || changedProperties.has("timePresetKey") || changedProperties.has("timeframe") ||
+        const reloadData = changedProperties.has('colorPickedAttributes') || changedProperties.has("datapointQuery") || changedProperties.has("timePresetKey") || changedProperties.has("timeframe") ||
             changedProperties.has("attributeSettings") || changedProperties.has("rightAxisAttributes") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
 
         if (reloadData) {
-            console.log('reloadData triggered');
+          //  console.log('reloadData triggered');
             this._data = undefined;
             if (this._chart) {
-                console.log('releadData found _chart exists so disposing');
+             //   console.log('releadData found _chart exists so disposing');
                 this._chart.dispose();
                 this._chart = undefined;
             }
@@ -520,7 +521,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         if (!this._data) {
-            console.log("Data is not loaded yet");
+          //  console.log("Data is not loaded yet");
             return;
         }
 
@@ -667,7 +668,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 }
             }
 
-            console.log(this._chartOptions);
+          //  console.log(this._chartOptions);
 
             // Initialize echarts instance
             this._chart = init(this._chartElem);
@@ -876,7 +877,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
 
     async loadSettings(reset: boolean) {
-        console.log('loadSettings triggered');
+       // console.log('loadSettings triggered');
 
         if(this.assetAttributes == undefined || reset) {
             this.assetAttributes = [];
@@ -961,7 +962,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     async saveSettings() {
-        console.log('saveSettings triggered');
+       // console.log('saveSettings triggered');
 
         if (!this.panelName) {
             return;
@@ -1066,7 +1067,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _cleanup() {
         console.log('cleanup triggered');
         if (this._chart) {
-            console.log('cleanup found _chart exists so disposing');
+            //('cleanup found _chart exists so disposing');
             this._chart.dispose();
             this._chart = undefined;
             this.requestUpdate();
@@ -1090,7 +1091,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _getAttributeOptionsOld(): [string, string][] | undefined {
-        console.log('getAttributeOptionsOld triggered');
+        //('getAttributeOptionsOld triggered');
         if(!this.activeAsset || !this.activeAsset.attributes) {
             return;
         }
@@ -1170,7 +1171,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
-        console.log('loadData triggered');
+       // console.log('loadData triggered');
         if ((this._data && !this._zoomChanged) || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
             return;
         }
@@ -1217,6 +1218,9 @@ export class OrChart extends translate(i18next)(LitElement) {
             } else {
                 this._dataAbortController = new AbortController();
                 promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
+                    console.log('Stepped attrs:' + JSON.stringify(this.attributeSettings.steppedAttributes));
+                    console.log('Collored attrs in chart:' + JSON.stringify(this.colorPickedAttributes));
+                    console.log('cheese:' + this.colorPickedAttributes);
 
                     const asset = this.assets[assetIndex];
                     const shownOnRightAxis = !!this.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
@@ -1225,7 +1229,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                     const area = !!this.attributeSettings.areaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const faint = !!this.attributeSettings.faintAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const extended = !!this.attributeSettings.extendedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
-                    const color = Array.from(this.attributeSettings.colorPickedAttributes).find(([{ name, id }]) => name === attribute.name && id === asset.id)?.[1];
+                    const color = this.colorPickedAttributes.find(({ attributeRef }) => attributeRef.name === attribute.name && attributeRef.id === asset.id)?.color;
+                    console.log('Picked color found: ' + color);
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);
                     const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
                     const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
@@ -1249,7 +1254,6 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
 
             this._data = data;
-            console.log(data); // DEBUGGING
             this._loading = false;
             this._zoomChanged = false;
 
@@ -1306,7 +1310,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             //areaStyle: fill settings
         }
 
-        console.log('load attribute data triggered');
+        //console.log('load attribute data triggered');
 
         if (asset.id && attribute.name && this.datapointQuery) {
             let response: GenericAxiosResponse<ValueDatapoint<any>[]>;
@@ -1319,10 +1323,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                 query.fromTimestamp = this._zoomStartOfPeriod;
                 query.toTimestamp = this._zoomEndOfPeriod;
             }
-
-            console.log('query.fromTimestamp: ' + query.fromTimestamp + asset.id + attribute.name + 'Predicted: ' + predicted);
-            console.log('query.toTimestamp: ' + query.toTimestamp + asset.id + attribute.name + 'Predicted: ' + predicted);
-
 
             if(query.type == 'lttb') {
 
