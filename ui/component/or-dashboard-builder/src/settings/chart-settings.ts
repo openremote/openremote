@@ -61,22 +61,22 @@ export class ChartSettings extends WidgetSettings {
                 <span>${asset.name}</span>
                 <span style="font-size:14px; color:grey;">${attributeLabel}</span>
                 ${when(isOnRightAxis, () => html`
-                    <div><span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;"><or-translate value="right"></or-translate></span></div>   
+                    <span style="font-size:14px; color:lightgrey;"><or-translate value="right"></or-translate></span>   
                 `)}
                 ${when(isFaint, () => html`
-                    <div><span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;"><or-translate value="dashboard.faint"></or-translate></span></div>
+                    <span style="font-size:14px; color:lightgrey;"><or-translate value="dashboard.faint"></or-translate></span>
                 `)}
                 ${when(isSmooth, () => html`
-                    <div><span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;"><or-translate value="dashboard.smooth"></or-translate></span></div>
+                    <span style="font-size:14px; color:lightgrey;"><or-translate value="dashboard.smooth"></or-translate></span>
                 `)}
                 ${when(isStepped, () => html`
-                    <div><span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;"><or-translate value="dashboard.stepped"></or-translate></span></div>
+                    <span style="font-size:14px; color:lightgrey;"><or-translate value="dashboard.stepped"></or-translate></span>
                 `)}
                 ${when(isArea, () => html`
-                    <div><span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;"><or-translate value="dashboard.fill"></or-translate></span></div>
+                    <span style="font-size:14px; color:lightgrey;"><or-translate value="dashboard.fill"></or-translate></span>
                 `)}
                 ${when(isExtended, () => html`
-                    <div><span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;"><or-translate value="dashboard.extendData"></or-translate></span></div>
+                    <span style="font-size:14px; color:lightgrey;"><or-translate value="dashboard.extendData"></or-translate></span>
                 `)}
             `
 

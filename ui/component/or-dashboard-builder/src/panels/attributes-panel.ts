@@ -55,7 +55,7 @@ export class AttributesSelectEvent extends CustomEvent<{ assets: Asset[], attrib
 
 const styling = css`
   #attribute-list {
-    overflow: auto;
+    overflow: visible;
     flex: 1 1 0;
     width: 100%;
     display: flex;
