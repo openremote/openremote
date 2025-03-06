@@ -23,6 +23,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -36,6 +38,7 @@ import jakarta.ws.rs.core.Response;
 
 public class MapResourceImpl extends WebResource implements MapResource {
 
+    private static final Logger LOG = Logger.getLogger(MapResourceImpl.class.getName());
     protected final MapService mapService;
     protected final ManagerIdentityService identityService;
 
@@ -78,21 +81,18 @@ public class MapResourceImpl extends WebResource implements MapResource {
     @Override
     public Response uploadMap() {
         if (request.getContentLength() > mapService.customMapLimit) {
-            throw new WebApplicationException("{\"map-custom\": false}", Response.Status.REQUEST_ENTITY_TOO_LARGE);
+            throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
         }
 
         try (InputStream stream = request.getInputStream()) {
             boolean isSaved = mapService.saveUploadedFile(stream);
-            ObjectNode response = ValueUtil.JSON
-                .createObjectNode()
-                .put("map-custom", isSaved);
-
             if (isSaved) {
                 return Response.ok("File uploaded successfully").build();
             }
-            return Response.status(Response.Status.BAD_REQUEST).entity(response).build();
-        } catch (IOException error) {
-            throw new WebApplicationException("{\"map-custom\": false}", Response.Status.BAD_REQUEST);
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        } catch (IOException e) {
+            LOG.log(Level.INFO, "Failed to save custom map tiles", e);
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
     }
 
@@ -112,6 +112,6 @@ public class MapResourceImpl extends WebResource implements MapResource {
         if (deleted) {
             return Response.noContent().build();
         }
-        return Response.status(400).build();
+        throw new WebApplicationException(Response.Status.BAD_REQUEST);
     }
 }
