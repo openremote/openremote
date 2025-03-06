@@ -90,14 +90,14 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
 
         // Test to verify "EDIT ACCESS" logic
 
-        when: "dashboard1 is made 'edit private' by its original owner"
-        privateUser1Dashboard.setEditAccess(DashboardAccess.PRIVATE)
+        when: "dashboard1 is made 'view private' by its original owner"
+        privateUser1Dashboard.setAccess(DashboardAccess.PRIVATE)
         assert privateUser1DashboardResource.update(null, privateUser1Dashboard) != null
 
         and: "dashboard1 is actually private"
         def dashboards = privateUser1DashboardResource.getAllRealmDashboards(null, MASTER_REALM)
         assert dashboards.length == 2
-        assert dashboards.find((d) -> d.id == privateUser1Dashboard.id).editAccess == DashboardAccess.PRIVATE
+        assert dashboards.find((d) -> d.id == privateUser1Dashboard.id).access == DashboardAccess.PRIVATE
 
         and: "the first dashboard cannot be edited by a different user, even if its admin user"
         privateUser1Dashboard.setDisplayName("another displayname")
@@ -131,14 +131,14 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         // Test to verify public dashboards CAN be fetched by public/unauthenticated users
 
         when: "dashboard1 is made 'view public' by its original owner"
-        privateUser1Dashboard.setViewAccess(DashboardAccess.PUBLIC)
+        privateUser1Dashboard.setAccess(DashboardAccess.PUBLIC)
         assert privateUser1DashboardResource.update(null, privateUser1Dashboard) != null
 
         then: "when a public user fetches all dashboards, it should only return that dashboard"
         def publicDashboards2 = publicUserDashboardResource.getAllRealmDashboards(null, MASTER_REALM)
         assert publicDashboards2.length == 1
-        assert publicDashboards2[0].viewAccess == DashboardAccess.PUBLIC
-        assert publicDashboards2[0].editAccess == DashboardAccess.PRIVATE
+        assert publicDashboards2[0].access == DashboardAccess.PUBLIC
+        /*assert publicDashboards2[0].editAccess == DashboardAccess.PRIVATE*/
 
         /* ----------------------- */
 
