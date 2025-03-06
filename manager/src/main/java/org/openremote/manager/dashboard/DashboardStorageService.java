@@ -178,10 +178,9 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      */
     protected StringBuilder appendSqlDashboardConditionsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams, String userId) {
         var dashboardConditions = query.conditions.getDashboard();
-        if(dashboardConditions.getViewAccess() != null || dashboardConditions.getEditAccess() != null) {
+        if(dashboardConditions.getViewAccess() != null) {
 
             List<DashboardAccess> viewAccess = new ArrayList<>(Arrays.asList(dashboardConditions.getViewAccess()));
-            List<DashboardAccess> editAccess = new ArrayList<>(Arrays.asList(dashboardConditions.getEditAccess()));
             sqlBuilder.append(" AND (");
 
             // When requesting PRIVATE dashboards, check whether the user is also the owner
@@ -190,17 +189,11 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
                 sqlBuilder.append("(view_access = 2 AND owner_id = :userId) OR ");
                 sqlParams.put("userId", userId);
             }
-            if(userId != null && editAccess.contains(DashboardAccess.PRIVATE)) {
-                editAccess.remove(DashboardAccess.PRIVATE);
-                sqlBuilder.append("(edit_access = 2 AND owner_id = :userId) OR ");
-                sqlParams.put("userId", userId);
-            }
 
             // Append simple SQL filter by dashboard access
-            sqlBuilder.append("(view_access IN (:viewAccess) OR edit_access IN (:editAccess)))");
+            sqlBuilder.append("(view_access IN (:viewAccess)))");
 
             sqlParams.put("viewAccess", viewAccess.stream().map(DashboardAccess::ordinal).collect(Collectors.toList()));
-            sqlParams.put("editAccess", editAccess.stream().map(DashboardAccess::ordinal).collect(Collectors.toList()));
 
             /** TODO: Implement filtering by {@link org.openremote.model.query.DashboardQuery.DashboardConditions.minWidgets} */
 
@@ -292,17 +285,12 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         if(userId == null) {
             throw new IllegalArgumentException("No userId is specified.");
         }
-        // Query the dashboards with the same ID (which is only 1), and that userId is able to EDIT
+        // Query the dashboards with the same ID (which is only 1)
         var query = new DashboardQuery()
                 .ids(dashboard.getId())
                 .realm(new RealmPredicate(realm))
                 .userIds(userId)
-                .limit(1)
-                .conditions(new DashboardQuery.Conditions().dashboard(
-                        new DashboardQuery.DashboardConditions()
-                                .viewAccess(new DashboardAccess[]{})
-                                .editAccess(new DashboardAccess[]{DashboardAccess.SHARED, DashboardAccess.PRIVATE})
-                ));
+                .limit(1);
         Dashboard[] dashboards = this.query(query, userId);
         if(dashboards != null && dashboards.length > 0) {
             Dashboard d = dashboards[0];
@@ -327,15 +315,12 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         }
         return persistenceService.doReturningTransaction(em -> {
 
-            // Query the dashboards with the same ID (which is only 1), and that userId is able to EDIT
+            // Query the dashboards with the same ID (which is only 1)
             Dashboard[] dashboards = this.query(new DashboardQuery()
                     .ids(dashboardId)
                     .realm(new RealmPredicate(realm))
                     .userIds(userId)
-                    .limit(1)
-                    .conditions(new DashboardQuery.Conditions().dashboard(
-                            new DashboardQuery.DashboardConditions().editAccess(new DashboardAccess[]{ DashboardAccess.SHARED, DashboardAccess.PRIVATE })
-                    )),
+                    .limit(1),
                     userId
             );
             if(dashboards == null || dashboards.length == 0) {

@@ -71,27 +71,19 @@ public class DashboardQuery implements Serializable {
      */
     public static class DashboardConditions {
         protected DashboardAccess[] viewAccess;
-        protected DashboardAccess[] editAccess;
         protected Integer minWidgets;
 
         public DashboardConditions() {
             this.viewAccess = new DashboardAccess[]{DashboardAccess.PUBLIC, DashboardAccess.SHARED, DashboardAccess.PRIVATE};
-            this.editAccess = new DashboardAccess[]{DashboardAccess.PUBLIC, DashboardAccess.SHARED, DashboardAccess.PRIVATE};
         }
 
-        public DashboardConditions(DashboardAccess[] viewAccess, DashboardAccess[] editAccess, Integer minWidgets) {
+        public DashboardConditions(DashboardAccess[] viewAccess, Integer minWidgets) {
             this.viewAccess = viewAccess;
-            this.editAccess = editAccess;
             this.minWidgets = minWidgets;
         }
 
         public DashboardConditions viewAccess(DashboardAccess[] access) {
             this.viewAccess = access;
-            return this;
-        }
-
-        public DashboardConditions editAccess(DashboardAccess[] editAccess) {
-            this.editAccess = editAccess;
             return this;
         }
 
@@ -102,10 +94,6 @@ public class DashboardQuery implements Serializable {
 
         public DashboardAccess[] getViewAccess() {
             return viewAccess;
-        }
-
-        public DashboardAccess[] getEditAccess() {
-            return editAccess;
         }
 
         public Integer getMinWidgets() {

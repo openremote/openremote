@@ -39,9 +39,6 @@ public class Dashboard {
     @Column(name = "VIEW_ACCESS", nullable = false)
     protected DashboardAccess viewAccess;
 
-    @Column(name = "EDIT_ACCESS", nullable = false)
-    protected DashboardAccess editAccess;
-
     @NotBlank(message = "{Dashboard.displayName.NotBlank}")
     @Column(name = "DISPLAY_NAME", nullable = false)
     protected String displayName;
@@ -94,11 +91,6 @@ public class Dashboard {
         return this;
     }
 
-    public Dashboard setEditAccess(DashboardAccess access) {
-        this.editAccess = access;
-        return this;
-    }
-
     public Dashboard setDisplayName(String displayName) {
         this.displayName = displayName;
         return this;
@@ -132,10 +124,6 @@ public class Dashboard {
 
     public DashboardAccess getViewAccess() {
         return this.viewAccess;
-    }
-
-    public DashboardAccess getEditAccess() {
-        return this.editAccess;
     }
 
     public String getDisplayName() {
