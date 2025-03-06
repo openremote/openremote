@@ -36,8 +36,8 @@ export class OrDashboardBoardsettings extends LitElement {
 
     /* -------------------------------- */
 
-    private setViewAccess(access: DashboardAccess) {
-        this.dashboard.viewAccess = access;
+    private setAccess(access: DashboardAccess) {
+        this.dashboard.access = access;
         this.requestUpdate();
         this.forceParentUpdate(false);
     }
@@ -57,7 +57,7 @@ export class OrDashboardBoardsettings extends LitElement {
     protected render() {
         if (this.dashboard.template?.screenPresets != null) {
             const screenPresets = sortScreenPresets(this.dashboard.template.screenPresets, true);
-            const viewAccessOptions = [DashboardAccess.PRIVATE, DashboardAccess.SHARED, DashboardAccess.PUBLIC].map((access) => ({key: access, value: dashboardAccessToString(access)}));
+            const accessOptions = [DashboardAccess.PRIVATE, DashboardAccess.SHARED, DashboardAccess.PUBLIC].map((access) => ({key: access, value: dashboardAccessToString(access)}));
             const refreshIntervalOptions = [DashboardRefreshInterval.OFF, DashboardRefreshInterval.ONE_MIN, DashboardRefreshInterval.FIVE_MIN, DashboardRefreshInterval.QUARTER, DashboardRefreshInterval.ONE_HOUR].map(interval => ({key: interval, value: `dashboard.interval.${interval.toLowerCase()}`}))
             const scalingPresets: { key: DashboardScalingPreset, value: string }[] = [];
             [DashboardScalingPreset.KEEP_LAYOUT, DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN, /*DashboardScalingPreset.REDIRECT,*/ DashboardScalingPreset.BLOCK_DEVICE].forEach((preset: DashboardScalingPreset) => {
@@ -74,10 +74,10 @@ export class OrDashboardBoardsettings extends LitElement {
                                     ${html`<span>${unsafeHTML(i18next.t('dashboard.whoCanView').toString())}</span>`}
                                 </div>
                                 <or-mwc-input class="permissionInput" comfortable type="${InputType.SELECT}" style="width: 100%;"
-                                              .options="${viewAccessOptions.map((access) => access.value)}"
-                                              .value="${dashboardAccessToString(this.dashboard.viewAccess!)}"
+                                              .options="${accessOptions.map((access) => access.value)}"
+                                              .value="${dashboardAccessToString(this.dashboard.access!)}"
                                               @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                                  this.setViewAccess(viewAccessOptions.find((access) => access.value == event.detail.value)?.key!);
+                                                  this.setAccess(accessOptions.find((access) => access.value == event.detail.value)?.key!);
                                               }}"
                                 ></or-mwc-input>
                             </div>

@@ -178,22 +178,22 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      */
     protected StringBuilder appendSqlDashboardConditionsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams, String userId) {
         var dashboardConditions = query.conditions.getDashboard();
-        if(dashboardConditions.getViewAccess() != null) {
+        if(dashboardConditions.getAccess() != null) {
 
-            List<DashboardAccess> viewAccess = new ArrayList<>(Arrays.asList(dashboardConditions.getViewAccess()));
+            List<DashboardAccess> access = new ArrayList<>(Arrays.asList(dashboardConditions.getAccess()));
             sqlBuilder.append(" AND (");
 
             // When requesting PRIVATE dashboards, check whether the user is also the owner
-            if(userId != null && viewAccess.contains(DashboardAccess.PRIVATE)) {
-                viewAccess.remove(DashboardAccess.PRIVATE);
-                sqlBuilder.append("(view_access = 2 AND owner_id = :userId) OR ");
+            if(userId != null && access.contains(DashboardAccess.PRIVATE)) {
+                access.remove(DashboardAccess.PRIVATE);
+                sqlBuilder.append("(access = 2 AND owner_id = :userId) OR ");
                 sqlParams.put("userId", userId);
             }
 
             // Append simple SQL filter by dashboard access
-            sqlBuilder.append("(view_access IN (:viewAccess)))");
+            sqlBuilder.append("(access IN (:access)))");
 
-            sqlParams.put("viewAccess", viewAccess.stream().map(DashboardAccess::ordinal).collect(Collectors.toList()));
+            sqlParams.put("access", access.stream().map(DashboardAccess::ordinal).collect(Collectors.toList()));
 
             /** TODO: Implement filtering by {@link org.openremote.model.query.DashboardQuery.DashboardConditions.minWidgets} */
 

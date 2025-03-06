@@ -4,7 +4,7 @@
   "realm": "manufacturer",
   "version": 11,
   "ownerId": "e5ca8a39-5193-478d-ba86-57e7095679cf",
-  "viewAccess": "SHARED",
+  "access": "SHARED",
   "displayName": "Harvesting dashboard",
   "template": {
     "id": "vmkw9nr0i4",

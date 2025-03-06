@@ -550,7 +550,7 @@ export class OrDashboardBuilder extends LitElement {
         return manager.hasRole(ClientRole.WRITE_INSIGHTS);
     }
     protected _hasViewAccess(): boolean {
-        return manager.hasRole(ClientRole.READ_INSIGHTS) && this.userId != null && (this.selectedDashboard?.viewAccess == DashboardAccess.PRIVATE ? this.selectedDashboard?.ownerId == this.userId : true)
+        return manager.hasRole(ClientRole.READ_INSIGHTS) && this.userId != null && (this.selectedDashboard?.access == DashboardAccess.PRIVATE ? this.selectedDashboard?.ownerId == this.userId : true)
     }
 
     /* ----------------- */

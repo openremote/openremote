@@ -36,8 +36,8 @@ public class Dashboard {
     @Column(name = "OWNER_ID", nullable = false)
     protected String ownerId;
 
-    @Column(name = "VIEW_ACCESS", nullable = false)
-    protected DashboardAccess viewAccess;
+    @Column(name = "ACCESS", nullable = false)
+    protected DashboardAccess access;
 
     @NotBlank(message = "{Dashboard.displayName.NotBlank}")
     @Column(name = "DISPLAY_NAME", nullable = false)
@@ -86,8 +86,8 @@ public class Dashboard {
         return this;
     }
 
-    public Dashboard setViewAccess(DashboardAccess access) {
-        this.viewAccess = access;
+    public Dashboard setAccess(DashboardAccess access) {
+        this.access = access;
         return this;
     }
 
@@ -122,8 +122,8 @@ public class Dashboard {
         return this.ownerId;
     }
 
-    public DashboardAccess getViewAccess() {
-        return this.viewAccess;
+    public DashboardAccess getAccess() {
+        return this.access;
     }
 
     public String getDisplayName() {

@@ -213,30 +213,8 @@ export class OrDashboardTree extends LitElement {
     // Element render method
     // TODO: Move dashboard filtering to separate method.
     protected render() {
-        const dashboardItems: ListItem[][] = [];
-        if (this.dashboards && this.dashboards.length > 0) {
-            if (this.userId) {
-                const myDashboards: Dashboard[] = [];
-                const otherDashboards: Dashboard[] = [];
-                this.dashboards?.forEach(d => {
-                    (d.ownerId === this.userId) ? myDashboards.push(d) : otherDashboards.push(d);
-                });
-                if (myDashboards.length > 0) {
-                    const items: ListItem[] = [];
-                    myDashboards.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName!) : 0).forEach(d => {
-                        items.push({icon: 'view-dashboard', text: d.displayName, value: d.id});
-                    });
-                    dashboardItems.push(items);
-                }
-                if (otherDashboards.length > 0) {
-                    const items: ListItem[] = [];
-                    otherDashboards.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName!) : 0).forEach(d => {
-                        items.push({icon: 'view-dashboard', text: d.displayName, value: d.id});
-                    });
-                    dashboardItems.push(items);
-                }
-            }
-        }
+        const dashboardItems = this.dashboards?.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName!) : 0)
+            .map(d => ({ icon: 'view-dashboard', text: d.displayName, value: d.id} as ListItem)) || []
         return html`
             <div id="menu-header">
                 <div id="title-container">
@@ -280,31 +258,16 @@ export class OrDashboardTree extends LitElement {
             
             <!-- List of dashboards -->
             <div id="content">
-                <div style="padding-top: 8px;">
-                    ${dashboardItems.map((items, index) => {
-                        return (items != null && items.length > 0) ? html`
-                            <div style="padding: 8px 0;">
-                                <span style="font-weight: 500; padding-left: 14px; color: #000000;">
-                                    <or-translate value="${(index === 0 ? 'dashboard.myDashboards' : 'dashboard.createdByOthers')}"></or-translate>
-                                 </span>
-                                <div id="list-container" style="overflow: hidden;">
-                                    <ol id="list">
-                                        ${items.map((listItem: ListItem) => {
-                                            return html`
-                                                <li ?data-selected="${listItem.value === this.selected?.id}" @click="${(_evt: MouseEvent) => {
-                                                    this.onDashboardClick(listItem.value);
-                                                }}">
-                                                    <div class="node-container">
-                                                        <span class="node-name">${listItem.text} </span>
-                                                    </div>
-                                                </li>
-                                            `;
-                                        })}
-                                    </ol>
+                <div id="list-container" style="overflow: hidden;">
+                    <ol id="list">
+                        ${dashboardItems.map((listItem: ListItem) => html`
+                            <li ?data-selected="${listItem.value === this.selected?.id}" @click="${(_evt: MouseEvent) => this.onDashboardClick(listItem.value)}">
+                                <div class="node-container">
+                                    <span class="node-name">${listItem.text} </span>
                                 </div>
-                            </div>
-                        ` : undefined;
-                    })}
+                            </li>
+                        `)}
+                    </ol>
                 </div>
             </div>
         `;

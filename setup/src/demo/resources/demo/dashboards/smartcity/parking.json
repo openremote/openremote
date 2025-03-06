@@ -4,7 +4,7 @@
   "realm": "smartcity",
   "version": 8,
   "ownerId": "e5ca8a39-5193-478d-ba86-57e7095679cf",
-  "viewAccess": "SHARED",
+  "access": "SHARED",
   "displayName": "Parking dashboard",
   "template": {
     "id": "szpfxnrzpg",
