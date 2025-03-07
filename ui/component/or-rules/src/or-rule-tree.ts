@@ -173,6 +173,7 @@ export class OrRuleTree extends OrTreeMenu {
     }
 
     protected _getHeaderTemplate(): TemplateResult {
+        console.log("selectedTypes are", this._selectedTypes);
         return html`
             ${when(manager.isSuperUser(), () => html`
                 <div id="rules-tree-global-header">
@@ -187,7 +188,9 @@ export class OrRuleTree extends OrTreeMenu {
                 </h3>
                 <div id="tree-header-actions">
                     ${when((this._selectedTypes.size === 1 && this._selectedTypes.has('ruleset')) && !this.readonly, () => html`
-                        <or-mwc-input type=${InputType.BUTTON} icon="content-copy" @or-mwc-input-changed=${this._onCopyClicked}></or-mwc-input>
+                        ${when(this._findSelectedTreeNodes().length === 1, () => html`
+                            <or-mwc-input type=${InputType.BUTTON} icon="content-copy" @or-mwc-input-changed=${this._onCopyClicked}></or-mwc-input>
+                        `)}
                         <or-mwc-input type=${InputType.BUTTON} icon="delete" @or-mwc-input-changed=${this._onDeleteClicked}></or-mwc-input>
                     `)}
                     ${when((this._selectedTypes.size === 1 && this._selectedTypes.has('group')) && !this.readonly, () => html`
@@ -339,6 +342,11 @@ export class OrRuleTree extends OrTreeMenu {
         this._selectedTypes = selectedTypes;
 
         return super._dispatchSelectEvent(nodes);
+    }
+
+    protected _deselectAllNodes() {
+        super._deselectAllNodes();
+        this._selectedTypes = new Set();
     }
 
     /**

@@ -50,6 +50,7 @@ const getStyles = () => css`
         padding-left: 4px;
         font-size: 18px;
         color: #cccccc;
+        z-index: 10;
     }
     
     #chevron:hover {
