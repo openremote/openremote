@@ -856,9 +856,6 @@ export class OrRules extends translate(i18next)(LitElement) {
     @state()
     protected _selectedGroup?: string;
 
-    /*@query("#rule-list")
-    private _rulesList?: OrRuleList;*/
-
     @query("#rule-tree")
     private _rulesTree?: OrRuleTree;
 
