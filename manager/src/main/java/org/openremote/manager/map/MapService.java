@@ -84,6 +84,7 @@ public class MapService implements ContainerService {
     protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
     protected String pathPrefix;
+    protected Path customMapTiles;
     protected int customMapLimit = OR_CUSTOM_MAP_SIZE_LIMIT_DEFAULT;
 
     public ObjectNode saveMapConfig(MapConfig mapConfiguration) throws RuntimeException {
@@ -220,6 +221,7 @@ public class MapService implements ContainerService {
     @Override
     public void start(Container container) throws Exception {
         setData();
+        customMapTiles = configurationService.getMapTilesPath().getParent().resolve("mapdata-custom.mbtiles");
     }
 
     public void setData() throws ClassNotFoundException, SQLException, NullPointerException {
@@ -434,9 +436,7 @@ public class MapService implements ContainerService {
     }
 
     public boolean saveUploadedFile(InputStream fileInputStream) {
-        Path destinationPath = configurationService.getCustomMapTilesPath();
-
-        try (OutputStream outputStream = Files.newOutputStream(destinationPath)) {
+        try (OutputStream outputStream = Files.newOutputStream(customMapTiles)) {
             byte[] buffer = new byte[4096];
             int bytesRead;
             while ((bytesRead = fileInputStream.read(buffer)) != -1) {
@@ -444,12 +444,12 @@ public class MapService implements ContainerService {
             }
 
             Class.forName(org.sqlite.JDBC.class.getName());
-            Connection connection = DriverManager.getConnection("jdbc:sqlite:" + destinationPath);
+            Connection connection = DriverManager.getConnection("jdbc:sqlite:" + customMapTiles);
 
             PreparedStatement query = connection.prepareStatement("PRAGMA integrity_check;");
             ResultSet result = query.executeQuery();
             if (!result.next() || !result.getString(1).equals("ok")) {
-                Files.deleteIfExists(destinationPath);
+                Files.deleteIfExists(customMapTiles);
                 LOG.log(Level.SEVERE, "MBTiles database file corrupt");
                 return false;
             }
@@ -457,38 +457,35 @@ public class MapService implements ContainerService {
             this.setData(connection);
             return true;
         } catch (IOException | SQLException | ClassNotFoundException e) {
-            LOG.log(Level.SEVERE, "Failed to load database file", e);
+            LOG.log(Level.SEVERE, "Failed to load mapdata-custom.mbtiles file", e);
             try {
-                Files.deleteIfExists(destinationPath);
-            } catch (IOException deleteError){
-                LOG.log(Level.SEVERE, "Failed to delete uploaded file", deleteError);
+                Files.deleteIfExists(customMapTiles);
+            } catch (IOException deleteError) {
+                LOG.log(Level.SEVERE, "Failed to delete mapdata-custom.mbtiles file", deleteError);
             }
             return false;
         }
     }
 
     public boolean isCustomUploadedFile() {
-        Path destinationPath = configurationService.getCustomMapTilesPath();
-        if (destinationPath == null) {
-            return false;
-        }
-        return Files.exists(destinationPath);
+        return Files.exists(customMapTiles);
     }
 
     public boolean deleteUploadedFile() {
-        Path destinationPath = configurationService.getCustomMapTilesPath();
-        boolean deleted = destinationPath.toFile().delete();
-        if (deleted) {
-            LOG.info("File deleted successfully");
-        } else {
-            LOG.severe("Failed to delete file");
+        try {
+            Files.deleteIfExists(customMapTiles);
+            LOG.info("mapdata-custom.mbtiles file deleted successfully");
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "Failed to delete mapdata-custom.mbtiles file", e);
+            return false;
         }
         try {
             this.setData();
         } catch (SQLException | ClassNotFoundException e) {
             LOG.log(Level.SEVERE, "Failed to load default file", e);
+            return false;
         }
-        return deleted;
+        return true;
     }
 
     protected static final class Metadata {
