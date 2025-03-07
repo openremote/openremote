@@ -173,7 +173,6 @@ export class OrRuleTree extends OrTreeMenu {
     }
 
     protected _getHeaderTemplate(): TemplateResult {
-        console.log("selectedTypes are", this._selectedTypes);
         return html`
             ${when(manager.isSuperUser(), () => html`
                 <div id="rules-tree-global-header">
