@@ -291,7 +291,7 @@ class OrSurvey extends LitElement {
                 localStorage.setItem('survey'+this.survey.id, "set");
 
                 const xhttp = new XMLHttpRequest();
-                const url = manager.config.managerUrl ? manager.config.managerUrl+"/rest/survey/" : window.location.origin+"/rest/survey/";
+                const url = manager.managerUrl ? manager.managerUrl+"/rest/survey/" : window.location.origin+"/rest/survey/";
                 xhttp.open("POST", url + this.survey.id, true);
                 xhttp.setRequestHeader("Content-type", "application/json");
                 xhttp.send(JSON.stringify(this.surveyAnswers));
