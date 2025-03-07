@@ -156,7 +156,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 display: flex;
             }
 
-            .custom-server-group {
+            .global-server-group {
                 width: 50%;
             }
 
@@ -166,7 +166,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             }
 
             @media screen and (max-width: 768px) {
-                .custom-tile-group, .custom-server-group {
+                .custom-tile-group, .global-server-group {
                     width: 100%;
                     padding: unset;
                 }
@@ -345,11 +345,11 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                         <or-panel .heading="${mapHeading}">
                             ${when(this.mapConfig, () => html`
                                 <div class="global-settings-container">
-                                    <div class="custom-server-group">
+                                    <div class="global-server-group">
                                         <div class="subheader"><or-translate value="configuration.global.tileServer"></or-translate></div>
                                         <span><or-translate value="configuration.global.tileServerDescription"></or-translate></span>
                                         <or-mwc-input class="input" outlined
-                                            .value="${this.mapConfig.sources?.['vector_tiles']?.tiles?.[0] || this.mapConfig.sources?.['vector_tiles']?.url}" 
+                                            .value="${this.mapConfig.sources?.['vector_tiles']?.tiles?.[0] || this.mapConfig.sources?.['vector_tiles']?.url}"
                                             .type="${InputType.URL}"
                                             .label="${i18next.t("configuration.global.tileServerPlaceholder")}"
                                             placeholder="https://api.example.com/tileset/{z}/{x}/{y}"

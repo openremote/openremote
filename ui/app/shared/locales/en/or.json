@@ -805,7 +805,7 @@
     "deleteMapCustomizationConfirm":"Are you sure you want to delete this Map customization?",
     "addMapCustomization" : "Add map settings",
     "global": {
-      "tileServer": "Custom Tile Server",
+      "tileServer": "Tile Server",
       "tileServerDescription": "Configure a tile server. The URL must specify the tile coordinates using the /{z}/{x}/{y} scheme.",
       "tileServerPlaceholder": "Map Server URL",
       "mapTiles": "Custom Map Tiles",
