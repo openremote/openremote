@@ -806,7 +806,8 @@
       "tileServerDescription": "Configureer een kaartserver. De URL moet de tegelcoördinaten specificeren met behulp van het /{z}/{x}/{y} schema.",
       "tileServerPlaceholder": "Kaartserver URL",
       "mapTiles": "Eigen Kaarttegels",
-      "uploadMapTiles": "Upload aangepaste kaarttegels. De maximaal toegestane bestandsgrootte is {{customMapLimit}}."
+      "uploadMapTiles": "Upload aangepaste kaarttegels. De maximaal toegestaande bestandsgrootte is {{customMapLimit}}.",
+      "uploadMapTilesError": "Kaarttegel bestand overschrijdt de maximale bestandsgrootte."
     }
   },
   "realmRole": {

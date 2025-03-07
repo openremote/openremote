@@ -36,6 +36,7 @@ import {OrConfRealmCard} from "../components/configuration/or-conf-realm/or-conf
 import {OrConfPanel} from "../components/configuration/or-conf-panel";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu, DefaultRealmConfig} from "../index";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 declare const CONFIG_URL_PREFIX: string;
 declare const MANAGER_URL: string | undefined;
@@ -415,6 +416,10 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     protected async uploadCustomMap(e: CustomEvent) {
         const file = e.detail.value[0] as File;
+        if (file.size > this.customMapLimit) {
+          showSnackbar(undefined, "configuration.global.uploadMapTilesError")
+          return;
+        }
         this.tilesForUpload = file;
         this.mapConfigChanged = true;
     }
