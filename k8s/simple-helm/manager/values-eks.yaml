@@ -1,0 +1,25 @@
+ingress:
+  hosts:
+    - paths:
+        - path: /
+          pathType: Prefix
+  className: "alb"
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/group.name: eric-test-ig
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:eu-west-1:463235666115:certificate/...
+  tls: {}
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: topology.kubernetes.io/zone
+              operator: In
+              values:
+                - eu-west-1a
+
+or:
+  hostname: k8stest.openremote.app
