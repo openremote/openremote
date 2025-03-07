@@ -1,3 +1,22 @@
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, queryAll} from "lit/decorators.js";
 import {map} from "lit/directives/map.js";
@@ -190,7 +209,6 @@ export class OrTreeMenu extends LitElement {
     /**
      * Returns a HTML template that displays the tree menu.
      * @param nodes - List of nodes to be rendered
-     * @protected
      */
     protected _getTreeTemplate(nodes: TreeNode[]): TemplateResult {
         this._treeNodeCache = new Map(); // clear cache on every new render of the tree
@@ -205,7 +223,6 @@ export class OrTreeMenu extends LitElement {
      * Returns an HTML template for displaying a single node within a tree menu. This can both be a group or a solo node.
      * @param node - Node to be rendered
      * @param parent - Optional parent (group node) if the node is placed inside a group
-     * @protected
      */
     protected _getNodeTemplate(node: TreeNode, parent?: TreeNode): TemplateResult {
         const isGroup = node.children;
@@ -220,7 +237,6 @@ export class OrTreeMenu extends LitElement {
      * Returns an HTML template for displaying a single node
      * @param node - Node to be rendered
      * @param parent - Optional parent (group node) if the node is placed inside a group
-     * @protected
      */
     protected _getSingleNodeTemplate(node: TreeNode, parent?: TreeNode): TemplateResult {
         const randomId = this._setTreeNodeId(node);
@@ -241,7 +257,6 @@ export class OrTreeMenu extends LitElement {
      * Returns an HTML template for the slot element inside <or-tree-node>.
      * It allows customization such as a prefix icon, adjusting the label, etc.
      * @param node - Node to be rendered
-     * @protected
      */
     protected _getSingleNodeSlotTemplate(node: TreeNode): TemplateResult {
         return html`
@@ -254,10 +269,9 @@ export class OrTreeMenu extends LitElement {
     /**
      * Returns a HTML template for rendering a group node (aka a node with children)
      * @param node - Node to be rendered
-     * @param parent - Optional parent (group node) if the node is placed inside a group
-     * @protected
+     * @param _parent - Optional parent (group node) if the node is placed inside a group
      */
-    protected _getGroupNodeTemplate(node: TreeNode, parent?: TreeNode): TemplateResult {
+    protected _getGroupNodeTemplate(node: TreeNode, _parent?: TreeNode): TemplateResult {
         const leaf = this.selection === TreeMenuSelection.LEAF;
         const randomId = this._setTreeNodeId(node);
         return html`
@@ -280,7 +294,6 @@ export class OrTreeMenu extends LitElement {
      * Returns an HTML template for the parent slot element inside <or-tree-group>.
      * It allows customization such as a prefix icon, adjusting the label, etc.
      * @param node - Node to be rendered
-     * @protected
      */
     protected _getGroupNodeSlotTemplate(node: TreeNode): TemplateResult {
         return html`
@@ -292,7 +305,6 @@ export class OrTreeMenu extends LitElement {
 
     /**
      * Returns a HTML template for the header
-     * @protected
      */
     protected _getHeaderTemplate(): TemplateResult {
         return html`
@@ -311,7 +323,6 @@ export class OrTreeMenu extends LitElement {
      * Returns a HTML template for the sorting options menu.
      * @param value - The selected sorting option
      * @param options - The available sorting options
-     * @protected
      */
     protected _getSortActionTemplate(value?: string, options?: TreeMenuSorting[]): TemplateResult {
         return getContentWithMenuTemplate(
@@ -324,7 +335,6 @@ export class OrTreeMenu extends LitElement {
 
     /**
      * Returns a HTML template for displaying errors
-     * @protected
      */
     protected _getErrorTemplate(): TemplateResult {
         return html``;
@@ -339,7 +349,6 @@ export class OrTreeMenu extends LitElement {
     /**
      * HTML callback event for selecting a sort option in the dropdown menu,.
      * @param value - The new selected sort option
-     * @protected
      */
     protected _onSortClick(value: string) {
         this.sortBy = value as TreeMenuSorting;
@@ -348,7 +357,6 @@ export class OrTreeMenu extends LitElement {
     /**
      * HTML callback event for clicking on a group node. (aka a node with children)
      * Based on the configured TreeMenuSelection, it single- or multi selects the nodes.
-     * @protected
      */
     protected _onTreeGroupClick(ev: PointerEvent) {
         const elem = ev.currentTarget as OrTreeNode;
@@ -395,10 +403,7 @@ export class OrTreeMenu extends LitElement {
         }
     }
 
-    /**
-     * HTML callback event for when a child node of the tree gets clicked on.
-     * @protected
-     */
+    /** HTML callback event for when a child node of the tree gets clicked on. */
     protected _onTreeNodeClick(ev: PointerEvent) {
         const node = ev.currentTarget as OrTreeNode;
         if (node) {
@@ -554,7 +559,6 @@ export class OrTreeMenu extends LitElement {
      * Selects the node using the HTML attribute 'selected' of OrTreeNode
      * @param node - Node to be selected
      * @param notify - Boolean whether to notify the HTML parents of an or-tree-select.
-     * @protected
      */
     protected _selectNode(node?: OrTreeNode, notify = true) {
         if(node) {
@@ -576,7 +580,6 @@ export class OrTreeMenu extends LitElement {
      * @param index1 - Start index of the nodes to select
      * @param index2 - End index of the nodes to select
      * @param notify - Boolean whether to notify the HTML parents of an or-tree-select.
-     * @protected
      */
     protected _selectNodesBetween(nodes: OrTreeNode[], index1: number, index2: number, notify = true) {
         const selectedNodes: OrTreeNode[] = [];
@@ -603,7 +606,6 @@ export class OrTreeMenu extends LitElement {
      * Function that notifies parent HTMLElements that a tree node got selected.
      * It dispatches the OrTreeSelectEvent, which includes a list of the selected nodes.
      * @returns a 'success' boolean whether the event was cancelled or not
-     * @protected
      */
     protected async _notifyNodesSelect(selectedNodes?: TreeNode[]) {
         await this.getUpdateComplete(); // await render to include the latest changes.
@@ -615,9 +617,8 @@ export class OrTreeMenu extends LitElement {
 
     /**
      * Utility function to detect the selected tree nodes.
-     * @param uiNodes
-     * @param cache
-     * @protected
+     * @param uiNodes - List of <or-tree-node> UI elements
+     * @param cache - Optionally, supply the cache for retrieving a {@link TreeNode} object from a <or-tree-node> element.
      */
     protected _findSelectedTreeNodes(uiNodes = Array.from(this._uiNodes || []), cache = this._treeNodeCache): TreeNode[] {
 
@@ -628,7 +629,7 @@ export class OrTreeMenu extends LitElement {
         const treeNodeEntries = Array.from(cache.entries());
 
         // Find the generated IDs in the list of TreeNodeComponents, and compare the element ID
-       return selectedUiNodes.map(component => treeNodeEntries
+        return selectedUiNodes.map(component => treeNodeEntries
             .find(v => v[1] === component.id))
             .map(x => x?.[0])
             .filter(n => n !== undefined) as TreeNode[];
@@ -638,7 +639,6 @@ export class OrTreeMenu extends LitElement {
      * Utility function that gets a {@link TreeNode} based on an {@link OrTreeNode} HTML element in the menu.
      * @param uiNode - The tree node HTML element
      * @param cache - Optional cache to get the TreeNode from
-     * @protected
      */
     protected _getTreeNodeFromTree(uiNode: OrTreeNode, cache = this._treeNodeCache): TreeNode | undefined {
         const treeNodeEntries = Array.from(cache.entries()); // Get the list of cached generated IDs (for tracking which TreeNode belongs to which TreeNodeComponent)
@@ -649,7 +649,6 @@ export class OrTreeMenu extends LitElement {
      * Utility function that gets an {@link OrTreeNode} HTML element based on the {@link TreeNode} input object.
      * @param treeNode - The tree node object
      * @param cache - Optional cache to get the HTML element from
-     * @protected
      */
     protected _getUiNodeFromTree(treeNode: TreeNode, cache = this._treeNodeCache): OrTreeNode | undefined {
         const treeNodeEntries = Array.from(cache.entries()); // Get the list of cached generated IDs (for tracking which TreeNode belongs to which TreeNodeComponent)
@@ -663,7 +662,6 @@ export class OrTreeMenu extends LitElement {
      * Utility function for sending a "select" event, so consumers of this component are aware a new node has been selected.
      * @param selectedNodes - List of selected nodes to include in the event payload.
      * @returns a 'success' boolean whether the event was cancelled or not.
-     * @protected
      */
     protected _dispatchSelectEvent(selectedNodes?: TreeNode[]): boolean {
         return this.dispatchEvent(new OrTreeSelectEvent(selectedNodes || []));
@@ -671,7 +669,6 @@ export class OrTreeMenu extends LitElement {
 
     /**
      * Utility function that deselects all tree nodes.
-     * @protected
      */
     protected _deselectAllNodes() {
         (this._uiGroups || []).forEach(uiGroup => uiGroup.deselect());
@@ -706,7 +703,8 @@ export class OrTreeMenu extends LitElement {
     /**
      * Function that caches a random ID into a key-value storage, linking the TreeNode with a generated ID.
      * This generated ID can be used somewhere else, for example in an HTMLElement ID as a unique identifier.
-     * @protected
+     * @param node - The TreeNode object to cache
+     * @param randomId - Optionally you can supply an ID to use for caching
      */
     protected _setTreeNodeId(node: TreeNode, randomId = Math.random().toString(36).substring(2, 11)): string {
         if(this._treeNodeCache.get(node)) {
@@ -719,7 +717,7 @@ export class OrTreeMenu extends LitElement {
     /**
      * Function for retrieving the sorting for TreeNodes based on a sortBy parameter.
      * The sortBy parameter represents a key in the TreeNode object like 'label'.
-     * @protected
+     * @param sortBy - Sorting option to use, such as "a_to_z"
      */
     protected _getSortFunction(sortBy?: TreeMenuSorting): (a: TreeNode, b: TreeNode) => number {
         switch (sortBy) {

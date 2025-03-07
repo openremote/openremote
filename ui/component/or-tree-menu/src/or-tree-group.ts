@@ -1,3 +1,22 @@
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query, queryAssignedElements} from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
@@ -153,7 +172,6 @@ export class OrTreeGroup extends LitElement {
     /**
      * Returns an HTML template that represents the icon for this group.
      * @param expanded State of the group
-     * @protected
      */
     protected _getIconTemplate(expanded = false): TemplateResult {
         return html`
@@ -165,7 +183,6 @@ export class OrTreeGroup extends LitElement {
 
     /**
      * Function that expands/collapses the group, changing the visibility of the child nodes.
-     * @protected
      */
     protected _onExpandToggle(_ev: MouseEvent) {
         this.expanded = !this.expanded;
@@ -174,7 +191,6 @@ export class OrTreeGroup extends LitElement {
     /**
      * Event listener for 'slotchange' of the default slot.
      * Normally triggers when <or-tree-node> elements are added or removed.
-     * @protected
      */
     protected _onSlotChange(_ev: Event) {
         this._applyIndentToChildren();
@@ -183,9 +199,8 @@ export class OrTreeGroup extends LitElement {
     /**
      * Function that applies CSS to TreeNode based on the group indentation.
      * It loops through all parent elements, and detects the amount of or-tree-group elements it is in.
-     * The more nested in the tree, the more lefthanded padding is applied.
+     * The more nested in the tree, the more left handed padding is applied.
      * @param children Node elements to apply padding to.
-     * @protected
      */
     protected _applyIndentToChildren(children = this.getChildNodes()) {
         const countGroups = (elem: HTMLElement | null) => {

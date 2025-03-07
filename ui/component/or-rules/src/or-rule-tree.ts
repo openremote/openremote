@@ -1,4 +1,23 @@
-import {OrTreeMenu, OrTreeNode, TreeMenuSelection, TreeMenuSorting, TreeNode} from "@openremote/or-tree-menu";
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+import {OrTreeMenu, TreeMenuSelection, TreeMenuSorting, TreeNode} from "@openremote/or-tree-menu";
 import {customElement, property, state} from "lit/decorators.js";
 import {RealmRuleset, RulesetLang, RulesetStatus, RulesetUnion} from "@openremote/model";
 import {css, html, PropertyValues, TemplateResult} from "lit";
@@ -186,7 +205,6 @@ export class OrRuleTree extends OrTreeMenu {
     /**
      * HTML callback on when the 'copy' menu option is pressed.
      * The function duplicates the current selected rule, and shows it inside the viewer window.
-     * @protected
      */
     protected _onCopyClicked(_ev: OrInputChangedEvent) {
         const selected = this._findSelectedTreeNodes() as RuleTreeNode[];
@@ -221,7 +239,6 @@ export class OrRuleTree extends OrTreeMenu {
      * HTML callback on when the 'delete' menu option is pressed.
      * The function deletes the rule that is affiliated with selected tree node,
      * after prompting a modal that the user confirms this action.
-     * @protected
      */
     protected _onDeleteClicked(_ev: OrInputChangedEvent) {
         const selected = this._findSelectedTreeNodes() as RuleTreeNode[];
@@ -257,7 +274,6 @@ export class OrRuleTree extends OrTreeMenu {
     /**
      * Utility function that returns a promise for deleting a list of rulesets, based on their type.
      * @param rulesets - List of rulesets to delete.
-     * @protected
      */
     protected async _deleteRulesets(rulesets: RulesetUnion[]) {
         const promises: Promise<any>[] = [];
@@ -323,7 +339,6 @@ export class OrRuleTree extends OrTreeMenu {
      * It maps the ruleset to the correct tree node format. For example, when a groupId is set in the Ruleset meta,
      * we group them together as children of a new group node.
      * @param rules - List of rulesets
-     * @protected
      */
     protected _getRuleNodes(rules: RulesetUnion[]): RuleTreeNode[] {
         const groupList = new Set(rules.map(r => r.meta?.groupId).filter(x => x)) as Set<string>;
@@ -351,7 +366,6 @@ export class OrRuleTree extends OrTreeMenu {
      * Utility function that returns a promise for loading the rulesets, based on the {@link global} and {@link realm} parameters
      * @param global - Whether only global rulesets should be loaded instead.
      * @param realm - Name of the realm to load (if global is `false` or `undefined`)
-     * @protected
      */
     protected async _loadRulesets(global = false, realm = manager.displayRealm): Promise<RulesetUnion[]> {
         if (global) {
@@ -378,7 +392,6 @@ export class OrRuleTree extends OrTreeMenu {
 
     /**
      * Generates a HTML {@link TemplateResult} for the "add" button in the controls menu.
-     * @protected
      */
     protected _getAddActionTemplate(): TemplateResult {
         const menuOptions: (ListItem | null)[] = (this._getAllowedLanguages() || []).map(l =>
@@ -404,7 +417,6 @@ export class OrRuleTree extends OrTreeMenu {
      * HTML callback function for clicking a ruleset language in the "add rule" menu.
      * @param lang - The language to be used for adding a rule.
      * @param global - Whether to create a global ruleset or not.
-     * @protected
      */
     protected _onRulesetAddClick(lang: RulesetLang, global = this.global) {
         const type = global ? "global" : "realm";
@@ -448,7 +460,6 @@ export class OrRuleTree extends OrTreeMenu {
 
     /**
      * HTML callback function for clicking "add group" in the controls menu.
-     * @protected
      */
     protected _onGroupAddClick() {
         this._deselectAllNodes();
@@ -478,7 +489,6 @@ export class OrRuleTree extends OrTreeMenu {
      * Utility function for getting the list of allowed languages based on {@link config} and {@link global} parameters.
      * @param config - Rules configuration to use
      * @param global - Whether only to include global rulesets
-     * @protected
      */
     protected _getAllowedLanguages(config = this.config, global = this.global): RulesetLang[] | undefined {
         const languages = config?.controls?.allowedLanguages ? [...config.controls.allowedLanguages] : OrRuleTree.DEFAULT_ALLOWED_LANGUAGES;
@@ -496,9 +506,8 @@ export class OrRuleTree extends OrTreeMenu {
     }
 
     /**
-     * Utility function that gets an Material Design icon based on the ruleset language
+     * Utility function that gets a Material Design icon based on the ruleset language
      * @param lang - The ruleset language to get an icon of.
-     * @protected
      */
     protected _getRulesetLangIcon(lang?: RulesetLang): string {
         switch (lang) {
@@ -516,9 +525,8 @@ export class OrRuleTree extends OrTreeMenu {
     }
 
     /**
-     * Utility function that gets an Material Design icon based on the ruleset status
+     * Utility function that gets a Material Design icon based on the ruleset status
      * @param status - The ruleset status to get an icon of.
-     * @protected
      */
     protected _getRulesetStatusIcon(status?: RulesetStatus): string | undefined {
         switch (status) {
@@ -546,7 +554,6 @@ export class OrRuleTree extends OrTreeMenu {
     /**
      * Utility function that returns a CSS class for the icon element, based on the ruleset status
      * @param status - The ruleset status to get a CSS class of.
-     * @protected
      */
     protected _getRulesetStatusColorClass(status?: RulesetStatus): string {
         switch (status) {

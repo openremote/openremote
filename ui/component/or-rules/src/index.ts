@@ -1,3 +1,22 @@
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import manager, {
@@ -897,7 +916,6 @@ export class OrRules extends translate(i18next)(LitElement) {
      * HTML event callback on when a "rule (or group) selection is requested".
      * It is a cancellable event that can prompt a user "to discard changes" if they have been made.
      * @param event - The cancellable selection event
-     * @protected
      */
     protected _onRuleSelectionRequested(event: OrRulesRequestSelectionEvent) {
         const isModified = this._viewer?.modified;
@@ -926,7 +944,6 @@ export class OrRules extends translate(i18next)(LitElement) {
     /**
      * HTML event callback on when a new rule (or group) has been selected.
      * @param event - The selection event
-     * @protected
      */
     protected _onRuleSelectionChanged(event: OrRulesSelectionEvent) {
         this._onNodeSelectionChanged(event.detail);
@@ -937,7 +954,6 @@ export class OrRules extends translate(i18next)(LitElement) {
      * when a new node in the {@link OrRuleTree} element is selected. It processes the event, and updates the {@link OrRuleViewer} with the new rule.
      * Alternatively, if a group is selected, it updates {@link _selectedGroup} instead.
      * @param payload - Event payload of the {@link RulesetBaseNode} selection
-     * @protected
      */
     protected _onNodeSelectionChanged(payload: NodeSelectEventDetail) {
         const selectedNodes = payload.newNodes;
@@ -982,8 +998,7 @@ export class OrRules extends translate(i18next)(LitElement) {
 
     /**
      * HTML callback event for when a new rule is added.
-     * @param event - An {@link CustomEvent} with the new ruleset as payload.
-     * @protected
+     * @param event - A {@link CustomEvent} with the new ruleset as payload.
      */
     protected _onRuleAdd(event: OrRulesAddEvent) {
         // Load the ruleset into the viewer
@@ -994,8 +1009,7 @@ export class OrRules extends translate(i18next)(LitElement) {
 
     /**
      * HTML callback event for when a rule has been saved by the user.
-     * @param event - An {@link CustomEvent} with a {@link SaveResult} payload.
-     * @protected
+     * @param event - A {@link CustomEvent} with a {@link SaveResult} payload.
      */
     protected async _onRuleSave(event: OrRulesSaveEvent) {
         if(event.detail.success) {
@@ -1018,7 +1032,6 @@ export class OrRules extends translate(i18next)(LitElement) {
      * Utility function that updates the viewer with the latest changes.
      * @param viewer - The or-rule-viewer HTML element
      * @param updatedRulesets - List of new rulesets that have been changed
-     * @protected
      */
     protected _checkForViewerUpdate(viewer = this._viewer, updatedRulesets?: RulesetUnion[]) {
         const current = viewer?.ruleset;
@@ -1031,8 +1044,7 @@ export class OrRules extends translate(i18next)(LitElement) {
     /**
      * HTML callback for {@link OrTreeDragEvent}, for when a rule is dragged into (or outside) a group.
      * It handles updating of the 'meta groupId' in a rule, and persists the changes with the HTTP API.
-     * @param ev
-     * @protected
+     * @param ev - Tree drag event with a payload of the moved nodes
      */
     protected _onRuleDrag(ev: OrTreeDragEvent) {
         const isModified = this._viewer?.modified;
@@ -1091,7 +1103,6 @@ export class OrRules extends translate(i18next)(LitElement) {
 
     /**
      * Utility function that deselects the group by clearing {@link _selectedGroup}.
-     * @protected
      */
     protected _deselectGroup(): Promise<boolean> {
         this._selectedGroup = undefined;
@@ -1101,7 +1112,6 @@ export class OrRules extends translate(i18next)(LitElement) {
     /**
      * HTML callback for when a new group is added to the {@link OrRuleTree}.
      * @param ev - Callback event
-     * @protected
      */
     protected _onGroupAddRequest(ev: OrRulesRequestGroupEvent) {
         this._selectedGroup = ev.detail.value;
@@ -1112,7 +1122,6 @@ export class OrRules extends translate(i18next)(LitElement) {
      * This function handles renaming the groupId of the rules within that group,
      * together with persisting the changes using the HTTP API.
      * @param ev - Callback event
-     * @protected
      */
     protected _onGroupNameChange(ev: OrRulesGroupNameChangeEvent) {
         const oldValue = this._selectedGroup;
@@ -1162,7 +1171,6 @@ export class OrRules extends translate(i18next)(LitElement) {
     /**
      * Utility function that returns a promise for saving the ruleset, based on its type.
      * @param ruleset - The ruleset to be saved
-     * @protected
      */
     protected async _saveRuleset(ruleset: RulesetUnion){
         let promise;
