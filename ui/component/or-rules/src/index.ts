@@ -53,12 +53,10 @@ import {
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-drawer";
 import {translate} from "@openremote/or-translate";
-import "./or-rule-list";
 import "./or-rule-viewer";
 import "./or-rule-group-viewer";
 import "./or-rule-tree";
 import "./flow-viewer/flow-viewer";
-import {OrRuleList} from "./or-rule-list";
 import {OrRuleViewer} from "./or-rule-viewer";
 import {RecurrenceOption} from "./json-viewer/or-rule-then-otherwise";
 import {ValueInputProviderGenerator} from "@openremote/or-mwc-components/or-mwc-input";
@@ -806,7 +804,7 @@ export const style = css`
         --or-panel-background-color: var(--internal-or-rules-panel-color);
     }
 
-    or-rule-tree, or-rule-list {
+    or-rule-tree {
         min-width: 300px;
         width: 300px;
         z-index: 2;
@@ -881,8 +879,7 @@ export class OrRules extends translate(i18next)(LitElement) {
 
     protected render() {
         return html`
-            <or-rule-tree id="rule-tree" ?readonly=${this._isReadonly()}></or-rule-tree>
-            <!--<or-rule-list id="rule-list" .config="${this.config}" .language="${this.language}" .selectedIds="${this.selectedIds}"></or-rule-list>-->
+            <or-rule-tree id="rule-tree" ?readonly=${this._isReadonly()} .config=${this.config}></or-rule-tree>
             ${when(this._selectedGroup, () => html`
                 <or-rule-group-viewer .group="${this._selectedGroup}" .readonly="${this._isReadonly()}"></or-rule-group-viewer>
             `, () => html`

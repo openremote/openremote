@@ -31,7 +31,9 @@ import {
     OrRules,
     OrRulesAddEvent,
     OrRulesRequestAddEvent,
-    OrRulesRequestDeleteEvent, OrRulesRequestGroupEvent, OrRulesRequestSelectionEvent,
+    OrRulesRequestDeleteEvent,
+    OrRulesRequestGroupEvent,
+    OrRulesRequestSelectionEvent,
     OrRulesSelectionEvent,
     RulesConfig,
     RulesetGroupNode,
@@ -126,6 +128,11 @@ export class OrRuleTree extends OrTreeMenu {
                 this._loadRulesets(this.global).then(rulesets => this.rules = rulesets);
             } else {
                 this.nodes = [...this._getRuleNodes(this.rules), ...this._cachedEmptyGroupNodes];
+            }
+        }
+        if (changedProps.has("config") && this.config) {
+            if(this.config.controls?.multiSelect !== undefined) {
+                this.selection = this.config.controls?.multiSelect ? TreeMenuSelection.MULTI : TreeMenuSelection.LEAF;
             }
         }
         return super.willUpdate(changedProps);
