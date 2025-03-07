@@ -802,8 +802,8 @@
     "deleteMapCustomizationConfirm":"Weet je zeker dat je deze kaart wilt verwijderen",
     "addMapCustomization" : "Voeg een Kaartinstelling toe",
     "global": {
-      "tileServer": "Tegel Server",
-      "tileServerDescription": "Configureer een Tegel server. De URL moet de tegelcoördinaten specificeren met behulp van het /{z}/{x}/{y} schema.",
+      "tileServer": "Kaartserver",
+      "tileServerDescription": "Configureer een kaartserver. De URL moet de tegelcoördinaten specificeren met behulp van het /{z}/{x}/{y} schema.",
       "tileServerPlaceholder": "Kaartserver URL",
       "mapTiles": "Eigen Kaarttegels",
       "uploadMapTiles": "Upload aangepaste kaarttegels. De maximaal toegestane bestandsgrootte is {{customMapLimit}}."
