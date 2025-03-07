@@ -815,7 +815,7 @@ export const style = css`
         box-shadow: ${unsafeCSS(DefaultBoxShadow)};
     }
     
-    or-rule-viewer {
+    or-rule-viewer, or-rule-group-viewer {
         z-index: 1;    
     }
 `;
