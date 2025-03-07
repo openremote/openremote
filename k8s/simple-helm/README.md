@@ -69,6 +69,36 @@ That being said, we have gone of a single Opaque secret to contain all secure in
 
 ## Additional information
 
+### Running custom projects
+
+With docker compose, custom projects use a thin image based on top of Alpine that contains the changes compared to a stock manager.  
+This is then used to create a docker volume that can then be mounted on top of a stock manager image.  
+
+The corresponding way to do this in Kubernetes would be to use Image Volumes, which at the moment (Feb 2025) is still an alpha feature, disabled by default.
+
+The way to move forward now is to create a specific docker image for each custom project, with the changes baked in.  
+That is, instead of using Alpine as the base image, use the OR manager image as the base. This is already done for Balena.  
+
+In a custom project, look at the Dockerfile under deployment and make a copy.  
+Then replace the first line
+`FROM alpine:latest`
+with
+`FROM openremote/manager:1.3.3`
+using the same version as the one used in gradle.properties
+
+We can automate it using
+`./gradlew properties -q | grep openremoteVersion | awk -F':' '{gsub(/ /, "", $0);print $2 }'`
+to retrieve the version and passing it as variable to the Dockerfile.  
+
+
+Once this image is built, it can be referenced from the manager helm chart by setting the image.repository and image.tag values,
+either on the command-line or passing an additional values files with following content
+```
+image:
+  repository: openremote/custom
+  tag: "1.2.4"
+```
+
 ### Environment variables
 
 The most important configuration information has been exposed in the helm values files.  
