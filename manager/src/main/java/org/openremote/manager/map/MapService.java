@@ -327,7 +327,7 @@ public class MapService implements ContainerService {
                 .filter(JsonNode::isObject)
                 .ifPresent(vectorTilesNode -> {
                     ObjectNode vectorTilesObj = (ObjectNode)vectorTilesNode;
-                    String url = vectorTilesObj.remove("url").textValue();
+                    JsonNode url = vectorTilesObj.remove("url");
 
                     vectorTilesObj.put("attribution", metadata.attribution);
                     vectorTilesObj.put("maxzoom", metadata.maxZoom);
@@ -342,14 +342,20 @@ public class MapService implements ContainerService {
                             }));
 
                     ArrayNode tilesArray = mapConfig.arrayNode();
-                    String tileUrl = !url.contentEquals(DEFAULT_VECTOR_TILES_URL)
-                        ? url
-                        : UriBuilder.fromUri(host)
+                    String tileUrl = UriBuilder.fromUri(host)
                             .replacePath(pathPrefix + API_PATH)
                             .path(realm)
                             .path("map/tile")
                             .build()
                             .toString() + "/{z}/{x}/{y}";
+
+                    if (url != null) {
+                        String customTileUrl = url.textValue();
+                        if (!customTileUrl.contentEquals(DEFAULT_VECTOR_TILES_URL)) {
+                            tileUrl = url.textValue();
+                        }
+                    }
+
                     tilesArray.insert(0, tileUrl);
                     vectorTilesObj.replace("tiles", tilesArray);
                 });
