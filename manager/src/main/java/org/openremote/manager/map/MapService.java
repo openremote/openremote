@@ -93,6 +93,7 @@ public class MapService implements ContainerService {
         }
 
         ObjectNode vectorTiles = ValueUtil.JSON.valueToTree(mapConfiguration.sources.get("vector_tiles"));
+        ObjectNode newVectorTiles = ValueUtil.JSON.createObjectNode().put("type", "vector");
         if (vectorTiles.hasNonNull("url")) {
             // We assume no custom tile server is configured when the URL is null.
             //
@@ -106,10 +107,11 @@ public class MapService implements ContainerService {
             if (!vectorTiles.get("url").textValue().contains("/{z}/{x}/{y}")) {
                 throw new WebApplicationException(Response.Status.BAD_REQUEST);
             }
+            newVectorTiles.put("url", vectorTiles.get("url").textValue());
         } else {
-            vectorTiles.put("url", DEFAULT_VECTOR_TILES_URL);
-            mapConfiguration.sources.put("vector_tiles", ValueUtil.JSON.convertValue(vectorTiles, MapSourceConfig.class));
+            newVectorTiles.put("url", DEFAULT_VECTOR_TILES_URL);
         }
+        mapConfiguration.sources.put("vector_tiles", ValueUtil.JSON.convertValue(newVectorTiles, MapSourceConfig.class));
 
         mapConfig.putPOJO("options", mapConfiguration.options);
         mapConfig.putPOJO("sources", mapConfiguration.sources);
