@@ -84,7 +84,7 @@ public class MapService implements ContainerService {
     protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
     protected String pathPrefix;
-    protected Path customMapTiles;
+    protected Path customMapTilesPath;
     protected int customMapLimit = OR_CUSTOM_MAP_SIZE_LIMIT_DEFAULT;
 
     public ObjectNode saveMapConfig(MapConfig mapConfiguration) throws RuntimeException {
@@ -221,7 +221,7 @@ public class MapService implements ContainerService {
     @Override
     public void start(Container container) throws Exception {
         setData();
-        customMapTiles = configurationService.getMapTilesPath().getParent().resolve("mapdata-custom.mbtiles");
+        customMapTilesPath = configurationService.getMapTilesPath().getParent().resolve("mapdata-custom.mbtiles");
     }
 
     public void setData() throws ClassNotFoundException, SQLException, NullPointerException {
@@ -237,14 +237,9 @@ public class MapService implements ContainerService {
         if (!mapTilesPath.toFile().exists()) {
             return;
         }
-        File parentDir = mapTilesPath.getParent().toFile();
-        if (parentDir.isDirectory()) {
-            String fileExtension = ".mbtiles";
-            File[] matchingFiles = parentDir.listFiles((dir, name) -> !Objects.equals(name, "mapdata.mbtiles") && name.endsWith(fileExtension));
-
-            if (matchingFiles != null && matchingFiles.length != 0) {
-                mapTilesPath = matchingFiles[0].toPath().toAbsolutePath();
-            }
+        // Overwrite default map if custom map file exists
+        if (customMapTilesPath != null && Files.exists(customMapTilesPath)) {
+            mapTilesPath = customMapTilesPath.toAbsolutePath();
         }
 
         Class.forName(org.sqlite.JDBC.class.getName());
@@ -442,7 +437,7 @@ public class MapService implements ContainerService {
     }
 
     public boolean saveUploadedFile(InputStream fileInputStream) {
-        try (OutputStream outputStream = Files.newOutputStream(customMapTiles)) {
+        try (OutputStream outputStream = Files.newOutputStream(customMapTilesPath)) {
             byte[] buffer = new byte[4096];
             int bytesRead;
             while ((bytesRead = fileInputStream.read(buffer)) != -1) {
@@ -450,12 +445,12 @@ public class MapService implements ContainerService {
             }
 
             Class.forName(org.sqlite.JDBC.class.getName());
-            Connection connection = DriverManager.getConnection("jdbc:sqlite:" + customMapTiles);
+            Connection connection = DriverManager.getConnection("jdbc:sqlite:" + customMapTilesPath);
 
             PreparedStatement query = connection.prepareStatement("PRAGMA integrity_check;");
             ResultSet result = query.executeQuery();
             if (!result.next() || !result.getString(1).equals("ok")) {
-                Files.deleteIfExists(customMapTiles);
+                Files.deleteIfExists(customMapTilesPath);
                 LOG.log(Level.SEVERE, "MBTiles database file corrupt");
                 return false;
             }
@@ -465,7 +460,7 @@ public class MapService implements ContainerService {
         } catch (IOException | SQLException | ClassNotFoundException e) {
             LOG.log(Level.SEVERE, "Failed to load mapdata-custom.mbtiles file", e);
             try {
-                Files.deleteIfExists(customMapTiles);
+                Files.deleteIfExists(customMapTilesPath);
             } catch (IOException deleteError) {
                 LOG.log(Level.SEVERE, "Failed to delete mapdata-custom.mbtiles file", deleteError);
             }
@@ -474,24 +469,23 @@ public class MapService implements ContainerService {
     }
 
     public boolean isCustomUploadedFile() {
-        return Files.exists(customMapTiles);
+        return Files.exists(customMapTilesPath);
     }
 
     public boolean deleteUploadedFile() {
+        boolean deleted = false;
         try {
-            Files.deleteIfExists(customMapTiles);
+            deleted = Files.deleteIfExists(customMapTilesPath);
             LOG.info("mapdata-custom.mbtiles file deleted successfully");
         } catch (IOException e) {
             LOG.log(Level.SEVERE, "Failed to delete mapdata-custom.mbtiles file", e);
-            return false;
         }
         try {
             this.setData();
-        } catch (SQLException | ClassNotFoundException e) {
+        } catch (SQLException | ClassNotFoundException | NullPointerException e) {
             LOG.log(Level.SEVERE, "Failed to load default file", e);
-            return false;
         }
-        return true;
+        return deleted;
     }
 
     protected static final class Metadata {
