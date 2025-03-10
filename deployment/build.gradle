@@ -9,7 +9,7 @@ dependencies {
     managerRuntime project(':manager')
 }
 
-task license {
+tasks.register('license') {
     doLast {
         def toConcatenate = files("${rootDir}/LICENSE.txt")
         def outputFileName = "${buildDir}/image/manager/app/LICENSE.txt"
