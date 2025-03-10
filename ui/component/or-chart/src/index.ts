@@ -20,31 +20,17 @@ import "@openremote/or-asset-tree";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {ECharts, EChartsOption, init} from "echarts";
+import {ECharts, EChartsOption, init, graphic} from "echarts";
 import {
-    Chart,
-    ChartConfiguration,
-    ChartDataset,
-    Filler,
-    Legend,
-    LinearScale,
-    LineController,
-    LineElement,
-    PointElement,
-    ScatterController,
-    ScatterDataPoint,
-    TimeScale,
-    TimeScaleOptions,
+
     TimeUnit,
-    Title,
-    Tooltip
+
 } from "chart.js";
 import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
-import ChartAnnotation, {AnnotationOptions} from "chartjs-plugin-annotation";
 import "chartjs-adapter-moment";
 import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
@@ -802,10 +788,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
                                     const asset: Asset | undefined = this.assets[assetIndex];
                                     const colourIndex = index % this.colors.length;
+                                    const color = this.colorPickedAttributes.find(({ attributeRef }) => attributeRef.name === attr.name && attributeRef.id === asset.id)?.color;
                                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset!.type, attr.name, attr);
                                     const label = Util.getAttributeLabel(attr, descriptors[0], asset!.type, true);
                                     const axisNote = (this.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
-                                    const bgColor = this.colors[colourIndex] || "";
+                                    const bgColor = ( color ?? this.colors[colourIndex] ) || "";
                                     return html`
                                         <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseenter="${() => this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseleave="${()=> this.removeDatasetHighlight()}">
                                             <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
@@ -852,7 +839,11 @@ export class OrChart extends translate(i18next)(LitElement) {
             let options = this._chart.getOption();
             if (options.series && Array.isArray(options.series)) {
                 options.series.forEach(function (series) {
-                    series.lineStyle.opacity = 1;
+                    if (series.lineStyle.opacity == 0.2) {
+                        series.lineStyle.opacity = 0.31;
+                    } else if (series.lineStyle.opacity != 0.31) {
+                        series.lineStyle.opacity = 1;
+                    }
                 });
             }
             this._chart.setOption(options);
@@ -865,7 +856,12 @@ export class OrChart extends translate(i18next)(LitElement) {
             if (options.series && Array.isArray(options.series)) {
                 options.series.forEach(function (series) {
                     if (series.assetId != assetId || series.attrName != attrName) {
-                        series.lineStyle.opacity = 0.2;
+                        if (series.lineStyle.opacity == 0.31) { // 0.31 is faint setting, 1 is normal
+                            series.lineStyle.opacity = 0.2;
+                        } else {
+                            series.lineStyle.opacity = 0.3;
+                        }
+
                     }
                 });
             }
@@ -1236,15 +1232,27 @@ export class OrChart extends translate(i18next)(LitElement) {
                     const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
                     const colourIndex = index % this.colors.length;
                     const options = { signal: this._dataAbortController?.signal };
-                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, false, smooth, stepped, area, faint, extended, asset.name + " " + label, options, unit);
+                    //Load Historic Data
+                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, false, smooth, stepped, area, faint, false, asset.name + " " + label, options, unit);
                     (dataset as any).assetId = asset.id;
                     (dataset as any).attrName = attribute.name;
                     (dataset as any).unit = unit;
                     (dataset as any).yAxisIndex = shownOnRightAxis ? '1' : '0';
+                    (dataset as any).color = color ?? this.colors[colourIndex];
                     data.push(dataset);
+                    //Load Predicted Data
+                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], predictedFromTimestamp, this._endOfPeriod!, true, smooth, stepped, area, faint, false , asset.name + " " + label + " " + i18next.t("predicted"), options, unit);
+                    data.push(dataset);
+                    //Load Extended Data
+                    let bsNumber = 1; //inserted in from and to, however these are not used in _loadAttributeData anyway, the function references variables outside of it (bad practice)
+                    if (extended) {
+                        console.log('Extended data requested');
+                        dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], bsNumber, bsNumber, false, false, false, area, faint, extended, asset.name + " " + label + " " + i18next.t("dashboard.extended"), options, unit);
+                        data.push(dataset);
+                    }
 
-                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], predictedFromTimestamp, this._endOfPeriod!, true, smooth, stepped, area, faint, extended, asset.name + " " + label + " " + i18next.t("predicted"), options);
-                    data.push(dataset);
+                    //Is it actually efficient to query three times ? think this can be way more efficient.
+
 
                 });
             }
@@ -1279,18 +1287,22 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
 
-    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string | undefined, from: number, to: number, predicted: boolean, smooth: boolean, stepped: boolean, area: boolean, faint: boolean, extended: boolean, label?: string, options?: any, unit?: any) {
+    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string, from: number, to: number, predicted: boolean, smooth: boolean, stepped: boolean, area: boolean, faint: boolean, extended: boolean, label?: string, options?: any, unit?: any) {
+
+        function rgba (color: string, alpha: number) {
+            return `rgba(${parseInt(color.slice(-6,-4), 16)}, ${parseInt(color.slice(-4,-2), 16)}, ${parseInt(color.slice(-2), 16)}, ${alpha})`;
+        }
 
         const dataset = {
             name: label,
             type: 'line',
             showSymbol: false,
-            data: {},
+            data: [] as [any, any][],
             sampling: 'lttb',
             lineStyle: {
                 color: color,
-                type: predicted ? [2, 4] : undefined,
-                opacity: faint ? 0.3 : 1,
+                type: predicted ? [2, 4] : extended ? [0.8, 10] : undefined,
+                opacity: faint ? 0.31 : 1,
             },
             itemStyle: {
                 color: color
@@ -1301,16 +1313,18 @@ export class OrChart extends translate(i18next)(LitElement) {
             },
             smooth: smooth,
             step: stepped ? 'end' : undefined,
-            areaStyle: area ? { color: color, opacity: faint ? 0.1 : 0.3 } : undefined,
-
-            //emphasis: {
-            //    focus: 'self', //hide other lines when hovering over one
-            //},
-            //smooth: true,
-            //areaStyle: fill settings
+            areaStyle: area ? {color: new graphic.LinearGradient(0, 0, 0, 1, [
+                    {
+                        offset: 0,
+                        color: rgba(color, faint ? 0.1 : 0.5)
+                    },
+                    {
+                        offset: 1,
+                        color: rgba(color, 0)
+                    }
+                ])} as any : undefined,
         }
 
-        //console.log('load attribute data triggered');
 
         if (asset.id && attribute.name && this.datapointQuery) {
             let response: GenericAxiosResponse<ValueDatapoint<any>[]>;
@@ -1325,10 +1339,10 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
 
             if(query.type == 'lttb') {
+                // NEEDS TO BE REWORKED, ECHARTS HAS LTTB BUILT IN, BUT THIS CAN BE A SETTING IN CHART-SETTINGS
 
                 // If amount of data points is set, only allow a maximum of 1 points per pixel in width
                 // Otherwise, dynamically set amount of data points based on chart width (1000px = 200 data points)
-                // >-------------IS DIT NOG WEL NODIG? ECHARTS HEEFT ZELF LTTB
                 //if(query.amountOfPoints) {
                 //    if(this._chartElem?.clientWidth > 0) {
                 //        query.amountOfPoints = Math.min(query.amountOfPoints, this._chartElem?.clientWidth)
@@ -1348,13 +1362,17 @@ export class OrChart extends translate(i18next)(LitElement) {
                 query.interval = (intervalArr[0].toString() + " " + intervalArr[1].toString()); // for example: "5 minute"
             }
 
-            //HIER EXTENDER TOEVOEGEN
 
-            if(!predicted) {
-                response = await manager.rest.api.AssetDatapointResource.getDatapoints(asset.id, attribute.name, query, options)
-            } else {
-                response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(asset.id, attribute.name, query, options)
-            }
+            if (predicted) {
+                response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(asset.id, attribute.name, query, options);
+            } else  {
+                    if (extended) {
+                        query.type = 'nearest';
+                        query.timestamp = new Date().toISOString()
+                    }
+
+                    response = await manager.rest.api.AssetDatapointResource.getDatapoints(asset.id, attribute.name, query, options);
+                }
 
             let data: ValueDatapoint<any>[] = [];
 
@@ -1366,10 +1384,32 @@ export class OrChart extends translate(i18next)(LitElement) {
                 dataset.data = data.map(point => [point.x, point.y]);
                 dataset.showSymbol = data.length <=30; //Only show symbols when there are 30 or fewer data points to be shown
             }
+
+
+            if (extended) {
+                if (dataset.data.length > 0) {
+                    // Get the first datapoint's timestamp
+                    const firstPointTime = new Date(dataset.data[0][0]).getTime();
+
+                    // If the first point is earlier than startOfPeriod, use startOfPeriod as the starting timestamp
+                    const startTimestamp = firstPointTime < query.fromTimestamp! ?
+                        new Date(query.fromTimestamp!).toISOString() :
+                        dataset.data[0][0];
+
+                    // Use endOfPeriod if it's earlier than now, otherwise use the current time
+                    const now = new Date().getTime();
+                    const endTimestamp = query.toTimestamp! < now ?
+                        new Date(query.toTimestamp!).toISOString() :
+                        new Date().toISOString();
+                    // Create a clean extended line by removing any existing points and adding just two points:
+                    // One at the appropriate start time and one at the current time
+                    dataset.data = [
+                        [startTimestamp, dataset.data[0][1]],
+                        [endTimestamp, dataset.data[0][1]]
+                    ];
+                }
+            }
         }
-
-
-
         return dataset;
     }
 

@@ -35,8 +35,8 @@
   "FR": "FR",
   "SA": "SA",
   "SU": "SU",
-  "left": "left",
-  "right": "right",
+  "left": "Left",
+  "right": "Right",
   "sceneStartTime": "Scene start time",
   "sceneConfiguration": "Scene Configuration",
   "temperature": "Temperature",
@@ -759,6 +759,7 @@
     "stepped": "Stepped",
     "fill": "Fill",
     "extendData": "Extend last datapoint",
+    "extended": "(last known)",
     "lineColor": "Line color"
 
   },

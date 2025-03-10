@@ -93,6 +93,7 @@ const styling = css`
     align-items: center;
     display: none;
     gap: 8px;
+    margin-bottom: 20px;  
   }
 
   .attribute-list-item-bullet {

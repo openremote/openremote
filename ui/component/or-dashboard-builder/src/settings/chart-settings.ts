@@ -79,15 +79,9 @@ export class ChartSettings extends WidgetSettings {
                     <span style="font-size:14px; color:lightgrey;"><or-translate value="dashboard.extendData"></or-translate></span>
                 `)}
             `
-
-            //return html`
-            //    <span>${asset.name}</span>
-            //    <span style="font-size:14px; color:grey;">${attributeLabel}</span>
-            //    ${when(isOnRightAxis, () => html`
-            //        <span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;"><or-translate value="right"></or-translate></span>
-            //    `)}
-            //`
         }
+
+
         const attributeActionCallback = (attributeRef: AttributeRef): AttributeAction[] => {
             return [
                 {
@@ -120,10 +114,16 @@ export class ChartSettings extends WidgetSettings {
                     tooltip: i18next.t('dashboard.extendData'),
                     disabled: false
                 },
+
                 {
                     icon: this.widgetConfig.rightAxisAttributes.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
                     tooltip: i18next.t('dashboard.toggleAxis'),
                     disabled: false
+                },
+                {
+                    icon: 'mdi-blank',
+                    tooltip: '',
+                    disabled: true
                 }
             ]
         }
@@ -295,10 +295,13 @@ export class ChartSettings extends WidgetSettings {
         }
     }
 
-    // When a user clicks on ANY action in the attribute list, we want to switch between LEFT and RIGHT axis.
-    // Since that is the only action, there is no need to check the ev.action variable.
+    // Check which icon was pressed and act accordingly.
     protected onAttributeAction(ev: AttributeActionEvent) {
         const { asset ,attributeRef, action } = ev.detail;
+
+        const findAttributeIndex = (array: AttributeRef[], ref: AttributeRef) => {
+            return array.findIndex(item => item.id === ref.id && item.name === ref.name);
+        };
 
         switch (action.icon) {
             case "arrow-right-bold":
@@ -333,56 +336,53 @@ export class ChartSettings extends WidgetSettings {
                         this.widgetConfig.colorPickedAttributes.push({ attributeRef, color });
                     }
                     this.notifyConfigUpdate();
-                    console.log("Color picked in settings: ", e.target.value);
-                    console.log('Updated widgetconfig colors: ' + JSON.stringify(this.widgetConfig.colorPickedAttributes));
                 });
                 colorInput.click();
                 break;
             case "chart-bell-curve-cumulative":
-                console.log('klikkerieklik');
-                if (!this.widgetConfig.attributeSettings.smoothAttributes.includes(attributeRef)) {
+                if (findAttributeIndex(this.widgetConfig.attributeSettings.smoothAttributes, attributeRef) < 0) {
                     this.widgetConfig.attributeSettings.smoothAttributes.push(attributeRef);
                 } else {
-                    this.widgetConfig.attributeSettings.smoothAttributes.splice(this.widgetConfig.attributeSettings.areaAttributes.indexOf(attributeRef), 1);
-
+                    this.widgetConfig.attributeSettings.smoothAttributes.splice(findAttributeIndex(this.widgetConfig.attributeSettings.smoothAttributes, attributeRef), 1);
                 }
                 this.notifyConfigUpdate();
                 break;
             case "square-wave":
-                if (!this.widgetConfig.attributeSettings.steppedAttributes.includes(attributeRef)) {
+                if (findAttributeIndex(this.widgetConfig.attributeSettings.steppedAttributes, attributeRef) < 0) {
                     this.widgetConfig.attributeSettings.steppedAttributes.push(attributeRef);
                 } else {
-                    this.widgetConfig.attributeSettings.steppedAttributes.splice(this.widgetConfig.attributeSettings.areaAttributes.indexOf(attributeRef), 1);
+                    this.widgetConfig.attributeSettings.steppedAttributes.splice(findAttributeIndex(this.widgetConfig.attributeSettings.steppedAttributes, attributeRef), 1);
                 }
                 this.notifyConfigUpdate();
                 break;
             case "chart-areaspline-variant":
-                if (!this.widgetConfig.attributeSettings.areaAttributes.includes(attributeRef)) {
+                if (findAttributeIndex(this.widgetConfig.attributeSettings.areaAttributes, attributeRef) < 0) {
                     this.widgetConfig.attributeSettings.areaAttributes.push(attributeRef);
                 } else {
-                    this.widgetConfig.attributeSettings.areaAttributes.splice(this.widgetConfig.attributeSettings.areaAttributes.indexOf(attributeRef), 1);
+                    this.widgetConfig.attributeSettings.areaAttributes.splice(findAttributeIndex(this.widgetConfig.attributeSettings.areaAttributes, attributeRef), 1);
                 }
                 this.notifyConfigUpdate();
                 break;
             case "arrange-send-backward":
-                if (!this.widgetConfig.attributeSettings.faintAttributes.includes(attributeRef)) {
+                if (findAttributeIndex(this.widgetConfig.attributeSettings.faintAttributes, attributeRef) < 0) {
                     this.widgetConfig.attributeSettings.faintAttributes.push(attributeRef);
                 } else {
-                    this.widgetConfig.attributeSettings.faintAttributes.splice(this.widgetConfig.attributeSettings.faintAttributes.indexOf(attributeRef), 1);
+                    this.widgetConfig.attributeSettings.faintAttributes.splice(findAttributeIndex(this.widgetConfig.attributeSettings.faintAttributes, attributeRef), 1);
                 }
                 this.notifyConfigUpdate();
                 break;
-                case "arrow-expand-right":
-                if (!this.widgetConfig.attributeSettings.extendedAttributes.includes(attributeRef)) {
+            case "arrow-expand-right":
+                if (findAttributeIndex(this.widgetConfig.attributeSettings.extendedAttributes, attributeRef) < 0) {
                     this.widgetConfig.attributeSettings.extendedAttributes.push(attributeRef);
                 } else {
-                    this.widgetConfig.attributeSettings.extendedAttributes.splice(this.widgetConfig.attributeSettings.extendedAttributes.indexOf(attributeRef), 1);
+                    this.widgetConfig.attributeSettings.extendedAttributes.splice(findAttributeIndex(this.widgetConfig.attributeSettings.extendedAttributes, attributeRef), 1);
                 }
                 this.notifyConfigUpdate();
                 break;
             default:
-                console.warn('Unknown action', action);
+                console.warn('Unknown attribute panel action:', action);
         }
+        console.log("end of onAttributeAction" + JSON.stringify(this.widgetConfig.attributeSettings));
     }
 
     // When the list of attributeRefs is changed by the asset selector,
@@ -390,9 +390,30 @@ export class ChartSettings extends WidgetSettings {
     // Also update the WidgetConfig attributeRefs field as usual
     protected onAttributesSelect(ev: AttributesSelectEvent) {
         const removedAttributeRefs = this.widgetConfig.attributeRefs.filter(ar => !ev.detail.attributeRefs.includes(ar));
-        removedAttributeRefs.forEach(raf => this.removeFromRightAxis(raf));
+
+        removedAttributeRefs.forEach(raf => {
+            this.removeFromRightAxis(raf);
+            this.removeFromAttributeSettings(raf);
+            this.removeFromColorPickedAttributes(raf);
+        });
+
         this.widgetConfig.attributeRefs = ev.detail.attributeRefs;
         this.notifyConfigUpdate();
+    }
+
+    protected removeFromAttributeSettings(attributeRef: AttributeRef) {
+        const settings = this.widgetConfig.attributeSettings;
+        settings.smoothAttributes = settings.smoothAttributes.filter(ar => ar.id !== attributeRef.id || ar.name !== attributeRef.name);
+        settings.steppedAttributes = settings.steppedAttributes.filter(ar => ar.id !== attributeRef.id || ar.name !== attributeRef.name);
+        settings.areaAttributes = settings.areaAttributes.filter(ar => ar.id !== attributeRef.id || ar.name !== attributeRef.name);
+        settings.faintAttributes = settings.faintAttributes.filter(ar => ar.id !== attributeRef.id || ar.name !== attributeRef.name);
+        settings.extendedAttributes = settings.extendedAttributes.filter(ar => ar.id !== attributeRef.id || ar.name !== attributeRef.name);
+    }
+
+    protected removeFromColorPickedAttributes(attributeRef: AttributeRef) {
+        this.widgetConfig.colorPickedAttributes = this.widgetConfig.colorPickedAttributes.filter(
+            item => item.attributeRef.id !== attributeRef.id || item.attributeRef.name !== attributeRef.name
+        );
     }
 
     protected addToRightAxis(attributeRef: AttributeRef, notify = false) {
