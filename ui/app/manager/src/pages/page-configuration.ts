@@ -350,12 +350,12 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                         <div class="subheader"><or-translate value="configuration.global.tileServer"></or-translate></div>
                                         <span><or-translate value="configuration.global.tileServerDescription"></or-translate></span>
                                         <or-mwc-input class="input" outlined
-                                            .value="${this.mapConfig.sources?.['vector_tiles']?.tiles?.[0] || this.mapConfig.sources?.['vector_tiles']?.url}"
+                                            .value="${this.mapConfig.sources?.vector_tiles?.url || this.mapConfig.sources?.vector_tiles?.tiles?.[0]}"
                                             .type="${InputType.URL}"
                                             .label="${i18next.t("configuration.global.tileServerPlaceholder")}"
                                             placeholder="https://api.example.com/tileset/{z}/{x}/{y}"
                                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                    this.mapConfig.sources["vector_tiles"] = {
+                                                    this.mapConfig.sources.vector_tiles = {
                                                         type: "vector",
                                                         url: e.detail.value || null
                                                     }
