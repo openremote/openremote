@@ -130,6 +130,9 @@ export class OrRuleTree extends OrTreeMenu {
                 this.nodes = [...this._getRuleNodes(this.rules), ...this._cachedEmptyGroupNodes];
             }
         }
+        if (changedProps.has("nodes")) {
+            this._cachedEmptyGroupNodes = this.nodes?.filter(n => !!n.children && n.children.length === 0) || [];
+        }
         if (changedProps.has("config") && this.config) {
             if(this.config.controls?.multiSelect !== undefined) {
                 this.selection = this.config.controls?.multiSelect ? TreeMenuSelection.MULTI : TreeMenuSelection.LEAF;
@@ -255,13 +258,28 @@ export class OrRuleTree extends OrTreeMenu {
             const selectedRules = selected.map(node => node.ruleset).filter(x => x) as RulesetUnion[];
 
             // If groups are selected, loop through the children, and add them to the selectedRules;
-            const selectedChildNodes = selected.filter(group => group.children).flatMap(group => group.children as RuleTreeNode[]);
+            const groupNodes = selected.filter(group => group.children);
+            const groupNames = groupNodes.map(node => node.label);
+            const selectedChildNodes = groupNodes.flatMap(group => group.children as RuleTreeNode[]);
             const selectedChildRules = selectedChildNodes.flatMap(node => node.ruleset ? [node.ruleset] : [])
             selectedRules.push(...selectedChildRules);
 
             // Transform rules into RulesetNode for consumers of the or-rule-tree
             const selectedRuleNodes = selectedRules.map(ruleset => ({ ruleset: ruleset, selected: true }) as RulesetNode);
 
+            // If only groups are selected without any rules, prompt "delete groups" dialog.
+            if(selectedRuleNodes.length === 0 && groupNodes.length > 0) {
+                showOkCancelDialog(i18next.t("deleteRulesetGroups"), i18next.t("deleteRulesetGroupsConfirm", { groupNames: groupNames }), i18next.t("delete"))
+                    .then((ok) => {
+                        if(ok) {
+                            this._deselectAllNodes();
+                            this.nodes = this.nodes.filter(n => !groupNames.includes(n.label));
+                        }
+                    })
+                return;
+            }
+
+            // Request deletion of rulesets, and prompt dialog.
             Util.dispatchCancellableEvent(this, new OrRulesRequestDeleteEvent(selectedRuleNodes))
                 .then((detail) => {
                     if (detail.allow) {
@@ -272,7 +290,10 @@ export class OrRuleTree extends OrTreeMenu {
                                     this._deselectAllNodes();
                                     this._deleteRulesets(selectedRules)
                                         .catch(e => console.error(e))
-                                        .finally(() => this.refresh());
+                                        .finally(() => {
+                                            this.nodes = this.nodes.filter(n => !groupNames.includes(n.label));
+                                            this.refresh()
+                                        });
                                 }
                             });
                     }

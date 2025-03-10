@@ -82,6 +82,8 @@
   "deleteRulesets": "Regels verwijderen",
   "deleteRulesetsConfirm": "Weet je zeker dat je de volgende regels wil verwijderen? {{ruleNames}}",
   "deleteRulesetsFailed": "Het verwijderen van een of meerdere regels is niet gelukt",
+  "deleteRulesetGroups": "Groepen verwijderen",
+  "deleteRulesetGroupsConfirm": "Weet je zeker dat je de volgende groepen wilt verwijderen? {{groupNames}}",
   "saveRulesetFailed": "Het opslaan van de regel is niet gelukt",
   "confirmContinueRulesetModified": "De regel is aangepast, wijzigingen weggooien?",
   "when": "Als",

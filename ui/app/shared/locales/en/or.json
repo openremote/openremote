@@ -83,6 +83,8 @@
   "deleteRulesets": "Delete rule(s)",
   "deleteRulesetsConfirm": "Are you sure you want to delete the selected rule(s)? {{ruleNames}}",
   "deleteRulesetsFailed": "Failed to delete one or more requested rules",
+  "deleteRulesetGroups": "Delete group(s)",
+  "deleteRulesetGroupsConfirm": "Are you sure you want to delete the selected group(s)? {{groupNames}}",
   "saveRulesetFailed": "Failed to save rule",
   "confirmContinueRulesetModified": "Rule has been modified, discard changes?",
   "when": "When",
