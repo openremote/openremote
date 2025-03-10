@@ -6,7 +6,7 @@ configurations {
 
 dependencies {
     api project(":setup")
-    managerRuntime(project(path: ':manager', configuration: 'runtime'))
+    managerRuntime project(':manager')
 }
 
 task license {
@@ -24,8 +24,9 @@ task license {
     }
 }
 
-task installDist(type: Copy) {
-    dependsOn (parent.getTasksByName('installDist', true).findAll {
+tasks.register('installDist', Copy) {
+    duplicatesStrategy DuplicatesStrategy.EXCLUDE
+    dependsOn(parent.getTasksByName('installDist', true).findAll {
         // Don't create circular dependency or depend on built in openremote submodule apps
         it.project != project && !it.project.path.startsWith(":openremote:ui:app")
     })
@@ -36,10 +37,14 @@ task installDist(type: Copy) {
 
     into("image") {
         from projectDir
-        exclude "build.gradle", "Dockerfile", "build", "**/*.mbtiles", "src", "**/*.md", ".gitignore", "**/*.encrypted"
+        exclude "build.gradle", "Dockerfile", "build", "**/*.mbtiles", "src", "**/*.md", ".gitignore"
     }
 
     into("image/manager/extensions") {
-        from getDeploymentJars()
+        from configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.collect {it.file }
+        // Don't include deps baked into the manager docker image
+        exclude configurations.managerRuntime.resolvedConfiguration.resolvedArtifacts.collect {it.file.name }
+        // Don't include any ui packaged JARs (used for dev purposes only)
+        exclude { (it.file.path.contains(".gradle")  || it.file.path.contains(".m2")) && it.file.path.contains("io.openremote.ui") }
     }
 }
