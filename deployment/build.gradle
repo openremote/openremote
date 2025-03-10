@@ -25,7 +25,7 @@ task license {
 }
 
 tasks.register('installDist', Copy) {
-    duplicatesStrategy DuplicatesStrategy.EXCLUDE
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     dependsOn(parent.getTasksByName('installDist', true).findAll {
         // Don't create circular dependency or depend on built in openremote submodule apps
         it.project != project && !it.project.path.startsWith(":openremote:ui:app")
