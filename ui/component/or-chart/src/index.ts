@@ -357,8 +357,8 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Object})
     public assetAttributes: [number, Attribute<any>][] = [];
 
-    @property({type: Array}) // List of AttributeRef that are shown on the right axis instead.
-    public rightAxisAttributes: AttributeRef[] = [];
+    //@property({type: Array}) // List of AttributeRef that are shown on the right axis instead.
+    //public rightAxisAttributes: AttributeRef[] = [];
 
     @property({type: Array})
     public colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }> = [];
@@ -371,7 +371,6 @@ export class OrChart extends translate(i18next)(LitElement) {
         areaAttributes: AttributeRef[],
         faintAttributes: AttributeRef[],
         extendedAttributes: AttributeRef[],
-        //colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }>;
     } = {
         rightAxisAttributes: [],
         smoothAttributes: [],
@@ -379,7 +378,6 @@ export class OrChart extends translate(i18next)(LitElement) {
         areaAttributes: [],
         faintAttributes: [],
         extendedAttributes: [],
-        //colorPickedAttributes: [],
     };
 
 
@@ -493,7 +491,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         const reloadData = changedProperties.has('colorPickedAttributes') || changedProperties.has("datapointQuery") || changedProperties.has("timePresetKey") || changedProperties.has("timeframe") ||
-            changedProperties.has("attributeSettings") || changedProperties.has("rightAxisAttributes") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
+            changedProperties.has("attributeSettings") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
 
         if (reloadData) {
           //  console.log('reloadData triggered');
@@ -587,7 +585,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     },
                     {
                         type: 'value',
-                        show: this.rightAxisAttributes.length > 0,
+                        show: this.attributeSettings.rightAxisAttributes.length > 0,
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ['10%', '10%'],
                         scale: true,
@@ -791,7 +789,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                     const color = this.colorPickedAttributes.find(({ attributeRef }) => attributeRef.name === attr.name && attributeRef.id === asset.id)?.color;
                                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset!.type, attr.name, attr);
                                     const label = Util.getAttributeLabel(attr, descriptors[0], asset!.type, true);
-                                    const axisNote = (this.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
+                                    const axisNote = (this.attributeSettings.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
                                     const bgColor = ( color ?? this.colors[colourIndex] ) || "";
                                     return html`
                                         <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseenter="${() => this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseleave="${()=> this.removeDatasetHighlight()}">
@@ -1219,7 +1217,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     console.log('cheese:' + this.colorPickedAttributes);
 
                     const asset = this.assets[assetIndex];
-                    const shownOnRightAxis = !!this.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const shownOnRightAxis = !!this.attributeSettings.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const smooth = !!this.attributeSettings.smoothAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const stepped = !!this.attributeSettings.steppedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const area = !!this.attributeSettings.areaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);

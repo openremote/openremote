@@ -13,7 +13,6 @@ import "@openremote/or-chart";
 
 export interface ChartWidgetConfig extends WidgetConfig {
     attributeRefs: AttributeRef[];
-    rightAxisAttributes: AttributeRef[];
     colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }>;
     attributeSettings: {
         rightAxisAttributes: AttributeRef[],
@@ -64,7 +63,6 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
     const dates = dateFunc(new Date());
     return {
         attributeRefs: [],
-        rightAxisAttributes: [],
         colorPickedAttributes: [],
         attributeSettings: {
             rightAxisAttributes: [],
@@ -214,7 +212,7 @@ export class ChartWidget extends OrAssetWidget {
                 
             `, () => {
                 return html`
-                    <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .rightAxisAttributes="${this.widgetConfig.rightAxisAttributes}"
+                    <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
                               .colorPickedAttributes="${this.widgetConfig?.colorPickedAttributes != null ? this.widgetConfig?.colorPickedAttributes : []}"
                               .attributeSettings="${this.widgetConfig?.attributeSettings != null ? this.widgetConfig.attributeSettings : {}}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
