@@ -228,11 +228,11 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
     } = mapStateToControlWithDetailProps(jsonFormsContext, props);
 
     const keyword = schema.anyOf !== undefined ? "anyOf" : "oneOf";
-    const resolvedSchema = resolveSchema(schema, keyword, rootSchema);
+    const resolvedSchema = resolveSchema(schema, keyword, rootSchema) as JsonSchema[];
     const resolvedProps = mapStateToCombinatorRendererProps(jsonFormsContext, props, keyword);
 
     const renderInfos = createCombinatorRenderInfos(
-        resolvedSchema[keyword]!,
+        resolvedSchema!,
         rootSchema,
         keyword,
         resolvedProps.uischema || uischema,
@@ -242,7 +242,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
 
     if (data !== undefined && data !== null && (resolvedProps.indexOfFittingSchema === undefined || resolvedProps.indexOfFittingSchema < 0)) {
         // Try and match the data using our own combinator info objects
-        const combinatorInfos = getCombinatorInfos(resolvedSchema[keyword]!, rootSchema);
+        const combinatorInfos = getCombinatorInfos(resolvedSchema!, rootSchema);
 
         const constProp = combinatorInfos.length > 0 ? combinatorInfos[0].constProperty : undefined;
         if (constProp && typeof data === "object" && data[constProp]) {
@@ -271,7 +271,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
             `;
         } else {
             // We have no data so show a schema picker
-            return getSchemaPicker(rootSchema, resolvedSchema, path, keyword, props.label || label, (selectedSchema => handleChange(path, selectedSchema.defaultValueCreator())))
+            return getSchemaPicker(rootSchema, resolvedSchema as any, path, keyword, props.label || label, (selectedSchema => handleChange(path, selectedSchema.defaultValueCreator())))
         }
     }
 
