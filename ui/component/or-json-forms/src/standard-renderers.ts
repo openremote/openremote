@@ -31,7 +31,7 @@ import {
     RankedTester,
     rankWith,
     RendererProps,
-    resolveSubSchemas,
+    resolveSchema,
     schemaMatches,
     schemaSubPathMatches,
     StatePropsOfControlWithDetail,
@@ -228,7 +228,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
     } = mapStateToControlWithDetailProps(jsonFormsContext, props);
 
     const keyword = schema.anyOf !== undefined ? "anyOf" : "oneOf";
-    const resolvedSchema = resolveSubSchemas(schema, rootSchema, keyword);
+    const resolvedSchema = resolveSchema(schema, keyword, rootSchema);
     const resolvedProps = mapStateToCombinatorRendererProps(jsonFormsContext, props, keyword);
 
     const renderInfos = createCombinatorRenderInfos(
@@ -315,7 +315,7 @@ export const allOfControlRenderer = (state: JsonFormsStateContext, props: Contro
     };
 
     // Merge the schemas
-    const allOfSchema = resolveSubSchemas(contentProps.schema, contentProps.rootSchema, "allOf");
+    const allOfSchema = resolveSchema(contentProps.schema, "allOf", contentProps.rootSchema);
     contentProps.schema = (allOfSchema.allOf! as JsonSchema[]).reduce((accumulator, value) => Util.mergeObjects(accumulator, value, false));
     // Reset the uischema scope
     contentProps.uischema.scope = "#";
