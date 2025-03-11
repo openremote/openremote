@@ -99,7 +99,7 @@ helm install keycloak keycloak -f keycloak/values-eks.yaml \
   --set-string or.hostname=$FQDN \
   --set-string 'ingress.annotations.\alb\.ingress\.kubernetes\.io\/certificate-arn'=$CERTIFICATE_ARN
 helm install manager manager -f manager/values-eks.yaml \
-  --set-string image.tag="1.2.4" \
+  --set-string image.tag="1.3.3" \
   --set-string or.hostname=$FQDN \
   --set-string 'ingress.annotations.\alb\.ingress\.kubernetes\.io\/certificate-arn'=$CERTIFICATE_ARN
 
