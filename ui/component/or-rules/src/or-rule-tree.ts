@@ -506,13 +506,13 @@ export class OrRuleTree extends OrTreeMenu {
         const sorting = sortBy as RuleTreeSorting | undefined;
         switch (sorting) {
             case RuleTreeSorting.LANGUAGE: {
-                return Util.sortByString(node => node.ruleset!.lang!);
+                return Util.sortByString(node => node.ruleset?.lang || node.label);
             }
             case RuleTreeSorting.CREATED_ON: {
-                return Util.sortByNumber(node => node.ruleset!.createdOn!);
+                return Util.sortByNumber(node => node.ruleset?.createdOn || 0);
             }
             case RuleTreeSorting.STATUS: {
-                return Util.sortByString(node => node.ruleset!.status!);
+                return Util.sortByString(node => node.ruleset?.status || node.label);
             }
             default: {
                 return super._getSortFunction(sortBy);
