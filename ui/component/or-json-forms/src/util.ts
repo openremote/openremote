@@ -45,8 +45,7 @@ export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFo
     let template: TemplateResult | undefined;
 
     if (renderers && schema && uischema) {
-      // TODO: FIX HARDCODED ROOT
-      const orderedRenderers: [JsonFormsRendererRegistryEntry, number][] = renderers.map(r => [r, r.tester(uischema, schema, { rootSchema: {}, config: state.config })] as [JsonFormsRendererRegistryEntry, number]).sort((a,b) => b[1] - a[1]);
+      const orderedRenderers: [JsonFormsRendererRegistryEntry, number][] = renderers.map(r => [r, r.tester(uischema, schema, { rootSchema: schema, config: state.config })] as [JsonFormsRendererRegistryEntry, number]).sort((a,b) => b[1] - a[1]);
         const renderer = orderedRenderers && orderedRenderers.length > 0 ? orderedRenderers[0] : undefined;
         if (renderer && renderer[1] !== -1) {
             template = renderer[0].renderer(state, props) as TemplateResult;
@@ -215,7 +214,8 @@ export function mapStateToCombinatorRendererProps(
 
     const ajv = state.jsonforms.core!.ajv!;
     const schema = resolvedSchema || rootSchema;
-    const _schema = Resolve.schema(schema, keyword, rootSchema);
+    const _schema = Resolve.schema(schema, keyword, rootSchema) as JsonSchema[];
+
     const structuralKeywords = [
         'required',
         'additionalProperties',
@@ -234,11 +234,11 @@ export function mapStateToCombinatorRendererProps(
     // TODO instead of compiling the combinator subschemas we can compile the original schema
     // without the combinator alternatives and then revalidate and check the errors for the
     // element
-    for (let i = 0; i < _schema[keyword]!.length; i++) {
+    for (let i = 0; i < _schema!.length; i++) {
         try {
             const schema = {
                 definitions: rootSchema.definitions,
-                ..._schema[keyword]![i]
+                ..._schema[i]
             } as JsonSchema;
             const valFn = ajv.compile(schema);
             valFn(data);
