@@ -202,25 +202,6 @@ def getYarnInstallTask() {
     resolveTask(":yarnInstall")
 }
 
-// Gets the list of runtime JAR dependencies; can be used in custom project deployment installDist task to populate
-// extensions directory
-def getDeploymentJars(Project project = project, String excludeConfigName = 'managerRuntime') {
-    if (project.configurations.find { it.name == excludeConfigName } == null) {
-        return []
-    }
-
-    // Get all dependencies that are already part of the openremote manager and exclude these from the libs dir
-    // otherwise they will appear on the classpath twice (once in manager app dir and then again in extensions)
-    def excludeDependencies = project.configurations.getByName(excludeConfigName).resolvedConfiguration.resolvedArtifacts
-
-    return project.configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts
-        .findAll { dep -> excludeDependencies.find { it == dep } == null && dep.name != "openremote-manager" }
-        .collect {
-            println "CopyLibs Artifact: ${it.file.path}"
-            return it.file
-        }
-}
-
 /**
  * This defines reusable config for the typescript generator plugin
  */
@@ -338,7 +319,6 @@ ext {
     resolveProject = this.&resolveProject
     resolveTask = this.&resolveTask
     getYarnInstallTask = this.&getYarnInstallTask
-    getDeploymentJars = this.&getDeploymentJars
     createTSGeneratorConfigForClient = this.&createTSGeneratorConfigForClient
     createTSGeneratorConfigForModel = this.&createTSGeneratorConfigForModel
 }
