@@ -68,6 +68,8 @@ eksctl create iamserviceaccount --profile or \
   --attach-policy-arn=arn:aws:iam::$AWS_ACCOUNT_ID:policy/AWSLoadBalancerControllerIAMPolicy \
   --approve
 
+# [Install AWS Load Balancer Controller with Helm - Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/lbc-helm.html)
+
 helm repo add eks https://aws.github.io/eks-charts
 
 helm repo update eks
