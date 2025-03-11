@@ -682,7 +682,9 @@ export class OrTreeMenu extends LitElement {
      * @param groupFirst - Whether to prioritize group nodes, and place them on the top of the list.
      */
     protected _sortNodes(nodes: TreeNode[], sortBy?: TreeMenuSorting, groupFirst = false): TreeNode[] {
-        console.debug("Sorting nodes in the tree menu...");
+
+        // TODO: Adjust before merging
+        console.debug("Sorting nodes in the tree menu:", nodes);
 
         const grouped = nodes.filter(node => node.children !== undefined);
 
