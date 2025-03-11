@@ -512,7 +512,7 @@ export class OrTreeMenu extends LitElement {
             // Remove "hover background" from the group node in the UI
             if(groupNode) this._getUiNodeFromTree(groupNode)?.removeAttribute("drophover");
 
-            const nodesToMove: TreeNode[] = [];
+            let nodesToMove: TreeNode[] = [];
 
             // Get the dragged element from the event payload data
             const data = ev.dataTransfer?.getData("treeNode");
@@ -532,6 +532,14 @@ export class OrTreeMenu extends LitElement {
                     nodesToMove.push(...selected.filter(node => !nodesToMove.find(n => JSON.stringify(n) === JSON.stringify(node))));
                 }
             }
+
+            // Filter out "nodes to move" that are already in that group
+            if(groupNode?.children) {
+                nodesToMove = nodesToMove.filter(node =>
+                    !groupNode.children?.find(child => child.id === node.id)
+                )
+            }
+
             // Finally, move the nodes
             if(nodesToMove.length > 0) {
                 this._dispatchCancellableDragEvent(nodesToMove, groupNode, this.nodes).then(() => {
