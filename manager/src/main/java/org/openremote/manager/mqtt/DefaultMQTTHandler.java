@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.mqtt;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
@@ -64,6 +65,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public static final String ATTRIBUTE_TOPIC = "attribute";
     public static final String ATTRIBUTE_VALUE_TOPIC = "attributevalue";
     public static final String ATTRIBUTE_VALUE_WRITE_TOPIC = "writeattributevalue";
+    public static final String ATTRIBUTE_WRITE_TOPIC = "writeattribute";
     private static final Logger LOG = SyslogCategory.getLogger(API, DefaultMQTTHandler.class);
     final protected Map<String, Map<String, Consumer<? extends Event>>> sessionSubscriptionConsumers = new HashMap<>();
     // An authorisation cache for publishing
@@ -114,7 +116,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
     @Override
     public boolean topicMatches(Topic topic) {
-        return isAttributeTopic(topic) || isAssetTopic(topic) || isAttributeValueWriteTopic(topic);
+        return isAttributeTopic(topic) || isAssetTopic(topic) || isAttributeValueWriteTopic(topic) || isAttributeWriteTopic(topic);
     }
 
     @Override
@@ -254,7 +256,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
         // We don't know the value at this point so just use a null value for authorization (value type will be handled
         // when the event is processed)
-        if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topic.getTokens(), null))) {
+        if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topic.getTokens(), null, null))) {
             LOG.fine("Publish was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
             return false;
         }
@@ -329,7 +331,8 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @Override
     public Set<String> getPublishListenerTopics() {
         return Set.of(
-            TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTE_VALUE_WRITE_TOPIC + "/" + TOKEN_MULTI_LEVEL_WILDCARD
+            TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTE_VALUE_WRITE_TOPIC + "/" + TOKEN_MULTI_LEVEL_WILDCARD,
+            TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTE_WRITE_TOPIC + "/" + TOKEN_MULTI_LEVEL_WILDCARD
         );
     }
 
@@ -337,23 +340,38 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
         List<String> topicTokens = topic.getTokens();
         String payloadContent = body.toString(StandardCharsets.UTF_8);
-        Object value = ValueUtil.parse(payloadContent).orElse(null);
-        AttributeEvent attributeEvent = buildAttributeEvent(topicTokens, value);
+        AttributeEvent attributeEvent;
 
-        // Set timestamp as early as possible if not set
-        if (attributeEvent.getTimestamp() <= 0) {
-            attributeEvent.setTimestamp(timerService.getCurrentTimeMillis());
+        if (isAttributeValueWriteTopic(topic)) {
+            attributeEvent = ValueUtil.parse(payloadContent, ObjectNode.class).map(valueWithTimestamp -> {
+                if (valueWithTimestamp.has("value") && valueWithTimestamp.has("timestamp")) {
+                    Object value = valueWithTimestamp.get("value");
+                    long timestamp = valueWithTimestamp.get("timestamp").asLong();
+                    if (timestamp > 0L) {
+                        return buildAttributeEvent(topicTokens, value, timestamp);
+                    }
+                }
+                return null;
+            }).orElse(null);
+            if (attributeEvent == null) {
+                LOG.info(() -> "Invalid publish to write attribute topic '" + topic + "': " + connectionToString(connection));
+            }
+        } else {
+            Object value = ValueUtil.parse(payloadContent).orElse(null);
+            attributeEvent = buildAttributeEvent(topicTokens, value, timerService.getCurrentTimeMillis());
         }
 
-        // This is called by a single ActiveMQ client thread (the session) and async offloaded to the container executor,
-        // once the container executor has no free threads the caller will execute (i.e. the client thread) which will
-        // effectively limit rate of publish consumption eventually filling the attribute queue in the broker and
-        // preventing additional attribute events from being added to the queue. This gives us a consistent failure mode
-        // and natural rate limiting.
-        messageBrokerService.getFluentProducerTemplate()
-            .withBody(attributeEvent)
-            .to(ATTRIBUTE_EVENT_PROCESSOR)
-            .asyncSend();
+        if (attributeEvent != null) {
+            // This is called by a single ActiveMQ client thread (the session) and async offloaded to the container executor,
+            // once the container executor has no free threads the caller will execute (i.e. the client thread) which will
+            // effectively limit rate of publish consumption eventually filling the attribute queue in the broker and
+            // preventing additional attribute events from being added to the queue. This gives us a consistent failure mode
+            // and natural rate limiting.
+            messageBrokerService.getFluentProducerTemplate()
+                    .withBody(attributeEvent)
+                    .to(ATTRIBUTE_EVENT_PROCESSOR)
+                    .asyncSend();
+        }
     }
 
     @Override
@@ -369,10 +387,10 @@ public class DefaultMQTTHandler extends MQTTHandler {
         }
     }
 
-    protected static AttributeEvent buildAttributeEvent(List<String> topicTokens, Object value) {
+    protected static AttributeEvent buildAttributeEvent(List<String> topicTokens, Object value, Long timestamp) {
         String attributeName = topicTokens.get(3);
         String assetId = topicTokens.get(4);
-        return new AttributeEvent(assetId, attributeName, value).setSource(DefaultMQTTHandler.class.getSimpleName());
+        return new AttributeEvent(assetId, attributeName, value, timestamp).setSource(DefaultMQTTHandler.class.getSimpleName());
     }
 
     protected static AssetFilter<?> buildAssetFilter(Topic topic) {
@@ -516,6 +534,10 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
     protected static boolean isAttributeValueWriteTopic(Topic topic) {
         return ATTRIBUTE_VALUE_WRITE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
+    }
+
+    protected static boolean isAttributeWriteTopic(Topic topic) {
+        return ATTRIBUTE_WRITE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
     }
 
     protected static boolean isAssetTopic(Topic topic) {
