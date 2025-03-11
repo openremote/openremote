@@ -430,6 +430,12 @@ export class OrChart extends translate(i18next)(LitElement) {
     public showToolBox: boolean = true;
 
     @property()
+    public showSymbolMaxDatapoints: number = 30;
+
+    @property()
+    public maxConcurrentDatapoints: number = 100;
+
+    @property()
     protected _loading: boolean = false;
 
     @property()
@@ -1212,9 +1218,6 @@ export class OrChart extends translate(i18next)(LitElement) {
             } else {
                 this._dataAbortController = new AbortController();
                 promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
-                    console.log('Stepped attrs:' + JSON.stringify(this.attributeSettings.steppedAttributes));
-                    console.log('Collored attrs in chart:' + JSON.stringify(this.colorPickedAttributes));
-                    console.log('cheese:' + this.colorPickedAttributes);
 
                     const asset = this.assets[assetIndex];
                     const shownOnRightAxis = !!this.attributeSettings.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
@@ -1224,7 +1227,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                     const faint = !!this.attributeSettings.faintAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const extended = !!this.attributeSettings.extendedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const color = this.colorPickedAttributes.find(({ attributeRef }) => attributeRef.name === attribute.name && attributeRef.id === asset.id)?.color;
-                    console.log('Picked color found: ' + color);
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);
                     const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
                     const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
@@ -1244,8 +1246,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     //Load Extended Data
                     let bsNumber = 1; //inserted in from and to, however these are not used in _loadAttributeData anyway, the function references variables outside of it (bad practice)
                     if (extended) {
-                        console.log('Extended data requested');
-                        dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], bsNumber, bsNumber, false, false, false, area, faint, extended, asset.name + " " + label + " " + i18next.t("dashboard.extended"), options, unit);
+                        dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], bsNumber, bsNumber, false, false, false, area, faint, extended, asset.name + " " + label + " " + i18next.t("dashboard.lastKnown"), options, unit);
                         data.push(dataset);
                     }
 
@@ -1337,22 +1338,8 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
 
             if(query.type == 'lttb') {
-                // NEEDS TO BE REWORKED, ECHARTS HAS LTTB BUILT IN, BUT THIS CAN BE A SETTING IN CHART-SETTINGS
 
-                // If amount of data points is set, only allow a maximum of 1 points per pixel in width
-                // Otherwise, dynamically set amount of data points based on chart width (1000px = 200 data points)
-                //if(query.amountOfPoints) {
-                //    if(this._chartElem?.clientWidth > 0) {
-                //        query.amountOfPoints = Math.min(query.amountOfPoints, this._chartElem?.clientWidth)
-                //    }
-                //} else {
-                //    if(this._chartElem?.clientWidth > 0) {
-                //        query.amountOfPoints = Math.round(this._chartElem.clientWidth / 5)
-                //    } else {
-                        console.warn("Could not grab width of the Chart for estimating amount of data points. Using 100 points instead.")
-                        query.amountOfPoints = 100;
-                //    }
-                //}
+               query.amountOfPoints = this.maxConcurrentDatapoints;
 
             } else if(query.type === 'interval' && !query.interval) {
                 const diffInHours = (this.datapointQuery.toTimestamp! - this.datapointQuery.fromTimestamp!) / 1000 / 60 / 60;
@@ -1380,7 +1367,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     .map(point => ({ x: point.x, y: point.y } as ValueDatapoint<any>))
 
                 dataset.data = data.map(point => [point.x, point.y]);
-                dataset.showSymbol = data.length <=30; //Only show symbols when there are 30 or fewer data points to be shown
+                dataset.showSymbol = data.length <= this.showSymbolMaxDatapoints;
             }
 
 

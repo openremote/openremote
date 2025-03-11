@@ -758,9 +758,11 @@
     "smooth": "Smooth",
     "stepped": "Stepped",
     "fill": "Fill",
-    "extendData": "Extend last datapoint",
-    "extended": "(last known)",
-    "lineColor": "Line color"
+    "extendData": "Extend latest datapoint",
+    "lastKnown": "(last known)",
+    "lineColor": "Line color",
+    "maxConcurrentDatapoints": "Max concurrent datapoints",
+    "showSymbolMaxDatapoints": "Upper limit to show datapoint symbols"
 
   },
   "south": "South",

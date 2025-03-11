@@ -163,7 +163,6 @@ export class ChartSettings extends WidgetSettings {
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowLegendToggle(ev)}"
                                 ></or-mwc-input>
                             </div>
-                        
                         <!-- Datazoombar -->
                             <div class="switch-container">
                                 <span><or-translate value="dashboard.showZoomBar"></or-translate></span>
@@ -178,6 +177,13 @@ export class ChartSettings extends WidgetSettings {
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowToolBoxToggle(ev)}"
                                 ></or-mwc-input>
                             </div>
+                        <!-- Show Symbol Treshold -->    
+                            <div class="number-container">
+                                <or-mwc-input .type="${InputType.NUMBER}" .min="1" .max="200" .step="1" label="${i18next.t('dashboard.showSymbolMaxDatapoints')}" style="width: 100%;" .value="${this.widgetConfig.showSymbolMaxDatapoints}"
+                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowSymbolMaxDatapointsValueChange(ev)}"
+                                ></or-mwc-input>
+                            </div>
+                            
                         </div>
                     </div>
                 </settings-panel>
@@ -288,6 +294,13 @@ export class ChartSettings extends WidgetSettings {
                         intervalQuery.formula = event.detail.value;
                         this.notifyConfigUpdate();
                     }}"
+                    ></or-mwc-input>
+                `;
+            }
+            case 'lttb': {
+                return html `
+                    <or-mwc-input .type="${InputType.NUMBER}" .min="10" .max="1000" .step="1" label="${i18next.t('dashboard.maxConcurrentDatapoints')}" .value="${this.widgetConfig.maxConcurrentDatapoints}" style="width: 100%;"
+                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMaxConcurrentDatapointsValueChange(ev)}"
                     ></or-mwc-input>
                 `;
             }
@@ -450,6 +463,16 @@ export class ChartSettings extends WidgetSettings {
 
     protected onSamplingQueryChange(ev: OrInputChangedEvent) {
         this.widgetConfig.datapointQuery.type = this.samplingOptions.get(ev.detail.value)! as any;
+        this.notifyConfigUpdate();
+    }
+
+    protected onMaxConcurrentDatapointsValueChange(ev: OrInputChangedEvent) {
+        this.widgetConfig.maxConcurrentDatapoints = ev.detail.value;
+        this.notifyConfigUpdate();
+    }
+
+    protected onShowSymbolMaxDatapointsValueChange(ev: OrInputChangedEvent) {
+        this.widgetConfig.showSymbolMaxDatapoints = ev.detail.value;
         this.notifyConfigUpdate();
     }
 }

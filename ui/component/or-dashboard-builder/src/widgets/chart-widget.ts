@@ -23,12 +23,14 @@ export interface ChartWidgetConfig extends WidgetConfig {
         extendedAttributes: AttributeRef[],
     },
     datapointQuery: AssetDatapointQueryUnion;
-    chartOptions?: any; // ChartConfiguration<"line", ScatterDataPoint[]>
+    chartOptions?: any;
     showTimestampControls: boolean;
     defaultTimePresetKey: string;
     showLegend: boolean;
     showZoomBar: boolean;
     showToolBox: boolean;
+    showSymbolMaxDatapoints: number;
+    maxConcurrentDatapoints: number;
 }
 
 function getDefaultTimePresetOptions(): Map<string, TimePresetCallback> {
@@ -95,7 +97,10 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
         defaultTimePresetKey: preset,
         showLegend: true,
         showZoomBar: false,
-        showToolBox: false
+        showToolBox: false,
+        showSymbolMaxDatapoints: 30,
+        maxConcurrentDatapoints: 100,
+
     };
 }
 
@@ -221,6 +226,8 @@ export class ChartWidget extends OrAssetWidget {
                               .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
                               .timePresetOptions="${getDefaultTimePresetOptions()}" .timePresetKey="${this.widgetConfig?.defaultTimePresetKey}"
                               .datapointQuery="${this.datapointQuery}" .chartOptions="${this.widgetConfig?.chartOptions}"
+                              .showSymbolMaxDatapoints="${this.widgetConfig?.showSymbolMaxDatapoints}"
+                              .maxConcurrentDatapoints="${this.widgetConfig?.maxConcurrentDatapoints}"
                               style="height: 100%"
                     ></or-chart>
                 `;
