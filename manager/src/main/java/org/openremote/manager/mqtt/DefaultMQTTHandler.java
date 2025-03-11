@@ -233,13 +233,13 @@ public class DefaultMQTTHandler extends MQTTHandler {
         AuthContext authContext = getAuthContextFromSecurityContext(securityContext);
 
         if (authContext == null) {
-            LOG.finer("Anonymous publish not supported: topic=" + topic + ", connection=" + mqttBrokerService.connectionToString(connection));
+            LOG.finer("Anonymous publish not supported: topic=" + topic + ", connection=" + connectionToString(connection));
             return false;
         }
 
-        if (isAttributeValueWriteTopic(topic)) {
+        if (isAttributeValueWriteTopic(topic) || isAttributeWriteTopic(topic)) {
             if (topic.getTokens().size() != 5 || !Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))) {
-                LOG.finer("Publish attribute value topic should be {realm}/{clientId}/writeattributevalue/{attributeName}/{assetId}: topic=" + topic + ", connection=" + mqttBrokerService.connectionToString(connection));
+                LOG.finer("Invalid publish topic: topic=" + topic + ", connection=" + connectionToString(connection));
                 return false;
             }
         } else {
@@ -342,7 +342,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         String payloadContent = body.toString(StandardCharsets.UTF_8);
         AttributeEvent attributeEvent;
 
-        if (isAttributeValueWriteTopic(topic)) {
+        if (isAttributeWriteTopic(topic)) {
             attributeEvent = ValueUtil.parse(payloadContent, ObjectNode.class).map(valueWithTimestamp -> {
                 if (valueWithTimestamp.has("value") && valueWithTimestamp.has("timestamp")) {
                     Object value = valueWithTimestamp.get("value");
