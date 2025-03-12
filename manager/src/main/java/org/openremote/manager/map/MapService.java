@@ -442,8 +442,15 @@ public class MapService implements ContainerService {
         try (OutputStream outputStream = Files.newOutputStream(customMapTilesPath)) {
             byte[] buffer = new byte[4096];
             int bytesRead;
+            int written = 0;
             while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+                if (written > customMapLimit) {
+                    LOG.log(Level.SEVERE, "Stream continued past content-length, deleting file.");
+                    Files.deleteIfExists(customMapTilesPath);
+                    return false;
+                }
                 outputStream.write(buffer, 0, bytesRead);
+                written += bytesRead;
             }
 
             Class.forName(org.sqlite.JDBC.class.getName());
