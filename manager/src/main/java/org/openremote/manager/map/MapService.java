@@ -110,8 +110,8 @@ public class MapService implements ContainerService {
             newVectorTiles.put("url", vectorTiles.get("url").textValue());
         } else {
             newVectorTiles.put("url", DEFAULT_VECTOR_TILES_URL);
+            mapConfiguration.sources.put("vector_tiles", ValueUtil.JSON.convertValue(newVectorTiles, MapSourceConfig.class));
         }
-        mapConfiguration.sources.put("vector_tiles", ValueUtil.JSON.convertValue(newVectorTiles, MapSourceConfig.class));
 
         mapConfig.putPOJO("options", mapConfiguration.options);
         mapConfig.putPOJO("sources", mapConfiguration.sources);
