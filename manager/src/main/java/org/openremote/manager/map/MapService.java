@@ -227,10 +227,10 @@ public class MapService implements ContainerService {
     }
 
     public void setData() throws ClassNotFoundException, SQLException, NullPointerException {
-        setData(null);
+        setData(null, null);
     }
 
-    public void setData(Connection conn) throws ClassNotFoundException, SQLException, NullPointerException {
+    public void setData(Connection conn, Metadata meta) throws ClassNotFoundException, SQLException, NullPointerException {
         Path mapTilesPath = configurationService.getMapTilesPath();
         if (mapTilesPath == null) {
             return;
@@ -246,7 +246,7 @@ public class MapService implements ContainerService {
 
         Class.forName(org.sqlite.JDBC.class.getName());
         connection = conn == null ? DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath) : conn;
-        metadata = getMetadata(connection);
+        metadata = meta == null ? getMetadata(connection) : metadata;
 
         if (metadata.isValid()) {
             mapConfig = configurationService.getMapConfig();
@@ -456,8 +456,9 @@ public class MapService implements ContainerService {
                 LOG.log(Level.SEVERE, "MBTiles database file corrupt");
                 return false;
             }
+            saveMapMetadata(getMetadata(connection));
 
-            this.setData(connection);
+            this.setData(connection, metadata);
             return true;
         } catch (IOException | SQLException | ClassNotFoundException e) {
             LOG.log(Level.SEVERE, "Failed to load mapdata-custom.mbtiles file", e);
@@ -483,11 +484,35 @@ public class MapService implements ContainerService {
             LOG.log(Level.SEVERE, "Failed to delete mapdata-custom.mbtiles file", e);
         }
         try {
-            this.setData();
+            Path mapTilesPath = configurationService.getMapTilesPath();
+            if (mapTilesPath == null) {
+                return deleted;
+            }
+            Class.forName(org.sqlite.JDBC.class.getName());
+            Connection connection = DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath);
+            saveMapMetadata(getMetadata(connection));
+
+            this.setData(connection, metadata);
         } catch (SQLException | ClassNotFoundException | NullPointerException e) {
             LOG.log(Level.SEVERE, "Failed to load default file", e);
         }
         return deleted;
+    }
+
+    private void saveMapMetadata(Metadata metadata) {
+        Optional<ObjectNode> options = Optional.ofNullable((ObjectNode)mapConfig.get("options"));
+        if (metadata.isValid() && options.isPresent()) {
+            Iterator<Map.Entry<String, JsonNode>> fields = options.get().fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> field = fields.next();
+                ObjectNode value = (ObjectNode)field.getValue();
+                value.set("center", metadata.getCenter());
+                value.set("bounds", metadata.getBounds());
+            }
+            configurationService.saveMapConfig(mapConfig);
+            mapConfig = configurationService.getMapConfig();
+            mapSettings.clear();
+        }
     }
 
     protected static final class Metadata {
