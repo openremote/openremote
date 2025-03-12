@@ -79,6 +79,7 @@ public interface MapResource {
     @POST
     @Path("upload")
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
+    @Produces("text/plain")
     @Operation(operationId = "uploadMap", summary = "Saves mbtiles file")
     Response uploadMap();
 
