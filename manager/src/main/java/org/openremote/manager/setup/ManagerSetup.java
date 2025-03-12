@@ -392,42 +392,6 @@ public class ManagerSetup implements Setup {
         return lightAsset;
     }
 
-    protected ElectricityStorageAsset createDemoElectricityStorageAsset(String name, Asset<?> area,
-            GeoJSONPoint location) {
-        ElectricityStorageAsset electricityStorageAsset = new ElectricityBatteryAsset(name);
-        electricityStorageAsset.setParent(area);
-        electricityStorageAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
-
-        return electricityStorageAsset;
-    }
-
-    protected ElectricityProducerSolarAsset createDemoElectricitySolarProducerAsset(String name, Asset<?> area,
-            GeoJSONPoint location) {
-        ElectricityProducerSolarAsset electricityProducerAsset = new ElectricityProducerSolarAsset(name);
-        electricityProducerAsset.setParent(area);
-        electricityProducerAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
-
-        return electricityProducerAsset;
-    }
-
-    protected ElectricityConsumerAsset createDemoElectricityConsumerAsset(String name, Asset<?> area,
-            GeoJSONPoint location) {
-        ElectricityConsumerAsset electricityConsumerAsset = new ElectricityConsumerAsset(name);
-        electricityConsumerAsset.setParent(area);
-        electricityConsumerAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
-
-        return electricityConsumerAsset;
-    }
-
-    protected ElectricityChargerAsset createDemoElectricityChargerAsset(String name, Asset<?> area,
-            GeoJSONPoint location) {
-        ElectricityChargerAsset electricityChargerAsset = new ElectricityChargerAsset(name);
-        electricityChargerAsset.setParent(area);
-        electricityChargerAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
-
-        return electricityChargerAsset;
-    }
-
     protected GroundwaterSensorAsset createDemoGroundwaterAsset(String name, Asset<?> area, GeoJSONPoint location) {
         GroundwaterSensorAsset groundwaterAsset = new GroundwaterSensorAsset(name);
         groundwaterAsset.setParent(area);
