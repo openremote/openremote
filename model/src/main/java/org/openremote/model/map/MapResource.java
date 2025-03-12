@@ -80,11 +80,17 @@ public interface MapResource {
     @Path("upload")
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
     @Produces("text/plain")
+    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @Operation(operationId = "uploadMap", summary = "Saves mbtiles file")
     Response uploadMap();
 
+    /**
+     * Retrieve if the map is custom and custom map limit
+     */
     @GET
     @Path("customMapInfo")
+    @RolesAllowed({Constants.READ_ADMIN_ROLE})
+    @Operation(operationId = "customMapInfo", summary = "Retrieve if the map is custom and custom map limit")
     Response customMapInfo();
 
     /**
@@ -93,6 +99,7 @@ public interface MapResource {
     @DELETE
     @Path("deleteMap")
     @Produces("text/plain")
+    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @Operation(operationId = "deleteMap", summary = "Removes mbtiles file")
     Response deleteMap();
 }
