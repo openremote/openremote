@@ -272,7 +272,7 @@ services:
       OR_MAP_SETTINGS_PATH: ${OR_MAP_SETTINGS_PATH:-/deployment/map/mapsettings.json}
 
       # Override the maximum allowed custom map tiles database file size in bytes.
-      OR_CUSTOM_MAP_SIZE_LIMIT: ${OR_CUSTOM_MAP_SIZE_LIMIT:-1000000000}
+      OR_CUSTOM_MAP_SIZE_LIMIT: ${OR_CUSTOM_MAP_SIZE_LIMIT:-100000000}
 
       # Set the tileserver host name and port; the manager will reverse proxy to this server
       # to provide raster map tiles to frontend apps
