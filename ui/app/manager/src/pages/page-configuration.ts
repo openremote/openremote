@@ -425,14 +425,12 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     }
 
     protected async deleteCustomMap() {
-        const response = await manager.rest.api.MapResource.deleteMap();
-
-        if (response.status !== 204) {
-            console.error("Map delete failed")
-            return
+        try {
+            await manager.rest.api.MapResource.deleteMap();
+            window.location.reload();
+        } catch (reason) {
+            console.error(reason);
         }
-
-        window.location.reload();
     }
 
     protected async getManagerConfig(): Promise<ManagerAppConfig | undefined> {
