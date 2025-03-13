@@ -186,6 +186,11 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 width: 80%;
             }
 
+            or-file-uploader {
+              width: 108px;
+              height: 108px;
+            }
+
             .d-inline-flex {
                 display: inline-flex;
             }
@@ -375,7 +380,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                                     customMapLimit: this.humanReadableBytes(this.customMapLimit)
                                                 })}"
                                                 .accept=${".mbtiles"}
-                                                @change="${(e) => this.uploadCustomMap(e)}"></or-file-uploader>
+                                                @change="${(e) => this.uploadCustomMap(e)}"
+                                                // Source: https://pictogrammers.com/library/mdi/icon/map-check-outline/
+                                                .src="${this.tilesForUpload || this.isMapCustom ? "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZD0iTTE4LjI1LDIyTDE1LjUsMTlMMTYuNjYsMTcuODJMMTguMjUsMTkuNDFMMjEuODQsMTUuODJMMjMsMTcuMjNMMTguMjUsMjJNMjAuNSwzQTAuNSwwLjUgMCAwLDEgMjEsMy41VjEzLjM0QzIwLjM3LDEzLjEyIDE5LjcsMTMgMTksMTNWNS43TDE2LDYuODZWMTMuOEMxNS4yLDE0LjI3IDE0LjUsMTQuOTEgMTQsMTUuNjhWNi44N0wxMCw1LjQ3VjE3LjEzTDEzLjA1LDE4LjJMMTMsMTlDMTMsMTkuNDYgMTMuMDUsMTkuOTIgMTMuMTUsMjAuMzVMOSwxOC45TDMuNjYsMjAuOTdMMy41LDIxQTAuNSwwLjUgMCAwLDEgMywyMC41VjUuMzhDMyw1LjE1IDMuMTUsNC45NyAzLjM2LDQuOUw5LDNMMTUsNS4xTDIwLjM0LDMuMDNMMjAuNSwzTTUsNi40NlYxOC4zMUw4LDE3LjE1VjUuNDVMNSw2LjQ2WiIgLz48L3N2Zz4=": undefined}"></or-file-uploader>
                                             ${when(this.isMapCustom, () => html`
                                                     <or-mwc-input type="${InputType.BUTTON}" iconColor="black" icon="delete" 
                                                         @or-mwc-input-changed="${async () => await this.deleteCustomMap()}" 
