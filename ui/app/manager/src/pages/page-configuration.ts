@@ -505,10 +505,12 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         }
 
         if (this.tilesForUpload) {
+            showSnackbar(undefined, "configuration.global.uploadingMapTiles");
             filePromises.push(manager.rest.api.MapResource.uploadMap({
                 data: this.tilesForUpload,
                 headers: {'Content-Type': 'application/octet-stream'}
             }).catch((reason) => {
+                setTimeout(() => showSnackbar(undefined, "configuration.global.uploadingMapTilesError"), 3000);
                 console.error(reason);
             }));
         }
