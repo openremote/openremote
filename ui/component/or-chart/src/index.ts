@@ -357,9 +357,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Object})
     public assetAttributes: [number, Attribute<any>][] = [];
 
-    //@property({type: Array}) // List of AttributeRef that are shown on the right axis instead.
-    //public rightAxisAttributes: AttributeRef[] = [];
-
     @property({type: Array})
     public colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }> = [];
 
@@ -416,6 +413,23 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     @property()
     public timePresetKey?: string;
+
+
+
+
+
+
+    @property()
+    public timeWindowOptions?: Map<string, [moment.unitOfTime.DurationConstructor, number]>;
+
+    @property()
+    public timePrefixKey?: string;
+
+    @property()
+    public timeWindowKey?: string;
+
+
+
 
     @property()
     public showLegend: boolean = true;
@@ -496,7 +510,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
         }
 
-        const reloadData = changedProperties.has('colorPickedAttributes') || changedProperties.has("datapointQuery") || changedProperties.has("timePresetKey") || changedProperties.has("timeframe") ||
+        const reloadData = changedProperties.has('colorPickedAttributes') || changedProperties.has("datapointQuery") || changedProperties.has("timePresetKey") || changedProperties.has("timeframe") || changedProperties.has("timePrefixKey") || changedProperties.has("timeWindowKey")||
             changedProperties.has("attributeSettings") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
 
         if (reloadData) {
@@ -543,7 +557,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                 tooltip: {
                     trigger: 'axis',
-                    axisPointer: { type: 'cross'},
+                    axisPointer: { type: 'cross', snap: true},
                     //formatter: (params: any) => {
                     //    if (Array.isArray(params) && params.length > 0) {
                     //        const yValue = params[0].value[1];
@@ -658,8 +672,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                 }
             }
 
-          //  console.log(this._chartOptions);
-
             // Initialize echarts instance
             this._chart = init(this._chartElem);
             // Set chart options to default
@@ -717,6 +729,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     render() {
+
         const disabled = false; // TEMP EDIT this._loading || this._latestError;
         return html`
             <div id="container">
@@ -738,23 +751,40 @@ export class OrChart extends translate(i18next)(LitElement) {
                     <div id="chart-controls">
                         <div id="controls">
                             <div class="period-controls">
-                                ${this.timePresetOptions && this.timePresetKey ? html`
+                                ${this.timePresetOptions && this.timePresetKey && this.timePrefixKey && this.timePrefixOptions && this.timeWindowKey && this.timeWindowOptions ? html`
                                     ${this.timestampControls ? html`
+                                        <!-- Scroll left button -->
+                                        <or-mwc-input .type="${InputType.BUTTON}" icon="chevron-left" @or-mwc-input-changed="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeWindowKey!, "previous")}"></or-mwc-input>
+                                        <!-- Time prefix selection -->
                                         ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePresetKey}"></or-mwc-input>`,
-                                                Array.from(this.timePresetOptions!.keys()).map((key) => ({ value: key } as ListItem)),
-                                                this.timePresetKey,
+                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}"></or-mwc-input>`,
+                                                this.timePrefixOptions.map((option) => ({ value: option } as ListItem)),
+                                                this.timePrefixKey,
                                                 (value: string | string[]) => {
                                                     this.timeframe = undefined; // remove any custom start & end times
-                                                    this.timePresetKey = value.toString();
+                                                    this.timePrefixKey = value.toString();
                                                 },
                                                 undefined,
                                                 undefined,
                                                 undefined,
                                                 true
                                         )}
-                                        <!-- Button that opens custom time selection -->
-                                        <or-mwc-input .type="${InputType.BUTTON}" icon="calendar-clock" @or-mwc-input-changed="${() => this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-mwc-input>
+                                        <!-- Time window selection -->
+                                        ${getContentWithMenuTemplate(
+                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeWindowKey}"></or-mwc-input>`,
+                                                Array.from(this.timeWindowOptions!.keys()).map((key) => ({ value: key } as ListItem)),
+                                                this.timePrefixKey,
+                                                (value: string | string[]) => {
+                                                    this.timeframe = undefined; // remove any custom start & end times
+                                                    this.timeWindowKey = value.toString();
+                                                },
+                                                undefined,
+                                                undefined,
+                                                undefined,
+                                                true
+                                        )}
+                                        <!-- Scroll right button -->
+                                        <or-mwc-input .type="${InputType.BUTTON}" icon="chevron-right" @or-mwc-input-changed="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeWindowKey!, "next")}"></or-mwc-input>
                                     ` : html`
                                         <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePresetKey}" disabled="true"></or-mwc-input>
                                     `}
@@ -843,9 +873,9 @@ export class OrChart extends translate(i18next)(LitElement) {
             let options = this._chart.getOption();
             if (options.series && Array.isArray(options.series)) {
                 options.series.forEach(function (series) {
-                    if (series.lineStyle.opacity == 0.2) {
+                    if (series.lineStyle.opacity == 0.2 || series.lineStyle.opacity == 0.99) {
                         series.lineStyle.opacity = 0.31;
-                    } else if (series.lineStyle.opacity != 0.31) {
+                    } else {
                         series.lineStyle.opacity = 1;
                     }
                 });
@@ -865,7 +895,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                         } else {
                             series.lineStyle.opacity = 0.3;
                         }
-
+                    } else if (series.lineStyle.opacity == 0.31) { // extra highlight if selected is faint
+                        series.lineStyle.opacity = 0.99;
                     }
                 });
             }
@@ -877,7 +908,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
 
     async loadSettings(reset: boolean) {
-       // console.log('loadSettings triggered');
+         console.log('loadSettings triggered');
 
         if(this.assetAttributes == undefined || reset) {
             this.assetAttributes = [];
@@ -892,6 +923,18 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
         if (!this.timePresetKey) {
             this.timePresetKey = this.timePresetOptions.keys().next().value.toString();
+        }
+
+        if (!this.timeWindowOptions) {
+            this.timeWindowOptions = this._getDefaultTimeWindowOptions();
+        }
+
+        if (!this.timeWindowKey) {
+            this.timeWindowKey = this.timeWindowOptions.keys().next().value.toString();
+        }
+
+        if (!this.timePrefixKey) {
+            this.timePrefixKey = this.timePrefixOptions[0];
         }
 
         if (!this.panelName) {
@@ -962,7 +1005,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     async saveSettings() {
-       // console.log('saveSettings triggered');
+       console.log('saveSettings triggered');
 
         if (!this.panelName) {
             return;
@@ -1137,7 +1180,104 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    protected _getDefaultTimestampOptions(): Map<string, TimePresetCallback> {
+
+
+
+
+
+
+    protected timePrefixOptions: string[] = ["this", "last"];
+
+
+
+    protected _getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
+        return new Map<string, [moment.unitOfTime.DurationConstructor, number]>([
+            ["5 minutes", ['minutes', 5]],
+            ["20 minutes", ['minutes', 20]],
+            ["60 minutes", ['minutes', 60]],
+            ["hour", ['hours', 1]],
+            ["6 hours", ['hours', 6]],
+            ["24 hours", ['hours', 24]],
+            ["day", ['days', 1]],
+            ["7 days", ['days', 7]],
+            ["week", ['weeks', 1]],
+            ["30 days", ['days', 30]],
+            ["month", ['months', 1]],
+            ["365 days", ['days', 365]],
+            ["year", ['years', 1]]
+        ]);
+    };
+
+
+    protected _getTimeWindowSelected(timePrefixSelected: string, timeWindowSelected: string): [Date, Date] {
+        let startDate = moment();
+        let endDate = moment();
+
+        const timeWindow: [moment.unitOfTime.DurationConstructor, number] | undefined = this.timeWindowOptions!.get(timeWindowSelected);
+
+        if (!timeWindow) {
+            throw new Error(`Unsupported time window selected: ${timeWindowSelected}`);
+        }
+
+        const [unit , value]: [moment.unitOfTime.DurationConstructor, number] = timeWindow;
+
+        switch (timePrefixSelected) {
+            case "this":
+                if (value == 1) { // For singulars like this hour
+                    startDate = moment().subtract(value, unit);
+                    endDate = moment().endOf(unit);
+                } else { // For multiples like this 5 min, put now in the middle
+                    startDate = moment().subtract(value*0.5, unit);
+                    endDate = moment().add(value*0.5, unit);
+                }
+                break;
+            case "last":
+                startDate = moment().subtract(value, unit).startOf(unit);
+                if (value == 1) { // For singulars like last hour
+                    endDate = moment().startOf(unit);
+                } else { //For multiples like last 5 min
+                    endDate = moment();
+                }
+                break;
+        }
+        return [startDate.toDate(), endDate.toDate()];
+    }
+
+    protected _shiftTimeframe(currentStart: Date, timeWindowSelected: string, direction: string) {
+        const timeWindow = this.timeWindowOptions!.get(timeWindowSelected);
+
+        if (!timeWindow) {
+            throw new Error(`Unsupported time window selected: ${timeWindowSelected}`);
+        }
+
+        const [unit, value] = timeWindow;
+        let newStart = moment(currentStart);
+
+        direction === "previous" ? newStart.subtract(value, unit as moment.unitOfTime.DurationConstructor) : newStart.add(value, unit as moment.unitOfTime.DurationConstructor);
+
+        let newEnd = moment(newStart).add(value, unit as moment.unitOfTime.DurationConstructor);
+
+        this.timeframe = [newStart.toDate(), newEnd.toDate()];
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        protected _getDefaultTimestampOptions(): Map<string, TimePresetCallback> {
         return new Map<string, TimePresetCallback>([
             ["lastHour", (date) => [moment(date).subtract(1, 'hour').toDate(), date]],
             ["last24Hours", (date) => [moment(date).subtract(24, 'hours').toDate(), date]],
@@ -1171,7 +1311,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
-       // console.log('loadData triggered');
+        console.log('loadData triggered');
         if ((this._data && !this._zoomChanged) || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
             return;
         }
@@ -1187,7 +1327,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         this._loading = true;
 
-        const dates: [Date, Date] = this.timePresetOptions!.get(this.timePresetKey!)!(new Date());
+        const dates: [Date, Date] = this._getTimeWindowSelected(this.timePrefixKey!, this.timeWindowKey!);
 
         if(!this._zoomChanged || !this._startOfPeriod || !this._endOfPeriod) {
             // If zoom has changed, we want to keep the previous start and end of period
@@ -1338,7 +1478,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
 
             if(query.type == 'lttb') {
-
+                // If the query type is lttb, we need to limit the amount of points to the maxConcurrentDatapoints
                query.amountOfPoints = this.maxConcurrentDatapoints;
 
             } else if(query.type === 'interval' && !query.interval) {
@@ -1352,6 +1492,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(asset.id, attribute.name, query, options);
             } else  {
                     if (extended) {
+                        // if request is for extended dataset, we want to get the last known value only
                         query.type = 'nearest';
                         query.timestamp = new Date().toISOString()
                     }
@@ -1432,6 +1573,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                     }
                 }
             }))
-        });
+        });;
     }
 }

@@ -55,6 +55,34 @@ function getDefaultTimePresetOptions(): Map<string, TimePresetCallback> {
     ]);
 }
 
+//function getDefaultWindowOptions(): Map<string, TimePresetCallback> {
+//    return new Map<string, TimePresetCallback>([
+//        ["15Minutes", (date: Date) => []],
+//        ["Hour", (date: Date) => [moment(date).subtract(1, 'hour').toDate(), date]],
+//        ["24Hours", (date: Date) => [moment(date).subtract(24, 'hours').toDate(), date]],
+//        ["Day", (date: Date) => [moment(date).startOf('day').toDate(), moment(date).endOf('day').toDate()]],
+//        ["7Days", (date: Date) => [moment(date).subtract(7, 'days').toDate(), date]],
+//        ["Week", (date: Date) => [moment(date).startOf('isoWeek').toDate(), moment(date).endOf('isoWeek').toDate()]],
+//        ["30Days", (date: Date) => [moment(date).subtract(30, 'days').toDate(), date]],
+//        ["Month", (date: Date) => [moment(date).startOf('month').toDate(), moment(date).endOf('month').toDate()]],
+//        ["90Days", (date: Date) => [moment(date).subtract(90, 'days').toDate(), date]],
+//        ["6Months", (date: Date) => [moment(date).subtract(6, 'months').toDate(), date]],
+//        ["Year", (date: Date) => [moment(date).subtract(1, 'year').toDate(), date]]
+//    ]);
+//}
+
+//function getDefaultPrefix(): Map<string, TimePresetCallback> {
+//    return new Map<string, TimePresetCallback>([
+//        ["last", (date: Date) => [moment(date).subtract(1, 'hour').toDate(), date]],
+//        ["this", (date: Date) => [moment(date).startOf('hour').toDate(), moment(date).endOf('hour').toDate()]],
+//        ["previous", (date: Date) => [moment(date).subtract(1, 'week').startOf('isoWeek').toDate(), moment(date).subtract(1, 'week').endOf('isoWeek').toDate()]],
+//    ]);
+//}
+
+
+
+
+
 function getDefaultSamplingOptions(): Map<string, string> {
     return new Map<string, string>([["lttb", 'lttb'], ["withInterval", 'interval']]);
 }
@@ -224,7 +252,9 @@ export class ChartWidget extends OrAssetWidget {
                               .showZoomBar="${(this.widgetConfig?.showZoomBar != null) ? this.widgetConfig?.showZoomBar : true}"
                               .showToolBox="${(this.widgetConfig?.showToolBox != null) ? this.widgetConfig?.showToolBox : true}"
                               .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
-                              .timePresetOptions="${getDefaultTimePresetOptions()}" .timePresetKey="${this.widgetConfig?.defaultTimePresetKey}"
+                              .timePresetOptions="${getDefaultTimePresetOptions()}" 
+                              .timePresetOptions2="${getDefaultTimePresetOptions()}"
+                              .timePresetKey="${this.widgetConfig?.defaultTimePresetKey}"
                               .datapointQuery="${this.datapointQuery}" .chartOptions="${this.widgetConfig?.chartOptions}"
                               .showSymbolMaxDatapoints="${this.widgetConfig?.showSymbolMaxDatapoints}"
                               .maxConcurrentDatapoints="${this.widgetConfig?.maxConcurrentDatapoints}"

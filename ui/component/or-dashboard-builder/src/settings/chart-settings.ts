@@ -318,10 +318,6 @@ export class ChartSettings extends WidgetSettings {
         };
 
         switch (action.icon) {
-            case "arrow-right-bold":
-            case "arrow-left-bold":
-                this.toggleAttributeSetting("rightAxisAttributes", attributeRef);
-                break;
             case "palette":    // Change color
                 const colorInput = document.createElement('input');
                 colorInput.type = 'color';
@@ -345,6 +341,10 @@ export class ChartSettings extends WidgetSettings {
                     this.notifyConfigUpdate();
                 });
                 colorInput.click();
+                break;
+            case "arrow-right-bold":
+            case "arrow-left-bold":
+                this.toggleAttributeSetting("rightAxisAttributes", attributeRef);
                 break;
             case "chart-bell-curve-cumulative":
                 this.toggleAttributeSetting("smoothAttributes", attributeRef);
