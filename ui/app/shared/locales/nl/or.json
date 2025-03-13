@@ -807,6 +807,7 @@
       "tileServerPlaceholder": "Kaartserver URL",
       "mapTiles": "Eigen Kaarttegels",
       "uploadMapTiles": "Upload aangepaste kaarttegels. De maximaal toegestaande bestandsgrootte is {{customMapLimit}}.",
+      "uploadMapTilesPrecedence": "Let op: De kaart van de server URL heeft voorrang op de kaarttegels.",
       "uploadMapTilesError": "Kaarttegel bestand overschrijdt de maximale bestandsgrootte."
     }
   },

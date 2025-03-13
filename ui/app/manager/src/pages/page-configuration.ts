@@ -353,7 +353,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 <div class="global-settings-container">
                                     <div class="global-server-group">
                                         <div class="subheader"><or-translate value="configuration.global.tileServer"></or-translate></div>
-                                        <span><or-translate value="configuration.global.tileServerDescription"></or-translate></span>
+                                        <span style="height: 42px"><or-translate value="configuration.global.tileServerDescription"></or-translate></span>
                                         <or-mwc-input class="input" outlined
                                             .value="${this.mapConfig.sources?.vector_tiles?.url || this.mapConfig.sources?.vector_tiles?.tiles?.[0]}"
                                             .type="${InputType.URL}"
@@ -373,7 +373,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                         <div class="subheader"><or-translate value="configuration.global.mapTiles"></or-translate></div>
                                         <span><or-translate value="configuration.global.uploadMapTiles" .options=${{
                                             customMapLimit: this.humanReadableBytes(this.customMapLimit)
-                                        }}></or-translate></span>
+                                        }}></or-translate><or-translate style="font-style: italic;" value="configuration.global.uploadMapTilesPrecedence"></or-translate></span>
                                         <div class="input d-inline-flex">
                                             <or-file-uploader 
                                                 .label=${i18next.t("configuration.global.uploadMapTiles", {

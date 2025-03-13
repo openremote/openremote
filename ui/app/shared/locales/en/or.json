@@ -810,6 +810,7 @@
       "tileServerPlaceholder": "Map Server URL",
       "mapTiles": "Custom Map Tiles",
       "uploadMapTiles": "Upload custom map tiles. The maximum allowed file size is {{customMapLimit}}.",
+      "uploadMapTilesPrecedence": "Note: The map through a tile server get's priority over custom map tiles.",
       "uploadMapTilesError": "Custom map tiles file exceeds size limit."
     }
   },
