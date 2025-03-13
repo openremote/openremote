@@ -803,7 +803,8 @@
     "addMapCustomization" : "Voeg een Kaartinstelling toe",
     "global": {
       "tileServer": "Kaartserver",
-      "tileServerDescription": "Configureer een kaartserver. De URL moet de tegelcoördinaten specificeren met behulp van het /{z}/{x}/{y} schema.",
+      "tileServerDescription": "Configureer een kaartserver.",
+      "tileServerNote": "Let op: De URL moet de tegelcoördinaten specificeren met behulp van het /{z}/{x}/{y} schema.",
       "tileServerPlaceholder": "Kaartserver URL",
       "mapTiles": "Eigen Kaarttegels",
       "uploadMapTiles": "Upload aangepaste kaarttegels. De maximaal toegestaande bestandsgrootte is {{customMapLimit}}.",

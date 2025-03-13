@@ -806,7 +806,8 @@
     "addMapCustomization" : "Add map settings",
     "global": {
       "tileServer": "Tile Server",
-      "tileServerDescription": "Configure a tile server. The URL must specify the tile coordinates using the /{z}/{x}/{y} scheme.",
+      "tileServerDescription": "Configure a tile server.",
+      "tileServerNote": "Note: The URL must specify the tile coordinates using the /{z}/{x}/{y} scheme.",
       "tileServerPlaceholder": "Map Server URL",
       "mapTiles": "Custom Map Tiles",
       "uploadMapTiles": "Upload custom map tiles. The maximum allowed file size is {{customMapLimit}}.",
