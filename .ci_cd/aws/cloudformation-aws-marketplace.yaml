@@ -1,18 +1,24 @@
-AWSTemplateFormatVersion: '2010-09-09'
-Description: Deploys an OpenRemote instance
+# ---------------------------------------------------------------------------------------------------------------------
+#
+# OpenRemote AWS Marketplace CloudFormation Template
+# This template will be used for spinning up an OpenRemote instance on the AWS Marketplace.
+#
+# ---------------------------------------------------------------------------------------------------------------------
+
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploy a OpenRemote instance via AWS Marketplace
 Metadata:
   AWS::CloudFormation::Interface: 
     ParameterGroups:
       -
         Label:
-          default: Instance Configuration
+          default: Instance Configuration 
         Parameters:
-          - InstanceName
-          - InstanceType
           - Hostname
+          - InstanceType
+          - VolumeSize
           - Keypair
-          - SSHLocation
-          - CIDRBlock
+          - AssignElasticIP
       - Label:
           default: OpenRemote Configuration
         Parameters:
@@ -20,585 +26,266 @@ Metadata:
       - Label:
           default: E-mail Configuration (Optional)
         Parameters:
-          - SMTPHost
-          - SMTPUser
+          - SMTPHostname
+          - SMTPUsername
           - SMTPPassword
-          - SMTPPort
-          - SMTPTLS
           - SMTPFrom
-          - SMTPProtocol
-
+    ParameterLabels:
+      Hostname:
+        default: "Would you like to use your own domain name? If so, please enter it here."
+      InstanceType:
+        default: "Which instance would you like to use?"
+      VolumeSize:
+        default: "How much storage would you like to allocate for the root device?"
+      Keypair: 
+        default: "Please select the keypair you would like to use for this instance."
+      AssignElasticIP:
+        default: "Would you like to configure an Elastic IP (Static IP)?"
+      Password:
+        default: "Please set the administrator password."
+      SMTPHostname:
+        default: "Please enter your SMTP Hostname"
+      SMTPUsername:
+        default: "Please enter your SMTP Username"
+      SMTPPassword:
+        default: "Please enter your SMTP Password"
+      SMTPFrom:
+        default: "Please enter the senders address"
 Parameters:
-    InstanceName:
-      Description: The name for this EC2 Instance on the EC2 Overview page
-      Type: String
-      Default: OpenRemote
-    InstanceType:
-      Description: Choose a instance based on your monthly budget
-      Type: String
-      Default: Medium
-      AllowedValues:
-        - Small
-        - Medium
-        - Large
-    Hostname:
-      Description: Optionally fill in the FQDN (Fully Qualified Domain Name) that you want to use for this OpenRemote instance
-      Type: String
-    Keypair:
-      Description: Choose a keypair for SSH Access
-      Type: AWS::EC2::KeyPair::KeyName
-    CIDRBlock:
-      Description: Please set CIDR to x.x.x.x/32 to allow one specific IP address access, 0.0.0.0/0 to allow all IP addresses access, or another CIDR range
-      Type: String
-      AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
-    SSHLocation:
-      Description: Fill in your Home IP for SSH Access. Set CIDR to x.x.x.x/32.
-      Type: String
-      AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
-      ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
-    Password:
-      Description: Create an (admin) password for your OpenRemote instance. Password must contain 1 or more uppercase characters. Password must contain 1 or more digit characters, 1 or more special characters and must be 8 or more characters in length.
-      Type: String
-      MinLength: 8
-      AllowedPattern: ^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[^0-9a-zA-Z])(?=\S+$).{8,}$
-      ConstraintDescription: Password must contain 1 or more uppercase characters. Password must contain 1 or more digit characters, 1 or more special characters and must be 8 or more characters in length.
-      NoEcho: true
-    SMTPHost:
-      Description: (Optional) Fill in the SMTP Hostname for sending e-mails
-      Type: String
-    SMTPUser:
-      Description: (Optional) Fill in the SMTP username for sending e-mails
-      Type: String
-    SMTPPassword:
-      Description: (Optional) Fill in the SMTP password for sending e-mails
+  Hostname:
+    Description: Enter the Fully Qualified Domain Name (FQDN) for this OpenRemote instance (e.g., example.com). Leave blank to use only an IPv4 address.
+    Type: String
+  InstanceType:
+    Description: Prices vary depending on the selected instance. All instances are powered by ARM chips.
+    Type: String
+    Default: t4g.medium
+    AllowedValues:
+      - t4g.small
+      - t4g.medium
+      - t4g.large
+      - t4g.xlarge
+      - m6g.large
+      - m6g.xlarge
+  VolumeSize:
+    Description: Choose the amount of storage (in GB)
+    Type: String
+    Default: 8GB
+    AllowedValues:
+      - 8GB
+      - 16GB
+      - 32GB
+      - 48GB
+      - 64GB
+  Keypair:
+    Description: With the selected keypair, you can log in to the machine via SSH.
+    Type: AWS::EC2::KeyPair::KeyName
+  AssignElasticIP:
+    Description: Enabling this option ensures that your IPv4 address remains static after a restart. Additional charges may apply.
+    Type: String
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+  Password:
+      Description: The password you enter here will be used for the administrator account within the OpenRemote manager. Leave empty to use the default one
       Type: String
       NoEcho: true
-    SMTPPort:
-      Description: Fill in the SMTP port for sending e-mails. If not using SMTP leave as '587'
-      Type: Number
-      Default: 587
-    SMTPTLS:
-      Description: Select if you want to use TLS for sending e-mails
-      Type: String 
-      AllowedValues:
-        - true
-        - false
-      Default: true
-    SMTPFrom:
-      Description: (Optional) Fill in the From e-mail address you want to use for sending e-mails
+  SMTPHostname:
+      Description: Enter the SMTP Hostname e.g. mail.example.com
       Type: String
-    SMTPProtocol:
-      Description: Select the SMTP protocol you want to use for sending e-mails (smtps = SSL)
+  SMTPUsername:
+      Description: Enter the SMTP Username. In most cases this is the e-mail address of the sending account
       Type: String
-      AllowedValues:
-        - smtp
-        - smtps
-      Default: smtps
+  SMTPPassword:
+      Description: Enter the SMTP Password.
+      Type: String
+      NoEcho: true
+  SMTPFrom:
+      Description: Enter the SMTP sender address. e.g. noreply@example.com
+      Type: String
 
 Mappings:
-  InstanceType:
-    Small:
-      InstanceSize: t4g.small
-    Medium:
-      InstanceSize: t4g.medium
-    Large:
-      InstanceSize: t4g.large
+  VolumeSize:
+    8GB:
+      VolumeSize: 8
+    16GB:
+      VolumeSize: 16
+    32GB:
+      VolumeSize: 32
+    48GB:
+      VolumeSize: 48
+    64GB:
+      VolumeSize: 64
 
-  # Region-specific AMI mapping
-  RegionMap: 
-    us-east-1: 
-        ImageId: ami-00b777c899f47763b
-    eu-west-1: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    us-west-1: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    ap-southeast-1: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    ap-northeast-1: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    us-west-2: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    sa-east-1: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    ap-southeast-2: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    eu-central-1: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    ap-northeast-2: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    ap-south-1: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    us-east-2: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    ca-central-1: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    eu-west-2: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    eu-west-3: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    ap-northeast-3: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    eu-north-1: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    ap-east-1: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    me-south-1: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    af-south-1: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    eu-south-1: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    ap-southeast-3: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    me-central-1: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    eu-central-2: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    eu-south-2: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    ap-south-2: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    ap-southeast-4: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    il-central-1: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    ca-west-1: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
-    ap-southeast-5: 
-        ImageId: ami-xxxxxxxxxxxxxxxxx
+  AssignElasticIP:
+    "Yes":
+      AssignElasticIP: true
+    "No":
+      AssignElasticIP: false
+
+Conditions:
+  AssignElasticIP: !Equals [!Ref AssignElasticIP, "Yes"]
 
 Resources:
-  VPC:
+  ORVPC:
     Type: AWS::EC2::VPC
-    Properties:
+    Properties: 
       CidrBlock: 172.20.0.0/16
       EnableDnsHostnames: true
       EnableDnsSupport: true
       InstanceTenancy: default
       Tags:
         - Key: Name
-          Value: !Ref InstanceName
-
-  InternetGateway:
+          Value: or-vpc
+  ORInternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags: 
         - Key: Name
-          Value: !Ref InstanceName
-  
-  InternetGatewayAttachment:
+          Value: or-internet-gateway
+  ORInternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      InternetGatewayId: !Ref InternetGateway
-      VpcId: !Ref VPC
-
-  Subnet:
+      VpcId: !Ref ORVPC
+      InternetGatewayId: !Ref ORInternetGateway
+  ORPublicSubnet:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: !Select [0, !GetAZs '']
+      VpcId: !Ref ORVPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
       CidrBlock: 172.20.0.0/24
-      VpcId: !Ref VPC
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Ref InstanceName
-  
-  RouteTable:
+          Value: or-public-subnet
+  ORPublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
+      VpcId: !Ref ORVPC
       Tags: 
         - Key: Name
-          Value: !Ref InstanceName
-      VpcId: !Ref VPC
-  
-  Route:
+          Value: or-routetable
+  ORPublicRoute:
     Type: AWS::EC2::Route
+    DependsOn: ORInternetGatewayAttachment
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
-      RouteTableId: !Ref RouteTable
-  
-  RouteTableAssociate:
+      GatewayId: !Ref ORInternetGateway
+      RouteTableId: !Ref ORPublicRouteTable
+  ORPublicRouteTableAssociate:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId: !Ref RouteTable
-      SubnetId: !Ref Subnet
-
-  SecurityGroup:
+      RouteTableId: !Ref ORPublicRouteTable
+      SubnetId: !Ref ORPublicSubnet
+  ORSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: OpenRemote Security Group
-      GroupName: !Ref InstanceName
-      VpcId: !Ref VPC
-      SecurityGroupEgress:
-        - CidrIp: 0.0.0.0/0
-          IpProtocol: "-1"
+      GroupDescription: Access OpenRemote Services
+      GroupName: or-securitygroup
+      VpcId: !Ref ORVPC
       SecurityGroupIngress:
-        - CidrIp: !Ref SSHLocation
-          FromPort: 22
-          IpProtocol: tcp
-          ToPort: 22
-          Description: SSH Access
-        - CidrIp: !Ref CIDRBlock
+        - CidrIp: 0.0.0.0/0
           FromPort: 80
           IpProtocol: tcp
           ToPort: 80
           Description: HTTP Access
-        - CidrIp: !Ref CIDRBlock
+        - CidrIp: 0.0.0.0/0
           FromPort: 443
           IpProtocol: tcp
           ToPort: 443
           Description: HTTPS Access
-        - CidrIp: !Ref CIDRBlock
+        - CidrIp: 0.0.0.0/0
           FromPort: 8883
           IpProtocol: tcp
           ToPort: 8883
           Description: MQTT Access
-        - CidrIp: !Ref CIDRBlock
+        - CidrIp: 0.0.0.0/0
           FromPort: 162
           IpProtocol: udp
           ToPort: 162
           Description: SNMP Access
+  ORSSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: OpenRemote SSH Whitelist
+      GroupName: or-ssh-whitelist
+      VpcId: !Ref ORVPC
+  ORElasticIP:
+    Type: AWS::EC2::EIP
+    Condition: AssignElasticIP
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref Hostname
+  ORElasticIPAssoc:
+    Type: AWS::EC2::EIPAssociation
+    Condition: AssignElasticIP
+    Properties:
+      InstanceId: !Ref ORInstance
+      EIP: !Ref ORElasticIP
   
-  InstanceOR:
+  ORInstance:
     Type: AWS::EC2::Instance
     Metadata:
       AWS::CloudFormation::Init:
         configSets:
-          default:  
-            - installOpenRemote
-
-        installOpenRemote:
+          default:
+            - docker_installation
+            - start_openremote
+        
+        docker_installation:
+          packages:
+            yum:
+              docker: []
           commands:
-            01_install_docker:
+            01_docker_compose_installation:
               command: |
-                yum install -y docker wget
-                service docker enable
-                service docker start
-
-            02_install_docker_compose:
-              command: |
+                sudo usermod -a -G docker ec2-user
                 curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
                 chmod +x /usr/local/bin/docker-compose
-              
-            03_download_openremote_compose:
+
+            02_download_docker_compose:
               command: |
-                mkdir openremote
-                wget https://raw.githubusercontent.com/openremote/openremote/master/docker-compose.yml -P /openremote
-            
-            04_create_containers:
+                sudo wget https://raw.githubusercontent.com/openremote/openremote/refs/heads/master/docker-compose.yml -P /openremote
+          services:
+            systemd:
+              docker:
+                enabled: true
+                ensureRunning: true
+
+        start_openremote:
+          commands:
+            01_start_openremote:
               command: !Sub |
-                docker-compose -f /openremote/docker-compose.yml -p openremote up -d --no-start
+                [ -ne ${Hostname} ] && HOST=$(curl v4.ident.me 2>/dev/null) || HOST=${Hostname}
 
-            05_create_startup_service:
-              command: |
-                # Create parameter fetch script
-                cat << 'EOF' > /usr/local/bin/fetch-env.sh
-                #!/bin/bash
-
-                MAX_ATTEMPTS=30
-                ATTEMPT=0
-
-                while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
-                    echo "Attempt $ATTEMPT to fetch parameters..."
-                    
-                    TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
-                    INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
-                    
-                    PARAMS=$(aws ssm get-parameter --name "/openremote/$INSTANCE_ID/config" --query Parameter.Value --output text 2>/dev/null)
-                    if [ $? -eq 0 ]; then
-                        echo "Successfully fetched parameters"
-                        
-                        # Write parameters to .env file
-                        echo "$PARAMS" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' > /openremote/.env
-
-                        # Check and set OR_HOSTNAME if not set or empty
-                        if ! grep -q "OR_HOSTNAME=" /openremote/.env || grep -q "OR_HOSTNAME=$" /openremote/.env; then
-                            PUBLIC_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/public-ipv4)
-                            echo "No Hostname provided, using the public IP address: $PUBLIC_IP"
-                            sed -i "s/OR_HOSTNAME=/OR_HOSTNAME=$PUBLIC_IP/" /openremote/.env
-                        fi
-                        exit 0
-                    fi
-                    
-                    echo "Attempt: $ATTEMPT - Parameters not available yet, trying again..."
-                    sleep 10
-                    ATTEMPT=$((ATTEMPT + 1))
-                done
-
-                echo "Failed to fetch parameters after $MAX_ATTEMPTS attempts"
-                exit 1
-                EOF
-
-                chmod +x /usr/local/bin/fetch-env.sh
-
-            06_create_systemd_service:
-              command: |
-                # Create systemd service
-                cat << 'EOF' > /etc/systemd/system/openremote.service
-                [Unit]
-                Description=OpenRemote Manager
-                After=docker.service network-online.target
-                Wants=network-online.target
-                Requires=docker.service
-
-                [Service]
-                Type=oneshot
-                RemainAfterExit=yes
-                WorkingDirectory=/openremote
-                ExecStartPre=/usr/local/bin/fetch-env.sh
-                ExecStart=/usr/local/bin/docker-compose --env-file /openremote/.env -f /openremote/docker-compose.yml up -d
-                ExecStartPost=/bin/rm -f /openremote/.env
-                ExecStop=/usr/local/bin/docker-compose -f /openremote/docker-compose.yml down
-                Restart=on-failure
-                RestartSec=10
-
-                [Install]
-                WantedBy=multi-user.target
-
-            07_start_enable_services:
-              command: |
-
-                systemctl daemon-reload
-                systemctl enable openremote.service
-                systemctl start openremote.service
-
-
+                OR_HOSTNAME=$HOST \
+                OR_ADMIN_PASSWORD=${Password} \
+                OR_EMAIL_HOST=${SMTPHostname} \
+                OR_EMAIL_USER=${SMTPUsername} \
+                OR_EMAIL_PASSWORD=${SMTPPassword} \
+                OR_EMAIL_FROM=${SMTPFrom} \
+                docker-compose -f /openremote/docker-compose.yml -p openremote up -d
     Properties:
-      ImageId: !FindInMap
-        - RegionMap
-        - us-east-1
-        - ImageId
-      InstanceType: !FindInMap [InstanceType, !Ref InstanceType, InstanceSize]
+      ImageId: '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64}}' # Fetch latest Amazon Linux 2023 AMI
+      InstanceType: !Ref InstanceType
       KeyName: !Ref Keypair
-      SubnetId: !Ref Subnet
+      SubnetId: !Ref ORPublicSubnet
       SecurityGroupIds:
-      -  !Ref SecurityGroup
+        -  !Ref ORSecurityGroup
+        -  !Ref ORSSHSecurityGroup
       Tags:
-        - Key: Name
-          Value: !Ref InstanceName
+      - Key: Name
+        Value: OpenRemote/AWS-Marketplace
       BlockDeviceMappings:
-       - DeviceName: /dev/xvda
-         Ebs:
-          VolumeSize: 30
+      - DeviceName: /dev/xvda
+        Ebs:
+          VolumeSize: !FindInMap [VolumeSize, !Ref VolumeSize , VolumeSize]
           VolumeType: gp3
           DeleteOnTermination: true
       UserData:
-        Fn::Base64:
+        !Base64
           Fn::Sub: |
             #!/bin/bash -xe
             yum -y install aws-cfn-bootstrap
-            /opt/aws/bin/cfn-init -v -s ${AWS::StackName} --resource InstanceOR
-      IamInstanceProfile: !Ref InstanceProfile
-
-  StaticIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      InstanceId: !Ref InstanceOR
-      Tags:
-        - Key: Name
-          Value: !Ref InstanceName
-
-  # IAM Role for retriving required data to recreate the .env file
-  SSMRole:
-    Type: AWS::IAM::Role
-    Properties: 
-      AssumeRolePolicyDocument: 
-        Version: '2012-10-17'
-        Statement: 
-          - Effect: Allow
-            Principal: 
-              Service: 
-                - ec2.amazonaws.com
-            Action: 
-              - sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-      Policies:
-        - PolicyName: SSMPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - ssm:GetParameter # For retrieval of parameters
-                Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/openremote/*'
-
-  # Attach IAM role to EC2 instance 
-  InstanceProfile:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      Roles:
-        - !Ref SSMRole
-
-  # SSM Parameter to store values required to recreate the .env file
-  OpenRemoteParameters:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/openremote/${InstanceOR}/config"
-      Type: String
-      Value: !Sub |
-        {
-          "OR_HOSTNAME": "${Hostname}",
-          "OR_ADMIN_PASSWORD": "${Password}",
-          "OR_EMAIL_HOST": "${SMTPHost}",
-          "OR_EMAIL_USER": "${SMTPUser}",
-          "OR_EMAIL_PASSWORD": "${SMTPPassword}",
-          "OR_EMAIL_PORT": "${SMTPPort}",
-          "OR_EMAIL_TLS": "${SMTPTLS}",
-          "OR_EMAIL_FROM": "${SMTPFrom}",
-          "OR_EMAIL_PROTOCOL": "${SMTPProtocol}"
-        }
-    DependsOn: StaticIP
-
-# SSM document to update Docker images
-  UpdateDockerImagesDocument:
-    Type: AWS::SSM::Document
-    Properties:
-      DocumentType: Command
-      Content:
-        schemaVersion: '2.2'
-        description: "Update Docker images"
-        mainSteps:
-          - action: aws:runShellScript
-            name: updateDockerImages
-            inputs:
-              runCommand:
-                # Check if docker-compose.yml exists as this is used for the update
-                - 'echo "Checking if docker-compose.yml exists..."'
-                - 'if [ ! -f /openremote/docker-compose.yml ]; then echo "docker-compose.yml not found"; exit 1; fi'
-                # Fetch EC2 metadata token to allow request access to EC2 metadata
-                - 'echo "Fetching instance metadata..."'
-                - 'TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")'
-                - 'INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)'
-                - 'echo "Instance ID: $INSTANCE_ID"'
-                # Fetch secrets from Parameter Store and create .env file
-                - |
-                  PARAM_PATH="/openremote/$INSTANCE_ID/config"
-                  echo "Creating env file from parameters from: $PARAM_PATH"
-                
-                  aws ssm get-parameter \
-                    --name "$PARAM_PATH" \
-                    --query Parameter.Value \
-                    --output text | \
-                  jq -r 'to_entries | .[] | "\(.key)=\(.value)"' > /openremote/.env
-                  
-                  if [ $? -ne 0 ]; then
-                    echo "Failed to fetch parameters from SSM"
-                    exit 1
-                  fi
-                # Check if OR_HOSTNAME is empty in .env, if so use public IP
-                - |
-                  OR_HOSTNAME_VALUE=$(grep "OR_HOSTNAME=" /openremote/.env | cut -d'=' -f2)
-                  if [ -z "$OR_HOSTNAME_VALUE" ]; then
-                    PUBLIC_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/public-ipv4)
-                    echo "No Hostname provided, using the public IP address: $PUBLIC_IP"
-                    sed -i "s/OR_HOSTNAME=/OR_HOSTNAME=$PUBLIC_IP/" /openremote/.env
-                  fi
-                # Pull and stop Docker containers
-                - 'echo "Pulling Docker images..."'
-                - 'sudo docker-compose -f /openremote/docker-compose.yml pull || { echo "Failed to pull Docker images"; exit 1; }'
-                - 'echo "Stopping Docker containers..."'
-                - 'sudo docker-compose -f /openremote/docker-compose.yml down || { echo "Failed to stop Docker containers"; exit 1; }'
-                # Remove existing Docker network if it exists to avoid conflicts
-                - 'echo "Removing existing Docker network..."'
-                - 'sudo docker network rm openremote_default || echo "Network openremote_default does not exist"'               
-                # Start Docker containers using the .env file, force recreate and prune images
-                - 'echo "Starting Docker containers..."'
-                - |
-                  sudo docker-compose -f /openremote/docker-compose.yml \
-                    --env-file /openremote/.env \
-                    up -d && docker image prune -af || { echo "Failed to start Docker containers"; exit 1; }
-                # Delete .env file
-                - 'echo "Cleaning up environment file..."'
-                - 'rm -f /openremote/.env || { echo "Failed to remove environment file, please delete /openremote/.env manually as it stores secrets"; exit 1; }'
-                - 'echo "Docker images updated successfully!"'
-
-  # New SSM document to update packages including Docker
-  UpdatePackagesDocument:
-    Type: AWS::SSM::Document
-    Properties:
-      DocumentType: Command
-      Content:
-        schemaVersion: '2.2'
-        description: "Update system packages and Docker (DOCKER AND OPENREMOTE WILL BE RESTARTED ONCE COMPLETE)"
-        mainSteps:
-          - action: aws:runShellScript
-            name: updatePackages
-            inputs:
-              runCommand:
-                - 'echo "Updating system packages..."'
-                - |
-                  if ! sudo yum update -y 2>&1; then
-                    echo "Failed to update system packages"
-                    exit 1
-                  fi
-                - 'echo "Restarting Docker service..."'
-                - |
-                  if ! sudo systemctl restart docker 2>&1; then
-                    echo "Failed to restart Docker"
-                    exit 1
-                  fi
-                - 'echo "System packages and Docker updated successfully!"'
-
-  # New SSM document to update the Amazon Linux OS
-  UpdateAWSLinuxOSDocument:
-    Type: AWS::SSM::Document
-    Properties:
-      DocumentType: Command
-      Content:
-        schemaVersion: '2.2'
-        description: "Update the system OS (EC2 INSTANCE WILL REBOOT AUTOMATICALLY ONCE COMPLETE)"
-        mainSteps:
-          - action: aws:runShellScript
-            name: updateAWSLinux
-            inputs:
-              runCommand:
-                - 'echo "Starting Amazon Linux OS update..."'
-                - |
-                  if ! sudo dnf upgrade --releasever=latest -y --quiet 2>/dev/null; then
-                    echo "Error: Update failed. Full error log:"
-                    sudo dnf upgrade --releasever=latest -y
-                    exit 1
-                  fi
-                - 'sudo dnf clean all --quiet'
-                - 'echo "Rebooting EC2 instance"'
-                - "sudo reboot now"
-                - 'echo "Amazon Linux OS update completed successfully"'
-
-# SSM document to clear the proxy data volume
-  ClearProxyDataDocument:
-    Type: AWS::SSM::Document
-    Properties:
-      DocumentType: Command
-      Content:
-        schemaVersion: '2.2'
-        description: "Delete the proxy data volume using systemd service"
-        mainSteps:
-          - action: aws:runShellScript
-            name: clearProxyData
-            inputs:
-              runCommand:
-                # Verify service exists
-                - 'if ! systemctl status openremote.service > /dev/null; then echo "OpenRemote service not found"; exit 1; fi'
-                # Stop service (which runs docker-compose down)
-                - 'echo "Stopping openremote.service..."'
-                - 'systemctl stop openremote.service || { echo "Failed to stop service"; exit 1; }'
-                # Wait for containers to stop
-                - 'sleep 5'
-                # Remove volume
-                - 'echo "Removing proxy volume..."'
-                - 'docker volume rm openremote_proxy-data || { echo "Failed to remove volume"; exit 1; }'
-                # Start service (which runs docker-compose up)
-                - 'echo "Starting openremote.service..."'
-                - 'systemctl start openremote.service || { echo "Failed to start service"; exit 1; }'
-                # Verify service is running
-                - 'systemctl is-active --quiet openremote.service || { echo "Service failed to start"; exit 1; }'
-                - 'echo "Service restarted successfully"'
-
-Outputs:
-  PublicIP:
-    Description: The Public IP Address of the newly created EC2 instance
-    Value: !GetAtt InstanceOR.PublicIp
-    Export:
-      Name: !Sub "${AWS::StackName}-PublicIP"
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --region ${AWS::Region} --resource ORInstance
