@@ -19,6 +19,7 @@
  */
 package org.openremote.agent.protocol.mqtt;
 
+import com.hivemq.client.mqtt.datatypes.MqttQos;
 import org.apache.http.client.utils.URIBuilder;
 import org.openremote.model.Container;
 import org.openremote.model.security.KeyStoreService;
@@ -55,7 +56,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
             Consumer<MQTTMessage<String>> messageConsumer = msg -> updateLinkedAttribute(
                 new AttributeRef(assetId, attribute.getName()), msg.payload
             );
-            client.addMessageConsumer(topic, messageConsumer);
+            client.addMessageConsumer(topic, agentLink.getQos().map(qos -> qos > 2 || qos < 0 ? null : qos).map(MqttQos::fromCode).orElse(null), messageConsumer);
             protocolMessageConsumers.put(new AttributeRef(assetId, attribute.getName()), messageConsumer);
         });
     }
@@ -120,12 +121,17 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
         //It's fine if they're null, they're not going to be used when creating the client
         TrustManagerFactory trustManagerFactory = null;
         KeyManagerFactory keyManagerFactory = null;
-        if(agent.isSecureMode().orElse(false) && agent.getCertificateAlias().isPresent()){
+        if (agent.isSecureMode().orElse(false) && agent.getCertificateAlias().isPresent()) {
             trustManagerFactory = keyStoreService.getTrustManagerFactory();
             keyManagerFactory = keyStoreService.getKeyManagerFactory(agent.getRealm()+"."+agent.getCertificateAlias().orElseThrow());
         }
 
-        return new MQTT_IOClient(agent.getClientId().orElseGet(UniqueIdentifierGenerator::generateId), host, port, agent.isSecureMode().orElse(false), !agent.isResumeSession().orElse(false), agent.getUsernamePassword().orElse(null), websocketURI, lastWill, keyManagerFactory, trustManagerFactory);
+        MQTT_IOClient client = new MQTT_IOClient(agent.getClientId().orElseGet(UniqueIdentifierGenerator::generateId), host, port, agent.isSecureMode().orElse(false), !agent.isResumeSession().orElse(false), agent.getUsernamePassword().orElse(null), websocketURI, lastWill, keyManagerFactory, trustManagerFactory);
+
+        agent.getSubscribeQoS().ifPresent(qos -> client.setSubscribeQos(MqttQos.fromCode(qos)));
+        agent.getPublishQoS().ifPresent(qos -> client.setPublishQos(MqttQos.fromCode(qos)));
+
+        return client;
     }
 
     @Override
@@ -137,13 +143,13 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
     protected MQTTMessage<String> createWriteMessage(MQTTAgentLink agentLink, AttributeEvent event, Object processedValue) {
         Optional<String> topic = agentLink.getPublishTopic();
 
-        if (!topic.isPresent()) {
+        if (topic.isEmpty()) {
             LOG.fine(prefixLogMessage("Publish topic is not set in agent link so cannot publish message"));
             return null;
         }
 
         String valueStr = ValueUtil.convert(processedValue, String.class);
-        return new MQTTMessage<>(topic.get(), valueStr);
+        return new MQTTMessage<>(topic.get(), valueStr, agentLink.getQos().orElse(null));
     }
 
     @Override

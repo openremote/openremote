@@ -39,6 +39,7 @@ import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu, DefaultRealmConfig} f
 
 declare const CONFIG_URL_PREFIX: string;
 declare const MANAGER_URL: string | undefined;
+declare const APP_VERSION: string;
 
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -287,6 +288,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 </div>
                             `)}
                         </or-panel>
+                        <div  style="margin: 0px auto; font-size: smaller;">
+                            OpenRemote Manager v${APP_VERSION}
+                        </div>
                     </div>
                 `
             })}
