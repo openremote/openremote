@@ -442,13 +442,12 @@ public abstract class ValueConstraint implements Serializable {
     }
 
     /**
-     * The attribute value must be a time- or coercive time value like integers or ISO 8601 compatible string
-     * values representing a timestamp in the past. Integers represent the time in epoch-seconds. The
-     * earliest timestamp is the standard Java epoch {@code 1970-01-01T00:00:00Z}. Null values are considered
-     * valid.
+     * The attribute value must be a java time object, java date object, a string in ISO8601 format or a
+     * number representing epoch milliseconds; the value must represent a time in the past. Null values are
+     * considered valid.
      */
     @JsonTypeName("past")
-    @JsonSchemaDescription("The attribute value must be a time- or coercive time value like integers or ISO 8601 compatible string values representing a timestamp in the past. Integers represent the time in epoch-seconds. The earliest timestamp is the standard Java epoch `1970-01-01T00:00:00Z`. Null values are considered valid.")
+    @JsonSchemaDescription("The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past. Null values are considered valid.")
     public static class Past extends ValueConstraint {
 
         public Past() {
@@ -483,13 +482,12 @@ public abstract class ValueConstraint implements Serializable {
     }
 
     /**
-     * The attribute value must be a time- or coercive time value like integers or ISO 8601 compatible string
-     * values representing a timestamp in the past or present. The integer represents the time in
-     * epoch-seconds The earliest timestamp is the standard Java epoch {@code 1970-01-01T00:00:00Z}. Null
+     * The attribute value must be a java time object, java date object, a string in ISO8601 format or a
+     * number representing epoch milliseconds; the value must represent a time in the past or present. Null
      * values are considered valid.
      */
     @JsonTypeName("pastOrPresent")
-    @JsonSchemaDescription("The attribute value must be a time- or coercive time value like integers or ISO 8601 compatible string values representing a timestamp in the past or present. Integers represent the time in epoch-seconds. The earliest timestamp is the standard Java epoch `1970-01-01T00:00:00Z`. Null values are considered valid.")
+    @JsonSchemaDescription("The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past or present. Null values are considered valid.")
     public static class PastOrPresent extends ValueConstraint {
 
         public PastOrPresent() {
@@ -524,13 +522,12 @@ public abstract class ValueConstraint implements Serializable {
     }
 
     /**
-     * The attribute value must be a time- or coercive time value like integers or ISO 8601 compatible string
-     * values representing a timestamp in the future. Integers represent the time in epoch-seconds. The
-     * earliest timestamp is the standard Java epoch {@code 1970-01-01T00:00:00Z}. Null values are considered
-     * valid.
+     * The attribute value must be a java time object, java date object, a string in ISO8601 format or a
+     * number representing epoch milliseconds; the value must represent a time in the future. Null values are
+     * considered valid.
      */
     @JsonTypeName("future")
-    @JsonSchemaDescription("The attribute value must be a time- or coercive time value like integers or ISO 8601 compatible string values representing a timestamp in the future. Integers represent the time in epoch-seconds. The earliest timestamp is the standard Java epoch `1970-01-01T00:00:00Z`. Null values are considered valid.")
+    @JsonSchemaDescription("The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future. Null values are considered valid.")
     public static class Future extends ValueConstraint {
 
         public Future() {
@@ -565,13 +562,12 @@ public abstract class ValueConstraint implements Serializable {
     }
 
     /**
-     * The attribute value must be a time- or coercive time value like integers or ISO 8601 compatible string
-     * values representing a timestamp in the future or present. The integer represents the time in
-     * epoch-seconds The earliest timestamp is the standard Java epoch {@code 1970-01-01T00:00:00Z}. Null
+     * The attribute value must be a java time object, java date object, a string in ISO8601 format or a
+     * number representing epoch milliseconds; the value must represent a time in the future or present. Null
      * values are considered valid.
      */
     @JsonTypeName("futureOrPresent")
-    @JsonSchemaDescription("The attribute value must be a time- or coercive time value like integers or ISO 8601 compatible string values representing a timestamp in the future or present. Integers represent the time in epoch-seconds. The earliest timestamp is the standard Java epoch `1970-01-01T00:00:00Z`. Null values are considered valid.")
+    @JsonSchemaDescription("The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future or present. Null values are considered valid.")
     public static class FutureOrPresent extends ValueConstraint {
 
         public FutureOrPresent() {
