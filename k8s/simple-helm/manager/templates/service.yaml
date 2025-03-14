@@ -5,11 +5,34 @@ metadata:
   labels:
     {{- include "manager.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ .Values.service.http.type }}
   ports:
-    - port: {{ .Values.service.port }}
+    - port: {{ .Values.service.http.port }}
       targetPort: 8080
       protocol: TCP
       name: http
   selector:
     {{- include "manager.selectorLabels" . | nindent 4 }}
+---
+{{- if .Values.service.mqtt.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "manager.mqttServiceName" . }}
+  labels:
+    {{- include "manager.mqttService.labels" . | nindent 4 }}
+  {{- with .Values.service.mqtt.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+spec:
+  selector:
+    {{- include "manager.selectorLabels" . | nindent 4 }}
+  type: LoadBalancer
+  ports:
+    - name: mqtt
+      port: 1883
+      targetPort: 1883
+      protocol: TCP
+{{- end }}

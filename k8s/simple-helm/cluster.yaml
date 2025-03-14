@@ -2,13 +2,17 @@ apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 
 metadata:
+  name: testcluster
   region: eu-west-1
+  # Kubernetes version to use for cluster, good idea to keep up to date
+  version: "1.32"
 
-serviceAccount:
-  create: false
-  name: aws-load-balancer-controller
+availabilityZones:
+  - eu-west-1a
+  - eu-west-1b
 
 nodeGroups:
   - name: ng-1
     instanceType: t2.large
+    volumeSize: 16
     desiredCapacity: 2

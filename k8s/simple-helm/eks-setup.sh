@@ -2,8 +2,6 @@
 
 # Name of cluster, not exposed but must be unique within account
 CLUSTER_NAME=testcluster
-# Kubernetes version to use for cluster, good idea to keep up to date
-K8S_VERSION=1.32
 
 # Hostname to use for public access to this instance, always under the openremote.app domain
 HOSTNAME=testmanager
@@ -34,8 +32,14 @@ fi
 
 aws sts assume-role --role-arn $DNSCHG_ROLE_ARN --role-session-name dnschg --profile or --query "Credentials.[AccessKeyId, SecretAccessKey, SessionToken]" --output text | awk -F'\t' '{print "aws_access_key_id "$1"\naws_secret_access_key "$2"\naws_session_token "$3 }' | xargs -L 1 aws configure --profile dnschg set
 
-eksctl create cluster --profile or --name $CLUSTER_NAME --version $K8S_VERSION --zones eu-west-1a,eu-west-1b
+# TODO: --name $CLUSTER_NAME -> in cluster.yaml
+# TODO: region is duplicated in cluster.yaml
+eksctl create cluster -f cluster.yaml --profile or
 
+# TODO: maybe extract cluster name after cluster creation so source of truth is in cluster.yaml, not other way around
+# Not straightforward
+
+# TODO: it might be possible to replace some of the operations below by configuration options in cluster.yaml
 oidc_id=$(aws eks describe-cluster --profile or --name $CLUSTER_NAME --query "cluster.identity.oidc.issuer" --output text | cut -d '/' -f 5)
 
 eksctl utils associate-iam-oidc-provider --profile or --cluster $CLUSTER_NAME --approve
@@ -76,13 +80,12 @@ helm repo update eks
 
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   -n kube-system \
-  -f cluster.yaml \
-  --set clusterName=$CLUSTER_NAME
-#  --set serviceAccount.create=false \
-#  --set serviceAccount.name=aws-load-balancer-controller
+  --set clusterName=$CLUSTER_NAME \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller
 
-PSQL_VOLUMEID=`aws ec2 create-volume --size 1 --availability-zone eu-west-1a --query VolumeId`
-MANAGER_VOLUMEID=`aws ec2 create-volume --size 1 --availability-zone eu-west-1a --query VolumeId`
+PSQL_VOLUMEID=`aws ec2 create-volume --size 1 --availability-zone eu-west-1a --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=psql-data}]" --query VolumeId`
+MANAGER_VOLUMEID=`aws ec2 create-volume --size 1 --availability-zone eu-west-1a --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=manager-data}]" --query VolumeId`
 
 # Wait for AWS LB ctrl to be ready
 kubectl rollout status deployment aws-load-balancer-controller -n kube-system --timeout=300s
@@ -92,16 +95,14 @@ helm install or-setup or-setup --set aws.enabled=true --set aws.managerVolumeId=
 CERTIFICATE_ARN=`aws acm request-certificate --domain-name $FQDN --validation-method DNS --profile or --query "CertificateArn" --output text`
 aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or
 
-helm install postgresql postgresql -f postgresql/values-eks.yaml \
-  --set-string image.tag="15.6.0.4"
+helm install postgresql postgresql -f postgresql/values-eks.yaml
 helm install keycloak keycloak -f keycloak/values-eks.yaml \
-  --set-string image.tag="23.0.7.2" \
   --set-string or.hostname=$FQDN \
-  --set-string 'ingress.annotations.\alb\.ingress\.kubernetes\.io\/certificate-arn'=$CERTIFICATE_ARN
+  --set-string 'ingress.annotations.alb\.ingress\.kubernetes\.io\/certificate-arn'=$CERTIFICATE_ARN
 helm install manager manager -f manager/values-eks.yaml \
-  --set-string image.tag="1.3.3" \
   --set-string or.hostname=$FQDN \
-  --set-string 'ingress.annotations.\alb\.ingress\.kubernetes\.io\/certificate-arn'=$CERTIFICATE_ARN
+  --set-string 'ingress.annotations.alb\.ingress\.kubernetes\.io\/certificate-arn'=$CERTIFICATE_ARN \
+  --set-string 'service.annotations.service\.beta\.kubernetes\.io\/aws-load-balancer-ssl-cert'=$CERTIFICATE_ARN
 
 DNS_RECORD_NAME=`aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[0].ResourceRecord.Name"`
 DNS_RECORD_VALUE=`aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[0].ResourceRecord.Value"`
@@ -113,14 +114,15 @@ aws route53 change-resource-record-sets \
      --profile dnschg
 
 # AWS LB Controller only creates an Application LB if there's an ingress
-# Following logic is assuming this is the only LB in the account
-while ! aws elbv2 describe-load-balancers 2>/dev/null | grep '"Code": "active"'; do
+# Following logic is assuming there is the only (application) LB in the account
+while ! aws elbv2 describe-load-balancers  --profile or --query "LoadBalancers[?Type=='application']" 2>/dev/null | grep '"Code": "active"'; do
   echo "Waiting for load balancer to be created..."
   sleep 10
 done
 
-DNS_NAME=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[0].DNSName"`
-HOSTED_ZONE_ID=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[0].CanonicalHostedZoneId"`
+# We're re-directing the FQDN to the application (web interface)
+DNS_NAME=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='application'].DNSName | [0]"`
+HOSTED_ZONE_ID=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='application'].CanonicalHostedZoneId | [0]"`
 
 aws route53 change-resource-record-sets \
     --hosted-zone-id /hostedzone/Z08751721JH0NB6LLCB4V \
