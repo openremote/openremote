@@ -38,7 +38,6 @@ import org.lfenergy.shapeshifter.core.service.receiving.UftpReceivedMessageServi
 import org.lfenergy.shapeshifter.core.service.sending.UftpSendMessageService;
 import org.lfenergy.shapeshifter.core.service.serialization.UftpSerializer;
 import org.lfenergy.shapeshifter.core.service.validation.UftpValidationService;
-import org.openremote.agent.protocol.http.AbstractHTTPServerProtocol;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.datapoint.AssetPredictedDatapointService;
@@ -65,9 +64,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.agent.protocol.http.AbstractHTTPServerProtocol.configureDeploymentInfo;
-import static org.openremote.agent.protocol.http.AbstractHTTPServerProtocol.getStandardProviders;
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
+import static org.openremote.container.web.WebService.*;
 import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
@@ -106,7 +103,7 @@ public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService
     protected final UftpCryptoService cryptoService;
     protected final String privateKey;
 
-    protected AbstractHTTPServerProtocol.DeploymentInstance deployment;
+    protected WebService.DeploymentInstance deployment;
 
     List<ScheduledFuture<?>> scheduledFutureList = new ArrayList<>();
 
@@ -229,7 +226,7 @@ public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService
             // Add the handler before the greedy deployment handler
             webService.getRequestHandlers().add(0, requestHandler);
 
-            deployment = new AbstractHTTPServerProtocol.DeploymentInstance(deploymentInfo, requestHandler);
+            deployment = new DeploymentInstance(deploymentInfo, requestHandler);
         } catch (ServletException e) {
             LOG.severe("Failed to deploy deployment: " + deploymentInfo.getDeploymentName());
         }

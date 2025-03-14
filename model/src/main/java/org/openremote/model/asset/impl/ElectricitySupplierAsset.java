@@ -68,7 +68,7 @@ public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySuppli
     public static final AttributeDescriptor<String> CONTRACTED_EAN = new AttributeDescriptor<>("contractedEan", ValueType.TEXT).withOptional(true);
     public static final AttributeDescriptor<Double> POWER_IMPORT_MAX_GOPACS = new AttributeDescriptor<>("powerImportMaxGopacs", NUMBER).withOptional(true);
     public static final AttributeDescriptor<Double> POWER_EXPORT_MAX_GOPACS = new AttributeDescriptor<>("powerExportMaxGopacs", NUMBER).withOptional(true);
-    public static final AttributeDescriptor<Double> POWER_FLEX_ORDER_GOPACS = new AttributeDescriptor<>("powerFlexOrderGOPACS", NUMBER).withOptional(true);
+    public static final AttributeDescriptor<Double> POWER_FLEX_ORDER_GOPACS = new AttributeDescriptor<>("powerFlexOrderGopacs", NUMBER).withOptional(true);
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */

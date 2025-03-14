@@ -89,7 +89,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
     }
 
     protected static final Logger LOG = Logger.getLogger(EnergyOptimisationService.class.getName());
-    protected static final int OPTIMISATION_TIMEOUT_MILLIS = 60000*10; // 10 mins
+    protected static final int OPTIMISATION_TIMEOUT_MILLIS = 60000 * 10; // 10 mins
     protected DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.from(ZoneOffset.UTC));
     protected TimerService timerService;
     protected AssetProcessingService assetProcessingService;
@@ -127,38 +127,38 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         LOG.fine("Loading optimisation assets...");
 
         List<EnergyOptimisationAsset> energyOptimisationAssets = assetStorageService.findAll(
-            new AssetQuery()
-                .types(EnergyOptimisationAsset.class)
-        )
-            .stream()
-            .map(asset -> (EnergyOptimisationAsset) asset)
-            .filter(optimisationAsset -> !optimisationAsset.isOptimisationDisabled().orElse(false))
-            .toList();
+                        new AssetQuery()
+                                .types(EnergyOptimisationAsset.class)
+                )
+                .stream()
+                .map(asset -> (EnergyOptimisationAsset) asset)
+                .filter(optimisationAsset -> !optimisationAsset.isOptimisationDisabled().orElse(false))
+                .toList();
 
         LOG.fine("Found enabled optimisation asset count = " + energyOptimisationAssets.size());
 
         energyOptimisationAssets.forEach(this::startOptimisation);
 
         clientEventService.addSubscription(
-            AttributeEvent.class,
-            null,
-            this::processAttributeEvent);
+                AttributeEvent.class,
+                null,
+                this::processAttributeEvent);
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public void configure() throws Exception {
         from(PERSISTENCE_TOPIC)
-            .routeId("Persistence-EnergyOptimisation")
-            .filter(isPersistenceEventForEntityType(EnergyOptimisationAsset.class))
-            .filter(isNotForGateway(gatewayService))
-            .process(exchange -> processAssetChange((PersistenceEvent<EnergyOptimisationAsset>) exchange.getIn().getBody(PersistenceEvent.class)));
+                .routeId("Persistence-EnergyOptimisation")
+                .filter(isPersistenceEventForEntityType(EnergyOptimisationAsset.class))
+                .filter(isNotForGateway(gatewayService))
+                .process(exchange -> processAssetChange((PersistenceEvent<EnergyOptimisationAsset>) exchange.getIn().getBody(PersistenceEvent.class)));
     }
 
     @Override
     public void stop(Container container) throws Exception {
         new ArrayList<>(assetOptimisationInstanceMap.keySet())
-            .forEach(this::stopOptimisation);
+                .forEach(this::stopOptimisation);
     }
 
     protected void processAssetChange(PersistenceEvent<EnergyOptimisationAsset> persistenceEvent) {
@@ -183,7 +183,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         String attributeName = attributeEvent.getName();
 
         if ((attributeName.equals(ElectricityChargerAsset.VEHICLE_CONNECTED.getName()) || attributeName.equals(ElectricVehicleAsset.CHARGER_CONNECTED.getName()))
-            && (Boolean)attributeEvent.getValue().orElse(false)) {
+                && (Boolean) attributeEvent.getValue().orElse(false)) {
             // Look for forced charge asset
             if (forceChargeAssetIds.remove(attributeEvent.getId())) {
                 LOG.fine("Previously force charged asset has now been disconnected so clearing force charge flag: " + attributeEvent.getId());
@@ -236,20 +236,20 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
     protected double getElectricityStorageAssetEnergyLevelMax(ElectricityStorageAsset asset) {
         double energyCapacity = asset.getEnergyCapacity().orElse(0d);
         int maxEnergyLevelPercentage = asset.getEnergyLevelPercentageMax().orElse(100);
-        return energyCapacity * ((1d*maxEnergyLevelPercentage)/100d);
+        return energyCapacity * ((1d * maxEnergyLevelPercentage) / 100d);
     }
 
     protected synchronized void processOptimisationAssetAttributeEvent(OptimisationInstance optimisationInstance, AttributeEvent attributeEvent) {
 
         if (EnergyOptimisationAsset.FINANCIAL_SAVING.getName().equals(attributeEvent.getName())
-            || EnergyOptimisationAsset.CARBON_SAVING.getName().equals(attributeEvent.getName())) {
+                || EnergyOptimisationAsset.CARBON_SAVING.getName().equals(attributeEvent.getName())) {
             // These are updated by this service
             return;
         }
 
 
         if (attributeEvent.getName().equals(EnergyOptimisationAsset.OPTIMISATION_DISABLED.getName())) {
-            boolean disabled = (Boolean)attributeEvent.getValue().orElse(false);
+            boolean disabled = (Boolean) attributeEvent.getValue().orElse(false);
             if (!disabled && assetOptimisationInstanceMap.containsKey(optimisationInstance.optimisationAsset.getId())) {
                 // Nothing to do here
                 return;
@@ -298,24 +298,24 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             LOG.finest(getLogPrefix(optimisationAsset.getId()) + "Running first optimisation for time '" + formatter.format(optimisationStartTime));
 
             //GOPACS logic
-            List<ElectricitySupplierAsset> supplierAssets = assetStorageService.findAll(
+            assetStorageService.findAll(
                             new AssetQuery()
                                     .types(ElectricitySupplierAsset.class)
                                     .recursive(true)
                                     .parents(optimisationAsset.getId())
                     ).stream()
-                    .filter(asset -> asset.hasAttribute(ElectricitySupplierAsset.CONTRACTED_EAN) && asset.getAttribute(ElectricitySupplierAsset.CONTRACTED_EAN).get().getValue().isPresent())
-                    .map(asset -> (ElectricitySupplierAsset) asset).toList();
-            for (ElectricitySupplierAsset supplierAsset : supplierAssets) {
-                String contractedEan = supplierAsset.getContractedEan().get();
-                GOPACSHandler existing = goPacsHandlerMap.get(contractedEan);
-                if (existing != null) {
-                    existing.undeploy();
-                }
-                LOG.fine("Deploying GOPACS for EAN: " + contractedEan);
-                goPacsHandlerMap.put(contractedEan, goPacsHandlerFactory.createHandler(contractedEan, supplierAsset.getRealm(), supplierAsset.getId(), supplierAsset.getPowerImportMax().orElse(0.0), supplierAsset.getPowerExportMax().orElse(0.0)));
-                LOG.fine("Deployed GOPACS for EAN: " + contractedEan);
-            }
+                    .map(ElectricitySupplierAsset.class::cast)
+                    .filter(supplierAsset -> !supplierAsset.getContractedEan().orElse("").isEmpty())
+                    .forEach(supplierAsset -> {
+                        String contractedEan = supplierAsset.getContractedEan().get();
+                        GOPACSHandler existing = goPacsHandlerMap.get(contractedEan);
+                        if (existing != null) {
+                            existing.undeploy();
+                        }
+                        LOG.fine("Deploying GOPACS for EAN: " + contractedEan);
+                        goPacsHandlerMap.put(contractedEan, goPacsHandlerFactory.createHandler(contractedEan, supplierAsset.getRealm(), supplierAsset.getId(), supplierAsset.getPowerImportMax().orElse(0.0), supplierAsset.getPowerExportMax().orElse(0.0)));
+                        LOG.fine("Deployed GOPACS for EAN: " + contractedEan);
+                    });
 
             executorService.execute(() -> {
                 try {
@@ -355,15 +355,15 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         }
 
         return scheduledExecutorService.scheduleAtFixedRate(() -> {
-                try {
-                    runOptimisation(optimisationAssetId, Instant.ofEpochMilli(timerService.getCurrentTimeMillis()).truncatedTo(ChronoUnit.MINUTES));
-                } catch (Exception e) {
-                    LOG.log(Level.SEVERE, "Failed to run energy optimiser for asset: " + optimisationAssetId, e);
-                }
-            },
-            startDuration.getSeconds(),
-            periodSeconds,
-            TimeUnit.SECONDS);
+                    try {
+                        runOptimisation(optimisationAssetId, Instant.ofEpochMilli(timerService.getCurrentTimeMillis()).truncatedTo(ChronoUnit.MINUTES));
+                    } catch (Exception e) {
+                        LOG.log(Level.SEVERE, "Failed to run energy optimiser for asset: " + optimisationAssetId, e);
+                    }
+                },
+                startDuration.getSeconds(),
+                periodSeconds,
+                TimeUnit.SECONDS);
     }
 
     /**
@@ -373,7 +373,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         Instant now = Instant.ofEpochMilli(currentMillis);
 
         Instant optimisationStartTime = now
-            .truncatedTo(ChronoUnit.DAYS);
+                .truncatedTo(ChronoUnit.DAYS);
 
         while (optimisationStartTime.isBefore(now)) {
             optimisationStartTime = optimisationStartTime.plus(periodSeconds, ChronoUnit.SECONDS);
@@ -417,13 +417,13 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         LOG.finest(getLogPrefix(optimisationAssetId) + "Fetching child assets of type '" + ElectricitySupplierAsset.class.getSimpleName() + "'");
 
         List<ElectricitySupplierAsset> supplierAssets = assetStorageService.findAll(
-                new AssetQuery()
-                    .types(ElectricitySupplierAsset.class)
-                    .recursive(true)
-                    .parents(optimisationAssetId)
-            ).stream()
-            .filter(asset -> asset.hasAttribute(ElectricitySupplierAsset.TARIFF_IMPORT))
-            .map(asset -> (ElectricitySupplierAsset) asset).toList();
+                        new AssetQuery()
+                                .types(ElectricitySupplierAsset.class)
+                                .recursive(true)
+                                .parents(optimisationAssetId)
+                ).stream()
+                .filter(asset -> asset.hasAttribute(ElectricitySupplierAsset.TARIFF_IMPORT))
+                .map(asset -> (ElectricitySupplierAsset) asset).toList();
 
         if (supplierAssets.size() != 1) {
             LOG.warning(getLogPrefix(optimisationAssetId) + "Expected exactly one " + ElectricitySupplierAsset.class.getSimpleName() + " asset with a '" + ElectricitySupplierAsset.TARIFF_IMPORT.getName() + "' attribute but found: " + supplierAssets.size());
@@ -445,84 +445,84 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         LOG.finest(getLogPrefix(optimisationAssetId) + "Fetching optimisable child assets of type '" + ElectricityStorageAsset.class.getSimpleName() + "'");
 
         List<ElectricityStorageAsset> optimisableStorageAssets = assetStorageService.findAll(
-            new AssetQuery()
-                .recursive(true)
-                .parents(optimisationAssetId)
-                .types(ElectricityStorageAsset.class)
-                .attributes(
-                    new LogicGroup<>(
-                        LogicGroup.Operator.AND,
-                        Collections.singletonList(new LogicGroup<>(
-                            LogicGroup.Operator.OR,
-                            new AttributePredicate(ElectricityStorageAsset.SUPPORTS_IMPORT.getName(), new BooleanPredicate(true)),
-                            new AttributePredicate(ElectricityStorageAsset.SUPPORTS_EXPORT.getName(), new BooleanPredicate(true))
-                        )),
-                        new AttributePredicate().name(new StringPredicate(ElectricityAsset.POWER_SETPOINT.getName())))
+                        new AssetQuery()
+                                .recursive(true)
+                                .parents(optimisationAssetId)
+                                .types(ElectricityStorageAsset.class)
+                                .attributes(
+                                        new LogicGroup<>(
+                                                LogicGroup.Operator.AND,
+                                                Collections.singletonList(new LogicGroup<>(
+                                                        LogicGroup.Operator.OR,
+                                                        new AttributePredicate(ElectricityStorageAsset.SUPPORTS_IMPORT.getName(), new BooleanPredicate(true)),
+                                                        new AttributePredicate(ElectricityStorageAsset.SUPPORTS_EXPORT.getName(), new BooleanPredicate(true))
+                                                )),
+                                                new AttributePredicate().name(new StringPredicate(ElectricityAsset.POWER_SETPOINT.getName())))
+                                )
                 )
-        )
-            .stream()
-            .map(asset -> (ElectricityStorageAsset)asset)
-            .collect(Collectors.toList());
+                .stream()
+                .map(asset -> (ElectricityStorageAsset) asset)
+                .collect(Collectors.toList());
 
         checkTimeoutAndThrow(optimisationAssetId, startTimeMillis);
 
         List<ElectricityStorageAsset> finalOptimisableStorageAssets = optimisableStorageAssets;
         optimisableStorageAssets = optimisableStorageAssets
-            .stream()
-            .filter(asset -> {
+                .stream()
+                .filter(asset -> {
 
-                // Exclude force charged assets (so we don't mess with the setpoint)
-                if (forceChargeAssetIds.contains(asset.getId())) {
-                    LOG.finest("Optimisable asset was requested to force charge so it won't be optimised: " + asset.getId());
-                    @SuppressWarnings("OptionalGetWithoutIsPresent")
-                    Attribute<Double> powerAttribute = asset.getAttribute(ElectricityAsset.POWER).get();
-                    double[] powerLevels = get24HAttributeValues(asset.getId(), powerAttribute, optimiser.getIntervalSize(), intervalCount, optimisationTime);
-                    IntStream.range(0, intervalCount).forEach(i -> powerNets[i] += powerLevels[i]);
+                    // Exclude force charged assets (so we don't mess with the setpoint)
+                    if (forceChargeAssetIds.contains(asset.getId())) {
+                        LOG.finest("Optimisable asset was requested to force charge so it won't be optimised: " + asset.getId());
+                        @SuppressWarnings("OptionalGetWithoutIsPresent")
+                        Attribute<Double> powerAttribute = asset.getAttribute(ElectricityAsset.POWER).get();
+                        double[] powerLevels = get24HAttributeValues(asset.getId(), powerAttribute, optimiser.getIntervalSize(), intervalCount, optimisationTime);
+                        IntStream.range(0, intervalCount).forEach(i -> powerNets[i] += powerLevels[i]);
 
-                    double currentEnergyLevel = asset.getEnergyLevel().orElse(0d);
-                    double maxEnergyLevel = getElectricityStorageAssetEnergyLevelMax(asset);
-                    if (currentEnergyLevel >= maxEnergyLevel) {
-                        LOG.info("Force charged asset has reached maxEnergyLevelPercentage so stopping charging: " + asset.getId());
-                        forceChargeAssetIds.remove(asset.getId());
-                        assetProcessingService.sendAttributeEvent(
-                            new AttributeEvent(asset.getId(), ElectricityStorageAsset.POWER_SETPOINT, 0d),
-                            getClass().getSimpleName());
-                        assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.COMPLETED), getClass().getSimpleName());
+                        double currentEnergyLevel = asset.getEnergyLevel().orElse(0d);
+                        double maxEnergyLevel = getElectricityStorageAssetEnergyLevelMax(asset);
+                        if (currentEnergyLevel >= maxEnergyLevel) {
+                            LOG.info("Force charged asset has reached maxEnergyLevelPercentage so stopping charging: " + asset.getId());
+                            forceChargeAssetIds.remove(asset.getId());
+                            assetProcessingService.sendAttributeEvent(
+                                    new AttributeEvent(asset.getId(), ElectricityStorageAsset.POWER_SETPOINT, 0d),
+                                    getClass().getSimpleName());
+                            assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.COMPLETED), getClass().getSimpleName());
+                        }
+                        return false;
                     }
-                    return false;
-                }
 
-                if (asset instanceof ElectricityChargerAsset) {
-                    // Check if it has a child vehicle asset
-                    return finalOptimisableStorageAssets.stream()
-                        .noneMatch(a -> {
-                                if (a instanceof ElectricVehicleAsset && a.getParentId().equals(asset.getId())) {
-                                // Take the lowest power max from vehicle or charger
-                                double vehiclePowerImportMax = a.getPowerImportMax().orElse(Double.MAX_VALUE);
-                                double vehiclePowerExportMax = a.getPowerExportMax().orElse(Double.MAX_VALUE);
-                                double chargerPowerImportMax = asset.getPowerImportMax().orElse(Double.MAX_VALUE);
-                                double chargerPowerExportMax = asset.getPowerExportMax().orElse(Double.MAX_VALUE);
-                                double smallestPowerImportMax = Math.min(vehiclePowerImportMax, chargerPowerImportMax);
-                                double smallestPowerExportMax = Math.min(vehiclePowerExportMax, chargerPowerExportMax);
+                    if (asset instanceof ElectricityChargerAsset) {
+                        // Check if it has a child vehicle asset
+                        return finalOptimisableStorageAssets.stream()
+                                .noneMatch(a -> {
+                                    if (a instanceof ElectricVehicleAsset && a.getParentId().equals(asset.getId())) {
+                                        // Take the lowest power max from vehicle or charger
+                                        double vehiclePowerImportMax = a.getPowerImportMax().orElse(Double.MAX_VALUE);
+                                        double vehiclePowerExportMax = a.getPowerExportMax().orElse(Double.MAX_VALUE);
+                                        double chargerPowerImportMax = asset.getPowerImportMax().orElse(Double.MAX_VALUE);
+                                        double chargerPowerExportMax = asset.getPowerExportMax().orElse(Double.MAX_VALUE);
+                                        double smallestPowerImportMax = Math.min(vehiclePowerImportMax, chargerPowerImportMax);
+                                        double smallestPowerExportMax = Math.min(vehiclePowerExportMax, chargerPowerExportMax);
 
-                                if (smallestPowerImportMax < vehiclePowerImportMax) {
-                                    LOG.fine("Reducing vehicle power import max due to connected charger limit: vehicle=" + a.getId() + ", oldPowerImportMax=" + vehiclePowerImportMax + ", newPowerImportMax=" + smallestPowerImportMax);
-                                    a.setPowerImportMax(smallestPowerImportMax);
-                                }
-                                if (smallestPowerExportMax < vehiclePowerExportMax) {
-                                    LOG.fine("Reducing vehicle power Export max due to connected charger limit: vehicle=" + a.getId() + ", oldPowerExportMax=" + vehiclePowerExportMax + ", newPowerExportMax=" + smallestPowerExportMax);
-                                    a.setPowerExportMax(smallestPowerExportMax);
-                                }
-                                LOG.finest("Excluding charger from optimisable assets and child vehicle will be used instead: " + asset.getId());
-                                return true;
-                            }
-                            return false;
-                        });
-                }
-                return true;
-            })
-            .sorted(Comparator.comparingInt(asset -> asset.getEnergyLevelSchedule().map(schedule -> 0).orElse(1)))
-            .collect(Collectors.toList());
+                                        if (smallestPowerImportMax < vehiclePowerImportMax) {
+                                            LOG.fine("Reducing vehicle power import max due to connected charger limit: vehicle=" + a.getId() + ", oldPowerImportMax=" + vehiclePowerImportMax + ", newPowerImportMax=" + smallestPowerImportMax);
+                                            a.setPowerImportMax(smallestPowerImportMax);
+                                        }
+                                        if (smallestPowerExportMax < vehiclePowerExportMax) {
+                                            LOG.fine("Reducing vehicle power Export max due to connected charger limit: vehicle=" + a.getId() + ", oldPowerExportMax=" + vehiclePowerExportMax + ", newPowerExportMax=" + smallestPowerExportMax);
+                                            a.setPowerExportMax(smallestPowerExportMax);
+                                        }
+                                        LOG.finest("Excluding charger from optimisable assets and child vehicle will be used instead: " + asset.getId());
+                                        return true;
+                                    }
+                                    return false;
+                                });
+                    }
+                    return true;
+                })
+                .sorted(Comparator.comparingInt(asset -> asset.getEnergyLevelSchedule().map(schedule -> 0).orElse(1)))
+                .collect(Collectors.toList());
 
         checkTimeoutAndThrow(optimisationAssetId, startTimeMillis);
 
@@ -539,72 +539,72 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
         AtomicInteger count = new AtomicInteger(0);
         assetStorageService.findAll(
-            new AssetQuery()
-                .recursive(true)
-                .parents(optimisationAssetId)
-                .types(ElectricityConsumerAsset.class, ElectricityProducerAsset.class)
-                .attributes(new AttributePredicate().name(new StringPredicate(ElectricityAsset.POWER.getName())))
-        )
-            //.stream()
-            //.filter(asset -> !(asset instanceof GroupAsset) || isElectricityGroupAsset(asset))
-            .forEach(asset -> {
-                @SuppressWarnings("OptionalGetWithoutIsPresent")
-                Attribute<Double> powerAttribute = asset.getAttribute(ElectricityAsset.POWER).get();
-                double[] powerLevels = get24HAttributeValues(asset.getId(), powerAttribute, optimiser.getIntervalSize(), intervalCount, optimisationTime);
-                IntStream.range(0, intervalCount).forEach(i -> powerNets[i] += powerLevels[i]);
-                count.incrementAndGet();
-            });
+                        new AssetQuery()
+                                .recursive(true)
+                                .parents(optimisationAssetId)
+                                .types(ElectricityConsumerAsset.class, ElectricityProducerAsset.class)
+                                .attributes(new AttributePredicate().name(new StringPredicate(ElectricityAsset.POWER.getName())))
+                )
+                //.stream()
+                //.filter(asset -> !(asset instanceof GroupAsset) || isElectricityGroupAsset(asset))
+                .forEach(asset -> {
+                    @SuppressWarnings("OptionalGetWithoutIsPresent")
+                    Attribute<Double> powerAttribute = asset.getAttribute(ElectricityAsset.POWER).get();
+                    double[] powerLevels = get24HAttributeValues(asset.getId(), powerAttribute, optimiser.getIntervalSize(), intervalCount, optimisationTime);
+                    IntStream.range(0, intervalCount).forEach(i -> powerNets[i] += powerLevels[i]);
+                    count.incrementAndGet();
+                });
 
         checkTimeoutAndThrow(optimisationAssetId, startTimeMillis);
 
         // Get power of storage assets that don't support neither import or export (treat them as plain consumers/producers)
         List<ElectricityStorageAsset> plainStorageAssets = assetStorageService.findAll(
-                new AssetQuery()
-                    .recursive(true)
-                    .parents(optimisationAssetId)
-                    .types(ElectricityStorageAsset.class)
-                    .attributes(
-                        new AttributePredicate().name(new StringPredicate(ElectricityAsset.POWER.getName())),
-                        new AttributePredicate(ElectricityStorageAsset.SUPPORTS_IMPORT.getName(), new BooleanPredicate(true), true, null),
-                        new AttributePredicate(ElectricityStorageAsset.SUPPORTS_EXPORT.getName(), new BooleanPredicate(true), true, null)
-                    )
-            )
-            .stream()
-            .map(asset -> (ElectricityStorageAsset) asset).toList();
+                        new AssetQuery()
+                                .recursive(true)
+                                .parents(optimisationAssetId)
+                                .types(ElectricityStorageAsset.class)
+                                .attributes(
+                                        new AttributePredicate().name(new StringPredicate(ElectricityAsset.POWER.getName())),
+                                        new AttributePredicate(ElectricityStorageAsset.SUPPORTS_IMPORT.getName(), new BooleanPredicate(true), true, null),
+                                        new AttributePredicate(ElectricityStorageAsset.SUPPORTS_EXPORT.getName(), new BooleanPredicate(true), true, null)
+                                )
+                )
+                .stream()
+                .map(asset -> (ElectricityStorageAsset) asset).toList();
 
         checkTimeoutAndThrow(optimisationAssetId, startTimeMillis);
 
         // Exclude chargers with a power value != 0 and a child vehicle with a power value != 0 (avoid double counting - vehicle takes priority)
         plainStorageAssets
-            .stream()
-            .filter(asset -> {
-                if (asset instanceof ElectricityChargerAsset) {
-                    // Check if it has a child vehicle asset also check optimisable assets as child vehicle could be in there
-                    return plainStorageAssets.stream()
-                        .noneMatch(a -> {
-                            if (a instanceof ElectricVehicleAsset && a.getParentId().equals(asset.getId())) {
-                                LOG.finest("Excluding charger from plain consumer/producer calculations to avoid double counting power: " + asset.getId());
-                                return true;
-                            }
-                            return false;
-                        }) && finalOptimisableStorageAssets.stream()
-                        .noneMatch(a -> {
-                            if (a instanceof ElectricVehicleAsset && a.getParentId().equals(asset.getId())) {
-                                LOG.finest("Excluding charger from plain consumer/producer calculations to avoid double counting power: " + asset.getId());
-                                return true;
-                            }
-                            return false;
-                        });
-                }
-                return true;
-            })
-            .forEach(asset -> {
-                @SuppressWarnings("OptionalGetWithoutIsPresent")
-                Attribute<Double> powerAttribute = asset.getAttribute(ElectricityAsset.POWER).get();
-                double[] powerLevels = get24HAttributeValues(asset.getId(), powerAttribute, optimiser.getIntervalSize(), intervalCount, optimisationTime);
-                IntStream.range(0, intervalCount).forEach(i -> powerNets[i] += powerLevels[i]);
-                count.incrementAndGet();
-            });
+                .stream()
+                .filter(asset -> {
+                    if (asset instanceof ElectricityChargerAsset) {
+                        // Check if it has a child vehicle asset also check optimisable assets as child vehicle could be in there
+                        return plainStorageAssets.stream()
+                                .noneMatch(a -> {
+                                    if (a instanceof ElectricVehicleAsset && a.getParentId().equals(asset.getId())) {
+                                        LOG.finest("Excluding charger from plain consumer/producer calculations to avoid double counting power: " + asset.getId());
+                                        return true;
+                                    }
+                                    return false;
+                                }) && finalOptimisableStorageAssets.stream()
+                                .noneMatch(a -> {
+                                    if (a instanceof ElectricVehicleAsset && a.getParentId().equals(asset.getId())) {
+                                        LOG.finest("Excluding charger from plain consumer/producer calculations to avoid double counting power: " + asset.getId());
+                                        return true;
+                                    }
+                                    return false;
+                                });
+                    }
+                    return true;
+                })
+                .forEach(asset -> {
+                    @SuppressWarnings("OptionalGetWithoutIsPresent")
+                    Attribute<Double> powerAttribute = asset.getAttribute(ElectricityAsset.POWER).get();
+                    double[] powerLevels = get24HAttributeValues(asset.getId(), powerAttribute, optimiser.getIntervalSize(), intervalCount, optimisationTime);
+                    IntStream.range(0, intervalCount).forEach(i -> powerNets[i] += powerLevels[i]);
+                    count.incrementAndGet();
+                });
 
         checkTimeoutAndThrow(optimisationAssetId, startTimeMillis);
 
@@ -635,8 +635,8 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             LOG.finest(getLogPrefix(optimisationAssetId) + "Adjusting costs to include some carbon weighting, financialWeightingImport=" + financialWeightingImport + ", financialWeightingExport=" + financialWeightingExport);
 
             for (int i = 0; i < costsImport.length; i++) {
-                costsImport[i] = (financialWeightingImport * costsImport[i]) + ((1-financialWeightingImport) * carbonImport[i]);
-                costsExport[i] = (financialWeightingExport * costsExport[i]) + ((1-financialWeightingExport) * carbonExport[i]);
+                costsImport[i] = (financialWeightingImport * costsImport[i]) + ((1 - financialWeightingImport) * carbonImport[i]);
+                costsExport[i] = (financialWeightingExport * costsExport[i]) + ((1 - financialWeightingExport) * carbonExport[i]);
             }
         }
 
@@ -660,7 +660,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         double[] exportPowerMaxes = new double[intervalCount];
         Arrays.fill(importPowerMaxes, importPowerMax);
         Arrays.fill(exportPowerMaxes, exportPowerMax);
-        long periodSeconds = (long)(optimiser.getIntervalSize()*60*60);
+        long periodSeconds = (long) (optimiser.getIntervalSize() * 60 * 60);
 
         for (ElectricityStorageAsset storageAsset : optimisableStorageAssets) {
             boolean hasSetpoint = storageAsset.hasAttribute(ElectricityStorageAsset.POWER_SETPOINT);
@@ -699,7 +699,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             // Does the storage support import and have an energy level schedule
             Optional<Integer[][]> energyLevelScheduleOptional = storageAsset.getEnergyLevelSchedule();
             boolean hasEnergyMinRequirement = energyLevelMin > 0 || energyLevelScheduleOptional.isPresent();
-            double powerExportMax = storageAsset.getPowerExportMax().map(power -> -1*power).orElse(Double.MIN_VALUE);
+            double powerExportMax = storageAsset.getPowerExportMax().map(power -> -1 * power).orElse(Double.MIN_VALUE);
             double powerImportMax = storageAsset.getPowerImportMax().orElse(Double.MAX_VALUE);
             int[][] energySchedule = energyLevelScheduleOptional.map(dayArr -> Arrays.stream(dayArr).map(hourArr -> Arrays.stream(hourArr).mapToInt(i -> i != null ? i : 0).toArray()).toArray(int[][]::new)).orElse(null);
 
@@ -751,7 +751,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
                 // Push the setpoints into the prediction service for the storage asset's setpoint attribute and set current setpoint
                 List<ValueDatapoint<?>> valuesAndTimestamps = IntStream.range(1, setpoints.length).mapToObj(i ->
-                    new ValueDatapoint<>(optimisationTime.plus(periodSeconds * i, ChronoUnit.SECONDS).toEpochMilli(), setpoints[i])
+                        new ValueDatapoint<>(optimisationTime.plus(periodSeconds * i, ChronoUnit.SECONDS).toEpochMilli(), setpoints[i])
                 ).collect(Collectors.toList());
 
                 assetPredictedDatapointService.updateValues(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT.getName(), valuesAndTimestamps);
@@ -799,12 +799,12 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         }
 
         Class<?> assetClass = ValueUtil
-            .getAssetDescriptor(((GroupAsset)asset).getChildAssetType().orElse(null))
-            .map(AssetDescriptor::getType)
-            .orElse(null);
+                .getAssetDescriptor(((GroupAsset) asset).getChildAssetType().orElse(null))
+                .map(AssetDescriptor::getType)
+                .orElse(null);
 
         return assetClass != null &&
-            ElectricityAsset.class.isAssignableFrom(assetClass);
+                ElectricityAsset.class.isAssignableFrom(assetClass);
     }
 
     protected double[] get24HAttributeValues(String assetId, Attribute<Double> attribute, double intervalSize, int intervalCount, Instant optimisationTime) {
@@ -824,7 +824,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                     ref.getName(),
                     new AssetDatapointIntervalQuery(
                             timestamp,
-                            timestamp.plus(24, HOURS).minus((long)(intervalSize * 60), ChronoUnit.MINUTES),
+                            timestamp.plus(24, HOURS).minus((long) (intervalSize * 60), ChronoUnit.MINUTES),
                             (intervalSize * 60) + " minutes",
                             AssetDatapointIntervalQuery.Formula.AVG,
                             true
@@ -842,12 +842,12 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                         // issues with resolution differences between stored predicted data and optimisation interval
                         Double previous = null;
                         Double next = null;
-                        int j = i-1;
+                        int j = i - 1;
                         while (previous == null && j >= 0) {
                             previous = (Double) predictedData.get(j).getValue();
                             j--;
                         }
-                        j = i+1;
+                        j = i + 1;
                         while (next == null && j < predictedData.size()) {
                             next = (Double) predictedData.get(j).getValue();
                             j++;
@@ -878,15 +878,15 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
      * calculator are valid and up to date.
      */
     protected double[] getStoragePowerSetpoints(
-        OptimisationInstance optimisationInstance,
-        ElectricityStorageAsset storageAsset,
-        double[] normalisedEnergyLevelMins,
-        double[] energyLevelMaxs,
-        double[] powerNets,
-        double[] importPowerLimits,
-        double[] exportPowerLimits,
-        double[] costImports,
-        double[] costExports) {
+            OptimisationInstance optimisationInstance,
+            ElectricityStorageAsset storageAsset,
+            double[] normalisedEnergyLevelMins,
+            double[] energyLevelMaxs,
+            double[] powerNets,
+            double[] importPowerLimits,
+            double[] exportPowerLimits,
+            double[] costImports,
+            double[] costExports) {
 
         EnergyOptimiser optimiser = optimisationInstance.energyOptimiser;
         String optimisationAssetId = optimisationInstance.optimisationAsset.getId();
@@ -898,7 +898,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
         double energyCapacity = storageAsset.getEnergyCapacity().orElse(0d);
         double energyLevel = Math.min(energyCapacity, storageAsset.getEnergyLevel().orElse(-1d));
-        double powerExportMax = storageAsset.getPowerExportMax().map(power -> -1*power).orElse(Double.MIN_VALUE);
+        double powerExportMax = storageAsset.getPowerExportMax().map(power -> -1 * power).orElse(Double.MIN_VALUE);
         double powerImportMax = storageAsset.getPowerImportMax().orElse(Double.MAX_VALUE);
         boolean isConnected = storageAssetConnected(storageAsset);
 
@@ -920,7 +920,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             // Find intervals that save/earn by exporting energy from this storage asset by looking at power levels
             BiFunction<Integer, Double, double[]> exportOptimiser = optimiser.getExportOptimiser(powerNets, exportPowerLimits, costImports, costExports, storageAsset.getTariffExport().orElse(0d));
             exportCostAndPower = IntStream.range(0, intervalCount).mapToObj(it -> exportOptimiser.apply(it, powerExportMax))
-                .toArray(double[][]::new);
+                    .toArray(double[][]::new);
         }
 
         // If asset supports importing energy then need to determine if there are opportunities to import energy to
@@ -930,7 +930,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             LOG.finest(getLogPrefix(optimisationAssetId) + "Storage asset supports import so calculating export cost and power levels for each interval: " + storageAsset.getId());
             BiFunction<Integer, double[], double[]> importOptimiser = optimiser.getImportOptimiser(powerNets, importPowerLimits, costImports, costExports, storageAsset.getTariffImport().orElse(0d));
             importCostAndPower = IntStream.range(0, intervalCount).mapToObj(it -> importOptimiser.apply(it, new double[]{0d, powerImportMax}))
-                .toArray(double[][]::new);
+                    .toArray(double[][]::new);
 
             boolean hasEnergyMinRequirement = Arrays.stream(normalisedEnergyLevelMins).anyMatch(el -> el > 0);
 
@@ -954,10 +954,10 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
     protected boolean storageAssetConnected(ElectricityStorageAsset storageAsset) {
         if (storageAsset instanceof ElectricVehicleAsset) {
-            return ((ElectricVehicleAsset)storageAsset).getChargerConnected().orElse(false);
+            return ((ElectricVehicleAsset) storageAsset).getChargerConnected().orElse(false);
         }
         if (storageAsset instanceof ElectricityChargerAsset) {
-            return ((ElectricityChargerAsset)storageAsset).getVehicleConnected().orElse(false);
+            return ((ElectricityChargerAsset) storageAsset).getVehicleConnected().orElse(false);
         }
         return true;
     }
