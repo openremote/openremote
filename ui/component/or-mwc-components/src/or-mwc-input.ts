@@ -635,6 +635,14 @@ const style = css`
     }
 `;
 
+/**
+ * Web Component for control elements using the Material Design specification. <br />
+ * Includes input fields, buttons, switches, and more.
+ *
+ * @cssprop --internal-or-mwc-input-color - Controls the color
+ *
+ * @event {OrInputChangedEvent} or-mwc-input-changed - Upon value change
+ */
 @customElement("or-mwc-input")
 export class OrMwcInput extends LitElement {
 

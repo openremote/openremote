@@ -9,6 +9,7 @@
     "ui/demo/*"
   ],
   "devDependencies": {
+    "@openremote/docs": "workspace:*",
     "@openremote/util": "workspace:*"
   }
 }
