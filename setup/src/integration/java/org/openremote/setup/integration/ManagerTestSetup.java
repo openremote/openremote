@@ -391,9 +391,7 @@ public class ManagerTestSetup extends ManagerSetup {
                                 .addMeta(new MetaItem<>(ACCESS_RESTRICTED_READ, true))
                                 .addMeta(new MetaItem<>(ACCESS_RESTRICTED_WRITE, true))
                 );
-        addDemoApartmentRoomMotionSensor(apartment1Hallway, true, () ->
-            new SimulatorAgentLink(apartment1ServiceAgentId)
-        );
+        addDemoApartmentRoomMotionSensor(apartment1Hallway, false, null);
 
         apartment1Hallway = assetStorageService.merge(apartment1Hallway);
         apartment1HallwayId = apartment1Hallway.getId();
