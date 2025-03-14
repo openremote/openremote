@@ -29,13 +29,14 @@ import "@openremote/or-components/or-collapsible-panel";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "../components/configuration/or-conf-json";
 import "../components/configuration/or-conf-panel";
-import {ManagerAppConfig, MapRealmConfig, Realm} from "@openremote/model";
+import {ManagerAppConfig, MapConfig, Realm} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
 import {OrConfRealmCard} from "../components/configuration/or-conf-realm/or-conf-realm-card";
 import {OrConfPanel} from "../components/configuration/or-conf-panel";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu, DefaultRealmConfig} from "../index";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 declare const CONFIG_URL_PREFIX: string;
 declare const MANAGER_URL: string | undefined;
@@ -144,6 +145,59 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                     display: none;
                 }
             }
+
+            /* Global map settings */
+
+            .subheader {
+                padding: 10px 0 4px;
+                font-weight: bolder;
+            }
+
+            .global-settings-container {
+                display: flex;
+            }
+
+            .global-server-group {
+                width: 50%;
+            }
+
+            .custom-tile-group {
+                width: 50%;
+                padding-left: 12px;
+            }
+
+            @media screen and (max-width: 768px) {
+                .custom-tile-group, .global-server-group {
+                    width: 100%;
+                    padding: unset;
+                }
+                .global-settings-container {
+                    display: block;
+                }
+            }
+
+            .input {
+                width: 100%;
+                max-width: 800px;
+                padding: 10px 0;
+            }
+
+            .input or-mwc-input:not([icon]) {
+                width: 80%;
+            }
+
+            .note {
+                color: rgba(0, 0, 0, 0.6);
+            }
+
+            or-file-uploader {
+              width: 108px;
+              height: 108px;
+            }
+
+            .d-inline-flex {
+                display: inline-flex;
+            }
         `;
     }
 
@@ -155,7 +209,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     public managerConfiguration?: ManagerAppConfig;
 
     @state()
-    public mapConfig?: {[id: string]: any};
+    public mapConfig?: MapConfig;
 
     @state()
     protected realms?: Realm[];
@@ -169,6 +223,15 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     @state()
     protected mapConfigChanged = false;
 
+    @state()
+    protected isMapCustom: boolean = false;
+
+    @state()
+    protected customMapLimit: number = 1e+9;
+
+    @state()
+    protected tilesForUpload: File;
+
     @query("#managerConfig-panel")
     protected realmConfigPanel?: OrConfPanel;
 
@@ -178,6 +241,18 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     /* ------------------------------------------ */
 
     public stateChanged(state: AppStateKeyed) {
+    }
+
+    public async firstUpdated() {
+        const response = await manager.rest.api.MapResource.customMapInfo();
+        this.customMapLimit = response.data["custom-map-limit"]
+        this.isMapCustom = response.data["map-custom"]
+    }
+
+    public humanReadableBytes(bytes: number) {
+        const unit = ['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'];
+        const exponent = Math.floor(Math.log(bytes) / Math.log(1000));
+        return (bytes / Math.pow(1000, exponent)).toFixed(2) + " " + unit[exponent];
     }
 
     // On every update..
@@ -232,13 +307,18 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             `, () => {
                 const realmHeading = html`
                     <div id="heading" style="justify-content: space-between;">
-                        <span style="margin: 0;">${i18next.t("configuration.realmStyling").toUpperCase()}</span>
+                        <span style="margin: 0;"><or-translate style="text-transform: uppercase;" value="configuration.realmStyling"></or-translate></span>
                         <or-conf-json .managerConfig="${this.managerConfiguration}" class="hide-mobile"
                                       @saveLocalManagerConfig="${(ev: CustomEvent) => {
                                           this.managerConfiguration = ev.detail.value as ManagerAppConfig;
                                           this.managerConfigurationChanged = true;
                                       }}"
                         ></or-conf-json>
+                    </div>
+                `;
+                const mapHeading = html`
+                    <div id="heading" style="justify-content: space-between;">
+                        <span style="margin: 0;"><or-translate style="text-transform: uppercase;" value="configuration.mapSettings"></or-translate></span>
                     </div>
                 `;
                 const realmOptions = this.realms?.map((r) => ({name: r.name, displayName: r.displayName, canDelete: true}));
@@ -248,7 +328,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                         <div id="header-wrapper">
                             <div id="header-title">
                                 <or-icon icon="palette-outline"></or-icon>
-                                ${i18next.t("appearance")}
+                                <or-translate value="appearance"></or-translate>
                             </div>
                             <div id="header-actions">
                                 <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged && !this.mapConfigChanged}" raised type="button" label="save"
@@ -263,7 +343,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 ></or-conf-panel>
                             `, () => html`
                                 <div class="notFound-container">
-                                    <span>${i18next.t('configuration.managerConfigNotFound')}</span>
+                                    <span><or-translate value="configuration.managerConfigNotFound"></or-translate></span>
                                     <or-mwc-input type="${InputType.BUTTON}" label="configuration.tryAgain"
                                                   @or-mwc-input-changed="${() => this.getManagerConfig().then(val => {
                                                       this.managerConfiguration = val;
@@ -272,14 +352,62 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 </div>
                             `)}
                         </or-panel>
-                        <or-panel .heading="${i18next.t("configuration.mapSettings").toUpperCase()}">
+                        <or-panel .heading="${mapHeading}">
                             ${when(this.mapConfig, () => html`
+                                <div class="global-settings-container">
+                                    <div class="global-server-group">
+                                        <div class="subheader"><or-translate value="configuration.global.tileServer"></or-translate></div>
+                                        <span>
+                                            <or-translate value="configuration.global.tileServerDescription"></or-translate><br>
+                                            <or-translate style="font-style: italic;" class="note" value="configuration.global.tileServerNote"></or-translate>
+                                        </span>
+                                        <or-mwc-input class="input" outlined
+                                            .value="${this.mapConfig.sources?.vector_tiles?.url || this.mapConfig.sources?.vector_tiles?.tiles?.[0]}"
+                                            .type="${InputType.URL}"
+                                            .label="${i18next.t("configuration.global.tileServerPlaceholder")}"
+                                            placeholder="https://api.example.com/tileset/{z}/{x}/{y}"
+                                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                                    this.mapConfig.sources.vector_tiles = {
+                                                        type: "vector",
+                                                        url: e.detail.value || null
+                                                    }
+                                                    this.mapConfigChanged = true;
+                                                }}"
+                                        ></or-mwc-input>
+                                    </div>
+
+                                    <div class="custom-tile-group">
+                                        <div class="subheader"><or-translate value="configuration.global.mapTiles"></or-translate></div>
+                                        <span><or-translate value="configuration.global.uploadMapTiles" .options=${{
+                                            customMapLimit: this.humanReadableBytes(this.customMapLimit)
+                                        }}></or-translate>
+                                            <or-translate style="font-style: italic;" class="note" value="configuration.global.uploadMapTilesPrecedence"></or-translate>
+                                        </span>
+                                        <div class="input d-inline-flex">
+                                            <or-file-uploader 
+                                                .label=${i18next.t("configuration.global.uploadMapTiles", {
+                                                    customMapLimit: this.humanReadableBytes(this.customMapLimit)
+                                                })}"
+                                                .accept=${".mbtiles"}
+                                                @change="${(e) => this.uploadCustomMap(e)}"
+                                                // Source: https://pictogrammers.com/library/mdi/icon/map-check-outline/
+                                                .src="${this.tilesForUpload || this.isMapCustom ? "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZD0iTTE4LjI1LDIyTDE1LjUsMTlMMTYuNjYsMTcuODJMMTguMjUsMTkuNDFMMjEuODQsMTUuODJMMjMsMTcuMjNMMTguMjUsMjJNMjAuNSwzQTAuNSwwLjUgMCAwLDEgMjEsMy41VjEzLjM0QzIwLjM3LDEzLjEyIDE5LjcsMTMgMTksMTNWNS43TDE2LDYuODZWMTMuOEMxNS4yLDE0LjI3IDE0LjUsMTQuOTEgMTQsMTUuNjhWNi44N0wxMCw1LjQ3VjE3LjEzTDEzLjA1LDE4LjJMMTMsMTlDMTMsMTkuNDYgMTMuMDUsMTkuOTIgMTMuMTUsMjAuMzVMOSwxOC45TDMuNjYsMjAuOTdMMy41LDIxQTAuNSwwLjUgMCAwLDEgMywyMC41VjUuMzhDMyw1LjE1IDMuMTUsNC45NyAzLjM2LDQuOUw5LDNMMTUsNS4xTDIwLjM0LDMuMDNMMjAuNSwzTTUsNi40NlYxOC4zMUw4LDE3LjE1VjUuNDVMNSw2LjQ2WiIgLz48L3N2Zz4=": undefined}"></or-file-uploader>
+                                            ${when(this.isMapCustom, () => html`
+                                                    <or-mwc-input type="${InputType.BUTTON}" iconColor="black" icon="delete" 
+                                                        @or-mwc-input-changed="${async () => await this.deleteCustomMap()}" 
+                                                    />
+                                            `)}
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr style="border: none; border-top: 1px solid #bbb; margin: 0; margin-bottom: 10px">
+                                
                                 <or-conf-panel id="mapConfig-panel" .config="${this.mapConfig}" .realmOptions="${realmOptions}"
                                                @change="${() => { this.mapConfigChanged = true; }}"
                                 ></or-conf-panel>
                             `, () => html`
                                 <div class="notFound-container">
-                                    <span>${i18next.t('configuration.mapSettingsNotFound')}</span>
+                                    <span><or-translate value="configuration.mapSettingsNotFound"></or-translate></span>
                                     <or-mwc-input type="${InputType.BUTTON}" label="configuration.tryAgain"
                                                   @or-mwc-input-changed="${() => this.getMapConfig().then(val => {
                                                       this.mapConfig = val;
@@ -302,7 +430,26 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     // FETCH METHODS
 
-    protected async getManagerConfig(): Promise<ManagerAppConfig> {
+    protected async uploadCustomMap(e: CustomEvent) {
+        const file = e.detail.value[0] as File;
+        if (file.size > this.customMapLimit) {
+          showSnackbar(undefined, "configuration.global.uploadMapTilesError")
+          return;
+        }
+        this.tilesForUpload = file;
+        this.mapConfigChanged = true;
+    }
+
+    protected async deleteCustomMap() {
+        try {
+            await manager.rest.api.MapResource.deleteMap();
+            window.location.reload();
+        } catch (reason) {
+            console.error(reason);
+        }
+    }
+
+    protected async getManagerConfig(): Promise<ManagerAppConfig | undefined> {
         const response = await manager.rest.api.ConfigurationResource.getManagerConfig();
         return response.status === 200 ? response.data as ManagerAppConfig : {
             realms: {
@@ -314,28 +461,29 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         };
     }
 
-    protected async getMapConfig(): Promise<{[id: string]: any}> {
+    protected async getMapConfig(): Promise<MapConfig> {
         const response = await manager.rest.api.MapResource.getSettings();
-        return (response.data.options as {[id: string]: any});
+        const { options, sources } = response.data as MapConfig;
+        return { options, sources };
     }
 
     protected async getAccessibleRealms(): Promise<Realm[]> {
         return (await manager.rest.api.RealmResource.getAccessible()).data;
     }
 
-    protected saveAllConfigs(config: ManagerAppConfig, mapConfig: {[p: string]: MapRealmConfig}) {
+    protected saveAllConfigs(config: ManagerAppConfig, mapConfig: MapConfig) {
         this.loading = true;
         let managerPromise;
 
         // Save the images to the server that have been uploaded by the user.
         // TODO: Optimize code so it only saves images that have been changed.
-        const imagePromises = [];
+        const filePromises = [];
         if(this.realmConfigPanel !== undefined) {
             const elems = this.realmConfigPanel.getCardElements() as OrConfRealmCard[];
             elems.forEach((elem, index) => {
                 const files = elem?.getFiles();
                 Object.entries(files).forEach(async ([x, y]) => {
-                    imagePromises.push(
+                    filePromises.push(
                         manager.rest.api.ConfigurationResource.fileUpload(y, {path: (y as any).path}).then(file =>{
                             config.realms[elem.name][x] = file.data;
                         })
@@ -356,11 +504,21 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 });
         }
 
+        if (this.tilesForUpload) {
+            showSnackbar(undefined, "configuration.global.uploadingMapTiles");
+            filePromises.push(manager.rest.api.MapResource.uploadMap({
+                data: this.tilesForUpload,
+                headers: {'Content-Type': 'application/octet-stream'}
+            }).catch((reason) => {
+                setTimeout(() => showSnackbar(undefined, "configuration.global.uploadingMapTilesError"), 3000);
+                console.error(reason);
+            }));
+        }
 
-        // We first wait for the imagePromises to finish, so that
+        // We first wait for the filePromises to finish, so that
         // we can use the path returned from the backend to store to the
         // manager_config.
-        Promise.all(imagePromises).then((arr:string[]) => {
+        Promise.all(filePromises).then((arr:string[]) => {
             // Wait for all requests to complete, then finish loading.
             const promises = [
                 this.managerConfigurationChanged ? manager.rest.api.ConfigurationResource.update(config) : null,
