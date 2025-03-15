@@ -36,6 +36,12 @@ export class OrFileUploader extends LitElement {
     @property()
     public readonly title: string = "";
 
+    @property()
+    public readonly description: string = "";
+
+    @property()
+    public readonly icon: string = "";
+
     @property({ attribute: false })
     public readonly accept: string = "image/png,image/jpeg,image/vnd.microsoft.icon,image/svg+xml";
 
@@ -151,8 +157,8 @@ export class OrFileUploader extends LitElement {
                           </div>
                       ` : html`
                           <div class="placeholder-container">
-                              <or-icon icon="upload"></or-icon>
-                              ${i18next.t('uploadFile')}
+                              <or-icon icon=${this.icon || "upload"}></or-icon>
+                              ${i18next.t(this.files.length ? 'fileSelected' : this.description || 'uploadFile')}
                           </div>
                       `
                     }
