@@ -10,6 +10,7 @@ import {ChartWidgetConfig} from "../widgets/chart-widget";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {TimePresetCallback} from "@openremote/or-chart";
 import {when} from "lit/directives/when.js";
+import moment from "moment/moment";
 
 const styling = css`
   .switch-container {
@@ -27,11 +28,16 @@ export class ChartSettings extends WidgetSettings {
 
 
 
-    protected timePresetOptions: Map<string, TimePresetCallback> = new Map<string, TimePresetCallback>();
+    protected timeWindowOptions: Map<string, [moment.unitOfTime.DurationConstructor, number]> = new Map<string, [moment.unitOfTime.DurationConstructor, number]>;
+    protected timePrefixOptions: string[] = [];
     protected samplingOptions: Map<string, string> = new Map<string, string>();
 
-    public setTimePresetOptions(options: Map<string, TimePresetCallback>) {
-        this.timePresetOptions = options;
+    public setTimeWindowOptions(options: Map<string, [moment.unitOfTime.DurationConstructor, number]>) {
+        this.timeWindowOptions = options;
+    }
+
+    public setTimePrefixOptions(options: string[]) {
+        this.timePrefixOptions = options;
     }
 
     public setSamplingOptions(options: Map<string, string>) {
@@ -144,9 +150,13 @@ export class ChartSettings extends WidgetSettings {
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
                         <!-- Timeframe -->
                         <div>
+                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('prefix')}" style="width: 100%;"
+                                          .options="${Array.from(this.timePrefixOptions.keys())}" value="${this.widgetConfig.defaultTimePrefixKey}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimePreFixSelect(ev)}"
+                            ></or-mwc-input>
                             <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('timeframeDefault')}" style="width: 100%;"
-                                          .options="${Array.from(this.timePresetOptions.keys())}" value="${this.widgetConfig.defaultTimePresetKey}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimePresetSelect(ev)}"
+                                          .options="${Array.from(this.timeWindowOptions.keys())}" value="${this.widgetConfig.defaultTimeWindowKey}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimeWindowSelect(ev)}"
                             ></or-mwc-input>
                         </div>
                         <!-- Time range selection -->
@@ -411,8 +421,13 @@ export class ChartSettings extends WidgetSettings {
         );
     }
 
-    protected onTimePresetSelect(ev: OrInputChangedEvent) {
-        this.widgetConfig.defaultTimePresetKey = ev.detail.value.toString();
+    protected onTimePreFixSelect(ev: OrInputChangedEvent) {
+        this.widgetConfig.defaultTimePrefixKey = ev.detail.value.toString();
+        this.notifyConfigUpdate();
+    }
+
+    protected onTimeWindowSelect(ev: OrInputChangedEvent) {
+        this.widgetConfig.defaultTimeWindowKey = ev.detail.value.toString();
         this.notifyConfigUpdate();
     }
 

@@ -157,6 +157,7 @@
   "previousYear": "Previous year",
   "period": "Period",
   "ending": "Ending",
+  "prefix": "Prefix",
   "timeframe": "Timeframe",
   "timeframeDefault": "Default timeframe",
   "dataSampling": "Data sampling",

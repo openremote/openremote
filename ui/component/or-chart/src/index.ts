@@ -390,7 +390,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Object})
     public config?: OrChartConfig;
 
-    @property({type: Object}) // WIDGET NEED TO CONVERT TO ECHARTS OPTION FORMAT, NOW WORKAROUND IN PLACE options that will get merged with our default chartjs configuration.
+    @property({type: Object})
     public chartOptions?: any
 
     @property({type: String})
@@ -409,15 +409,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     public timestampControls: boolean = true;
 
     @property()
-    public timePresetOptions?: Map<string, TimePresetCallback>;
-
-    @property()
-    public timePresetKey?: string;
-
-
-
-
-
+    protected timePrefixOptions?: string[];
 
     @property()
     public timeWindowOptions?: Map<string, [moment.unitOfTime.DurationConstructor, number]>;
@@ -474,6 +466,9 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _stepSize?: number;
     protected _latestError?: string;
     protected _dataAbortController?: AbortController;
+    protected _zoomHandler?: any;
+    protected _resizeHandler?: any;
+    protected _containerResizeObserver?: ResizeObserver;
 
     constructor() {
         super();
@@ -510,7 +505,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
         }
 
-        const reloadData = changedProperties.has('colorPickedAttributes') || changedProperties.has("datapointQuery") || changedProperties.has("timePresetKey") || changedProperties.has("timeframe") || changedProperties.has("timePrefixKey") || changedProperties.has("timeWindowKey")||
+        const reloadData = changedProperties.has('colorPickedAttributes') || changedProperties.has("datapointQuery") || changedProperties.has("timeframe") || changedProperties.has("timePrefixKey") || changedProperties.has("timeWindowKey")||
             changedProperties.has("attributeSettings") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
 
         if (reloadData) {
@@ -518,6 +513,8 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._data = undefined;
             if (this._chart) {
              //   console.log('releadData found _chart exists so disposing');
+                // Remove event listeners
+                this._toggleChartEventListeners(false);
                 this._chart.dispose();
                 this._chart = undefined;
             }
@@ -557,14 +554,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                 backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                 tooltip: {
                     trigger: 'axis',
-                    axisPointer: { type: 'cross', snap: true},
-                    //formatter: (params: any) => {
-                    //    if (Array.isArray(params) && params.length > 0) {
-                    //        const yValue = params[0].value[1];
-                    //        return yValue !== undefined ? yValue.toString() : '';
-                    //    }
-                    //    return ''
-                    //}
+                    axisPointer: {
+                        type: 'cross'
+                    },
                 },
                 toolbox: {},
                 xAxis: {
@@ -664,9 +656,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                     top: 0,
                     feature: {
                         dataView: {readOnly: true},
-                        magicType: {
-                            type: ['line', 'bar']
-                        },
+                        //magicType: {
+                        //    type: ['line', 'bar']
+                        //},
                         saveAsImage: {}
                     }
                 }
@@ -676,15 +668,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._chart = init(this._chartElem);
             // Set chart options to default
             this._chart.setOption(this._chartOptions);
-            // Make chart size responsive
-            window.addEventListener("resize", () => this._chart!.resize());
-            const resizeObserver = new ResizeObserver(() => this._chart!.resize());
-            resizeObserver.observe(this._chartElem);
-            // Add event listener for zooming
-            this._chart!.on('datazoom', debounce((params: any) => { this._onZoomChange(params); }, 1500));
-            // Add event listener for chart resize
-            this._chart!.on('resize', throttle(() => { this.applyChartResponsiveness(); }, 200));
-
+            this._toggleChartEventListeners(true);
         }
 
         if (changedProperties.has("_data")) {
@@ -702,6 +686,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     // Also sorts the attribute lists horizontally when it is below the chart
     applyChartResponsiveness(): void {
         if(this.shadowRoot) {
+            console.log('applyChartResponsiveness triggered');
             const container = this.shadowRoot.getElementById('container');
             if(container) {
                 const bottomLegend: boolean = (container.clientWidth < 600);
@@ -751,7 +736,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     <div id="chart-controls">
                         <div id="controls">
                             <div class="period-controls">
-                                ${this.timePresetOptions && this.timePresetKey && this.timePrefixKey && this.timePrefixOptions && this.timeWindowKey && this.timeWindowOptions ? html`
+                                ${this.timePrefixKey && this.timePrefixOptions && this.timeWindowKey && this.timeWindowOptions ? html`
                                     ${this.timestampControls ? html`
                                         <!-- Scroll left button -->
                                         <or-mwc-input .type="${InputType.BUTTON}" icon="chevron-left" @or-mwc-input-changed="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeWindowKey!, "previous")}"></or-mwc-input>
@@ -786,7 +771,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                         <!-- Scroll right button -->
                                         <or-mwc-input .type="${InputType.BUTTON}" icon="chevron-right" @or-mwc-input-changed="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeWindowKey!, "next")}"></or-mwc-input>
                                     ` : html`
-                                        <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePresetKey}" disabled="true"></or-mwc-input>
+                                        <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePrefixKey} ${this.timeWindowKey}" disabled="true"></or-mwc-input>
                                     `}
                                 ` : undefined}
                             </div>
@@ -918,11 +903,8 @@ export class OrChart extends translate(i18next)(LitElement) {
             this.realm = manager.getRealm();
         }
 
-        if (!this.timePresetOptions) {
-            this.timePresetOptions = this._getDefaultTimestampOptions();
-        }
-        if (!this.timePresetKey) {
-            this.timePresetKey = this.timePresetOptions.keys().next().value.toString();
+        if (!this.timePrefixOptions) {
+            this.timePrefixOptions = this._getDefaultTimePrefixOptions();
         }
 
         if (!this.timeWindowOptions) {
@@ -934,7 +916,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         if (!this.timePrefixKey) {
-            this.timePrefixKey = this.timePrefixOptions[0];
+            this.timePrefixKey = this.timePrefixOptions[1];
         }
 
         if (!this.panelName) {
@@ -1051,31 +1033,6 @@ export class OrChart extends translate(i18next)(LitElement) {
         dialog.addEventListener(OrAttributePickerPickedEvent.NAME, (ev: any) => this._addAttribute(ev.detail));
     }
 
-    protected _openTimeDialog(startTimestamp?: number, endTimestamp?: number) {
-        const startRef: Ref<OrMwcInput> = createRef();
-        const endRef: Ref<OrMwcInput> = createRef();
-        const dialog = showDialog(new OrMwcDialog()
-            .setHeading(i18next.t('timeframe'))
-            .setContent(() => html`
-                <div>
-                    <or-mwc-input ${ref(startRef)} type="${InputType.DATETIME}" required label="${i18next.t('start')}" .value="${startTimestamp}"></or-mwc-input>
-                    <or-mwc-input ${ref(endRef)} type="${InputType.DATETIME}" required label="${i18next.t('ending')}" .value="${endTimestamp}"></or-mwc-input>
-                </div>
-            `)
-            .setActions([{
-                actionName: "cancel",
-                content: "cancel"
-            }, {
-                actionName: "ok",
-                content: "ok",
-                action: () => {
-                    if(this.timePresetOptions && startRef.value?.value && endRef.value?.value) {
-                        this.timeframe = [new Date(startRef.value.value), new Date(endRef.value.value)];
-                    }
-                }
-            }])
-        )
-    }
 
     protected async _addAttribute(selectedAttrs?: AttributeRef[]) {
         if (!selectedAttrs) return;
@@ -1111,6 +1068,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         console.log('cleanup triggered');
         if (this._chart) {
             //('cleanup found _chart exists so disposing');
+            this._toggleChartEventListeners(false);
             this._chart.dispose();
             this._chart = undefined;
             this.requestUpdate();
@@ -1183,18 +1141,13 @@ export class OrChart extends translate(i18next)(LitElement) {
 
 
 
-
-
-
-    protected timePrefixOptions: string[] = ["this", "last"];
-
+    protected _getDefaultTimePrefixOptions(): string[] {
+        return ["this", "last"];
+    }
 
 
     protected _getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
         return new Map<string, [moment.unitOfTime.DurationConstructor, number]>([
-            ["5 minutes", ['minutes', 5]],
-            ["20 minutes", ['minutes', 20]],
-            ["60 minutes", ['minutes', 60]],
             ["hour", ['hours', 1]],
             ["6 hours", ['hours', 6]],
             ["24 hours", ['hours', 24]],
@@ -1277,17 +1230,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
 
 
-        protected _getDefaultTimestampOptions(): Map<string, TimePresetCallback> {
-        return new Map<string, TimePresetCallback>([
-            ["lastHour", (date) => [moment(date).subtract(1, 'hour').toDate(), date]],
-            ["last24Hours", (date) => [moment(date).subtract(24, 'hours').toDate(), date]],
-            ["last7Days", (date) => [moment(date).subtract(7, 'days').toDate(), date]],
-            ["last30Days", (date) => [moment(date).subtract(30, 'days').toDate(), date]],
-            ["last90Days", (date) => [moment(date).subtract(90, 'days').toDate(), date]],
-            ["last6Months", (date) => [moment(date).subtract(6, 'months').toDate(), date]],
-            ["lastYear", (date) => [moment(date).subtract(1, 'year').toDate(), date]]
-        ]);
-    }
+
 
     protected _getInterval(diffInHours: number): [number, DatapointInterval] {
 
@@ -1574,5 +1517,31 @@ export class OrChart extends translate(i18next)(LitElement) {
                 }
             }))
         });;
+    }
+
+    protected _toggleChartEventListeners(connect: boolean){
+        if (connect) {
+            //Connect event listeners
+            // Make chart size responsive
+            //window.addEventListener("resize", () => this._chart!.resize());
+            this._containerResizeObserver = new ResizeObserver(() => this._chart!.resize());
+            this._containerResizeObserver.observe(this._chartElem);
+            // Add event listener for zooming
+            this._zoomHandler = this._chart!.on('datazoom', debounce((params: any) => { this._onZoomChange(params); }, 1500));
+            // Add event listener for chart resize
+            this._resizeHandler = this._chart!.on('resize', throttle(() => { this.applyChartResponsiveness(); }, 200));
+        }
+        else if (!connect) {
+            //Disconnect event listeners
+            this._chart!.off('datazoom', this._zoomHandler);
+            this._chart!.off('resize', this._resizeHandler);
+            this._containerResizeObserver?.disconnect();
+            this._containerResizeObserver = undefined;
+        }
+
+
+
+
+
     }
 }
