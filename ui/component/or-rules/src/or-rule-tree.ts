@@ -334,6 +334,8 @@ export class OrRuleTree extends OrTreeMenu {
         if(rulesetNode) {
             const uiNode = this._getUiNodeFromTree(rulesetNode);
             if(uiNode) this._selectNode(uiNode, !silent);
+        } else {
+            console.warn("Could not select ruleset; it was not found.")
         }
     }
 

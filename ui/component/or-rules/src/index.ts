@@ -843,9 +843,6 @@ export class OrRules extends translate(i18next)(LitElement) {
     @property({type: String})
     public language?: RulesetLang;
 
-    @property({type: Array})
-    public selectedIds?: (number | string)[];
-
     @property({attribute: false})
     private _isValidRule?: boolean;
 
@@ -970,8 +967,8 @@ export class OrRules extends translate(i18next)(LitElement) {
         } else {
             const groupNodes = selectedNodes.filter(n => n.type === "group") as RulesetGroupNode[]; // list of selected group nodes
             const rulesetNodes = selectedNodes.filter(n => n.type === "rule") as RulesetNode[]; // list of selected rule nodes
-            this.selectedIds = rulesetNodes.map((node) => node.ruleset.id!);
-            console.debug(`Selecting rule IDs ${this.selectedIds}`);
+            const selectedIds = rulesetNodes.map((node) => node.ruleset.id!);
+            console.debug(`Selecting rule IDs ${selectedIds}`);
 
             // Deselect the group, and select either a new rule or group after that.
             this._deselectGroup().then(() => {
@@ -1017,7 +1014,12 @@ export class OrRules extends translate(i18next)(LitElement) {
 
             // Select the ruleset if it's new
             if (event.detail.isNew) {
-                this.selectedIds = [event.detail.ruleset.id!];
+                const ruleset = newRulesets?.find(r => r.id && r.id === event.detail.ruleset.id);
+                if(ruleset) {
+                    this._rulesTree?.selectRuleset(ruleset);
+                } else {
+                    console.warn("Could not select the new ruleset.")
+                }
             }
         }
     }
