@@ -78,7 +78,7 @@ export function getCombinatorInfos(schemas: JsonSchema[], rootSchema: JsonSchema
         const titleAndDescription = findSchemaTitleAndDescription(schema, rootSchema);
 
         if (schema.$ref) {
-            schema = Resolve.schema(schema, schema.$ref, rootSchema);
+            schema = Resolve.schema(schema, '', rootSchema);
         }
 
         if (Array.isArray(schema.allOf)) {
@@ -146,12 +146,13 @@ export function getSchemaPicker(rootSchema: JsonSchema, resolvedSchema: JsonSche
     `;
 }
 
+// TODO: use i18n translations from jsonforms/core
 export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: JsonSchema): [string | undefined, string | undefined] {
     let title: string | undefined;
 
     if (schema.$ref) {
         title = getLabelFromScopeOrRef(schema.$ref);
-        schema = Resolve.schema(schema, schema.$ref, rootSchema);
+        schema = Resolve.schema(schema, '', rootSchema);
     }
 
     if (schema.title) {
