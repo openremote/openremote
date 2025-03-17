@@ -1016,6 +1016,7 @@ export class OrRules extends translate(i18next)(LitElement) {
             if (event.detail.isNew) {
                 const ruleset = newRulesets?.find(r => r.id && r.id === event.detail.ruleset.id);
                 if(ruleset) {
+                    this._rulesTree?.deselectAllNodes();
                     this._rulesTree?.selectRuleset(ruleset);
                 } else {
                     console.warn("Could not select the new ruleset.")
