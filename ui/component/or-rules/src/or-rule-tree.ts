@@ -272,7 +272,7 @@ export class OrRuleTree extends OrTreeMenu {
                 showOkCancelDialog(i18next.t("deleteRulesetGroups"), i18next.t("deleteRulesetGroupsConfirm", { groupNames: groupNames }), i18next.t("delete"))
                     .then((ok) => {
                         if(ok) {
-                            this._deselectAllNodes();
+                            this.deselectAllNodes();
                             this.nodes = this.nodes.filter(n => !groupNames.includes(n.label));
                         }
                     })
@@ -287,7 +287,7 @@ export class OrRuleTree extends OrTreeMenu {
                         showOkCancelDialog(i18next.t("deleteRulesets"), i18next.t("deleteRulesetsConfirm", { ruleNames: names }), i18next.t("delete"))
                             .then((ok) => {
                                 if (ok) {
-                                    this._deselectAllNodes();
+                                    this.deselectAllNodes();
                                     this._deleteRulesets(selectedRules)
                                         .catch(e => console.error(e))
                                         .finally(() => {
@@ -366,8 +366,8 @@ export class OrRuleTree extends OrTreeMenu {
         return super._dispatchSelectEvent(nodes);
     }
 
-    protected _deselectAllNodes() {
-        super._deselectAllNodes();
+    public deselectAllNodes() {
+        super.deselectAllNodes();
         this._selectedTypes = new Set();
     }
 
@@ -499,7 +499,7 @@ export class OrRuleTree extends OrTreeMenu {
      * HTML callback function for clicking "add group" in the controls menu.
      */
     protected _onGroupAddClick() {
-        this._deselectAllNodes();
+        this.deselectAllNodes();
         const groupName = i18next.t('ruleGroupNameDefault') || "Group name"
         this.dispatchEvent(new OrRulesRequestGroupEvent(groupName));
     }

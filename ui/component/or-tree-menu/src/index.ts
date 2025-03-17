@@ -170,7 +170,7 @@ export class OrTreeMenu extends LitElement {
         }
         // If the selection method has been changed, for example from LEAF to SINGLE, we deselect everything
         if(changedProps.has("selection") && changedProps.get("selection") && this.selection) {
-            this._deselectAllNodes();
+            this.deselectAllNodes();
         }
         return super.willUpdate(changedProps);
     }
@@ -390,13 +390,13 @@ export class OrTreeMenu extends LitElement {
                     return;
                 }
                 // Otherwise, select node like normal
-                this._deselectAllNodes();
+                this.deselectAllNodes();
                 select(group, elem);
                 return;
             }
 
             case TreeMenuSelection.SINGLE: {
-                this._deselectAllNodes();
+                this.deselectAllNodes();
                 select(group, elem);
                 return;
             }
@@ -426,13 +426,13 @@ export class OrTreeMenu extends LitElement {
                         return;
                     }
                     // Otherwise select the node like normal
-                    this._deselectAllNodes();
+                    this.deselectAllNodes();
                     this._selectNode(node);
                     return;
                 }
 
                 default: {
-                    this._deselectAllNodes();
+                    this.deselectAllNodes();
                     this._selectNode(node);
                     return;
                 }
@@ -528,7 +528,7 @@ export class OrTreeMenu extends LitElement {
                 selected = selected.filter(n => !n.children);
 
                 if(selected.length > 0) {
-                    this._deselectAllNodes();
+                    this.deselectAllNodes();
                     nodesToMove.push(...selected.filter(node => !nodesToMove.find(n => JSON.stringify(n) === JSON.stringify(node))));
                 }
             }
@@ -676,9 +676,9 @@ export class OrTreeMenu extends LitElement {
     }
 
     /**
-     * Utility function that deselects all tree nodes.
+     * Public function that deselects all tree nodes.
      */
-    protected _deselectAllNodes() {
+    public deselectAllNodes() {
         (this._uiGroups || []).forEach(uiGroup => uiGroup.deselect());
         (this._uiNodes || []).forEach(uiNode => uiNode.selected = false);
     }
