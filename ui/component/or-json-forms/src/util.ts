@@ -44,8 +44,8 @@ export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFo
 
     let template: TemplateResult | undefined;
 
-    if (renderers && schema && uischema) {
-      const orderedRenderers: [JsonFormsRendererRegistryEntry, number][] = renderers.map(r => [r, r.tester(uischema, schema, { rootSchema: schema, config: state.config })] as [JsonFormsRendererRegistryEntry, number]).sort((a,b) => b[1] - a[1]);
+    if (renderers && schema && uischema && state.core) {
+      const orderedRenderers: [JsonFormsRendererRegistryEntry, number][] = renderers.map(r => [r, r.tester(uischema, schema, { rootSchema: resolveSubSchemasRecursive(schema, state.core!.schema), config: state.config })] as [JsonFormsRendererRegistryEntry, number]).sort((a,b) => b[1] - a[1]);
         const renderer = orderedRenderers && orderedRenderers.length > 0 ? orderedRenderers[0] : undefined;
         if (renderer && renderer[1] !== -1) {
             template = renderer[0].renderer(state, props) as TemplateResult;
@@ -287,43 +287,43 @@ export function getLabel(schema: JsonSchema, rootSchema: JsonSchema, uiElementLa
     return undefined;
 }
 
-// export function resolveSubSchemasRecursive(
-//     schema: JsonSchema,
-//     rootSchema: JsonSchema,
-//     keyword?: CombinatorKeyword
-// ): JsonSchema {
-//     const combinators: string[] = keyword ? [keyword] : ["allOf", "anyOf", "oneOf"];
+export function resolveSubSchemasRecursive(
+    schema: JsonSchema,
+    rootSchema: JsonSchema,
+    keyword?: CombinatorKeyword
+): JsonSchema {
+    const combinators: string[] = keyword ? [keyword] : ["allOf", "anyOf", "oneOf"];
 
-//     if (schema.$ref) {
-//         return resolveSubSchemasRecursive(resolveSchema(rootSchema, schema.$ref), rootSchema);
-//     }
+    if (schema.$ref) {
+        return resolveSubSchemasRecursive(Resolve.schema(rootSchema, schema.$ref, rootSchema), rootSchema);
+    }
 
-//     combinators.forEach((combinator) => {
-//         const schemas = (schema as any)[combinator] as JsonSchema[];
+    combinators.forEach((combinator) => {
+        const schemas = (schema as any)[combinator] as JsonSchema[];
 
-//         if (schemas) {
-//             (schema as any)[combinator] = schemas.map(subSchema =>
-//                 resolveSubSchemasRecursive(subSchema, rootSchema)
-//             );
-//         }
-//     });
+        if (schemas) {
+            (schema as any)[combinator] = schemas.map(subSchema =>
+                resolveSubSchemasRecursive(subSchema, rootSchema)
+            );
+        }
+    });
 
-//     if (schema.items) {
-//         if (Array.isArray(schema.items)) {
-//             schema.items = (schema.items as JsonSchema4[]).map((itemSchema) => resolveSubSchemasRecursive(itemSchema, rootSchema) as JsonSchema4);
-//         } else {
-//             schema.items = resolveSubSchemasRecursive(schema.items as JsonSchema, rootSchema);
-//         }
-//     }
+    if (schema.items) {
+        if (Array.isArray(schema.items)) {
+            schema.items = (schema.items as JsonSchema4[]).map((itemSchema) => resolveSubSchemasRecursive(itemSchema, rootSchema) as JsonSchema4);
+        } else {
+            schema.items = resolveSubSchemasRecursive(schema.items as JsonSchema, rootSchema);
+        }
+    }
 
-//     if (schema.properties) {
-//         Object.keys(schema.properties).forEach((prop) =>
-//             schema.properties![prop] = resolveSubSchemasRecursive(schema.properties![prop], rootSchema)
-//         );
-//     }
+    if (schema.properties) {
+        Object.keys(schema.properties).forEach((prop) =>
+            schema.properties![prop] = resolveSubSchemasRecursive(schema.properties![prop], rootSchema)
+        );
+    }
 
-//     return schema;
-// }
+    return schema;
+}
 
 export const controlWithoutLabel = (scope: string): ControlElement => ({
     type: 'Control',
