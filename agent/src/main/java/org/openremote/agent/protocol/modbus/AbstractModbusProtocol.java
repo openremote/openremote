@@ -1,26 +1,17 @@
 package org.openremote.agent.protocol.modbus;
 
-import com.digitalpetri.modbus.client.ModbusClient;
-import com.digitalpetri.modbus.pdu.ModbusResponsePdu;
 import org.apache.plc4x.java.api.PlcConnection;
-import org.apache.plc4x.java.api.PlcDriver;
-import org.apache.plc4x.java.api.PlcDriverManager;
-import org.apache.plc4x.java.api.exceptions.PlcConnectionException;
 import org.apache.plc4x.java.api.messages.PlcReadRequest;
 import org.apache.plc4x.java.api.messages.PlcReadResponse;
+import org.apache.plc4x.java.api.model.PlcTag;
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.agent.protocol.http.HTTPAgentLink;
-import org.openremote.agent.protocol.http.HTTPProtocol;
 import org.openremote.agent.protocol.velbus.AbstractVelbusProtocol;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.HashMap;
@@ -28,8 +19,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -60,6 +49,8 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
             client = createIoClient(agent);
 
+            client.connect();
+
             if (client.isConnected()) {
                 setConnectionStatus(ConnectionStatus.CONNECTED);
             } else {
@@ -82,7 +73,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
         int unitId = agentLink.getUnitId();
         int readAddress = agentLink.getReadAddress();
 
-        pollingMap.put(ref, schedulePollingRequest(ref, attribute, ((int) agentLink.getRefresh()), unitId, agentLink.getReadType(), readAddress));
+        pollingMap.put(ref, schedulePollingRequest(ref, attribute, ((int) agentLink.getRefresh()), unitId, agentLink.getReadType(), agentLink.getReadValueType(), readAddress));
     }
 
     @Override
@@ -114,26 +105,29 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                                                         int pollingMillis,
                                                         int unitId,
                                                         ModbusAgentLink.ReadType readType,
+                                                        ModbusAgentLink.ModbusDataType dataType,
                                                         int readAddress) {
 
-        LOG.warning("Scheduling polling request '" + "clientRequest" + "' to execute every " + pollingMillis + " ms for attribute: " + attribute);
-
+        LOG.warning("Scheduling polling request '" + "clientRequest" + "' to execute every " + pollingMillis + "ms for attribute: " + attribute);
+        // TODO: integrate unit ID into the connection, meaning the agent
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 PlcReadRequest.Builder builder = client.readRequestBuilder();
                 switch (readType) {
-                    case COIL -> builder.addTagAddress("coils", "coil:" + readAddress + "[65536]");
-                    case DISCRETE -> builder.addTagAddress("discreteInputs", "discrete-input:" + readAddress + "[65536]");
-                    case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + readAddress + "[65536]");
-                    case INPUT -> builder.addTagAddress("inputRegisters", "input-register:" + readAddress + "[65536]");
+                    case COIL -> builder.addTagAddress("coils", "coil:" + readAddress + ":" + dataType);
+                    case DISCRETE -> builder.addTagAddress("discreteInputs", "discrete-input:" + readAddress + ":" + dataType);
+                    case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + readAddress + ":" + dataType);
+                    case INPUT -> builder.addTagAddress("inputRegisters", "input-register:" + readAddress + ":" + dataType);
                     default -> throw new IllegalArgumentException("Unsupported read type: " + readType);
                 }
                 PlcReadRequest readRequest = builder.build();
+
+
                 PlcReadResponse response = readRequest.execute().get();
-//                Object parsedResponse = ModbusHelper.parseResponse(response);
-                Optional<?> coercedResponse = ValueUtil.getValueCoerced(response, attribute.getTypeClass());
-                LOG.fine(ValueUtil.JSON.writeValueAsString(response));
-                updateLinkedAttribute(ref, coercedResponse);
+                Object responseValue = response.getObject(response.getTagNames().stream().findFirst().get());
+                Optional<?> coercedResponse = ValueUtil.getValueCoerced(responseValue, dataType.getJavaType());
+                LOG.warning(ValueUtil.JSON.writeValueAsString(coercedResponse.get()));
+                updateLinkedAttribute(ref, coercedResponse.get());
             } catch (Exception e) {
                 LOG.log(Level.WARNING, prefixLogMessage("Exception thrown whilst processing polling response"));
             }

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.openremote.model.asset.agent.AgentLink;
 
+import java.math.BigInteger;
+
 public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
 
     @JsonPropertyDescription("Identifier of Modbus TCP server or Modbus serial slave")
@@ -17,7 +19,7 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     private ReadType readType;
 
     @JsonPropertyDescription("Read value type: \"int64\", \"int64_swap\", \"uint64\", \"uint64_swap\", \"float32\", \"float32_swap\", \"int32\", \"int32_swap\", \"uint32\", \"uint32_swap\", \"int16\", \"uint16\", \"int8\", \"uint8\", \"bit\"")
-    private ReadValueType readValueType;
+    private ModbusDataType readValueType;
 
     @JsonPropertyDescription("Zero based address for reading data")
     private int readAddress;
@@ -56,11 +58,11 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         this.readType = readType;
     }
 
-    public ReadValueType getReadValueType() {
+    public ModbusDataType getReadValueType() {
         return readValueType;
     }
 
-    public void setReadValueType(ReadValueType readValueType) {
+    public void setReadValueType(ModbusDataType readValueType) {
         this.readValueType = readValueType;
     }
 
@@ -101,10 +103,34 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         COIL, DISCRETE, HOLDING, INPUT
     }
 
-    public enum ReadValueType {
-        INT64, INT64_SWAP, UINT64, UINT64_SWAP, FLOAT32, FLOAT32_SWAP,
-        INT32, INT32_SWAP, UINT32, UINT32_SWAP,
-        INT16, UINT16, INT8, UINT8, BIT
+    public enum ModbusDataType {
+        BOOL(boolean.class),
+        SINT(byte.class),
+        USINT(short.class),
+        BYTE(short.class),
+        INT(short.class),
+        UINT(int.class),
+        WORD(int.class),
+        DINT(int.class),
+        UDINT(long.class),
+        DWORD(long.class),
+        LINT(long.class),
+        ULINT(BigInteger.class),
+        LWORD(BigInteger.class),
+        REAL(float.class),
+        LREAL(double.class),
+        CHAR(char.class),
+        WCHAR(String.class);
+
+        private final Class<?> javaType;
+
+        ModbusDataType(Class<?> javaType) {
+            this.javaType = javaType;
+        }
+
+        public Class<?> getJavaType() {
+            return javaType;
+        }
     }
 
     public enum WriteType {
@@ -124,7 +150,7 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     }
 
     @JsonCreator
-    public ModbusAgentLink(@JsonProperty("id") String id, @JsonProperty int unitId, @JsonProperty("refresh") long refresh, @JsonProperty("readType") ReadType readType, @JsonProperty("readValueType") ReadValueType readValueType, @JsonProperty("readAddress") int readAddress, @JsonProperty("writeType") WriteType writeType, @JsonProperty("writeAddress") int writeAddress, @JsonProperty("writeValueType") WriteValueType writeValueType) {
+    public ModbusAgentLink(@JsonProperty("id") String id, @JsonProperty int unitId, @JsonProperty("refresh") long refresh, @JsonProperty("readType") ReadType readType, @JsonProperty("readValueType") ModbusDataType readValueType, @JsonProperty("readAddress") int readAddress, @JsonProperty("writeType") WriteType writeType, @JsonProperty("writeAddress") int writeAddress, @JsonProperty("writeValueType") WriteValueType writeValueType) {
         super(id);
         this.unitId = unitId;
         this.refresh = refresh;

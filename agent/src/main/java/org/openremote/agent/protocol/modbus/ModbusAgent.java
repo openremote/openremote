@@ -22,9 +22,13 @@ package org.openremote.agent.protocol.modbus;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.DefaultAgentLink;
+import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
 
 import jakarta.persistence.Entity;
+import org.openremote.model.value.MetaItemType;
+import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
 
 import java.util.Optional;
@@ -32,8 +36,7 @@ import java.util.Optional;
 @Entity
 public abstract class ModbusAgent<T extends ModbusAgent<T, U>, U extends AbstractModbusProtocol<U, T>> extends Agent<T, U, ModbusAgentLink> {
 
-    public static final AttributeDescriptor<String> HOST = Agent.HOST.withOptional(false);
-    public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
+    public static final AttributeDescriptor<Integer> UNIT_ID = new AttributeDescriptor<>("unitId", ValueType.INTEGER, new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.Min(1), new ValueConstraint.Max(255))));
 
     // For Hydrators
     protected ModbusAgent() {}
@@ -42,12 +45,7 @@ public abstract class ModbusAgent<T extends ModbusAgent<T, U>, U extends Abstrac
         super(name);
     }
 
-
-    public Optional<String> getHost(){
-        return getAttributes().getValue(HOST);
-    }
-
-    public Optional<Integer> getPort(){
-        return getAttributes().getValue(PORT);
+    public Optional<Integer> getUnitId(){
+        return getAttributes().getValue(UNIT_ID);
     }
 }

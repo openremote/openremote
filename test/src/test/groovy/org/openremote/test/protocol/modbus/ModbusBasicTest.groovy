@@ -54,7 +54,7 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
         agent.setRealm(MASTER_REALM)
 
         agent.setHost("localhost")
-        agent.setPort(56606)
+        agent.setPort(5020)
 
         agent = assetStorageService.merge(agent)
 
@@ -79,9 +79,9 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
                         id: agent.getId(),
                         unitId: 1,
                         refresh: 1000,
-                        readType: ModbusAgentLink.ReadType.COIL,
-                        readValueType: ModbusAgentLink.ReadValueType.FLOAT32,
-                        readAddress: 1,
+                        readType: ModbusAgentLink.ReadType.HOLDING,
+                        readValueType: ModbusAgentLink.ModbusDataType.UINT,
+                        readAddress: 2,
                         writeType: ModbusAgentLink.WriteType.COIL,
                         writeAddress: 1,
                         writeValueType: ModbusAgentLink.WriteValueType.FLOAT32
@@ -95,9 +95,8 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
             assert agentService.getProtocolInstance(agent.id) != null
             assert ((ModbusTcpProtocol)agentService.getProtocolInstance(agent.id)) != null
 
-            assert false
-//            def asset = assetStorageService.find(ship.getId(), true)
-//            assert asset.getAttribute("ch1State").flatMap { it.getValue() }.orElse(null) == "RELEASED"
+            ship = assetStorageService.find(ship.getId(), true)
+            assert asset.getAttribute(ShipAsset.SPEED).flatMap { it.getValue() }.orElse(null) == 52226
         }
 
     }
