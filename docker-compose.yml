@@ -39,8 +39,6 @@ services:
     volumes:
       - postgresql-data:/var/lib/postgresql/data
       - manager-data:/storage
-    ports:
-      - 5432:5432
 
   keycloak:
     restart: always
@@ -66,7 +64,7 @@ services:
     ports:
       - "127.0.0.1:8405:8405" # Localhost metrics access
     environment:
-      OR_SETUP_TYPE: ${OR_SETUP_TYPE:-demo}
+      OR_SETUP_TYPE:
       OR_ADMIN_PASSWORD:
       OR_SETUP_RUN_ON_RESTART:
       OR_EMAIL_HOST:
