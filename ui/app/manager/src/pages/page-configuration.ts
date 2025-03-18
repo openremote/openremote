@@ -252,7 +252,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                             </div>
                             <div id="header-actions">
                                 <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged && !this.mapConfigChanged}" raised type="button" label="save"
-                                              @click="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
+                                              @or-mwc-input-changed="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
                                 ></or-mwc-input>
                             </div>
                         </div>
