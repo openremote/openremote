@@ -58,8 +58,6 @@ export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
     }
 }
 
-export type TimePresetCallback = (date: Date) => [Date, Date];
-
 export interface ChartViewConfig {
     attributeRefs?: AttributeRef[];
     fromTimestamp?: number;
@@ -476,25 +474,21 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     connectedCallback() {
-        console.log('connectedCallback triggered');
         super.connectedCallback();
         this._style = window.getComputedStyle(this);
     }
 
     disconnectedCallback(): void {
-        console.log('disconnectedCallback triggered');
         super.disconnectedCallback();
         this._cleanup();
 
     }
 
     firstUpdated() {
-        console.log('firstUpdated triggered');
         this.loadSettings(false);
     }
 
     updated(changedProperties: PropertyValues) {
-       // console.log('updated triggered');
 
         super.updated(changedProperties);
 
@@ -509,10 +503,8 @@ export class OrChart extends translate(i18next)(LitElement) {
             changedProperties.has("attributeSettings") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
 
         if (reloadData) {
-          //  console.log('reloadData triggered');
             this._data = undefined;
             if (this._chart) {
-             //   console.log('releadData found _chart exists so disposing');
                 // Remove event listeners
                 this._toggleChartEventListeners(false);
                 this._chart.dispose();
@@ -522,7 +514,6 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         if (!this._data) {
-          //  console.log("Data is not loaded yet");
             return;
         }
 
@@ -572,7 +563,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                         showMinLabel: true,
                         showMaxLabel: true,
                         hideOverlap: true,
-                        textStyle: {fontWeight: 'bold'},
+                        fontSize: 10,
                         formatter: {
                              year: '{yyyy}-{MMM}',
                              month: '{yy}-{MMM}',
@@ -686,7 +677,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     // Also sorts the attribute lists horizontally when it is below the chart
     applyChartResponsiveness(): void {
         if(this.shadowRoot) {
-            console.log('applyChartResponsiveness triggered');
             const container = this.shadowRoot.getElementById('container');
             if(container) {
                 const bottomLegend: boolean = (container.clientWidth < 600);
@@ -758,7 +748,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                         ${getContentWithMenuTemplate(
                                                 html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeWindowKey}"></or-mwc-input>`,
                                                 Array.from(this.timeWindowOptions!.keys()).map((key) => ({ value: key } as ListItem)),
-                                                this.timePrefixKey,
+                                                this.timeWindowKey,
                                                 (value: string | string[]) => {
                                                     this.timeframe = undefined; // remove any custom start & end times
                                                     this.timeWindowKey = value.toString();
@@ -893,7 +883,6 @@ export class OrChart extends translate(i18next)(LitElement) {
 
 
     async loadSettings(reset: boolean) {
-         console.log('loadSettings triggered');
 
         if(this.assetAttributes == undefined || reset) {
             this.assetAttributes = [];
@@ -987,8 +976,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     async saveSettings() {
-       console.log('saveSettings triggered');
-
         if (!this.panelName) {
             return;
         }
@@ -1065,7 +1052,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _cleanup() {
-        console.log('cleanup triggered');
         if (this._chart) {
             //('cleanup found _chart exists so disposing');
             this._toggleChartEventListeners(false);
@@ -1149,14 +1135,14 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
         return new Map<string, [moment.unitOfTime.DurationConstructor, number]>([
             ["hour", ['hours', 1]],
-            ["6 hours", ['hours', 6]],
-            ["24 hours", ['hours', 24]],
+            ["6Hours", ['hours', 6]],
+            ["24Hours", ['hours', 24]],
             ["day", ['days', 1]],
-            ["7 days", ['days', 7]],
+            ["7Days", ['days', 7]],
             ["week", ['weeks', 1]],
-            ["30 days", ['days', 30]],
+            ["30Days", ['days', 30]],
             ["month", ['months', 1]],
-            ["365 days", ['days', 365]],
+            ["365Days", ['days', 365]],
             ["year", ['years', 1]]
         ]);
     };
@@ -1177,7 +1163,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         switch (timePrefixSelected) {
             case "this":
                 if (value == 1) { // For singulars like this hour
-                    startDate = moment().subtract(value, unit);
+                    startDate = moment().startOf(unit);
                     endDate = moment().endOf(unit);
                 } else { // For multiples like this 5 min, put now in the middle
                     startDate = moment().subtract(value*0.5, unit);
@@ -1214,24 +1200,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     protected _getInterval(diffInHours: number): [number, DatapointInterval] {
 
         if(diffInHours <= 1) {
@@ -1254,7 +1222,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
-        console.log('loadData triggered');
         if ((this._data && !this._zoomChanged) || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
             return;
         }
@@ -1484,7 +1451,6 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     protected _onZoomChange(params: any) {
         this._zoomChanged = true;
-        console.log('onZoomChange triggered');
         const { start: zoomStartPercentage, end: zoomEndPercentage } = params.batch[0];
         //Define the start and end of the period based on the zoomed area
         this._zoomStartOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomStartPercentage / 100);
@@ -1496,7 +1462,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _updateChartData(){
-        console.log('updateChartData triggered');
         this._chart!.setOption({
             xAxis: {
                 min: this._startOfPeriod,

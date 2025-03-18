@@ -8,7 +8,6 @@ import {AttributeAction, AttributeActionEvent, AttributesSelectEvent} from "../p
 import {Asset, AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, Attribute, AttributeRef} from "@openremote/model";
 import {ChartWidgetConfig} from "../widgets/chart-widget";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {TimePresetCallback} from "@openremote/or-chart";
 import {when} from "lit/directives/when.js";
 import moment from "moment/moment";
 
@@ -145,13 +144,13 @@ export class ChartSettings extends WidgetSettings {
                     ></attributes-panel>
                 </settings-panel>
 
-                <!-- Display options -->
-                <settings-panel displayName="display" expanded="${true}">
+                <!-- Time options -->
+                <settings-panel displayName="time" expanded="${true}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
                         <!-- Timeframe -->
                         <div>
-                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('prefix')}" style="width: 100%;"
-                                          .options="${Array.from(this.timePrefixOptions.keys())}" value="${this.widgetConfig.defaultTimePrefixKey}"
+                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('prefixDefault')}" style="width: 100%;"
+                                          .options="${this.timePrefixOptions}" value="${this.widgetConfig.defaultTimePrefixKey}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimePreFixSelect(ev)}"
                             ></or-mwc-input>
                             <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('timeframeDefault')}" style="width: 100%;"
@@ -167,6 +166,12 @@ export class ChartSettings extends WidgetSettings {
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimestampControlsToggle(ev)}"
                                 ></or-mwc-input>
                             </div>
+                        </div> 
+                    </div>  
+               </settings-panel>
+               <!-- Display options --> 
+               <settings-panel displayName="display" expanded="${false}">
+                   <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 16px;">
                             <div class="switch-container">
                                 <span><or-translate value="dashboard.showLegend"></or-translate></span>
                                 <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showLegend}"
@@ -193,13 +198,11 @@ export class ChartSettings extends WidgetSettings {
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowSymbolMaxDatapointsValueChange(ev)}"
                                 ></or-mwc-input>
                             </div>
-                            
-                        </div>
                     </div>
                 </settings-panel>
 
                 <!-- Axis configuration -->
-                <settings-panel displayName="dashboard.axisConfig" expanded="${true}">
+                <settings-panel displayName="dashboard.axisConfig" expanded="${false}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 16px;">
 
                         <!-- Left axis configuration -->
@@ -277,7 +280,7 @@ export class ChartSettings extends WidgetSettings {
                 </settings-panel>
 
                 <!-- Data sampling options -->
-                <settings-panel displayName="dataSampling" expanded="${true}">
+                <settings-panel displayName="dataSampling" expanded="${false}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 12px;">
                         <div>
                             <or-mwc-input .type="${InputType.SELECT}" style="width: 100%" .options="${Array.from(this.samplingOptions.keys())}" .value="${samplingValue}"
@@ -378,7 +381,7 @@ export class ChartSettings extends WidgetSettings {
     }
 
     // When the list of attributeRefs is changed by the asset selector,
-    // we should remove the "right axis" references for the attributes that got removed.
+    // we should remove the settings references for the attributes that got removed.
     // Also update the WidgetConfig attributeRefs field as usual
     protected onAttributesSelect(ev: AttributesSelectEvent) {
         const removedAttributeRefs = this.widgetConfig.attributeRefs.filter(ar => !ev.detail.attributeRefs.includes(ar));

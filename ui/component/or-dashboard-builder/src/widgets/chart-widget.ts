@@ -1,7 +1,6 @@
 import {AssetDatapointLTTBQuery, AssetDatapointQueryUnion, Attribute, AttributeRef} from "@openremote/model";
 import {html, PropertyValues, TemplateResult } from "lit";
 import { when } from "lit/directives/when.js";
-import {TimePresetCallback} from "@openremote/or-chart";
 import moment from "moment";
 import {OrAssetWidget} from "../util/or-asset-widget";
 import { customElement, state } from "lit/decorators.js";
@@ -36,18 +35,18 @@ export interface ChartWidgetConfig extends WidgetConfig {
 
 function getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
     return new Map<string, [moment.unitOfTime.DurationConstructor, number]>([
-        ["5 minutes", ['minutes', 5]],
-        ["20 minutes", ['minutes', 20]],
-        ["60 minutes", ['minutes', 60]],
+        ["5Minutes", ['minutes', 5]],
+        ["20Minutes", ['minutes', 20]],
+        ["60Minutes", ['minutes', 60]],
         ["hour", ['hours', 1]],
-        ["6 hours", ['hours', 6]],
-        ["24 hours", ['hours', 24]],
+        ["6Hours", ['hours', 6]],
+        ["24Hours", ['hours', 24]],
         ["day", ['days', 1]],
-        ["7 days", ['days', 7]],
+        ["7Days", ['days', 7]],
         ["week", ['weeks', 1]],
-        ["30 days", ['days', 30]],
+        ["30Days", ['days', 30]],
         ["month", ['months', 1]],
-        ["365 days", ['days', 365]],
+        ["365Days", ['days', 365]],
         ["year", ['years', 1]]
     ]);
 }
@@ -61,7 +60,7 @@ function getDefaultSamplingOptions(): Map<string, string> {
 }
 
 function getDefaultWidgetConfig(): ChartWidgetConfig {
-    const preset = "24 hours";  // Default time preset, "last" is hardcoded below.
+    const preset = "24Hours";  // Default time preset, "last" prefix is hardcoded in startDate and endDate below.
     const dateFunc = getDefaultTimeWindowOptions().get(preset);
     const startDate = moment().subtract(dateFunc![1], dateFunc![0]).startOf(dateFunc![0]);
     const endDate = dateFunc![1]== 1 ? moment().endOf(dateFunc![0]) : moment();
