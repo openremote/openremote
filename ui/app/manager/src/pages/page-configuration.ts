@@ -39,6 +39,7 @@ import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu, DefaultRealmConfig} f
 
 declare const CONFIG_URL_PREFIX: string;
 declare const MANAGER_URL: string | undefined;
+declare const APP_VERSION: string;
 
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -251,7 +252,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                             </div>
                             <div id="header-actions">
                                 <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged && !this.mapConfigChanged}" raised type="button" label="save"
-                                              @click="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
+                                              @or-mwc-input-changed="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
                                 ></or-mwc-input>
                             </div>
                         </div>
@@ -287,6 +288,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 </div>
                             `)}
                         </or-panel>
+                        <div  style="margin: 0px auto; font-size: smaller;">
+                            OpenRemote Manager v${APP_VERSION}
+                        </div>
                     </div>
                 `
             })}
