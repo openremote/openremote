@@ -1,14 +1,10 @@
 package org.openremote.test.assets
 
-import com.vividsolutions.jts.geom.Coordinate
-import org.openremote.manager.rules.AssetQueryPredicate
+import org.locationtech.jts.geom.Coordinate
 import org.openremote.model.query.filter.GeofencePredicate
 import org.openremote.model.query.filter.RadialGeofencePredicate
 import org.openremote.model.query.filter.RectangularGeofencePredicate
 import spock.lang.Specification
-
-import java.util.function.Predicate
-import java.util.function.Supplier
 
 class AssetQueryPredicateTest extends Specification {
 

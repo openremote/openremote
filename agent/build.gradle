@@ -31,7 +31,9 @@ dependencies {
 
     api "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
 
-    api "com.github.weliem:blessed-bluez:$bluetoothVersion"
+    api("com.github.weliem:blessed-bluez:$bluetoothVersion") {
+        exclude group: "com.github.weliem.blessed-bluez", module: "blessed-test"
+    }
 
     implementation "dev.failsafe:failsafe:$failsafeVersion"
 

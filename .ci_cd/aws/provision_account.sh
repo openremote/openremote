@@ -296,12 +296,12 @@ STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM -
 
 # Wait for cloud formation stack status to be CREATE_*
 echo "Waiting for stack to be created"
-STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
 while [[ "$STATUS" == 'CREATE_IN_PROGRESS' ]]; do
   echo "Stack creation is still in progress .. Sleeping 30 seconds"
   sleep 30
-  STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+  STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
 done
 
 if [ "$STATUS" != 'CREATE_COMPLETE' ] && [ "$STATUS" != 'UPDATE_COMPLETE' ]; then

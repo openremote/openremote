@@ -6,28 +6,28 @@ plugins {
 }
 
 apply plugin: "java-library"
-apply plugin: "java-test-fixtures"
 apply plugin: "groovy"
 apply plugin: "maven-publish"
 apply plugin: "signing"
 
 dependencies {
 
-    // SLF4J facade
-    testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
-
     testImplementation project(":setup").sourceSets.integration.output
-    testFixturesApi project(":manager")
+    api project(":manager")
 
-    testFixturesImplementation "org.codehaus.groovy:groovy:$groovyVersion"
-    testFixturesApi platform("org.spockframework:spock-bom:$spockVersion")
-    testFixturesApi 'org.spockframework:spock-core'
+    implementation "org.apache.groovy:groovy-all:$groovyVersion"
+    implementation "org.apache.groovy:groovy-test:$groovyVersion"
+    api platform("org.spockframework:spock-bom:$spockVersion")
+    api 'org.spockframework:spock-core'
 
     // optional dependencies for using Spock
-    testFixturesRuntimeOnly "net.bytebuddy:byte-buddy:$byteBuddyVersion" // allows mocking of classes (in addition to interfaces)
-    testFixturesRuntimeOnly "org.objenesis:objenesis:$objenesisVersion"      // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
+    testRuntimeOnly "net.bytebuddy:byte-buddy:$byteBuddyVersion" // allows mocking of classes (in addition to interfaces)
+    testRuntimeOnly "org.objenesis:objenesis:$objenesisVersion" // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
 
-    testImplementation "com.github.calimero:calimero-server:$calimeroVersion"
+    testImplementation("com.github.calimero:calimero-server:$calimeroVersion") {
+        // Has a dependency on the SLF4J simple provider
+        exclude group: "org.slf4j"
+    }
 
     testImplementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
     testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"

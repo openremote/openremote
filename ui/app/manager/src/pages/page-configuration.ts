@@ -34,12 +34,12 @@ import {i18next} from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
 import {OrConfRealmCard} from "../components/configuration/or-conf-realm/or-conf-realm-card";
 import {OrConfPanel} from "../components/configuration/or-conf-panel";
-import {Input} from "@openremote/or-rules/lib/flow-viewer/services/input";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
-import {DefaultAppConfig} from "../index";
+import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu, DefaultRealmConfig} from "../index";
 
 declare const CONFIG_URL_PREFIX: string;
 declare const MANAGER_URL: string | undefined;
+declare const APP_VERSION: string;
 
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -252,7 +252,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                             </div>
                             <div id="header-actions">
                                 <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged && !this.mapConfigChanged}" raised type="button" label="save"
-                                              @click="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
+                                              @or-mwc-input-changed="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
                                 ></or-mwc-input>
                             </div>
                         </div>
@@ -288,6 +288,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 </div>
                             `)}
                         </or-panel>
+                        <div  style="margin: 0px auto; font-size: smaller;">
+                            OpenRemote Manager v${APP_VERSION}
+                        </div>
                     </div>
                 `
             })}
@@ -299,9 +302,16 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     // FETCH METHODS
 
-    protected async getManagerConfig(): Promise<ManagerAppConfig | undefined> {
+    protected async getManagerConfig(): Promise<ManagerAppConfig> {
         const response = await manager.rest.api.ConfigurationResource.getManagerConfig();
-        return response.status === 200 ? response.data as ManagerAppConfig : DefaultAppConfig;
+        return response.status === 200 ? response.data as ManagerAppConfig : {
+            realms: {
+                default: {
+                    appTitle: DefaultRealmConfig.appTitle,
+                    headers: [...Object.keys(DefaultHeaderMainMenu),...Object.keys(DefaultHeaderSecondaryMenu)]
+                }
+            }
+        };
     }
 
     protected async getMapConfig(): Promise<{[id: string]: any}> {

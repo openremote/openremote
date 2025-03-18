@@ -46,7 +46,7 @@ trait ManagerContainerTrait extends ContainerTrait {
             *additionalServices
         ].stream()
             .sorted(Comparator.comparingInt{it.getPriority()})
-            .collect(Collectors.toList()) as Iterable<ContainerService>
+            .collect(Collectors.<ContainerService>toList()) as Iterable<ContainerService>
     }
 
     Iterable<ContainerService> defaultServices(ContainerService... additionalServices) {

@@ -100,7 +100,7 @@ export class OrAssetAttributePicker extends AttributePicker {
                 </div>
                 <div class="col" style="flex: 1 1 auto;width: 260px;overflow: auto;">
                     ${when(this._assetAttributes && this._assetAttributes.length > 0, () => {
-            const selectedNames = this.selectedAttributes.filter(attrRef => attrRef.id === this._asset?.id).map(attrRef => attrRef.name);
+            const selectedNames = this.selectedAttributes.filter(attrRef => attrRef.id === this._asset?.id).map(attrRef => attrRef.name!);
             return html`
                             <div class="attributes-header">
                                 <or-translate value="attribute_plural"></or-translate>

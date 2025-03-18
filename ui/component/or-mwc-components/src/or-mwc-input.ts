@@ -1358,7 +1358,7 @@ export class OrMwcInput extends LitElement {
                                     format.momentJsFormat = "YYYY-MM-DDTHH:mm";
                                     break;
                                 case InputType.NUMBER:
-                                    format.maximumFractionDigits = 20; // default according to Web documentation
+                                    format.maximumFractionDigits ??= 20; // default according to Web documentation
                                     break;
                             }
 
@@ -1446,7 +1446,7 @@ export class OrMwcInput extends LitElement {
                             "mdc-slider": true,
                             "mdc-slider--range": this.continuous,
                             "mdc-slider--discreet": !this.continuous,
-                            "mdc-slider--disabled": this.disabled
+                            "mdc-slider--disabled": this.disabled || this.readonly
                         };
 
                         inputElem = html`

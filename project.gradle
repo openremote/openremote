@@ -27,9 +27,15 @@ configurations.all {
         // This has been replaced with eclipse angus implementation
         exclude group: "com.sun.activation", module: "jakarta.activation"
 
+        // This has been replaced with org.bouncycastle bcprov-jdk18on
+        exclude group: "org.bouncycastle", module: "bcprov-jdk15on"
+
         eachDependency { DependencyResolveDetails details ->
             if (details.requested.group == 'org.eclipse.angus' && details.requested.name == 'angus-activation' && details.requested.version == '1.0.0') {
                 details.useVersion '2.0.0'
+            }
+            if (details.requested.group == 'commons-io' && details.requested.name == 'commons-io') {
+                details.useVersion '2.14.0'
             }
         }
     }
@@ -146,6 +152,7 @@ subprojects {
 // Default repositories for dependency resolution
 repositories {
     mavenLocal()
+    // Needs to be above central due to org.geotools:gt-main issues
     maven {
         url = "https://repo.osgeo.org/repository/release/"
     }
@@ -155,6 +162,12 @@ repositories {
     }
     maven {
         url = "https://s01.oss.sonatype.org/content/repositories/snapshots"
+    }
+    maven {
+        url = "https://repo.jenkins-ci.org/releases/"
+    }
+    maven {
+        url = 'https://jitpack.io'
     }
 }
 
@@ -189,25 +202,6 @@ def getYarnInstallTask() {
     resolveTask(":yarnInstall")
 }
 
-// Gets the list of runtime JAR dependencies; can be used in custom project deployment installDist task to populate
-// extensions directory
-def getDeploymentJars(Project project = project, String excludeConfigName = 'managerRuntime') {
-    if (project.configurations.find { it.name == excludeConfigName } == null) {
-        return []
-    }
-
-    // Get all dependencies that are already part of the openremote manager and exclude these from the libs dir
-    // otherwise they will appear on the classpath twice (once in manager app dir and then again in extensions)
-    def excludeDependencies = project.configurations.getByName(excludeConfigName).resolvedConfiguration.resolvedArtifacts
-
-    return project.configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts
-        .findAll { dep -> excludeDependencies.find { it == dep } == null && dep.name != "openremote-manager" }
-        .collect {
-            println "CopyLibs Artifact: ${it.file.path}"
-            return it.file
-        }
-}
-
 /**
  * This defines reusable config for the typescript generator plugin
  */
@@ -220,7 +214,7 @@ def createTSGeneratorConfigForModel(String outputFileName, Project...customProje
                         "JsonSerializeExtension"
                 ]
                 customTypeMappings = [
-                        "com.fasterxml.jackson.databind.node.ObjectNode:{ [id: string]: any }",
+                        "com.fasterxml.jackson.databind.node.ObjectNode:{ [id: string]: unknown }",
                         "java.lang.Class<T>:string",
                         "org.openremote.model.attribute.MetaItem<T>:any"
                 ]
@@ -239,7 +233,7 @@ def createTSGeneratorConfigForClient(String outputFileName, File modelInfoJson, 
                         "cz.habarta.typescript.generator.ext.AxiosClientExtension"
                 ]
                 customTypeMappings = [
-                        "com.fasterxml.jackson.databind.node.ObjectNode:{ [id: string]: any }",
+                        "com.fasterxml.jackson.databind.node.ObjectNode:{ [id: string]: unknown }",
                         "java.lang.Class<T>:string",
                         "org.openremote.model.attribute.MetaItem<T>:any",
                         "org.openremote.model.asset.Asset<T>:Model.Asset",
@@ -289,12 +283,14 @@ def createTSGeneratorConfig(boolean outputAPIClient, String outputFileName, Proj
                 (outputAPIClient ? "org.openremote.model.**Resource" : "org.openremote.model.**")
         ] + classPatternGlobs
         customTypeNamingFunction = "function(name, simpleName) { if (name.indexOf(\"\$\") > 0) return name.substr(name.lastIndexOf(\".\")+1).replace(\"\$\",\"\"); }"
+        nullabilityDefinition = cz.habarta.typescript.generator.NullabilityDefinition.nullAndUndefinedInlineUnion
+        nullableAnnotations = ["org.checkerframework.checker.nullness.qual.Nullable"]
         excludeClassPatterns = [
                 "org.openremote.model.event.shared.*Filter**",
                 "org.openremote.model.util.**",
                 "org.openremote.model.flow.**",
                 "java.io.**",
-                "java.lang.**",
+                //"java.lang.**",
                 "org.hibernate.**",
                 "jakarta.**"
         ]
@@ -323,7 +319,6 @@ ext {
     resolveProject = this.&resolveProject
     resolveTask = this.&resolveTask
     getYarnInstallTask = this.&getYarnInstallTask
-    getDeploymentJars = this.&getDeploymentJars
     createTSGeneratorConfigForClient = this.&createTSGeneratorConfigForClient
     createTSGeneratorConfigForModel = this.&createTSGeneratorConfigForModel
 }
@@ -379,10 +374,10 @@ task tscWatch(type: Exec) {
 // Configure Java build
 plugins.withType(JavaPlugin).whenPluginAdded {
 
-    // Use Java 17
+    // Use Java 21
     tasks.withType(JavaCompile) {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
         def warnLogFile = file("$buildDir/${name}Warnings.log")
         logging.addStandardErrorListener(new StandardOutputListener() {
             void onOutput(CharSequence output) {

@@ -2,8 +2,8 @@ package org.openremote.test.rules.residence
 
 
 import com.google.firebase.messaging.Message
-import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.Recur
+import net.fortuna.ical4j.transform.recurrence.Frequency
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -257,7 +257,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         stopPseudoClock()
         def baseTime = getClockTimeOf(container)
         def fromTo = getOccurrenceFromTo(baseTime, 0)
-        def recur = new Recur(Recur.WEEKLY, 2)
+        def recur = new Recur<>(Frequency.WEEKLY, 2)
         def validity = new CalendarEvent(fromTo[0], fromTo[1], recur)
         ruleset.setValidity(validity)
         rulesetStorageService.merge(ruleset)
@@ -266,8 +266,8 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         then: "the ruleset should have saved successfully and the validity should also have been stored"
         assert ruleset != null
         assert ruleset.getValidity() != null
-        assert ruleset.getValidity().getNextOrActiveFromTo(new Date(getClockTimeOf(container))).key == fromTo[0].getTime()
-        assert ruleset.getValidity().getNextOrActiveFromTo(new Date(getClockTimeOf(container))).value == fromTo[1].getTime()
+        assert ruleset.getValidity().getNextOrActiveFromTo(new java.util.Date(getClockTimeOf(container))).key == fromTo[0].getTime()
+        assert ruleset.getValidity().getNextOrActiveFromTo(new java.util.Date(getClockTimeOf(container))).value == fromTo[1].getTime()
         assert ruleset.getValidity().getRecurrence() != null
 
         and: "the ruleset state should be deployed and paused"

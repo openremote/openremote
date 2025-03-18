@@ -22,7 +22,7 @@ package org.openremote.model.geo;
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 import java.util.Objects;
 
@@ -35,10 +35,10 @@ public class GeoJSONPoint extends GeoJSONGeometry {
 
         @Override
         public double[] convert(Coordinate value) {
-            if (Double.isNaN(value.z)) {
+            if (Double.isNaN(value.getZ())) {
                 return new double[] {value.x, value.y};
             }
-            return new double[] {value.x, value.y, value.z};
+            return new double[] {value.x, value.y, value.getZ()};
         }
     }
 
@@ -81,18 +81,18 @@ public class GeoJSONPoint extends GeoJSONGeometry {
 
     @JsonIgnore
     public Double getZ() {
-        return coordinates.z;
+        return coordinates.getZ();
     }
 
     @JsonIgnore
     public boolean hasZ() {
-        return coordinates.z != Coordinate.NULL_ORDINATE;
+        return coordinates.getZ() != Coordinate.NULL_ORDINATE;
     }
 
     @Override
     public String toString() {
         return "GeoJSONPoint{" +
-            "coordinates=" + (coordinates != null ? (coordinates.x + ", " + coordinates.y + ", " + coordinates.z) : "null") +
+            "coordinates=" + (coordinates != null ? (coordinates.x + ", " + coordinates.y + ", " + coordinates.getZ()) : "null") +
             '}';
     }
 }
