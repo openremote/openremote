@@ -3,6 +3,8 @@ package org.openremote.agent.protocol.modbus;
 import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.messages.PlcReadRequest;
 import org.apache.plc4x.java.api.messages.PlcReadResponse;
+import org.apache.plc4x.java.api.messages.PlcWriteRequest;
+import org.apache.plc4x.java.api.messages.PlcWriteResponse;
 import org.apache.plc4x.java.api.model.PlcTag;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.velbus.AbstractVelbusProtocol;
@@ -17,6 +19,7 @@ import org.openremote.model.util.ValueUtil;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -88,6 +91,20 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     @Override
     protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
         //TODO: Implement writing to the Modbus server
+
+        PlcWriteRequest.Builder builder = client.writeRequestBuilder();
+
+        switch (agentLink.getWriteType()){
+            case COIL -> builder.addTagAddress("coil", "coil:" + agentLink.getWriteAddress(), processedValue);
+            case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + agentLink.getWriteAddress(), processedValue);
+        }
+
+        try {
+            PlcWriteRequest request = builder.build();
+            PlcWriteResponse response = request.execute().get();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

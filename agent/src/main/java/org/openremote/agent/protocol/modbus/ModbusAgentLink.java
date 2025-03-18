@@ -31,7 +31,7 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     private int writeAddress;
 
     @JsonPropertyDescription("Write value type: \"int64\", \"int64_swap\", \"float32\", \"float32_swap\", \"int32\", \"int32_swap\", \"int16\", \"bit\"")
-    private WriteValueType writeValueType;
+    private ModbusDataType writeValueType;
 
     // Getters and setters for each variable
     public int getUnitId() {
@@ -90,11 +90,11 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         this.writeAddress = writeAddress;
     }
 
-    public WriteValueType getWriteValueType() {
+    public ModbusDataType getWriteValueType() {
         return writeValueType;
     }
 
-    public void setWriteValueType(WriteValueType writeValueType) {
+    public void setWriteValueType(ModbusDataType writeValueType) {
         this.writeValueType = writeValueType;
     }
 
@@ -150,7 +150,7 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     }
 
     @JsonCreator
-    public ModbusAgentLink(@JsonProperty("id") String id, @JsonProperty int unitId, @JsonProperty("refresh") long refresh, @JsonProperty("readType") ReadType readType, @JsonProperty("readValueType") ModbusDataType readValueType, @JsonProperty("readAddress") int readAddress, @JsonProperty("writeType") WriteType writeType, @JsonProperty("writeAddress") int writeAddress, @JsonProperty("writeValueType") WriteValueType writeValueType) {
+    public ModbusAgentLink(@JsonProperty("id") String id, @JsonProperty int unitId, @JsonProperty("refresh") long refresh, @JsonProperty("readType") ReadType readType, @JsonProperty("readValueType") ModbusDataType readValueType, @JsonProperty("readAddress") int readAddress, @JsonProperty("writeType") WriteType writeType, @JsonProperty("writeAddress") int writeAddress, @JsonProperty("writeValueType") ModbusDataType writeValueType) {
         super(id);
         this.unitId = unitId;
         this.refresh = refresh;

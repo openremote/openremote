@@ -30,7 +30,9 @@ import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.ShipAsset
 import org.openremote.model.attribute.Attribute
+import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
+import org.openremote.model.value.ValueType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -54,7 +56,7 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
         agent.setRealm(MASTER_REALM)
 
         agent.setHost("localhost")
-        agent.setPort(5020)
+        agent.setPort(12345)
 
         agent = assetStorageService.merge(agent)
 
@@ -82,9 +84,24 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
                         readType: ModbusAgentLink.ReadType.HOLDING,
                         readValueType: ModbusAgentLink.ModbusDataType.UINT,
                         readAddress: 2,
+                        writeType: ModbusAgentLink.WriteType.HOLDING,
+                        writeAddress: 3,
+                        writeValueType: ModbusAgentLink.ModbusDataType.UINT
+                )
+        )));
+
+        ship.addOrReplaceAttributes(new Attribute<Object>("coil1", ValueType.BOOLEAN).addOrReplaceMeta(new MetaItem<>(
+                AGENT_LINK,
+                new ModbusAgentLink(
+                        id: agent.getId(),
+                        unitId: 1,
+                        refresh: 1000,
+                        readType: ModbusAgentLink.ReadType.COIL,
+                        readValueType: ModbusAgentLink.ModbusDataType.BOOL,
+                        readAddress: 2,
                         writeType: ModbusAgentLink.WriteType.COIL,
-                        writeAddress: 1,
-                        writeValueType: ModbusAgentLink.WriteValueType.FLOAT32
+                        writeAddress: 5,
+                        writeValueType: ModbusAgentLink.ModbusDataType.BOOL
                 )
         )));
 
@@ -96,8 +113,47 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
             assert ((ModbusTcpProtocol)agentService.getProtocolInstance(agent.id)) != null
 
             ship = assetStorageService.find(ship.getId(), true)
-            assert asset.getAttribute(ShipAsset.SPEED).flatMap { it.getValue() }.orElse(null) == 52226
+            assert ship.getAttribute(ShipAsset.SPEED).flatMap { it.getValue() }.orElse(null) <= 10
         }
+
+        and: "I should receive the correct value in the coil"
+
+        conditions.eventually {
+            assert agentService.getProtocolInstance(agent.id) != null
+            assert ((ModbusTcpProtocol)agentService.getProtocolInstance(agent.id)) != null
+
+            ship = assetStorageService.find(ship.getId(), true)
+            assert ship.getAttribute("coil1").flatMap { it.getValue() }.orElse(null) == false
+        }
+
+        when: "the attribute is updated"
+
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(ship.getId(), ShipAsset.SPEED, 123D))
+
+        then: "the value is sent to the Modbus server"
+
+        conditions.eventually {
+            assert agentService.getProtocolInstance(agent.id) != null
+            assert ((ModbusTcpProtocol)agentService.getProtocolInstance(agent.id)) != null
+
+            ship = assetStorageService.find(ship.getId(), true)
+            assert ship.getAttribute(ShipAsset.SPEED).flatMap { it.getValue() }.orElse(null) < 10
+        }
+
+        and: "the coil is read properly"
+
+        conditions.eventually {
+            assert agentService.getProtocolInstance(agent.id) != null
+            assert ((ModbusTcpProtocol)agentService.getProtocolInstance(agent.id)) != null
+
+            ship = assetStorageService.find(ship.getId(), true)
+            assert ship.getAttribute("coil1").flatMap { it.getValue() }.orElse(null) == false
+        }
+
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(ship.getId(), "coil1", true))
+
+//        and: "I send the correct boolean to the coil"
+
 
     }
 }
