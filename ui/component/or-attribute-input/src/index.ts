@@ -17,7 +17,8 @@ import {
     WellknownMetaItems,
     WellknownValueTypes,
     AssetModelUtil,
-    ClientRole
+    ClientRole,
+    ValueConstraint
 } from "@openremote/model";
 import manager, {subscribe, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -270,8 +271,29 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
       let schema: any;
       const jsonForms: Ref<OrJSONForms> = createRef();
       const loadingWrapper: Ref<OrLoadingWrapper> = createRef();
+      let initialised = false;
+      let valueConstraints: ValueConstraint[] = [];
 
-      const doLoad = async () => {
+      const onConstraintsChanged = (dataAndErrors: {errors: ErrorObject[] | undefined, data: any}) => {
+          if (!initialised) {
+              return;
+          }
+
+          const newConstraints: ValueConstraint[] | undefined = dataAndErrors.data;
+
+          if (newConstraints?.length) {
+              valueChangeNotifier({
+                  value: newConstraints
+              });
+          }
+      };
+
+      const doLoad = async (constraints: ValueConstraint[]) => {
+          if (!initialised && constraints) {
+              valueConstraints = constraints;
+          }
+          initialised = true;
+
           if (!schema) {
               // TODO: dynamically generate the Schema from the backend.
               schema = (await manager.rest.api.AssetModelResource.getConfigurationItemSchemas({ item: "ValueConstraint" })).data as any;
@@ -279,13 +301,14 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
           if (jsonForms.value && loadingWrapper.value) {
               const forms = jsonForms.value;
               forms.schema = schema;
-              forms.data = [];
+              forms.data = valueConstraints;
               loadingWrapper.value.loading = false;
           }
       }
 
       const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
-          window.setTimeout(() => doLoad(), 0);
+
+          window.setTimeout(() => doLoad(value), 0);
 
           return html`
               <style>
@@ -300,7 +323,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
               <or-loading-wrapper ${ref(loadingWrapper)} .loading="${true}">
                   <or-json-forms .renderers="${jsonFormsAttributeRenderers}" ${ref(jsonForms)}
                                  .disabled="${disabled}" .readonly="${readonly}" .label="${label}"
-                                 .schema="${schema}" label="Agent link" .uischema="${uiSchema}"></or-json-forms>
+                                 .schema="${schema}" label="Constraints" .uischema="${uiSchema}" .onChange="${onConstraintsChanged}"></or-json-forms>
               </or-loading-wrapper>
           `;
       }
