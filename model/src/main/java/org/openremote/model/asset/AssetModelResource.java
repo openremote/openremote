@@ -20,12 +20,15 @@
 package org.openremote.model.asset;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import jakarta.ws.rs.*;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.Map;
 
@@ -99,4 +102,10 @@ public interface AssetModelResource {
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getMetaItemDescriptors", summary = "Retrieve the available meta item descriptors")
     Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
+
+    @POST
+    @Path("getItemSchemas")
+    @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getItemSchemas", summary = "Retrieve the available configuration item JSON Schemas.")
+    JsonNode getConfigurationItemSchemas(@BeanParam RequestParams requestParams, @RequestBody ValueDescriptor<?> item);
 }

@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import org.apache.camel.builder.RouteBuilder;
@@ -51,9 +52,14 @@ import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -203,6 +209,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
     protected GatewayService gatewayService;
     protected PersistenceService persistenceService;
     protected Map<String, AssetTypeInfo> dynamicAssetTypeInfos;
+    protected Map<String, ObjectNode> dynamicJsonSchemas = new ConcurrentHashMap<>();
     protected Path storageDir;
 
     @Override
@@ -371,6 +378,38 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         }
 
         return ValueUtil.getMetaItemDescriptors();
+    }
+
+    public JsonNode getConfigurationItemSchemas(ValueDescriptor<?> valueDescriptor) throws ClassNotFoundException, RuntimeException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
+        return dynamicJsonSchemas.computeIfAbsent(valueDescriptor.getType().getName() + valueDescriptor.isArray(), key -> {
+            Class<?> clazz = valueDescriptor.getType();
+            ObjectNode schema = (ObjectNode)ValueUtil.getSchema(clazz);
+
+            if (valueDescriptor.isArray()) {
+                JsonNode title = schema.get("title");
+                JsonNode type = schema.remove("type");
+                JsonNode oneOf = schema.remove("oneOf");
+                JsonNode properties = schema.remove("properties");
+
+                ObjectNode item = ValueUtil.JSON.createObjectNode();
+                // item.put("title", "Value Constraint");
+                if (title != null && title.isTextual()) {
+                    schema.put("title", title.textValue() + "s");
+                    item.set("title", title);
+                }
+                if (type != null) {
+                    item.putPOJO("type", type);
+                }
+                if (oneOf != null) {
+                    item.putPOJO("oneOf", oneOf);
+                }
+                if (properties != null) {
+                    item.putPOJO("properties", properties);
+                }
+                return schema.put("type", "array").putPOJO("items", item);
+            }
+            return schema;
+        });
     }
 
     protected <T> T parse(String jsonString, Class<T> type) throws JsonProcessingException {
