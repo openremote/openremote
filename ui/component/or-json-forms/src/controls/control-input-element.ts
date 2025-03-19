@@ -39,6 +39,7 @@ export class ControlInputElement extends ControlBaseElement {
         const uischema = this.uischema;
         const schema = this.schema;
         const format = this.schema.format;
+        const context = { rootSchema: this.rootSchema, config: this.config };
 
         this.inputType = InputType.TEXT;
         let step: number | undefined;
@@ -53,10 +54,10 @@ export class ControlInputElement extends ControlBaseElement {
 
         if (Array.isArray(schema.type)) {
             this.inputType = InputType.JSON;
-        } else if (isBooleanControl(uischema, schema)) {
+        } else if (isBooleanControl(uischema, schema, context)) {
             this.inputType = InputType.CHECKBOX;
-        } else if (isNumberControl(uischema, schema) || isIntegerControl(uischema, schema)) {
-            step = isNumberControl(uischema, schema) ? 0.1 : 1;
+        } else if (isNumberControl(uischema, schema, context) || isIntegerControl(uischema, schema, context)) {
+            step = isNumberControl(uischema, schema, context) ? 0.1 : 1;
             this.inputType = InputType.NUMBER;
             min = schema.minimum;
             max = schema.maximum;
@@ -71,17 +72,17 @@ export class ControlInputElement extends ControlBaseElement {
             }
 
         } else if (
-            isEnumControl(uischema, schema)
-            || isOneOfEnumControl(uischema, schema)
-            || isEnumArray(uischema, schema)) {
+            isEnumControl(uischema, schema, context)
+            || isOneOfEnumControl(uischema, schema, context)
+            || isEnumArray(uischema, schema, context)) {
 
             this.inputType = InputType.SELECT;
 
-            if (isEnumControl(uischema, schema)) {
+            if (isEnumControl(uischema, schema, context)) {
                 options = schema.enum!.map(enm => {
                     return [JSON.stringify(enm), String(enm)];
                 });
-            } else if (isOneOfEnumControl(uischema, schema)) {
+            } else if (isOneOfEnumControl(uischema, schema, context)) {
                 options = (schema.oneOf as JsonSchema[]).map(s => {
                     return [JSON.stringify(s.const), String(s.const)];
                 })
@@ -105,7 +106,7 @@ export class ControlInputElement extends ControlBaseElement {
             } else {
                 value = value !== undefined ? JSON.stringify(value) : undefined;
             }
-        } else if (isStringControl(uischema, schema)) {
+        } else if (isStringControl(uischema, schema, context)) {
             minLength = schema.minLength;
             maxLength = schema.maxLength;
             pattern = schema.pattern;
