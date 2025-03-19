@@ -264,6 +264,61 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
         };
     }
 
+    if (valueDescriptor.name === "valueConstraint") {
+
+      const uiSchema: any = {type: "Control", scope: "#"};
+      let schema: any;
+      const jsonForms: Ref<OrJSONForms> = createRef();
+      const loadingWrapper: Ref<OrLoadingWrapper> = createRef();
+
+      const doLoad = () => {
+          if (!schema) {
+              // TODO: dynamically generate the Schema from the backend.
+              schema = "{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"array\",\"title\":\"Constraints\",\"items\":{\"title\":\"Value Constraint\",\"oneOf\":[{\"$ref\":\"#/definitions/size\"},{\"$ref\":\"#/definitions/pattern\"},{\"$ref\":\"#/definitions/min\"},{\"$ref\":\"#/definitions/max\"},{\"$ref\":\"#/definitions/allowedValues\"},{\"$ref\":\"#/definitions/past\"},{\"$ref\":\"#/definitions/pastOrPresent\"},{\"$ref\":\"#/definitions/future\"},{\"$ref\":\"#/definitions/futureOrPresent\"},{\"$ref\":\"#/definitions/notEmpty\"},{\"$ref\":\"#/definitions/notBlank\"},{\"$ref\":\"#/definitions/notNull\"}]},\"definitions\":{\"size\":{\"type\":\"object\",\"additionalProperties\":true,\"description\":\"The attribute value must be between the specified boundaries based on the `min` and `max` properties. Supported types are JSON compatible strings, arrays and objects. Null values are considered valid.\",\"properties\":{\"type\":{\"type\":\"string\",\"enum\":[\"size\"],\"default\":\"size\"},\"min\":{\"type\":\"integer\"},\"max\":{\"type\":\"integer\"},\"message\":{\"type\":\"string\"}},\"title\":\"size\",\"required\":[\"type\"]},\"pattern\":{\"type\":\"object\",\"additionalProperties\":true,\"description\":\"The attribute value must match the regular expression pattern described in the `regexp` property. The regular expression follows the Java regular expression conventions. Flags can be specified using the `flags` property with values: CASE_INSENSITIVE, MULTILINE, DOTALL, UNIX_LINES, UNICODE_CASE, CANON_EQ and COMMENTS. Null values are considered valid.\",\"properties\":{\"type\":{\"type\":\"string\",\"enum\":[\"pattern\"],\"default\":\"pattern\"},\"regexp\":{\"type\":\"string\"},\"flags\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"UNIX_LINES\",\"CASE_INSENSITIVE\",\"COMMENTS\",\"MULTILINE\",\"DOTALL\",\"UNICODE_CASE\",\"CANON_EQ\"]}},\"message\":{\"type\":\"string\"}},\"title\":\"pattern\",\"required\":[\"type\"]},\"min\":{\"type\":\"object\",\"additionalProperties\":true,\"description\":\"The attribute value must be a number higher or equal to the specified value on the `min` property. Null values are considered valid.\",\"properties\":{\"type\":{\"type\":\"string\",\"enum\":[\"min\"],\"default\":\"min\"},\"min\":{\"type\":\"number\"},\"message\":{\"type\":\"string\"}},\"title\":\"min\",\"required\":[\"type\"]},\"max\":{\"type\":\"object\",\"additionalProperties\":true,\"description\":\"The attribute value must be a number lower or equal to the specified value on the `max` property. Null values are considered valid.\",\"properties\":{\"type\":{\"type\":\"string\",\"enum\":[\"max\"],\"default\":\"max\"},\"max\":{\"type\":\"number\"},\"message\":{\"type\":\"string\"}},\"title\":\"max\",\"required\":[\"type\"]},\"allowedValues\":{\"type\":\"object\",\"additionalProperties\":true,\"description\":\"The attribute value must match any of the specified values in the `allowedValues` property. The associated input in the UI will change to a select input with the options specified in the `allowedValues` property. The `allowedValueNames` property accepts a list of names that replace the labels in the select input, if the `allowedValueNames` list matches the length of the `allowedValues` list otherwise it falls back to the `allowedValues` as labels. Null values are considered valid. If `allowedValues` is not specified or empty the constraint only accepts null values.\",\"properties\":{\"type\":{\"type\":\"string\",\"enum\":[\"allowedValues\"],\"default\":\"allowedValues\"},\"allowedValueNames\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}},\"allowedValues\":{\"type\":\"array\",\"items\":{\"$ref\":\"#/definitions/AnyType\"}},\"message\":{\"type\":\"string\"}},\"title\":\"allowedValues\",\"required\":[\"type\"]},\"AnyType\":{\"type\":[\"null\",\"number\",\"integer\",\"boolean\",\"string\",\"array\",\"object\"],\"additionalProperties\":true,\"properties\":{}},\"past\":{\"type\":\"object\",\"additionalProperties\":true,\"description\":\"The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past. Null values are considered valid.\",\"properties\":{\"type\":{\"type\":\"string\",\"enum\":[\"past\"],\"default\":\"past\"},\"message\":{\"type\":\"string\"}},\"title\":\"past\",\"required\":[\"type\"]},\"pastOrPresent\":{\"type\":\"object\",\"additionalProperties\":true,\"description\":\"The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past or present. Null values are considered valid.\",\"properties\":{\"type\":{\"type\":\"string\",\"enum\":[\"pastOrPresent\"],\"default\":\"pastOrPresent\"},\"message\":{\"type\":\"string\"}},\"title\":\"pastOrPresent\",\"required\":[\"type\"]},\"future\":{\"type\":\"object\",\"additionalProperties\":true,\"description\":\"The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future. Null values are considered valid.\",\"properties\":{\"type\":{\"type\":\"string\",\"enum\":[\"future\"],\"default\":\"future\"},\"message\":{\"type\":\"string\"}},\"title\":\"future\",\"required\":[\"type\"]},\"futureOrPresent\":{\"type\":\"object\",\"additionalProperties\":true,\"description\":\"The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future or present. Null values are considered valid.\",\"properties\":{\"type\":{\"type\":\"string\",\"enum\":[\"futureOrPresent\"],\"default\":\"futureOrPresent\"},\"message\":{\"type\":\"string\"}},\"title\":\"futureOrPresent\",\"required\":[\"type\"]},\"notEmpty\":{\"type\":\"object\",\"additionalProperties\":true,\"description\":\"The attribute value must not be null nor empty. Supported types are JSON compatible strings, arrays and objects which contain at least 1 character, item or property.\",\"properties\":{\"type\":{\"type\":\"string\",\"enum\":[\"notEmpty\"],\"default\":\"notEmpty\"},\"message\":{\"type\":\"string\"}},\"title\":\"notEmpty\",\"required\":[\"type\"]},\"notBlank\":{\"type\":\"object\",\"additionalProperties\":true,\"description\":\"The attribute value must not be null and must contain at least 1 non-whitespace character. Accepts strings.\",\"properties\":{\"type\":{\"type\":\"string\",\"enum\":[\"notBlank\"],\"default\":\"notBlank\"},\"message\":{\"type\":\"string\"}},\"title\":\"notBlank\",\"required\":[\"type\"]},\"notNull\":{\"type\":\"object\",\"additionalProperties\":true,\"description\":\"The attribute value must not be null. Accepts any type.\",\"properties\":{\"type\":{\"type\":\"string\",\"enum\":[\"notNull\"],\"default\":\"notNull\"},\"message\":{\"type\":\"string\"}},\"title\":\"notNull\",\"required\":[\"type\"]}}}";
+          }
+          if (jsonForms.value && loadingWrapper.value) {
+              const forms = jsonForms.value;
+              forms.schema = schema;
+              forms.data = [];
+              loadingWrapper.value.loading = false;
+          }
+      }
+
+      const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
+          window.setTimeout(() => doLoad(), 0);
+
+          return html`
+              <style>
+                  .disabled {
+                      opacity: 0.5;
+                      pointer-events: none;
+                  }
+                  or-loading-wrapper {
+                      width: 100%;
+                  }
+              </style>
+              <or-loading-wrapper ${ref(loadingWrapper)} .loading="${true}">
+                  <or-json-forms .renderers="${jsonFormsAttributeRenderers}" ${ref(jsonForms)}
+                                 .disabled="${disabled}" .readonly="${readonly}" .label="${label}"
+                                 .schema="${schema}" label="Agent link" .uischema="${uiSchema}"></or-json-forms>
+              </or-loading-wrapper>
+          `;
+      }
+
+      return {
+        templateFunction,
+        supportsHelperText: false,
+        supportsLabel: false,
+        supportsSendButton: false,
+        validator: () => {
+            if (!jsonForms.value) {
+                return false;
+            }
+            return jsonForms.value.checkValidity();
+          }
+      }
+    }
+
     return fallback;
 };
 
