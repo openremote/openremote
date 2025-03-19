@@ -1451,7 +1451,8 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     protected _onZoomChange(params: any) {
         this._zoomChanged = true;
-        const { start: zoomStartPercentage, end: zoomEndPercentage } = params.batch[0];
+        const { start: zoomStartPercentage, end: zoomEndPercentage } = params.batch?.[0] ?? params; // Events triggered by scroll and zoombar return different structures
+
         //Define the start and end of the period based on the zoomed area
         this._zoomStartOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomStartPercentage / 100);
         this._zoomEndOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomEndPercentage / 100);
