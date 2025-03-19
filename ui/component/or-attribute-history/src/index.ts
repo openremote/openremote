@@ -1,7 +1,7 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 declare function require(name: string): any;
 import {ECharts, EChartsOption, init} from "echarts";
-import _ from "lodash";
+import {debounce} from "lodash";
 import {
     css,
     html,
@@ -417,9 +417,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         top: '5%',
                         feature: {
                             dataView: {readOnly: true},
-                            magicType: {
-                                type: ['line', 'bar']
-                            },
                             saveAsImage: {}
                         }
                     },
@@ -433,6 +430,18 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             showMinLabel: true,
                             showMaxLabel: true,
                             hideOverlap: true,
+                            fontSize: 10,
+                            formatter: {
+                                year: '{yyyy}-{MMM}',
+                                month: '{yy}-{MMM}',
+                                day: '{d}-{MMM}',
+                                hour: '{HH}:{mm}',
+                                minute: '{HH}:{mm}',
+                                second: '{HH}:{mm}:{ss}',
+                                millisecond: '{d}-{MMM} {HH}:{mm}',
+                                // @ts-ignore
+                                none: '{MMM}-{dd} {HH}:{mm}'
+                            }
                         }
                     },
                     yAxis:
@@ -511,7 +520,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 const resizeObserver = new ResizeObserver(() => this._chart!.resize());
                 resizeObserver.observe(this._chartElem);
                 // Add event listener for zooming
-                this._chart!.on('datazoom', _.debounce((params: any) => { this._onZoomChange(params); }, 1500));
+                this._chart!.on('datazoom', debounce((params: any) => { this._onZoomChange(params); }, 1500));
 
             } else {
                 if (changedProperties.has("_data")) {
@@ -867,7 +876,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
     protected _onZoomChange(params: any) {
         this._zoomChanged = true;
-        const { start: zoomStartPercentage, end: zoomEndPercentage } = params.batch[0];
+        const { start: zoomStartPercentage, end: zoomEndPercentage } = params.batch?.[0] ?? params; // Events triggered by scroll and zoombar return different structures
         //Define the start and end of the period based on the zoomed area
         this._queryStartOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomStartPercentage / 100);
         this._queryEndOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomEndPercentage / 100);
@@ -887,7 +896,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 max: this._endOfPeriod
             },
             series: [{
-                data: data
+                data: data,
+                showSymbol: data.length <= 30
             }]
         });
     }
