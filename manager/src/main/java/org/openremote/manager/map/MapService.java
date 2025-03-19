@@ -297,7 +297,7 @@ public class MapService implements ContainerService {
                 });
 
         // Set sprite URL to shared folder
-        Optional.ofNullable(settings.has("sprite") && settings.get("sprite").isTextual() ? settings.get("sprite").asText() : null).ifPresent(sprite -> {
+        Optional.ofNullable(mapConfig.has("sprite") && mapConfig.get("sprite").isTextual() ? mapConfig.get("sprite").asText() : null).ifPresent(sprite -> {
             String spriteUri =
                     UriBuilder.fromUri(host)
                             .replacePath(pathPrefix + MAP_SHARED_DATA_BASE_URI)
@@ -307,7 +307,7 @@ public class MapService implements ContainerService {
         });
 
         // Set glyphs URL to shared folder (tileserver-gl glyphs url cannot contain a path segment so add /fonts here
-        Optional.ofNullable(settings.has("glyphs") && settings.get("glyphs").isTextual() ? settings.get("glyphs").asText() : null).ifPresent(glyphs -> {
+        Optional.ofNullable(mapConfig.has("glyphs") && mapConfig.get("glyphs").isTextual() ? mapConfig.get("glyphs").asText() : null).ifPresent(glyphs -> {
             String glyphsUri =
                     UriBuilder.fromUri(host)
                             .replacePath(pathPrefix + MAP_SHARED_DATA_BASE_URI)

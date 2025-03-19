@@ -215,7 +215,7 @@ public class GatewayConnector {
      */
     protected CompletableFuture<GatewayCapabilitiesResponseEvent> getCapabilities() {
 
-        final AtomicReference<GatewayCapabilitiesResponseEvent> responseRef = new AtomicReference<>();
+        CompletableFuture<GatewayCapabilitiesResponseEvent> future = new CompletableFuture<>();
 
         synchronized (eventConsumerMap) {
             if (eventConsumerMap.containsKey(GatewayCapabilitiesResponseEvent.class)) {
@@ -224,36 +224,21 @@ public class GatewayConnector {
 
             eventConsumerMap.put(GatewayCapabilitiesResponseEvent.class, (e) -> {
                 GatewayCapabilitiesResponseEvent response = (GatewayCapabilitiesResponseEvent) e;
-
-                synchronized (responseRef) {
-                    responseRef.set(response);
-                    responseRef.notify();
-                }
+                future.complete(response);
             });
         }
 
-        return CompletableFuture.supplyAsync(() -> {
-                sendMessageToGateway(new GatewayCapabilitiesRequestEvent());
+        sendMessageToGateway(new GatewayCapabilitiesRequestEvent());
 
-                // Wait for response indefinitely as timeout handled on CompletableFuture
-                try {
-                    synchronized (responseRef) {
-                        responseRef.wait();
-                    }
-                } catch (InterruptedException ignored) {
-                } finally {
-                    synchronized (eventConsumerMap) {
-                        eventConsumerMap.remove(GatewayCapabilitiesResponseEvent.class);
-                    }
-                }
-                return responseRef.get();
-            }, executorService)
+        return future
             .orTimeout(RESPONSE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
             .whenComplete((result, ex) -> {
-                if (ex instanceof TimeoutException) {
-                    synchronized (responseRef) {
-                        responseRef.notify();
-                    }
+                synchronized (eventConsumerMap) {
+                    eventConsumerMap.remove(GatewayCapabilitiesResponseEvent.class);  // Cleanup
+                }
+                if (ex != null && !(ex instanceof TimeoutException)) {
+                    // Re-throw unexpected exceptions
+                    throw new RuntimeException("Failed to get gateway response", ex);
                 }
             });
     }
@@ -266,7 +251,7 @@ public class GatewayConnector {
             throw new IllegalStateException(msg);
         }
 
-        final AtomicReference<GatewayTunnelStartResponseEvent> responseRef = new AtomicReference<>();
+        CompletableFuture<Void> future = new CompletableFuture<>();
 
         synchronized (eventConsumerMap) {
             if (eventConsumerMap.containsKey(GatewayTunnelStartResponseEvent.class)) {
@@ -275,50 +260,33 @@ public class GatewayConnector {
 
             eventConsumerMap.put(GatewayTunnelStartResponseEvent.class, (e) -> {
                 GatewayTunnelStartResponseEvent response = (GatewayTunnelStartResponseEvent) e;
-
-                synchronized (responseRef) {
-                    responseRef.set(response);
-                    responseRef.notify();
+                if (response != null && response.getError() != null) {
+                    throw new RuntimeException("Failed to start tunnel: error=" + response.getError() + ", " + tunnelInfo);
                 }
+                future.complete(null);
             });
         }
 
-        return CompletableFuture.runAsync(() -> {
-            sendMessageToGateway(
+        sendMessageToGateway(
                 new GatewayTunnelStartRequestEvent(gatewayService.getTunnelSSHHostname(), gatewayService.getTunnelSSHPort(), tunnelInfo)
-            );
+        );
 
-            // Wait for response indefinitely as timeout handled on CompletableFuture
-            try {
-                synchronized (responseRef) {
-                    responseRef.wait();
-                }
-
-                GatewayTunnelStartResponseEvent responseEvent = responseRef.get();
-
-                if (responseEvent != null && responseEvent.getError() != null) {
-                    throw new RuntimeException("Failed to start tunnel: error=" + responseEvent.getError() + ", " + tunnelInfo);
-                }
-            } catch (InterruptedException ignored) {
-            } finally {
-                synchronized (eventConsumerMap) {
-                    eventConsumerMap.remove(GatewayTunnelStartResponseEvent.class);
-                }
-            }
-        }, executorService)
+        return future
                 .orTimeout(RESPONSE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
                 .whenComplete((result, ex) -> {
-                    if (ex instanceof TimeoutException) {
-                        synchronized (responseRef) {
-                            responseRef.notify();
-                        }
+                    synchronized (eventConsumerMap) {
+                        eventConsumerMap.remove(GatewayTunnelStartResponseEvent.class);
+                    }
+                    if (ex != null && !(ex instanceof TimeoutException)) {
+                        // Re-throw unexpected exceptions
+                        throw new RuntimeException("Failed to get gateway response", ex);
                     }
                 });
     }
 
     protected CompletableFuture<Void> stopTunnel(GatewayTunnelInfo tunnelInfo) {
 
-        final AtomicReference<GatewayTunnelStopResponseEvent> responseRef = new AtomicReference<>();
+        CompletableFuture<Void> future = new CompletableFuture<>();
 
         synchronized (eventConsumerMap) {
             if (eventConsumerMap.containsKey(GatewayTunnelStopResponseEvent.class)) {
@@ -327,41 +295,22 @@ public class GatewayConnector {
 
             eventConsumerMap.put(GatewayTunnelStopResponseEvent.class, (e) -> {
                 GatewayTunnelStopResponseEvent response = (GatewayTunnelStopResponseEvent) e;
-
-                synchronized (responseRef) {
-                    responseRef.set(response);
-                    responseRef.notify();
+                if (response != null && response.getError() != null) {
+                    throw new RuntimeException("Failed to stop tunnel: error=" + response.getError() + ", " + tunnelInfo);
                 }
+                future.complete(null);
             });
         }
 
-        return CompletableFuture.runAsync(() -> {
-                sendMessageToGateway(new GatewayTunnelStopRequestEvent(tunnelInfo));
-
-                // Wait for response indefinitely as timeout handled on CompletableFuture
-                try {
-                    synchronized (responseRef) {
-                        responseRef.wait();
-                    }
-
-                    GatewayTunnelStopResponseEvent responseEvent = responseRef.get();
-
-                    if (responseEvent != null && responseEvent.getError() != null) {
-                        throw new RuntimeException("Failed to stop tunnel: error=" + responseEvent.getError() + ", " + tunnelInfo);
-                    }
-                } catch (InterruptedException ignored) {
-                } finally {
-                    synchronized (eventConsumerMap) {
-                        eventConsumerMap.remove(GatewayTunnelStopResponseEvent.class);
-                    }
-                }
-            }, executorService)
+        return future
             .orTimeout(RESPONSE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
             .whenComplete((result, ex) -> {
-                if (ex instanceof TimeoutException) {
-                    synchronized (responseRef) {
-                        responseRef.notify();
-                    }
+                synchronized (eventConsumerMap) {
+                    eventConsumerMap.remove(GatewayTunnelStopResponseEvent.class);
+                }
+                if (ex != null && !(ex instanceof TimeoutException)) {
+                    // Re-throw unexpected exceptions
+                    throw new RuntimeException("Failed to get gateway response", ex);
                 }
             });
     }
