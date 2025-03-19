@@ -501,7 +501,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             markLine: {
                                 symbol: 'circle',
                                 silent: true,
-                                data: [ { name: 'now', xAxis: new Date().toISOString(), label: {formatter: '{b}'}} ],
+                                data: [ { name: '', xAxis: new Date().toISOString(), label: {formatter: '{b}'}} ],
                                 lineStyle: {
                                     color: this._style.getPropertyValue("--internal-or-attribute-history-text-color"),
                                     type: 'solid',
