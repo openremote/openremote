@@ -21,12 +21,10 @@ package org.openremote.model.asset.impl;
 
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.value.AbstractNameValueHolder;
-import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueType;
+import org.openremote.model.value.*;
 
 import jakarta.persistence.Entity;
+
 import java.util.Optional;
 
 import static org.openremote.model.Constants.*;
@@ -67,6 +65,10 @@ public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySuppli
     public static final AttributeDescriptor<Double> CARBON_EXPORT = new AttributeDescriptor<>("carbonExport", ValueType.NUMBER)
             .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(false);
 
+    public static final AttributeDescriptor<String> CONTRACTED_EAN = new AttributeDescriptor<>("contractedEan", ValueType.TEXT).withOptional(true);
+    public static final AttributeDescriptor<Double> POWER_IMPORT_MAX_GOPACS = new AttributeDescriptor<>("powerImportMaxGopacs", NUMBER).withOptional(true);
+    public static final AttributeDescriptor<Double> POWER_EXPORT_MAX_GOPACS = new AttributeDescriptor<>("powerExportMaxGopacs", NUMBER).withOptional(true);
+    public static final AttributeDescriptor<Double> POWER_FLEX_ORDER_GOPACS = new AttributeDescriptor<>("powerFlexOrderGopacs", NUMBER).withOptional(true);
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
@@ -146,6 +148,15 @@ public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySuppli
 
     public ElectricitySupplierAsset setEnergyAutarky(Double value) {
         getAttributes().getOrCreate(ENERGY_AUTARKY).setValue(value);
+        return this;
+    }
+
+    public Optional<String> getContractedEan() {
+        return getAttribute(CONTRACTED_EAN).flatMap(AbstractNameValueHolder::getValue);
+    }
+
+    public ElectricitySupplierAsset setContractedEan(String contractedEan) {
+        getAttributes().getOrCreate(CONTRACTED_EAN).setValue(contractedEan);
         return this;
     }
 }
