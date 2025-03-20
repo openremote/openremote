@@ -16,7 +16,7 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
     public Formula formula;
 
     public enum Formula {
-        MIN, AVG, MAX
+        MIN, AVG, MAX, DELTA
     }
 
     public AssetDatapointIntervalQuery() {
@@ -42,9 +42,18 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
         boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
         String function = (gapFill ? "public.time_bucket_gapfill" : "public.time_bucket");
         if (isNumber) {
-            return "select " + function + "(cast(? as interval), timestamp) AS x, " + this.formula.toString().toLowerCase() + "(cast(value as numeric)) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC";
+            if(this.formula == Formula.DELTA) {
+                return "select " + function + "(cast(? as interval), timestamp) AS x, (last(cast(value as numeric), timestamp) - first(cast(value as numeric), timestamp)) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_REF = ? and " +
+                        "timestamp BETWEEN ? AND ? GROUP BY x ORDER BY x";
+            } else {
+                 return "select " + function + "(cast(? as interval), timestamp) AS x, " + this.formula.toString().toLowerCase() + "(cast(value as numeric)) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC";
+            }
         } else if (isBoolean) {
-            return "select " + function + "(cast(? as interval), timestamp) AS x, " + this.formula.toString().toLowerCase() + "(case when cast(cast(value as text) as boolean) is true then 1 else 0 end) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC";
+            if (this.formula == Formula.DELTA) {
+                throw new IllegalStateException("Query of type DELTA is not applicable for boolean attributes.");
+            } else {
+                return "select " + function + "(cast(? as interval), timestamp) AS x, " + this.formula.toString().toLowerCase() + "(case when cast(cast(value as text) as boolean) is true then 1 else 0 end) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC";
+            }
         } else {
             throw new IllegalStateException("Query of type Interval requires either a number or a boolean attribute.");
         }
