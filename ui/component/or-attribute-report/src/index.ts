@@ -582,7 +582,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ['10%', '10%'],
                         scale: true,
-                        min: this.chartOptions.options.scales.y.min ? this.chartOptions.options.scales.y.min : undefined, //NOG FIXEN MET MERGEN VAN CHARTOPTIONS
+                        min: this.chartOptions.options.scales.y.min ? this.chartOptions.options.scales.y.min : undefined,
                         max: this.chartOptions.options.scales.y.max ? this.chartOptions.options.scales.y.max : undefined
                     },
                     {
@@ -606,36 +606,36 @@ export class OrChart extends translate(i18next)(LitElement) {
             };
 
             // Add dataZoom bar if enabled
-            (this._chartOptions!.dataZoom! as any[]).push({
-                    start: 0,
-                    end: 100,
-                    backgroundColor: bgColor,
-                    fillerColor: bgColor,
-                    dataBackground: {
-                        areaStyle: {
-                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
-                        }
-                    },
-                    selectedDataBackground: {
-                        areaStyle: {
-                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color"),
-                        }
-                    },
-                    moveHandleStyle: {
-                        color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
-                    },
-                    emphasis: {
-                        moveHandleStyle: {
-                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
-                        },
-                        handleLabel: {
-                            show: false
-                        }
-                    },
-                    handleLabel: {
-                        show: false
-                    }
-                })
+            //(this._chartOptions!.dataZoom! as any[]).push({
+            //        start: 0,
+            //        end: 100,
+            //        backgroundColor: bgColor,
+            //        fillerColor: bgColor,
+            //        dataBackground: {
+            //            areaStyle: {
+            //                color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
+            //            }
+            //        },
+            //        selectedDataBackground: {
+            //            areaStyle: {
+            //                color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color"),
+            //            }
+            //        },
+            //        moveHandleStyle: {
+            //            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
+            //        },
+            //        emphasis: {
+            //            moveHandleStyle: {
+            //                color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
+            //            },
+            //            handleLabel: {
+            //                show: false
+            //            }
+            //        },
+            //        handleLabel: {
+            //            show: false
+            //        }
+            //    })
 
 
             // Add toolbox if enabled
@@ -1150,24 +1150,27 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
 
-    protected _getInterval(diffInHours: number): [number, DatapointInterval] {
+    protected _getInterval(diffInHours: number): [number, DatapointInterval, string] {
+    //Returns amount of steps, interval size and moment.js time format
+
+        //This must be reworked for my own use case
 
         if(diffInHours <= 1) {
-            return [5, DatapointInterval.MINUTE];
+            return [5, DatapointInterval.MINUTE,"h:mm:ss"];
         } else if(diffInHours <= 3) {
-            return [10, DatapointInterval.MINUTE];
+            return [10, DatapointInterval.MINUTE,"h:mm:ss"];
         } else if(diffInHours <= 6) {
-            return [30, DatapointInterval.MINUTE];
+            return [30, DatapointInterval.MINUTE,"h:mm:ss"];
         } else if(diffInHours <= 24) { // one day
-            return [1, DatapointInterval.HOUR];
+            return [1, DatapointInterval.HOUR,"h:mm"];
         } else if(diffInHours <= 48) { // two days
-            return [3, DatapointInterval.HOUR];
+            return [3, DatapointInterval.HOUR,"h:mm"];
         } else if(diffInHours <= 96) {
-            return [12, DatapointInterval.HOUR];
+            return [12, DatapointInterval.HOUR,"LT"];
         } else if(diffInHours <= 744) { // one month
-            return [1, DatapointInterval.DAY];
+            return [1, DatapointInterval.DAY,"Do"];
         } else {
-            return [1, DatapointInterval.MONTH];
+            return [1, DatapointInterval.MONTH,"MMM"];
         }
     }
 
@@ -1278,15 +1281,15 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         const dataset = {
             name: label,
-            type: 'line',
-            showSymbol: false,
+            type: 'bar',
+            //showSymbol: false,
             data: [] as [any, any][],
-            sampling: 'lttb',
-            lineStyle: {
-                color: color,
-                type: predicted ? [2, 4] : extended ? [0.8, 10] : undefined,
-                opacity: faint ? 0.31 : 1,
-            },
+            //sampling: 'lttb',
+            //lineStyle: {
+            //    color: color,
+            //    type: predicted ? [2, 4] : extended ? [0.8, 10] : undefined,
+            //    opacity: faint ? 0.31 : 1,
+            //},
             itemStyle: {
                 color: color
             },
@@ -1294,18 +1297,18 @@ export class OrChart extends translate(i18next)(LitElement) {
                 // @ts-ignore
                 valueFormatter: value => value + unit
             },
-            smooth: smooth,
-            step: stepped ? 'end' : undefined,
-            areaStyle: area ? {color: new graphic.LinearGradient(0, 0, 0, 1, [
-                    {
-                        offset: 0,
-                        color: rgba(color, faint ? 0.1 : 0.5)
-                    },
-                    {
-                        offset: 1,
-                        color: rgba(color, 0)
-                    }
-                ])} as any : undefined,
+            //smooth: smooth,
+            //step: stepped ? 'end' : undefined,
+            //areaStyle: area ? {color: new graphic.LinearGradient(0, 0, 0, 1, [
+            //        {
+            //            offset: 0,
+            //            color: rgba(color, faint ? 0.1 : 0.5)
+            //        },
+            //        {
+            //            offset: 1,
+            //            color: rgba(color, 0)
+            //        }
+            //    ])} as any : undefined,
         }
 
 
@@ -1333,7 +1336,9 @@ export class OrChart extends translate(i18next)(LitElement) {
             if (response.status === 200) {
                 data = response.data
                     .filter(value => value.y !== null && value.y !== undefined)
-                    .map(point => ({ x: point.x, y: point.y } as ValueDatapoint<any>))
+                    .map(point => ({ x: moment(point.x).format(intervalArr[2]), y: point.y } as ValueDatapoint<any>))
+
+
 
                 dataset.data = data.map(point => [point.x, point.y]);
                 dataset.showSymbol = data.length <= this.showSymbolMaxDatapoints;
@@ -1342,16 +1347,17 @@ export class OrChart extends translate(i18next)(LitElement) {
 
 
         }
+        console.log("dataset", dataset);
         return dataset;
     }
 
 
     protected _updateChartData(){
         this._chart!.setOption({
-            xAxis: {
-                min: this._startOfPeriod,
-                max: this._endOfPeriod
-            },
+            //xAxis: {
+            //    min: this._startOfPeriod,
+            //    max: this._endOfPeriod
+            //},
             series: this._data!.map(series => ({
                 ...series,
                 //markLine: {
