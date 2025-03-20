@@ -19,8 +19,6 @@ import {
     OwnPropsOfControl,
     OwnPropsOfRenderer,
     Resolve,
-    resolveSchema,
-    resolveSubSchemas,
     StatePropsOfCombinator,
 } from "@jsonforms/core";
 import {DefaultColor5, Util} from "@openremote/core";
@@ -46,8 +44,8 @@ export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFo
 
     let template: TemplateResult | undefined;
 
-    if (renderers && schema && uischema) {
-        const orderedRenderers: [JsonFormsRendererRegistryEntry, number][] = renderers.map(r => [r, r.tester(uischema, schema)] as [JsonFormsRendererRegistryEntry, number]).sort((a,b) => b[1] - a[1]);
+    if (renderers && schema && uischema && state.core) {
+      const orderedRenderers: [JsonFormsRendererRegistryEntry, number][] = renderers.map(r => [r, r.tester(uischema, schema, { rootSchema: resolveSubSchemasRecursive(schema, state.core!.schema), config: state.config })] as [JsonFormsRendererRegistryEntry, number]).sort((a,b) => b[1] - a[1]);
         const renderer = orderedRenderers && orderedRenderers.length > 0 ? orderedRenderers[0] : undefined;
         if (renderer && renderer[1] !== -1) {
             template = renderer[0].renderer(state, props) as TemplateResult;
@@ -80,11 +78,11 @@ export function getCombinatorInfos(schemas: JsonSchema[], rootSchema: JsonSchema
         const titleAndDescription = findSchemaTitleAndDescription(schema, rootSchema);
 
         if (schema.$ref) {
-            schema = Resolve.schema(rootSchema, schema.$ref);
+            schema = Resolve.schema(schema, '', rootSchema);
         }
 
         if (Array.isArray(schema.allOf)) {
-            schema = resolveSubSchemas(schema, rootSchema, "allOf");
+            schema = Resolve.schema(schema, "allOf", rootSchema);
         }
 
         if (deriveTypes(schema).every(type => type === "object")) {
@@ -104,11 +102,11 @@ export function getCombinatorInfos(schemas: JsonSchema[], rootSchema: JsonSchema
                     titleAndDescription[0] = getSchemaConst(constProp[1]);
                 }
             } else {
-                creator = () => createDefaultValue(schema);
+                creator = () => createDefaultValue(schema, rootSchema);
             }
         } else {
             // Assume a primitive type that can be instantiated with default value creator
-            creator = () => createDefaultValue(schema);
+            creator = () => createDefaultValue(schema, rootSchema);
         }
 
         return {
@@ -148,12 +146,13 @@ export function getSchemaPicker(rootSchema: JsonSchema, resolvedSchema: JsonSche
     `;
 }
 
+// TODO: use i18n translations from jsonforms/core
 export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: JsonSchema): [string | undefined, string | undefined] {
     let title: string | undefined;
 
     if (schema.$ref) {
         title = getLabelFromScopeOrRef(schema.$ref);
-        schema = Resolve.schema(rootSchema, schema.$ref);
+        schema = Resolve.schema(schema, '', rootSchema);
     }
 
     if (schema.title) {
@@ -161,7 +160,7 @@ export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: Js
     }
 
     if (schema.allOf) {
-        const resolvedSchema = resolveSubSchemas(schema, rootSchema, "allOf");
+        const resolvedSchema = Resolve.schema(schema, "allOf", rootSchema);
         const titledSchema = (resolvedSchema.allOf! as JsonSchema[]).find((allOfSchema) => {
             return !!allOfSchema.title;
         });
@@ -197,7 +196,7 @@ export function mapStateToCombinatorRendererProps(
     state: JsonFormsState,
     ownProps: OwnPropsOfControl,
     keyword: CombinatorKeyword
-): StatePropsOfCombinator {
+): Omit<StatePropsOfCombinator, 'label'|'errors'|'enabled'> {
     const { uischema } = ownProps;
     const path = composeWithUi(uischema!, ownProps.path!);
     const rootSchema = getSchema(state);
@@ -216,7 +215,8 @@ export function mapStateToCombinatorRendererProps(
 
     const ajv = state.jsonforms.core!.ajv!;
     const schema = resolvedSchema || rootSchema;
-    const _schema = resolveSubSchemas(schema, rootSchema, keyword);
+    const _schema = Resolve.schema(schema, keyword, rootSchema) as JsonSchema[];
+
     const structuralKeywords = [
         'required',
         'additionalProperties',
@@ -235,11 +235,11 @@ export function mapStateToCombinatorRendererProps(
     // TODO instead of compiling the combinator subschemas we can compile the original schema
     // without the combinator alternatives and then revalidate and check the errors for the
     // element
-    for (let i = 0; i < _schema[keyword]!.length; i++) {
+    for (let i = 0; i < _schema!.length; i++) {
         try {
             const schema = {
                 definitions: rootSchema.definitions,
-                ..._schema[keyword]![i]
+                ..._schema[i]
             } as JsonSchema;
             const valFn = ajv.compile(schema);
             valFn(data);
@@ -261,7 +261,7 @@ export function mapStateToCombinatorRendererProps(
         id,
         indexOfFittingSchema,
         uischemas: state.jsonforms.uischemas!,
-        uischema
+        uischema: uischema!,
     };
 }
 
@@ -291,7 +291,7 @@ export function resolveSubSchemasRecursive(
     const combinators: string[] = keyword ? [keyword] : ["allOf", "anyOf", "oneOf"];
 
     if (schema.$ref) {
-        return resolveSubSchemasRecursive(resolveSchema(rootSchema, schema.$ref), rootSchema);
+        return resolveSubSchemasRecursive(Resolve.schema(rootSchema, schema.$ref, rootSchema), rootSchema);
     }
 
     combinators.forEach((combinator) => {
