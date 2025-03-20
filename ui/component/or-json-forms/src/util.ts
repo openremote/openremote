@@ -196,7 +196,7 @@ export function mapStateToCombinatorRendererProps(
     state: JsonFormsState,
     ownProps: OwnPropsOfControl,
     keyword: CombinatorKeyword
-): StatePropsOfCombinator {
+): Omit<StatePropsOfCombinator, 'label'|'errors'|'enabled'> {
     const { uischema } = ownProps;
     const path = composeWithUi(uischema!, ownProps.path!);
     const rootSchema = getSchema(state);
@@ -261,11 +261,7 @@ export function mapStateToCombinatorRendererProps(
         id,
         indexOfFittingSchema,
         uischemas: state.jsonforms.uischemas!,
-        // TODO: handle correctly
-        uischema: uischema ?? {} as ControlElement,
-        label: "test",
-        errors: "test",
-        enabled: true
+        uischema: uischema!,
     };
 }
 
