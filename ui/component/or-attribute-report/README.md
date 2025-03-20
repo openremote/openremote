@@ -3,7 +3,7 @@
 [![Linux Build][travis-image]][travis-url]
 [![Test Coverage][coveralls-image]][coveralls-url]
 
-Web Component for displaying chart values.
+Web Component for displaying interval value reports.
 
 ## Install
 ```bash

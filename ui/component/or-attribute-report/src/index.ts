@@ -42,12 +42,12 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import { when } from "lit/directives/when.js";
 import {createRef, Ref, ref } from "lit/directives/ref.js";
 
-export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
+export class OrAttributeReportEvent extends CustomEvent<OrAttributeReportEventDetail> {
 
-    public static readonly NAME = "or-chart-event";
+    public static readonly NAME = "or-report-event";
 
     constructor(value?: any, previousValue?: any) {
-        super(OrChartEvent.NAME, {
+        super(OrAttributeReportEvent.NAME, {
             detail: {
                 value: value,
                 previousValue: previousValue
@@ -58,7 +58,7 @@ export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
     }
 }
 
-export interface ChartViewConfig {
+export interface AttributeReportViewConfig {
     attributeRefs?: AttributeRef[];
     fromTimestamp?: number;
     toTimestamp?: number;
@@ -68,27 +68,27 @@ export interface ChartViewConfig {
     decimals?: number;
 }
 
-export interface OrChartEventDetail {
+export interface OrAttributeReportEventDetail {
     value?: any;
     previousValue?: any;
 }
 
 declare global {
     export interface HTMLElementEventMap {
-        [OrChartEvent.NAME]: OrChartEvent;
+        [OrAttributeReportEvent.NAME]: OrAttributeReportEvent;
     }
 }
 
-export interface ChartConfig {
+export interface AttributeReportConfig {
     xLabel?: string;
     yLabel?: string;
 }
 
-export interface OrChartConfig {
-    chart?: ChartConfig;
+export interface OrAttributeReportConfig {
+    report?: AttributeReportConfig;
     realm?: string;
     views: {[name: string]: {
-        [panelName: string]: ChartViewConfig
+        [panelName: string]: AttributeReportViewConfig
     }};
 }
 
@@ -334,7 +334,7 @@ const style = css`
 `;
 
 @customElement("or-attribute-report")
-export class OrChart extends translate(i18next)(LitElement) {
+export class OrAttributeReport extends translate(i18next)(LitElement) {
 
     public static DEFAULT_TIMESTAMP_FORMAT = "L HH:mm:ss";
 
@@ -389,7 +389,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     public readonly datapointQuery!: AssetDatapointQueryUnion;
 
     @property({type: Object})
-    public config?: OrChartConfig;
+    public config?: OrAttributeReportConfig;
 
     @property({type: Object})
     public chartOptions?: any
@@ -666,7 +666,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         this.onCompleted().then(() => {
-            this.dispatchEvent(new OrChartEvent('rendered'));
+            this.dispatchEvent(new OrAttributeReportEvent('rendered'));
         });
 
     }
@@ -910,13 +910,13 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         const viewSelector = window.location.hash;
-        const allConfigs: OrChartConfig[] = await manager.console.retrieveData("OrChartConfig") || [];
+        const allConfigs: OrAttributeReportConfig[] = await manager.console.retrieveData("OrChartConfig") || [];
 
         if (!Array.isArray(allConfigs)) {
             manager.console.storeData("OrChartConfig", [allConfigs]);
         }
 
-        let config: OrChartConfig | undefined = allConfigs.find(e => e.realm === this.realm);
+        let config: OrAttributeReportConfig | undefined = allConfigs.find(e => e.realm === this.realm);
 
         if (!config) {
             return;
@@ -978,8 +978,8 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         const viewSelector = window.location.hash;
-        const allConfigs: OrChartConfig[] = await manager.console.retrieveData("OrChartConfig") || [];
-        let config: OrChartConfig | undefined = allConfigs.find(e => e.realm === this.realm);
+        const allConfigs: OrAttributeReportConfig[] = await manager.console.retrieveData("OrChartConfig") || [];
+        let config: OrAttributeReportConfig | undefined = allConfigs.find(e => e.realm === this.realm);
 
         if (!config) {
             config = {
@@ -1341,7 +1341,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
 
                 dataset.data = data.map(point => [point.x, point.y]);
-                dataset.showSymbol = data.length <= this.showSymbolMaxDatapoints;
+                //dataset.showSymbol = data.length <= this.showSymbolMaxDatapoints;
             }
 
 
