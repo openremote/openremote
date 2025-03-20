@@ -20,19 +20,25 @@
 package org.openremote.manager.map;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.manager.MapRealmConfig;
+import org.openremote.model.manager.MapConfig;
 import org.openremote.model.map.MapResource;
+import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
-import java.util.Map;
-
 public class MapResourceImpl extends WebResource implements MapResource {
 
+    private static final Logger LOG = Logger.getLogger(MapResourceImpl.class.getName());
     protected final MapService mapService;
     protected final ManagerIdentityService identityService;
 
@@ -42,7 +48,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public Object saveSettings(RequestParams requestParams, Map<String, MapRealmConfig> mapConfig) {
+    public Object saveSettings(RequestParams requestParams, MapConfig mapConfig) {
         return mapService.saveMapConfig(mapConfig);
     }
 
@@ -70,5 +76,42 @@ public class MapResourceImpl extends WebResource implements MapResource {
         } else {
             throw new WebApplicationException(Response.Status.NO_CONTENT);
         }
+    }
+
+    @Override
+    public Response uploadMap() {
+        if (request.getContentLength() > mapService.customMapLimit) {
+            throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
+        }
+
+        try (InputStream stream = request.getInputStream()) {
+            boolean isSaved = mapService.saveUploadedFile(stream);
+            if (isSaved) {
+                return Response.ok("File uploaded successfully").build();
+            }
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        } catch (IOException e) {
+            LOG.log(Level.INFO, "Failed to save custom map tiles", e);
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
+    }
+
+    @Override
+    public Response customMapInfo() {
+        ObjectNode response = ValueUtil.JSON
+            .createObjectNode()
+            .put("custom-map-limit", mapService.customMapLimit)
+            .put("map-custom", mapService.isCustomUploadedFile());
+
+        return Response.ok().entity(response).build();
+    }
+
+    @Override
+    public Response deleteMap() {
+        boolean deleted = mapService.deleteUploadedFile();
+        if (deleted) {
+            return Response.noContent().build();
+        }
+        throw new WebApplicationException(Response.Status.BAD_REQUEST);
     }
 }
