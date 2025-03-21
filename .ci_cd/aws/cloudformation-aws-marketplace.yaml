@@ -1,0 +1,293 @@
+# ---------------------------------------------------------------------------------------------------------------------
+#
+# OpenRemote AWS Marketplace CloudFormation Template
+# This template will be used for spinning up an OpenRemote instance on the AWS Marketplace.
+#
+# ---------------------------------------------------------------------------------------------------------------------
+
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploy a OpenRemote instance via AWS Marketplace
+Metadata:
+  AWS::CloudFormation::Interface: 
+    ParameterGroups:
+      -
+        Label:
+          default: Instance Configuration 
+        Parameters:
+          - Hostname
+          - InstanceType
+          - VolumeSize
+          - Keypair
+          - AssignElasticIP
+      - Label:
+          default: OpenRemote Configuration
+        Parameters:
+          - Password
+      - Label:
+          default: E-mail Configuration (Optional)
+        Parameters:
+          - SMTPHostname
+          - SMTPUsername
+          - SMTPPassword
+          - SMTPFrom
+    ParameterLabels:
+      Hostname:
+        default: "Would you like to use your own domain name? If so, please enter it here."
+      InstanceType:
+        default: "Which instance would you like to use?"
+      VolumeSize:
+        default: "How much storage would you like to allocate for the root device?"
+      Keypair: 
+        default: "Please select the keypair you would like to use for this instance."
+      AssignElasticIP:
+        default: "Would you like to configure an Elastic IP (Static IP)?"
+      Password:
+        default: "Please set the administrator password."
+      SMTPHostname:
+        default: "Please enter your SMTP Hostname"
+      SMTPUsername:
+        default: "Please enter your SMTP Username"
+      SMTPPassword:
+        default: "Please enter your SMTP Password"
+      SMTPFrom:
+        default: "Please enter the senders address"
+Parameters:
+  Hostname:
+    Description: Enter the Fully Qualified Domain Name (FQDN) for this OpenRemote instance (e.g., example.com). Leave blank to use only an IPv4 address.
+    Type: String
+  InstanceType:
+    Description: Prices vary depending on the selected instance. All instances are powered by ARM chips.
+    Type: String
+    Default: t4g.medium
+    AllowedValues:
+      - t4g.small
+      - t4g.medium
+      - t4g.large
+      - t4g.xlarge
+      - m6g.large
+      - m6g.xlarge
+  VolumeSize:
+    Description: Choose the amount of storage (in GB)
+    Type: String
+    Default: 8GB
+    AllowedValues:
+      - 8GB
+      - 16GB
+      - 32GB
+      - 48GB
+      - 64GB
+  Keypair:
+    Description: With the selected keypair, you can log in to the machine via SSH.
+    Type: AWS::EC2::KeyPair::KeyName
+    AllowedPattern: ".+"
+    ConstraintDescription: You must select an Keypair
+  AssignElasticIP:
+    Description: Enabling this option ensures that your IPv4 address remains static after a restart. Additional charges may apply.
+    Type: String
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+  Password:
+      Description: The password you enter here will be used for the administrator account within the OpenRemote manager. Leave empty to use the default one
+      Type: String
+      NoEcho: true
+  SMTPHostname:
+      Description: Enter the SMTP Hostname e.g. mail.example.com
+      Type: String
+  SMTPUsername:
+      Description: Enter the SMTP Username. In most cases this is the e-mail address of the sending account
+      Type: String
+  SMTPPassword:
+      Description: Enter the SMTP Password.
+      Type: String
+      NoEcho: true
+  SMTPFrom:
+      Description: Enter the SMTP sender address. e.g. noreply@example.com
+      Type: String
+
+Mappings:
+  VolumeSize:
+    8GB:
+      VolumeSize: 8
+    16GB:
+      VolumeSize: 16
+    32GB:
+      VolumeSize: 32
+    48GB:
+      VolumeSize: 48
+    64GB:
+      VolumeSize: 64
+
+  AssignElasticIP:
+    "Yes":
+      AssignElasticIP: true
+    "No":
+      AssignElasticIP: false
+
+Conditions:
+  AssignElasticIP: !Equals [!Ref AssignElasticIP, "Yes"]
+
+Resources:
+  ORVPC:
+    Type: AWS::EC2::VPC
+    Properties: 
+      CidrBlock: 172.20.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: or-vpc
+  ORInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags: 
+        - Key: Name
+          Value: or-internet-gateway
+  ORInternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref ORVPC
+      InternetGatewayId: !Ref ORInternetGateway
+  ORPublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref ORVPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: 172.20.0.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: or-public-subnet
+  ORPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref ORVPC
+      Tags: 
+        - Key: Name
+          Value: or-routetable
+  ORPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: ORInternetGatewayAttachment
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref ORInternetGateway
+      RouteTableId: !Ref ORPublicRouteTable
+  ORPublicRouteTableAssociate:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref ORPublicRouteTable
+      SubnetId: !Ref ORPublicSubnet
+  ORSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access OpenRemote Services
+      GroupName: or-securitygroup
+      VpcId: !Ref ORVPC
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+          Description: HTTP Access
+        - CidrIp: 0.0.0.0/0
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+          Description: HTTPS Access
+        - CidrIp: 0.0.0.0/0
+          FromPort: 8883
+          IpProtocol: tcp
+          ToPort: 8883
+          Description: MQTT Access
+        - CidrIp: 0.0.0.0/0
+          FromPort: 162
+          IpProtocol: udp
+          ToPort: 162
+          Description: SNMP Access
+  ORSSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: OpenRemote SSH Whitelist
+      GroupName: or-ssh-whitelist
+      VpcId: !Ref ORVPC
+  ORElasticIP:
+    Type: AWS::EC2::EIP
+    Condition: AssignElasticIP
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref Hostname
+  ORElasticIPAssoc:
+    Type: AWS::EC2::EIPAssociation
+    Condition: AssignElasticIP
+    Properties:
+      InstanceId: !Ref ORInstance
+      EIP: !Ref ORElasticIP
+  
+  ORInstance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          default:
+            - docker_installation
+            - start_openremote
+        
+        docker_installation:
+          packages:
+            yum:
+              docker: []
+          commands:
+            01_docker_compose_installation:
+              command: |
+                sudo usermod -a -G docker ec2-user
+                curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+                chmod +x /usr/local/bin/docker-compose
+
+            02_download_docker_compose:
+              command: |
+                sudo wget https://raw.githubusercontent.com/openremote/openremote/refs/heads/master/docker-compose.yml -P /openremote
+          services:
+            systemd:
+              docker:
+                enabled: true
+                ensureRunning: true
+
+        start_openremote:
+          commands:
+            01_start_openremote:
+              command: !Sub |
+                [ -ne ${Hostname} ] && HOST=$(curl v4.ident.me 2>/dev/null) || HOST=${Hostname}
+
+                OR_HOSTNAME=$HOST \
+                OR_ADMIN_PASSWORD=${Password} \
+                OR_EMAIL_HOST=${SMTPHostname} \
+                OR_EMAIL_USER=${SMTPUsername} \
+                OR_EMAIL_PASSWORD=${SMTPPassword} \
+                OR_EMAIL_FROM=${SMTPFrom} \
+                docker-compose -f /openremote/docker-compose.yml -p openremote up -d
+    Properties:
+      ImageId: '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64}}' # Fetch latest Amazon Linux 2023 AMI
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref Keypair
+      SubnetId: !Ref ORPublicSubnet
+      SecurityGroupIds:
+        -  !Ref ORSecurityGroup
+        -  !Ref ORSSHSecurityGroup
+      Tags:
+      - Key: Name
+        Value: OpenRemote/AWS-Marketplace
+      BlockDeviceMappings:
+      - DeviceName: /dev/xvda
+        Ebs:
+          VolumeSize: !FindInMap [VolumeSize, !Ref VolumeSize , VolumeSize]
+          VolumeType: gp3
+          DeleteOnTermination: true
+      UserData:
+        !Base64
+          Fn::Sub: |
+            #!/bin/bash -xe
+            yum -y install aws-cfn-bootstrap
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --region ${AWS::Region} --resource ORInstance
