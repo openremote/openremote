@@ -4,8 +4,8 @@ import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 import {
     Asset,
-    AssetDatapointQueryUnion,
     AssetDatapointIntervalQueryFormula,
+    AssetDatapointQueryUnion,
     AssetEvent,
     AssetModelUtil,
     AssetQuery,
@@ -13,34 +13,28 @@ import {
     AttributeRef,
     DatapointInterval,
     ReadAssetEvent,
-    ValueDatapoint,
-    WellknownMetaItems
+    ValueDatapoint
 } from "@openremote/model";
 import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
 import "@openremote/or-asset-tree";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {ECharts, EChartsOption, init, graphic} from "echarts";
-import {
-
-    TimeUnit,
-
-} from "chart.js";
-import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+import {ECharts, EChartsOption, init} from "echarts";
+import {TimeUnit,} from "chart.js";
+import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
-import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {cache} from "lit/directives/cache.js";
-import {debounce, throttle} from "lodash";
+import {throttle} from "lodash";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
-import { when } from "lit/directives/when.js";
-import {createRef, Ref, ref } from "lit/directives/ref.js";
+import {when} from "lit/directives/when.js";
 
 export class OrAttributeReportEvent extends CustomEvent<OrAttributeReportEventDetail> {
 
@@ -1228,7 +1222,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     const colourIndex = index % this.colors.length;
                     const options = { signal: this._dataAbortController?.signal };
                     //Load Historic Data
-                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, false, smooth, stepped, area, faint, false, asset.name + " " + label, options, unit);
+                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, false, asset.name + " " + label, options, unit);
                     (dataset as any).assetId = asset.id;
                     (dataset as any).attrName = attribute.name;
                     (dataset as any).unit = unit;
@@ -1273,7 +1267,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     }
 
 
-    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string, from: number, to: number, predicted: boolean, smooth: boolean, stepped: boolean, area: boolean, faint: boolean, extended: boolean, label?: string, options?: any, unit?: any) {
+    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string, from: number, to: number, predicted: boolean, label?: string, options?: any, unit?: any) {
 
         function rgba (color: string, alpha: number) {
             return `rgba(${parseInt(color.slice(-6,-4), 16)}, ${parseInt(color.slice(-4,-2), 16)}, ${parseInt(color.slice(-2), 16)}, ${alpha})`;
@@ -1336,11 +1330,11 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             if (response.status === 200) {
                 data = response.data
                     .filter(value => value.y !== null && value.y !== undefined)
-                    .map(point => ({ x: moment(point.x).format(intervalArr[2]), y: point.y } as ValueDatapoint<any>))
+                    .map(point => ({ x: point.x , y: point.y } as ValueDatapoint<any>))
 
 
 
-                dataset.data = data.map(point => [point.x, point.y]);
+                dataset.data = data.map(point => [moment(point.x).format(intervalArr[2]), point.y]);
                 //dataset.showSymbol = data.length <= this.showSymbolMaxDatapoints;
             }
 

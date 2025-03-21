@@ -2553,6 +2553,30 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@openremote/or-attribute-report@workspace:*, @openremote/or-attribute-report@workspace:^, @openremote/or-attribute-report@workspace:ui/component/or-attribute-report":
+  version: 0.0.0-use.local
+  resolution: "@openremote/or-attribute-report@workspace:ui/component/or-attribute-report"
+  dependencies:
+    "@material/data-table": "npm:^9.0.0"
+    "@material/dialog": "npm:^9.0.0"
+    "@openremote/core": "workspace:*"
+    "@openremote/or-asset-tree": "workspace:*"
+    "@openremote/or-attribute-picker": "workspace:*"
+    "@openremote/or-components": "workspace:*"
+    "@openremote/or-icon": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
+    "@openremote/util": "workspace:*"
+    "@types/chart.js": "npm:^2.9.34"
+    "@types/offscreencanvas": "npm:^2019.6.4"
+    chart.js: "npm:^3.6.0"
+    echarts: "npm:^5.6.0"
+    jsonpath-plus: "npm:^6.0.1"
+    lit: "npm:^2.0.2"
+    moment: "npm:^2.29.4"
+  languageName: unknown
+  linkType: soft
+
 "@openremote/or-bottom-navigation@workspace:ui/component/or-bottom-navigation":
   version: 0.0.0-use.local
   resolution: "@openremote/or-bottom-navigation@workspace:ui/component/or-bottom-navigation"
@@ -2605,6 +2629,7 @@ __metadata:
   dependencies:
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
+    "@openremote/or-attribute-report": "workspace:*"
     "@openremote/or-chart": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
@@ -4864,6 +4889,16 @@ __metadata:
   version: 0.2.0
   resolution: "eastasianwidth@npm:0.2.0"
   checksum: 10c0/26f364ebcdb6395f95124fda411f63137a4bfb5d3a06453f7f23dfe52502905bd84e0488172e0f9ec295fdc45f05c23d5d91baf16bd26f0fe9acd777a188dc39
+  languageName: node
+  linkType: hard
+
+"echarts@npm:^5.6.0":
+  version: 5.6.0
+  resolution: "echarts@npm:5.6.0"
+  dependencies:
+    tslib: "npm:2.3.0"
+    zrender: "npm:5.6.1"
+  checksum: 10c0/6d6a2ee88534d1ff0433e935c542237b9896de1c94959f47ebc7e0e9da26f59bf11c91ed6fc135b62ad2786c779ee12bc536fa481e60532dad5b6a2f5167e9ea
   languageName: node
   linkType: hard
 
@@ -7792,6 +7827,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "openremote@workspace:."
   dependencies:
+    "@openremote/or-attribute-report": "workspace:^"
     "@openremote/util": "workspace:*"
   languageName: unknown
   linkType: soft
@@ -9401,6 +9437,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tslib@npm:2.3.0":
+  version: 2.3.0
+  resolution: "tslib@npm:2.3.0"
+  checksum: 10c0/a845aed84e7e7dbb4c774582da60d7030ea39d67307250442d35c4c5dd77e4b44007098c37dd079e100029c76055f2a362734b8442ba828f8cc934f15ed9be61
+  languageName: node
+  linkType: hard
+
 "tslib@npm:^1.10.0, tslib@npm:^1.8.1, tslib@npm:^1.9.3":
   version: 1.14.1
   resolution: "tslib@npm:1.14.1"
@@ -10069,5 +10112,14 @@ __metadata:
   version: 0.1.0
   resolution: "yocto-queue@npm:0.1.0"
   checksum: 10c0/dceb44c28578b31641e13695d200d34ec4ab3966a5729814d5445b194933c096b7ced71494ce53a0e8820685d1d010df8b2422e5bf2cdea7e469d97ffbea306f
+  languageName: node
+  linkType: hard
+
+"zrender@npm:5.6.1":
+  version: 5.6.1
+  resolution: "zrender@npm:5.6.1"
+  dependencies:
+    tslib: "npm:2.3.0"
+  checksum: 10c0/dc1cc570054640cbd8fbb7b92e6252f225319522bfe3e8dc8bf02cc02d414e00a4c8d0a6f89bfc9d96e5e9511fdca94dd3d06bf53690df2b2f12b0fc560ac307
   languageName: node
   linkType: hard

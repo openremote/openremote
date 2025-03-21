@@ -122,8 +122,8 @@ export class ReportWidget extends OrAssetWidget {
 
     static getManifest(): WidgetManifest {
         return {
-            displayName: "Line Chart",
-            displayIcon: "chart-line",
+            displayName: "Report",
+            displayIcon: "chart-bar",
             minColumnWidth: 2,
             minColumnHeight: 2,
             getContentHtml(config: ReportWidgetConfig): OrWidget {
@@ -220,7 +220,7 @@ export class ReportWidget extends OrAssetWidget {
                 
             `, () => {
                 return html`
-                    <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
+                    <or-attribute-report .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
                               .colorPickedAttributes="${this.widgetConfig?.colorPickedAttributes != null ? this.widgetConfig?.colorPickedAttributes : []}"
                               .attributeSettings="${this.widgetConfig?.attributeSettings != null ? this.widgetConfig.attributeSettings : {}}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
@@ -235,7 +235,7 @@ export class ReportWidget extends OrAssetWidget {
                               .showSymbolMaxDatapoints="${this.widgetConfig?.showSymbolMaxDatapoints}"
                               .maxConcurrentDatapoints="${this.widgetConfig?.maxConcurrentDatapoints}"
                               style="height: 100%"
-                    ></or-chart>
+                    ></or-attribute-report>
                 `;
             }))}
         `;
