@@ -19,7 +19,9 @@
  */
 package org.openremote.test.protocol.modbus
 
-
+import net.solarnetwork.*
+import net.solarnetwork.io.modbus.tcp.TcpModbusMessage;
+import net.solarnetwork.io.modbus.tcp.netty.NettyTcpModbusServer
 import org.openremote.agent.protocol.modbus.ModbusAgentLink
 import org.openremote.agent.protocol.modbus.ModbusTcpAgent
 import org.openremote.agent.protocol.modbus.ModbusTcpProtocol
@@ -34,6 +36,7 @@ import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.value.ValueType
 import org.openremote.test.ManagerContainerTrait
+import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -41,6 +44,30 @@ import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
 
 class ModbusBasicTest extends Specification implements ManagerContainerTrait {
+
+    @Shared
+    int modbusServerPort;
+
+    @Shared
+    NettyTcpModbusServer server;
+
+    def setupSpec() {
+        modbusServerPort = findEphemeralPort();
+        server = new NettyTcpModbusServer(modbusServerPort)
+        server.setMessageHandler { msg, sender ->
+            def tcpMessage = msg.unwrap(TcpModbusMessage.class)
+            def tcpParsedMessage = tcpMessage.validate();
+            print(tcpParsedMessage);
+        }
+
+        server.start()
+    }
+
+    def cleanupSpec() {
+        server.stop();
+    }
+
+
     def "Modbus Integration Test"() {
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
@@ -56,7 +83,7 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
         agent.setRealm(MASTER_REALM)
 
         agent.setHost("localhost")
-        agent.setPort(12345)
+        agent.setPort(modbusServerPort)
 
         agent = assetStorageService.merge(agent)
 
