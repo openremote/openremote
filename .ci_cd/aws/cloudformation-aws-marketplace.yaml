@@ -79,6 +79,8 @@ Parameters:
   Keypair:
     Description: With the selected keypair, you can log in to the machine via SSH.
     Type: AWS::EC2::KeyPair::KeyName
+    AllowedPattern: ".+"
+    ConstraintDescription: You must select an Keypair
   AssignElasticIP:
     Description: Enabling this option ensures that your IPv4 address remains static after a restart. Additional charges may apply.
     Type: String
