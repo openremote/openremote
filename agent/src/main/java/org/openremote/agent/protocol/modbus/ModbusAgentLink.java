@@ -9,9 +9,6 @@ import java.math.BigInteger;
 
 public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
 
-    @JsonPropertyDescription("Identifier of Modbus TCP server or Modbus serial slave")
-    private int unitId;
-
     @JsonPropertyDescription("Poll interval in milliseconds")
     private long refresh;
 
@@ -32,15 +29,6 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
 
     @JsonPropertyDescription("Write value type: \"int64\", \"int64_swap\", \"float32\", \"float32_swap\", \"int32\", \"int32_swap\", \"int16\", \"bit\"")
     private ModbusDataType writeValueType;
-
-    // Getters and setters for each variable
-    public int getUnitId() {
-        return unitId;
-    }
-
-    public void getUnitId(int id) {
-        this.unitId = id;
-    }
 
     public long getRefresh() {
         return refresh;
@@ -150,9 +138,8 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     }
 
     @JsonCreator
-    public ModbusAgentLink(@JsonProperty("id") String id, @JsonProperty int unitId, @JsonProperty("refresh") long refresh, @JsonProperty("readType") ReadType readType, @JsonProperty("readValueType") ModbusDataType readValueType, @JsonProperty("readAddress") int readAddress, @JsonProperty("writeType") WriteType writeType, @JsonProperty("writeAddress") int writeAddress, @JsonProperty("writeValueType") ModbusDataType writeValueType) {
+    public ModbusAgentLink(@JsonProperty("id") String id, @JsonProperty("refresh") long refresh, @JsonProperty("readType") ReadType readType, @JsonProperty("readValueType") ModbusDataType readValueType, @JsonProperty("readAddress") int readAddress, @JsonProperty("writeType") WriteType writeType, @JsonProperty("writeAddress") int writeAddress, @JsonProperty("writeValueType") ModbusDataType writeValueType) {
         super(id);
-        this.unitId = unitId;
         this.refresh = refresh;
         this.readType = readType;
         this.readValueType = readValueType;
