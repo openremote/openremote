@@ -32,6 +32,13 @@ dependencies {
     testImplementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
     testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
     testImplementation "com.icegreen:greenmail:$greenmailVersion"
+
+    testImplementation "net.solarnetwork.common:nifty-modbus-tcp:$niftyModbusVersion"
+    testImplementation "net.solarnetwork.common:nifty-modbus-rtu-jsc:$niftyModbusVersion"
+    testImplementation "net.solarnetwork.common:nifty-modbus-api:$niftyModbusVersion"
+    testImplementation "net.solarnetwork.common:nifty-modbus-core:$niftyModbusVersion"
+
+
 }
 
 tasks.withType(Test) {
