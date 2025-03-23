@@ -44,6 +44,8 @@ Metadata:
         default: Would you like to assign an Elastic IP?
       Password:
         default: Would you like to change the default administrator password?
+      RepeatPassword:
+        default: If changed the password, please repeat the password above.
       SMTPHostname:
         default: Please enter the SMTP hostname.
       SMTPUsername:
@@ -93,6 +95,10 @@ Parameters:
       Description: The password you enter here will be used for the administrator account within the OpenRemote manager. Leave empty to use the default one.
       Type: String
       NoEcho: true
+  RepeatPassword:
+      Description: Repeat the password you have entered above.
+      Type: String
+      NoEcho: true
   SMTPHostname:
       Description: The hostname you enter here will be used for sending e-mails e.g. mail.example.com.
       Type: String
@@ -128,6 +134,17 @@ Mappings:
 
 Conditions:
   AssignElasticIP: !Equals [!Ref AssignElasticIP, "Yes"]
+
+Rules:
+  IsPasswordProvided:
+    RuleCondition: !Not [!Equals [!Ref Password, .+]]
+    Assertions:
+      - Assert:
+          !Equals
+           - !Ref Password
+           - !Ref RepeatPassword
+        AssertDescription: The password and repeat password field must be the same.
+
 
 Resources:
   ORVPC:
