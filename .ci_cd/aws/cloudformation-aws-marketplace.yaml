@@ -1,12 +1,12 @@
 # ---------------------------------------------------------------------------------------------------------------------
 #
 # OpenRemote AWS Marketplace CloudFormation Template
-# This template will be used for spinning up an OpenRemote instance on the AWS Marketplace.
+# This template will be used for spinning up an OpenRemote instance via the AWS Marketplace.
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
 AWSTemplateFormatVersion: 2010-09-09
-Description: Deploy a OpenRemote instance via AWS Marketplace
+Description: Deploy an OpenRemote instance via the AWS Marketplace
 Metadata:
   AWS::CloudFormation::Interface: 
     ParameterGroups:
@@ -20,9 +20,10 @@ Metadata:
           - Keypair
           - AssignElasticIP
       - Label:
-          default: OpenRemote Configuration
+          default: OpenRemote Configuration (Optional)
         Parameters:
           - Password
+          - RepeatPassword
       - Label:
           default: E-mail Configuration (Optional)
         Parameters:
@@ -32,31 +33,31 @@ Metadata:
           - SMTPFrom
     ParameterLabels:
       Hostname:
-        default: "Would you like to use your own domain name? If so, please enter it here."
+        default: Would you like to use your own domain name? If so, please enter it here.
       InstanceType:
-        default: "Which instance would you like to use?"
+        default: Which instance would you like to use?
       VolumeSize:
-        default: "How much storage would you like to allocate for the root device?"
+        default: How much storage would you like to allocate to the virtual machine?
       Keypair: 
-        default: "Please select the keypair you would like to use for this instance."
+        default: Which keypair would you like to use for this instance?
       AssignElasticIP:
-        default: "Would you like to configure an Elastic IP (Static IP)?"
+        default: Would you like to assign an Elastic IP?
       Password:
-        default: "Please set the administrator password."
+        default: Would you like to change the default administrator password?
       SMTPHostname:
-        default: "Please enter your SMTP Hostname"
+        default: Please enter the SMTP hostname.
       SMTPUsername:
-        default: "Please enter your SMTP Username"
+        default: Please enter the SMTP username.
       SMTPPassword:
-        default: "Please enter your SMTP Password"
+        default: Please enter the SMTP password.
       SMTPFrom:
-        default: "Please enter the senders address"
+        default: Please enter the e-mail address you would like to use for sending e-mails.
 Parameters:
   Hostname:
-    Description: Enter the Fully Qualified Domain Name (FQDN) for this OpenRemote instance (e.g., example.com). Leave blank to use only an IPv4 address.
+    Description: Enter the Fully Qualified Domain Name (FQDN) e.g. example.com. Leave blank to use the IPv4 address.
     Type: String
   InstanceType:
-    Description: Prices vary depending on the selected instance. All instances are powered by ARM chips.
+    Description: Prices vary depending on the selected instance. All instances are using the ARM architecture.
     Type: String
     Default: t4g.medium
     AllowedValues:
@@ -77,33 +78,33 @@ Parameters:
       - 48GB
       - 64GB
   Keypair:
-    Description: With the selected keypair, you can log in to the machine via SSH.
+    Description: With the selected keypair, you can SSH into the machine.
     Type: AWS::EC2::KeyPair::KeyName
     AllowedPattern: ".+"
-    ConstraintDescription: You must select an Keypair
+    ConstraintDescription: You must select an keypair.
   AssignElasticIP:
-    Description: Enabling this option ensures that your IPv4 address remains static after a restart. Additional charges may apply.
+    Description: Enabling this option ensures that your IPv4 address remains the same after stopping the virtual machine. Additional charges may apply.
     Type: String
     Default: "No"
     AllowedValues:
       - "Yes"
       - "No"
   Password:
-      Description: The password you enter here will be used for the administrator account within the OpenRemote manager. Leave empty to use the default one
+      Description: The password you enter here will be used for the administrator account within the OpenRemote manager. Leave empty to use the default one.
       Type: String
       NoEcho: true
   SMTPHostname:
-      Description: Enter the SMTP Hostname e.g. mail.example.com
+      Description: The hostname you enter here will be used for sending e-mails e.g. mail.example.com.
       Type: String
   SMTPUsername:
-      Description: Enter the SMTP Username. In most cases this is the e-mail address of the sending account
+      Description: The username for authenticating with the SMTP server. In most cases this is the e-mail address of the sending account.
       Type: String
   SMTPPassword:
-      Description: Enter the SMTP Password.
+      Description: The password for authenticating with the SMTP server.
       Type: String
       NoEcho: true
   SMTPFrom:
-      Description: Enter the SMTP sender address. e.g. noreply@example.com
+      Description: The e-mail address is visible for the receivers. e.g. noreply@example.com.
       Type: String
 
 Mappings:
@@ -225,7 +226,6 @@ Resources:
     Properties:
       InstanceId: !Ref ORInstance
       EIP: !Ref ORElasticIP
-  
   ORInstance:
     Type: AWS::EC2::Instance
     Metadata:
@@ -278,7 +278,7 @@ Resources:
         -  !Ref ORSSHSecurityGroup
       Tags:
       - Key: Name
-        Value: OpenRemote/AWS-Marketplace
+        Value: OpenRemote/AWS Marketplace
       BlockDeviceMappings:
       - DeviceName: /dev/xvda
         Ebs:
