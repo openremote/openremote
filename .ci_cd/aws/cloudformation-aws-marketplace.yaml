@@ -228,6 +228,10 @@ Resources:
       EIP: !Ref ORElasticIP
   ORInstance:
     Type: AWS::EC2::Instance
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: PT5M
     Metadata:
       AWS::CloudFormation::Init:
         configSets:
@@ -289,5 +293,12 @@ Resources:
         !Base64
           Fn::Sub: |
             #!/bin/bash -xe
+            
+            # Install CFN scripts.
             yum -y install aws-cfn-bootstrap
-            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --region ${AWS::Region} --resource ORInstance
+
+            # Execute default configset.
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --configsets default --region ${AWS::Region} --resource ORInstance
+
+            # Wait for signal that OpenRemote is succesfully installed.
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource ORInstance
