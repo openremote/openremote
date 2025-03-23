@@ -139,13 +139,13 @@ Resources:
       InstanceTenancy: default
       Tags:
         - Key: Name
-          Value: or-vpc
+          Value: !Sub ${AWS::StackName}/or-vpc
   ORInternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags: 
         - Key: Name
-          Value: or-internet-gateway
+          Value: !Sub ${AWS::StackName}/or-internet-gateway
   ORInternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
@@ -160,14 +160,14 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: or-public-subnet
+          Value: !Sub ${AWS::StackName}/or-public-subnet
   ORPublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref ORVPC
       Tags: 
         - Key: Name
-          Value: or-routetable
+          Value: !Sub ${AWS::StackName}/or-routetable
   ORPublicRoute:
     Type: AWS::EC2::Route
     DependsOn: ORInternetGatewayAttachment
@@ -184,7 +184,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Access OpenRemote Services
-      GroupName: or-securitygroup
+      GroupName: !Sub ${AWS::StackName}/or-securitygroup
       VpcId: !Ref ORVPC
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
@@ -211,7 +211,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: OpenRemote SSH Whitelist
-      GroupName: or-ssh-whitelist
+      GroupName: !Sub ${AWS::StackName}/or-ssh-whitelist
       VpcId: !Ref ORVPC
   ORElasticIP:
     Type: AWS::EC2::EIP
@@ -219,7 +219,7 @@ Resources:
     Properties:
       Tags:
         - Key: Name
-          Value: !Ref Hostname
+          Value: !Sub ${AWS::StackName}/Hostname
   ORElasticIPAssoc:
     Type: AWS::EC2::EIPAssociation
     Condition: AssignElasticIP
@@ -282,7 +282,7 @@ Resources:
         -  !Ref ORSSHSecurityGroup
       Tags:
       - Key: Name
-        Value: OpenRemote/AWS Marketplace
+        Value: !Sub ${AWS::StackName}/AWS Marketplace
       BlockDeviceMappings:
       - DeviceName: /dev/xvda
         Ebs:
