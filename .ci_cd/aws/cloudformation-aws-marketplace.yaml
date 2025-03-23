@@ -133,13 +133,18 @@ Resources:
   ORVPC:
     Type: AWS::EC2::VPC
     Properties: 
-      CidrBlock: 172.20.0.0/16
+      CidrBlock: 10.0.0.0/16
       EnableDnsHostnames: true
       EnableDnsSupport: true
       InstanceTenancy: default
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}/or-vpc
+  ORIPv6CIDRBlock:
+    Type: AWS::EC2::VPCCidrBlock
+    Properties:
+      VpcId: !Ref ORVPC
+      AmazonProvidedIpv6CidrBlock: true
   ORInternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
@@ -153,10 +158,12 @@ Resources:
       InternetGatewayId: !Ref ORInternetGateway
   ORPublicSubnet:
     Type: AWS::EC2::Subnet
+    DependsOn: ORIPv6CIDRBlock
     Properties:
       VpcId: !Ref ORVPC
       AvailabilityZone: !Select [ 0, !GetAZs '' ]
-      CidrBlock: 172.20.0.0/24
+      CidrBlock: !Select [ 1, !Cidr [!GetAtt ORVPC.CidrBlock, 6, 8]]
+      Ipv6CidrBlock: !Select [1, !Cidr [!Select [0, !GetAtt ORVPC.Ipv6CidrBlocks], 7, 64]]
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
@@ -168,13 +175,20 @@ Resources:
       Tags: 
         - Key: Name
           Value: !Sub ${AWS::StackName}/or-routetable
-  ORPublicRoute:
+  ORPublicRouteIPv4:
     Type: AWS::EC2::Route
     DependsOn: ORInternetGatewayAttachment
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref ORInternetGateway
       RouteTableId: !Ref ORPublicRouteTable
+  ORPublicRouteIPv6:
+    Type: AWS::EC2::Route
+    DependsOn: ORInternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref ORPublicRouteTable
+      GatewayId: !Ref ORInternetGateway
+      DestinationIpv6CidrBlock: ::/0
   ORPublicRouteTableAssociate:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -187,26 +201,45 @@ Resources:
       GroupName: !Sub ${AWS::StackName}/or-securitygroup
       VpcId: !Ref ORVPC
       SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
           FromPort: 80
-          IpProtocol: tcp
           ToPort: 80
-          Description: HTTP Access
-        - CidrIp: 0.0.0.0/0
+          CidrIp: 0.0.0.0/0
+          Description: HTTP Access IPv4
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIpv6: ::/0
+          Description: HTTP Access IPv6
+        - IpProtocol: tcp
           FromPort: 443
-          IpProtocol: tcp
           ToPort: 443
-          Description: HTTPS Access
-        - CidrIp: 0.0.0.0/0
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS Access IPv4
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIpv6: ::/0
+          Description: HTTPS Access IPv6
+        - IpProtocol: tcp
           FromPort: 8883
-          IpProtocol: tcp
           ToPort: 8883
-          Description: MQTT Access
-        - CidrIp: 0.0.0.0/0
-          FromPort: 162
-          IpProtocol: udp
+          CidrIp: 0.0.0.0/0
+          Description: MQTT Access IPv4
+        - IpProtocol: tcp
+          FromPort: 8883
+          ToPort: 8883
+          CidrIpv6: ::/0
+          Description: MQTT Access IPv6
+        - IpProtocol: udp
+          FromPort: 161
           ToPort: 162
-          Description: SNMP Access
+          Description: SNMP Access IPv4
+        - IpProtocol: udp
+          FromPort: 161
+          ToPort: 162
+          CidrIpv6: ::/0
+          Description: SNMP Access IPv6
   ORSSHSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
