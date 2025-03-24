@@ -302,20 +302,6 @@ export class NotificationForm extends LitElement {
         return normalizedValue;
     }
 
-    private _getReadableTargetName() {
-        if (!this.formData.target) return '-';
-        // for assets, try to find the asset name
-
-        // for users, try to find the username
-
-        // for realms, the ID is already the name but "normalize" it just to be safe
-        if (this.formData.targetType === 'Realm') {
-            return this.formData.target; 
-        }
-
-        return this.formData.target;
-    }
-
     private async _populateFormFromNotification() {
         if (!this.notification) return;
 
@@ -408,34 +394,34 @@ export class NotificationForm extends LitElement {
         return html`
             <div class="form-container">
                 <div class="formGridContainer">
-                    ${this._getTargetContainer(inputDisabled)}  
-                    ${this._getMessageContentContainer(inputDisabled)}       
-                    ${this._getActionButtonContainer(inputDisabled)}
-                    ${this.readonly ? this._getPropertiesContainer() : ''}
+                    ${this._renderTargetContainer(inputDisabled)}  
+                    ${this._renderMessageContentContainer(inputDisabled)}       
+                    ${this._renderActionButtonContainer(inputDisabled)}
+                    ${this.readonly ? this._renderPropertiesContainer() : ''}
                 </div>
             </div>
         `;
     }
 
-    protected _getPropertiesContainer() {
+    protected _renderPropertiesContainer() {
         return html`
             <div class="propContainer">
                 <h5>${i18next.t("Properties")}</h5>
-                ${this._getReadOnlyField("Source", this._normalizeValue(this.formData.source))}
-                ${this._getReadOnlyField("Status", this.formData.status)}
-                ${this._getReadOnlyField("Sent", this.formData.sent)}
-                ${this._getReadOnlyField("Delivered", this.formData.delivered)}
+                ${this._renderReadOnlyField("Source", this._normalizeValue(this.formData.source))}
+                ${this._renderReadOnlyField("Status", this.formData.status)}
+                ${this._renderReadOnlyField("Sent", this.formData.sent)}
+                ${this._renderReadOnlyField("Delivered", this.formData.delivered)}
             </div>
         `;
     }
 
-    protected _getTargetContainer(inputDisabled: boolean) {
+    protected _renderTargetContainer(inputDisabled: boolean) {
         if (inputDisabled) {
             return html`
              <div class="targetContainer">
                 <h5>${i18next.t("Target")}</h5>
-                ${this._getReadOnlyField("Target type", this._normalizeValue(this.formData.targetType))}
-                ${this._getReadOnlyField("Target", this.formData.target)}
+                ${this._renderReadOnlyField("Target type", this._normalizeValue(this.formData.targetType))}
+                ${this._renderReadOnlyField("Target", this.formData.target)}
              </div>
             `;
         }
@@ -496,7 +482,7 @@ export class NotificationForm extends LitElement {
         `;
     }
 
-    protected _getMessageContentContainer(inputDisabled: boolean) {
+    protected _renderMessageContentContainer(inputDisabled: boolean) {
         return html`
         <div class="messageContentContainer">
                     <h5>${i18next.t("Content")}</h5>
@@ -528,7 +514,7 @@ export class NotificationForm extends LitElement {
 
     }
 
-    protected _getActionButtonContainer(inputDisabled: boolean) {
+    protected _renderActionButtonContainer(inputDisabled: boolean) {
         return html`
         <div class="actionButtonContainer">
                     <h5>${i18next.t("Actions")}</h5>
@@ -573,7 +559,7 @@ export class NotificationForm extends LitElement {
         `;
     }
 
-    protected _getReadOnlyField(label: string, value: string | undefined) {
+    protected _renderReadOnlyField(label: string, value: string | undefined) {
         return html`
             <or-mwc-input 
                 label="${i18next.t(label)}"
