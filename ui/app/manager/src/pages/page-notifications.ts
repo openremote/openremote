@@ -33,15 +33,14 @@ export class NotificationService {
             {fromDate, toDate} :
             this.getDefaultTimeRange();
 
-            // const response = await manager.rest.api.NotificationResource.getNotifications({
-            //     from: timeRange.fromDate,
-            //     to: timeRange.toDate
-            // });
-            const response = await manager.rest.api.NotificationResource.getAllNotifications({
-                from: timeRange.fromDate,
-                to: timeRange.toDate,
-                realmId: realm
-            });
+            const response = await manager.rest.api.NotificationResource.getNotificationsByRealm(
+                realm,
+                {
+                    from: timeRange.fromDate,
+                    to: timeRange.toDate,
+                    realmId: realm
+                });
+            
             if (!response.data) {
                 console.warn("No data in response:", response);
                 return [];
@@ -55,15 +54,12 @@ export class NotificationService {
         }
     }
 
-    async sendNotification(notification: Notification): Promise<boolean> {
+    async sendNotification(notification: Notification, realm: string): Promise<boolean> {
         try {    
-            // const response = await manager.rest.api.NotificationResource.sendNotification(
-            //     notification
-            // );
-            const response = await manager.rest.api.NotificationResource.createNotificationInDB(
-                notification
+            const response = await manager.rest.api.NotificationResource.sendNotificationWithRealmData(
+                notification,
+                {realmId: realm}
             );
-            console.log("Response received:", response);
             return response.status === 200;
         } catch (err: unknown) {
             const error = err as AxiosError;
@@ -275,26 +271,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
     protected _data?: SentNotification[];
 
     @state()
-    protected _users?: User[];
-
-    @state()
-    protected _assets?: Asset[];
-
-    @state()
-    protected _realms?: string[];
-
-    @state()
-    protected _selectedTargetType?: string;
-
-    @state()
-    protected _targetOptions: {text: string, value: string}[] = [];
-
-    protected _targetTypeInput?: OrMwcInput;
-
-    @state()
-    protected _targetInput?: OrMwcInput;
-
-    @state()
     protected notification?: SentNotification;
 
     @state()
@@ -304,12 +280,10 @@ export class PageNotifications extends Page<AppStateKeyed> {
     protected _toDate?: number;
 
     @state()
-    protected _selectedSource?: string;
+    protected _dateRange?: number[];
 
     @state()
-    protected creationState?: {
-        notificationModel: Notification;
-    }
+    protected _selectedSource?: string;
 
     @state()
     protected _isFilteredDate: boolean = false;
@@ -318,7 +292,9 @@ export class PageNotifications extends Page<AppStateKeyed> {
     protected _isFilteredSource: boolean = false;
 
     protected _loading: boolean = false;
+    
     protected notificationService: NotificationService;
+    
     protected _sourceOptions = [
         { value: " ", text: i18next.t("All sources") },
         { value: "CLIENT", text: i18next.t("Client") },
@@ -339,31 +315,56 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     public stateChanged(state: AppStateKeyed): void {
-        console.log("current realm as seen from stateChanged", this.realm);
-        console.log("app.state.realm", state.app.realm);
-        if (state.app.page == "notifications") {
-            console.log("stateChanged notification condition met", this.realm);
+        if (state.app.page == "Notifications") {
             if (this.realm === undefined || this.realm == state.app.realm) {
-                console.log("stateChanged realm condition met", this.realm);
                 this._loadData();
             } 
             this.realm = state.app.realm;
-            
             this.requestUpdate('realm');
             
             this._loadData();
-            console.log("this.realm after loadData()", this.realm);
         }
     }
 
+    protected reset(): void {
+        this._data = undefined;
+        this.requestUpdate();
+    }
+
+    public shouldUpdate(changedProperties: PropertyValues): boolean {
+        if (changedProperties.has("realm")) {
+            this.realm = manager.displayRealm;
+            this.reset();
+        }
+
+        if (!this._data && !this._loading && this.realm) {
+            this._loadData();
+        }
+
+        return super.shouldUpdate(changedProperties);
+    }
+
+    public connectedCallback(): void {
+        super.connectedCallback();
+        
+        this.realm = manager.displayRealm;
+        if (!this._data) {
+            this._loadData();
+        }
+    }
+
+    get name(): string {
+        return "notification.notification_plural"
+    }
+
     protected async _loadData() {
-        console.log("LoadData triggered");
         if (this._loading || !this.realm) {
             return;
         }
         this._loading = true;
 
         try {
+
             const fromDate = this._isFilteredDate ? this._fromDate : undefined;
             const toDate = this._isFilteredDate ? this._toDate : undefined;
 
@@ -473,7 +474,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
                 }]
             };
 
-            const response = await this.notificationService.sendNotification(notification);
+            const response = await this.notificationService.sendNotification(notification, this.realm);
 
             showSnackbar(undefined, i18next.t("Successfully created notification."));
             dialog.close();
@@ -506,72 +507,27 @@ export class PageNotifications extends Page<AppStateKeyed> {
             type === NotificationTargetType.CUSTOM;
     }
 
-    protected reset(): void {
-        console.log("Reset() triggered");
-        this._data = undefined;
-        this.requestUpdate();
-    }
-
-    public shouldUpdateOld(changedProperties: PropertyValues): boolean {
-        if (changedProperties.has("realm") && changedProperties.get("realm") != undefined) {
-            this.reset();
-
-            const tableContainer = this.shadowRoot?.querySelector("#table-container");
-            console.log("In shouldUpdate, here's table container BEFORE shady innerHTML manip:", tableContainer);
-            if (tableContainer) {
-                tableContainer.innerHTML = '';
-                this.requestUpdate();
-            }
-
-            console.log("In shouldUpdate, here's table container after shady innerHTML manip:", tableContainer);
-        }
-
-        if (!this._data) {
-            this._loadData();
-        }
-
-        return super.shouldUpdate(changedProperties);
-    }
-
-    public shouldUpdate(changedProperties: PropertyValues): boolean {
-        console.log("Current realm before if block", this.realm);
-        if (changedProperties.has("realm")) {
-            this.realm = manager.displayRealm;
-            console.log("Realm set to", this.realm);
-            console.log("From manager displayRealm", manager.displayRealm);
-            this.reset();
-        }
-
-        if (!this._data && !this._loading && this.realm) {
-            this._loadData();
-        }
-
-        return super.shouldUpdate(changedProperties);
-    }
-
-    public connectedCallback(): void {
-        super.connectedCallback();
-        
-        this.realm = manager.displayRealm;
-        if (!this._data) {
-            this._loadData();
-        }
-    }
-
-    get name(): string {
-        return "notification.notification_plural"
-    }
-
     protected render() {
-        if (!manager.authenticated) {
-            return html`<or-translate value="notAuthenticated"/>`;
-        }
-
         const writeNotifications = manager.hasRole("write:admin");
 
         return html`
             <div id="wrapper">
-                <div id="title">
+                ${!manager.authenticated
+                    ? html`<or-translate value="notAuthenticated"/>`
+                    : html`
+                    ${this._renderHeader(writeNotifications)}
+                    <div id="table-container">
+                        ${this._renderNotificationsTable()}
+                    </div>
+                    `
+                }
+            </div>
+        `;
+    }
+    
+    protected _renderHeader(writeNotifications) {
+        return html`
+            <div id="title">
                     <div style="display: flex; align-items: center;">
                         <or-icon icon="message-outline" style="padding: 0 10px 0 4px;"></or-icon>
                         <span><or-translate value="${i18next.t("Notifications")}"/></span>
@@ -612,7 +568,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
                                 }}"
                             ></or-mwc-input>
                     </div>
-                    
                     <div class="create-btn">
                     ${writeNotifications ? html`
                         <or-mwc-input 
@@ -624,14 +579,10 @@ export class PageNotifications extends Page<AppStateKeyed> {
                     ` : ``}
                     </div>
                 </div>
-                <div id="table-container">
-                    ${this.getNotificationsTable()}
-                </div>
-            </div>
         `;
     }
 
-    protected getNotificationsTable() {
+    protected _renderNotificationsTable() {
         return html`
             <or-notifications-table 
                 .notifications=${this._getFilteredNotifications() || []}
@@ -641,18 +592,18 @@ export class PageNotifications extends Page<AppStateKeyed> {
         `;
     }
 
-    protected _getCreateDialogHTML() {
-        return html`
+
+    protected _renderForm(notification?: SentNotification) {
+        if (!notification) {
+            return html`
             <div class="dialog-content">
                 <notification-form
                     id="notificationForm"
                     ?disabled="${false}">
                 </notification-form>
             </div>
-        `
-    }
+        `}
 
-    protected _getNotificationDetailsContent(notification: SentNotification) {
         return html`
         <div class="form-preview">
             <notification-form
@@ -669,7 +620,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
         const dialog = showDialog(
             new OrMwcDialog()
             .setHeading(i18next.t("Create notification"))
-            .setContent(this._getCreateDialogHTML())
+            .setContent(this._renderForm())
             // .setDismissAction(null)
                 .setActions([
                     {
@@ -707,7 +658,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
         const dialog = showDialog(
             new OrMwcDialog()
             .setHeading(i18next.t("Notification details"))
-            .setContent(this._getNotificationDetailsContent(notification))
+            .setContent(this._renderForm(notification))
             .setDismissAction({
                 actionName: "cancel",
                 action: () => {dialog.close(); this._loadData();},
@@ -721,7 +672,5 @@ export class PageNotifications extends Page<AppStateKeyed> {
         ])
         );
     }
-
-
 }
 
