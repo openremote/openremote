@@ -145,7 +145,6 @@ Rules:
            - !Ref RepeatPassword
         AssertDescription: The password and repeat password field must be the same.
 
-
 Resources:
   ORVPC:
     Type: AWS::EC2::VPC
@@ -285,7 +284,7 @@ Resources:
     Metadata:
       AWS::CloudFormation::Init:
         configSets:
-          default:
+          openremote:
             - docker_installation
             - start_openremote
         
@@ -299,10 +298,12 @@ Resources:
                 sudo usermod -a -G docker ec2-user
                 curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
                 chmod +x /usr/local/bin/docker-compose
+              test: docker-compose --version >/dev/null 2>&1; (( $? != 0 ))
 
-            02_download_docker_compose:
+            02_download_docker_compose_openremote:
               command: |
                 sudo wget https://raw.githubusercontent.com/openremote/openremote/refs/heads/master/docker-compose.yml -P /openremote
+              test: ls /openremote/docker-compose.yml >/dev/null 2>&1; (( $? != 0 ))
           services:
             systemd:
               docker:
@@ -313,8 +314,11 @@ Resources:
           commands:
             01_start_openremote:
               command: !Sub |
+                
+                # If no hostname is provided, use the IPv4 address of the virtual machine, otherwise use the hostname.
                 [ -ne ${Hostname} ] && HOST=$(curl v4.ident.me 2>/dev/null) || HOST=${Hostname}
 
+                # Set Environment variables and start OpenRemote with the Docker-Compose file.
                 OR_HOSTNAME=$HOST \
                 OR_ADMIN_PASSWORD=${Password} \
                 OR_EMAIL_HOST=${SMTPHostname} \
@@ -348,7 +352,7 @@ Resources:
             yum -y install aws-cfn-bootstrap
 
             # Execute default configset.
-            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --configsets default --region ${AWS::Region} --resource ORInstance
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --configsets openremote --region ${AWS::Region} --resource ORInstance
 
             # Wait for signal that OpenRemote is succesfully installed.
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource ORInstance
