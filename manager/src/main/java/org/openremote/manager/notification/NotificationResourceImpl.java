@@ -280,11 +280,6 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
             throw new WebApplicationException("Missing notification", BAD_REQUEST);
         }
 
-        //Allow users to specify realms they have access to
-        if (!isSuperUser() && !getAuthenticatedRealmName().equals(realmId)) {
-            throw new WebApplicationException("You can only create notifications in your own realm", BAD_REQUEST);
-        }
-
         Map<String, Object> headers = new HashMap<>();
         headers.put(Notification.HEADER_SOURCE, Notification.Source.CLIENT);
         headers.put("NOTIFICATION_REALM_ID", realmId);

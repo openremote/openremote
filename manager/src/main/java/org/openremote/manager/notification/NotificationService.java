@@ -177,7 +177,6 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     switch (source) {
                         case INTERNAL -> {
                             isSuperUser = true;
-                            //I have a feeling this is an issue 
                             notificationRealm.set("master");
                         }
                         case CLIENT -> {
