@@ -146,19 +146,14 @@ public interface NotificationResource {
                                   @PathParam("notificationId") Long notificationId,
                                   JsonNode acknowledgement);
 
-     /**
-     * Development use only: Getting all notifications from the database directly for testing purposes
-     */
     @GET
-    @Path("all")
+    @Path("{realmId}")
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getAllNotifications", summary = "Retrieve all notifications (development only)")
-    SentNotification[] getAllNotifications(@BeanParam RequestParams requestParams, 
-                                            @QueryParam("from") Long fromTimestamp,
-                                            @QueryParam("to") Long toTimestamp,
-                                            @QueryParam("realmId") String realmId);
-    
-
+    @Operation(operationId = "getNotificationsByRealm", summary="Get notifications filtered by realm ownership and optional time bounds.")
+    public SentNotification[] getNotificationsByRealm(@BeanParam RequestParams requestParams,
+                                        @QueryParam("from") Long fromTimestamp,
+                                        @QueryParam("to") Long toTimestamp,
+                                        @QueryParam("realmId") String realmId);
     /**
      * Development use only: Sending notification to the database directly for testing purposes
      */
@@ -166,7 +161,8 @@ public interface NotificationResource {
     @Path("db")
     @Consumes(APPLICATION_JSON)
     @Operation(operationId = "sendTestNotification", summary = "Send a notification directly to db")
-    public void createNotificationInDB(@BeanParam RequestParams requestParams,
-                          Notification notification);
+    public void sendNotificationWithRealmData(@BeanParam RequestParams requestParams,
+                          Notification notification,
+                          @QueryParam("realmId") String realmId);
 
 }
