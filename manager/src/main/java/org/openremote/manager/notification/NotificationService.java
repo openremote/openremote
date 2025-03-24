@@ -177,6 +177,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     switch (source) {
                         case INTERNAL -> {
                             isSuperUser = true;
+                            //I have a feeling this is an issue 
                             notificationRealm.set("master");
                         }
                         case CLIENT -> {
@@ -185,8 +186,20 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                 // Anonymous clients cannot send notifications
                                 throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
                             }
+                            // For compatibility with existing tests/code, set realm from auth context first
                             realm = authContext.getAuthenticatedRealmName();
-                            notificationRealm.set(authContext.getAuthenticatedRealmName());
+                            notificationRealm.set(realm);
+                            // If a specific notification realm is provided, use it instead
+                            String specifiedRealm = exchange.getIn().getHeader("NOTIFICATION_REALM_ID", String.class);
+                            if (!TextUtil.isNullOrEmpty(specifiedRealm)) {
+                                // Only allow superusers to override the realm
+                                if (authContext.isSuperUser()) {
+                                    notificationRealm.set(specifiedRealm);
+                                } else {
+                                    LOG.warning("Non-superuser attempted to specify a different realm for notification: " + 
+                                    authContext.getUserId() + " tried to set realm to " + specifiedRealm);
+                                }
+                            }
                             userId = authContext.getUserId();
                             sourceId.set(userId);
                             isSuperUser = authContext.isSuperUser();
@@ -357,12 +370,24 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         builder.append("select n from SentNotification n where 1=1");
         processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, false);
         builder.append(" order by n.sentOn asc");
+
+        LOG.fine("Query builder after processing criteria: " + builder.toString());
+        LOG.fine("Parameters after processing criteria: " + parameters);
+        LOG.info("getNotifications called with: ids=" + ids + 
+             ", types=" + types + 
+             ", fromTimestamp=" + fromTimestamp + 
+             ", toTimestamp=" + toTimestamp + 
+             ", realmIds=" + realmIds + 
+             ", userIds=" + userIds + 
+             ", assetIds=" + assetIds);
+
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
             IntStream.rangeClosed(1, parameters.size())
                     .forEach(i -> query.setParameter(i, parameters.get(i-1)));
             return query.getResultList();
         });
+        
     }
 
     public void removeNotification(Long id) {
@@ -471,6 +496,42 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             parameters.add(Notification.TargetType.REALM);
             parameters.add(realmIds);
         }
+    }
+
+    public List<SentNotification> getNotificationsByRealm(List<String> realmIds, Long fromTimestamp, Long toTimestamp) {
+        if (realmIds == null || realmIds.isEmpty()) {
+            throw new IllegalArgumentException("RealmID must be specified"); 
+        }
+
+        StringBuilder builder = new StringBuilder();
+        List<Object> parameters = new ArrayList<>();
+        int paramIndex = 1;
+
+        builder.append("SELECT n FROM SentNotification n WHERE n.realm IN ?").append(paramIndex++);
+        parameters.add(realmIds);
+
+
+        if (fromTimestamp != null) {
+            builder.append(" AND n.sentOn >= ?").append(paramIndex++);
+            parameters.add(new Date(fromTimestamp));
+        }
+
+        if (toTimestamp != null) {
+            builder.append(" AND n.sentOn <= ?").append(paramIndex++);
+            parameters.add(new Date(toTimestamp));
+        }
+
+        builder.append(" ORDER BY n.sentOn DESC");
+        
+        return persistenceService.doReturningTransaction(entityManager -> {
+            TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
+            for (int i = 0; i < parameters.size(); i++) {
+                query.setParameter(i + 1, parameters.get(i));
+            }
+
+            return query.getResultList();
+        });
+        
     }
 
     protected Instant getRepeatAfterTimestamp(Notification notification, Instant lastSend) {

@@ -20,6 +20,9 @@
 package org.openremote.manager.notification;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.github.javaparser.utils.Log;
+
+
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.asset.AssetStorageService;
@@ -34,6 +37,8 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.WebApplicationException;
+
+import java.lang.reflect.Array;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -220,52 +225,106 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         }
     }
 
+    @Override
+    public SentNotification[] getNotificationsByRealm(RequestParams requestParams, Long fromTimestamp, Long toTimestamp, String realmId) {
+        if (realmId == null) {
+            throw new WebApplicationException("Realm ID must be specified", BAD_REQUEST);
+        }
+
+        try {
+            return notificationService.getNotificationsByRealm(
+                Collections.singletonList(realmId),
+                fromTimestamp,
+                toTimestamp
+            ).toArray(new SentNotification[0]);
+
+        } catch (IllegalArgumentException e) {
+            throw new WebApplicationException("Error retrieving notifications: " + e.getMessage(), BAD_REQUEST);
+        }
+    }
+
     // API endpoints below added for development purposes
     // Notification source is set to internal to sidestep local FCM config issues. 
+    // @Override
+    // public void sendNotificationWithRealmData (RequestParams requestParams, Notification notification, String realmId) {
+    //     if (notification == null) {
+    //         throw new WebApplicationException("Missing notification", BAD_REQUEST);
+    //     }
+
+    //     try {
+    //         Date now = new Date();
+
+    //         SentNotification sentNotification = new SentNotification()
+    //         .setName(notification.getName())
+    //         .setType(notification.getMessage().getType())
+    //         .setSource(Notification.Source.INTERNAL)
+    //         .setSourceId("")
+    //         .setTarget(notification.getTargets().get(0).getType())
+    //         .setTargetId(notification.getTargets().get(0).getId())
+    //         .setMessage(notification.getMessage())
+    //         .setRealm(realmId)
+    //         .setSentOn(now)
+    //         .setDeliveredOn(now);
+
+    //         notificationService.persistenceService.doTransaction(em -> {em.merge(sentNotification);
+    //         });
+    //     } catch (Exception e) {
+    //         LOG.warning("Failed to create notification in DB:" + e.getMessage());
+    //         throw new WebApplicationException("Failed to create notification", INTERNAL_SERVER_ERROR);
+    //     }
+    // }
+
     @Override
-    public void createNotificationInDB (RequestParams requestParams, Notification notification) {
+    public void sendNotificationWithRealmData (RequestParams requestParams, Notification notification, String realmId) {
         if (notification == null) {
             throw new WebApplicationException("Missing notification", BAD_REQUEST);
         }
 
-        try {
-            Date now = new Date();
-            String realm = getAuthenticatedRealmName();
-
-            SentNotification sentNotification = new SentNotification()
-            .setName(notification.getName())
-            .setType(notification.getMessage().getType())
-            .setSource(Notification.Source.INTERNAL)
-            .setSourceId("")
-            .setTarget(notification.getTargets().get(0).getType())
-            .setTargetId(notification.getTargets().get(0).getId())
-            .setMessage(notification.getMessage())
-            .setRealm(realm)
-            .setSentOn(now)
-            .setDeliveredOn(now);
-
-            notificationService.persistenceService.doTransaction(em -> {em.merge(sentNotification);
-            });
-        } catch (Exception e) {
-            LOG.warning("Failed to create notification in DB:" + e.getMessage());
-            throw new WebApplicationException("Failed to create notification", INTERNAL_SERVER_ERROR);
+        //Allow users to specify realms they have access to
+        if (!isSuperUser() && !getAuthenticatedRealmName().equals(realmId)) {
+            throw new WebApplicationException("You can only create notifications in your own realm", BAD_REQUEST);
         }
+
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(Notification.HEADER_SOURCE, Notification.Source.CLIENT);
+        headers.put("NOTIFICATION_REALM_ID", realmId);
+
+        if (isAuthenticated()) {
+            headers.put(Constants.AUTH_CONTEXT, getAuthContext());
+        }
+
+        boolean success = messageBrokerService.getFluentProducerTemplate()
+            .withBody(notification)
+            .withHeaders(headers)
+            .to(NotificationService.NOTIFICATION_QUEUE)
+            .request(Boolean.class);
+
+        if (!success) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+
+        // try {
+        //     Date now = new Date();
+
+        //     SentNotification sentNotification = new SentNotification()
+        //     .setName(notification.getName())
+        //     .setType(notification.getMessage().getType())
+        //     .setSource(Notification.Source.INTERNAL)
+        //     .setSourceId("")
+        //     .setTarget(notification.getTargets().get(0).getType())
+        //     .setTargetId(notification.getTargets().get(0).getId())
+        //     .setMessage(notification.getMessage())
+        //     .setRealm(realmId)
+        //     .setSentOn(now)
+        //     .setDeliveredOn(now);
+
+        //     notificationService.persistenceService.doTransaction(em -> {em.merge(sentNotification);
+        //     });
+        // } catch (Exception e) {
+        //     LOG.warning("Failed to create notification in DB:" + e.getMessage());
+        //     throw new WebApplicationException("Failed to create notification", INTERNAL_SERVER_ERROR);
+        // }
     }
 
-    @Override
-    public SentNotification[] getAllNotifications(RequestParams requestParams, Long fromTimestamp, Long toTimestamp, String realmId) {
-        
-        try {
-            return notificationService.getNotifications(
-            null, 
-            null, 
-            fromTimestamp,
-            toTimestamp, 
-            realmId != null ? Collections.singletonList(realmId) : null,
-            null, 
-            null).toArray(new SentNotification[0]);
-        } catch (IllegalArgumentException e) {
-            throw new WebApplicationException("Error retrieving notifications:", e);
-        }
-    }
+    
 }
