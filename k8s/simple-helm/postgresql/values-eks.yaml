@@ -1,3 +1,5 @@
+useSubPath: true
+
 affinity:
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:

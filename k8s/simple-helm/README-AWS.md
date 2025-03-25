@@ -47,7 +47,7 @@ For this reason, the volume mount section of the PostgreSQL statefulset has been
               name: postgresql-data
 ```
 
-This is however causing several permission issues. To resolve those, an init container (running as root) is used to reset ownership and file persmissions.
+This is however causing several permission issues. To resolve those, an init container (running as root) is used to reset ownership and file permissions.
 ```yaml
       initContainers:
         - name: psql-data-ownership
@@ -60,6 +60,8 @@ This is however causing several permission issues. To resolve those, an init con
               subPath: psql-data
               name: postgresql-data
 ```
+
+Those additions have been causing issues when running locally (at least on macOS) and are thus conditional to the useSubPath value.
 
 ### Networking
 

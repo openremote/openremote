@@ -94,6 +94,9 @@ volumeMounts: []
 #   mountPath: "/etc/foo"
 #   readOnly: true
 
+# Indicates if subpath must be used when mounting the psql data volume, required for AWS EBS volumes
+useSubPath: false
+
 nodeSelector: {}
 
 tolerations: []
