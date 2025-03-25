@@ -42,9 +42,12 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
         boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
         String function = (gapFill ? "public.time_bucket_gapfill" : "public.time_bucket");
         if (isNumber) {
-            if(this.formula == Formula.DELTA) {
-                return "select " + function + "(cast(? as interval), timestamp) AS x, (last(cast(value as numeric), timestamp) - first(cast(value as numeric), timestamp)) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_REF = ? and " +
-                        "timestamp BETWEEN ? AND ? GROUP BY x ORDER BY x";
+            if (this.formula == Formula.DELTA) {
+                this.gapFill = true; //check where this is set in using this code
+                //Returns the delta between the start and end of the period. Ex. for interval 1 minute, 10:41 will hold the difference between 10:41:00 and 10:42:00.
+                return "WITH interval_data AS (" + "SELECT " + function + "(cast(? as interval), timestamp) AS x, public.locf(public.last(value::DOUBLE PRECISION, timestamp)) AS numeric_value " +
+                        "FROM " + tableName + " " + "WHERE ENTITY_ID = ? AND ATTRIBUTE_NAME = ? AND TIMESTAMP >= ? AND TIMESTAMP <= ? GROUP BY x ) SELECT x, COALESCE(numeric_value - LAG(numeric_value, 1, numeric_value) OVER (ORDER BY x), numeric_value) AS delta FROM interval_data ORDER BY x ASC";
+
             } else {
                  return "select " + function + "(cast(? as interval), timestamp) AS x, " + this.formula.toString().toLowerCase() + "(cast(value as numeric)) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC";
             }

@@ -1321,13 +1321,14 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             query.interval = (intervalArr[0].toString() + " " + intervalArr[1].toString()); // for example: "5 minute"
 
 
-
+            console.log("datapointResoursequery:", query);
             response = await manager.rest.api.AssetDatapointResource.getDatapoints(asset.id, attribute.name, query, options);
 
 
             let data: ValueDatapoint<any>[] = [];
 
             if (response.status === 200) {
+                console.log("response:", response.data);
                 data = response.data
                     .filter(value => value.y !== null && value.y !== undefined)
                     .map(point => ({ x: point.x , y: point.y } as ValueDatapoint<any>))
