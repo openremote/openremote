@@ -163,7 +163,8 @@ const style = css`
     #container {
         display: flex;
         min-width: 0;
-        flex-direction: row;
+        flex-direction: column;
+        align-items: center;
         height: 100%;
     }
        
@@ -189,7 +190,7 @@ const style = css`
         flex-wrap: wrap;
         margin: var(--internal-or-chart-controls-margin);
         width: 100%;
-        flex-direction: column;
+        flex-direction: row;
         margin: 0;
     }
 
@@ -282,6 +283,7 @@ const style = css`
         flex: 1 1 0;
         position: relative;
         overflow: hidden;
+        width: 100%;
         /*min-height: 400px;
         max-height: 550px;*/
     }
@@ -415,29 +417,17 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     @property()
     public timeWindowKey?: string;
 
-
-
-
     @property()
     public showLegend: boolean = true;
 
     @property()
     public denseLegend: boolean = false;
 
-
     @property()
     public showToolBox: boolean = true;
 
     @property()
-    public showSymbolMaxDatapoints: number = 30;
-
-    @property()
-    public maxConcurrentDatapoints: number = 100;
-
-    @property()
     protected _loading: boolean = false;
-
-
 
     @property()
     protected _data?: ValueDatapoint<any>[];
@@ -525,7 +515,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
 
             this._chartOptions = {
-                animation: false,
+                //animation: false,
                 grid: {
                     show: true,
                     backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
@@ -533,42 +523,44 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     left: 50,//'5%', // 5% padding
                     right: 50,//'5%',
                     top: this.showToolBox ? 28 : 10,
-                    bottom:  20
+                    bottom:  55
                 },
                 backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                 tooltip: {
                     trigger: 'axis',
                     axisPointer: {
-                        type: 'cross'
+                        type: 'shadow'
                     },
                 },
+                legend: {show: true},
                 toolbox: {},
                 xAxis: {
                     type: 'category',
-                    //axisLine: {
+                    axisLine: {
                     //    onZero: false,
-                    //    lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}
-                    //},
-                    //splitLine: {show: true},
+                        lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}
+                    },
+                    splitLine: {show: true},
                     //min: this._startOfPeriod,
                     //max: this._endOfPeriod,
-                    //axisLabel: {
-                    //    showMinLabel: true,
-                    //    showMaxLabel: true,
-                    //    hideOverlap: true,
-                    //    fontSize: 10,
-                    //    formatter: {
-                    //         year: '{yyyy}-{MMM}',
-                    //         month: '{yy}-{MMM}',
-                    //         day: '{d}-{MMM}',
-                    //         hour: '{HH}:{mm}',
-                    //         minute: '{HH}:{mm}',
-                    //         second: '{HH}:{mm}:{ss}',
-                    //         millisecond: '{d}-{MMM} {HH}:{mm}',
-                    //        // @ts-ignore
-                    //         none: '{MMM}-{dd} {HH}:{mm}'
-                    //    }
-                    //}
+                    axisLabel: {
+                        showMinLabel: true,
+                        showMaxLabel: true,
+                        hideOverlap: true,
+                        rotate: 25,
+                        //fontSize: 10,
+                        //formatter: {
+                        //     year: '{yyyy}-{MMM}',
+                        //     month: '{yy}-{MMM}',
+                        //     day: '{d}-{MMM}',
+                        //     hour: '{HH}:{mm}',
+                        //     minute: '{HH}:{mm}',
+                        //     second: '{HH}:{mm}:{ss}',
+                        //     millisecond: '{d}-{MMM} {HH}:{mm}',
+                        //    // @ts-ignore
+                        //     none: '{MMM}-{dd} {HH}:{mm}'
+                        //}
+                    }
                 },
                 yAxis: [
                     {
@@ -599,39 +591,6 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                 series: [],
             };
 
-            // Add dataZoom bar if enabled
-            //(this._chartOptions!.dataZoom! as any[]).push({
-            //        start: 0,
-            //        end: 100,
-            //        backgroundColor: bgColor,
-            //        fillerColor: bgColor,
-            //        dataBackground: {
-            //            areaStyle: {
-            //                color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
-            //            }
-            //        },
-            //        selectedDataBackground: {
-            //            areaStyle: {
-            //                color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color"),
-            //            }
-            //        },
-            //        moveHandleStyle: {
-            //            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
-            //        },
-            //        emphasis: {
-            //            moveHandleStyle: {
-            //                color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
-            //            },
-            //            handleLabel: {
-            //                show: false
-            //            }
-            //        },
-            //        handleLabel: {
-            //            show: false
-            //        }
-            //    })
-
-
             // Add toolbox if enabled
             if(this.showToolBox) {
                 this._chartOptions!.toolbox! = {
@@ -639,9 +598,9 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     top: 0,
                     feature: {
                         dataView: {readOnly: true},
-                        //magicType: {
-                        //    type: ['line', 'bar']
-                        //},
+                        magicType: {
+                            type: ['stack']
+                        },
                         saveAsImage: {}
                     }
                 }
@@ -671,7 +630,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         if(this.shadowRoot) {
             const container = this.shadowRoot.getElementById('container');
             if(container) {
-                const bottomLegend: boolean = (container.clientWidth < 600);
+                const bottomLegend: boolean = (container.clientWidth < 2000); // CHANGE THIS
                 container.style.flexDirection = bottomLegend ? 'column' : 'row';
                 const periodControls = this.shadowRoot.querySelector('.period-controls') as HTMLElement;
                 if(periodControls) {
@@ -1156,15 +1115,15 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         } else if(diffInHours <= 6) {
             return [30, DatapointInterval.MINUTE,"h:mm:ss"];
         } else if(diffInHours <= 24) { // one day
-            return [1, DatapointInterval.HOUR,"h:mm"];
+            return [1, DatapointInterval.HOUR,"h:mmA"];
         } else if(diffInHours <= 48) { // two days
-            return [3, DatapointInterval.HOUR,"h:mm"];
+            return [3, DatapointInterval.HOUR,"h:mmA"];
         } else if(diffInHours <= 96) {
-            return [12, DatapointInterval.HOUR,"LT"];
+            return [12, DatapointInterval.HOUR,"MMM Mo hA"];
         } else if(diffInHours <= 744) { // one month
-            return [1, DatapointInterval.DAY,"Do"];
+            return [1, DatapointInterval.DAY,"ddd MMM Do"];
         } else {
-            return [1, DatapointInterval.MONTH,"MMM"];
+            return [1, DatapointInterval.MONTH,"MMM 'YY"];
         }
     }
 
@@ -1185,14 +1144,19 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         this._loading = true;
 
         const dates: [Date, Date] = this._getTimeSelectionDates(this.timePrefixKey!, this.timeWindowKey!);
+        console.log("Selected prefix&window", dates);
 
-        if(!this._startOfPeriod || !this._endOfPeriod) {
+        //if(!this._startOfPeriod || !this._endOfPeriod) {
+        //Above is commented to work BUT WHY IS IT LIKE THIS, OR CHART WORKS WITH IT
+            console.log("periods were empty");
             this._startOfPeriod = this.timeframe ? this.timeframe[0].getTime() : dates[0].getTime();
             this._endOfPeriod = this.timeframe ? this.timeframe[1].getTime() : dates[1].getTime();
-        }
+        //}
 
         const diffInHours = (this._endOfPeriod - this._startOfPeriod) / 1000 / 60 / 60;
+        console.log('diffinhours1',diffInHours);
         const intervalArr = this._getInterval(diffInHours);
+        console.log("Interval selectione", intervalArr);
 
         const stepSize: number = intervalArr[0];
         const interval: DatapointInterval = intervalArr[1];
@@ -1279,11 +1243,11 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             //showSymbol: false,
             data: [] as [any, any][],
             //sampling: 'lttb',
-            //lineStyle: {
-            //    color: color,
+            lineStyle: {
+                color: color,
             //    type: predicted ? [2, 4] : extended ? [0.8, 10] : undefined,
             //    opacity: faint ? 0.31 : 1,
-            //},
+            },
             itemStyle: {
                 color: color
             },
@@ -1316,11 +1280,12 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
 
             //if(query.type === 'interval' && !query.interval) {
-            const diffInHours = (this.datapointQuery.toTimestamp! - this.datapointQuery.fromTimestamp!) / 1000 / 60 / 60;
+            const diffInHours = (this._endOfPeriod! - this._startOfPeriod!) / 1000 / 60 / 60;
+            console.log("DiffInHours", diffInHours);
             const intervalArr = this._getInterval(diffInHours);
+            console.log("intervallArr2",intervalArr)
             query.interval = (intervalArr[0].toString() + " " + intervalArr[1].toString()); // for example: "5 minute"
-
-
+            console.log('Start:', new Date(this._startOfPeriod!), 'End:', new Date(this._endOfPeriod!));
             console.log("datapointResoursequery:", query);
             response = await manager.rest.api.AssetDatapointResource.getDatapoints(asset.id, attribute.name, query, options);
 

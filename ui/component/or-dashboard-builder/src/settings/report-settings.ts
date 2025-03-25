@@ -58,31 +58,11 @@ export class ReportSettings extends WidgetSettings {
         const samplingValue = Array.from(this.samplingOptions.entries()).find((entry => entry[1] === this.widgetConfig.datapointQuery.type))![0]
         const attributeLabelCallback = (asset: Asset, attribute: Attribute<any>, attributeLabel: string) => {
             const isOnRightAxis = isMultiAxis && attrSettings.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isFaint = attrSettings.faintAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isSmooth = attrSettings.smoothAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isStepped = attrSettings.steppedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isArea = attrSettings.areaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isExtended = attrSettings.extendedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
             return html`
                 <span>${asset.name}</span>
                 <span style="font-size:14px; color:grey;">${attributeLabel}</span>
                 ${when(isOnRightAxis, () => html`
                     <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="right"></or-translate></span>   
-                `)}
-                ${when(isFaint, () => html`
-                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="dashboard.faint"></or-translate></span>
-                `)}
-                ${when(isSmooth, () => html`
-                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="dashboard.smooth"></or-translate></span>
-                `)}
-                ${when(isStepped, () => html`
-                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="dashboard.stepped"></or-translate></span>
-                `)}
-                ${when(isArea, () => html`
-                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="dashboard.fill"></or-translate></span>
-                `)}
-                ${when(isExtended, () => html`
-                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="dashboard.extendData"></or-translate></span>
                 `)}
             `
         }
@@ -95,32 +75,6 @@ export class ReportSettings extends WidgetSettings {
                   tooltip: i18next.t('dashboard.lineColor'),
                   disabled: false
                 },
-                {
-                    icon: 'chart-bell-curve-cumulative',
-                    tooltip: i18next.t("dashboard.smooth"),
-                    disabled: false
-                },
-                {
-                    icon: 'square-wave',
-                    tooltip: i18next.t('dashboard.stepped'),
-                    disabled: false
-                },
-                {
-                    icon: 'chart-areaspline-variant',
-                    tooltip: i18next.t('dashboard.fill'),
-                    disabled: false
-                },
-                {
-                    icon: 'arrange-send-backward',
-                    tooltip: i18next.t('dashboard.faint'),
-                    disabled: false
-                },
-                {
-                    icon: 'arrow-expand-right',
-                    tooltip: i18next.t('dashboard.extendData'),
-                    disabled: false
-                },
-
                 {
                     icon: this.widgetConfig.attributeSettings.rightAxisAttributes.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
                     tooltip: i18next.t('dashboard.toggleAxis'),
@@ -178,24 +132,11 @@ export class ReportSettings extends WidgetSettings {
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowLegendToggle(ev)}"
                                 ></or-mwc-input>
                             </div>
-                        <!-- Datazoombar -->
-                            <div class="switch-container">
-                                <span><or-translate value="dashboard.showZoomBar"></or-translate></span>
-                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showZoomBar}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowZoomBarToggle(ev)}"
-                                ></or-mwc-input>
-                            </div>
                         <!-- Toolbox -->
                             <div class="switch-container">
                                 <span><or-translate value="dashboard.showToolBox"></or-translate></span>
                                 <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showToolBox}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowToolBoxToggle(ev)}"
-                                ></or-mwc-input>
-                            </div>
-                        <!-- Show Symbol Treshold -->    
-                            <div class="number-container">
-                                <or-mwc-input .type="${InputType.NUMBER}" .min="1" .max="200" .step="1" label="${i18next.t('dashboard.showSymbolMaxDatapoints')}" style="width: 100%;" .value="${this.widgetConfig.showSymbolMaxDatapoints}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowSymbolMaxDatapointsValueChange(ev)}"
                                 ></or-mwc-input>
                             </div>
                     </div>
@@ -310,13 +251,6 @@ export class ReportSettings extends WidgetSettings {
                     ></or-mwc-input>
                 `;
             }
-            case 'lttb': {
-                return html `
-                    <or-mwc-input .type="${InputType.NUMBER}" .min="10" .max="1000" .step="1" label="${i18next.t('dashboard.maxConcurrentDatapoints')}" .value="${this.widgetConfig.maxConcurrentDatapoints}" style="width: 100%;"
-                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMaxConcurrentDatapointsValueChange(ev)}"
-                    ></or-mwc-input>
-                `;
-            }
             default:
                 return html``;
         }
@@ -358,21 +292,6 @@ export class ReportSettings extends WidgetSettings {
             case "arrow-right-bold":
             case "arrow-left-bold":
                 this.toggleAttributeSetting("rightAxisAttributes", attributeRef);
-                break;
-            case "chart-bell-curve-cumulative":
-                this.toggleAttributeSetting("smoothAttributes", attributeRef);
-                break;
-            case "square-wave":
-                this.toggleAttributeSetting("steppedAttributes", attributeRef);
-                break;
-            case "chart-areaspline-variant":
-                this.toggleAttributeSetting("areaAttributes", attributeRef);
-                break;
-            case "arrange-send-backward":
-                this.toggleAttributeSetting("faintAttributes", attributeRef);
-                break;
-            case "arrow-expand-right":
-                this.toggleAttributeSetting("extendedAttributes", attributeRef);
                 break;
             default:
                 console.warn('Unknown attribute panel action:', action);
@@ -444,11 +363,6 @@ export class ReportSettings extends WidgetSettings {
         this.notifyConfigUpdate();
     }
 
-    protected onShowZoomBarToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.showZoomBar = ev.detail.value;
-        this.notifyConfigUpdate();
-    }
-
     protected onShowToolBoxToggle(ev: OrInputChangedEvent) {
         this.widgetConfig.showToolBox = ev.detail.value;
         this.notifyConfigUpdate();
@@ -484,13 +398,4 @@ export class ReportSettings extends WidgetSettings {
         this.notifyConfigUpdate();
     }
 
-    protected onMaxConcurrentDatapointsValueChange(ev: OrInputChangedEvent) {
-        this.widgetConfig.maxConcurrentDatapoints = ev.detail.value;
-        this.notifyConfigUpdate();
-    }
-
-    protected onShowSymbolMaxDatapointsValueChange(ev: OrInputChangedEvent) {
-        this.widgetConfig.showSymbolMaxDatapoints = ev.detail.value;
-        this.notifyConfigUpdate();
-    }
 }

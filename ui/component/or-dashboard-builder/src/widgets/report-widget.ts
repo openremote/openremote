@@ -1,4 +1,4 @@
-import {AssetDatapointLTTBQuery, AssetDatapointQueryUnion, Attribute, AttributeRef} from "@openremote/model";
+import {AssetDatapointIntervalQuery, AssetDatapointQueryUnion, Attribute, AttributeRef} from "@openremote/model";
 import {html, PropertyValues, TemplateResult } from "lit";
 import { when } from "lit/directives/when.js";
 import moment from "moment";
@@ -15,11 +15,6 @@ export interface ReportWidgetConfig extends WidgetConfig {
     colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }>;
     attributeSettings: {
         rightAxisAttributes: AttributeRef[],
-        smoothAttributes: AttributeRef[],
-        steppedAttributes: AttributeRef[],
-        areaAttributes: AttributeRef[],
-        faintAttributes: AttributeRef[],
-        extendedAttributes: AttributeRef[],
     },
     datapointQuery: AssetDatapointQueryUnion;
     chartOptions?: any;
@@ -27,10 +22,8 @@ export interface ReportWidgetConfig extends WidgetConfig {
     defaultTimeWindowKey: string;
     defaultTimePrefixKey: string;
     showLegend: boolean;
-    showZoomBar: boolean;
     showToolBox: boolean;
-    showSymbolMaxDatapoints: number;
-    maxConcurrentDatapoints: number;
+
 }
 
 function getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
@@ -60,7 +53,7 @@ function getDefaultSamplingOptions(): Map<string, string> {
 }
 
 function getDefaultWidgetConfig(): ReportWidgetConfig {
-    const preset = "24Hours";  // Default time preset, "last" prefix is hardcoded in startDate and endDate below.
+    const preset = "30Days";  // Default time preset, "last" prefix is hardcoded in startDate and endDate below.
     const dateFunc = getDefaultTimeWindowOptions().get(preset);
     const startDate = moment().subtract(dateFunc![1], dateFunc![0]).startOf(dateFunc![0]);
     const endDate = dateFunc![1]== 1 ? moment().endOf(dateFunc![0]) : moment();
@@ -69,14 +62,9 @@ function getDefaultWidgetConfig(): ReportWidgetConfig {
         colorPickedAttributes: [],
         attributeSettings: {
             rightAxisAttributes: [],
-            smoothAttributes: [],
-            steppedAttributes: [],
-            areaAttributes: [],
-            faintAttributes: [],
-            extendedAttributes: [],
         },
         datapointQuery: {
-            type: "lttb",
+            type: "interval",
             fromTimestamp: startDate.toDate().getTime(),
             toTimestamp: endDate.toDate().getTime(),
         },
@@ -98,11 +86,7 @@ function getDefaultWidgetConfig(): ReportWidgetConfig {
         defaultTimeWindowKey: preset,
         defaultTimePrefixKey: "last",
         showLegend: true,
-        showZoomBar: false,
         showToolBox: false,
-        showSymbolMaxDatapoints: 30,
-        maxConcurrentDatapoints: 100
-
     };
 }
 
@@ -224,7 +208,6 @@ export class ReportWidget extends OrAssetWidget {
                               .colorPickedAttributes="${this.widgetConfig?.colorPickedAttributes != null ? this.widgetConfig?.colorPickedAttributes : []}"
                               .attributeSettings="${this.widgetConfig?.attributeSettings != null ? this.widgetConfig.attributeSettings : {}}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
-                              .showZoomBar="${(this.widgetConfig?.showZoomBar != null) ? this.widgetConfig?.showZoomBar : true}"
                               .showToolBox="${(this.widgetConfig?.showToolBox != null) ? this.widgetConfig?.showToolBox : true}"
                               .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
                               .timeWindowOptions="${getDefaultTimeWindowOptions()}"
@@ -232,8 +215,6 @@ export class ReportWidget extends OrAssetWidget {
                               .timePrefixKey="${this.widgetConfig?.defaultTimePrefixKey}"
                               .timeWindowKey="${this.widgetConfig?.defaultTimeWindowKey}"
                               .datapointQuery="${this.datapointQuery}" .chartOptions="${this.widgetConfig?.chartOptions}"
-                              .showSymbolMaxDatapoints="${this.widgetConfig?.showSymbolMaxDatapoints}"
-                              .maxConcurrentDatapoints="${this.widgetConfig?.maxConcurrentDatapoints}"
                               style="height: 100%"
                     ></or-attribute-report>
                 `;
@@ -241,11 +222,11 @@ export class ReportWidget extends OrAssetWidget {
         `;
     }
 
-    protected getDefaultQuery(): AssetDatapointLTTBQuery {
+    protected getDefaultQuery(): AssetDatapointIntervalQuery {
         return {
-            type: "lttb",
-            fromTimestamp: moment().set('minute', -60).toDate().getTime(),
-            toTimestamp: moment().set('minute', 60).toDate().getTime()
+            type: "interval",
+            fromTimestamp: moment().set('day', -30).toDate().getTime(),
+            toTimestamp: moment().toDate().getTime()
         }
     }
 }
