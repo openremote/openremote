@@ -388,21 +388,19 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                                 .options=${{customMapLimit: this.humanReadableBytes(this.customMapLimit)}}
                                             ></or-translate>
                                         </span>
-                                        <div class="input d-inline-flex">
-                                            <or-file-uploader 
-                                                .description=${this.isMapCustom ? "fileSaved" : ""}
-                                                .icon=${this.tilesForUpload || this.isMapCustom ? "map-check-outline" : ""}
-                                                .label=${i18next.t("configuration.global.uploadMapTiles", {
-                                                    customMapLimit: this.humanReadableBytes(this.customMapLimit)
-                                                })}"
-                                                .accept=${".mbtiles"}
-                                                @change="${(e) => this.uploadCustomMap(e)}">
-                                            </or-file-uploader>
-                                            ${when(this.isMapCustom, () => html`
+                                        <div class="input d-inline-flex" style="height: 56px">
+                                            <div id="fileupload" style="display: flex; align-items: center">
+                                                <or-mwc-input outlined label="selectFile" style="width: 148px" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this.shadowRoot!.getElementById('fileupload-elem')!.click()}">
+                                                    <input id="fileupload-elem" name="configfile" type="file" accept=".mbtiles" @change="${(e) => this.uploadCustomMap(e)}"/>
+                                                </or-mwc-input>
+                                                ${when(this.isMapCustom, () => html`
                                                     <or-mwc-input type="${InputType.BUTTON}" iconColor="black" icon="delete" 
                                                         @or-mwc-input-changed="${async () => await this.deleteCustomMap()}" 
                                                     />
-                                            `)}
+                                                `, () => html`
+                                                    <or-mwc-input id="filename-elem" style="width: unset" .label="${i18next.t("file")}" .type="${InputType.TEXT}" disabled></or-mwc-input>
+                                                `)}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -437,11 +435,12 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     // FETCH METHODS
 
     protected async uploadCustomMap(e: CustomEvent) {
-        const file = e.detail.value[0] as File;
+        const file = (e.target as HTMLInputElement).files[0];
         if (file.size > this.customMapLimit) {
           showSnackbar(undefined, "configuration.global.uploadMapTilesError")
           return;
         }
+        (this.shadowRoot!.getElementById('filename-elem')! as HTMLInputElement).value = file.name;
         this.tilesForUpload = file;
         this.mapConfigChanged = true;
     }
