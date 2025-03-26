@@ -74,16 +74,6 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  */
 public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerProtocol<T, U, V>, U extends AbstractHTTPServerAgent<U, T, V>, V extends AgentLink<?>> extends AbstractProtocol<U, V> {
 
-    public static class DeploymentInstance {
-        protected DeploymentInfo deploymentInfo;
-        protected WebService.RequestHandler requestHandler;
-
-        public DeploymentInstance(DeploymentInfo deploymentInfo, WebService.RequestHandler requestHandler) {
-            this.deploymentInfo = deploymentInfo;
-            this.requestHandler = requestHandler;
-        }
-    }
-
     /**
      * This is the default path prefix for all deployments. Should not be overridden unless you know what you are doing
      * and there is a good reason to override.
