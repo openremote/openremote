@@ -819,11 +819,11 @@
     "global": {
       "tileServer": "Tile Server",
       "tileServerDescription": "Configure a tile server.",
-      "tileServerNote": "Note: The map through a tile server gets priority over custom map tiles.",
+      "tileServerNote": "The map through a tile server gets priority over custom map tiles.",
       "tileServerPlaceholder": "Map Server URL",
       "mapTiles": "Custom Map Tiles",
       "uploadMapTiles": "Upload custom map tiles.",
-      "uploadMapTilesPrecedence": "Note: The maximum allowed file size is {{customMapLimit}}.",
+      "uploadMapTilesPrecedence": "The maximum allowed file size is {{customMapLimit}}.",
       "uploadingMapTiles": "Uploading map tiles... This may take a moment.",
       "uploadMapTilesError": "Custom map tiles file exceeds size limit.",
       "uploadingMapTilesError": "Failed to upload map tiles"
