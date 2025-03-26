@@ -523,11 +523,13 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     left: 50,//'5%', // 5% padding
                     right: 50,//'5%',
                     top: this.showToolBox ? 28 : 10,
-                    bottom:  55
+                    bottom:  55,
+                    containLabel: true
                 },
                 backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                 tooltip: {
                     trigger: 'axis',
+                    confine: true, //make tooltip not go outside frame bounds
                     axisPointer: {
                         type: 'shadow'
                     },
@@ -541,11 +543,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                         lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}
                     },
                     splitLine: {show: true},
-                    //min: this._startOfPeriod,
-                    //max: this._endOfPeriod,
                     axisLabel: {
-                        showMinLabel: true,
-                        showMaxLabel: true,
                         hideOverlap: true,
                         rotate: 25,
                         //fontSize: 10,
@@ -1109,19 +1107,19 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         //This must be reworked for my own use case
 
         if(diffInHours <= 1) {
-            return [5, DatapointInterval.MINUTE,"h:mm:ss"];
+            return [5, DatapointInterval.MINUTE,"h:mmA"];
         } else if(diffInHours <= 3) {
-            return [10, DatapointInterval.MINUTE,"h:mm:ss"];
+            return [20, DatapointInterval.MINUTE,"h:mmA"];
         } else if(diffInHours <= 6) {
-            return [30, DatapointInterval.MINUTE,"h:mm:ss"];
+            return [30, DatapointInterval.MINUTE,"h:mmA"];
         } else if(diffInHours <= 24) { // one day
             return [1, DatapointInterval.HOUR,"h:mmA"];
         } else if(diffInHours <= 48) { // two days
-            return [3, DatapointInterval.HOUR,"h:mmA"];
+            return [6, DatapointInterval.HOUR,"h:mmA"];
         } else if(diffInHours <= 96) {
-            return [12, DatapointInterval.HOUR,"MMM Mo hA"];
+            return [12, DatapointInterval.HOUR,"MMM Do hA"];
         } else if(diffInHours <= 744) { // one month
-            return [1, DatapointInterval.DAY,"ddd MMM Do"];
+            return [1, DatapointInterval.DAY,"ddd | MMM Do"];
         } else {
             return [1, DatapointInterval.MONTH,"MMM 'YY"];
         }
@@ -1185,6 +1183,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
                     const colourIndex = index % this.colors.length;
                     const options = { signal: this._dataAbortController?.signal };
+                    let formula = 'Max'
                     //Load Historic Data
                     let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, false, asset.name + " " + label, options, unit);
                     (dataset as any).assetId = asset.id;
@@ -1192,6 +1191,16 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     (dataset as any).unit = unit;
                     (dataset as any).yAxisIndex = shownOnRightAxis ? '1' : '0';
                     (dataset as any).color = color ?? this.colors[colourIndex];
+                    (dataset as any).label = {
+                        show: true,
+                        position: 'insideBottom',
+                        distance: 15,
+                        align: 'left',
+                        verticalAlign: 'middle',
+                        rotate: 90,
+                        formatter: `{c1}${unit} ${formula}}`,
+                        //fontSize: 16,
+                    }
                     data.push(dataset);
 
                     //Load Comparison Data
@@ -1206,6 +1215,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             }
 
             this._data = data;
+            console.log("this._data",this._data);
             this._loading = false;
 
 
@@ -1240,9 +1250,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         const dataset = {
             name: label,
             type: 'bar',
-            //showSymbol: false,
             data: [] as [any, any][],
-            //sampling: 'lttb',
             lineStyle: {
                 color: color,
             //    type: predicted ? [2, 4] : extended ? [0.8, 10] : undefined,
@@ -1255,8 +1263,6 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                 // @ts-ignore
                 valueFormatter: value => value + unit
             },
-            //smooth: smooth,
-            //step: stepped ? 'end' : undefined,
             //areaStyle: area ? {color: new graphic.LinearGradient(0, 0, 0, 1, [
             //        {
             //            offset: 0,
@@ -1298,10 +1304,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     .filter(value => value.y !== null && value.y !== undefined)
                     .map(point => ({ x: point.x , y: point.y } as ValueDatapoint<any>))
 
-
-
                 dataset.data = data.map(point => [moment(point.x).format(intervalArr[2]), point.y]);
-                //dataset.showSymbol = data.length <= this.showSymbolMaxDatapoints;
             }
 
 
@@ -1314,26 +1317,19 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
     protected _updateChartData(){
         this._chart!.setOption({
+            //legend: {data: this._data!.map((data) => `${data.name} ${data.unit}`)},
             //xAxis: {
             //    min: this._startOfPeriod,
             //    max: this._endOfPeriod
             //},
             series: this._data!.map(series => ({
                 ...series,
-                //markLine: {
-                //    symbol: 'circle',
-                //    silent: true,
-                //    data: [{ name: '', xAxis: new Date().toISOString(), label: { formatter: '{b}' } }],
-                //    lineStyle: {
-                //        color: this._style.getPropertyValue("--internal-or-chart-text-color"),
-                //        type: 'solid',
-                //        width: 2,
-                //        opacity: 1
-                //    }
-                //}
+                //markLine: KLOPT DIT NOG WEL NU ALLEEN SERIES ER NOG IS
+                //
             }))
         });
     }
+
 
     protected _toggleChartEventListeners(connect: boolean){
         if (connect) {
