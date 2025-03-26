@@ -83,8 +83,6 @@ public class MapSourceConfig {
 	 * The Maplibre sources follow the TileJSON specification. The TileJSON specification allows additional properties not in the spec.
 	 * Those properties MUST be ignored by MapLibre, but can be used in OpenRemote.
 	 *
-	 * @implNote The value is ignored, whenever the property is present the the tile server is assumed to be custom.
-	 *
 	 * @see https://github.com/mapbox/tilejson-spec/blob/master/3.0.0/README.md#3-structure
 	*/
 	protected boolean custom;
