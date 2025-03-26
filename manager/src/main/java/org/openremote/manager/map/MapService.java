@@ -39,7 +39,6 @@ import org.openremote.model.manager.MapSourceConfig;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -93,25 +92,21 @@ public class MapService implements ContainerService {
         }
 
         ObjectNode vectorTiles = ValueUtil.JSON.valueToTree(mapConfiguration.sources.get("vector_tiles"));
-        ObjectNode newVectorTiles = ValueUtil.JSON.createObjectNode().put("type", "vector");
-        if (vectorTiles.hasNonNull("url")) {
-            // We assume no custom tile server is configured when the URL is null.
-            //
-            // The DEFAULT_VECTOR_TILES_URL in the mapsettings.json file is used as placeholder. When getMapSettings is
-            // called it omits the URL and replaces it with a tiles property containing a list of URLs that MapLibre
-            // will use.
-            //
-            // This check ensures when a custom tile server is configured that it follows the required xyz
-            // scheme see {@link MapSourceConfig.scheme}. The getMapSettings method will use the custom tile server URL
-            // in case the DEFAULT_VECTOR_TILES_URL is replaced.
-            if (!vectorTiles.get("url").textValue().contains("/{z}/{x}/{y}")) {
-                throw new WebApplicationException(Response.Status.BAD_REQUEST);
-            }
-            newVectorTiles.put("url", vectorTiles.get("url").textValue());
+        String tileUrl = Optional.ofNullable(vectorTiles.get("tiles"))
+            .map(tiles -> tiles.get(0))
+            .filter(JsonNode::isTextual)
+            .map(url -> url.textValue())
+            .orElse(null);
+        // Saves custom tile server url if custom is true in the vector_tiles source and the url follows the required xyz scheme.
+        // Otherwise replace it with the default configuration.
+        if (vectorTiles.get("custom").booleanValue() && tileUrl != null && tileUrl.contains("/{z}/{x}/{y}")) {
+            vectorTiles.put("url", tileUrl);
         } else {
-            newVectorTiles.put("url", DEFAULT_VECTOR_TILES_URL);
-            mapConfiguration.sources.put("vector_tiles", ValueUtil.JSON.convertValue(newVectorTiles, MapSourceConfig.class));
+            vectorTiles = ValueUtil.JSON.createObjectNode()
+                .put("type", "vector")
+                .put("url", DEFAULT_VECTOR_TILES_URL);
         }
+        mapConfiguration.sources.put("vector_tiles", ValueUtil.JSON.convertValue(vectorTiles, MapSourceConfig.class));
 
         mapConfig.putPOJO("options", mapConfiguration.options);
         mapConfig.putPOJO("sources", mapConfiguration.sources);
@@ -324,7 +319,7 @@ public class MapService implements ContainerService {
                 .filter(JsonNode::isObject)
                 .ifPresent(vectorTilesNode -> {
                     ObjectNode vectorTilesObj = (ObjectNode)vectorTilesNode;
-                    JsonNode url = vectorTilesObj.remove("url");
+                    vectorTilesObj.remove("url");
 
                     vectorTilesObj.put("attribution", metadata.attribution);
                     vectorTilesObj.put("maxzoom", metadata.maxZoom);
@@ -345,15 +340,19 @@ public class MapService implements ContainerService {
                             .path("map/tile")
                             .build()
                             .toString() + "/{z}/{x}/{y}";
-
-                    if (url != null) {
-                        String customTileUrl = url.textValue();
-                        if (!customTileUrl.contentEquals(DEFAULT_VECTOR_TILES_URL)) {
-                            tileUrl = url.textValue();
-                        }
-                    }
-
                     tilesArray.insert(0, tileUrl);
+
+                    Optional.ofNullable(vectorTilesObj.get("tiles"))
+                        .map(tiles -> tiles.get(0))
+                        .filter(JsonNode::isTextual)
+                        .map(url -> url.textValue())
+                        .ifPresent(url -> {
+                            if (!url.contentEquals(DEFAULT_VECTOR_TILES_URL)) {
+                                tilesArray.remove(0);
+                                tilesArray.insert(0, url);
+                            }
+                        });
+
                     vectorTilesObj.replace("tiles", tilesArray);
                 });
 
@@ -507,7 +506,7 @@ public class MapService implements ContainerService {
     }
 
     private void saveMapMetadata(Metadata metadata) {
-        Optional<ObjectNode> options = Optional.ofNullable((ObjectNode)mapConfig.get("options"));
+        Optional<JsonNode> options = Optional.ofNullable(mapConfig.get("options"));
         if (metadata.isValid() && options.isPresent()) {
             Iterator<Map.Entry<String, JsonNode>> fields = options.get().fields();
             while (fields.hasNext()) {

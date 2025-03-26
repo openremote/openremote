@@ -232,6 +232,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     @state()
     protected tilesForUpload: File;
 
+    @state()
+    protected tilesForDeletion: boolean = false;
+
     @query("#managerConfig-panel")
     protected realmConfigPanel?: OrConfPanel;
 
@@ -331,7 +334,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 <or-translate value="appearance"></or-translate>
                             </div>
                             <div id="header-actions">
-                                <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged && !this.mapConfigChanged}" raised type="button" label="save"
+                                <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged && !this.mapConfigChanged && !this.tilesForDeletion}" raised type="button" label="save"
                                               @or-mwc-input-changed="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
                                 ></or-mwc-input>
                             </div>
@@ -362,14 +365,15 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                             <or-translate style="font-style: italic;" class="note" value="configuration.global.tileServerNote"></or-translate>
                                         </span>
                                         <or-mwc-input class="input" outlined
-                                            .value="${this.mapConfig.sources?.vector_tiles?.url || this.mapConfig.sources?.vector_tiles?.tiles?.[0]}"
+                                            .value="${this.mapConfig.sources?.vector_tiles?.custom ? this.mapConfig.sources?.vector_tiles?.tiles?.[0] : undefined}"
                                             .type="${InputType.URL}"
                                             .label="${i18next.t("configuration.global.tileServerPlaceholder")}"
                                             placeholder="https://api.example.com/tileset/{z}/{x}/{y}"
                                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                                     this.mapConfig.sources.vector_tiles = {
                                                         type: "vector",
-                                                        url: e.detail.value || null
+                                                        ...(e.detail.value ? { tiles: [e.detail.value], custom: true } : {}),
+                                                        custom: true
                                                     }
                                                     this.mapConfigChanged = true;
                                                 }}"
@@ -443,12 +447,8 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     }
 
     protected async deleteCustomMap() {
-        try {
-            await manager.rest.api.MapResource.deleteMap();
-            window.location.reload();
-        } catch (reason) {
-            console.error(reason);
-        }
+        this.isMapCustom = false;
+        this.tilesForDeletion = true;
     }
 
     protected async getManagerConfig(): Promise<ManagerAppConfig | undefined> {
@@ -524,8 +524,15 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             // Wait for all requests to complete, then finish loading.
             const promises = [
                 this.managerConfigurationChanged ? manager.rest.api.ConfigurationResource.update(config) : null,
-                this.mapConfigChanged ?  mapPromise : null];
+                this.mapConfigChanged ?  mapPromise : null
+            ];
             Promise.all(promises).finally(() => {
+                // The deletion must happen after the config changes since deletion will re-center to the default map.
+                if (this.tilesForDeletion && !this.tilesForUpload) {
+                    manager.rest.api.MapResource.deleteMap().catch((reason) => {
+                        console.error(reason);
+                    });
+                }
                 this.requestUpdate();
                 this.loading = false;
                 this.managerConfigurationChanged = false;
