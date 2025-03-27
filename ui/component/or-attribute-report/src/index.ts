@@ -21,7 +21,8 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {ECharts, EChartsOption, init} from "echarts";
-import {TimeUnit,} from "chart.js";
+import {MDCDataTable} from "@material/data-table";
+import {OrMwcTableRowClickEvent, TableColumn, TableRow, TableConfig} from "@openremote/or-mwc-components/or-mwc-table";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
@@ -297,6 +298,27 @@ const style = css`
         height: 100%; !important;
     }
 
+    #table-container {
+        height: 100%;
+        min-height: 250px;
+    }
+
+    #table {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    #table > table {
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    #table th, #table td {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
     @media screen and (max-width: 1280px) {
         #chart-container {
             max-height: 330px;
@@ -376,7 +398,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
 
     @property()
-    public dataProvider?: (startOfPeriod: number, endOfPeriod: number, timeUnits: TimeUnit, stepSize: number) => Promise<[]>
+    public dataProvider?: () => Promise<[]>
 
     @property({type: Array})
     public colors: string[] = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
@@ -427,24 +449,29 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     public showToolBox: boolean = true;
 
     @property()
+    public isChart: boolean = false;
+
+    @property()
     protected _loading: boolean = false;
 
     @property()
-    protected _data?: ValueDatapoint<any>[];
+    protected _data?: any[];
 
     @property()
     protected _tableTemplate?: TemplateResult;
 
     @query("#chart")
     protected _chartElem!: HTMLDivElement;
+    @query("#table")
+    protected _tableElem!: HTMLDivElement;
+    protected _table?: MDCDataTable;
+    protected columns: TableColumn[] = [];
+    protected rows: TableRow[] = [];
     protected _chartOptions: EChartsOption = {};
     protected _chart?: ECharts;
     protected _style!: CSSStyleDeclaration;
     protected _startOfPeriod?: number;
     protected _endOfPeriod?: number;
-
-    protected _timeUnits?: TimeUnit;
-    protected _stepSize?: number;
     protected _latestError?: string;
     protected _dataAbortController?: AbortController;
 
@@ -539,25 +566,12 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                 xAxis: {
                     type: 'category',
                     axisLine: {
-                    //    onZero: false,
                         lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}
                     },
                     splitLine: {show: true},
                     axisLabel: {
                         hideOverlap: true,
                         rotate: 25,
-                        //fontSize: 10,
-                        //formatter: {
-                        //     year: '{yyyy}-{MMM}',
-                        //     month: '{yy}-{MMM}',
-                        //     day: '{d}-{MMM}',
-                        //     hour: '{HH}:{mm}',
-                        //     minute: '{HH}:{mm}',
-                        //     second: '{HH}:{mm}:{ss}',
-                        //     millisecond: '{d}-{MMM} {HH}:{mm}',
-                        //    // @ts-ignore
-                        //     none: '{MMM}-{dd} {HH}:{mm}'
-                        //}
                     }
                 },
                 yAxis: [
@@ -653,10 +667,22 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     }
 
     render() {
-        const disabled =  this._loading || this._latestError;
+        const disabled =  !this.isChart || this._loading || this._latestError;
+
+        const tableConfig: any = {
+            fullHeight: true,
+            pagination: {
+                enable: true,
+                options: [10, 25, 100],
+            }
+        } as TableConfig
+
+
         return html`
+            
+            
+            
             <div id="container">
-                <div id="chart-container">
                     ${when(this._loading, () => html`
                         <div style="position: absolute; height: 100%; width: 100%;">
                             <or-loading-indicator ?overlay="false"></or-loading-indicator>
@@ -667,8 +693,22 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                             <or-translate .value="${this._latestError || 'errorOccurred'}"></or-translate>
                         </div>
                     `)}
+                ${when(this.isChart, () => html`
+                <div id="chart-container">
                     <div id="chart" style="visibility: ${disabled ? 'hidden' : 'visible'}"></div>
                 </div>
+                    
+                `, () => html `
+                <div id="chart-container">
+                    <div id="chart" style="visibility: ${disabled ? 'hidden' : 'visible'}"></div>
+                </div>
+                <div id="table-container">
+                    <or-mwc-table .columns="${this.columns}" .rows="${this.rows}" .config="${tableConfig}" .paginationSize="10"></or-mwc-table>
+                </div>
+                `)}
+                
+                
+                
                 
                 ${(this.timestampControls || this.attributeControls || this.showLegend) ? html`
                     <div id="chart-controls">
@@ -1083,6 +1123,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         return [startDate.toDate(), endDate.toDate()];
     }
 
+
     protected _shiftTimeframe(currentStart: Date, timeWindowSelected: string, direction: string) {
         const timeWindow = this.timeWindowOptions!.get(timeWindowSelected);
 
@@ -1092,20 +1133,14 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
         const [unit, value] = timeWindow;
         let newStart = moment(currentStart);
-
         direction === "previous" ? newStart.subtract(value, unit as moment.unitOfTime.DurationConstructor) : newStart.add(value, unit as moment.unitOfTime.DurationConstructor);
-
         let newEnd = moment(newStart).add(value, unit as moment.unitOfTime.DurationConstructor);
-
         this.timeframe = [newStart.toDate(), newEnd.toDate()];
     }
 
 
     protected _getInterval(diffInHours: number): [number, DatapointInterval, string] {
     //Returns amount of steps, interval size and moment.js time format
-
-        //This must be reworked for my own use case
-
         if(diffInHours <= 1) {
             return [5, DatapointInterval.MINUTE,"h:mmA"];
         } else if(diffInHours <= 3) {
@@ -1140,35 +1175,18 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         }
 
         this._loading = true;
-
         const dates: [Date, Date] = this._getTimeSelectionDates(this.timePrefixKey!, this.timeWindowKey!);
-        console.log("Selected prefix&window", dates);
-
         //if(!this._startOfPeriod || !this._endOfPeriod) {
         //Above is commented to work BUT WHY IS IT LIKE THIS, OR CHART WORKS WITH IT
-            console.log("periods were empty");
-            this._startOfPeriod = this.timeframe ? this.timeframe[0].getTime() : dates[0].getTime();
-            this._endOfPeriod = this.timeframe ? this.timeframe[1].getTime() : dates[1].getTime();
+        this._startOfPeriod = this.timeframe ? this.timeframe[0].getTime() : dates[0].getTime();
+        this._endOfPeriod = this.timeframe ? this.timeframe[1].getTime() : dates[1].getTime();
         //}
-
-        const diffInHours = (this._endOfPeriod - this._startOfPeriod) / 1000 / 60 / 60;
-        console.log('diffinhours1',diffInHours);
-        const intervalArr = this._getInterval(diffInHours);
-        console.log("Interval selectione", intervalArr);
-
-        const stepSize: number = intervalArr[0];
-        const interval: DatapointInterval = intervalArr[1];
-
-        const lowerCaseInterval = interval.toLowerCase();
-        this._timeUnits =  lowerCaseInterval as TimeUnit;
-        this._stepSize = stepSize;
-
         const data: any = [];
         let promises;
 
         try {
             if(this.dataProvider) {
-                await this.dataProvider(this._startOfPeriod, this._endOfPeriod, (interval.toString() as TimeUnit), stepSize).then((dataset) => {
+                await this.dataProvider().then((dataset) => {
                     dataset.forEach((set) => { data.push(set); });
                 });
             } else {
@@ -1191,16 +1209,8 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     (dataset as any).unit = unit;
                     (dataset as any).yAxisIndex = shownOnRightAxis ? '1' : '0';
                     (dataset as any).color = color ?? this.colors[colourIndex];
-                    (dataset as any).label = {
-                        show: true,
-                        position: 'insideBottom',
-                        distance: 15,
-                        align: 'left',
-                        verticalAlign: 'middle',
-                        rotate: 90,
-                        formatter: `{c1}${unit} ${formula}}`,
-                        //fontSize: 16,
-                    }
+                    //(dataset as any).label.formatter = `{@[1]}${unit} ${formula}`; this does not scale well
+
                     data.push(dataset);
 
                     //Load Comparison Data
@@ -1216,6 +1226,19 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
             this._data = data;
             console.log("this._data",this._data);
+
+            //Load data into table format
+            this.columns = ['Time', ...this._data!.map(entry => entry.name)];
+
+            this.rows= this._data![0].data.map((subArray: any[]) => ({
+                content: [subArray[0], ...this._data!.map(entry => entry.data[subArray[0] === entry.data[0][0] ? 0 : 1][1])]
+            }));
+
+
+            console.log("columns:", this.columns);
+            console.log("rows:", this.rows);
+
+
             this._loading = false;
 
 
@@ -1243,36 +1266,25 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
     protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string, from: number, to: number, predicted: boolean, label?: string, options?: any, unit?: any) {
 
-        function rgba (color: string, alpha: number) {
-            return `rgba(${parseInt(color.slice(-6,-4), 16)}, ${parseInt(color.slice(-4,-2), 16)}, ${parseInt(color.slice(-2), 16)}, ${alpha})`;
-        }
-
         const dataset = {
             name: label,
             type: 'bar',
             data: [] as [any, any][],
             lineStyle: {
                 color: color,
-            //    type: predicted ? [2, 4] : extended ? [0.8, 10] : undefined,
-            //    opacity: faint ? 0.31 : 1,
             },
-            itemStyle: {
-                color: color
-            },
+            //label: { Does not scale well
+            //    show: true,
+            //    position: 'insideBottom',
+            //    distance: 15,
+            //    align: 'left',
+            //    verticalAlign: 'middle',
+            //    rotate: 90,
+            //},
             tooltip: {
                 // @ts-ignore
                 valueFormatter: value => value + unit
             },
-            //areaStyle: area ? {color: new graphic.LinearGradient(0, 0, 0, 1, [
-            //        {
-            //            offset: 0,
-            //            color: rgba(color, faint ? 0.1 : 0.5)
-            //        },
-            //        {
-            //            offset: 1,
-            //            color: rgba(color, 0)
-            //        }
-            //    ])} as any : undefined,
         }
 
 
@@ -1302,9 +1314,11 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                 console.log("response:", response.data);
                 data = response.data
                     .filter(value => value.y !== null && value.y !== undefined)
-                    .map(point => ({ x: point.x , y: point.y } as ValueDatapoint<any>))
+                    .map(point => ({x: point.x, y: point.y} as ValueDatapoint<any>))
 
                 dataset.data = data.map(point => [moment(point.x).format(intervalArr[2]), point.y]);
+                //dataset.label.show =data.length <= 12 // this does not scale well
+
             }
 
 
@@ -1318,14 +1332,8 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     protected _updateChartData(){
         this._chart!.setOption({
             //legend: {data: this._data!.map((data) => `${data.name} ${data.unit}`)},
-            //xAxis: {
-            //    min: this._startOfPeriod,
-            //    max: this._endOfPeriod
-            //},
             series: this._data!.map(series => ({
                 ...series,
-                //markLine: KLOPT DIT NOG WEL NU ALLEEN SERIES ER NOG IS
-                //
             }))
         });
     }

@@ -23,6 +23,7 @@ export interface ReportWidgetConfig extends WidgetConfig {
     defaultTimePrefixKey: string;
     showLegend: boolean;
     showToolBox: boolean;
+    isChart: boolean;
 
 }
 
@@ -87,6 +88,7 @@ function getDefaultWidgetConfig(): ReportWidgetConfig {
         defaultTimePrefixKey: "last",
         showLegend: true,
         showToolBox: false,
+        isChart: true
     };
 }
 
@@ -215,6 +217,7 @@ export class ReportWidget extends OrAssetWidget {
                               .timePrefixKey="${this.widgetConfig?.defaultTimePrefixKey}"
                               .timeWindowKey="${this.widgetConfig?.defaultTimeWindowKey}"
                               .datapointQuery="${this.datapointQuery}" .chartOptions="${this.widgetConfig?.chartOptions}"
+                              .isChart="${this.widgetConfig?.isChart}"          
                               style="height: 100%"
                     ></or-attribute-report>
                 `;

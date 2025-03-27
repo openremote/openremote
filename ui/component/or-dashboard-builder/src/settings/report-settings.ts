@@ -139,6 +139,13 @@ export class ReportSettings extends WidgetSettings {
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowToolBoxToggle(ev)}"
                                 ></or-mwc-input>
                             </div>
+                       <!-- TEMP isChart -->
+                       <div class="switch-container">
+                           <span><or-translate value="isChart"></or-translate></span>
+                           <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.isChart}"
+                                         @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onisChartToggle(ev)}"
+                           ></or-mwc-input>
+                       </div>
                     </div>
                 </settings-panel>
 
@@ -365,6 +372,11 @@ export class ReportSettings extends WidgetSettings {
 
     protected onShowToolBoxToggle(ev: OrInputChangedEvent) {
         this.widgetConfig.showToolBox = ev.detail.value;
+        this.notifyConfigUpdate();
+    }
+
+    protected onisChartToggle(ev: OrInputChangedEvent) {
+        this.widgetConfig.isChart = ev.detail.value;
         this.notifyConfigUpdate();
     }
 
