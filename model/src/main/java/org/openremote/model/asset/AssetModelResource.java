@@ -27,6 +27,8 @@ import org.openremote.model.value.ValueDescriptor;
 
 import jakarta.ws.rs.*;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.util.Map;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -99,4 +101,10 @@ public interface AssetModelResource {
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getMetaItemDescriptors", summary = "Retrieve the available meta item descriptors")
     Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
+
+    @GET
+    @Path("getItemSchemas")
+    @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getItemSchemas", summary = "Retrieve the available configuration item JSON Schemas.")
+    JsonNode getConfigurationItemSchemas(@BeanParam RequestParams requestParams, @QueryParam("item") String item);
 }

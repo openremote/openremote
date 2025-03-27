@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import org.apache.camel.builder.RouteBuilder;
@@ -40,6 +41,7 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.AssetModelProvider;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.attribute.MetaMap;
@@ -49,8 +51,10 @@ import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
+import org.openremote.model.value.ValueConstraint;
 
 import java.io.IOException;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -371,6 +375,27 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         }
 
         return ValueUtil.getMetaItemDescriptors();
+    }
+
+    public JsonNode getConfigurationItemSchemas(String item) {
+        switch (item) {
+            case "AgentLink":
+                return ValueUtil.getSchema(AgentLink.class);
+            case "ValueConstraint":
+                ObjectNode valueConstraintSchema = (ObjectNode)ValueUtil.getSchema(ValueConstraint.class);
+                System.out.println(valueConstraintSchema.toString());
+                JsonNode oneOf = valueConstraintSchema.remove("oneOf");
+                valueConstraintSchema.put("type", "array");
+                valueConstraintSchema.put("title", "Constraints");
+                valueConstraintSchema.putPOJO("items",
+                    ValueUtil.JSON.createObjectNode()
+                        .put("title", "Value Constraint")
+                        .putPOJO("oneOf", oneOf)
+                );
+                return valueConstraintSchema;
+            default:
+                return null;
+        }
     }
 
     protected <T> T parse(String jsonString, Class<T> type) throws JsonProcessingException {

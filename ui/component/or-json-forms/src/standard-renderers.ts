@@ -31,7 +31,7 @@ import {
     RankedTester,
     rankWith,
     RendererProps,
-    resolveSubSchemas,
+    resolveSchema,
     schemaMatches,
     schemaSubPathMatches,
     StatePropsOfControlWithDetail,
@@ -228,11 +228,11 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
     } = mapStateToControlWithDetailProps(jsonFormsContext, props);
 
     const keyword = schema.anyOf !== undefined ? "anyOf" : "oneOf";
-    const resolvedSchema = resolveSubSchemas(schema, rootSchema, keyword);
+    const resolvedSchema = resolveSchema(schema, keyword, rootSchema) as JsonSchema[];
     const resolvedProps = mapStateToCombinatorRendererProps(jsonFormsContext, props, keyword);
 
     const renderInfos = createCombinatorRenderInfos(
-        resolvedSchema[keyword]!,
+        resolvedSchema!,
         rootSchema,
         keyword,
         resolvedProps.uischema || uischema,
@@ -242,7 +242,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
 
     if (data !== undefined && data !== null && (resolvedProps.indexOfFittingSchema === undefined || resolvedProps.indexOfFittingSchema < 0)) {
         // Try and match the data using our own combinator info objects
-        const combinatorInfos = getCombinatorInfos(resolvedSchema[keyword]!, rootSchema);
+        const combinatorInfos = getCombinatorInfos(resolvedSchema!, rootSchema);
 
         const constProp = combinatorInfos.length > 0 ? combinatorInfos[0].constProperty : undefined;
         if (constProp && typeof data === "object" && data[constProp]) {
@@ -271,7 +271,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
             `;
         } else {
             // We have no data so show a schema picker
-            return getSchemaPicker(rootSchema, resolvedSchema, path, keyword, props.label || label, (selectedSchema => handleChange(path, selectedSchema.defaultValueCreator())))
+            return getSchemaPicker(rootSchema, resolvedSchema as any, path, keyword, props.label || label, (selectedSchema => handleChange(path, selectedSchema.defaultValueCreator())))
         }
     }
 
@@ -315,7 +315,7 @@ export const allOfControlRenderer = (state: JsonFormsStateContext, props: Contro
     };
 
     // Merge the schemas
-    const allOfSchema = resolveSubSchemas(contentProps.schema, contentProps.rootSchema, "allOf");
+    const allOfSchema = resolveSchema(contentProps.schema, "allOf", contentProps.rootSchema);
     contentProps.schema = (allOfSchema.allOf! as JsonSchema[]).reduce((accumulator, value) => Util.mergeObjects(accumulator, value, false));
     // Reset the uischema scope
     contentProps.uischema.scope = "#";

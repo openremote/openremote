@@ -384,7 +384,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                         const key = dynamic ? keyValue as string : selectedParameter!.path.split(".").pop()!;
                         const data = {...this.data};
                         const schema = dynamic ? dynamicValueSchema! : selectedParameter!.schema;
-                        data[key] = Array.isArray(schema.type) ? null : ((selectedOneOf ? selectedOneOf.defaultValueCreator() : undefined) || createDefaultValue(schema));
+                        data[key] = Array.isArray(schema.type) ? null : ((selectedOneOf ? selectedOneOf.defaultValueCreator() : undefined) || createDefaultValue(schema, rootSchema));
                         this.handleChange(this.path || "", data);
                     },
                     content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled label="add"></or-mwc-input>`

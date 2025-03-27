@@ -19,12 +19,14 @@
  */
 package org.openremote.model.simulator;
 
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 import java.io.Serializable;
 import java.util.Optional;
 
 /**
  * Represents a value at a point in time defined as the number of seconds of the day.
  */
+@JsonSchemaTitle("Data point")
 public class SimulatorReplayDatapoint implements Serializable {
 
     /**
