@@ -79,10 +79,10 @@ public interface MapResource {
     @POST
     @Path("upload")
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
-    @Produces("text/plain")
+    @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @Operation(operationId = "uploadMap", summary = "Saves mbtiles file")
-    Response uploadMap();
+    ObjectNode uploadMap(@BeanParam RequestParams requestParams);
 
     /**
      * Retrieve if the map is custom and custom map limit
@@ -98,8 +98,8 @@ public interface MapResource {
      */
     @DELETE
     @Path("deleteMap")
-    @Produces("text/plain")
+    @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @Operation(operationId = "deleteMap", summary = "Removes mbtiles file")
-    Response deleteMap();
+    ObjectNode deleteMap(@BeanParam RequestParams requestParams);
 }

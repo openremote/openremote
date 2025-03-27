@@ -445,6 +445,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     }
 
     protected async deleteCustomMap() {
+        this.isMapCustom = false;
         this.tilesForDeletion = true;
     }
 
@@ -508,8 +509,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             filePromises.push(manager.rest.api.MapResource.uploadMap({
                 data: this.tilesForUpload,
                 headers: {'Content-Type': 'application/octet-stream'}
-            }).then(() => {
+            }).then(({ data }) => {
                 this.isMapCustom = true;
+                this.mapConfig = data as MapConfig;
             }).catch((reason) => {
                 setTimeout(() => showSnackbar(undefined, "configuration.global.uploadingMapTilesError"), 3000);
                 console.error(reason);
@@ -530,9 +532,10 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             Promise.all(promises).finally(() => {
                 // The deletion must happen after the config changes since deletion will re-center to the default map.
                 if (this.tilesForDeletion && !this.tilesForUpload) {
-                    manager.rest.api.MapResource.deleteMap().then(() => {
+                    manager.rest.api.MapResource.deleteMap().then(({ data }) => {
                         this.tilesForDeletion = false;
                         this.isMapCustom = false;
+                        this.mapConfig = data as MapConfig;
                     }).catch((reason) => {
                         console.error(reason);
                     });

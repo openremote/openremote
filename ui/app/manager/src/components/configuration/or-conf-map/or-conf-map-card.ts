@@ -210,7 +210,7 @@ export class OrConfMapCard extends LitElement {
                                 <or-map-marker id="geo-json-point-marker" .lng="${this.map.center[0]}" .lat="${this.map.center[1]}"></or-map-marker>
                             `)}
                         </or-map>
-                    </div>`)}
+                    </div>
 
                     <div class="settings-container">
                         <div class="boundary-container">
@@ -311,6 +311,7 @@ export class OrConfMapCard extends LitElement {
                         ></or-mwc-input>
                     `)}
                 </div>
+                `)}
             </or-collapsible-panel>
         `;
     }

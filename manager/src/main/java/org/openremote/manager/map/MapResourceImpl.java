@@ -79,7 +79,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public Response uploadMap() {
+    public ObjectNode uploadMap(RequestParams requestParams) {
         if (request.getContentLength() > mapService.customMapLimit) {
             throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
         }
@@ -87,7 +87,10 @@ public class MapResourceImpl extends WebResource implements MapResource {
         try (InputStream stream = request.getInputStream()) {
             boolean isSaved = mapService.saveUploadedFile(stream);
             if (isSaved) {
-                return Response.ok("File uploaded successfully").build();
+                return mapService.getMapSettings(
+                    getRequestRealmName(),
+                    requestParams.getExternalSchemeHostAndPort()
+                );
             }
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         } catch (IOException e) {
@@ -107,10 +110,13 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public Response deleteMap() {
+    public ObjectNode deleteMap(RequestParams requestParams) {
         boolean deleted = mapService.deleteUploadedFile();
         if (deleted) {
-            return Response.noContent().build();
+            return mapService.getMapSettings(
+                getRequestRealmName(),
+                requestParams.getExternalSchemeHostAndPort()
+            );
         }
         throw new WebApplicationException(Response.Status.BAD_REQUEST);
     }
