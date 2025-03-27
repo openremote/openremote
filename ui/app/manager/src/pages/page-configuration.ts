@@ -334,7 +334,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 <or-translate value="appearance"></or-translate>
                             </div>
                             <div id="header-actions">
-                                <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged && !this.mapConfigChanged && !this.tilesForDeletion}" raised type="button" label="save"
+                                <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged && !this.mapConfigChanged && !this.tilesForUpload && !this.tilesForDeletion}" raised type="button" label="save"
                                               @or-mwc-input-changed="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
                                 ></or-mwc-input>
                             </div>
@@ -442,11 +442,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         }
         (this.shadowRoot!.getElementById('filename-elem')! as HTMLInputElement).value = file.name;
         this.tilesForUpload = file;
-        this.mapConfigChanged = true;
     }
 
     protected async deleteCustomMap() {
-        this.isMapCustom = false;
         this.tilesForDeletion = true;
     }
 
@@ -510,9 +508,13 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             filePromises.push(manager.rest.api.MapResource.uploadMap({
                 data: this.tilesForUpload,
                 headers: {'Content-Type': 'application/octet-stream'}
+            }).then(() => {
+                this.isMapCustom = true;
             }).catch((reason) => {
                 setTimeout(() => showSnackbar(undefined, "configuration.global.uploadingMapTilesError"), 3000);
                 console.error(reason);
+            }).finally(() => {
+                this.tilesForUpload = null;
             }));
         }
 
@@ -528,7 +530,10 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             Promise.all(promises).finally(() => {
                 // The deletion must happen after the config changes since deletion will re-center to the default map.
                 if (this.tilesForDeletion && !this.tilesForUpload) {
-                    manager.rest.api.MapResource.deleteMap().catch((reason) => {
+                    manager.rest.api.MapResource.deleteMap().then(() => {
+                        this.tilesForDeletion = false;
+                        this.isMapCustom = false;
+                    }).catch((reason) => {
                         console.error(reason);
                     });
                 }
@@ -538,7 +543,6 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 this.mapConfigChanged = false;
                 const configURL =  (MANAGER_URL ?? "") + "/api/master/configuration/manager";
                 fetch(configURL, {cache: "reload"})
-                window.location.reload();
             })
         })
 

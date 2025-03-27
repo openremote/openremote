@@ -20,6 +20,28 @@
 import { css, html, LitElement, unsafeCSS } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import { DefaultColor5 } from "@openremote/core";
+import { when } from 'lit/directives/when.js';
+
+export class OrCollapsibleToggled extends CustomEvent<{ expanded: boolean }> {
+
+    public static readonly NAME = "or-collapsible-toggled";
+
+    constructor(expanded: boolean) {
+        super(OrCollapsibleToggled.NAME, {
+            detail: {
+                expanded
+            },
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+declare global {
+    export interface HTMLElementEventMap {
+        [OrCollapsibleToggled.NAME]: OrCollapsibleToggled;
+    }
+}
 
 // language=CSS
 const style = css`
@@ -117,6 +139,8 @@ export class OrCollapsiblePanel extends LitElement {
     }
 
     @property({type: Boolean})
+    lazyload: boolean = false;
+    @property({type: Boolean})
     expanded: boolean = false;
     @property({type: Boolean})
     expandable: boolean = true;
@@ -129,10 +153,14 @@ export class OrCollapsiblePanel extends LitElement {
         }
         ev.preventDefault();
         this.expanded = !this.expanded;
+        this.notifyCollapsibleToggled()
+    }
+
+    protected notifyCollapsibleToggled() {
+        this.dispatchEvent(new CustomEvent(OrCollapsibleToggled.NAME, { detail: { expanded: this.expanded } }));
     }
 
     render() {
-
         return html`
             <div id="header" class="${this.expandable ? "expandable" : ""} ${this.expandable && this.expanded ? "expanded" : ""}" @click="${(ev:MouseEvent) => this._onHeaderClicked(ev)}">
                 ${this.expandable ? html`<or-icon icon="chevron-${this.expanded ? "down" : "right"}"></or-icon>` : ""}
@@ -141,9 +169,12 @@ export class OrCollapsiblePanel extends LitElement {
                     <span id="header-description"><slot name="header-description"></slot></span>
                 </span>
             </div>
-            <div id="content" class="${this.expandable && this.expanded ? "expanded" : ""}">
-                <slot name="content"></slot>
-            </div>
+            ${when(!this.lazyload || this.expanded, () => html`
+                    <div id="content" class="${this.expandable && this.expanded ? "expanded" : ""}">
+                        <slot name="content"></slot>
+                    </div>
+                `
+            )}
         `;
     }
 }
