@@ -390,7 +390,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                         </span>
                                         <div class="input d-inline-flex" style="height: 56px">
                                             <div id="fileupload" style="display: flex; align-items: center">
-                                                <or-mwc-input outlined label="selectFile" style="width: 148px" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this.shadowRoot!.getElementById('fileupload-elem')!.click()}">
+                                                <or-mwc-input outlined label="selectFile" style="width: 148px" .type="${InputType.BUTTON}" @or-mwc-input-changed="${
+                                                    () => this.shadowRoot.getElementById('fileupload-elem').click()
+                                                }">
                                                     <input id="fileupload-elem" name="configfile" type="file" accept=".mbtiles" @change="${(e) => this.uploadCustomMap(e)}"/>
                                                 </or-mwc-input>
                                                 ${when(this.isMapCustom, () => html`
@@ -440,7 +442,10 @@ export class PageConfiguration extends Page<AppStateKeyed> {
           showSnackbar(undefined, "configuration.global.uploadMapTilesError")
           return;
         }
-        (this.shadowRoot!.getElementById('filename-elem')! as HTMLInputElement).value = file.name;
+        const filenameEl = this.shadowRoot.getElementById('filename-elem') as HTMLInputElement
+        if (filenameEl) {
+            filenameEl.value = file.name;
+        }
         this.tilesForUpload = file;
     }
 
