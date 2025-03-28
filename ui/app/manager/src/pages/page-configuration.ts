@@ -390,7 +390,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                         </span>
                                         <div class="input d-inline-flex" style="height: 56px">
                                             <div id="fileupload" style="display: flex; align-items: center">
-                                                <or-mwc-input outlined label="selectFile" style="width: 148px" .type="${InputType.BUTTON}" @or-mwc-input-changed="${
+                                                <or-mwc-input outlined label="selectFile" style="width: fit-content; padding-right: 12px;" .type="${InputType.BUTTON}" @or-mwc-input-changed="${
                                                     () => this.shadowRoot.getElementById('fileupload-elem').click()
                                                 }">
                                                     <input id="fileupload-elem" name="configfile" type="file" accept=".mbtiles" @change="${(e) => this.uploadCustomMap(e)}"/>
@@ -406,8 +406,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                         </div>
                                     </div>
                                 </div>
-                                <hr style="border: none; border-top: 1px solid #bbb; margin: 0; margin-bottom: 10px">
-                                
+                                <div class="subheader"><or-translate style="text-transform: uppercase;" value="configuration.realmMapSettingsTitle"></or-translate></div>
                                 <or-conf-panel id="mapConfig-panel" .config="${this.mapConfig}" .realmOptions="${realmOptions}"
                                                @change="${() => { this.mapConfigChanged = true; }}"
                                 ></or-conf-panel>
