@@ -1747,15 +1747,20 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             this._nodes = [];
         } else {
             if (manager.isRestrictedUser()) {
-                // Any assets whose parents aren't accessible need to be re-parented
+                // Restricted users might have access to children, without access to the parent asset.
+                // Any assets whose parents aren't accessible need to be 're-parented'.
                 assets.forEach(asset => {
                     if (!!asset.parentId && !!asset.path && assets.find(a => a.id === asset.parentId) === undefined) {
                         let reparentId = null;
-                        for (let i = 2; i < asset.path!.length; i++) {
+
+                        // Loop through ALL assets in the path, and check if they're present in the (restricted) asset list
+                        // Once found, update its parent ID without replacing the original (that's why it's named 'reparentId').
+                        for (let i = 0; i < asset.path!.length; i++) {
                             const ancestorId = asset.path![i];
-                            if (assets.find(a => a.id === ancestorId) !== undefined) {
+                            if (asset.id !== ancestorId && assets.find(a => a.id === ancestorId) !== undefined) {
                                 reparentId = ancestorId;
-                                break;
+
+                                // break; No break statement here, as when an asset further down the tree has been found, it should overwrite the parent ID.
                             }
                         }
                         (asset as AssetWithReparentId).reparentId = reparentId;
