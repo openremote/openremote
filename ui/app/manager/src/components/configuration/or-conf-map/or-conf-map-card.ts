@@ -187,13 +187,13 @@ export class OrConfMapCard extends LitElement {
         this.zoom = nr;
     }
 
-
     render() {
         return html`
-            <or-collapsible-panel .expanded="${this.expanded}">
+            <or-collapsible-panel .expanded="${this.expanded}" .lazyload @or-collapsible-toggled="${(e) => { this.expanded = e.detail.expanded; } }">
                 <div slot="header" class="header-container">
                     ${this.name}
                 </div>
+                ${when(this.expanded, () => html`
                 <div slot="content" class="panel-content">
                     <div class="map-container">
                         <div class="subheader">${i18next.t("map")}</div>
@@ -311,6 +311,7 @@ export class OrConfMapCard extends LitElement {
                         ></or-mwc-input>
                     `)}
                 </div>
+                `)}
             </or-collapsible-panel>
         `;
     }
