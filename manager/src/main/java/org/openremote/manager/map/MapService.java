@@ -25,8 +25,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.ProxyHandler;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.app.ConfigurationService;
@@ -51,6 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.StreamSupport;
 
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
@@ -462,7 +461,10 @@ public class MapService implements ContainerService {
                 LOG.log(Level.SEVERE, "MBTiles database file corrupt");
                 return false;
             }
-            saveMapMetadata(getMetadata(connection));
+            if (!saveMapMetadata(getMetadata(connection))) {
+                Files.deleteIfExists(customMapTilesPath);
+                return false;
+            };
 
             this.setData(connection, metadata);
             return true;
@@ -505,7 +507,7 @@ public class MapService implements ContainerService {
         return deleted;
     }
 
-    private void saveMapMetadata(Metadata metadata) {
+    private boolean saveMapMetadata(Metadata metadata) {
         Optional<JsonNode> options = Optional.ofNullable(mapConfig.get("options"));
         if (metadata.isValid() && options.isPresent()) {
             Iterator<Map.Entry<String, JsonNode>> fields = options.get().fields();
@@ -518,9 +520,16 @@ public class MapService implements ContainerService {
             configurationService.saveMapConfig(mapConfig);
             mapConfig = configurationService.getMapConfig();
             mapSettings.clear();
+            return true;
         }
+        return false;
     }
 
+    /**
+     * The {@link Metadata} class validates that {@link #bounds} and {@link #center} follow the mbtiles-spec.
+     *
+     * @implSpec https://github.com/mapbox/mbtiles-spec/blob/master/1.3/spec.md#metadata
+     */
     protected static final class Metadata {
         protected String attribution;
         protected ArrayNode vectorLayers;
@@ -537,7 +546,18 @@ public class MapService implements ContainerService {
             this.center = center;
             this.maxZoom = maxZoom;
             this.minZoom = minZoom;
-            valid = true;
+
+            boolean boundsValid = this.bounds.size() == 4
+                && StreamSupport.stream(Spliterators.spliterator(this.bounds.elements(), 0, 4), false).allMatch(v -> v.numberType() != null);
+            boolean centerValid = this.center.size() == 3
+                && StreamSupport.stream(Spliterators.spliterator(this.bounds.elements(), 0, 3), false).allMatch(v -> v.numberType() != null);
+            if (!boundsValid) {
+                LOG.log(Level.WARNING, "Map bounds are invalid.");
+            }
+            if (!centerValid) {
+                LOG.log(Level.WARNING, "Map center is invalid.");
+            }
+            valid = boundsValid && centerValid;
         }
 
         public Metadata() {
