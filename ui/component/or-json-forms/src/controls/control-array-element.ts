@@ -272,7 +272,7 @@ export class ControlArrayElement extends ControlBaseElement {
         if (this.itemInfos) {
             this.showAddDialog();
         } else {
-            this.addItem(createDefaultValue(this.resolvedSchema));
+            this.addItem(createDefaultValue(this.resolvedSchema, this.rootSchema));
         }
     }
 
