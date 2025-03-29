@@ -3,7 +3,6 @@ package org.openremote.agent.protocol.modbus;
 import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.PlcDriverManager;
 import org.apache.plc4x.java.api.exceptions.PlcConnectionException;
-import org.jboss.resteasy.spi.NotImplementedYetException;
 
 public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialProtocol, ModbusSerialAgent>{
     public ModbusSerialProtocol(ModbusSerialAgent agent) {
@@ -12,13 +11,14 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
 
     @Override
     protected PlcConnection createIoClient(ModbusSerialAgent agent) throws RuntimeException {
-        PlcConnection plcConnection = null;
+        PlcConnection plcConnection;
         try {
             plcConnection = PlcDriverManager.getDefault().getConnectionManager()
-                    .getConnection("modbus-ascii://"+agent.getSerialPort() +
-                            "?serial.baud-rate=" + agent.getBaudRate() +
-                            "&serial.num-data-bits=" + agent.getDataBits() +
-                            "&serial.num-stop-bits=" + agent.getStopBits()
+                    .getConnection("modbus-rtu://"+agent.getSerialPort() +
+                                    "?serial.baud-rate=" + agent.getBaudRate() +
+                                    "&unit-identifier=" + agent.getUnitId().orElseThrow() +
+                                    "&serial.num-data-bits=" + agent.getDataBits() +
+                                    "&serial.num-stop-bits=" + agent.getStopBits()
 //                            "&serial.parity=" + agent.getParity()
                     );
         } catch (PlcConnectionException e) {

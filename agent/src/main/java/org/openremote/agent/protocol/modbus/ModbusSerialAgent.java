@@ -3,12 +3,13 @@ package org.openremote.agent.protocol.modbus;
 import jakarta.persistence.Entity;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.attribute.Attribute;
 import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.ValueConstraint;
-import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 
+/**
+ * This Modbus serial agent is currently untested, due to difficulties in testing Modbus serial agents (especially the
+ * absence of automated Modbus serial testing libraries)
+ */
 @Entity
 public class ModbusSerialAgent extends ModbusAgent<ModbusSerialAgent, ModbusSerialProtocol>{
 

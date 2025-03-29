@@ -4,7 +4,6 @@ import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.messages.PlcReadRequest;
 import org.apache.plc4x.java.api.messages.PlcReadResponse;
 import org.apache.plc4x.java.api.messages.PlcWriteRequest;
-import org.apache.plc4x.java.api.messages.PlcWriteResponse;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.velbus.AbstractVelbusProtocol;
 import org.openremote.model.Container;
@@ -13,11 +12,9 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.ValueUtil;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -28,8 +25,6 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,T>, T extends ModbusAgent<T, S>> extends AbstractProtocol<T, ModbusAgentLink>{
 
     public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractVelbusProtocol.class);
-
-    public static final int MODBUS_POLLING_RATE_MS = 1000;
 
     protected final Map<AttributeRef, ScheduledFuture<?>> pollingMap = new HashMap<>();
 
@@ -62,15 +57,14 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     }
     @Override
     protected void doStop(Container container) throws Exception {
+        //TODO: Do I need to empty the pollingMap too when stopping the protocol?
         client.close();
     }
 
     @Override
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) throws RuntimeException {
         AttributeRef ref = new AttributeRef(assetId, attribute.getName());
-        int readAddress = agentLink.getReadAddress();
-
-        pollingMap.put(ref, schedulePollingRequest(ref, attribute, ((int) agentLink.getRefresh()), agentLink.getReadType(), agentLink.getReadValueType(), readAddress));
+        pollingMap.put(ref, schedulePollingRequest(ref, attribute, ((int) agentLink.getRefresh()), agentLink.getReadMemoryArea(), agentLink.getReadValueType(), agentLink.getReadAddress()));
     }
 
     @Override
@@ -90,7 +84,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
         PlcWriteRequest.Builder builder = client.writeRequestBuilder();
 
-        switch (agentLink.getWriteType()){
+        switch (agentLink.getWriteMemoryArea()){
             case COIL -> builder.addTagAddress("coil", "coil:" + offsetWriteAddress, processedValue);
             case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + offsetWriteAddress, processedValue);
         }
@@ -98,11 +92,14 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
         PlcWriteRequest request = builder.build();
 
         try {
-            PlcWriteResponse response = request.execute().get();
+            //TODO: Not sure how/if to check the response, and which response codes warrant an exception
+            request.execute().get();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
+
+    //TODO: Not sure what these are supposed to be, I think it's only for logging/executor purposes
 
     @Override
     public String getProtocolName() {
@@ -111,22 +108,22 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
     @Override
     public String getProtocolInstanceUri() {
-        return "modbus-tcp://" + agent.getHost() + ":" + agent.getPort();
+        return "modbus-tcp://" + agent.getHost().orElseThrow() + ":" + agent.getPort().orElseThrow();
     }
 
     protected ScheduledFuture<?> schedulePollingRequest(AttributeRef ref,
                                                         Attribute<?> attribute,
                                                         int pollingMillis,
-                                                        ModbusAgentLink.ReadType readType,
+                                                        ModbusAgentLink.ReadMemoryArea readType,
                                                         ModbusAgentLink.ModbusDataType dataType,
                                                         int readAddress) {
 
         LOG.warning("Scheduling polling request '" + "clientRequest" + "' to execute every " + pollingMillis + "ms for attribute: " + attribute);
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
-                //TODO: PLC4X accounts for zero-based addressing by removing 1 from the readAddress that is being read/written, so we compensate for that.
+                // PLC4X accounts for zero-based addressing by removing 1 from the readAddress that is being read/written, so we compensate for that.
                 // So when I try to read address 3, it is really reading address 2, which is the 3rd element of the values.
-                // I think this could lead to some confusion so I'll add that 1 back.
+                // I think this could lead to some confusion, so I'll add that 1 back.
 
                 int offsetReadAddress = readAddress + 1;
 
@@ -142,9 +139,17 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
 
                 PlcReadResponse response = readRequest.execute().get();
-                Object responseValue = response.getObject(response.getTagNames().stream().findFirst().get());
-                Optional<?> coercedResponse = ValueUtil.getValueCoerced(responseValue, dataType.getJavaType());
-                updateLinkedAttribute(ref, coercedResponse.get());
+
+                // We currently only request one thing (with the above tag), so we get it from there. If it doesn't exist,
+                // we can assume that the request failed.
+
+                String responseTag = response.getTagNames().stream().findFirst()
+                        .orElseThrow(() -> new RuntimeException("Could not retrieve the requested value from the response"));
+
+
+
+                Object responseValue = response.getObject(responseTag);
+                updateLinkedAttribute(ref, responseValue);
             } catch (Exception e) {
                 LOG.log(Level.WARNING, prefixLogMessage("Exception thrown whilst processing polling response"));
             }

@@ -5,15 +5,21 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.openremote.model.asset.agent.AgentLink;
 
+import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
 
 public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
 
+    //TODO: Fix what is required and what is not
+    // - Test all data types
+    // -
+
     @JsonPropertyDescription("Poll interval in milliseconds")
+    @NotNull
     private long refresh;
 
     @JsonPropertyDescription("Read type: \"coil\" (FC01), \"discrete\" (FC02), \"holding\" (FC03), \"input\" (FC04)")
-    private ReadType readType;
+    private ReadMemoryArea readMemoryArea;
 
     @JsonPropertyDescription("Read value type: \"int64\", \"int64_swap\", \"uint64\", \"uint64_swap\", \"float32\", \"float32_swap\", \"int32\", \"int32_swap\", \"uint32\", \"uint32_swap\", \"int16\", \"uint16\", \"int8\", \"uint8\", \"bit\"")
     private ModbusDataType readValueType;
@@ -22,7 +28,7 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     private int readAddress;
 
     @JsonPropertyDescription("Write type: \"coil\", \"holding\"")
-    private WriteType writeType;
+    private WriteMemoryArea writeMemoryArea;
 
     @JsonPropertyDescription("Zero based address for writing data")
     private int writeAddress;
@@ -38,12 +44,12 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         this.refresh = refresh;
     }
 
-    public ReadType getReadType() {
-        return readType;
+    public ReadMemoryArea getReadMemoryArea() {
+        return readMemoryArea;
     }
 
-    public void setReadType(ReadType readType) {
-        this.readType = readType;
+    public void setReadMemoryArea(ReadMemoryArea readMemoryArea) {
+        this.readMemoryArea = readMemoryArea;
     }
 
     public ModbusDataType getReadValueType() {
@@ -62,12 +68,12 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         this.readAddress = readAddress;
     }
 
-    public WriteType getWriteType() {
-        return writeType;
+    public WriteMemoryArea getWriteMemoryArea() {
+        return writeMemoryArea;
     }
 
-    public void setWriteType(WriteType writeType) {
-        this.writeType = writeType;
+    public void setWriteMemoryArea(WriteMemoryArea writeMemoryArea) {
+        this.writeMemoryArea = writeMemoryArea;
     }
 
     public int getWriteAddress() {
@@ -86,8 +92,8 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         this.writeValueType = writeValueType;
     }
 
-    // Enums for readType, readValueType, and writeValueType
-    public enum ReadType {
+    // Enums for readMemoryArea, readValueType, and writeValueType
+    public enum ReadMemoryArea {
         COIL, DISCRETE, HOLDING, INPUT
     }
 
@@ -121,7 +127,7 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         }
     }
 
-    public enum WriteType {
+    public enum WriteMemoryArea {
         COIL, HOLDING
     }
 
@@ -138,13 +144,13 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     }
 
     @JsonCreator
-    public ModbusAgentLink(@JsonProperty("id") String id, @JsonProperty("refresh") long refresh, @JsonProperty("readType") ReadType readType, @JsonProperty("readValueType") ModbusDataType readValueType, @JsonProperty("readAddress") int readAddress, @JsonProperty("writeType") WriteType writeType, @JsonProperty("writeAddress") int writeAddress, @JsonProperty("writeValueType") ModbusDataType writeValueType) {
+    public ModbusAgentLink(@JsonProperty("id") String id, @JsonProperty("refresh") long refresh, @JsonProperty("readMemoryArea") ReadMemoryArea readMemoryArea, @JsonProperty("readValueType") ModbusDataType readValueType, @JsonProperty("readAddress") int readAddress, @JsonProperty("writeMemoryArea") WriteMemoryArea writeMemoryArea, @JsonProperty("writeAddress") int writeAddress, @JsonProperty("writeValueType") ModbusDataType writeValueType) {
         super(id);
         this.refresh = refresh;
-        this.readType = readType;
+        this.readMemoryArea = readMemoryArea;
         this.readValueType = readValueType;
         this.readAddress = readAddress;
-        this.writeType = writeType;
+        this.writeMemoryArea = writeMemoryArea;
         this.writeAddress = writeAddress;
         this.writeValueType = writeValueType;
     }

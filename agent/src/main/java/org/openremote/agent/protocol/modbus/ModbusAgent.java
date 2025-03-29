@@ -19,14 +19,10 @@
  */
 package org.openremote.agent.protocol.modbus;
 
-import org.openremote.model.asset.agent.Agent;
-import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.asset.agent.DefaultAgentLink;
-import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.util.ValueUtil;
-import org.openremote.model.value.AttributeDescriptor;
-
 import jakarta.persistence.Entity;
+import org.openremote.model.asset.agent.Agent;
+import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
