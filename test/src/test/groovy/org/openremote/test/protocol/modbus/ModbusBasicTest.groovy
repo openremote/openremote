@@ -101,7 +101,7 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
                 case ModbusBlockType.Holding -> {
                     RegistersModbusMessage registerRequest = msg.unwrap(RegistersModbusMessage.class);
                     if (msg.getFunction().isReadFunction()) {
-                        modbusMessage = readHoldingsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), new short[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+                        modbusMessage = readHoldingsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), new short[]{1, 2, 3, 4, 5, 6, 7, 8, 12.3f, 10});
                     } else {
                         if (registerRequest.getFunction().getCode() == WRITE_HOLDING_REGISTERS) {
                             modbusMessage = writeHoldingsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), registerRequest.getCount());
@@ -151,6 +151,7 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
 
         agent.setHost("localhost")
         agent.setPort(modbusServerPort)
+        agent.setUnitId(1)
 
         agent = assetStorageService.merge(agent)
 
@@ -174,21 +175,18 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
                 new ModbusAgentLink(
                         id: agent.getId(),
                         refresh: 1000,
-                        readType: ModbusAgentLink.ReadType.HOLDING,
+                        readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                         readValueType: ModbusAgentLink.ModbusDataType.UINT,
                         readAddress: 2,
-                        writeType: ModbusAgentLink.WriteType.HOLDING,
+                        writeMemoryArea: ModbusAgentLink.WriteMemoryArea.HOLDING,
                         writeAddress: 3,
                         writeValueType: ModbusAgentLink.ModbusDataType.UINT
                 )
         )));
 
-
-
         ship = assetStorageService.merge(ship);
 
         ModbusAgentLink agentLink;
-
 
         then: "a client should be created and the pollingMap is populated"
         conditions.eventually {
@@ -237,10 +235,10 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
                 new ModbusAgentLink(
                         id: agent.getId(),
                         refresh: 1000,
-                        readType: ModbusAgentLink.ReadType.COIL,
+                        readMemoryArea: ModbusAgentLink.ReadMemoryArea.COIL,
                         readValueType: ModbusAgentLink.ModbusDataType.BOOL,
                         readAddress: 5,
-                        writeType: ModbusAgentLink.WriteType.COIL,
+                        writeMemoryArea: ModbusAgentLink.WriteMemoryArea.COIL,
                         writeAddress: 6,
                         writeValueType: ModbusAgentLink.ModbusDataType.BOOL
                 )
