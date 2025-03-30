@@ -41,8 +41,8 @@ public abstract class ModbusAgent<T extends ModbusAgent<T, U>, U extends Abstrac
         super(name);
     }
 
-    public Optional<Integer> getUnitId(){
-        return getAttributes().getValue(UNIT_ID);
+    public Integer getUnitId(){
+        return getAttributes().getValue(UNIT_ID).get();
     }
 
     public void setUnitId(Integer unitId) {

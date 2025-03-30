@@ -16,7 +16,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
             plcConnection = PlcDriverManager.getDefault().getConnectionManager()
                     .getConnection("modbus-rtu://"+agent.getSerialPort() +
                                     "?serial.baud-rate=" + agent.getBaudRate() +
-                                    "&unit-identifier=" + agent.getUnitId().orElseThrow() +
+                                    "&unit-identifier=" + agent.getUnitId() +
                                     "&serial.num-data-bits=" + agent.getDataBits() +
                                     "&serial.num-stop-bits=" + agent.getStopBits()
 //                            "&serial.parity=" + agent.getParity()

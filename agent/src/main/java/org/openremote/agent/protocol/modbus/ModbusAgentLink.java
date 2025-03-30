@@ -8,11 +8,8 @@ import org.openremote.model.asset.agent.AgentLink;
 import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
 
+//TODO: Make non-primitive parameters required
 public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
-
-    //TODO: Fix what is required and what is not
-    // - Test all data types
-    // -
 
     @JsonPropertyDescription("Poll interval in milliseconds")
     @NotNull

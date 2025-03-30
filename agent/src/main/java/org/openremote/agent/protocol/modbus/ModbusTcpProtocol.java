@@ -14,7 +14,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
         PlcConnection plcConnection;
         try {
             plcConnection = PlcDriverManager.getDefault().getConnectionManager()
-                    .getConnection("modbus-tcp://" + agent.getHost().orElseThrow() + ":" + agent.getPort().orElseThrow()+"?unit-identifier=" + agent.getUnitId().orElseThrow());
+                    .getConnection("modbus-tcp://" + agent.getHost().orElseThrow() + ":" + agent.getPort().orElseThrow()+"?unit-identifier=" + agent.getUnitId());
         } catch (PlcConnectionException e) {
             throw new RuntimeException(e);
         }

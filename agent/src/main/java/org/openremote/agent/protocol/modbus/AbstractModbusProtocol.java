@@ -118,7 +118,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                                                         ModbusAgentLink.ModbusDataType dataType,
                                                         int readAddress) {
 
-        LOG.warning("Scheduling polling request '" + "clientRequest" + "' to execute every " + pollingMillis + "ms for attribute: " + attribute);
+        LOG.log(Level.FINE,"Scheduling polling request '" + "clientRequest" + "' to execute every " + pollingMillis + "ms for attribute: " + attribute);
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 // PLC4X accounts for zero-based addressing by removing 1 from the readAddress that is being read/written, so we compensate for that.
