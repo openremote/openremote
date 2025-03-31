@@ -1,10 +1,8 @@
 #!/bin/bash
 
 CLUSTER_NAME=testcluster
-
 HOSTNAME=testmanager
 FQDN=$HOSTNAME.openremote.app
-MQTT_FQDN=mqtt.$FQDN
 
 AWS_REGION="eu-west-1"
 AWS_ACCOUNT_ID="463235666115" # openremote
@@ -31,30 +29,8 @@ fi
 
 aws sts assume-role --role-arn $DNSCHG_ROLE_ARN --role-session-name dnschg --profile or --query "Credentials.[AccessKeyId, SecretAccessKey, SessionToken]" --output text | awk -F'\t' '{print "aws_access_key_id "$1"\naws_secret_access_key "$2"\naws_session_token "$3 }' | xargs -L 1 aws configure --profile dnschg set
 
-CERTIFICATE_ARN=`kubectl get ingress manager -o jsonpath='{.metadata.annotations.\alb\.ingress\.kubernetes\.io\/certificate-arn}'`
-
-DNS_RECORD_NAME=`aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[0].ResourceRecord.Name"`
-DNS_RECORD_VALUE=`aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[0].ResourceRecord.Value"`
-
-echo "Delete DNS record $DNS_RECORD_NAME"
-aws route53 change-resource-record-sets \
-    --hosted-zone-id /hostedzone/Z08751721JH0NB6LLCB4V \
-    --change-batch \
-     '{"Changes": [ { "Action": "DELETE", "ResourceRecordSet": { "Name": '$DNS_RECORD_NAME', "Type": "CNAME", "TTL": 300, "ResourceRecords" : [ { "Value": '$DNS_RECORD_VALUE' } ] } } ]}' \
-     --profile dnschg
-
-DNS_RECORD_NAME=`aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[1].ResourceRecord.Name"`
-DNS_RECORD_VALUE=`aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[1].ResourceRecord.Value"`
-
-echo "Delete DNS record $DNS_RECORD_NAME"
-aws route53 change-resource-record-sets \
-    --hosted-zone-id /hostedzone/Z08751721JH0NB6LLCB4V \
-    --change-batch \
-     '{"Changes": [ { "Action": "DELETE", "ResourceRecordSet": { "Name": '$DNS_RECORD_NAME', "Type": "CNAME", "TTL": 300, "ResourceRecords" : [ { "Value": '$DNS_RECORD_VALUE' } ] } } ]}' \
-     --profile dnschg
-
-DNS_NAME=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='application'].DNSName | [0]"`
-HOSTED_ZONE_ID=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='application'].CanonicalHostedZoneId | [0]"`
+DNS_NAME=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[0].DNSName"`
+HOSTED_ZONE_ID=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[0].CanonicalHostedZoneId"`
 
 echo "Delete DNS record $FQDN"
 
@@ -64,20 +40,10 @@ aws route53 change-resource-record-sets \
      '{"Changes": [ { "Action": "DELETE", "ResourceRecordSet": { "Name": "'$FQDN'", "Type": "A", "AliasTarget":{ "HostedZoneId": '$HOSTED_ZONE_ID',"DNSName": '$DNS_NAME',"EvaluateTargetHealth": false} } } ]}' \
      --profile dnschg
 
-DNS_NAME=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='network'].DNSName | [0]"`
-HOSTED_ZONE_ID=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='network'].CanonicalHostedZoneId | [0]"`
-
-echo "Delete DNS record $MQTT_FQDN"
-
-aws route53 change-resource-record-sets \
-    --hosted-zone-id /hostedzone/Z08751721JH0NB6LLCB4V \
-    --change-batch \
-     '{"Changes": [ { "Action": "DELETE", "ResourceRecordSet": { "Name": "'$MQTT_FQDN'", "Type": "A", "AliasTarget":{ "HostedZoneId": '$HOSTED_ZONE_ID',"DNSName": '$DNS_NAME',"EvaluateTargetHealth": false} } } ]}' \
-     --profile dnschg
-
 helm uninstall manager
 helm uninstall keycloak
 helm uninstall postgresql
+helm uninstall proxy
 
 # Give the AWS LB Controller time to delete the NLB after the Service is deleted
 while aws elbv2 describe-load-balancers  --profile or --query "LoadBalancers[?Type=='network']" 2>/dev/null | grep '"Code": "active"'; do
@@ -85,9 +51,6 @@ while aws elbv2 describe-load-balancers  --profile or --query "LoadBalancers[?Ty
   sleep 10
 done
 helm uninstall aws-load-balancer-controller -n kube-system
-
-echo "Delete certificate $CERTIFICATE_ARN"
-aws acm delete-certificate --certificate-arn $CERTIFICATE_ARN --profile or
 
 MANAGER_VOLUMEID=`kubectl get pv manager-data-pv -o=jsonpath='{.spec.awsElasticBlockStore.volumeID}'`
 PSQL_VOLUMEID=`kubectl get pv postgresql-data-pv -o=jsonpath='{.spec.awsElasticBlockStore.volumeID}'`

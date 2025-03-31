@@ -11,6 +11,10 @@ spec:
       targetPort: 8080
       protocol: TCP
       name: http
+    - name: mqtt
+      port: 1883
+      targetPort: 1883
+      protocol: TCP
   selector:
     {{- include "manager.selectorLabels" . | nindent 4 }}
 ---
@@ -34,5 +38,9 @@ spec:
     - name: mqtt
       port: 1883
       targetPort: 1883
+      protocol: TCP
+    - name: mqtts
+      port: 8883
+      targetPort: 8883
       protocol: TCP
 {{- end }}

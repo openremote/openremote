@@ -1,7 +1,6 @@
 # Kubernetes deployment under AWS (EKS)
 
 TODO: include links to appropriate documentation
-TODO: see if can make hostname configurable
 
 ## TL;DR
 
@@ -10,14 +9,17 @@ Requirements: you need to have kubectl, helm, aws cli and eksctl installed befor
 The scripts have been tested within the openremote account.  
 You must get proper credentials and set the AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and AWS_SESSION_TOKEN variable before running them.
 
-The `eks-setup.sh` script creates a new EKS cluster from scratch and deploys on OR stack in it.
-The `eks-cleanup.sh` script deletes all the components that have been created by the above script.
+The `eks-setup-haproxy.sh` script creates a new EKS cluster from scratch and deploys an OR stack in it.
+The `eks-cleanup-haproxy.sh` script deletes all the components that have been created by the above script.
 
-At this stage, the hostname is hardcoded to k8stest.openremote.app  
+The hostname is defined as an environment variable in the the script, by default it is testmanager.openremote.app  
 
 See comments within the script for more information.
 
 ## Setup
+
+We have 2 different options for deployment: using a HAProxy container or not
+There are pros and cons to both approaches, see [Networking](#Networking) section for more details.
 
 We're creating an EKS cluster with a managed node group.
 By default, the group uses 2 VMs of type t2.large. The script places them in AZ eu-west-1a and eu-west-1b
@@ -65,6 +67,22 @@ Those additions have been causing issues when running locally (at least on macOS
 
 ### Networking
 
+#### Using HAProxy
+
+In this configuration, we deploy a HAProxy pod within the cluster.
+All traffic gets routed to HAProxy at layer 4 and HAProxy is responsible for TLS termination and management of all further routing to the other pods.
+This is similar to what is done when running under docker compose on a VM.
+
+All OR pods only expose an IPCluster service and never an Ingress.
+HAProxy exposes a LoadBalancer service for communication from the outside world.
+We're using [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.7/) to automatically create a Network Load Balancer (NLB) based on that service.
+One NLB is automatically created when a (LoadBalancer) Service object exists and destroyed when the Service is deleted.
+
+#### Using Ingresses and individual LoadBalancer services
+
+In this configuration, standard kubernetes Ingress and Load Balancer services are used
+by each pod to expose their APIs to the outside world. 
+
 We're using [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.7/) to automatically create an Application Load Balancer based on the Ingress manifests.  
 An Application Load Balancer (ALB) is automatically created when an Ingress object exists in the cluster and destroyed when there are none.  
 
@@ -77,6 +95,15 @@ For that, we use [Route 53](https://aws.amazon.com/route53/) and an alias record
 
 To create the certificate, we use [AWS Certificate Manager](https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html).  
 Domain ownership validation is performed via DNS record.
+
+For MQTTS, the manager uses a Load Balancer service.
+This creates a Network Load Balancer with an alias different from the ALB one created above.
+As such, it is not possible to 
+
+
+test routing with a subdomain for mqtt
+
+
 
 
 TODO: more info on annotations
@@ -113,3 +140,6 @@ some of the automatic orchestration offered by k8s
 
 Can we make it more dynamic using storage class and not explicit binding
 
+
+
+Some duplication in configuration

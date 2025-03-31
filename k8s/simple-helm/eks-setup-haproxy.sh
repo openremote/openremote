@@ -6,7 +6,6 @@ CLUSTER_NAME=testcluster
 # Hostname to use for public access to this instance, always under the openremote.app domain
 HOSTNAME=testmanager
 FQDN=$HOSTNAME.openremote.app
-MQTT_FQDN=mqtt.$FQDN
 
 AWS_REGION="eu-west-1"
 AWS_ACCOUNT_ID="463235666115" # openremote
@@ -91,52 +90,24 @@ MANAGER_VOLUMEID=`aws ec2 create-volume --size 1 --availability-zone eu-west-1a 
 # Wait for AWS LB ctrl to be ready
 kubectl rollout status deployment aws-load-balancer-controller -n kube-system --timeout=300s
 
+CLUSTER_DNS=`kubectl get svc kube-dns -n kube-system -o jsonpath='{.spec.clusterIP}:{.spec.ports[?(@.name=="dns")].port}'`
+
 helm install or-setup or-setup --set aws.enabled=true --set aws.managerVolumeId=$MANAGER_VOLUMEID --set aws.psqlVolumeId=$PSQL_VOLUMEID
 
-CERTIFICATE_ARN=`aws acm request-certificate --domain-name $FQDN --subject-alternative-names $MQTT_FQDN --validation-method DNS --profile or --query "CertificateArn" --output text`
-aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or
+helm install proxy proxy -f proxy/values-eks.yaml --set or.nameserver=$CLUSTER_DNS
 
 helm install postgresql postgresql -f postgresql/values-eks.yaml
-helm install keycloak keycloak -f keycloak/values-eks.yaml \
-  --set-string or.hostname=$FQDN \
-  --set-string 'ingress.annotations.alb\.ingress\.kubernetes\.io\/certificate-arn'=$CERTIFICATE_ARN
-helm install manager manager -f manager/values-eks.yaml \
-  --set-string or.hostname=$FQDN \
-  --set-string 'ingress.annotations.alb\.ingress\.kubernetes\.io\/certificate-arn'=$CERTIFICATE_ARN \
-  --set-string 'service.mqtt.annotations.service\.beta\.kubernetes\.io\/aws-load-balancer-ssl-cert'=$CERTIFICATE_ARN
 
-# For FQDN
-
-DNS_RECORD_NAME=`aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[0].ResourceRecord.Name"`
-DNS_RECORD_VALUE=`aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[0].ResourceRecord.Value"`
-
-aws route53 change-resource-record-sets \
-    --hosted-zone-id /hostedzone/Z08751721JH0NB6LLCB4V \
-    --change-batch \
-     '{"Changes": [ { "Action": "UPSERT", "ResourceRecordSet": { "Name": '$DNS_RECORD_NAME', "Type": "CNAME", "TTL": 300, "ResourceRecords" : [ { "Value": '$DNS_RECORD_VALUE' } ] } } ]}' \
-     --profile dnschg
-
-# For MQTT_FQDN
-
-DNS_RECORD_NAME=`aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[1].ResourceRecord.Name"`
-DNS_RECORD_VALUE=`aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[1].ResourceRecord.Value"`
-
-aws route53 change-resource-record-sets \
-    --hosted-zone-id /hostedzone/Z08751721JH0NB6LLCB4V \
-    --change-batch \
-     '{"Changes": [ { "Action": "UPSERT", "ResourceRecordSet": { "Name": '$DNS_RECORD_NAME', "Type": "CNAME", "TTL": 300, "ResourceRecords" : [ { "Value": '$DNS_RECORD_VALUE' } ] } } ]}' \
-     --profile dnschg
-
-# AWS LB Controller only creates an Application LB if there's an ingress
-# Following logic is assuming there is the only (application) LB in the account
-while ! aws elbv2 describe-load-balancers  --profile or --query "LoadBalancers[?Type=='application']" 2>/dev/null | grep '"Code": "active"'; do
+# Waiting for the LB to be created
+# AWS LB Controller only creates an Network LB if there's a service
+# Following logic is assuming there is the only (network) LB in the account
+while ! aws elbv2 describe-load-balancers  --profile or --query "LoadBalancers[?Type=='network']" 2>/dev/null | grep '"Code": "active"'; do
   echo "Waiting for load balancer to be created..."
   sleep 10
 done
 
-# We're re-directing the FQDN to the application LB (web interface)
-DNS_NAME=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='application'].DNSName | [0]"`
-HOSTED_ZONE_ID=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='application'].CanonicalHostedZoneId | [0]"`
+DNS_NAME=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='network'].DNSName | [0]"`
+HOSTED_ZONE_ID=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='network'].CanonicalHostedZoneId | [0]"`
 
 aws route53 change-resource-record-sets \
     --hosted-zone-id /hostedzone/Z08751721JH0NB6LLCB4V \
@@ -144,14 +115,16 @@ aws route53 change-resource-record-sets \
      '{"Changes": [ { "Action": "UPSERT", "ResourceRecordSet": { "Name": "'$FQDN'", "Type": "A", "AliasTarget":{ "HostedZoneId": '$HOSTED_ZONE_ID',"DNSName": '$DNS_NAME',"EvaluateTargetHealth": false} } } ]}' \
      --profile dnschg
 
-# We're re-directing the MQTT_FQDN to the network load balancer
-DNS_NAME=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='network'].DNSName | [0]"`
-HOSTED_ZONE_ID=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='network'].CanonicalHostedZoneId | [0]"`
+helm install keycloak keycloak -f keycloak/values-haproxy.yaml \
+  --set-string or.hostname=$FQDN
+helm install manager manager -f manager/values-haproxy-eks.yaml \
+  --set-string or.hostname=$FQDN
 
-aws route53 change-resource-record-sets \
-    --hosted-zone-id /hostedzone/Z08751721JH0NB6LLCB4V \
-    --change-batch \
-     '{"Changes": [ { "Action": "UPSERT", "ResourceRecordSet": { "Name": "'$MQTT_FQDN'", "Type": "A", "AliasTarget":{ "HostedZoneId": '$HOSTED_ZONE_ID',"DNSName": '$DNS_NAME',"EvaluateTargetHealth": false} } } ]}' \
-     --profile dnschg
+while ! dig +short $FQDN | grep -qE '^[0-9]'; do
+    echo "Waiting for DNS resolution..."
+    sleep 5
+done
+
+kubectl delete pod -l app.kubernetes.io/name=proxy
 
 echo "Access the manager at https://$FQDN"
