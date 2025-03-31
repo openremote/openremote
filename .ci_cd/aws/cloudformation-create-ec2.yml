@@ -77,6 +77,14 @@ Parameters:
     Description: Role ARN that can be assumed for updating DNS A record (if Hosted Zone in another account)
     Type: String
     Default: ""
+  SnapshotId:
+    Description: Snapshot ID to create the EBS volume based of an existing Snapshot.
+    Type: String
+    Default: ""
+  EBSDeviceName:
+    Description: Device name where data volume needs to be mounted.
+    Type: String
+    Default: ""
   ElasticIP:
     Description: Assign elastic IP address
     Type: String
@@ -219,6 +227,7 @@ Resources:
             - cloudwatch_config
             - restart_amazon-cloudwatch-agent
             - docker_setup
+            - prepare_volume
             - cron_setup
             - env_vars
             - dns_updater
@@ -766,6 +775,27 @@ Resources:
               docker:
                 enabled: "true"
                 ensureRunning: "true"
+        
+        prepare_volume:
+          commands:
+            01_mount_volume:
+              command: !Sub |
+                if [ -n "${SnapshotId}" ]; then
+                  sudo mount "${EBSDeviceName}" /var/lib/docker/volumes
+                else
+                  sudo mkfs -t xfs "${EBSDeviceName}"
+                  sudo mount "${EBSDeviceName}" /var/lib/docker/volumes
+                fi
+            02_configure_fstab:
+              command: !Sub |
+                UUID=$(sudo blkid -o value -s UUID "${EBSDeviceName}")
+                if [ -n $UUID ]; then
+                   sudo cp /etc/fstab /etc/fstab.orig
+                   sudo echo "UUID=$UUID /var/lib/docker/volumes xfs defaults,nofail 0 2" >> /etc/fstab
+                else
+                  echo "Failed to create /etc/fstab entry. UUID is not found"
+                  exit 1
+                fi
 
         cron_setup:
           packages:
