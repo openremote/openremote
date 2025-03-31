@@ -19,11 +19,13 @@
  */
 package org.openremote.manager.map;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -107,11 +109,11 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public ObjectNode customMapInfo() {
+    public ObjectNode getCustomMapInfo() {
         return ValueUtil.JSON
             .createObjectNode()
             .put("limit", mapService.customMapLimit)
-            .put("filename", mapService.getCustomMapDataPath().getFileName().toString());
+            .put("filename", Optional.ofNullable(mapService.getCustomMapDataPath()).map(Path::getFileName).map(Object::toString).orElse(null));
     }
 
     @Override

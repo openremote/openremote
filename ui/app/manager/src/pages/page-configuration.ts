@@ -247,7 +247,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     }
 
     public async firstUpdated() {
-        const response = await manager.rest.api.MapResource.customMapInfo();
+        const response = await manager.rest.api.MapResource.getCustomMapInfo();
         this.customMapLimit = response.data.limit;
         this.customMapFilename = response.data.filename;
     }

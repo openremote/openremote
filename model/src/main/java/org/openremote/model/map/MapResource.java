@@ -88,11 +88,11 @@ public interface MapResource {
      * Retrieve if the map is custom and custom map limit
      */
     @GET
-    @Path("customMapInfo")
+    @Path("getCustomMapInfo")
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE})
-    @Operation(operationId = "customMapInfo", summary = "Retrieve if the map is custom and custom map limit")
-    ObjectNode customMapInfo();
+    @Operation(operationId = "getCustomMapInfo", summary = "Retrieve if the map is custom and custom map limit")
+    ObjectNode getCustomMapInfo();
 
     /**
      * Removes mbtiles file
