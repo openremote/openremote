@@ -82,16 +82,17 @@ public interface MapResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @Operation(operationId = "uploadMap", summary = "Saves mbtiles file")
-    ObjectNode uploadMap(@BeanParam RequestParams requestParams);
+    ObjectNode uploadMap(@BeanParam RequestParams requestParams, @QueryParam("filename") String filename);
 
     /**
      * Retrieve if the map is custom and custom map limit
      */
     @GET
     @Path("customMapInfo")
+    @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE})
     @Operation(operationId = "customMapInfo", summary = "Retrieve if the map is custom and custom map limit")
-    Response customMapInfo();
+    ObjectNode customMapInfo();
 
     /**
      * Removes mbtiles file

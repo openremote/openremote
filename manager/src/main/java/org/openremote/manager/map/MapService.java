@@ -37,6 +37,7 @@ import org.openremote.model.manager.MapSourceConfig;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -82,7 +83,6 @@ public class MapService implements ContainerService {
     protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
     protected String pathPrefix;
-    protected Path customMapTilesPath;
     protected int customMapLimit = OR_CUSTOM_MAP_SIZE_LIMIT_DEFAULT;
 
     public ObjectNode saveMapConfig(MapConfig mapConfiguration) throws RuntimeException {
@@ -217,7 +217,6 @@ public class MapService implements ContainerService {
     @Override
     public void start(Container container) throws Exception {
         setData();
-        customMapTilesPath = configurationService.getMapTilesPath().getParent().resolve("mapdata-custom.mbtiles");
     }
 
     public void setData() throws ClassNotFoundException, SQLException, NullPointerException {
@@ -234,6 +233,7 @@ public class MapService implements ContainerService {
             return;
         }
         // Overwrite default map if custom map file exists
+        Path customMapTilesPath = getCustomMapDataPath();
         if (customMapTilesPath != null && Files.exists(customMapTilesPath)) {
             mapTilesPath = customMapTilesPath.toAbsolutePath();
         }
@@ -436,15 +436,15 @@ public class MapService implements ContainerService {
         }
     }
 
-    public boolean saveUploadedFile(InputStream fileInputStream) {
-        try (OutputStream outputStream = Files.newOutputStream(customMapTilesPath)) {
+    public boolean saveUploadedFile(Path path, InputStream fileInputStream) {
+        try (OutputStream outputStream = Files.newOutputStream(path)) {
             byte[] buffer = new byte[4096];
             int bytesRead;
             int written = 0;
             while ((bytesRead = fileInputStream.read(buffer)) != -1) {
                 if (written > customMapLimit) {
                     LOG.log(Level.SEVERE, "Stream continued past content-length, deleting file.");
-                    Files.deleteIfExists(customMapTilesPath);
+                    Files.deleteIfExists(path);
                     return false;
                 }
                 outputStream.write(buffer, 0, bytesRead);
@@ -452,44 +452,46 @@ public class MapService implements ContainerService {
             }
 
             Class.forName(org.sqlite.JDBC.class.getName());
-            Connection connection = DriverManager.getConnection("jdbc:sqlite:" + customMapTilesPath);
+            Connection connection = DriverManager.getConnection("jdbc:sqlite:" + path);
 
             PreparedStatement query = connection.prepareStatement("PRAGMA integrity_check;");
             ResultSet result = query.executeQuery();
             if (!result.next() || !result.getString(1).equals("ok")) {
-                Files.deleteIfExists(customMapTilesPath);
+                Files.deleteIfExists(path);
                 LOG.log(Level.SEVERE, "MBTiles database file corrupt");
                 return false;
             }
             if (!saveMapMetadata(getMetadata(connection))) {
-                Files.deleteIfExists(customMapTilesPath);
+                Files.deleteIfExists(path);
                 return false;
             };
 
             this.setData(connection, metadata);
             return true;
         } catch (IOException | SQLException | ClassNotFoundException e) {
-            LOG.log(Level.SEVERE, "Failed to load mapdata-custom.mbtiles file", e);
+            LOG.log(Level.SEVERE, "Failed to load " + path.toString() + " file", e);
             try {
-                Files.deleteIfExists(customMapTilesPath);
+                Files.deleteIfExists(path);
             } catch (IOException deleteError) {
-                LOG.log(Level.SEVERE, "Failed to delete mapdata-custom.mbtiles file", deleteError);
+                LOG.log(Level.SEVERE, "Failed to delete " + path.toString() + " file", deleteError);
             }
             return false;
         }
     }
 
     public boolean isCustomUploadedFile() {
-        return Files.exists(customMapTilesPath);
+        return Files.exists(getCustomMapDataPath());
     }
 
     public boolean deleteUploadedFile() {
+        Path customTilesPath = getCustomMapDataPath();
+
         boolean deleted = false;
         try {
-            deleted = Files.deleteIfExists(customMapTilesPath);
-            LOG.info("mapdata-custom.mbtiles file deleted successfully");
+            deleted = Files.deleteIfExists(customTilesPath);
+            LOG.info(customTilesPath.toString() + " file deleted successfully");
         } catch (IOException e) {
-            LOG.log(Level.SEVERE, "Failed to delete mapdata-custom.mbtiles file", e);
+            LOG.log(Level.SEVERE, "Failed to delete " + customTilesPath.toString() + " file", e);
         }
         try {
             Path mapTilesPath = configurationService.getMapTilesPath();
@@ -523,6 +525,33 @@ public class MapService implements ContainerService {
             return true;
         }
         return false;
+    }
+
+    /**
+     * The filename resolves to a path, when the file ends with {@code .mbtiles} and does not equal {@code configurationService.getMapTilesPath()}.
+     * Otherwise returns {@code null}.
+     */
+    public Path resolveCustomTilesPath(String filename) {
+        Path mapTilesPath = configurationService.getMapTilesPath();
+        if (!filename.endsWith(".mbtiles") || filename.equals(mapTilesPath.toString())) {
+            return null;
+        }
+        return mapTilesPath.getParent().resolve(filename);
+    }
+
+    /**
+     * Gets the first matching map tiles path that doesn't match {@code configurationService.getMapTilesPath()}
+     */
+    public Path getCustomMapDataPath() {
+        Path mapTilesPath = configurationService.getMapTilesPath();
+        File parent = configurationService.getMapTilesPath().getParent().toFile();
+        if (parent.isDirectory()) {
+            File[] matchingFiles = parent.listFiles((dir, name) -> !name.equals(mapTilesPath.getFileName().toString()) && name.endsWith(".mbtiles"));
+            if (matchingFiles != null && matchingFiles.length != 0) {
+                return matchingFiles[0].toPath();
+            }
+        }
+        return null;
     }
 
     /**

@@ -224,7 +224,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     protected mapConfigChanged = false;
 
     @state()
-    protected isMapCustom: boolean = false;
+    protected customMapFilename: string;
 
     @state()
     protected customMapLimit: number = 1e+9;
@@ -248,8 +248,8 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     public async firstUpdated() {
         const response = await manager.rest.api.MapResource.customMapInfo();
-        this.customMapLimit = response.data["custom-map-limit"]
-        this.isMapCustom = response.data["map-custom"]
+        this.customMapLimit = response.data.limit;
+        this.customMapFilename = response.data.filename;
     }
 
     public humanReadableBytes(bytes: number) {
@@ -364,7 +364,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                             <or-translate value="configuration.global.tileServerDescription"></or-translate><br>
                                             <or-translate style="font-style: italic;" class="note" value="configuration.global.tileServerNote"></or-translate>
                                         </span>
-                                        <or-mwc-input class="input" outlined
+                                        <or-mwc-input class="input"
                                             .value="${this.mapConfig.sources?.vector_tiles?.custom ? this.mapConfig.sources?.vector_tiles?.tiles?.[0] : undefined}"
                                             .type="${InputType.URL}"
                                             .label="${i18next.t("configuration.global.tileServerPlaceholder")}"
@@ -395,13 +395,11 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                                 }">
                                                     <input id="fileupload-elem" name="configfile" type="file" accept=".mbtiles" @change="${(e) => this.uploadCustomMap(e)}"/>
                                                 </or-mwc-input>
-                                                ${when(this.isMapCustom, () => html`
-                                                    <or-mwc-input type="${InputType.BUTTON}" iconColor="black" icon="delete" 
-                                                        @or-mwc-input-changed="${async () => await this.deleteCustomMap()}" 
-                                                    />
-                                                `, () => html`
-                                                    <or-mwc-input id="filename-elem" style="width: unset" .label="${i18next.t("file")}" .type="${InputType.TEXT}" disabled></or-mwc-input>
-                                                `)}
+                                                <or-mwc-input id="filename-elem" style="width: unset" .value="${this.customMapFilename}" .label="${i18next.t("file")}" .type="${InputType.TEXT}" disabled>
+                                                </or-mwc-input>
+                                                ${when(this.customMapFilename, () => html`<or-mwc-input type="${InputType.BUTTON}" iconColor="black" icon="delete"
+                                                    @or-mwc-input-changed="${async () => await this.deleteCustomMap()}"
+                                                />`)}
                                             </div>
                                         </div>
                                     </div>
@@ -449,7 +447,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     }
 
     protected async deleteCustomMap() {
-        this.isMapCustom = false;
+        this.customMapFilename = undefined;
         this.tilesForDeletion = true;
     }
 
@@ -510,11 +508,13 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
         if (this.tilesForUpload) {
             showSnackbar(undefined, "configuration.global.uploadingMapTiles");
+            const filename = this.tilesForUpload.name;
             filePromises.push(manager.rest.api.MapResource.uploadMap({
                 data: this.tilesForUpload,
-                headers: {'Content-Type': 'application/octet-stream'}
+                headers: {'Content-Type': 'application/octet-stream'},
+                params: { filename }
             }).then(({ data }) => {
-                this.isMapCustom = true;
+                this.customMapFilename = filename;
                 this.mapConfig = data as MapConfig;
             }).catch((reason) => {
                 showSnackbar(undefined, "configuration.global.uploadingMapTilesError");
@@ -538,7 +538,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 if (this.tilesForDeletion && !this.tilesForUpload) {
                     manager.rest.api.MapResource.deleteMap().then(({ data }) => {
                         this.tilesForDeletion = false;
-                        this.isMapCustom = false;
+                        this.customMapFilename = undefined;
                         this.mapConfig = data as MapConfig;
                     }).catch((reason) => {
                         console.error(reason);

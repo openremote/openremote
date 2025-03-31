@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -79,13 +80,19 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public ObjectNode uploadMap(RequestParams requestParams) {
+    public ObjectNode uploadMap(RequestParams requestParams, String filename) {
+        Path tilesPath = mapService.resolveCustomTilesPath(filename);
+        if (tilesPath == null) {
+            LOG.log(Level.INFO, "Filename " + filename + " not allowed for custom tiles");
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
+
         if (request.getContentLength() > mapService.customMapLimit) {
             throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
         }
 
         try (InputStream stream = request.getInputStream()) {
-            boolean isSaved = mapService.saveUploadedFile(stream);
+            boolean isSaved = mapService.saveUploadedFile(tilesPath, stream);
             if (isSaved) {
                 return mapService.getMapSettings(
                     getRequestRealmName(),
@@ -100,13 +107,11 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public Response customMapInfo() {
-        ObjectNode response = ValueUtil.JSON
+    public ObjectNode customMapInfo() {
+        return ValueUtil.JSON
             .createObjectNode()
-            .put("custom-map-limit", mapService.customMapLimit)
-            .put("map-custom", mapService.isCustomUploadedFile());
-
-        return Response.ok().entity(response).build();
+            .put("limit", mapService.customMapLimit)
+            .put("filename", mapService.getCustomMapDataPath().getFileName().toString());
     }
 
     @Override
