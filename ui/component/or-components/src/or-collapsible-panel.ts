@@ -17,31 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { css, html, LitElement, unsafeCSS } from "lit";
+import { css, html, LitElement, TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
+import { i18next } from "@openremote/or-translate";
 import { DefaultColor5 } from "@openremote/core";
-import { when } from 'lit/directives/when.js';
-
-export class OrCollapsibleToggled extends CustomEvent<{ expanded: boolean }> {
-
-    public static readonly NAME = "or-collapsible-toggled";
-
-    constructor(expanded: boolean) {
-        super(OrCollapsibleToggled.NAME, {
-            detail: {
-                expanded
-            },
-            bubbles: true,
-            composed: true
-        });
-    }
-}
-
-declare global {
-    export interface HTMLElementEventMap {
-        [OrCollapsibleToggled.NAME]: OrCollapsibleToggled;
-    }
-}
+import { until } from 'lit/directives/until.js';
 
 // language=CSS
 const style = css`
@@ -138,8 +118,8 @@ export class OrCollapsiblePanel extends LitElement {
         ];
     }
 
-    @property({type: Boolean})
-    lazyload: boolean = false;
+    @property({type: Promise<TemplateResult>})
+    lazycontent!: Promise<TemplateResult>;
     @property({type: Boolean})
     expanded: boolean = false;
     @property({type: Boolean})
@@ -153,11 +133,6 @@ export class OrCollapsiblePanel extends LitElement {
         }
         ev.preventDefault();
         this.expanded = !this.expanded;
-        this.notifyCollapsibleToggled()
-    }
-
-    protected notifyCollapsibleToggled() {
-        this.dispatchEvent(new CustomEvent(OrCollapsibleToggled.NAME, { detail: { expanded: this.expanded } }));
     }
 
     render() {
@@ -169,12 +144,9 @@ export class OrCollapsiblePanel extends LitElement {
                     <span id="header-description"><slot name="header-description"></slot></span>
                 </span>
             </div>
-            ${when(!this.lazyload || this.expanded, () => html`
-                    <div id="content" class="${this.expandable && this.expanded ? "expanded" : ""}">
-                        <slot name="content"></slot>
-                    </div>
-                `
-            )}
+            <div id="content" class="${this.expandable && this.expanded ? "expanded" : ""}">
+                ${this.lazycontent ? this.expanded && until(this.lazycontent, html`${i18next.t('loading')}`) : html`<slot name="content"></slot>`}
+            </div>
         `;
     }
 }
