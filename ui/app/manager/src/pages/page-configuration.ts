@@ -35,7 +35,7 @@ import "@openremote/or-components/or-loading-indicator";
 import {OrConfRealmCard} from "../components/configuration/or-conf-realm/or-conf-realm-card";
 import {OrConfPanel} from "../components/configuration/or-conf-panel";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu, DefaultRealmConfig} from "../index";
+import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu, DefaultRealmConfig, store} from "../index";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 declare const CONFIG_URL_PREFIX: string;
@@ -248,8 +248,8 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     public async firstUpdated() {
         const response = await manager.rest.api.MapResource.getCustomMapInfo();
-        this.customMapLimit = response.data.limit;
-        this.customMapFilename = response.data.filename;
+        this.customMapLimit = response.data.limit as number;
+        this.customMapFilename = response.data.filename as string | null;
     }
 
     public humanReadableBytes(bytes: number) {
@@ -550,6 +550,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 this.mapConfigChanged = false;
                 const configURL =  (MANAGER_URL ?? "") + "/api/master/configuration/manager";
                 fetch(configURL, {cache: "reload"})
+                window.location.reload();
             })
         })
 
