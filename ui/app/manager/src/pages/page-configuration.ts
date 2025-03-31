@@ -509,10 +509,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         if (this.tilesForUpload) {
             showSnackbar(undefined, "configuration.global.uploadingMapTiles");
             const filename = this.tilesForUpload.name;
-            filePromises.push(manager.rest.api.MapResource.uploadMap({
-                data: this.tilesForUpload,
-                headers: {'Content-Type': 'application/octet-stream'},
-                params: { filename }
+            filePromises.push(manager.rest.api.MapResource.uploadMap({ filename }, {
+              headers: {'Content-Type': 'application/octet-stream'},
+              data: this.tilesForUpload
             }).then(({ data }) => {
                 this.customMapFilename = filename;
                 this.mapConfig = data as MapConfig;
