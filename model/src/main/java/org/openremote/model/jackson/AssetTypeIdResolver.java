@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.impl.ThingAsset;
+import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.IOException;
@@ -60,7 +61,7 @@ public class AssetTypeIdResolver extends TypeIdResolverBase {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public JavaType typeFromId(DatabindContext context, String id) throws IOException {
-        Class<?> assetClass = ValueUtil.getAssetDescriptor(id).map(AssetDescriptor::getType).orElse((Class) ThingAsset.class);
+        Class<?> assetClass = ValueUtil.getAssetDescriptor(id).map(AssetDescriptor::getType).orElse((Class) UnknownAsset.class);
         return context.constructType(assetClass);
     }
 }
