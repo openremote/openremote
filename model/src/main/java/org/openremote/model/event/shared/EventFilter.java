@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,42 +12,41 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.event.shared;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.event.Event;
 import org.openremote.model.syslog.SyslogEvent;
 
-/**
- * Filters {@link SharedEvent} by arbitrary criteria.
- */
+/** Filters {@link SharedEvent} by arbitrary criteria. */
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = RealmFilter.class, name = RealmFilter.FILTER_TYPE),
-    @JsonSubTypes.Type(value = SyslogEvent.LevelCategoryFilter.class, name = SyslogEvent.LevelCategoryFilter.FILTER_TYPE),
-    @JsonSubTypes.Type(value = AssetFilter.class, name = AssetFilter.FILTER_TYPE)
+  @JsonSubTypes.Type(value = RealmFilter.class, name = RealmFilter.FILTER_TYPE),
+  @JsonSubTypes.Type(
+      value = SyslogEvent.LevelCategoryFilter.class,
+      name = SyslogEvent.LevelCategoryFilter.FILTER_TYPE),
+  @JsonSubTypes.Type(value = AssetFilter.class, name = AssetFilter.FILTER_TYPE)
 })
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    property = "filterType"
-)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "filterType")
 @JsonAutoDetect(
     fieldVisibility = JsonAutoDetect.Visibility.ANY,
-    creatorVisibility= JsonAutoDetect.Visibility.NONE,
-    getterVisibility= JsonAutoDetect.Visibility.NONE,
-    setterVisibility= JsonAutoDetect.Visibility.NONE,
-    isGetterVisibility= JsonAutoDetect.Visibility.NONE
-)
+    creatorVisibility = JsonAutoDetect.Visibility.NONE,
+    getterVisibility = JsonAutoDetect.Visibility.NONE,
+    setterVisibility = JsonAutoDetect.Visibility.NONE,
+    isGetterVisibility = JsonAutoDetect.Visibility.NONE)
 // TODO: Provide authorisation method on this interface
 @FunctionalInterface
 public interface EventFilter<E extends Event> {
-    /**
-     *
-     * @return the event or a filtered copy of it if the filter matches; do not modify the supplied event.
-     */
-    E apply(E event);
+  /**
+   * @return the event or a filtered copy of it if the filter matches; do not modify the supplied
+   *     event.
+   */
+  E apply(E event);
 }
