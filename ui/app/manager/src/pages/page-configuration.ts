@@ -517,7 +517,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 this.isMapCustom = true;
                 this.mapConfig = data as MapConfig;
             }).catch((reason) => {
-                setTimeout(() => showSnackbar(undefined, "configuration.global.uploadingMapTilesError"), 3000);
+                showSnackbar(undefined, "configuration.global.uploadingMapTilesError");
                 console.error(reason);
             }).finally(() => {
                 this.tilesForUpload = null;
