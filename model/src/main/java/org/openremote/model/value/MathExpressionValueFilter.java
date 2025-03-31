@@ -29,14 +29,13 @@ public class MathExpressionValueFilter extends ValueFilter {
     }
 
     @Override
-    public Object filter(Object value) {
-        Optional<Double> coercedValue = ValueUtil.getDoubleCoerced(value);
-        if (coercedValue.isEmpty()) return null;
-
-        Expression e = new ExpressionBuilder(expression)
-                .variables("x")
-                .build()
-                .setVariable("x", coercedValue.get());
-        return e.evaluate();
+    public Double filter(Object value) {
+        return ValueUtil.getDoubleCoerced(value).map(v -> {
+            Expression e = new ExpressionBuilder(expression)
+                    .variables("x")
+                    .build()
+                    .setVariable("x", v);
+            return e.evaluate();
+        }).orElse(null);
     }
 }
