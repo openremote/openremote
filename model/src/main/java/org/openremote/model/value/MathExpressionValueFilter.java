@@ -7,6 +7,9 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 import net.objecthunter.exp4j.Expression;
 import net.objecthunter.exp4j.ExpressionBuilder;
+import org.openremote.model.util.ValueUtil;
+
+import java.util.Optional;
 
 @JsonSchemaTitle("Mathematical Expression")
 @JsonTypeName(MathExpressionValueFilter.NAME)
@@ -27,23 +30,13 @@ public class MathExpressionValueFilter extends ValueFilter {
 
     @Override
     public Object filter(Object value) {
-
-        if (value == null) return null;
-
-        if (value instanceof String){
-            try{
-                value = Double.valueOf((String) value);
-            } catch (Exception ignored) {}
-        }
-
-        if (!(value instanceof Number)) {
-            return null;
-        }
+        Optional<Double> coercedValue = ValueUtil.getDoubleCoerced(value);
+        if (coercedValue.isEmpty()) return null;
 
         Expression e = new ExpressionBuilder(expression)
                 .variables("x")
                 .build()
-                .setVariable("x", ((Number) value).doubleValue());
+                .setVariable("x", coercedValue.get());
         return e.evaluate();
     }
 }
