@@ -8,17 +8,29 @@ import { customElement, query, queryAll, state, property } from "lit/decorators.
 import {HtmlSettings} from "../settings/html-settings";
 import { when } from "lit/directives/when.js";
 import {throttle} from "lodash";
-import {Util} from "@openremote/core";
+import DOMPurify from 'dompurify'
 
 export interface HtmlWidgetConfig extends WidgetConfig {
-    html: string;
+    html: string,
     css: string,
+    sanitizerConfig: Object
 }
 
 function getDefaultWidgetConfig() {
     return {
         html: '',
         css: '',
+        sanitizerConfig: {
+            ALLOWED_TAGS: ['p', 'div', 'span', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'br', 'h1', 'h2', 'h3'],
+            ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+            ALLOWED_STYLES: [
+                'color', 'font-size', 'text-align', 'margin', 'padding',
+                'font-weight', 'font-style', 'text-decoration'
+            ],
+            ADD_ATTR: ['target'], // Allow target="_blank" for links
+            RETURN_DOM_FRAGMENT: false,
+            RETURN_DOM: false
+        }
     } as HtmlWidgetConfig;
 }
 
@@ -60,6 +72,20 @@ export class HtmlWidget extends OrWidget {
     protected attributeInputElems?: NodeList;
 
     protected resizeObserver?: ResizeObserver;
+
+    // DOMPurify configuration
+    private sanitizerConfig = {
+        ALLOWED_TAGS: ['p', 'div', 'span', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'br', 'h1', 'h2', 'h3'],
+        ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+        ALLOWED_STYLES: [
+            'color', 'font-size', 'text-align', 'margin', 'padding',
+            'font-weight', 'font-style', 'text-decoration'
+        ],
+        ADD_ATTR: ['target'], // Allow target="_blank" for links
+        RETURN_DOM_FRAGMENT: false,
+        RETURN_DOM: false
+    };
+
 
     static getManifest(): WidgetManifest {
         return {
@@ -115,10 +141,16 @@ export class HtmlWidget extends OrWidget {
 
 
     protected render(): TemplateResult {
+        const sanitizedContent = this.getSanitizedContent();
         return html`
             <div id="widget-wrapper">
-                     ${unsafeHTML(this.widgetConfig.html)}  
+                <div class="sanitized-html">${unsafeHTML(sanitizedContent)}</div>
             </div>
         `;
+    }
+
+    // Sanitize the HTML content
+    private getSanitizedContent(): string {
+        return DOMPurify.sanitize(this.widgetConfig.html, this.widgetConfig.sanitizerConfig);
     }
 }

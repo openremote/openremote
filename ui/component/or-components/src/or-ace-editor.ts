@@ -4,6 +4,7 @@ import ace, {Ace} from "ace-builds";
 import "ace-builds/src-noconflict/mode-javascript";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/mode-groovy";
+import "ace-builds/src-noconflict/mode-html";
 import "ace-builds/webpack-resolver";
 
 export class OrAceEditorChangedEvent extends CustomEvent<{ value: string, valid: boolean }> {

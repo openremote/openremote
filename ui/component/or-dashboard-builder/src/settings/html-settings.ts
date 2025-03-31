@@ -6,6 +6,10 @@ import {WidgetSettings} from "../util/widget-settings";
 import {i18next} from "@openremote/or-translate";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {createRef, Ref, ref } from "lit/directives/ref.js";
+import {OrAceEditor} from "@openremote/or-components/or-ace-editor";
+import "ace-builds/src-noconflict/mode-html";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import DOMPurify from 'dompurify'
 
 const styling = css`
   .switch-container {
@@ -27,7 +31,6 @@ export class HtmlSettings extends WidgetSettings {
 
     protected readonly widgetConfig!: HtmlWidgetConfig;
 
-
     static get styles() {
         return [...super.styles, styling];
     }
@@ -38,7 +41,7 @@ export class HtmlSettings extends WidgetSettings {
                 <!-- HTML input -->
                 <settings-panel displayName="Content" expanded="${true}">
                     <div>
-                        <or-mwc-input .type="${InputType.BUTTON}" label="Custom HTML" icon="language-html5" @or-mwc-input-changed="${() => this.openHtmlInputDialog(this.widgetConfig.html)}"></or-mwc-input>
+                        <or-mwc-input .type="${InputType.BUTTON}" outlined label="Custom HTML" icon="language-html5" @or-mwc-input-changed="${() => this.openHtmlInputDialog(this.widgetConfig.html)}"></or-mwc-input>
                     </div
                     <div>
                         <a href="https://wysiwyghtml.com/" target="_blank" rel="nofollow">Online&nbsp;HTML&nbsp;markup&nbsp;editor</a>
@@ -51,50 +54,39 @@ export class HtmlSettings extends WidgetSettings {
 
 
     protected openHtmlInputDialog(content?: string) {
-        const reference: Ref<OrMwcInput> = createRef();
-        const dialog = showDialog(new OrMwcDialog()
-            .setHeading(i18next.t("Insert18there"))
+        const editorRef: Ref<OrAceEditor> = createRef();
+        showDialog(new OrMwcDialog()
+            .setHeading(i18next.t("HTML Editor"))
             .setContent(()=> html `
                     <div>
-                        <or-mwc-input
-                                style="width:100%;"
-                                ${ref(reference)}
-                                .type="${InputType.TEXTAREA}" 
-                                .label="${i18next.t('input label')}"
-                                resizeVertical
-                                fullwidth
-                                fullheight
-                                .value="${content}"
-                        ></or-mwc-input>
+                        <or-ace-editor ${ref(editorRef)} .value="${content}" .mode="ace/mode/html" style="height: 60vh; width: 1024px;"></or-ace-editor>
                     </div>
                 `)
-                .setStyles(html`    
-                    <style>
-                        .mdc-dialog__surface {
-                            width: 1200px;
+                .setActions([
+                    {actionName: "cancel", content: "cancel"},
+                    {actionName: "save", content: "save", action: () => {
+                            if (editorRef.value) {
+                                const editor = editorRef.value;
+                                console.log('Editor:', editor)
+                                if (!editor!.validate()) {
+                                    console.warn("HMTL was not valid");
+                                    showSnackbar(undefined, i18next.t('errorOccurred'));
+                                    return;
+                                } else {
+                                    this.widgetConfig.html = DOMPurify.sanitize(editor!.value!.value, this.widgetConfig.sanitizerConfig)
+                                    this.notifyConfigUpdate();
+                                }
+                                if (editor!.value?.value != this.widgetConfig.html) {
+                                    console.warn("Potentially Harmful HTML code present, will be purified");
+                                }
+                            }
                         }
-    
-                        #dialog-content {
-                            padding: 24px;
-                        }
-                    </style>
-                `)
-                .setActions([{
-                    actionName: "cancel",
-                    content: "cancel"
-                }, {
-                    actionName: "ok",
-                    content: "ok",
-                    action: () => {
-                        if (reference.value?.value) {
-                            this.widgetConfig.html = reference.value.value
-                            this.notifyConfigUpdate();
-                        }
-                    }
                 }])
         )
         console.log("generated config:", this.widgetConfig.html)
 
     }
+
+
 
 }
