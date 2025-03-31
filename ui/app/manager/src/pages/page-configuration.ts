@@ -406,7 +406,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                         </div>
                                     </div>
                                 </div>
-                                <div class="subheader"><or-translate style="text-transform: uppercase;" value="configuration.realmMapSettingsTitle"></or-translate></div>
+                                <div class="subheader"><or-translate value="configuration.realmMapSettingsTitle"></or-translate></div>
                                 <or-conf-panel id="mapConfig-panel" .config="${this.mapConfig}" .realmOptions="${realmOptions}"
                                                @change="${() => { this.mapConfigChanged = true; }}"
                                 ></or-conf-panel>
