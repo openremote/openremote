@@ -260,7 +260,7 @@ export class PageRealms extends Page<AppStateKeyed> {
       `;
     }
 
-    const readonly = !manager.hasRole(ClientRole.WRITE_USER);
+    const readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
     return html`
          <div id="wrapper">
                 <div id="title">
