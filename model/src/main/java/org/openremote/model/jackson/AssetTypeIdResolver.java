@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.impl.ThingAsset;
+import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.IOException;
