@@ -50,7 +50,7 @@ import static org.openremote.model.util.ValueUtil.applyValueFilters;
 public final class ProtocolUtil {
 
     protected static Logger LOG = SyslogCategory.getLogger(PROTOCOL, ProtocolUtil.class);
-    
+
     protected ProtocolUtil() {
     }
 

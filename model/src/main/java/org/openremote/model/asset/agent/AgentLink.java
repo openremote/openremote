@@ -22,8 +22,10 @@ package org.openremote.model.asset.agent;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaFormat;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
+
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.query.filter.ValuePredicate;
 import org.openremote.model.util.JSONSchemaUtil;
@@ -44,20 +46,40 @@ import java.util.Optional;
 @TsIgnoreTypeParams
 public abstract class AgentLink<T extends AgentLink<?>> implements Serializable {
 
+    // @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY)
+    // @JsonSchemaDescription("Defines a value converter map to allow for basic value type conversion; the incoming value" +
+    //     " will be converted to JSON and if this string matches a key in the converter then the value of that key will be" +
+    //     " pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but" +
+    //     " you want to connect this to a Boolean attribute")
+    // @JsonSchemaInject(jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
+    // public class ValueConverter {
+    //     Map<String, Object> additionalProperties;
+
+    //     public Map<String, Object> getAdditionalProperties() {
+    //         return additionalProperties;
+    //     }
+    // }
+
+    // @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY)
+    // @JsonSchemaDescription("Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion")
+    // @JsonSchemaInject(jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
+    // public class WriteValueConverter {
+    //     Map<String, Object> additionalProperties;
+
+    //     protected WriteValueConverter() {}
+
+    //     public Map<String, Object> getAdditionalProperties() {
+    //         return additionalProperties;
+    //     }
+    // }
+
     @JsonSchemaFormat("or-agent-id")
     protected String id;
     @JsonPropertyDescription("Defines ValueFilters to apply to an incoming value before it is written to a" +
         " protocol linked attribute; this is particularly useful for generic protocols. The message should pass through" +
         " the filters in array order")
     protected ValueFilter[] valueFilters;
-    @JsonPropertyDescription("Defines a value converter map to allow for basic value type conversion; the incoming value" +
-        " will be converted to JSON and if this string matches a key in the converter then the value of that key will be" +
-        " pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but" +
-        " you want to connect this to a Boolean attribute")
-    @JsonSchemaInject(jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
     protected Map<String, Object> valueConverter;
-    @JsonSchemaInject(jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
-    @JsonPropertyDescription("Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion")
     protected Map<String, Object> writeValueConverter;
     @JsonPropertyDescription("String to be used for attribute writes and can contain dynamic placeholders to allow dyanmic" +
             " value and/or time injection with formatting (see documentation for details) into the string or alternatively" +

@@ -115,6 +115,7 @@ public class JSONSchemaUtil {
             false,
             Collections.emptySet(),
             Map.of(
+                String.class, Object.class,
                 Object.class, AnyType.class,
                 ObjectNode.class, PatternPropertiesSimpleKeyAnyType.class
             ),

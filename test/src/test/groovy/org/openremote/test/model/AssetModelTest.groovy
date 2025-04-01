@@ -1,4 +1,5 @@
 package org.openremote.test.model
+import java.io.File
 
 import com.fasterxml.jackson.databind.node.ObjectNode
 import jakarta.ws.rs.WebApplicationException
@@ -469,7 +470,12 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         assert testAgentDescriptor != null
 
         and: "the descriptor should contain an agent link schema"
+
         def schema = ValueUtil.getSchema(AgentLink.class)
+        def file = new File("schema")
+        file << schema
+
+
         def schema2 = ValueUtil.getSchema(ValueType.IntegerMap.class)
         assert schema != null
         assert schema.get("oneOf") != null
