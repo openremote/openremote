@@ -33,6 +33,8 @@ dependencies {
     api "io.micrometer:micrometer-core:$micrometerVersion"
     api "com.devskiller.friendly-id:friendly-id:$friendlyIdVersion"
     api "com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion"
+
+    api "fr.neolegal:exp4j:$exp4jVersion"
 }
 
 base {
