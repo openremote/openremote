@@ -39,8 +39,27 @@ spec:
       port: 1883
       targetPort: 1883
       protocol: TCP
+{{- end }}
+---
+{{- if .Values.service.mqtts.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "manager.mqttsServiceName" . }}
+  labels:
+    {{- include "manager.mqttsService.labels" . | nindent 4 }}
+  {{- with .Values.service.mqtts.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+spec:
+  selector:
+    {{- include "manager.selectorLabels" . | nindent 4 }}
+  type: LoadBalancer
+  ports:
     - name: mqtts
       port: 8883
-      targetPort: 8883
+      targetPort: 1883
       protocol: TCP
 {{- end }}

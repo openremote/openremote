@@ -68,14 +68,14 @@ spec:
           {{- end }}
           volumeMounts:
             - mountPath: /var/lib/postgresql/data
-{{- if .Values.useSubPath -}}
+              {{- if .Values.useSubPath }}
               subPath: psql-data
-{{- end }}
+              {{- end }}
               name: postgresql-data
           {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
-{{- if .Values.useSubPath -}}
+      {{- if .Values.useSubPath }}
       initContainers:
         - name: psql-data-ownership
           image: alpine:latest
@@ -86,7 +86,7 @@ spec:
             - mountPath: /var/lib/postgresql/data
               subPath: psql-data
               name: postgresql-data
-{{- end }}
+      {{- end }}
       volumes:
         - name: postgresql-data
           persistentVolumeClaim:

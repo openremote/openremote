@@ -5,6 +5,7 @@ CLUSTER_NAME=testcluster
 HOSTNAME=testmanager
 FQDN=$HOSTNAME.openremote.app
 MQTT_FQDN=mqtt.$FQDN
+MQTTS_FQDN=mqtts.$FQDN
 
 AWS_REGION="eu-west-1"
 AWS_ACCOUNT_ID="463235666115" # openremote
@@ -64,15 +65,26 @@ aws route53 change-resource-record-sets \
      '{"Changes": [ { "Action": "DELETE", "ResourceRecordSet": { "Name": "'$FQDN'", "Type": "A", "AliasTarget":{ "HostedZoneId": '$HOSTED_ZONE_ID',"DNSName": '$DNS_NAME',"EvaluateTargetHealth": false} } } ]}' \
      --profile dnschg
 
-DNS_NAME=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='network'].DNSName | [0]"`
-HOSTED_ZONE_ID=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='network'].CanonicalHostedZoneId | [0]"`
+DNS_NAME=`kubectl get svc manager-mqtt -o jsonpath="{.status.loadBalancer.ingress[0].hostname}"`
+HOSTED_ZONE_ID=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?DNSName=='$DNS_NAME'].CanonicalHostedZoneId | [0]"`
 
 echo "Delete DNS record $MQTT_FQDN"
 
 aws route53 change-resource-record-sets \
     --hosted-zone-id /hostedzone/Z08751721JH0NB6LLCB4V \
     --change-batch \
-     '{"Changes": [ { "Action": "DELETE", "ResourceRecordSet": { "Name": "'$MQTT_FQDN'", "Type": "A", "AliasTarget":{ "HostedZoneId": '$HOSTED_ZONE_ID',"DNSName": '$DNS_NAME',"EvaluateTargetHealth": false} } } ]}' \
+     '{"Changes": [ { "Action": "DELETE", "ResourceRecordSet": { "Name": "'$MQTT_FQDN'", "Type": "A", "AliasTarget":{ "HostedZoneId": '$HOSTED_ZONE_ID',"DNSName": '\"$DNS_NAME\"',"EvaluateTargetHealth": false} } } ]}' \
+     --profile dnschg
+
+DNS_NAME=`kubectl get svc manager-mqtts -o jsonpath="{.status.loadBalancer.ingress[0].hostname}"`
+HOSTED_ZONE_ID=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?DNSName=='$DNS_NAME'].CanonicalHostedZoneId | [0]"`
+
+echo "Delete DNS record $MQTTS_FQDN"
+
+aws route53 change-resource-record-sets \
+    --hosted-zone-id /hostedzone/Z08751721JH0NB6LLCB4V \
+    --change-batch \
+     '{"Changes": [ { "Action": "DELETE", "ResourceRecordSet": { "Name": "'$MQTTS_FQDN'", "Type": "A", "AliasTarget":{ "HostedZoneId": '$HOSTED_ZONE_ID',"DNSName": '\"$DNS_NAME\"',"EvaluateTargetHealth": false} } } ]}' \
      --profile dnschg
 
 helm uninstall manager
