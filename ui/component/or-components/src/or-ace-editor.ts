@@ -78,7 +78,7 @@ export class OrAceEditor extends LitElement {
     @property({attribute: false})
     public value?: any;
 
-    @property({type: String, attribute: false})
+    @property({type: String, attribute: true})
     public mode: string = "ace/mode/json";
 
     @query("#ace-editor")
@@ -125,7 +125,7 @@ export class OrAceEditor extends LitElement {
     protected initEditor() {
         if (this._aceElem) {
             this._aceEditor = ace.edit(this._aceElem, {
-                mode: this.mode,
+                mode: 'ace/mode/html',
                 value: this._lastValue,
                 useSoftTabs: true,
                 tabSize: 2,
@@ -178,10 +178,12 @@ export class OrAceEditor extends LitElement {
     public validate(): boolean {
 
         if (!this._aceEditor) {
+            console.log("editor bestaat niet");
             return false;
         }
 
         const annotations = this._aceEditor.getSession().getAnnotations();
+        console.log("annotations:", annotations);
         return !annotations || annotations.length === 0;
     }
 }
