@@ -25,7 +25,7 @@ import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 
 /**
- * This is used for deserializing assets whose type is unknown to this instance
+ * This is only needed so JPA can deserialise an Asset whose type doesn't match an entity otherwise it is un-used
  */
 @Entity
 @DiscriminatorValue("not null")
