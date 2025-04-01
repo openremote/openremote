@@ -19,16 +19,15 @@
  */
 package org.openremote.manager.mqtt;
 
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.core.config.Configuration;
-import org.apache.activemq.artemis.core.settings.impl.AddressFullMessagePolicy;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
-import org.apache.activemq.artemis.core.settings.impl.PageFullMessagePolicy;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.KeycloakSecurityContext;
-import org.openremote.container.concurrent.ContainerExecutor;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -54,13 +53,14 @@ import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
@@ -93,7 +93,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
                     if (persistenceEvent.getCause() == PersistenceEvent.Cause.UPDATE) {
                         // Force disconnect if the certain properties have changed
                         forceDisconnect = persistenceEvent.hasPropertyChanged(ProvisioningConfig.DISABLED_PROPERTY_NAME)
-                                || persistenceEvent.hasPropertyChanged(ProvisioningConfig.DATA_PROPERTY_NAME);
+                            || persistenceEvent.hasPropertyChanged(ProvisioningConfig.DATA_PROPERTY_NAME);
                     }
 
                     if (forceDisconnect) {
@@ -110,31 +110,22 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     public static final String RESPONSE_TOKEN = "response";
     public static final String UNIQUE_ID_PLACEHOLDER = "%UNIQUE_ID%";
     public static final String PROVISIONING_USER_PREFIX = "ps-";
-    public static final String OR_AUTO_PROVISIONING_THREADS_MIN = "OR_AUTO_PROVISIONING_THREADS_MIN";
-    public static final String OR_AUTO_PROVISIONING_THREADS_MAX = "OR_AUTO_PROVISIONING_THREADS_MAX";
-    public static final int OR_AUTO_PROVISIONING_MIN_THREAD_COUNT_DEFAULT = 1;
-    public static final int OR_AUTO_PROVISIONING_MAX_THREAD_COUNT_DEFAULT = 10;
     protected ProvisioningService provisioningService;
     protected TimerService timerService;
     protected AssetStorageService assetStorageService;
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected boolean isKeycloak;
     protected final ConcurrentMap<Long, Set<RemotingConnection>> provisioningConfigAuthenticatedConnectionMap = new ConcurrentHashMap<>();
-    protected ExecutorService provisioningExecutorService;
+    protected Timer provisioningTimer;
+    protected final Map<String, RemotingConnection> responseSubscribedConnections = new ConcurrentHashMap<>();
 
     @Override
     public void init(Container container, Configuration serverConfiguration) throws Exception {
         super.init(container, serverConfiguration);
 
-        // Set all provisioning addresses to fail on full
-        serverConfiguration.addAddressSetting(PROVISIONING_TOKEN + "." + mqttBrokerService.wildcardConfiguration.getAnyWordsString(),
-            new AddressSettings()
-                .setPageFullMessagePolicy(PageFullMessagePolicy.FAIL)
-                .setAddressFullMessagePolicy(AddressFullMessagePolicy.FAIL)
-                .setMaxSizeMessages(1000)
-                .setPageLimitMessages(0L)
-                .setDefaultConsumerWindowSize(-1)
-        );
+        if (container.getMeterRegistry() != null) {
+            provisioningTimer = container.getMeterRegistry().timer("or.provisioning", Tags.empty());
+        }
     }
 
     @Override
@@ -152,12 +143,21 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             isKeycloak = true;
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
             container.getService(MessageBrokerService.class).getContext().addRoutes(new ProvisioningPersistenceRouteBuilder(this));
-
-            int minThreadCount = getInteger(container.getConfig(), OR_AUTO_PROVISIONING_THREADS_MIN, OR_AUTO_PROVISIONING_MIN_THREAD_COUNT_DEFAULT);
-            int maxThreadCount = Math.max(minThreadCount, getInteger(container.getConfig(), OR_AUTO_PROVISIONING_THREADS_MAX, OR_AUTO_PROVISIONING_MAX_THREAD_COUNT_DEFAULT));
-
-            provisioningExecutorService = new ContainerExecutor("AutoProvisioningPool", minThreadCount, maxThreadCount, 60, -1, new ThreadPoolExecutor.CallerRunsPolicy());
         }
+    }
+
+    /**
+     * Limit the number of messages allowed in the address queue and fail when over; this will disconnect the client.
+     * Approx 20ms per request with 20s timeout on auto provisioning request = 1000
+     */
+    @Override
+    protected AddressSettings getPublishTopicAddressSettings(Container container, String publishTopic) {
+        AddressSettings addressSettings = super.getPublishTopicAddressSettings(container, publishTopic);
+        if (addressSettings != null) {
+            addressSettings
+                .setMaxSizeMessages(1000L);
+        }
+        return addressSettings;
     }
 
     @Override
@@ -205,19 +205,30 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             return false;
         }
 
-        return isResponseTopic(topic)
+        boolean allowed = isResponseTopic(topic)
             && !TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 1))
             && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 1));
+
+        if (allowed) {
+            // Only allow if there is no existing subscription for this topic
+            RemotingConnection existingConnection = responseSubscribedConnections.get(topic.getString());
+            if (existingConnection != null) {
+                LOG.warning("Subscription already exists possible eavesdropping");
+                allowed = false;
+            }
+        }
+
+        return allowed;
     }
 
     @Override
     public void onSubscribe(RemotingConnection connection, Topic topic) {
-        // Nothing to do here as we'll publish to this topic in response to client messages
+        responseSubscribedConnections.put(topic.getString(), connection);
     }
 
     @Override
     public void onUnsubscribe(RemotingConnection connection, Topic topic) {
-
+        responseSubscribedConnections.remove(topic.getString());
     }
 
     @Override
@@ -242,18 +253,21 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
         // Offload messages to the thread pool to improve processing rate
-        try {
-            provisioningExecutorService.submit(() -> {
-                if (!connection.getTransportConnection().isOpen()) {
-                    // Drop provisioning requests for closed connections
-                    LOG.fine(() -> "Skipping provisioning request as connection is now closed: " + MQTTBrokerService.connectionToString(connection));
-                    return;
-                }
-                this.processProvisioningRequest(connection, topic, body);
-            });
-        } catch (RejectedExecutionException e) {
-            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_BUSY), MqttQoS.AT_MOST_ONCE);
+        if (!connection.getTransportConnection().isOpen()) {
+            // Drop provisioning requests for closed connections
+            LOG.finest(() -> "Skipping provisioning request as connection is now closed: " + MQTTBrokerService.connectionToString(connection));
+            return;
         }
+        // When no more threads available in the executorService the calling ActiveMQ client thread will execute which
+        // will cause provisioning messages to wait in the address queue eventually hitting the message limit and
+        // additional requests will be failed until the queue drains, this provides natural rate limiting.
+        executorService.submit(() -> {
+            if (provisioningTimer != null) {
+                provisioningTimer.record(() -> processProvisioningRequest(connection, topic, body));
+            } else {
+                processProvisioningRequest(connection, topic, body);
+            }
+        });
     }
 
     @Override
@@ -397,13 +411,13 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         provisioningConfigAuthenticatedConnectionMap.compute(matchingConfig.getId(), (id, connections) -> {
             if (connections == null) {
-                connections = new HashSet<>();
+                connections = ConcurrentHashMap.newKeySet();
             }
             connections.add(connection);
             return connections;
         });
 
-        LOG.fine("Client successfully provisioned");
+        LOG.fine("Client successfully provisioned: " + uniqueId);
         publishMessage(getResponseTopic(topic), new SuccessResponseMessage(realm, asset), MqttQoS.AT_MOST_ONCE);
     }
 

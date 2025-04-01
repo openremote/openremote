@@ -21,7 +21,6 @@ package org.openremote.model.value.impl;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import net.fortuna.ical4j.model.Dur;
 import org.openremote.model.util.TextUtil;
 
 import jakarta.validation.constraints.NotNull;

@@ -150,8 +150,8 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
                     thing.getId(),
                     "light1PowerConsumption",
                     new AssetDatapointIntervalQuery(
-                            LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS),
-                            LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()),
+                            Instant.ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.systemDefault()).toLocalDateTime().minus(1, ChronoUnit.HOURS),
+                            Instant.ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.systemDefault()).toLocalDateTime(),
                             "minute",
                             AssetDatapointIntervalQuery.Formula.AVG,
                             true
@@ -175,8 +175,8 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
                     thing.getId(),
                     "light1PowerConsumption",
                     new AssetDatapointIntervalQuery(
-                            LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS),
-                            LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()),
+                            Instant.ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.systemDefault()).toLocalDateTime().minus(1, ChronoUnit.HOURS),
+                            Instant.ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.systemDefault()).toLocalDateTime(),
                             "5 minutes",
                             AssetDatapointIntervalQuery.Formula.AVG,
                             true
@@ -247,8 +247,8 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
                     thing.getId(),
                     thingLightToggleAttributeName,
                     new AssetDatapointIntervalQuery(
-                            LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS),
-                            LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()),
+                            Instant.ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.systemDefault()).toLocalDateTime().minus(1, ChronoUnit.HOURS),
+                            Instant.ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.systemDefault()).toLocalDateTime(),
                             "MINUTE",
                             AssetDatapointIntervalQuery.Formula.AVG,
                             true
@@ -258,6 +258,26 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             assert aggregatedDatapoints[58].value == 0
             assert aggregatedDatapoints[59].value == 1d
             assert aggregatedDatapoints[60].value == 0
+        }
+
+        // ------------------------------------
+        // Test logging of outdated data points
+        // ------------------------------------
+
+        when: "a simulated sensor receives a new outdated value"
+        simulatorProtocol.updateSensor(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName), true, getClockTimeOf(container)-5000)
+
+        then: "the datapoint should be stored"
+        conditions.eventually {
+            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
+            assert datapoints.any {it.timestamp == getClockTimeOf(container)-5000 && (it.value as Boolean)}
+        }
+
+        and: "the attribute should not be updated"
+        conditions.eventually {
+            def thing = assetStorageService.find(managerTestSetup.thingId, true)
+            assert !thing.getAttribute(thingLightToggleAttributeName).flatMap { it.getValue(Boolean.class) }.orElse(true)
+            assert thing.getAttribute(thingLightToggleAttributeName).flatMap {it.getTimestamp()}.orElse(0) == getClockTimeOf(container)
         }
 
         // ------------------------------------

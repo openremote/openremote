@@ -31,7 +31,7 @@ import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import "./modals/or-rule-radial-modal";
 import { ifDefined } from "lit/directives/if-defined.js";
 import {when} from 'lit/directives/when.js';
-import {getWhenTypesMenu} from "./or-rule-condition";
+import moment from "moment";
 
 // language=CSS
 const style = css`
@@ -77,7 +77,19 @@ const style = css`
         flex-wrap: wrap;
         align-items: center;
         gap: 6px;
-    }    
+    }
+    .attribute > div > or-rule-radial-modal {
+        min-width: auto;
+    }
+    .attribute > div > or-mwc-input[type="button"] {
+        min-width: auto;
+    }
+    .attribute > div > or-mwc-input:not([type="button"]) {
+        width: 200px;
+    }
+    .attribute > div > or-attribute-input {
+        width: 200px;
+    }
     .attribute > div > * {
         min-width: 200px;
     }
@@ -130,7 +142,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.WITHIN_RECTANGLE,
             AssetQueryOperator.OUTSIDE_RECTANGLE,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
         this._queryOperatorsMap["string"] = [
             AssetQueryOperator.EQUALS,
@@ -142,7 +155,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.ENDS_WITH,
             AssetQueryOperator.NOT_ENDS_WITH,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
         this._queryOperatorsMap["number"] = [
             AssetQueryOperator.EQUALS,
@@ -154,13 +168,15 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.BETWEEN,
             AssetQueryOperator.NOT_BETWEEN,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
         this._queryOperatorsMap["boolean"] = [
             AssetQueryOperator.IS_TRUE,
             AssetQueryOperator.IS_FALSE,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
         this._queryOperatorsMap["array"] = [
             AssetQueryOperator.CONTAINS,
@@ -172,13 +188,15 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.LENGTH_LESS_THAN,
             AssetQueryOperator.LENGTH_GREATER_THAN,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
         this._queryOperatorsMap["object"] = [
             AssetQueryOperator.CONTAINS_KEY,
             AssetQueryOperator.NOT_CONTAINS_KEY,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
     }
 
@@ -226,6 +244,25 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     }
 
     protected attributePredicateValueEditorTemplate(assetDescriptor: AssetDescriptor, asset: Asset | undefined, attributePredicate: AttributePredicate) {
+        const operator = this.getOperator(attributePredicate);
+
+        if (operator === AssetQueryOperator.NOT_UPDATED_FOR) {
+            const duration = attributePredicate.timestampOlderThan ? 
+                moment.duration(attributePredicate.timestampOlderThan) : undefined;
+            return html`
+                <or-mwc-input type="${InputType.NUMBER}" 
+                              min="0"
+                              .value="${duration?.asMinutes()}"
+                              label="${i18next.t("rulesEditorDuration")}"
+                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                  const minutes = ev.detail.value;
+                                  const newDuration = moment.duration(minutes, "minutes");
+                                  attributePredicate.timestampOlderThan = minutes > 0 ? 
+                                      newDuration.toISOString() : undefined;
+                                  this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+                              }}">
+                </or-mwc-input>`;
+        }
 
         const valuePredicate = attributePredicate.value;
 
@@ -237,7 +274,6 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const assetType = getAssetTypeFromQuery(this.query);
         const attribute = asset && asset.attributes && attributeName ? asset.attributes[attributeName] : undefined;
         const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetType, attributeName, attribute);
-
 
         // @ts-ignore
         const value = valuePredicate ? valuePredicate.value : undefined;
@@ -275,6 +311,40 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         }
     }
 
+    protected attributeDurationTemplate(durationMap: Map<number, string | undefined>, index: number, onAdd: (index: number) => void, onChange: (index: number, duration: string | undefined) => void) {
+        const attributePredicate = this.query.attributes?.items?.[index];
+        const operator = attributePredicate ? this.getOperator(attributePredicate) : undefined;
+        
+        // Don't show duration button if NOT_UPDATED_FOR is selected
+        if (operator === AssetQueryOperator.NOT_UPDATED_FOR) {
+            return html``;
+        }
+
+        if(durationMap.has(index)) {
+            const isoDuration = durationMap.get(index);
+            const duration = isoDuration ? moment.duration(isoDuration) : undefined;
+            return html`
+                <or-mwc-input type="${InputType.NUMBER}" min="0" .readonly="${this.readonly || false}"
+                              .value="${duration?.asMinutes()}" label="${i18next.t("rulesEditorDuration")}"
+                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                  const newDuration = moment.duration(ev.detail.value, "minutes");
+                                  if(newDuration.asMinutes() > 0) {
+                                      onChange(index, newDuration.toISOString());
+                                  } else {
+                                      onChange(index, undefined);
+                                  }
+                              }}"
+                ></or-mwc-input>
+            `;
+        } else {
+            return html`
+                <or-mwc-input type="${InputType.BUTTON}" .readonly="${this.readonly || false}" icon="clock-plus-outline"
+                              @or-mwc-input-changed="${() => onAdd(index)}"
+                ></or-mwc-input>
+            `;
+        }
+    }
+
     static get styles() {
         return style;
     }
@@ -290,6 +360,30 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
     protected get query() {
         return this.condition.assets!;
+    }
+
+    /**
+     * Returns a Map<number, string> with all configured durations of a {@link RuleCondition}.
+     * The number represents an index of the attribute array, and the string an ISO8601 duration expression.
+     */
+    protected get duration(): Map<number, string | undefined> {
+        if(this.condition?.duration) {
+            return new Map(Object.entries(this.condition.duration).map(([key, value]) => [Number(key), value as string]));
+        } else {
+            return new Map<number, string | undefined>();
+        }
+    }
+
+    /**
+     * Updates the duration property in {@link condition}, based on the {@link durationMap} parameter.
+     * The number represents an index of the attribute array, and the string an ISO8601 duration expression.
+     */
+    protected set duration(durationMap: Map<number, string | undefined>) {
+        if(durationMap.size > 0) {
+            this.condition.duration = Object.fromEntries(durationMap);
+        } else {
+            this.condition.duration = undefined;
+        }
     }
 
     protected render() {
@@ -361,6 +455,17 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
                     const showAddAttribute = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddAttribute !== true);
                     
+                    const onDurationAdd = (index: number) => {
+                        this.duration = this.duration.set(index, undefined);
+                        this.requestUpdate();
+                    };
+                    const onDurationChange = (index: number, duration: string | undefined) => {
+                        console.debug("Updating duration of rule condition to ", duration);
+                        this.duration = this.duration.set(index, duration);
+                        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+                        this.requestUpdate();
+                    };
+                    
                     return html`
                         <or-mwc-input id="idSelect" class="min-width filledSelect" type="${InputType.SELECT}" .readonly="${this.readonly || false}" .label="${i18next.t("asset")}" 
                                       .options="${idOptions}" .value="${idValue}" .searchProvider="${searchProvider}"
@@ -372,7 +477,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                                     ${index > 0 ? html`<or-icon class="small" icon="ampersand"></or-icon>` : ``}
                                     <div class="attribute">
                                         <div>
-                                    ${this.attributePredicateEditorTemplate(assetTypeInfo, idValue !== "*" ? this._assets!.find((asset) => asset.id === idValue) : undefined, attributePredicate)}
+                                            ${this.attributePredicateEditorTemplate(assetTypeInfo, idValue !== "*" ? this._assets!.find((asset) => asset.id === idValue) : undefined, attributePredicate)}
+                                            ${this.attributeDurationTemplate(this.duration, index, onDurationAdd, onDurationChange)}
                                         </div>
                                     ${showRemoveAttribute ? html`
                                         <button class="button-clear" @click="${() => this.removeAttributePredicate(this.query!.attributes!, attributePredicate)}"><or-icon icon="close-circle"></or-icon></input>
@@ -455,8 +561,16 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     }
 
     protected getOperator(attributePredicate: AttributePredicate): string | undefined {
+        if (!attributePredicate) {
+            return;
+        }
 
-        if (!attributePredicate || !attributePredicate.value) {
+        // Check for timestampOlderThan, it's independent of value predicate
+        if (attributePredicate.timestampOlderThan !== undefined) {
+            return AssetQueryOperator.NOT_UPDATED_FOR;
+        }
+
+        if (!attributePredicate.value) {
             return;
         }
 
@@ -517,6 +631,20 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         }
     }
 
+    protected updateDurationMap(index: number): void {
+        if (this.duration) {
+            // re-assign durations by filtering out the index and adjusting remaining indices
+            const newDurationEntries = Array.from(this.duration.entries())
+                .filter(([k, _]) => k !== index)
+                .map(([k, v]) => {
+                    const newIndex = k > index ? k - 1 : k;
+                    return [newIndex, v] as [number, string | undefined]; // adjust indices after the removed index
+                });
+
+            this.duration = new Map<number, string | undefined>(newDurationEntries);
+        }
+    }
+
     protected setOperator(assetDescriptor: AssetDescriptor, attribute: Attribute<any> | undefined, attributeName: string, attributePredicate: AttributePredicate, operator: string | undefined) {
 
         if (!this.query
@@ -542,6 +670,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             this.requestUpdate();
             return;
         }
+
+        attributePredicate.timestampOlderThan = undefined;
 
         const valueDescriptor = descriptors[1];
         let predicate: ValuePredicateUnion | undefined;
@@ -714,12 +844,20 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                         negated: value === AssetQueryOperator.NOT_CONTAINS
                     };
                 } else if (valueDescriptor.jsonType === "string") {
-                predicate = {
-                    predicateType: "string",
-                    negate: value === AssetQueryOperator.NOT_CONTAINS,
-                    match: AssetQueryMatch.CONTAINS
-                };
-            }
+                    predicate = {
+                        predicateType: "string",
+                        negate: value === AssetQueryOperator.NOT_CONTAINS,
+                        match: AssetQueryMatch.CONTAINS
+                    };
+                }
+                break;
+            // operator without value predicate - since timestamp is being used rather than attribute value
+            case AssetQueryOperator.NOT_UPDATED_FOR:
+                attributePredicate.timestampOlderThan = "";
+
+                const index = this.query.attributes.items.indexOf(attributePredicate);
+                this.updateDurationMap(index);
+                break;
         }
 
         attributePredicate.value = predicate;
@@ -749,6 +887,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const index = group.items!.indexOf(attributePredicate);
         if (index >= 0) {
             group.items!.splice(index, 1);
+            this.updateDurationMap(index);
         }
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();

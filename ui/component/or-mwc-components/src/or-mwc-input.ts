@@ -179,7 +179,7 @@ function inputTypeSupportsHelperText(inputType: InputType) {
 }
 
 function inputTypeSupportsLabel(inputType: InputType) {
-    return inputTypeSupportsHelperText(inputType) || inputType === InputType.CHECKBOX;
+    return inputTypeSupportsHelperText(inputType) || inputType === InputType.CHECKBOX || inputType === InputType.BUTTON_MOMENTARY;
 }
 
 export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
@@ -225,7 +225,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                     inputType = InputType.CHECKBOX;
                 }
 
-                if (format && format.asMomentary) {
+                if (format && format.asMomentary || (Util.getMetaValue(WellknownMetaItems.MOMENTARY, valueHolder, valueHolderDescriptor) === true) ) {
                     inputType = InputType.BUTTON_MOMENTARY;
                 }
                 break;
@@ -723,6 +723,9 @@ export class OrMwcInput extends LitElement {
     @property({type: Object})
     public searchProvider?: (search?: string) => Promise<[any, string][]>
 
+    @property({type: String})
+    public searchLabel = "search"
+
     /* STYLING PROPERTIES BELOW */
 
     @property({type: String})
@@ -1122,7 +1125,9 @@ export class OrMwcInput extends LitElement {
                                 <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed ${this.searchProvider != undefined ? 'mdc-menu__searchable' : undefined}" @MDCMenuSurface:closed="${menuCloseHandler}">
                                     ${when(this.searchProvider != undefined, () => html`
                                         <label id="select-searchable" class="mdc-text-field mdc-text-field--filled">
-                                            <span class="mdc-floating-label" style="color: rgba(0, 0, 0, 0.6); text-transform: capitalize; visibility: ${this.searchableValue ? 'hidden' : 'visible'}" id="my-label-id">${i18next.t('search')}</span>
+                                            <span class="mdc-floating-label" style="color: rgba(0, 0, 0, 0.6); text-transform: capitalize; visibility: ${this.searchableValue ? 'hidden' : 'visible'}" id="my-label-id">
+                                                <or-translate .value="${this.searchLabel}"></or-translate>
+                                            </span>
                                             <input class="mdc-text-field__input" type="text"
                                                    @keyup="${(e: KeyboardEvent) => this.searchableValue = (e.target as HTMLInputElement).value}"
                                             />
@@ -1167,17 +1172,24 @@ export class OrMwcInput extends LitElement {
                             ev.stopPropagation();
                         }
 
-                        isMomentary ? this.dispatchEvent(new OrInputChangedEvent(false, true)) : this.dispatchEvent(new OrInputChangedEvent(true, null))
+                        if (isMomentary) this.dispatchEvent(new OrInputChangedEvent(false, true))
                     };
                     const onClick = (ev: MouseEvent) => {
                         if (this.disabled) {
                             ev.stopPropagation();
                         }
-                    }
+
+                        if (!isMomentary) this.dispatchEvent(new OrInputChangedEvent(true, null))
+                    };
 
                     const isMomentary = this.type === InputType.BUTTON_MOMENTARY;
                     const isIconButton = !this.action && !this.label;
-                    let classes = {
+                    // If no action, label or icons are given, show as a circle.
+                    if (isIconButton && !this.iconTrailing && !this.icon ) {
+                        this.icon = "circle"
+                        }
+
+                    const classes = {
                         "mdc-icon-button": isIconButton,
                         "mdc-fab": !isIconButton && this.action,
                         "mdc-fab--extended": !isIconButton && this.action && !!this.label,
@@ -1185,7 +1197,7 @@ export class OrMwcInput extends LitElement {
                         "mdc-button": !isIconButton && !this.action,
                         "mdc-button--raised": !isIconButton && !this.action && this.raised,
                         "mdc-button--unelevated": !isIconButton && !this.action && this.unElevated,
-                        "mdc-button--outlined": !isIconButton && !this.action && this.outlined,
+                        "mdc-button--outlined": !isIconButton && !this.action && (this.outlined || isMomentary),
                         "mdc-button--rounded": !isIconButton && !this.action && this.rounded,                        
                         "mdc-button--fullwidth": this.fullWidth,
                     };
@@ -1346,7 +1358,7 @@ export class OrMwcInput extends LitElement {
                                     format.momentJsFormat = "YYYY-MM-DDTHH:mm";
                                     break;
                                 case InputType.NUMBER:
-                                    format.maximumFractionDigits = 20; // default according to Web documentation
+                                    format.maximumFractionDigits ??= 20; // default according to Web documentation
                                     break;
                             }
 
@@ -1434,7 +1446,7 @@ export class OrMwcInput extends LitElement {
                             "mdc-slider": true,
                             "mdc-slider--range": this.continuous,
                             "mdc-slider--discreet": !this.continuous,
-                            "mdc-slider--disabled": this.disabled
+                            "mdc-slider--disabled": this.disabled || this.readonly
                         };
 
                         inputElem = html`

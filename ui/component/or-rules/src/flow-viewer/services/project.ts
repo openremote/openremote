@@ -1,8 +1,10 @@
-import { Node, NodeConnection, NodeSocket, NodeCollection, RulesetUnion } from "@openremote/model";
-import { EventEmitter } from "events";
-import { SocketTypeMatcher, NodeUtilities } from "../node-structure";
-import { EditorWorkspace } from "../components/editor-workspace";
-import { input } from "../components/flow-editor";
+import {Node, NodeCollection, NodeConnection, NodeSocket} from "@openremote/model";
+import {EventEmitter} from "events";
+import {EditorWorkspace} from "../components/editor-workspace";
+import {input} from "../components/flow-editor";
+import manager from "@openremote/core";
+import {NodeUtilities} from "../node-structure";
+import {SocketTypeMatcher} from "../node-structure/socket.type.matcher";
 
 export class Project extends EventEmitter {
     public nodes: Node[] = [];
@@ -191,12 +193,9 @@ export class Project extends EventEmitter {
             return false;
         }
 
-        if (!SocketTypeMatcher.match(fromSocket.type!, toSocket.type!) ||
+        return !(!SocketTypeMatcher.match(fromSocket.type!, toSocket.type!) ||
             fromSocket.id === toSocket.id ||
-            fromSocket.nodeId === toSocket.nodeId) {
-            return false;
-        }
-        return true;
+            fromSocket.nodeId === toSocket.nodeId);
     }
 
     public createConnection(fromSocket: string, toSocket: string): boolean {
@@ -205,10 +204,15 @@ export class Project extends EventEmitter {
             to: toSocket
         };
 
-        if (!this.isValidConnection(connection)) { return false; }
+        if (!(this.isValidConnection(connection))) { return false; }
 
-        for (const c of this.connections.filter((j) => j.to === toSocket)) {
-            this.removeConnection(c);
+
+        // If the type contains _ARRAY, then assume that we allow multiple nodes to connect to that socket.
+        if(!((NodeUtilities.getSocketFromID(connection.to, this.nodes)!.type)!.includes("_ARRAY"))){
+            for (const c of this.connections.filter((j) => j.to === toSocket)) {
+                // TODO: this.connections should contain the types of the other nodes, so that we only remove
+                this.removeConnection(c);
+            }
         }
 
         this.connections.push(connection);
@@ -217,8 +221,15 @@ export class Project extends EventEmitter {
     }
 
     public removeInvalidConnections() {
-        for (const c of this.connections.filter((j) => !this.isValidConnection(j))) {
+        for (const c of this.connections.map(c => this.enrichConnection(c)).filter(async (j) => !(this.isValidConnection(j)))) {
             this.removeConnection(c);
+        }
+    }
+
+    private enrichConnection(c: NodeConnection): NodeConnection {
+        return {
+            from: NodeUtilities.getSocketFromID(c.from!, this.nodes)?.id,
+            to: NodeUtilities.getSocketFromID(c.to!, this.nodes)?.id
         }
     }
 }

@@ -21,9 +21,6 @@ package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
 import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
 /**
  * To be used as a wrapper class to create a ConfigProxySet message.
  */

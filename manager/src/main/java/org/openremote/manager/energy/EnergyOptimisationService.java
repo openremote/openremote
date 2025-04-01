@@ -51,10 +51,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -101,7 +98,8 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
     protected MessageBrokerService messageBrokerService;
     protected ClientEventService clientEventService;
     protected GatewayService gatewayService;
-    protected ScheduledExecutorService executorService;
+    protected ExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected final Map<String, OptimisationInstance> assetOptimisationInstanceMap = new HashMap<>();
     protected List<String> forceChargeAssetIds = new ArrayList<>();
 
@@ -114,7 +112,8 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         messageBrokerService = container.getService(MessageBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
-        executorService = container.getExecutorService();
+        executorService = container.getExecutor();
+        scheduledExecutorService = container.getScheduledExecutor();
     }
 
     @Override
@@ -137,7 +136,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
         energyOptimisationAssets.forEach(this::startOptimisation);
 
-        clientEventService.addInternalSubscription(
+        clientEventService.addSubscription(
             AttributeEvent.class,
             null,
             this::processAttributeEvent);
@@ -332,7 +331,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             throw new IllegalStateException("Optimiser instance not found for asset: " + optimisationAssetId);
         }
 
-        return executorService.scheduleAtFixedRate(() -> {
+        return scheduledExecutorService.scheduleAtFixedRate(() -> {
                 try {
                     runOptimisation(optimisationAssetId, Instant.ofEpochMilli(timerService.getCurrentTimeMillis()).truncatedTo(ChronoUnit.MINUTES));
                 } catch (Exception e) {
@@ -683,7 +682,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
             if (energySchedule != null) {
                 LOG.finest(getLogPrefix(optimisationAssetId) + "Applying energy schedule for storage asset: " + storageAsset.getId());
-                optimiser.applyEnergySchedule(energyLevelMins, energyLevelMaxs, energyCapacity, energySchedule, LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault()));
+                optimiser.applyEnergySchedule(energyLevelMins, energyLevelMaxs, energyCapacity, energySchedule, Instant.ofEpochMilli(timerService.getCurrentTimeMillis()).atZone(ZoneId.systemDefault()).toLocalDateTime());
             }
 
             double maxEnergyLevelMin = Arrays.stream(energyLevelMins).max().orElse(0);
@@ -796,7 +795,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         AttributeRef ref = new AttributeRef(assetId, attribute.getName());
 
         if (attribute.hasMeta(MetaItemType.HAS_PREDICTED_DATA_POINTS)) {
-            LocalDateTime timestamp = LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault());
+            LocalDateTime timestamp = optimisationTime.atZone(ZoneId.systemDefault()).toLocalDateTime();
             List<ValueDatapoint<?>> predictedData = assetPredictedDatapointService.queryDatapoints(
                     ref.getId(),
                     ref.getName(),

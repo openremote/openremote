@@ -22,6 +22,7 @@ package org.openremote.agent.protocol.bluetooth.mesh.utils;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.logging.Logger;
 
@@ -75,7 +76,7 @@ public enum OutputOOBAction {
      * Returns the Output OOB Action description
      *
      * @param type Output OOB type
-     * @return Input OOB type descrption
+     * @return Input OOB type description
      */
     public static String getOutputOOBActionDescription(final OutputOOBAction type) {
         switch (type) {
@@ -102,9 +103,9 @@ public enum OutputOOBAction {
      * @param outputAction type of output action
      * @return selected output action type
      */
-    public static ArrayList<OutputOOBAction> parseOutputActionsFromBitMask(final int outputAction) {
+    public static List<OutputOOBAction> parseOutputActionsFromBitMask(final int outputAction) {
         final OutputOOBAction[] outputActions = {BLINK, BEEP, VIBRATE, OUTPUT_NUMERIC, OUTPUT_ALPHA_NUMERIC};
-        final ArrayList<OutputOOBAction> supportedActionValues = new ArrayList<>();
+        final List<OutputOOBAction> supportedActionValues = new ArrayList<>();
         for (OutputOOBAction action : outputActions) {
             if ((outputAction & action.outputOOBAction) == action.outputOOBAction) {
                 supportedActionValues.add(action);

@@ -20,6 +20,9 @@
 package org.openremote.model.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
 
@@ -27,6 +30,9 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import org.openremote.model.persistence.PasswordPolicyConverter;
+
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -42,6 +48,20 @@ public class Realm {
 
     protected static Field[] propertyFields;
 
+    private static final PasswordPolicyConverter PASSWORD_POLICY_CONVERTER = new PasswordPolicyConverter();
+
+    public static class PasswordPolicyDeserializer extends JsonDeserializer<List<String>> {
+        @Override
+        public List<String> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+            JsonNode node = p.getCodec().readTree(p);
+            List<String> policies = new ArrayList<>();
+            if (node.isArray()) {
+                node.forEach(element -> policies.add(element.asText()));
+            }
+            return policies;
+        }
+    }
+
     @Id
     protected String id;
 
@@ -56,6 +76,15 @@ public class Realm {
 
     @Column(name = "NOT_BEFORE")
     protected Double notBefore; // This will explode in 2038
+
+    /**
+     * List of password policies, using the "policy(value)" format. Example: "specialChars(1)".
+     * Stored in column as "policy(value) and policy(value) and policy(value)", and converted using {@link PasswordPolicyConverter}
+     */
+    @Column(name = "password_policy")
+    @Convert(converter = PasswordPolicyConverter.class)
+    @JsonDeserialize(using = PasswordPolicyDeserializer.class)
+    protected List<String> passwordPolicy;
 
     @Column(name = "reset_password_allowed")
     protected Boolean resetPasswordAllowed;
@@ -144,6 +173,24 @@ public class Realm {
 
     public Realm setEnabled(Boolean enabled) {
         this.enabled = enabled;
+        return this;
+    }
+
+    public List<String> getPasswordPolicy() {
+        return passwordPolicy;
+    }
+
+    public String getPasswordPolicyString() {
+        return PASSWORD_POLICY_CONVERTER.convertToDatabaseColumn(passwordPolicy);
+    }
+
+    public Realm setPasswordPolicy(List<String> passwordPolicy) {
+        this.passwordPolicy = passwordPolicy;
+        return this;
+    }
+
+    public Realm setPasswordPolicy(String passwordPolicy) {
+        this.passwordPolicy = PASSWORD_POLICY_CONVERTER.convertToEntityAttribute(passwordPolicy);
         return this;
     }
 
@@ -309,6 +356,11 @@ public class Realm {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hashCode(name);
+    }
+
+    @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "id='" + id + '\'' +
@@ -316,6 +368,7 @@ public class Realm {
             ", displayName='" + displayName + '\'' +
             ", enabled=" + enabled +
             ", notBefore=" + notBefore +
+            ", passwordPolicy=" + passwordPolicy +
             ", resetPasswordAllowed=" + resetPasswordAllowed +
             ", duplicateEmailsAllowed=" + duplicateEmailsAllowed +
             ", rememberMe=" + rememberMe +

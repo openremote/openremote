@@ -19,31 +19,28 @@
  */
 package org.openremote.manager.rules;
 
-import org.openremote.model.PersistenceEvent;
 import jakarta.ws.rs.core.MediaType;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.alarm.Alarm;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.geo.GeoJSONPoint;
-import org.openremote.model.notification.EmailNotificationMessage;
-import org.openremote.model.notification.Notification;
-import org.openremote.model.notification.PushNotificationMessage;
+import org.openremote.model.notification.*;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.json.*;
-import org.openremote.model.util.EnumUtil;
-import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.TimeUtil;
-import org.openremote.model.util.ValueUtil;
+import org.openremote.model.util.*;
 import org.openremote.model.value.MetaItemType;
+import org.openremote.model.value.NameValueHolder;
 import org.openremote.model.webhook.Webhook;
 import org.quartz.CronExpression;
 import org.shredzone.commons.suncalc.SunTimes;
@@ -51,7 +48,8 @@ import org.shredzone.commons.suncalc.SunTimes;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -62,6 +60,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.openremote.manager.rules.AssetQueryPredicate.groupIsEmpty;
@@ -80,7 +79,6 @@ public class JsonRulesBuilder extends RulesBuilder {
         }
     }
 
-
     /**
      * Stores all state for a given {@link RuleCondition} and calculates which {@link AttributeInfo}s match and don't
      * match the condition.
@@ -94,6 +92,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         int limit;
         LogicGroup<AttributePredicate> attributePredicates = null;
         Function<Collection<AttributeInfo>, Set<AttributeInfo>> assetPredicate = null;
+        Map<Pair<AttributeInfo, Integer>, Long> durationMatchTimes = new HashMap<>();
         Set<AttributeInfo> unfilteredAssetStates = new HashSet<>();
         Set<AttributeInfo> previouslyMatchedAssetStates = new HashSet<>();
         Set<AttributeInfo> previouslyUnmatchedAssetStates;
@@ -110,24 +109,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 previouslyUnmatchedAssetStates = new HashSet<>();
             }
 
-            if (!TextUtil.isNullOrEmpty(ruleCondition.duration)) {
-                try {
-                    final long duration = TimeUtil.parseTimeDuration(ruleCondition.duration);
-                    AtomicLong nextExecuteMillis = new AtomicLong(timerService.getCurrentTimeMillis());
-
-                    timePredicate = (time) -> {
-                        long nextExecute = nextExecuteMillis.get();
-                        if (time >= nextExecute) {
-                            nextExecuteMillis.set(nextExecute + duration);
-                            return true;
-                        }
-                        return false;
-                    };
-                } catch (Exception e) {
-                    log(Level.SEVERE, "Failed to parse rule condition duration expression: " + ruleCondition.duration, e);
-                    throw e;
-                }
-            } else if (!TextUtil.isNullOrEmpty(ruleCondition.cron)) {
+            if (!TextUtil.isNullOrEmpty(ruleCondition.cron)) {
                 try {
                     CronExpression timerExpression = new CronExpression(ruleCondition.cron);
                     timerExpression.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -185,17 +167,21 @@ public class JsonRulesBuilder extends RulesBuilder {
                     return false;
                 };
             } else if (ruleCondition.assets != null) {
-
                 // Pull out order, limit and attribute predicates so they can be applied at required times
                 orderBy = ruleCondition.assets.orderBy;
                 limit = ruleCondition.assets.limit;
                 attributePredicates = ruleCondition.assets.attributes;
+                boolean attributePredicateHasDurationCondition = ruleCondition.duration != null && !ruleCondition.duration.isEmpty();
 
                 if (attributePredicates != null && attributePredicates.items != null) {
                     // Only supports a single level or logic group for attributes (i.e. cannot nest groups in the UI so
                     // don't support it here either)
                     attributePredicates.groups = null;
-                    assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates);
+                    if (attributePredicateHasDurationCondition) {
+                        assetPredicate = asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates.getItems(), ruleCondition.duration, durationMatchTimes);
+                    } else {
+                        assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates);
+                    }
                 }
                 ruleCondition.assets.orderBy = null;
                 ruleCondition.assets.limit = 0;
@@ -224,7 +210,21 @@ public class JsonRulesBuilder extends RulesBuilder {
                                 unfilteredAssetStates.add(event.assetState);
                             }
                         }
-                        case DELETE -> unfilteredAssetStates.remove(event.assetState);
+                        case DELETE -> {
+                            unfilteredAssetStates.remove(event.assetState);
+                            if (durationMatchTimes != null) {
+                                durationMatchTimes.keySet().removeIf(attributeRefPredicateIndex -> attributeRefPredicateIndex.getKey().getRef().equals(event.assetState.getRef()));
+                            }
+                        }
+                    }
+                }
+
+                // Replace any potentially stale asset states (values may have changed)
+                // only need up to date values in the previously matched asset states previously unmatched asset states is only
+                // used to compare asset ID and attribute name.
+                if (event != null) {
+                    if (previouslyMatchedAssetStates.remove(event.assetState)) {
+                        previouslyMatchedAssetStates.add(event.assetState);
                     }
                 }
 
@@ -278,15 +278,19 @@ public class JsonRulesBuilder extends RulesBuilder {
                 results.put(true, matched);
                 results.put(false, unmatched);
 
-                unfilteredAssetStates.stream().collect(Collectors.groupingBy(AttributeInfo::getId)).forEach((id, states) -> {
-                    Set<AttributeInfo> matches = assetPredicate.apply(states);
-                    if (matches != null) {
-                        matched.addAll(matches);
-                        unmatched.addAll(states.stream().filter(matches::contains).collect(Collectors.toSet()));
-                    } else {
-                        unmatched.addAll(states);
-                    }
-                });
+                unfilteredAssetStates.stream()
+                    .collect(Collectors.groupingBy(AttributeInfo::getId))
+                    .forEach((id, states) -> {
+                        Set<AttributeInfo> matches = assetPredicate.apply(states);
+                        if (matches != null) {
+                            matched.addAll(matches);
+                            unmatched.addAll(states.stream()
+                                .filter(state -> !matches.contains(state))
+                                .collect(Collectors.toSet()));
+                        } else {
+                            unmatched.addAll(states);
+                        }
+                    });
 
                 matchedAssetStates = results.getOrDefault(true, Collections.emptyList());
                 unmatchedAssetStates = results.getOrDefault(false, Collections.emptyList());
@@ -298,7 +302,6 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                     // Filter out previous un-matches to avoid re-triggering
                     unmatchedAssetStates.removeIf(previouslyUnmatchedAssetStates::contains);
-
                 }
             }
 
@@ -352,9 +355,9 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 // Filter out unmatched asset ids that are in the matched list
                 unmatchedAssetIds = unmatchedAssetStateStream
-                        .map(AttributeInfo::getId)
-                        .filter(id -> !matchedAssetIds.contains(id))
-                        .collect(Collectors.toList());
+                    .map(AttributeInfo::getId)
+                    .filter(id -> !matchedAssetIds.contains(id))
+                    .collect(Collectors.toList());
             }
 
             lastEvaluationResult = new RuleConditionEvaluationResult((!matchedAssetIds.isEmpty() || (trackUnmatched && !unmatchedAssetIds.isEmpty())), matchedAssetStates, matchedAssetIds, unmatchedAssetStates, unmatchedAssetIds);
@@ -399,12 +402,12 @@ public class JsonRulesBuilder extends RulesBuilder {
         @Override
         public String toString() {
             return RuleConditionEvaluationResult.class.getSimpleName() + "{" +
-                    "matches=" + matches +
-                    ", matchedAssetStates=" + matchedAssetStates.size() +
-                    ", unmatchedAssetStates=" + unmatchedAssetStates.size() +
-                    ", matchedAssetIds=" + matchedAssetIds.size() +
-                    ", unmatchedAssetIds=" + unmatchedAssetIds.size() +
-                    '}';
+                "matches=" + matches +
+                ", matchedAssetStates=" + matchedAssetStates.size() +
+                ", unmatchedAssetStates=" + unmatchedAssetStates.size() +
+                ", matchedAssetIds=" + matchedAssetIds.size() +
+                ", unmatchedAssetIds=" + unmatchedAssetIds.size() +
+                '}';
         }
     }
 
@@ -477,6 +480,25 @@ public class JsonRulesBuilder extends RulesBuilder {
                     groupMatches = ruleConditionGroup.getItems().stream()
                         .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
                         .allMatch(ruleConditionState -> ruleConditionState.lastEvaluationResult != null && ruleConditionState.lastEvaluationResult.matches);
+                    
+             
+                    // Prevent stale matches from blocking rule re-triggering for multi LHS condition groups
+                    if (!groupMatches && ruleConditionGroup.getItems().size() > 1) {
+
+                        boolean anyConditionHasNoPreviousMatches = ruleConditionGroup.getItems().stream()
+                            .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
+                            .anyMatch(ruleConditionState -> ruleConditionState.previouslyMatchedAssetStates.isEmpty());
+
+                        // Clear previously matched asset states, so they can be re-matched and trigger the rule when the group matches again
+                        if (anyConditionHasNoPreviousMatches) {
+                            ruleConditionGroup.getItems().forEach(ruleCondition -> {
+                                RuleConditionState conditionState = conditionStateMap.get(ruleCondition.tag);
+                                if (conditionState != null && !conditionState.previouslyMatchedAssetStates.isEmpty()) {
+                                    conditionState.previouslyMatchedAssetStates.clear();
+                                }
+                            });      
+                        }   
+                    }
                 } else {
                     groupMatches = ruleConditionGroup.getItems().stream()
                         .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
@@ -528,9 +550,11 @@ public class JsonRulesBuilder extends RulesBuilder {
     public static final String PLACEHOLDER_RULESET_ID = "%RULESET_ID%";
     public static final String PLACEHOLDER_RULESET_NAME = "%RULESET_NAME%";
     public static final String PLACEHOLDER_TRIGGER_ASSETS = "%TRIGGER_ASSETS%";
+    public static final String PLACEHOLDER_ASSET_ID = "%ASSET_ID%";
     final static String TIMER_TEMPORAL_FACT_NAME_PREFIX = "TimerTemporalFact-";
     final static String LOG_PREFIX = "JSON Rule '";
     final protected AssetStorageService assetStorageService;
+    final protected RulesEngine<?> rulesEngine;
     final protected TimerService timerService;
     final protected Assets assetsFacade;
     final protected Users usersFacade;
@@ -539,27 +563,25 @@ public class JsonRulesBuilder extends RulesBuilder {
     final protected Alarms alarmsFacade;
     final protected HistoricDatapoints historicDatapointsFacade;
     final protected PredictedDatapoints predictedDatapointsFacade;
-    final protected ScheduledExecutorService executorService;
     final protected BiConsumer<Runnable, Long> scheduledActionConsumer;
-    final protected Map<String, RuleState> ruleStateMap = new HashMap<>();
+    final protected Map<String, RuleState> ruleStateMap = new ConcurrentHashMap<>();
     final protected JsonRule[] jsonRules;
     final protected Ruleset jsonRuleset;
     protected static Logger LOG;
 
-    public JsonRulesBuilder(Logger logger, Ruleset ruleset, TimerService timerService,
-                            AssetStorageService assetStorageService, ScheduledExecutorService executorService,
+    public JsonRulesBuilder(Logger logger, Ruleset ruleset, RulesEngine<?> rulesEngine, TimerService timerService, AssetStorageService assetStorageService,
                             Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade,
                             Alarms alarmsFacade, HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints,
                             BiConsumer<Runnable, Long> scheduledActionConsumer) throws Exception {
+        this.rulesEngine = rulesEngine;
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
-        this.executorService = executorService;
         this.assetsFacade = assetsFacade;
         this.usersFacade = usersFacade;
         this.notificationsFacade = notificationsFacade;
         this.webhooksFacade = webhooksFacade;
         this.alarmsFacade = alarmsFacade;
-        this.historicDatapointsFacade= historicDatapoints;
+        this.historicDatapointsFacade = historicDatapoints;
         this.predictedDatapointsFacade = predictedDatapoints;
         this.scheduledActionConsumer = scheduledActionConsumer;
         LOG = logger;
@@ -623,10 +645,10 @@ public class JsonRulesBuilder extends RulesBuilder {
         }
 
         add().name(rule.name)
-                .description(rule.description)
-                .priority(rule.priority)
-                .when(condition)
-                .then(action);
+            .description(rule.description)
+            .priority(rule.priority)
+            .when(condition)
+            .then(action);
 
         return this;
     }
@@ -671,20 +693,22 @@ public class JsonRulesBuilder extends RulesBuilder {
         return facts -> {
 
             try {
-                if (ruleState.thenMatched()) {
-                    log(Level.FINEST, "Triggered rule so executing 'then' actions for rule: " + rule.name);
-                    executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
-                }
+                // Execute actions only when the rules engine has already fired to prevent execution during startup
+                if (rulesEngine.hasPreviouslyFired()) {
+                    if (ruleState.thenMatched()) {
+                        log(Level.FINE, "Triggered rule so executing 'then' actions for rule: " + rule.name);
+                        executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
+                    }
 
-                if (rule.otherwise != null && ruleState.otherwiseMatched()) {
-                    log(Level.FINEST, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
-                    executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
+                    if (rule.otherwise != null && ruleState.otherwiseMatched()) {
+                        log(Level.FINE, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
+                        executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
+                    }
                 }
             } catch (Exception e) {
                 log(Level.SEVERE, "Exception thrown during rule RHS execution", e);
                 throw e;
             } finally {
-
                 // Store recurrence times as required
                 boolean recurPerAsset = rule.recurrence == null || rule.recurrence.scope != RuleRecurrence.Scope.GLOBAL;
                 long currentTime = timerService.getCurrentTimeMillis();
@@ -702,10 +726,6 @@ public class JsonRulesBuilder extends RulesBuilder {
                     // Store last evaluation results in state
                     if (ruleConditionState.lastEvaluationResult != null) {
 
-                        // Replace any stale matched asset states (values may have changed equality is by asset ID and attribute name)
-                        // only need up to date values in the previously matched asset states previously unmatched asset states is only
-                        // used to compare asset ID and attribute name.
-                        ruleConditionState.previouslyMatchedAssetStates.removeAll(ruleConditionState.lastEvaluationResult.matchedAssetStates);
                         ruleConditionState.previouslyMatchedAssetStates.addAll(ruleConditionState.lastEvaluationResult.matchedAssetStates);
 
                         if (ruleConditionState.trackUnmatched) {
@@ -781,20 +801,53 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             Notification notification = ValueUtil.clone(notificationAction.notification);
             String body;
-            boolean linkedUsersTarget = ruleAction.target != null && ruleAction.target.linkedUsers != null && ruleAction.target.linkedUsers;
+            boolean linkedUsersTarget = ruleAction.target != null && Boolean.TRUE.equals(ruleAction.target.linkedUsers);
+            boolean isLocalized = Objects.equals(notification.getMessage().getType(), LocalizedNotificationMessage.TYPE);
             boolean isEmail = Objects.equals(notification.getMessage().getType(), EmailNotificationMessage.TYPE);
             boolean isPush = Objects.equals(notification.getMessage().getType(), PushNotificationMessage.TYPE);
             boolean isHtml;
 
-            if (isEmail) {
+            if (isLocalized) {
+                LocalizedNotificationMessage localizedMsg = (LocalizedNotificationMessage) notification.getMessage();
+                isHtml = false;
+                localizedMsg.getMessages().forEach((lang, msg) -> {
+                    if (msg instanceof PushNotificationMessage pushMsg) {
+                        PushNotificationAction action = pushMsg.getAction();
+                        if (action != null && action.getUrl() != null) {
+                            String newUrl = replaceAssetIdPlaceholder(action.getUrl(), ruleState, useUnmatched, "notification URL", true);
+                            action.setUrl(newUrl);
+                            pushMsg.setAction(action);
+                        }
+
+                        if (pushMsg.getBody() != null) {
+                            String newBody = replaceAssetIdPlaceholder(pushMsg.getBody(), ruleState, useUnmatched, "notification body", false);
+                            pushMsg.setBody(newBody);
+                        }
+                    }
+                });
+                body = null;
+            } else if (isEmail) {
                 EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
                 isHtml = !TextUtil.isNullOrEmpty(email.getHtml());
                 body = isHtml ? email.getHtml() : email.getText();
             } else {
                 isHtml = false;
                 if (isPush) {
-                    PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) notification.getMessage();
-                    body = pushNotificationMessage.getBody();
+                    PushNotificationMessage pushMsg = (PushNotificationMessage) notification.getMessage();
+                    PushNotificationAction action;
+                    body = pushMsg.getBody();
+                    action = pushMsg.getAction();
+
+                    if (action != null && action.getUrl() != null) {
+                        String newUrl = replaceAssetIdPlaceholder(action.getUrl(), ruleState, useUnmatched, "notification URL", true);
+                        action.setUrl(newUrl);
+                        pushMsg.setAction(action);
+                    }
+
+                    if (body!= null) {
+                        String newBody = replaceAssetIdPlaceholder(body, ruleState, useUnmatched, "notification body", false);
+                        pushMsg.setBody(newBody);
+                    }
                 } else {
                     body = null;
                 }
@@ -803,7 +856,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             // Transfer the rule action target into notification targets
             Notification.TargetType targetType = Notification.TargetType.ASSET;
             if (ruleAction.target != null) {
-                if (ruleAction.target.users != null
+                if ((ruleAction.target.users != null || Boolean.TRUE.equals(ruleAction.target.linkedUsers))
                     && ruleAction.target.conditionAssets == null
                     && ruleAction.target.assets == null
                     && ruleAction.target.matchedAssets == null) {
@@ -817,16 +870,41 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
 
             Collection<String> targetIds;
-            boolean bodyContainsTriggeredAssetInfo = !TextUtil.isNullOrEmpty(body) && body.contains(PLACEHOLDER_TRIGGER_ASSETS);
+            boolean bodyContainsTriggeredAssetInfo;
+
+            // In case of a localized message, we build a Map of all bodies in each language.
+            // We also cache a list of languages that are using HTML, to use later
+            Map<String, String> localizedBodies = new HashMap<>();
+            Map<String, Boolean> localizedIsHtml = new HashMap<>();
+            if(isLocalized) {
+                ((LocalizedNotificationMessage) notification.getMessage()).getMessages().forEach((lang, msg) -> {
+                    if (msg instanceof PushNotificationMessage pushMsg) {
+                        localizedBodies.put(lang, pushMsg.getBody());
+                        localizedIsHtml.put(lang, false);
+                    } else if (msg instanceof EmailNotificationMessage emailMsg) {
+                        boolean isMsgHtml = !TextUtil.isNullOrEmpty(emailMsg.getHtml());
+                        localizedBodies.put(lang, isMsgHtml ? emailMsg.getHtml() : emailMsg.getText());
+                        localizedIsHtml.put(lang, true);
+                    }
+                });
+            }
+
+            // Check if the body containers the PLACEHOLDER_TRIGGER_ASSETS
+            if(isLocalized) {
+                bodyContainsTriggeredAssetInfo = localizedBodies.values().stream().anyMatch(
+                    text -> !TextUtil.isNullOrEmpty(text) && text.contains(PLACEHOLDER_TRIGGER_ASSETS));
+            } else {
+                bodyContainsTriggeredAssetInfo = !TextUtil.isNullOrEmpty(body) && body.contains(PLACEHOLDER_TRIGGER_ASSETS);
+            }
 
             if (linkedUsersTarget) {
-                targetType = Notification.TargetType.USER;
 
-                // Find users linked to the matched assets
+                // Find users linked to the matched assets applying any additional use query in the action
                 Set<String> assetIds = useUnmatched ? ruleState.otherwiseMatchedAssetIds : ruleState.thenMatchedAssetIds;
+                UserQuery userQuery = ruleAction.target.users != null ? ruleAction.target.users : new UserQuery();
                 List<String> userIds = assetIds == null || assetIds.isEmpty()
                     ? Collections.emptyList()
-                    : usersFacade.getResults(new UserQuery().assets(assetIds.toArray(String[]::new))).toList();
+                    : usersFacade.getResults(userQuery.assets(assetIds.toArray(String[]::new))).toList();
 
                 if (userIds.isEmpty()) {
                     LOG.info("No users linked to matched assets for triggered rule so nothing to do: " + jsonRuleset);
@@ -852,18 +930,18 @@ public class JsonRulesBuilder extends RulesBuilder {
                         Map<String, Set<AttributeInfo>> assetStates = getMatchedAssetStates(ruleState, useUnmatched, userAssetLinks, userId);
 
                         Notification customNotification = ValueUtil.clone(notification);
-                        String newBody = insertTriggeredAssetInfo(finalBody, assetStates, isHtml, false);
 
-                        if (isEmail) {
-                            EmailNotificationMessage email = (EmailNotificationMessage) customNotification.getMessage();
-                            if (isHtml) {
-                                email.setHtml(newBody);
-                            } else {
-                                email.setText(newBody);
-                            }
-                        } else if (isPush) {
-                            PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) customNotification.getMessage();
-                            pushNotificationMessage.setBody(newBody);
+
+                        if(isLocalized) {
+                            LocalizedNotificationMessage localizedMsg = ((LocalizedNotificationMessage) customNotification.getMessage());
+                            localizedMsg.getMessages().forEach((lang, msg) -> {
+                                String newBody = insertTriggeredAssetInfo(localizedBodies.get(lang), assetStates, localizedIsHtml.get(lang), false);
+                                localizedMsg.setMessage(lang, insertBodyInMessage(msg, localizedIsHtml.get(lang), newBody));
+                            });
+
+                        } else {
+                            String newBody = insertTriggeredAssetInfo(finalBody, assetStates, isHtml, false);
+                            customNotification.setMessage(insertBodyInMessage(customNotification.getMessage(), isHtml, newBody));
                         }
 
                         customNotification.setTargets(new Notification.Target(Notification.TargetType.USER, userId));
@@ -874,7 +952,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                         customNotifications.forEach(customNotification -> {
                             log(Level.FINE, "Sending custom user notification for rule action: " + rule.name + " '" + actionsName + "' action index " + index + " [Targets=" + (customNotification.getTargets() != null ? customNotification.getTargets().stream().map(Object::toString).collect(Collectors.joining(",")) : "null") + "]");
                             notificationsFacade.send(customNotification);
-                    }), 0);
+                        }), 0);
                 }
             } else {
                 targetIds = getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts);
@@ -891,18 +969,17 @@ public class JsonRulesBuilder extends RulesBuilder {
             if (bodyContainsTriggeredAssetInfo) {
                 // Extract asset states for matched asset IDs
                 Map<String, Set<AttributeInfo>> assetStates = getMatchedAssetStates(ruleState, useUnmatched, null, null);
-                body = insertTriggeredAssetInfo(body, assetStates, isHtml, false);
 
-                if (isEmail) {
-                    EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
-                    if (isHtml) {
-                        email.setHtml(body);
-                    } else {
-                        email.setText(body);
-                    }
-                } else if (isPush) {
-                    PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) notification.getMessage();
-                    pushNotificationMessage.setBody(body);
+                if(isLocalized) {
+                    LocalizedNotificationMessage localizedMsg = ((LocalizedNotificationMessage) notification.getMessage());
+                    localizedMsg.getMessages().forEach((lang, msg) -> {
+                        String newBody = insertTriggeredAssetInfo(localizedBodies.get(lang), assetStates, localizedIsHtml.get(lang), false);
+                        localizedMsg.setMessage(lang, insertBodyInMessage(msg, localizedIsHtml.get(lang), newBody));
+                    });
+
+                } else {
+                    String newBody = insertTriggeredAssetInfo(body, assetStates, isHtml, false);
+                    notification.setMessage(insertBodyInMessage(notification.getMessage(), isHtml, newBody));
                 }
             }
 
@@ -991,8 +1068,8 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             log(Level.FINE, "Writing attribute '" + attributeAction.attributeName + "' for " + ids.size() + " asset(s) for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
             return new RuleActionExecution(() ->
-                    ids.forEach(id ->
-                            assetsFacade.dispatch(id, attributeAction.attributeName, attributeAction.value)), 0);
+                ids.forEach(id ->
+                    assetsFacade.dispatch(id, attributeAction.attributeName, attributeAction.value)), 0);
         }
 
         if (ruleAction instanceof RuleActionWait) {
@@ -1039,12 +1116,12 @@ public class JsonRulesBuilder extends RulesBuilder {
             List<AttributeInfo> matchingAssetStates = matchingAssetIds
                 .stream()
                 .map(assetId ->
-                        facts.getAssetStates()
-                                .stream()
-                                .filter(state -> state.getId().equals(assetId) && state.getName().equals(attributeUpdateAction.attributeName))
-                                .findFirst().orElseGet(() -> {
-                                    log(Level.WARNING, "Failed to find attribute in rule states for attribute update: " + new AttributeRef(assetId, attributeUpdateAction.attributeName));
-                                    return null;
+                    facts.getAssetStates()
+                        .stream()
+                        .filter(state -> state.getId().equals(assetId) && state.getName().equals(attributeUpdateAction.attributeName))
+                        .findFirst().orElseGet(() -> {
+                            log(Level.WARNING, "Failed to find attribute in rule states for attribute update: " + new AttributeRef(assetId, attributeUpdateAction.attributeName));
+                            return null;
                         }))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
@@ -1124,7 +1201,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                         assetsFacade.dispatch(assetState.getId(), attributeUpdateAction.attributeName, value);
                     }
                 }),
-            0);
+                0);
         }
 
         log(Level.FINE, "Unsupported rule action: " + rule.name + " '" + actionsName + "' action index " + index);
@@ -1172,6 +1249,27 @@ public class JsonRulesBuilder extends RulesBuilder {
         return sourceText.replace(PLACEHOLDER_TRIGGER_ASSETS, sb.toString());
     }
 
+    protected String replaceAssetIdPlaceholder(String text, RuleState ruleState, boolean useUnmatched, String context, boolean firstOnly) {
+        if (TextUtil.isNullOrEmpty(text) || !text.contains(PLACEHOLDER_ASSET_ID)) {
+            return text;
+        }
+
+        Set<String> matchedIds = useUnmatched ? ruleState.otherwiseMatchedAssetIds : ruleState.thenMatchedAssetIds;
+
+        if (matchedIds != null && !matchedIds.isEmpty()) {
+            String replacement = firstOnly ? matchedIds.iterator().next() : String.join(",", matchedIds);
+
+
+            String result = text.replace(PLACEHOLDER_ASSET_ID, replacement);
+            log(Level.FINEST, "Replaced asset ID(s) in " + context + ": " + result);
+            return result;
+        } else {
+            log(Level.WARNING, "Asset ID placeholder used but no matched assets found for " + context);
+            return text;
+        }
+    }
+
+
     protected String insertTriggeredAssetInfo(String sourceText, Map<String, Set<AttributeInfo>> assetStates, boolean isHtml, boolean isJson) {
 
         StringBuilder sb = new StringBuilder();
@@ -1210,6 +1308,19 @@ public class JsonRulesBuilder extends RulesBuilder {
         }
 
         return sourceText.replace(PLACEHOLDER_TRIGGER_ASSETS, sb.toString());
+    }
+
+    protected AbstractNotificationMessage insertBodyInMessage(AbstractNotificationMessage sourceMessage, boolean isHtml, String body) {
+        if(sourceMessage instanceof EmailNotificationMessage emailMsg) {
+            if (isHtml) {
+                emailMsg.setHtml(body);
+            } else {
+                emailMsg.setText(body);
+            }
+        } else if(sourceMessage instanceof PushNotificationMessage pushMsg) {
+            pushMsg.setBody(body);
+        }
+        return sourceMessage;
     }
 
     protected static Collection<String> getRuleActionTargetIds(RuleActionTarget target, boolean useUnmatched, RuleState ruleState, Assets assetsFacade, Users usersFacade, RulesFacts facts) {
@@ -1256,12 +1367,12 @@ public class JsonRulesBuilder extends RulesBuilder {
         if (conditionStateMap != null) {
             if (!useUnmatched) {
                 return conditionStateMap.values().stream().flatMap(triggerState ->
-                        triggerState != null ? triggerState.getMatchedAssetIds().stream() : Stream.empty()
+                    triggerState != null ? triggerState.getMatchedAssetIds().stream() : Stream.empty()
                 ).distinct().collect(Collectors.toList());
             }
 
             return conditionStateMap.values().stream().flatMap(triggerState ->
-                    triggerState != null ? triggerState.getUnmatchedAssetIds().stream() : Stream.empty()
+                triggerState != null ? triggerState.getUnmatchedAssetIds().stream() : Stream.empty()
             ).distinct().collect(Collectors.toList());
         }
 
@@ -1300,14 +1411,109 @@ public class JsonRulesBuilder extends RulesBuilder {
         }
 
         SunTimes.Parameters sunCalculator = SunTimes.compute()
-                .on(timerService.getNow())
-                .utc()
-                .at(location.getX(), location.getY());
+            .on(timerService.getNow())
+            .utc()
+            .at(location.getX(), location.getY());
 
         if (twilight != null) {
             sunCalculator.twilight(twilight);
         }
 
         return sunCalculator;
+    }
+
+
+    /**
+     * Creates a function that matches attributes similar to {@link AssetQueryPredicate#asAttributeMatcher},
+     * but with duration logic applied per {@link AttributePredicate} and only supports a single list of predicates.
+     */
+    @SuppressWarnings("unchecked")
+    protected static Function<Collection<AttributeInfo>, Set<AttributeInfo>> asAttributeMatcher(Supplier<Long> currentMillisProducer, List<AttributePredicate> attributePredicates, Map<Integer, String> predicateDurationStrings, Map<Pair<AttributeInfo, Integer>, Long> durationMatchTimes) {
+        if (attributePredicates == null || attributePredicates.isEmpty()) {
+            return as -> Collections.EMPTY_SET;
+        }
+
+        List<Pair<Predicate<AttributeInfo>, Long>> attributePredicatesAndDurations = IntStream.range(0, attributePredicates.size()).mapToObj(i -> {
+            AttributePredicate p = attributePredicates.get(i);
+            Long predicateDuration = null;
+
+            // Parse duration string only once during build not each time during eval for each asset state as this is computationally expensive
+            if (predicateDurationStrings != null && predicateDurationStrings.get(i) != null) {
+                String durationStr = predicateDurationStrings.get(i);
+                predicateDuration = TimeUtil.parseTimeDuration(durationStr);
+            }
+
+            Predicate<AttributeInfo> predicate = (Predicate<AttributeInfo>) (Predicate) AssetQueryPredicate.asPredicate(currentMillisProducer, p);
+
+            if (p.meta != null) {
+                final Predicate<NameValueHolder<?>> innerMetaPredicate = Arrays.stream(p.meta)
+                    .map(metaPred -> AssetQueryPredicate.asPredicate(currentMillisProducer, metaPred))
+                    .reduce(x -> true, Predicate::and);
+
+                predicate = predicate.and(assetState -> {
+                    MetaMap metaItems = assetState.getMeta();
+                    return metaItems.stream().anyMatch(metaItem ->
+                        innerMetaPredicate.test(assetState)
+                    );
+                });
+            }
+
+            if (p.previousValue != null) {
+                Predicate<Object> innerOldValuePredicate = p.previousValue.asPredicate(currentMillisProducer);
+                predicate = predicate.and(nameValueHolder -> innerOldValuePredicate.test(nameValueHolder.getOldValue()));
+            }
+
+            return new Pair<>(predicate, predicateDuration);
+        }).toList();
+
+
+        return assetStates -> {
+            Set<AttributeInfo> matchedAssetStates = new HashSet<>();
+            // Can't just fail on first nonmatch as we need to keep duration times up to date for each predicate
+            boolean allPredicatesMatch = IntStream.range(0, attributePredicatesAndDurations.size()).mapToObj(i -> {
+                Pair<Predicate<AttributeInfo>, Long> predicateAndDuration = attributePredicatesAndDurations.get(i);
+                Long duration = predicateAndDuration.getValue();
+
+                if (duration == null) {
+                    // Find the first match as an attribute predicate shouldn't match more than one asset state
+                    return assetStates.stream().filter(predicateAndDuration.getKey()).findFirst().map(matchedAssetState -> {
+                        matchedAssetStates.add(matchedAssetState);
+                        return true;
+                    }).orElse(false);
+                } else {
+                    AtomicBoolean matchFound = new AtomicBoolean();
+                    // Need to clear any duration timer for each asset state that doesn't match
+                    assetStates.forEach(assetState -> {
+                        if (predicateAndDuration.getKey().test(assetState)) {
+                            boolean durationMatches = false;
+
+                            Pair<AttributeInfo, Integer> assetStatePredicateIndex = new Pair<>(assetState, i);
+                            // Look for existing duration end time
+                            Long previousMatchTime = durationMatchTimes.get(assetStatePredicateIndex);
+
+                            if (previousMatchTime != null) {
+                                // Check if previous match time is longer than duration millis ago
+                                durationMatches = previousMatchTime + duration <= currentMillisProducer.get();
+                            } else {
+                                // Insert the current time for this asset state and predicate index
+                                durationMatchTimes.put(assetStatePredicateIndex, currentMillisProducer.get());
+                            }
+
+                            // Store first match
+                            if (durationMatches && !matchFound.get()) {
+                                matchFound.set(true);
+                                matchedAssetStates.add(assetState);
+                            }
+                        } else {
+                            durationMatchTimes.remove(new Pair<>(assetState, i));
+                        }
+                    });
+
+                    return matchFound.get();
+                }
+            }).filter(predicateMatches -> predicateMatches.equals(true))
+                .count() == attributePredicatesAndDurations.size();
+            return allPredicatesMatch ? matchedAssetStates : null;
+        };
     }
 }

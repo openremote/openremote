@@ -19,8 +19,6 @@
  */
 package org.openremote.model.value;
 
-import jakarta.validation.constraints.Pattern;
-import org.openremote.model.Constants;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
@@ -106,32 +104,11 @@ public final class MetaItemType {
     /* RULE META */
 
     /**
-     * Set maximum lifetime of {@link org.openremote.model.attribute.AttributeInfo} temporary facts in rules, for example "PT1H30M5S". The rules engine
-     * will remove temporary {@link org.openremote.model.attribute.AttributeInfo} facts if they are older than this value (using event source/value
-     * timestamp, not event processing time).
-     * <p>
-     * The default expiration for asset events can be configured with environment variable
-     * <code>RULE_EVENT_EXPIRES</code>.
-     */
-    @Pattern(regexp = Constants.ISO8601_DURATION_REGEXP)
-    public static final MetaItemDescriptor<String> RULE_EVENT_EXPIRES = new MetaItemDescriptor<>("ruleEventExpires", ValueType.TEXT);
-
-    /**
-     * Should attribute writes be processed by the rules engines as temporary facts. When an attribute is updated, the
-     * change will be inserted as a new {@link org.openremote.model.attribute.AttributeInfo} temporary fact in rules engines. These facts expire
-     * automatically after a defined time, see {@link #RULE_EVENT_EXPIRES}. If you want to match (multiple) {@link
-     * org.openremote.model.attribute.AttributeInfo}s for the same attribute over time, to evaluate the change history of an attribute, add this meta
-     * item.
-     */
-    public static final MetaItemDescriptor<Boolean> RULE_EVENT = new MetaItemDescriptor<>("ruleEvent", ValueType.BOOLEAN);
-
-    /**
      * Can be set to false to exclude an attribute update from being processed by the rules engines as {@link
      * org.openremote.model.attribute.AttributeInfo} facts, otherwise any attribute that also has an {@link #AGENT_LINK} meta item or {@link #RULE_STATE}
      * is true, will be processed with a lifecycle that reflects the state of the asset attribute. Each attribute will have one
      * fact at all times in rules memory. These state facts are kept in sync with asset changes: When the attribute is
-     * updated, the fact will be updated (replaced). If you want evaluate the change history of an attribute, you
-     * typically need to combine this with {@link #RULE_EVENT}.
+     * updated, the fact will be updated (replaced).
      */
     public static final MetaItemDescriptor<Boolean> RULE_STATE = new MetaItemDescriptor<>("ruleState", ValueType.BOOLEAN);
 

@@ -71,7 +71,7 @@ public class TradfriProtocol extends AbstractProtocol<TradfriAgent, DefaultAgent
 
         String securityCode = agent.getSecurityCode().orElse("");
 
-        tradfriConnection = new TradfriConnection(host, securityCode, executorService);
+        tradfriConnection = new TradfriConnection(host, securityCode);
         tradfriConnection.addConnectionStatusConsumer(this::setConnectionStatus);
 
         // Connect to the gateway

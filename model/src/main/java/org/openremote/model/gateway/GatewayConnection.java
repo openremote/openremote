@@ -20,7 +20,6 @@
 package org.openremote.model.gateway;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -34,6 +33,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "GATEWAY_CONNECTION")
@@ -82,6 +82,14 @@ public class GatewayConnection {
     protected List<GatewayAttributeFilter> attributeFilters;
 
     /**
+     * A map of {@link GatewayAssetSyncRule}s where the key should be an {@link org.openremote.model.asset.Asset} type
+     * to which the rules should be applied, to apply to all asset types use the * wildcard.
+     */
+    @Column(name = "SYNC_RULES")
+    @JdbcTypeCode(SqlTypes.JSON)
+    protected Map<String, GatewayAssetSyncRule> assetSyncRules;
+
+    /**
      * For JPA
      */
     protected GatewayConnection() {
@@ -97,6 +105,7 @@ public class GatewayConnection {
         String clientSecret,
         Boolean secured,
         List<GatewayAttributeFilter> attributeFilters,
+        Map<String, GatewayAssetSyncRule> assetSyncRules,
         boolean disabled) {
         this.localRealm = localRealm;
         this.host = host;
@@ -107,6 +116,7 @@ public class GatewayConnection {
         this.secured = secured;
         this.disabled = disabled;
         this.attributeFilters = attributeFilters;
+        this.assetSyncRules = assetSyncRules;
     }
 
     public GatewayConnection(
@@ -203,6 +213,15 @@ public class GatewayConnection {
         return this;
     }
 
+    public Map<String, GatewayAssetSyncRule> getAssetSyncRules() {
+        return assetSyncRules;
+    }
+
+    public GatewayConnection setAssetSyncRules(Map<String, GatewayAssetSyncRule> assetSyncRules) {
+        this.assetSyncRules = assetSyncRules;
+        return this;
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
@@ -212,6 +231,7 @@ public class GatewayConnection {
             ", realm='" + realm + '\'' +
             ", secured=" + secured +
             ", attributeFilters=" + (attributeFilters != null && !attributeFilters.isEmpty()) +
+            ", assetSyncRules=" + assetSyncRules +
             ", disabled=" + disabled +
             '}';
     }

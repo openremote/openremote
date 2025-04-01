@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { css, html, LitElement, TemplateResult } from "lit";
+import { html, LitElement, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { ActionType, RulesConfig } from "../index";
 import {
@@ -30,27 +30,8 @@ import "./modals/or-rule-alarm-modal";
 import "./forms/or-rule-form-alarm";
 import manager from "@openremote/core";
 
-
-// language=CSS
-const style = css`
-    :host {
-        display: flex;
-        align-items: center;
-    }
-    :host > * {
-        margin: 0 3px 6px;
-    }
-    .min-width {
-        min-width: 200px;
-    }
-`;
-
 @customElement("or-rule-action-alarm")
 export class OrRuleActionAlarm extends LitElement {
-
-    static get styles() {
-        return style;
-    }
 
     @property({ type: Object, attribute: false })
     public rule!: JsonRule;
@@ -97,11 +78,9 @@ export class OrRuleActionAlarm extends LitElement {
 
         if (alarm) {
             modalTemplate = html`
-                        <div style="display: flex;">
-                            <or-rule-alarm-modal title="alarm." .action="${this.action}">
-                                <or-rule-form-alarm .users="${this._loadedUsers}" .action="${this.action}"></or-rule-form-alarm>
-                            </or-rule-alarm-modal>
-                        </div>
+                        <or-rule-alarm-modal title="alarm." .action="${this.action}">
+                            <or-rule-form-alarm .users="${this._loadedUsers}" .action="${this.action}"></or-rule-form-alarm>
+                        </or-rule-alarm-modal>
                     `;
         }
 

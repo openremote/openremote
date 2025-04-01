@@ -2,8 +2,8 @@ package org.openremote.test.rules.residence
 
 
 import com.google.firebase.messaging.Message
-import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.Recur
+import net.fortuna.ical4j.transform.recurrence.Frequency
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -51,7 +51,7 @@ import static org.openremote.model.util.ValueUtil.parse
 class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerContainerTrait {
 
     def getOccurrenceFromTo(long baseTime, int occurrence) {
-        def tomorrowMidnight = LocalDateTime.ofInstant(Instant.ofEpochMilli(baseTime).truncatedTo(ChronoUnit.DAYS).plus(1, ChronoUnit.DAYS), ZoneId.systemDefault())
+        def tomorrowMidnight = Instant.ofEpochMilli(baseTime).truncatedTo(ChronoUnit.DAYS).plus(1, ChronoUnit.DAYS).atZone(ZoneId.systemDefault())
         def from = LocalDateTime.of(tomorrowMidnight.get(ChronoField.YEAR), tomorrowMidnight.get(ChronoField.MONTH_OF_YEAR), tomorrowMidnight.get(ChronoField.DAY_OF_MONTH), 6, 0, 0)
         from = from.plus(occurrence, ChronoUnit.WEEKS)
         def to = from.plus(2, ChronoUnit.HOURS)
@@ -111,7 +111,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
             apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
-            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
+            assert apartment1Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
         }
 
         and: "the alarm enabled, presence detected flag of room should not be set"
@@ -257,7 +257,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         stopPseudoClock()
         def baseTime = getClockTimeOf(container)
         def fromTo = getOccurrenceFromTo(baseTime, 0)
-        def recur = new Recur(Recur.WEEKLY, 2)
+        def recur = new Recur<>(Frequency.WEEKLY, 2)
         def validity = new CalendarEvent(fromTo[0], fromTo[1], recur)
         ruleset.setValidity(validity)
         rulesetStorageService.merge(ruleset)
@@ -266,8 +266,8 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         then: "the ruleset should have saved successfully and the validity should also have been stored"
         assert ruleset != null
         assert ruleset.getValidity() != null
-        assert ruleset.getValidity().getNextOrActiveFromTo(new Date(getClockTimeOf(container))).key == fromTo[0].getTime()
-        assert ruleset.getValidity().getNextOrActiveFromTo(new Date(getClockTimeOf(container))).value == fromTo[1].getTime()
+        assert ruleset.getValidity().getNextOrActiveFromTo(new java.util.Date(getClockTimeOf(container))).key == fromTo[0].getTime()
+        assert ruleset.getValidity().getNextOrActiveFromTo(new java.util.Date(getClockTimeOf(container))).value == fromTo[1].getTime()
         assert ruleset.getValidity().getRecurrence() != null
 
         and: "the ruleset state should be deployed and paused"

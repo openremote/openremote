@@ -45,7 +45,7 @@ import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import ChartAnnotation, {AnnotationOptions} from "chartjs-plugin-annotation";
 import "chartjs-adapter-moment";
-import {GenericAxiosResponse} from "@openremote/rest";
+import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {cache} from "lit/directives/cache.js";
@@ -429,15 +429,14 @@ export class OrChart extends translate(i18next)(LitElement) {
     @query("#chart")
     protected _chartElem!: HTMLCanvasElement;
 
-    protected _dialogElem!: HTMLElement;
-
     protected _chart?: Chart;
     protected _style!: CSSStyleDeclaration;
     protected _startOfPeriod?: number;
     protected _endOfPeriod?: number;
     protected _timeUnits?: TimeUnit;
     protected _stepSize?: number;
-    protected _updateTimestampTimer: number | null = null;
+    protected _latestError?: string;
+    protected _dataAbortController?: AbortController;
 
     constructor() {
         super();
@@ -632,15 +631,20 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     render() {
-        const disabled = this._loading;
+        const disabled = this._loading || this._latestError;
         return html`
             <div id="container">
                 <div id="chart-container">
-                    ${disabled ? html`
+                    ${when(this._loading, () => html`
                         <div style="position: absolute; height: 100%; width: 100%;">
                             <or-loading-indicator ?overlay="false"></or-loading-indicator>
                         </div>
-                    ` : undefined}
+                    `)}
+                    ${when(this._latestError, () => html`
+                        <div style="position: absolute; height: 100%; width: 100%; display: flex; justify-content: center; align-items: center;">
+                            <or-translate .value="${this._latestError || 'errorOccurred'}"></or-translate>
+                        </div>
+                    `)}
                     <canvas id="chart" style="visibility: ${disabled ? 'hidden' : 'visible'}"></canvas>
                 </div>
                 
@@ -740,11 +744,9 @@ export class OrChart extends translate(i18next)(LitElement) {
         } else {
             // fully load the asset
             const assetEvent: AssetEvent = await manager.events.sendEventWithReply({
-                event: {
-                    eventType: "read-asset",
-                    assetId: selectedNode.asset!.id
-                } as ReadAssetEvent
-            });
+                eventType: "read-asset",
+                assetId: selectedNode.asset!.id
+            } as ReadAssetEvent);
             this.activeAsset = assetEvent.asset;
         }
     }
@@ -1066,8 +1068,17 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
-        if (this._loading || this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
+        if (this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
             return;
+        }
+
+        if(this._loading) {
+            if(this._dataAbortController) {
+                this._dataAbortController.abort("Data request overridden");
+                delete this._dataAbortController;
+            } else {
+                return;
+            }
         }
 
         this._loading = true;
@@ -1091,40 +1102,64 @@ export class OrChart extends translate(i18next)(LitElement) {
         const data: ChartDataset<"line", ScatterDataPoint[]>[] = [];
         let promises;
 
-        if(this.dataProvider) {
-            await this.dataProvider(this._startOfPeriod, this._endOfPeriod, (interval.toString() as TimeUnit), stepSize).then((dataset) => {
-                dataset.forEach((set) => { data.push(set); });
-            });
-        } else {
-            promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
+        try {
+            if(this.dataProvider) {
+                await this.dataProvider(this._startOfPeriod, this._endOfPeriod, (interval.toString() as TimeUnit), stepSize).then((dataset) => {
+                    dataset.forEach((set) => { data.push(set); });
+                });
+            } else {
+                this._dataAbortController = new AbortController();
+                promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
 
-                const asset = this.assets[assetIndex];
-                const shownOnRightAxis = !!this.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
-                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);
-                const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
-                const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
-                const colourIndex = index % this.colors.length;
-                let dataset = await this._loadAttributeData(asset, attribute, this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, false, asset.name + " " + label);
-                (dataset as any).assetId = asset.id;
-                (dataset as any).attrName = attribute.name;
-                (dataset as any).unit = unit;
-                (dataset as any).yAxisID = shownOnRightAxis ? 'y1' : 'y';
-                data.push(dataset);
+                    const asset = this.assets[assetIndex];
+                    const shownOnRightAxis = !!this.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);
+                    const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
+                    const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
+                    const colourIndex = index % this.colors.length;
+                    const options = { signal: this._dataAbortController?.signal };
+                    let dataset = await this._loadAttributeData(asset, attribute, this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, false, asset.name + " " + label, options);
+                    (dataset as any).assetId = asset.id;
+                    (dataset as any).attrName = attribute.name;
+                    (dataset as any).unit = unit;
+                    (dataset as any).yAxisID = shownOnRightAxis ? 'y1' : 'y';
+                    data.push(dataset);
 
-                dataset =  await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], predictedFromTimestamp, this._endOfPeriod!, true, asset.name + " " + label + " " + i18next.t("predicted"));
-                data.push(dataset);
-            });
+                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], predictedFromTimestamp, this._endOfPeriod!, true, asset.name + " " + label + " " + i18next.t("predicted"), options);
+                    (dataset as any).unit = unit;
+                    data.push(dataset);
+                });
+            }
+
+            if(promises) {
+                await Promise.all(promises);
+            }
+
+            this._data = data;
+            this._loading = false;
+
+        } catch (ex) {
+            console.error(ex);
+            if((ex as Error)?.message === "canceled") {
+                return; // If request has been canceled (using AbortController); return, and prevent _loading is set to false.
+            }
+            this._loading = false;
+
+            if(isAxiosError(ex)) {
+                if(ex.message.includes("timeout")) {
+                    this._latestError = "noAttributeDataTimeout";
+                    return;
+                } else if(ex.response?.status === 413) {
+                    this._latestError = "datapointRequestTooLarge";
+                    return;
+                }
+            }
+            this._latestError = "errorOccurred";
         }
-
-        if(promises) {
-            await Promise.all(promises);
-        }
-        this._loading = false;
-        this._data = data;
     }
 
 
-    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string | undefined, from: number, to: number, predicted: boolean, label: string | undefined): Promise<ChartDataset<"line", ScatterDataPoint[]>> {
+    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string | undefined, from: number, to: number, predicted: boolean, label?: string, options?: any): Promise<ChartDataset<"line", ScatterDataPoint[]>> {
 
         const dataset: ChartDataset<"line", ScatterDataPoint[]> = {
             borderColor: color,
@@ -1166,9 +1201,9 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
 
             if(!predicted) {
-                response = await manager.rest.api.AssetDatapointResource.getDatapoints(asset.id, attribute.name, query)
+                response = await manager.rest.api.AssetDatapointResource.getDatapoints(asset.id, attribute.name, query, options)
             } else {
-                response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(asset.id, attribute.name, query)
+                response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(asset.id, attribute.name, query, options)
             }
 
             if (response.status === 200) {

@@ -58,7 +58,7 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
         this.assetStorageService = assetStorageService;
 
         // Subscribe for asset events
-        clientEventService.addInternalSubscription(
+        clientEventService.addSubscription(
             AssetEvent.class,
             null,
             this::onAssetChange);

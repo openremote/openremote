@@ -250,13 +250,13 @@ export const surveyLayoutStyle =html`
                 display: block;
             }
 
-            .anwser-card {
+            .answer-card {
                 flex: 1;
                 flex-grow: 1;
                 flex-basis: 0;
             }
 
-            .anwser-card {
+            .answer-card {
                 background-color: var(--internal-or-survey-color1, #F3C11F);
                 margin-left: 5px;
                 border: 3px solid white;
@@ -266,41 +266,41 @@ export const surveyLayoutStyle =html`
                 -webkit-box-sizing: border-box;
             }
 
-            .anwser-card:first-child {
+            .answer-card:first-child {
                 margin-left: 0;
             }
 
-            .anwser-card:nth-of-type(1),
-            .anwser-card:nth-of-type(5),
-            .anwser-card:nth-of-type(9){
+            .answer-card:nth-of-type(1),
+            .answer-card:nth-of-type(5),
+            .answer-card:nth-of-type(9){
                 background-color: var(--internal-or-survey-color1, #F3C11F);
             }
             
-            .anwser-card:nth-of-type(2),
-            .anwser-card:nth-of-type(6),
-            .anwser-card:nth-of-type(10){
+            .answer-card:nth-of-type(2),
+            .answer-card:nth-of-type(6),
+            .answer-card:nth-of-type(10){
                 background-color: var(--internal-or-survey-color2, #4A99BA);
             }
 
-            .anwser-card:nth-of-type(3),
-            .anwser-card:nth-of-type(7),
-            .anwser-card:nth-of-type(11){
+            .answer-card:nth-of-type(3),
+            .answer-card:nth-of-type(7),
+            .answer-card:nth-of-type(11){
                 background-color: var(--internal-or-survey-color3, #23B099);
             }
 
-            .anwser-card:nth-of-type(4),
-            .anwser-card:nth-of-type(8),
-            .anwser-card:nth-of-type(12){
+            .answer-card:nth-of-type(4),
+            .answer-card:nth-of-type(8),
+            .answer-card:nth-of-type(12){
                 background-color: var(--internal-or-survey-color4, #EA8D31);
             }
 
 
-            .anwser-card.rating {
+            .answer-card.rating {
                 border: none;
                 background-color: transparent;
             }
 
-            .anwser-card.rating label {
+            .answer-card.rating label {
                 border-radius: 50%;
                 background-color: var(--or-survey-color-button, #e32527);
 
@@ -442,7 +442,7 @@ export const surveyLayoutStyle =html`
                 -webkit-justify-content: center;
                 justify-content: center;
             }
-            .anwser-card {
+            .answer-card {
                 width: 25%;
                 min-width: 25%;
                 max-width: 25%;
@@ -451,7 +451,7 @@ export const surveyLayoutStyle =html`
                 margin-left: 0px;
             }
             @media (max-width: 1480px) {
-                .anwser-card {
+                .answer-card {
                     width: 50%;
                     min-width: 50%;
                     max-width: 50%;
@@ -464,7 +464,7 @@ export const surveyLayoutStyle =html`
                 padding: 20px;
             }
 
-            .anwser-card.rating {
+            .answer-card.rating {
                 width: 20%;
                 min-width: 20%;
                 max-width: 20%;

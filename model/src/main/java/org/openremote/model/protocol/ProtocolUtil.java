@@ -206,7 +206,7 @@ public final class ProtocolUtil {
                 Object messageFiltered = applyValueFilters(message, matchFilters);
                 if (messageFiltered != null) {
                     if (matchPredicate.asPredicate(currentMillisSupplier).test(messageFiltered)) {
-                        LOG.finest("Inbound message meets attribute matching meta so writing state to state consumer for attribute: asssetId=" + assetId + ", attribute=" + attribute.getName());
+                        LOG.finest("Inbound message meets attribute matching meta so writing state to state consumer for attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
                         stateConsumer.accept(new AttributeRef(assetId, attribute.getName()), message);
                     }
                 }

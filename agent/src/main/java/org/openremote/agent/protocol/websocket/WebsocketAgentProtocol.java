@@ -60,7 +60,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 /**
  * This is a generic {@link org.openremote.model.asset.agent.Protocol} for communicating with a Websocket server
  * using {@link String} based messages.
- * <p>
+ *
  * <h2>Protocol Specifics</h2>
  * When the websocket connection is established it is possible to subscribe to events by specifying the
  * {@link WebsocketAgent#CONNECT_SUBSCRIPTIONS} on the {@link WebsocketAgent} or
@@ -174,7 +174,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
             Runnable task = () -> doSubscriptions(clientHeaders, websocketSubscriptions);
             addAttributeConnectedTask(attributeRef, task);
             if (client.getConnectionStatus() == ConnectionStatus.CONNECTED) {
-                executorService.schedule(task, 1000, TimeUnit.MILLISECONDS);
+                scheduledExecutorService.schedule(task, 1000, TimeUnit.MILLISECONDS);
             }
         });
 
@@ -195,7 +195,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     protected static void initClient() {
         synchronized (resteasyClient) {
             if (resteasyClient.get() == null) {
-                resteasyClient.set(createClient(org.openremote.container.Container.EXECUTOR_SERVICE));
+                resteasyClient.set(createClient(org.openremote.container.Container.SCHEDULED_EXECUTOR));
             }
         }
     }
@@ -204,12 +204,12 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
         // Look for any subscriptions that need to be processed
         if (protocolConnectedTasks != null) {
             // Execute after a delay to ensure connection is properly initialised
-            executorService.schedule(() -> protocolConnectedTasks.forEach(Runnable::run), CONNECTED_SEND_DELAY_MILLIS, TimeUnit.MILLISECONDS);
+            scheduledExecutorService.schedule(() -> protocolConnectedTasks.forEach(Runnable::run), CONNECTED_SEND_DELAY_MILLIS, TimeUnit.MILLISECONDS);
         }
 
         if (attributeConnectedTasks != null) {
             // Execute after a delay to ensure connection is properly initialised
-            executorService.schedule(() -> attributeConnectedTasks.forEach((ref, task) -> task.run()), CONNECTED_SEND_DELAY_MILLIS, TimeUnit.MILLISECONDS);
+            scheduledExecutorService.schedule(() -> attributeConnectedTasks.forEach((ref, task) -> task.run()), CONNECTED_SEND_DELAY_MILLIS, TimeUnit.MILLISECONDS);
         }
     }
 

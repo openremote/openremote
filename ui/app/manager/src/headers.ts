@@ -52,7 +52,7 @@ export function headerItemGatewayTunnel<S extends AppStateKeyed, A extends AnyAc
         icon: "lan-connect",
         value: "gateway-tunnel",
         href: "gateway-tunnel",
-        text: "gatewayTunnels.",
+        text: "gatewayTunnel",
         roles: ["write:admin", "read:admin"]
     }
 }
@@ -85,7 +85,8 @@ export function headerItemLogs<S extends AppStateKeyed, A extends AnyAction>(orA
         value: "logs",
         href: "logs",
         text: "logs",
-        hideMobile: true
+        hideMobile: true,
+        roles: ["write:logs", "read:logs"]
     };
 }
 export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {

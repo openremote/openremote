@@ -4,5 +4,5 @@ test/
 src/
 webpack.config.js
 tsconfig.json
-dist/*.map
-.tsbuildinfo
+dist/Material Design Icons/
+*.tsbuildinfo

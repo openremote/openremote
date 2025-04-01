@@ -228,7 +228,7 @@ export const mapAssetCardStyle = css`
                 padding: 5px 12px;
             }
             
-            @media only screen and (min-width: 415px){
+            @media only screen and (min-width: 40em){
                 #card-container {
                     height: 400px; /* fallback for IE */
                     height: max-content;

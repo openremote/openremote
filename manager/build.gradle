@@ -6,13 +6,15 @@ apply plugin: "distribution"
 apply plugin: "maven-publish"
 apply plugin: "signing"
 
-mainClassName = "org.openremote.manager.Main"
+application {
+    mainClass = "org.openremote.manager.Main"
+}
 
 dependencies {
 
-    api resolveProject(":container")
-    api resolveProject(":agent")
-    api resolveProject(":model")
+    api project(":container")
+    api project(":agent")
+    api project(":model")
 
     implementation "org.xerial:sqlite-jdbc:$sqliteVersion"
 
@@ -25,13 +27,7 @@ dependencies {
     implementation "org.openjdk.nashorn:nashorn-core:$nashornVersion"
     implementation "org.apache.camel:camel-undertow:$camelVersion"
 
-    implementation ("io.netty:netty-codec-http") {
-        version {
-            strictly "$nettyVersion"
-        }
-    }
-
-    // Exposed via MQTT API
+    // Indirect dep from org.apache.activemq:artemis-mqtt-protocol
     api ("io.netty:netty-codec-mqtt") {
         version {
             strictly "$nettyVersion"
@@ -55,22 +51,41 @@ dependencies {
     }
 
     implementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
     implementation "io.prometheus:simpleclient_httpserver:$prometheusVersion"
 
     implementation "com.github.mwiede:jsch:$jSchVersion"
 }
 
-jar {
-    archivesBaseName = "openremote-${project.name}"
+base {
+    archivesName = "openremote-${project.name}"
+}
+
+configurations {
+    runtime {
+        canBeConsumed = true
+        canBeResolved = false
+        extendsFrom implementation, runtimeOnly
+    }
+}
+
+artifacts {
+    runtime(jar)
 }
 
 afterEvaluate {
     // Change the working directory for the run task
-    tasks.run.workingDir = isCustomProject() ? project(":openremote").projectDir : rootProject.projectDir
+    tasks.run.workingDir = rootProject.projectDir
 }
 
 tasks.withType(Sync).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.withType(Tar){
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.withType(Zip) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
@@ -82,9 +97,6 @@ distributions {
             }
             into ("web") {
                 from("${rootDir}/LICENSE.txt")
-            }
-            into ("web") {
-                from("${projectDir}/src/web")
             }
             into ("map") {
                 from("${projectDir}/src/map")
@@ -127,22 +139,44 @@ publishing {
                         organizationUrl = 'https://openremote.io'
                     }
                 }
+                scm {
+                    connection = 'scm:git:git://github.com/openremote/openremote.git'
+                    developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
+                    url = 'https://github.com/openremote/openremote/tree/master'
+                }
             }
         }
     }
 
     repositories {
         maven {
-            name = 'myRepo'
-            url = layout.buildDirectory.dir("repo")
+            if (!version.endsWith('-LOCAL')) {
+                credentials {
+                    username = findProperty("publishUsername")
+                    password = findProperty("publishPassword")
+                }
+            }
+            url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
         }
     }
 }
 
+signing {
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    if (signingKey && signingPassword) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign publishing.publications.maven
+    }
+}
+
 // Output version.properties file
-task setVersionProperties(type: WriteProperties) {
-    outputFile =  Paths.get(projectDir.path, "src", "main", "resources", "version.properties").toFile()
+tasks.register('setVersionProperties', WriteProperties) {
+    destinationFile = Paths.get(projectDir.path, "src", "main", "resources", "version.properties").toFile()
     property 'version', project.version
 }
+
 publish.mustRunAfter(setVersionProperties)
 publish.dependsOn(setVersionProperties)
+processResources.dependsOn(setVersionProperties)
+sourcesJar.dependsOn(setVersionProperties)

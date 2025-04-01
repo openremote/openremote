@@ -5,7 +5,7 @@ import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {ClientRole, Role, User, UserAssetLink, UserQuery, UserSession} from "@openremote/model";
+import {ClientRole, Credential, Role, User, UserAssetLink, UserQuery, UserSession} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -15,6 +15,7 @@ import {OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent} from "@open
 import {getNewUserRoute, getUsersRoute} from "../routes";
 import {when} from 'lit/directives/when.js';
 import {until} from 'lit/directives/until.js';
+import {map} from 'lit/directives/map.js';
 import {OrMwcTableRowClickEvent, TableColumn, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
@@ -87,7 +88,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     border: 1px solid #e5e5e5;
                     border-radius: 5px;
                     position: relative;
-                    margin: 0 auto 10px;
+                    margin: 0 auto 16px;
                     padding: 12px 24px 24px;
                     display: flex;
                     flex-direction: column;
@@ -208,6 +209,8 @@ export class PageUsers extends Page<AppStateKeyed> {
     @state()
     protected _serviceUserFilter = this.getDefaultUserFilter(true);
     @state()
+    protected _passwordPolicy: string[] = []
+    @state()
     protected _roles: Role[] = [];
     @state()
     protected _realmRoles: Role[] = [];
@@ -321,6 +324,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         this._roles = roleResponse.data.filter(role => !role.composite).sort(Util.sortByString(role => role.name));
         this._registrationEmailAsUsername = realmResponse.data.registrationEmailAsUsername;
         this._realmRoles = (realmResponse.data.realmRoles || []).sort(Util.sortByString(role => role.name));
+        this._passwordPolicy = realmResponse.data.passwordPolicy;
         this._users = usersResponse.data.filter(user => !user.serviceAccount).sort(Util.sortByString(u => u.username));
         this._serviceUsers = usersResponse.data.filter(user => user.serviceAccount).sort(Util.sortByString(u => u.username));
     }
@@ -348,11 +352,6 @@ export class PageUsers extends Page<AppStateKeyed> {
             // Ensure user ID is set
             user.id = response.data.id;
 
-            if (user.password) {
-                const credentials = {value: user.password}
-                manager.rest.api.UserResource.resetPassword(manager.displayRealm, user.id, credentials);
-            }
-
             await this._updateRoles(user, false);
             await this._updateRoles(user, true);
             await this._updateUserAssetLinks(user);
@@ -371,6 +370,18 @@ export class PageUsers extends Page<AppStateKeyed> {
 
         } finally {
             await this.loadData();
+
+            // After updating the user, reset the password if it has changed.
+            // This is handled asynchronously, so it will not 'wait' before the request has succeeded.
+            if (user.password) {
+                const credentials = {value: user.password} as Credential;
+                manager.rest.api.UserResource.resetPassword(manager.displayRealm, user.id, credentials).catch(e => {
+                    if(isAxiosError(e) && e.response.status !== 404) {
+                        showSnackbar(undefined, "savePasswordFailed");
+                    }
+                });
+            }
+
             return result;
         }
     }
@@ -739,8 +750,8 @@ export class PageUsers extends Page<AppStateKeyed> {
     }
 
     protected _onPasswordChanged(user: UserModel, suffix: string) {
-        const passwordComponent = this.shadowRoot.getElementById("password-" + suffix) as OrMwcInput;
-        const repeatPasswordComponent = this.shadowRoot.getElementById("repeatPassword-" + suffix) as OrMwcInput;
+        const passwordComponent = this.shadowRoot.getElementById("new-password-" + suffix) as OrMwcInput;
+        const repeatPasswordComponent = this.shadowRoot.getElementById("new-repeatPassword-" + suffix) as OrMwcInput;
 
         if (repeatPasswordComponent.value !== passwordComponent.value) {
             const error = i18next.t("passwordMismatch");
@@ -841,46 +852,50 @@ export class PageUsers extends Page<AppStateKeyed> {
                 <div class="column">
                     <h5>${i18next.t("details")}</h5>
                     <!-- user details -->
-                    <or-mwc-input id="username-${suffix}" ?readonly="${!!user.id || readonly}" .disabled="${!!user.id || (!isServiceUser && this._registrationEmailAsUsername)}"
+                    <or-mwc-input id="new-username-${suffix}" ?readonly="${!!user.id || readonly}" .disabled="${!!user.id || (!isServiceUser && this._registrationEmailAsUsername)}"
                                   class = "validate"
                                   .label="${i18next.t("username")}"
                                   .type="${InputType.TEXT}" minLength="3" maxLength="255" 
                                   ?required="${isServiceUser || !this._registrationEmailAsUsername}"
-                                  pattern="[A-Za-z0-9\\-_]+"
-                                  .value="${user.username}"
+                                  pattern="[A-Za-z0-9_+@.\-ßçʊÇʊ]+"
+                                  .value="${user.username}" autocomplete="false"
                                   .validationMessage="${i18next.t("invalidUsername")}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.username = e.detail.value;
                                       this.onUserChanged(suffix)
                                   }}"></or-mwc-input>
                     <!-- if identity provider is set to use email as username, make it required -->
-                    <or-mwc-input ?readonly="${(!!user.id && this._registrationEmailAsUsername) || readonly}"
+                    <or-mwc-input id="new-email" ?readonly="${(!!user.id && this._registrationEmailAsUsername) || readonly}"
                                   .disabled="${!!user.id && this._registrationEmailAsUsername}"
                                   class="${isServiceUser ? "hidden" : "validate"}"
                                   .label="${i18next.t("email")}"
                                   .type="${InputType.EMAIL}"
-                                  .value="${user.email}"
+                                  .value="${user.email}" autocomplete="false"
                                   ?required="${!isServiceUser && this._registrationEmailAsUsername}"
                                   pattern="^[\\w\\.\\-]+@([\\w\\-]+\\.)+[\\w]{2,4}$"
                                   .validationMessage="${i18next.t("invalidEmail")}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                      if(this._registrationEmailAsUsername) {
+                                          user.username = e.detail.value;
+                                      }
                                       user.email = e.detail.value;
-                                      this.onUserChanged(suffix)
+                                      this.onUserChanged(suffix);
+                                      this.requestUpdate(); // in case of username update, we trigger a state change
                                   }}"></or-mwc-input>
-                    <or-mwc-input ?readonly="${readonly}"
+                    <or-mwc-input id="new-firstName" ?readonly="${readonly}"
                                   class="${isServiceUser ? "hidden" : "validate"}"
                                   .label="${i18next.t("firstName")}"
                                   .type="${InputType.TEXT}" minLength="1"
-                                  .value="${user.firstName}"
+                                  .value="${user.firstName}" autocomplete="false"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.firstName = e.detail.value;
                                       this.onUserChanged(suffix)
                                   }}"></or-mwc-input>
-                    <or-mwc-input ?readonly="${readonly}"
+                    <or-mwc-input id="new-surname" ?readonly="${readonly}"
                                   class="${isServiceUser ? "hidden" : "validate"}"
                                   .label="${i18next.t("surname")}"
                                   .type="${InputType.TEXT}" minLength="1"
-                                  .value="${user.lastName}"
+                                  .value="${user.lastName}" autocomplete="false"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.lastName = e.detail.value;
                                       this.onUserChanged(suffix)
@@ -890,7 +905,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     <h5>${i18next.t("password")}</h5>
                     ${isServiceUser ? html`
                         ${when(user.secret, () => html`
-                            <or-mwc-input id="password-${suffix}" readonly
+                            <or-mwc-input id="new-password-${suffix}" readonly
                                           class = "validate"
                                           .label="${i18next.t("secret")}"
                                           .value="${user.secret}"
@@ -906,25 +921,27 @@ export class PageUsers extends Page<AppStateKeyed> {
                             <span>${i18next.t("generateSecretInfo")}</span>
                         `)}
                     ` : html`
-                        <or-mwc-input id="password-${suffix}"
+                        <or-mwc-input id="new-password-${suffix}"
                                       ?readonly="${readonly}"
                                       class = "validate"
                                       .label="${i18next.t("password")}"
-                                      .type="${InputType.PASSWORD}" min="1"
+                                      .type="${InputType.PASSWORD}" min="1" autocomplete="false"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                           this._onPasswordChanged(user, suffix);
                                           this.onUserChanged(suffix);
                                       }}"
                         ></or-mwc-input>
-                        <or-mwc-input id="repeatPassword-${suffix}"
+                        <or-mwc-input id="new-repeatPassword-${suffix}"
                                       helperPersistent ?readonly="${readonly}"
                                       .label="${i18next.t("repeatPassword")}"
-                                      .type="${InputType.PASSWORD}" min="1"
+                                      .type="${InputType.PASSWORD}" min="1" autocomplete="false"
+                                      style="${this._passwordPolicy ? 'margin-bottom: 0' : undefined}"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                           this._onPasswordChanged(user, suffix);
                                           this.onUserChanged(suffix);
                                       }}"
                         ></or-mwc-input>
+                        ${when(this._passwordPolicy, () => until(this._getPasswordPolicyTemplate(user, this._passwordPolicy)))}
                     `}
                 </div>
 
@@ -1051,7 +1068,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                               if (error) {
                                                   this.updateComplete.then(() => {
                                                       showSnackbar(undefined, error.text);
-                                                      if (error.status == 403) {
+                                                      if (error.status === 403) {
                                                           const elem = this.shadowRoot.getElementById('username-' + suffix) as OrMwcInput;
                                                           elem.setCustomValidity(error.text);
                                                           (elem.shadowRoot.getElementById("elem") as HTMLInputElement).reportValidity(); // manually reporting was required since we're not editing the username at all.
@@ -1065,6 +1082,66 @@ export class PageUsers extends Page<AppStateKeyed> {
                     </div>
                 </div>
             `)}
+        `;
+    }
+
+    protected async _getPasswordPolicyTemplate(user: UserModel, passwordPolicy = this._passwordPolicy): Promise<TemplateResult> {
+        const policyMap = new Map(passwordPolicy.map(policyStr => {
+            const name = policyStr.split("(")[0];
+            const value = policyStr.split("(")[1].split(")")[0];
+            return [name, value];
+        }));
+        const policies = Array.from(policyMap.keys());
+        const policyTexts: TemplateResult[] = [];
+
+        // Minimum / maximum length warning
+        if(policies.includes("length") && policies.includes("maxLength")) {
+            policyTexts.push(html`<or-translate value="password-policy-invalid-length" .options="${{ 0: policyMap.get("length"), 1: policyMap.get("maxLength") }}"></or-translate>`);
+        } else if(policies.includes("length")) {
+            policyTexts.push(html`<or-translate value="password-policy-invalid-length-too-short" .options="${{ 0: policyMap.get("length") }}"></or-translate>`);
+        } else if(policies.includes("maxLength")) {
+            policyTexts.push(html`<or-translate value="password-policy-invalid-length-too-long" .options="${{ 0: policyMap.get("maxLength") }}"></or-translate>`);
+        }
+
+        // Special characters
+        if(policies.includes("specialChars")) {
+            const value = policyMap.get("specialChars");
+            const translation = value == "1" ? "password-policy-special-chars-single" : "password-policy-special-chars";
+            policyTexts.push(html`<or-translate value="${translation}" .options="${{ 0: value }}"></or-translate>`);
+        }
+
+        // Digits/numbers
+        if(policies.includes("digits")) {
+            const value = policyMap.get("digits");
+            const translation = value == "1" ? "password-policy-digits-single" : "password-policy-digits";
+            policyTexts.push(html`<or-translate value="${translation}" .options="${{ 0: value }}"></or-translate>`);
+        }
+
+        // Uppercase / lowercase letters
+        if(policies.includes("upperCase")) {
+            const value = policyMap.get("upperCase");
+            const translation = value == "1" ? "password-policy-uppercase-single" : "password-policy-uppercase";
+            policyTexts.push(html`<or-translate value="${translation}" .options="${{ 0: value }}"></or-translate>`);
+        }
+
+        // Warn for recently used passwords
+        if(policies.includes("passwordHistory")) {
+            policyTexts.push(html`<or-translate value="password-policy-recently-used"></or-translate>`);
+        }
+
+        // Cannot be username and/or email
+        if(policies.includes("notUsername") && policies.includes("notEmail")) {
+            policyTexts.push(html`<or-translate value="password-policy-not-email-username"></or-translate>`);
+        } else if(policies.includes("notUsername")) {
+            policyTexts.push(html`<or-translate value="password-policy-not-username"></or-translate>`);
+        } else if(policies.includes("notEmail")) {
+            policyTexts.push(html`<or-translate value="password-policy-not-email"></or-translate>`);
+        }
+
+        return html`
+            <ul>
+                ${map(policyTexts, text => html`<li>${text}</li>`)}
+            </ul>
         `;
     }
 

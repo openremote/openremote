@@ -4,11 +4,13 @@ package org.openremote.test.notification
 import com.fasterxml.jackson.databind.node.TextNode
 import jakarta.mail.Message
 import jakarta.mail.internet.InternetAddress
+import jakarta.ws.rs.BadRequestException
 import jakarta.ws.rs.WebApplicationException
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.asset.console.ConsoleResourceImpl
 import org.openremote.manager.notification.EmailNotificationHandler
+import org.openremote.manager.notification.LocalizedNotificationHandler
 import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
@@ -23,6 +25,7 @@ import org.openremote.model.console.ConsoleResource
 import org.openremote.model.notification.*
 import org.openremote.model.query.UserQuery
 import org.openremote.model.query.filter.RealmPredicate
+import org.openremote.model.security.User
 import org.openremote.model.util.TextUtil
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
@@ -673,5 +676,367 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         cleanup: "the mock is removed"
         notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
+    }
+
+    def "Check localized notification functionality"() {
+
+        List<String> localizedNotificationIds = []
+        List<Notification.TargetType> localizedNotificationTargetTypes = []
+        List<String> localizedNotificationTargetIds = []
+        List<AbstractNotificationMessage> localizedNotificationMessages = []
+
+        List<String> pushNotificationIds = []
+        List<Notification.TargetType> pushNotificationTargetTypes = []
+        List<String> pushNotificationTargetIds = []
+        List<AbstractNotificationMessage> pushNotificationMessages = []
+
+        given: "the container environment is started with the mock handler"
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.1, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def identityService = container.getService(ManagerIdentityService.class)
+        def notificationService = container.getService(NotificationService.class)
+        def pushNotificationHandler = container.getService(PushNotificationHandler.class)
+        def localizedNotificationHandler = container.getService(LocalizedNotificationHandler.class)
+
+        /* ----- */
+
+        and: "a mock push notification handler"
+        def throwPushHandlerException = false
+        PushNotificationHandler mockPushNotificationHandler = Spy(pushNotificationHandler)
+        mockPushNotificationHandler.isValid() >> true
+
+        // Intercept the messages sent
+        mockPushNotificationHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
+            id, source, sourceId, target, message ->
+                if (throwPushHandlerException) {
+                    throw new Exception("Failed to send notification")
+                }
+                pushNotificationIds << id
+                pushNotificationTargetTypes << target.type
+                pushNotificationTargetIds << target.id
+                pushNotificationMessages << message
+                callRealMethod()
+        }
+        // Auto accept the messages sent to Firebase (without calling its logic)
+        mockPushNotificationHandler.sendMessage(_ as com.google.firebase.messaging.Message) >> {
+            message -> return NotificationSendResult.success()
+        }
+
+        notificationService.notificationHandlerMap.put(mockPushNotificationHandler.getTypeName(), mockPushNotificationHandler)
+
+        /* ----- */
+
+        and: "a mock localized notification handler"
+        def throwLocalizedHandlerException = false
+        LocalizedNotificationHandler mockLocalizedNotificationHandler = Spy(localizedNotificationHandler)
+        mockLocalizedNotificationHandler.isValid() >> true
+
+        // Intercept the messages sent
+        mockLocalizedNotificationHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
+            id, source, sourceId, target, message ->
+                if (throwLocalizedHandlerException) {
+                    throw new Exception("Failed to send notification")
+                }
+                localizedNotificationIds << id
+                localizedNotificationTargetTypes << target.type
+                localizedNotificationTargetIds << target.id
+                localizedNotificationMessages << message
+                callRealMethod()
+        }
+        // the notificationHandlerMap in the localized handler, should also use the same mock handlers
+        mockLocalizedNotificationHandler.notificationHandlerMap = notificationService.notificationHandlerMap
+
+        notificationService.notificationHandlerMap.put(localizedNotificationHandler.getTypeName(), mockLocalizedNotificationHandler)
+
+        /* ----- */
+
+        and: "an authenticated superuser"
+        def adminAccessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
+
+        def notification = new Notification(
+                "MultiLanguageAction",
+                new LocalizedNotificationMessage(
+                        "en",
+                        new HashMap<String, AbstractNotificationMessage>() {{
+                            put("nl", new PushNotificationMessage("Nederlandse titel", "Nederlandse body", null, null, null))
+                            put("en", new PushNotificationMessage("English title", "English body", null, null, null))
+                        }}
+                ),
+                null,
+                null,
+                null)
+
+        and: "the admin notification resource"
+        def adminNotificationResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(NotificationResource.class)
+        def adminConsoleResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(ConsoleResource.class)
+
+        when: "the admin console is registered"
+        def consoleRegistration = new ConsoleRegistration(null,
+                "Admin Console",
+                "1.0",
+                "Android 7.0",
+                new HashMap<String, ConsoleProvider>() {
+                    {
+                        put("geofence", new ConsoleProvider(
+                                ORConsoleGeofenceAssetAdapter.NAME,
+                                true,
+                                false,
+                                false,
+                                false,
+                                false,
+                                null
+                        ))
+                        put("push", new ConsoleProvider(
+                                "fcm",
+                                true,
+                                true,
+                                true,
+                                true,
+                                false,
+                                (Map) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
+                        ))
+                    }
+                },
+                "",
+                ["manager"] as String[])
+        def adminConsole = adminConsoleResource.register(null, consoleRegistration)
+
+        then: "the admin console should have been created"
+        adminConsole.id != null
+
+        when: "the admin user sends a push notification to the entire MASTER realm (which is only himself)"
+        notification.targets = [new Notification.Target(Notification.TargetType.REALM, MASTER_REALM)]
+        adminNotificationResource.sendNotification(null, notification)
+
+        then: "all consoles in that realm should have been sent a notification"
+        conditions.eventually {
+            assert localizedNotificationIds.size() == 1
+            assert localizedNotificationTargetIds.size() == 1
+            assert localizedNotificationTargetIds.contains(adminConsole.id)
+            assert pushNotificationIds.size() == 1
+            assert pushNotificationTargetIds.size() == 1
+            assert pushNotificationTargetIds.contains(adminConsole.id)
+            assert pushNotificationMessages.size() == 1
+            assert pushNotificationMessages.get(0).type == "push"
+            assert ((PushNotificationMessage)pushNotificationMessages.get(0)).title == "English title"
+            assert ((PushNotificationMessage)pushNotificationMessages.get(0)).body == "English body"
+        }
+
+        and: "we clear the cached notifications"
+        localizedNotificationIds.clear()
+        localizedNotificationTargetTypes.clear()
+        localizedNotificationTargetIds.clear()
+        localizedNotificationMessages.clear()
+        pushNotificationIds.clear()
+        pushNotificationTargetTypes.clear()
+        pushNotificationTargetIds.clear()
+        pushNotificationMessages.clear()
+
+        /* ------------ */
+
+        when: "a new user gets added"
+        def testuser1AccessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                "testuser1",
+                "testuser1"
+        ).token
+
+        and: "their language is updated to dutch"
+        def testuser1 = identityService.getIdentityProvider().getUserByUsername(MASTER_REALM, "testuser1")
+        testuser1.setAttribute(User.LOCALE_ATTRIBUTE, "nl")
+        identityService.getIdentityProvider().createUpdateUser(MASTER_REALM, testuser1, null, true)
+
+        and: "the console of the dutch user is registered"
+        def testuser1ConsoleResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, testuser1AccessToken).proxy(ConsoleResource.class)
+        def testuser1ConsoleRegistration = new ConsoleRegistration(null,
+                "Test user 1 Console",
+                "1.0",
+                "Android 7.0",
+                new HashMap<String, ConsoleProvider>() {
+                    {
+                        put("geofence", new ConsoleProvider(
+                                ORConsoleGeofenceAssetAdapter.NAME,
+                                true,
+                                false,
+                                false,
+                                false,
+                                false,
+                                null
+                        ))
+                        put("push", new ConsoleProvider(
+                                "fcm",
+                                true,
+                                true,
+                                true,
+                                true,
+                                false,
+                                (Map) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
+                        ))
+                    }
+                },
+                "",
+                ["manager"] as String[])
+        def testuser1Console = testuser1ConsoleResource.register(null, testuser1ConsoleRegistration)
+
+        and: "the console is created"
+        testuser1Console.id != null
+
+        and: "the same notification is sent, now to both users"
+        adminNotificationResource.sendNotification(null, notification)
+
+        then: "both consoles in that realm should have been sent a notification"
+        conditions.eventually {
+            assert localizedNotificationIds.size() == 2
+            assert localizedNotificationTargetIds.size() == 2
+            assert pushNotificationIds.size() == 2
+            assert pushNotificationTargetIds.size() == 2
+        }
+
+        and: "we clear the cached notifications again"
+        localizedNotificationIds.clear()
+        localizedNotificationTargetTypes.clear()
+        localizedNotificationTargetIds.clear()
+        localizedNotificationMessages.clear()
+        pushNotificationIds.clear()
+        pushNotificationTargetTypes.clear()
+        pushNotificationTargetIds.clear()
+        pushNotificationMessages.clear()
+
+        /* ------------ */
+
+        when: "testuser1 their language is updated to an unknown language, like italian"
+        testuser1.setAttribute(User.LOCALE_ATTRIBUTE, "it")
+        identityService.getIdentityProvider().createUpdateUser(MASTER_REALM, testuser1, null, true)
+
+        and: "the same notification is sent again, to both users"
+        adminNotificationResource.sendNotification(null, notification)
+
+        then: "testuser1 should still receive the notification, but in the default language"
+        conditions.eventually {
+            assert localizedNotificationMessages.size() == 2
+            assert pushNotificationMessages.size() == 2
+            assert pushNotificationMessages.stream().allMatch { msg -> (msg as PushNotificationMessage).title == "English title" && (msg as PushNotificationMessage).body == "English body" }
+        }
+
+        and: "we clear the cached notifications again"
+        localizedNotificationIds.clear()
+        localizedNotificationTargetTypes.clear()
+        localizedNotificationTargetIds.clear()
+        localizedNotificationMessages.clear()
+        pushNotificationIds.clear()
+        pushNotificationTargetTypes.clear()
+        pushNotificationTargetIds.clear()
+        pushNotificationMessages.clear()
+
+        and: "testuser1 sets their language back to dutch"
+        testuser1.setAttribute(User.LOCALE_ATTRIBUTE, "nl")
+        identityService.getIdentityProvider().createUpdateUser(MASTER_REALM, testuser1, null, true)
+
+        /* ----------- */
+
+        when: "a complex notification with different types per language is set up"
+        def complexNotification = new Notification(
+                "MultiTypeAction",
+                new LocalizedNotificationMessage(
+                        "en",
+                        new HashMap<String, AbstractNotificationMessage>() {{
+                            put("en", new PushNotificationMessage("English title", "English body", null, null, null))
+                            put("nl", new EmailNotificationMessage().setSubject("Nederlandse titel").setText("Nederlandse tekst"))
+                        }}
+                ),
+                null,
+                null,
+                null)
+
+        complexNotification.targets = [new Notification.Target(Notification.TargetType.REALM, MASTER_REALM)]
+
+        and: "the mock email notification handler has been added"
+        List<Message> sentEmails = []
+        def emailNotificationHandler = container.getService(EmailNotificationHandler.class)
+        EmailNotificationHandler mockEmailNotificationHandler = Spy(emailNotificationHandler)
+        mockEmailNotificationHandler.isValid() >> true
+
+        // Log email and assume sent to SMTP Server
+        mockEmailNotificationHandler.sendMessage(_ as Message) >> {
+            Message email ->
+                sentEmails << email
+                return NotificationSendResult.success()
+        }
+
+        // Add email handler to the list of handlers
+        notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), mockEmailNotificationHandler)
+        mockLocalizedNotificationHandler.notificationHandlerMap = notificationService.notificationHandlerMap
+
+        and: "testuser1 configures their email address"
+        testuser1.setEmail("testuser1@email.com")
+        identityService.getIdentityProvider().createUpdateUser(MASTER_REALM, testuser1, null, true)
+
+        and: "the complex notification is sent"
+        adminNotificationResource.sendNotification(null, complexNotification)
+
+        then: "it should return a BAD_REQUEST because testuser1 only gets one notification"
+        thrown(BadRequestException)
+
+        and: "the other notifications should be sent correctly through email and with push"
+        conditions.eventually {
+            assert localizedNotificationMessages.size() == 3
+            assert localizedNotificationTargetIds.size() == 3
+            assert pushNotificationMessages.size() == 1
+            assert sentEmails.size() == 1
+        }
+
+        and: "we clear the cached notifications once again"
+        localizedNotificationIds.clear()
+        localizedNotificationTargetTypes.clear()
+        localizedNotificationTargetIds.clear()
+        localizedNotificationMessages.clear()
+        pushNotificationIds.clear()
+        pushNotificationTargetTypes.clear()
+        pushNotificationTargetIds.clear()
+        pushNotificationMessages.clear()
+
+
+        /* ------------ */
+
+        when: "an invalid notification is created"
+        def invalidNotification = new Notification(
+                "InvalidNotification",
+                new LocalizedNotificationMessage(
+                        "en",
+                        new HashMap<String, AbstractNotificationMessage>() {{
+                            put("nl", new PushNotificationMessage())
+                            put("en", new PushNotificationMessage("English title", "English body", null, null, null))
+                        }}
+                ),
+                null,
+                null,
+                null)
+
+        and: "the invalid notification is sent to all users"
+        adminNotificationResource.sendNotification(null, invalidNotification)
+
+        then: "it should return a BAD_REQUEST, because the message is invalid"
+        thrown(BadRequestException)
+
+        and: "all users should receive the english message"
+        conditions.eventually {
+            assert localizedNotificationMessages.size() == 0
+            assert localizedNotificationTargetIds.size() == 0
+            assert pushNotificationMessages.size() == 0
+        }
+
+
+        /* ------------------------ */
+
+        /*when: "if the notification became valid, and the TRIGGER_ASSETS placeholder is inserted"
+        ((LocalizedNotificationMessage) invalidNotification.getMessage()).setMessage("nl", new PushNotificationMessage())*/
     }
 }

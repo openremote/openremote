@@ -81,6 +81,7 @@ public abstract class Ruleset {
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "LAST_MODIFIED", nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
+    @org.hibernate.annotations.UpdateTimestamp
     protected Date lastModified;
 
     @NotNull(message = "{Ruleset.name.NotNull}")

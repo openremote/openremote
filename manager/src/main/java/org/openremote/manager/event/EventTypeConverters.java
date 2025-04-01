@@ -103,17 +103,4 @@ public class EventTypeConverters implements TypeConverters {
     public String writeUnauthorizedEventSubscription(UnauthorizedEventSubscription unauthorizedEventSubscription, Exchange exchange) throws Exception {
         return UnauthorizedEventSubscription.MESSAGE_PREFIX + ValueUtil.JSON.writeValueAsString(unauthorizedEventSubscription);
     }
-
-    @Converter
-    public EventRequestResponseWrapper readRequestResponse(String string, Exchange exchange) throws Exception {
-        if (!string.startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX))
-            return null;
-        string = string.substring(EventRequestResponseWrapper.MESSAGE_PREFIX.length());
-        return ValueUtil.JSON.readValue(string, EventRequestResponseWrapper.class);
-    }
-
-    @Converter
-    public String writeRequestResponse(EventRequestResponseWrapper requestResponseWrapper, Exchange exchange) throws Exception {
-        return EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.JSON.writeValueAsString(requestResponseWrapper);
-    }
 }

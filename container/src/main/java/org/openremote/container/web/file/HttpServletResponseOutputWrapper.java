@@ -31,7 +31,6 @@ import jakarta.servlet.http.HttpServletResponseWrapper;
  * <p>
  * The boolean property <code>passThrough</code>, which defaults to <code>false</code> also enables the developer to
  * control whether to pass through to the wrapped {@link ServletOutputStream} or not.
- * <p>
  *
  * @author Bauke Scholtz
  * @since 1.1

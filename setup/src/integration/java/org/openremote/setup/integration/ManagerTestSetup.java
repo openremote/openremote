@@ -21,7 +21,6 @@ package org.openremote.setup.integration;
 
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
-import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
@@ -34,6 +33,7 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.security.Realm;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.impl.ColourRGB;
@@ -391,9 +391,7 @@ public class ManagerTestSetup extends ManagerSetup {
                                 .addMeta(new MetaItem<>(ACCESS_RESTRICTED_READ, true))
                                 .addMeta(new MetaItem<>(ACCESS_RESTRICTED_WRITE, true))
                 );
-        addDemoApartmentRoomMotionSensor(apartment1Hallway, true, () ->
-            new SimulatorAgentLink(apartment1ServiceAgentId)
-        );
+        addDemoApartmentRoomMotionSensor(apartment1Hallway, false, null);
 
         apartment1Hallway = assetStorageService.merge(apartment1Hallway);
         apartment1HallwayId = apartment1Hallway.getId();
@@ -450,9 +448,7 @@ public class ManagerTestSetup extends ManagerSetup {
                 new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454053, 51.446603)),
                 new Attribute<>("allLightsOffSwitch", BOOLEAN, true)
                         .addMeta(
-                                new MetaItem<>(LABEL, "All Lights Off Switch"),
-                                new MetaItem<>(RULE_EVENT, true),
-                                new MetaItem<>(RULE_EVENT_EXPIRES, "PT3S")
+                                new MetaItem<>(LABEL, "All Lights Off Switch")
                         )
         );
         apartment2 = assetStorageService.merge(apartment2);
@@ -472,8 +468,7 @@ public class ManagerTestSetup extends ManagerSetup {
                 new Attribute<>("motionSensor", BOOLEAN, false)
                     .addMeta(
                             new MetaItem<>(LABEL, "Motion Sensor"),
-                            new MetaItem<>(RULE_STATE, true),
-                            new MetaItem<>(RULE_EVENT, true)
+                            new MetaItem<>(RULE_STATE, true)
                     ),
                 new Attribute<>("presenceDetected", BOOLEAN, false)
                         .addMeta(
@@ -527,8 +522,7 @@ public class ManagerTestSetup extends ManagerSetup {
                 new Attribute<>("motionSensor", BOOLEAN, false)
                         .addMeta(
                                 new MetaItem<>(LABEL, "Motion Sensor"),
-                                new MetaItem<>(RULE_STATE, true),
-                                new MetaItem<>(RULE_EVENT, true)
+                                new MetaItem<>(RULE_STATE, true)
                         ),
                 new Attribute<>("presenceDetected", BOOLEAN, false)
                         .addMeta(

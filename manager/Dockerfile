@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/openjdk-17-runtime
+FROM registry.access.redhat.com/ubi8/openjdk-21-runtime
 
 # Add git commit label must be specified at build time using --build-arg GIT_COMMIT=dadadadadad
 ARG GIT_COMMIT=unknown
@@ -50,7 +50,6 @@ ENV OR_MAP_SETTINGS_PATH ${OR_MAP_SETTINGS_PATH:-/deployment/map/mapsettings.jso
 ENV OR_MAP_TILESERVER_HOST ${OR_MAP_TILESERVER_HOST}
 ENV OR_MAP_TILESERVER_PORT ${OR_MAP_TILESERVER_PORT:-8082}
 ENV OR_MAP_TILESERVER_REQUEST_TIMEOUT ${OR_MAP_TILESERVER_REQUEST_TIMEOUT:-10000}
-ENV OR_SCHEDULED_TASKS_THREADS_MAX ${OR_SCHEDULED_TASKS_THREADS_MAX:-4}
 ENV OR_RULE_EVENT_EXPIRES ${OR_RULE_EVENT_EXPIRES:-PT1H}
 ENV OR_IDENTITY_PROVIDER ${OR_IDENTITY_PROVIDER:-keycloak}
 ENV OR_IDENTITY_SESSION_MAX_MINUTES ${OR_IDENTITY_SESSION_MAX_MINUTES:-1440}
@@ -78,5 +77,5 @@ ADD deployment /deployment
 EXPOSE 8080
 EXPOSE 1883
 
-HEALTHCHECK --interval=3s --timeout=60s --start-period=30s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
+HEALTHCHECK --interval=5s --timeout=60s --start-period=5s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
 ENTRYPOINT java $OR_JAVA_OPTS -cp /opt/app/lib/*:/deployment/manager/extensions/* org.openremote.manager.Main

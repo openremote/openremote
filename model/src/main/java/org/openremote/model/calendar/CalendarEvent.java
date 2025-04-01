@@ -23,14 +23,17 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
-import net.fortuna.ical4j.model.DateList;
 import net.fortuna.ical4j.model.Recur;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.util.Pair;
 
 import java.io.Serializable;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Represents an event that occurs at a point in time with a {@link #start}, {#link #end} and optional
@@ -75,28 +78,27 @@ import java.util.Date;
 }
  * }</pre></blockquote>
  */
-// TODO: Update to ical4j 4 once released with DST bug fix https://github.com/ical4j/ical4j/issues/117
 public class CalendarEvent implements Serializable {
     protected Date start;
     protected Date end;
     @JsonSerialize(converter = RecurStringConverter.class)
-    protected Recur recurrence;
+    protected Recur<LocalDateTime> recurrence;
 
-    public static class RecurStringConverter extends StdConverter<Recur, String> {
+    public static class RecurStringConverter extends StdConverter<Recur<?>, String> {
 
         @Override
-        public String convert(Recur value) {
+        public String convert(Recur<?> value) {
             return value.toString();
         }
     }
 
     @JsonCreator
     public CalendarEvent(@JsonProperty("start") Date start, @JsonProperty("end") Date end, @JsonProperty("recurrence") String recurrence) {
-        Recur recur = null;
+        Recur<LocalDateTime> recur = null;
 
         try {
-            recur = new Recur(recurrence);
-        } catch (Exception e) {}
+            recur = new Recur<>(recurrence);
+        } catch (Exception ignored) {}
 
         this.start = start;
         this.end = end;
@@ -104,10 +106,10 @@ public class CalendarEvent implements Serializable {
     }
 
     public CalendarEvent(Date start, Date end) {
-        this(start, end, (Recur)null);
+        this(start, end, (Recur<LocalDateTime>)null);
     }
 
-    public CalendarEvent(Date start, Date end, Recur recurrence) {
+    public CalendarEvent(Date start, Date end, Recur<LocalDateTime> recurrence) {
         this.start = start;
         this.end = end;
         this.recurrence = recurrence;
@@ -121,7 +123,7 @@ public class CalendarEvent implements Serializable {
         return end;
     }
 
-    public Recur getRecurrence() {
+    public Recur<LocalDateTime> getRecurrence() {
         return recurrence;
     }
 
@@ -135,7 +137,7 @@ public class CalendarEvent implements Serializable {
             return new Pair<>(getStart().getTime(), getEnd().getTime());
         }
 
-        Recur recurrence = getRecurrence();
+        Recur<LocalDateTime> recurrence = getRecurrence();
 
         if (recurrence == null) {
             if (getEnd().before(when)) {
@@ -144,22 +146,28 @@ public class CalendarEvent implements Serializable {
             return new Pair<>(getStart().getTime(), getEnd().getTime());
         }
 
-        long whenMillis = when.toInstant().minus(getEnd().getTime() - getStart().getTime(), ChronoUnit.MILLIS).toEpochMilli();
-        DateList matches = recurrence.getDates(new net.fortuna.ical4j.model.DateTime(getStart()), new net.fortuna.ical4j.model.DateTime(whenMillis), new net.fortuna.ical4j.model.DateTime(Long.MAX_VALUE), net.fortuna.ical4j.model.parameter.Value.DATE_TIME, 2);
+        Instant whenMillis = when.toInstant().minus(getEnd().getTime() - getStart().getTime(), ChronoUnit.MILLIS);
+        List<LocalDateTime> matches = recurrence.getDates(
+				LocalDateTime.ofInstant(getStart().toInstant(), ZoneOffset.UTC),
+		        LocalDateTime.ofInstant(whenMillis, ZoneOffset.UTC),
+		        LocalDateTime.ofInstant(Instant.ofEpochMilli(Long.MAX_VALUE), ZoneOffset.UTC),
+		        2);
+
+		List<Instant> instants = matches.stream().map(d -> d.toInstant(ZoneOffset.UTC)).toList();
 
         if (matches.isEmpty()) {
             return null;
         }
 
-        long endTime = matches.get(0).getTime() + (getEnd().getTime()- getStart().getTime());
+        long endTime = instants.get(0).toEpochMilli() + (getEnd().getTime()- getStart().getTime());
 
         if (endTime <= when.getTime()) {
-            if (matches.size() == 2) {
-                return new Pair<>(matches.get(1).getTime(), matches.get(1).getTime() + (getEnd().getTime()- getStart().getTime()));
+            if (instants.size() == 2) {
+                return new Pair<>(instants.get(1).toEpochMilli(), instants.get(1).toEpochMilli() + (getEnd().getTime()- getStart().getTime()));
             }
             return null;
         }
 
-        return new Pair<>(matches.get(0).getTime(), endTime);
+        return new Pair<>(instants.get(0).toEpochMilli(), endTime);
     }
 }

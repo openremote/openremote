@@ -10,6 +10,7 @@ import manager from "@openremote/core";
 import {when} from "lit/directives/when.js";
 import {i18next} from "@openremote/or-translate";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import moment from "moment";
 
 const styling = css`
     #gateway-widget-wrapper {
@@ -29,7 +30,7 @@ const styling = css`
         flex-wrap: wrap;
         position: relative;
     }
-`
+`;
 
 export interface GatewayWidgetConfig extends WidgetConfig {
     gatewayId?: string;
@@ -54,10 +55,19 @@ export class GatewayWidget extends OrWidget {
     @state()
     protected _loading = true;
 
+    /**
+     * Cache of the active {@link GatwayTunnelInfo} we receive from the HTTP API.
+     * It contains all necessary information, such as ID, assigned port, target information, and autoCloseTime.
+     */
     @state()
     protected _activeTunnel?: GatewayTunnelInfo;
 
+    @state()
+    protected _isReady = false;
+
     protected _startedByUser = false;
+
+    protected _refreshTimer?: number = undefined;
 
     static getManifest(): WidgetManifest {
         return {
@@ -74,11 +84,12 @@ export class GatewayWidget extends OrWidget {
             getDefaultConfig(): GatewayWidgetConfig {
                 return getDefaultWidgetConfig();
             }
-        }
+        };
     }
 
     refreshContent(force: boolean): void {
         this.widgetConfig = JSON.parse(JSON.stringify(this.widgetConfig)) as GatewayWidgetConfig;
+        this._readyCheck(this.widgetConfig);
     }
 
     static get styles() {
@@ -89,23 +100,29 @@ export class GatewayWidget extends OrWidget {
         if(this._activeTunnel) {
             if(this._startedByUser) {
                 this._stopTunnel(this._activeTunnel).then(() => {
-                    console.warn("Stopped the active tunnel, as it was created through the widget.")
+                    console.warn("Stopped the active tunnel, as it was created through the widget.");
                 });
             } else {
-                console.warn("Keeping the active tunnel open, as it is not started through the widget.")
+                console.warn("Keeping the active tunnel open, as it is not started through the widget.");
             }
         }
+
+        if (this._refreshTimer) {
+            clearTimeout(this._refreshTimer);
+        }
+
         super.disconnectedCallback();
     }
 
     protected firstUpdated(changedProps: PropertyValues) {
         if(this.widgetConfig) {
 
+            const tunnelInfo = this._getTunnelInfoByConfig(this.widgetConfig);
+            this._readyCheck(this.widgetConfig);
             // Apply a timeout of 500 millis, so the tunnel has time to close upon disconnectedCallback() of a different widget.
             setTimeout(() => {
 
                 // Check if the tunnel is already active upon widget initialization
-                const tunnelInfo = this._getTunnelInfoByConfig(this.widgetConfig);
                 this._getActiveTunnel(tunnelInfo).then(info => {
                     if(info) {
                         console.log("Existing tunnel found!", info);
@@ -123,7 +140,8 @@ export class GatewayWidget extends OrWidget {
     }
 
     protected render(): TemplateResult {
-        const disabled = this.getEditMode?.() || !this._isConfigComplete(this.widgetConfig);
+        const tunnelInfo = this._getTunnelInfoByConfig(this.widgetConfig);
+        const disabled = this.getEditMode?.() || !this._isConfigComplete(this.widgetConfig) || !this._isReady;
         return html`
             <div id="gateway-widget-wrapper">
                 <div id="gateway-widget-container">
@@ -132,7 +150,7 @@ export class GatewayWidget extends OrWidget {
                     `, () => {
                         if (this._activeTunnel) {
                             return html`
-
+                                <div>
                                 <or-mwc-input .type="${InputType.BUTTON}" icon="stop" label="${i18next.t('gatewayTunnels.stop')}" .disabled="${disabled}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onStopTunnelClick(ev)}"
                                 ></or-mwc-input>
@@ -143,14 +161,17 @@ export class GatewayWidget extends OrWidget {
                                     ></or-mwc-input>
                                 `, () => html`
                                     <or-mwc-input .type="${InputType.BUTTON}" icon="open-in-new" label="${i18next.t('gatewayTunnels.open')}" outlined .disabled="${disabled}"
-                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onTunnelNavigateClick(ev)}"
+                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onTunnelNavigateClick(ev, this._activeTunnel)}"
                                     ></or-mwc-input>
                                 `)}
-                                
+                                </div>
+                                ${when(this._activeTunnel?.autoCloseTime, () => html`
+                                    <div><or-translate value="gatewayTunnels.closesAt"></or-translate>: ${moment(this._activeTunnel?.autoCloseTime).format("lll")}</div>
+                                `)}
                             `;
                         } else {
                             return html`
-                                <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('gatewayTunnels.start')}" outlined .disabled="${disabled}"
+                                <or-mwc-input .type="${InputType.BUTTON}" label="${disabled ? i18next.t('gatewayTunnels.offline') : i18next.t('gatewayTunnels.start')}" outlined .disabled="${disabled}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onStartTunnelClick(ev)}"
                                 ></or-mwc-input>
                             `;
@@ -199,9 +220,9 @@ export class GatewayWidget extends OrWidget {
     /**
      * HTML callback function when 'open' button is pressed, meant to start using the tunnel.
      */
-    protected _onTunnelNavigateClick(ev: OrInputChangedEvent) {
-        if (this._isConfigComplete(this.widgetConfig)) {
-            this._navigateToTunnel(this._getTunnelInfoByConfig(this.widgetConfig));
+    protected _onTunnelNavigateClick(ev: OrInputChangedEvent, activeTunnel?: GatewayTunnelInfo) {
+        if(activeTunnel) {
+            this._navigateToTunnel(activeTunnel);
         } else {
             console.warn("Could not navigate to tunnel as configuration is not complete.")
         }
@@ -213,6 +234,26 @@ export class GatewayWidget extends OrWidget {
      */
     protected _setActiveTunnel(tunnelInfo?: GatewayTunnelInfo, silent = false) {
         this._activeTunnel = tunnelInfo;
+
+        if (this._refreshTimer) {
+            clearTimeout(this._refreshTimer);
+        }
+
+        if (tunnelInfo?.autoCloseTime) {
+            const timeout = tunnelInfo?.autoCloseTime - Date.now();
+            if (timeout > 0) {
+                this._refreshTimer = window.setTimeout(() => {
+                    this._getActiveTunnel(this._getTunnelInfoByConfig(this.widgetConfig)).then(info => {
+                        if (info) {
+                            this._setActiveTunnel(info, true)
+                        } else {
+                            this._setActiveTunnel(undefined);
+                        }
+                    });
+                }, timeout);
+            }
+        }
+
         if(tunnelInfo && !silent) {
             this._navigateToTunnel(tunnelInfo);
         }
@@ -289,6 +330,30 @@ export class GatewayWidget extends OrWidget {
     }
 
     /**
+     * Internal function that requests the Manager API for the gatewayStatus of the gatewayId asset in {@link GatewayTunnelInfo}.
+     * Returns undefined if there is misalignment in the linked asset id or unexpected http code.
+     */
+   protected async _getGatewayStatus(info: GatewayTunnelInfo): Promise<string | undefined> {
+        const response =  await manager.rest.api.AssetResource.get(info.gatewayId!)
+        if (response.status === 200 && response.data && response.data.attributes && response.data.attributes.gatewayStatus) {
+            return response.data.attributes.gatewayStatus.value
+        } else {
+            return undefined;
+             }
+    }
+
+    /**
+     * Function that tries to check the gateway status and sets the ready flag to true only if connected.
+     */
+    protected _readyCheck(config: GatewayWidgetConfig): void {
+        const tunnelInfo = this._getTunnelInfoByConfig(config);
+        //Check if the gateway is actually in a status to accept connections
+        this._getGatewayStatus(tunnelInfo).then(status => {
+            this._isReady = (status === "CONNECTED");
+            });
+   }
+
+    /**
      * Function that tries to destroy the currently active tunnel.
      */
     protected _tryStopTunnel(config: GatewayWidgetConfig): void {
@@ -319,7 +384,7 @@ export class GatewayWidget extends OrWidget {
      * It will open in a new browser tab automatically.
      */
     protected _navigateToTunnel(info: GatewayTunnelInfo): void {
-        if (!info.realm || !info.gatewayId || !info.target || !info.targetPort) {
+        if (!info.id || !info.realm || !info.gatewayId || !info.target || !info.targetPort) {
             console.warn("Could not navigate to tunnel, as some provided information was not set.");
         }
         const address = this._getTunnelAddress(info);
@@ -336,6 +401,7 @@ export class GatewayWidget extends OrWidget {
 
     /**
      * Internal function to get the tunnel address based on {@link GatewayTunnelInfo}
+     * WARNING: Could return incorrect address if not all fields are set.
      */
     protected _getTunnelAddress(info: GatewayTunnelInfo): string | undefined {
         switch (info.type) {
@@ -373,6 +439,7 @@ export class GatewayWidget extends OrWidget {
 
     /**
      * Internal function that parses a {@link GatewayWidgetConfig} into a new {@link GatewayTunnelInfo}.
+     * Be aware: this does not information received from the HTTP API such as ID, assigned port, etc. Please use {@link _activeTunnel} for this.
      */
     protected _getTunnelInfoByConfig(config: GatewayWidgetConfig): GatewayTunnelInfo {
         return {

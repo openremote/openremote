@@ -823,8 +823,16 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         and: "the asset resource"
         def assetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name).proxy(AssetResource.class)
 
+        when: "the anonymous user tries to retrieve all assets"
+        def assets = assetResource.queryAssets(null, new AssetQuery().recursive(true))
+
+        then: "only public assets should be returned"
+        assets.size() == 2
+        assets.find {it.id == managerTestSetup.apartment1Id } != null
+        assets.find {it.id == managerTestSetup.apartment2LivingroomId } != null
+
         when: "the public assets are retrieved"
-        def assets = assetResource.queryAssets(null, new AssetQuery()
+        assets = assetResource.queryAssets(null, new AssetQuery()
                 .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)))
 
         then: "the public assets should be retrieved"

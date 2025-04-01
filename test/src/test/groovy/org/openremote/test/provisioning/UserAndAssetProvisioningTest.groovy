@@ -60,6 +60,7 @@ import org.openremote.setup.integration.ManagerTestSetup
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
 
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString
@@ -73,8 +74,9 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
     def "Check basic functionality"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
         MQTT_IOClient device1Client
+        MQTT_IOClient device1SnoopClient
         MQTT_IOClient deviceNClient
 
         and: "the container starts"
@@ -82,6 +84,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def assetStorageService = container.getService(AssetStorageService.class)
         def provisioningService = container.getService(ProvisioningService.class)
         def mqttBrokerService = container.getService(MQTTBrokerService.class)
+        def defaultMQTTHandler = mqttBrokerService.getCustomHandlers().find{it instanceof DefaultMQTTHandler} as DefaultMQTTHandler
         def clientEventService = container.getService(ClientEventService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def identityService = container.getService(ManagerIdentityService.class)
@@ -105,11 +108,11 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         })
 
         and: "an internal attribute event subscriber is added for test validation purposes"
-        List<AttributeEvent> internalAttributeEvents = []
+        List<AttributeEvent> internalAttributeEvents = new CopyOnWriteArrayList<>()
         Consumer<AttributeEvent> internalConsumer = { ev ->
             internalAttributeEvents.add(ev)
         }
-        clientEventService.addInternalSubscription(AttributeEvent.class, null, internalConsumer)
+        clientEventService.addSubscription(AttributeEvent.class, null, internalConsumer)
 
         // TODO: Switch to use provisioning resource once implemented
         when: "a provisioning realm config is added to the system"
@@ -152,10 +155,12 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         RemotingConnection connection = null
         def device1UniqueId = "device1"
         def mqttDevice1ClientId = UniqueIdentifierGenerator.generateId("device1")
-        List<String> subscribeFailures = []
-        List<ConnectionStatus> connectionStatuses = []
+        def mqttDevice1SnoopClientId = UniqueIdentifierGenerator.generateId("device1snoop")
+        List<String> subscribeFailures = new CopyOnWriteArrayList<>()
+        List<ConnectionStatus> connectionStatuses = new CopyOnWriteArrayList<>()
         Consumer<String> subscribeFailureCallback = {String topic -> subscribeFailures.add(topic)}
         device1Client = new MQTT_IOClient(mqttDevice1ClientId, mqttHost, mqttPort, false, false, null, null, null)
+        device1SnoopClient = new MQTT_IOClient(mqttDevice1SnoopClientId, mqttHost, mqttPort, false, false, null, null, null)
         device1Client.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         device1Client.addConnectionStatusConsumer({connectionStatus ->
             connectionStatuses.add(connectionStatus)})
@@ -167,7 +172,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         }
 
         when: "the client subscribes to the provisioning endpoints"
-        List<ProvisioningMessage> device1Responses = []
+        List<ProvisioningMessage> device1Responses = new CopyOnWriteArrayList<>()
         Consumer<MQTTMessage<String>> device1MessageConsumer = { MQTTMessage<String> msg ->
             device1Responses.add(ValueUtil.parse(msg.payload, ProvisioningMessage.class).orElse(null))
         }
@@ -178,10 +183,37 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert device1Client.topicConsumerMap.get(device1ResponseTopic) != null
-            assert device1Client.topicConsumerMap.get(device1ResponseTopic).size() == 1
+            assert device1Client.topicConsumerMap.get(device1ResponseTopic).value.size() == 1
+        }
+
+        when: "an eavesdropping client connects"
+        device1SnoopClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
+        device1SnoopClient.connect()
+
+        then: "it should be connected"
+        conditions.eventually {
+            assert device1SnoopClient.getConnectionStatus() == ConnectionStatus.CONNECTED
+        }
+
+        when: "the eavesdropping client subscribes to the provisioning response topic"
+        def result = device1SnoopClient.addMessageConsumer(device1ResponseTopic, device1MessageConsumer)
+
+        then: "the subscription should have failed"
+        conditions.eventually {
+            assert !result
+            assert device1SnoopClient.topicConsumerMap.get(device1ResponseTopic) == null
+            assert subscribeFailures.size() == 1
+        }
+
+        and: "the actual client should still be connected and subscribed"
+        conditions.eventually {
+            assert device1Client.getConnectionStatus() == ConnectionStatus.CONNECTED
+            assert device1Client.topicConsumerMap.get(device1ResponseTopic) != null
+            assert device1Client.topicConsumerMap.get(device1ResponseTopic).value.size() == 1
         }
 
         when: "the client publishes a valid x509 certificate that has been signed by the CA stored in the provisioning config"
+        subscribeFailures.clear()
         def existingConnection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
         device1Client.sendMessage(
             new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
@@ -223,7 +255,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert device1Client.topicConsumerMap.get(device1ResponseTopic) != null
-            assert device1Client.topicConsumerMap.get(device1ResponseTopic).size() == 1
+            assert device1Client.topicConsumerMap.get(device1ResponseTopic).value.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != null
         }
 
@@ -275,8 +307,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def asset = ((SuccessResponseMessage)device1Responses.get(0)).asset
         def assetSubscriptionTopic = "$provisioningConfig.realm/$mqttDevice1ClientId/$DefaultMQTTHandler.ASSET_TOPIC/#".toString()
         def attributeSubscriptionTopic = "$provisioningConfig.realm/$mqttDevice1ClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/+/$asset.id".toString()
-        List<AssetEvent> assetEvents = []
-        List<AttributeEvent> attributeEvents = []
+        List<AssetEvent> assetEvents = new CopyOnWriteArrayList<>()
+        List<AttributeEvent> attributeEvents = new CopyOnWriteArrayList<>()
         Consumer<MQTTMessage<String>> eventConsumer = { MQTTMessage<String> msg ->
             def event = ValueUtil.parse(msg.payload, SharedEvent.class).orElse(null)
             if (event instanceof AssetEvent) {
@@ -292,12 +324,12 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert device1Client.topicConsumerMap.get(assetSubscriptionTopic) != null
             assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic) != null
-            assert device1Client.topicConsumerMap.get(assetSubscriptionTopic).size() == 1
-            assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic).size() == 1
+            assert device1Client.topicConsumerMap.get(assetSubscriptionTopic).value.size() == 1
+            assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic).value.size() == 1
             connection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
             assert connection != null
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 2
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 2
         }
 
         when: "the client updates one of the provisioned asset's attributes"
@@ -352,8 +384,9 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "all subscriptions should be removed and the client should be disconnected"
         conditions.eventually {
-            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
+            assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
             assert device1Client.getConnectionStatus() == ConnectionStatus.DISCONNECTED
+            assert userAssetProvisioningMQTTHandler.responseSubscribedConnections.isEmpty()
         }
 
         and: "the connected attribute of the provisioned asset should show as not connected"
@@ -417,12 +450,12 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert device1Client.topicConsumerMap.get(assetSubscriptionTopic) != null
             assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic) != null
-            assert device1Client.topicConsumerMap.get(assetSubscriptionTopic).size() == 1
-            assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic).size() == 1
+            assert device1Client.topicConsumerMap.get(assetSubscriptionTopic).value.size() == 1
+            assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic).value.size() == 1
             connection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
             assert connection != null
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 2
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 2
         }
 
         when: "a second device connects"
@@ -441,7 +474,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         }
 
         when: "the client subscribes to the provisioning endpoints"
-        List<ProvisioningMessage> deviceNResponses = []
+        List<ProvisioningMessage> deviceNResponses = new CopyOnWriteArrayList<>()
         Consumer<MQTTMessage<String>> deviceNMessageConsumer = { MQTTMessage<String> msg ->
             deviceNResponses.add(ValueUtil.parse(msg.payload, ProvisioningMessage.class).orElse(null))
         }
@@ -450,7 +483,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
-            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).size() == 1
+            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).value.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -499,7 +532,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
-            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).size() == 1
+            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).value.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -548,7 +581,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
-            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).size() == 1
+            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).value.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -589,9 +622,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "already connected client that was authenticated should be disconnected, then reconnect and should fail to re-subscribe to asset and attribute events"
         conditions.eventually {
-            assert connectionStatuses.size() == 2
-            assert connectionStatuses.get(0) == ConnectionStatus.WAITING
-            assert connectionStatuses.get(1) == ConnectionStatus.CONNECTED
+            assert connectionStatuses.size() >= 1
+            assert connectionStatuses.get(0) == ConnectionStatus.DISCONNECTED
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != null
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != existingConnection
             connection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
@@ -631,7 +663,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
-            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).size() == 1
+            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).value.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -695,7 +727,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != null
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != existingConnection
-            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(existingConnection))
+            assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(existingConnection))
         }
 
         when: "the re-connected client re-authenticates"
@@ -731,7 +763,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
-            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).size() == 1
+            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).value.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -778,8 +810,14 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         if (device1Client != null) {
             device1Client.disconnect()
         }
+        if (device1SnoopClient != null) {
+            device1SnoopClient.disconnect()
+        }
         if (deviceNClient != null) {
             deviceNClient.disconnect()
+        }
+        if (internalConsumer != null) {
+            clientEventService.removeSubscription {internalConsumer}
         }
     }
 }

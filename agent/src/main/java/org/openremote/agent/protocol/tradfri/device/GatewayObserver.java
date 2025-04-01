@@ -9,6 +9,7 @@ import org.openremote.agent.protocol.tradfri.util.CoapClient;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * The class that observes an IKEA TRÅDFRI gateway to automagically detect changes
@@ -64,7 +65,7 @@ public class GatewayObserver extends Observer {
     public void callEventHandlers(String payload) {
         try {
             int[] deviceIds = objectMapper.readValue(payload, int[].class);
-            ArrayList<EventHandler<?>> called = new ArrayList<>();
+            List<EventHandler<?>> called = new ArrayList<>();
             GatewayEvent event = new GatewayEvent(gateway);
             for (EventHandler<?> eventHandler : gateway.getEventHandlers()) {
                 if (eventHandler.getEventType().isAssignableFrom(event.getClass()) && !called.contains(eventHandler)) {

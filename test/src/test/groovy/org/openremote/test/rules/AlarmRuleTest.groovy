@@ -112,7 +112,8 @@ class AlarmRuleTest extends Specification implements ManagerContainerTrait {
         notificationMessages.clear()
     }
 
-    def "rule in realm with alarm action creates an alarm with severity '#severity', assignee '#assigneeId' and '#emailNotifications' emailNotifications based on attribute event"() {
+    @Shared
+    createAlarmRule = { severity, assigneeId ->
         when: "a ruleset with a notification action is created in the building realm"
         def rulesStr = getClass().getResource("/org/openremote/test/rules/CO2AlarmRule.json").text
         JsonRulesetDefinition rulesetDef = ValueUtil.JSON.readValue(rulesStr, JsonRulesetDefinition.class)
@@ -121,20 +122,28 @@ class AlarmRuleTest extends Specification implements ManagerContainerTrait {
         ((RuleActionAlarm) rulesetDef.rules[0].then[0]).assigneeId = assigneeId
         rulesStr = ValueUtil.JSON.writeValueAsString(rulesetDef)
         def realmRuleset = new RealmRuleset(managerTestSetup.realmBuildingName, "CO2 Alarm Rule", Ruleset.Lang.JSON, rulesStr)
-        rulesetStorageService.merge(realmRuleset)
+        realmRuleset = rulesetStorageService.merge(realmRuleset)
 
         then: "the ruleset should reach the engine"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         conditions.eventually {
+            assert rulesService.realmEngines.containsKey(managerTestSetup.realmBuildingName)
             def deployment = rulesService.realmEngines.get(managerTestSetup.realmBuildingName).deployments.get(realmRuleset.id)
             assert deployment != null
             assert deployment.ruleset.version == realmRuleset.version
         }
 
+        realmRuleset
+    }
+
+    def "rule in realm with alarm action creates an alarm with severity '#severity', assignee '#assigneeId' and '#emailNotifications' emailNotifications based on attribute event"() {
+        def realmRuleset = createAlarmRule(severity, assigneeId)
+getLOG()
         when: "the room linked attribute is updated"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment2LivingroomId, "co2Level", 6000))
 
         then: "the linked co2Level attribute should equal the event value"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         conditions.eventually {
             def asset = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
             assert asset.getAttribute("co2Level").flatMap { it.getValue() }.orElse(null) == 6000
@@ -181,7 +190,9 @@ Value: 6000
         assetLink.parentAssetName == "Apartment 2"
 
         and: "the expected number e-mail notifications matches"
-        notificationMessages.size() == emailNotifications
+        conditions.eventually {
+            notificationMessages.size() == emailNotifications
+        }
 
         where:
         severity              | assigneeId                    | emailNotifications
@@ -192,6 +203,55 @@ Value: 6000
         Alarm.Severity.HIGH   | null                          | 1
         Alarm.Severity.HIGH   | keycloakTestSetup.testuser3Id | 1
         Alarm.Severity.HIGH   | alarmsReadWriteUserId         | 1
+    }
+
+    def "rule does not create alarm when rules service is restarted"() {
+        def realmRuleset = createAlarmRule(Alarm.Severity.HIGH, null)
+
+        when: "the room linked attribute is updated"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment2LivingroomId, "co2Level", 6000))
+
+        then: "the linked co2Level attribute should equal the event value"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        conditions.eventually {
+            def asset = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
+            assert asset.getAttribute("co2Level").flatMap { it.getValue() }.orElse(null) == 6000
+        }
+
+        and: "one alarm is created"
+        conditions.eventually {
+            def alarms = alarmService.getAlarms(managerTestSetup.realmBuildingName, null, null, null)
+            assert alarms.size() == 1
+        }
+
+        when: "the rules service is stopped"
+        rulesService.stop(container)
+
+        then: "the realm engine and rule is no longer deployed"
+        conditions.eventually {
+            assert !rulesService.realmEngines.containsKey(managerTestSetup.realmBuildingName)
+        }
+
+        and: "the linked co2Level attribute still equals the event value"
+        def asset = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
+        asset.getAttribute("co2Level").flatMap { it.getValue() }.orElse(null) == 6000
+
+        when: "the rules service is started"
+        rulesService.start(container)
+
+        then: "the rule is deployed again"
+        conditions.eventually {
+            def deployment = rulesService.realmEngines.get(managerTestSetup.realmBuildingName).deployments.get(realmRuleset.id)
+            assert deployment != null
+            assert deployment.ruleset.version == realmRuleset.version
+        }
+
+        and: "the number of created alarms remains the same"
+        def conditions2 = new PollingConditions(initialDelay: 5, timeout: 6, delay: 0.2)
+        conditions2.eventually {
+            def alarms = alarmService.getAlarms(managerTestSetup.realmBuildingName, null, null, null)
+            assert alarms.size() == 1
+        }
     }
 
 }

@@ -31,11 +31,7 @@ import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -53,7 +49,8 @@ public class BluetoothMeshProxyStateMachine {
     private final BluetoothCentralManager bluetoothCentral;
     private volatile BluetoothPeripheral peripheral;
     private final BluetoothPeripheralCallback peripheralCallback;
-    private final ScheduledExecutorService executorService;
+    private final ExecutorService executorService;
+    private final ScheduledExecutorService scheduledExecutorService;
     private volatile BluetoothMeshProxyRxCallback rxDataCallback;
     private volatile Consumer<ConnectionStatus> statusConsumer;
     private volatile BluetoothMeshProxyConnectCallback connectCallback;
@@ -80,11 +77,12 @@ public class BluetoothMeshProxyStateMachine {
     private final FailedState failedState = new FailedState(this);
     private volatile State state = startState;
 
-    public BluetoothMeshProxyStateMachine(BluetoothMeshProxy proxy, BluetoothCentralManager bluetoothCentral, ScheduledExecutorService executorService, MainThreadManager commandSerializer, BluetoothPeripheral peripheral, BluetoothPeripheralCallback callback) {
+    public BluetoothMeshProxyStateMachine(BluetoothMeshProxy proxy, BluetoothCentralManager bluetoothCentral, ExecutorService executorService, ScheduledExecutorService scheduledExecutorService, MainThreadManager commandSerializer, BluetoothPeripheral peripheral, BluetoothPeripheralCallback callback) {
         this.meshProxy = proxy;
         this.bluetoothCentral = bluetoothCentral;
         this.commandSerializer = commandSerializer;
         this.executorService = executorService;
+        this.scheduledExecutorService = scheduledExecutorService;
         this.peripheral = peripheral;
         this.peripheralCallback = callback;
     }
@@ -238,7 +236,7 @@ public class BluetoothMeshProxyStateMachine {
     }
 
     void startQueueWorker() {
-        workerFuture = executorService.schedule(queueWorker, 0, TimeUnit.MILLISECONDS);
+        workerFuture = scheduledExecutorService.schedule(queueWorker, 0, TimeUnit.MILLISECONDS);
     }
 
     void stopQueueWorker() {
@@ -337,7 +335,7 @@ public class BluetoothMeshProxyStateMachine {
     }
 
     void startTimeout(int timeout) {
-        timeoutFuture = executorService.schedule(() -> {
+        timeoutFuture = scheduledExecutorService.schedule(() -> {
                 onTimeout();
             },
             timeout, TimeUnit.MILLISECONDS

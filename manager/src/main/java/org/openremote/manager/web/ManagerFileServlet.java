@@ -20,6 +20,8 @@
 package org.openremote.manager.web;
 
 import io.undertow.server.HttpHandler;
+import io.undertow.server.handlers.resource.PathResourceManager;
+import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
@@ -31,7 +33,6 @@ import org.openremote.container.web.file.GzipResponseFilter;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -44,7 +45,7 @@ public class ManagerFileServlet extends FileServlet {
 
     private static final Logger LOG = Logger.getLogger(ManagerFileServlet.class.getName());
 
-    public static final Map<String, String> MIME_TYPES = new HashMap<String, String>() {
+    public static final Map<String, String> MIME_TYPES = new HashMap<>() {
         {
             put("pbf", "application/x-protobuf");
             put("woff2", "font/woff2");
@@ -88,17 +89,13 @@ public class ManagerFileServlet extends FileServlet {
     };
 
     public ManagerFileServlet(boolean devMode,
-                              File base,
+                              ResourceManager resourceManager,
                               String[] requiredRoles) {
-        super(devMode, base, requiredRoles, MIME_TYPES, MIME_TYPES_EXPIRE_SECONDS, FILE_EXTENSIONS_ALREADY_ZIPPED);
+        super(devMode, resourceManager, requiredRoles, MIME_TYPES, MIME_TYPES_EXPIRE_SECONDS, FILE_EXTENSIONS_ALREADY_ZIPPED);
     }
 
-    public static DeploymentInfo createDeploymentInfo(boolean devMode, String contextPath, Path docRoot, String[] requiredRoles) {
-        if (!Files.isDirectory(docRoot)) {
-            throw new IllegalArgumentException("Document root does not exist: " + docRoot.toAbsolutePath());
-        }
-
-        ManagerFileServlet fileServlet = new ManagerFileServlet(devMode, docRoot.toFile(), requiredRoles);
+    public static DeploymentInfo createDeploymentInfo(boolean devMode, String contextPath, ResourceManager resourceManager, String[] requiredRoles) {
+        ManagerFileServlet fileServlet = new ManagerFileServlet(devMode, resourceManager, requiredRoles);
         ServletInfo servletInfo = Servlets.servlet("Manager File Servlet", FileServlet.class, () -> new ImmediateInstanceHandle<>(fileServlet));
         servletInfo.addMapping("/*");
 
@@ -125,7 +122,7 @@ public class ManagerFileServlet extends FileServlet {
             if (staticMatcher.matches()) {
                 LOG.finest("Serving static resource: " + requestPath);
                 String remaining = staticMatcher.group(1);
-                String relativePath = remaining == null || remaining.length() == 0 ? "/" : remaining;
+                String relativePath = remaining == null || remaining.isEmpty() ? "/" : remaining;
                 exchange.setRelativePath(relativePath);
                 wrapped.handleRequest(exchange);
             }

@@ -23,7 +23,7 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import { GenericAxiosResponse } from "axios";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
-const linkParser = require("parse-link-header");
+const linkParser = require("http-link-header");
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 export interface ViewerConfig {
@@ -475,19 +475,23 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         this._loading = false;
 
         if (response.status === 200) {
-            // Get page count
-            this._pageCount = this._getPageCount(response);
             this._data = response.data;
+             // Get page count
+            this._pageCount = this._getPageCount(response);
         }
     }
 
     protected _getPageCount(response: GenericAxiosResponse<any>): number | undefined {
-        const linkHeaders = response.headers["link"] as string;
+        const linkHeaders = response.headers["link"] as any;
         if (linkHeaders) {
-            const links = linkParser(linkHeaders);
-            const lastLink = links["last"];
-            if (lastLink) {
-                return lastLink["page"] as number;
+            const links = linkParser.parse(linkHeaders);
+            let lastLink = links.rel("last");
+            if (Array.isArray(lastLink) && lastLink.length > 0) {
+                lastLink = lastLink[0];
+            }
+            if (lastLink && lastLink.uri) {
+                const url = new URL(lastLink.uri);
+                return parseInt(Util.getQueryParameters(url.search)['page']);
             }
         }
     }

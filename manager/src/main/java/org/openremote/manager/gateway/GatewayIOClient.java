@@ -22,7 +22,6 @@ package org.openremote.manager.gateway;
 
 import org.openremote.agent.protocol.websocket.WebsocketIOClient;
 import org.openremote.model.auth.OAuthGrant;
-import org.openremote.model.event.shared.EventRequestResponseWrapper;
 import org.openremote.model.gateway.GatewayCapabilitiesRequestEvent;
 import org.openremote.model.syslog.SyslogCategory;
 
@@ -56,7 +55,12 @@ public class GatewayIOClient extends WebsocketIOClient<String> {
 
     @Override
     protected Future<Void> startChannel() {
-        CompletableFuture<Void> connectedFuture = toCompletableFuture(super.startChannel());
+        CompletableFuture<Void> connectedFuture;
+        try {
+            connectedFuture = toCompletableFuture(super.startChannel());
+        } catch (Exception e) {
+            connectedFuture = CompletableFuture.failedFuture(e);
+        }
 
         return connectedFuture
             .orTimeout(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS)
@@ -88,7 +92,7 @@ public class GatewayIOClient extends WebsocketIOClient<String> {
 
     @Override
     protected void onMessageReceived(String message) {
-        if (syncFuture != null && message.startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX) && message.contains(GatewayCapabilitiesRequestEvent.TYPE)) {
+        if (syncFuture != null && message.contains(GatewayCapabilitiesRequestEvent.TYPE)) {
             LOG.finest("Gateway connection is now ready");
             syncFuture.complete(null);
         }

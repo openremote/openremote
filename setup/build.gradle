@@ -14,17 +14,23 @@ configurations {
 }
 
 dependencies {
-    implementation resolveProject(":manager")
+    implementation project(":manager")
 }
 
-task demoJar(type: Jar) {
-    archivesBaseName = "openremote-demo-${project.name}"
-    from sourceSets.demo.output
-}
-
-task load1Jar(type: Jar) {
-    archivesBaseName = "openremote-load1-${project.name}"
+task (load1Jar, type: Jar) {
+    base {
+        archivesName = "openremote-load1-${project.name}"
+    }
     from sourceSets.load1.output
+}
+
+// Order of JAR tasks affects the name of the final jar but not the contents which is odd
+// So putting demo last
+task (demoJar, type: Jar) {
+    base {
+        archivesName = "openremote-demo-${project.name}"
+    }
+    from sourceSets.demo.output
 }
 
 // Use demo setup sourceset by default for jar
@@ -34,5 +40,5 @@ task installDist(type: Copy) {
     dependsOn setupTask
     dependsOn resolveTask(":manager:installDist")
     from setupTask.archiveFile
-    into "${resolveProject(":manager").buildDir}/install/manager/deployment/manager/extensions"
+    into "${project(":manager").buildDir}/install/manager/deployment/manager/extensions"
 }

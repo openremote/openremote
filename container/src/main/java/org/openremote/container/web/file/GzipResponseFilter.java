@@ -37,7 +37,7 @@ import static java.util.Collections.unmodifiableSet;
  * servlet container independent way of configuring GZIP compression and also allows enabling GZIP compression anyway
  * on 3rd party hosts where you have no control over servlet container configuration.
  *
- * <h3>Installation</h3>
+ * <h2>Installation</h2>
  * <p>
  * To get it to run, map this filter on the desired <code>&lt;url-pattern&gt;</code> or maybe even on the
  * <code>&lt;servlet-name&gt;</code> of the <code>FacesServlet</code>. A <code>Filter</code> is by default dispatched

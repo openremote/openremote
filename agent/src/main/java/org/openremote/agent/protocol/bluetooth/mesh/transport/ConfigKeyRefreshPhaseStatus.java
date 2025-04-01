@@ -19,7 +19,7 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 // import static org.openremote.agent.protocol.bluetooth.mesh.NetworkKey.KeyRefreshPhase;
@@ -53,7 +53,7 @@ public class ConfigKeyRefreshPhaseStatus extends ConfigStatusMessage {
         mStatusCode = mParameters[0];
         mStatusCodeName = getStatusCodeName(mStatusCode);
 
-        final ArrayList<Integer> keyIndexes = decode(mParameters.length, 1);
+        final List<Integer> keyIndexes = decode(mParameters.length, 1);
         mNetKeyIndex = keyIndexes.get(0);
         transition = mParameters[3];
 

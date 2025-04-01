@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.system;
 
+import com.fasterxml.jackson.databind.node.NullNode;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.system.HealthStatusProvider;
@@ -43,20 +44,26 @@ public class StatusResourceImpl implements StatusResource {
         this.healthStatusProviderList = healthStatusProviderList;
         Properties versionProps = new Properties();
         String authServerUrl = "";
+        String version = null;
 
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
-        if (identityService != null) {
+        if (identityService != null && identityService.getIdentityProvider().getFrontendURI() != null) {
             authServerUrl = identityService.getIdentityProvider().getFrontendURI();
         }
 
-        try(InputStream resourceStream = StatusResourceImpl.class.getClassLoader().getResourceAsStream("version.properties")) {
-            versionProps.load(resourceStream);
-        } catch (IOException e) {
-            LOG.log(Level.SEVERE, "Failed to load manager version properties file: version.properties");
-            throw new IllegalStateException("Missing manager version.properties file");
+        try (InputStream resourceStream = StatusResourceImpl.class.getClassLoader().getResourceAsStream("version.properties")) {
+            if (resourceStream != null) {
+                versionProps.load(resourceStream);
+                version = versionProps.getProperty("version");
+            }
+        } catch (IOException ignored) {
         }
 
-        String version = versionProps.getProperty("version");
+        if (version == null) {
+            LOG.log(Level.WARNING, "Failed to load manager version properties file: version.properties");
+            version = "0.0.0";
+        }
+
         serverInfo = Map.of(
             "version", version,
             "authServerUrl", authServerUrl
@@ -68,7 +75,8 @@ public class StatusResourceImpl implements StatusResource {
         Map<String, Object> objectValue = new HashMap<>();
 
         healthStatusProviderList.forEach(healthStatusProvider -> {
-            Map<String, Object> providerValue = Map.of("data", healthStatusProvider.getHealthStatus());
+            Object healthStatus = healthStatusProvider.getHealthStatus();
+            Map<String, Object> providerValue = Map.of("data", healthStatus != null ? healthStatus : NullNode.getInstance());
                 objectValue.put(healthStatusProvider.getHealthStatusName(), providerValue);
             }
         );

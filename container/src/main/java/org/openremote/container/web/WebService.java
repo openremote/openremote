@@ -19,6 +19,7 @@
  */
 package org.openremote.container.web;
 
+import com.google.common.collect.Lists;
 import io.undertow.Undertow;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
@@ -31,6 +32,7 @@ import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
 import io.undertow.util.HeaderMap;
+import io.undertow.websockets.core.WebSocketChannel;
 import jakarta.servlet.DispatcherType;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.UriBuilder;
@@ -84,6 +86,24 @@ public abstract class WebService implements ContainerService {
         }
     }
 
+    public static class DeploymentInstance {
+        protected DeploymentInfo deploymentInfo;
+        protected WebService.RequestHandler requestHandler;
+
+        public DeploymentInstance(DeploymentInfo deploymentInfo, WebService.RequestHandler requestHandler) {
+            this.deploymentInfo = deploymentInfo;
+            this.requestHandler = requestHandler;
+        }
+
+        public WebService.RequestHandler getRequestHandler() {
+            return requestHandler;
+        }
+
+        public DeploymentInfo getDeploymentInfo() {
+            return deploymentInfo;
+        }
+    }
+
     // Change this to 0.0.0.0 to bind on all interfaces, enabling
     // access of the manager service from other devices in your LAN
     public static final String OR_WEBSERVER_LISTEN_HOST = "OR_WEBSERVER_LISTEN_HOST";
@@ -105,6 +125,13 @@ public abstract class WebService implements ContainerService {
     protected Undertow undertow;
     protected List<RequestHandler> httpHandlers = new ArrayList<>();
     protected URI containerHostUri;
+    protected static WebServiceExceptions.DefaultResteasyExceptionMapper defaultResteasyExceptionMapper;
+    protected static WebServiceExceptions.ForbiddenResteasyExceptionMapper forbiddenResteasyExceptionMapper;
+    protected static JacksonConfig jacksonConfig;
+    protected static AlreadyGzippedWriterInterceptor alreadyGzippedWriterInterceptor;
+    protected static ClientErrorExceptionHandler clientErrorExceptionHandler;
+    protected static WebServiceExceptions.ServletUndertowExceptionHandler undertowExceptionHandler;
+
 
     protected static String getLocalIpAddress() throws Exception {
         return Inet4Address.getLocalHost().getHostAddress();
@@ -143,6 +170,10 @@ public abstract class WebService implements ContainerService {
                         .setWorkerOption(Options.WORKER_NAME, "WebService")
                         .setWorkerOption(Options.THREAD_DAEMON, true)
         ).build();
+
+        // We have to set system properties for websocket timeouts
+        System.setProperty(WebSocketChannel.WEB_SOCKETS_READ_TIMEOUT, "30000");
+        System.setProperty(WebSocketChannel.WEB_SOCKETS_WRITE_TIMEOUT, "30000");
     }
 
     @Override
@@ -209,6 +240,32 @@ public abstract class WebService implements ContainerService {
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    public static void configureDeploymentInfo(DeploymentInfo deploymentInfo) {
+        // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
+        deploymentInfo.setExceptionHandler(undertowExceptionHandler);
+    }
+
+    /**
+     * Get standard JAX-RS providers that are used in the deployment.
+     */
+    public static List<Object> getStandardProviders(boolean devMode) {
+        if (defaultResteasyExceptionMapper == null) {
+            defaultResteasyExceptionMapper = new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode);
+            forbiddenResteasyExceptionMapper = new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode);
+            undertowExceptionHandler = new WebServiceExceptions.ServletUndertowExceptionHandler(devMode);
+            jacksonConfig = new JacksonConfig();
+            alreadyGzippedWriterInterceptor = new AlreadyGzippedWriterInterceptor();
+            clientErrorExceptionHandler = new ClientErrorExceptionHandler();
+        }
+        return Lists.newArrayList(
+                defaultResteasyExceptionMapper,
+                forbiddenResteasyExceptionMapper,
+                jacksonConfig,
+                alreadyGzippedWriterInterceptor,
+                clientErrorExceptionHandler
+        );
     }
 
     /**
@@ -364,7 +421,7 @@ public abstract class WebService implements ContainerService {
 
     public static Set<String> getAllowedOrigins(Container container) {
         // Set allowed origins using external hostnames and WEBSERVER_ALLOWED_ORIGINS
-        HashSet<String> allowedOrigins = new HashSet<>(
+        Set<String> allowedOrigins = new HashSet<>(
             getExternalHostnames(container)
                 .stream().map(hostname -> "https://" + hostname).toList()
         );

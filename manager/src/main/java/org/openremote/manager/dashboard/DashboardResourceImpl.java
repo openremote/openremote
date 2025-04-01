@@ -34,7 +34,6 @@ import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;

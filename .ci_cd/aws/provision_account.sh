@@ -11,6 +11,7 @@
 # * Create Hosted domain zone (if requested) and will create the NS record in the PARENT_DNS_ZONE to delegate to the
 #   new hosted zone; the zone will use the account name.
 # * Adds SSH whitelist to the ssh-access security group in the new account (see refresh_ssh_whitelist.sh)
+# * Adds default OR cloudwatch dashboard that can be used to check any instances configured for metrics collection
 #
 # Arguments:
 # 1 - OU - Name of organizational unit where account should be provisioned (defaults to account root if not set)
@@ -274,6 +275,40 @@ EOF
   fi
 else
   echo "PARENT_DNS_ZONE not set so no DNS configuration will be attempted"
+fi
+
+# Provision default dashboard
+if [ -f "${awsDir}cloudformation-create-dashboard.yml" ]; then
+  TEMPLATE_PATH="${awsDir}cloudformation-create-dashboard.yml"
+elif [ -f ".ci_cd/aws/cloudformation-create-dashboard.yml" ]; then
+  TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-dashboard.yml"
+elif [ -f "openremote/.ci_cd/aws/cloudformation-create-dashboard.yml" ]; then
+  TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-create-dashboard.yml"
+else
+  echo "Cannot determine location of cloudformation-create-dashboard.yml"
+  exit 1
+fi
+
+STACK_NAME=or-dashboard-default
+
+# Create dashboard in specified account
+STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --output text $ACCOUNT_PROFILE)
+
+# Wait for cloud formation stack status to be CREATE_*
+echo "Waiting for stack to be created"
+STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+while [[ "$STATUS" == 'CREATE_IN_PROGRESS' ]]; do
+  echo "Stack creation is still in progress .. Sleeping 30 seconds"
+  sleep 30
+  STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+done
+
+if [ "$STATUS" != 'CREATE_COMPLETE' ] && [ "$STATUS" != 'UPDATE_COMPLETE' ]; then
+  echo "Stack creation has failed status is '$STATUS'" >&2
+  exit 1
+else
+  echo "Stack creation is complete"
 fi
 
 # Update SSH Whitelist for this account

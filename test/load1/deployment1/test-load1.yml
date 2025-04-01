@@ -12,8 +12,6 @@
 #
 # Please see profile/deploy.yml for configuration details for each service.
 #
-version: '2.4'
-
 volumes:
   proxy-data:
   manager-data:
@@ -38,6 +36,7 @@ services:
       LE_EMAIL: ${OR_EMAIL_FROM:-}
       DOMAINNAME: ${OR_HOSTNAME:-localhost}
       DOMAINNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
+      MQTT_RATE_LIMIT: ${MQTT_RATE_LIMIT:-50}
       # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
       #HAPROXY_CONFIG: '/data/proxy/haproxy.cfg'
 
@@ -93,6 +92,8 @@ services:
       OR_SETUP_SERVICE_USERS:
       OR_SETUP_DEVICES: ${OR_SETUP_DEVICES:-10000}
       OR_SETUP_DEVICES_SKIP_COUNT:
+      OR_METRICS_ENABLED: true
+      OR_EXECUTOR_THREADS_MAX:
       OR_JAVA_OPTS: ${OR_JAVA_OPTS:--Xms500m -Xmx4g -XX:NativeMemoryTracking=summary -Xlog:all=warning:stdout:uptime,level,tags -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}
     volumes:
       - manager-data:/storage

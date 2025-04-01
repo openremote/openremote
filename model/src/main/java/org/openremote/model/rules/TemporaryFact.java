@@ -43,7 +43,7 @@ public class TemporaryFact<T> extends Event {
         super(timestamp);
         this.expirationMilliseconds = expirationMilliseconds;
         this.fact = fact;
-        this.time = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
+        this.time = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
         this.expirationTime = time.plus(expirationMilliseconds, ChronoUnit.MILLIS);
     }
 

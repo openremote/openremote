@@ -67,7 +67,7 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
         output: {
             path: dirname + "/dist",
             publicPath: "/" + dirname.split(path.sep).slice(-1)[0] + "/",
-            filename: "[name].[contenthash].js"
+            filename: production ? "[name].[contenthash].js" : "[name].js"
         },
         module: {...getStandardModuleRules()},
         // optimization: {
@@ -282,6 +282,10 @@ function generateExports(dirname) {
                 path: path.resolve(dirname, "dist/umd"),
                 library: libName,
                 libraryTarget: "umd"
+            },
+            resolve: {
+                extensions: [".ts", ".tsx", "..."],
+                fallback: { "vm": false }
             },
             module: {...getStandardModuleRules()},
             externals: generateExternals(bundle)

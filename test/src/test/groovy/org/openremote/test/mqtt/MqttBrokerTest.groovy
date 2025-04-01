@@ -8,7 +8,7 @@ import io.netty.channel.socket.SocketChannel
 import org.openremote.agent.protocol.mqtt.MQTTLastWill
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
-import org.openremote.agent.protocol.simulator.SimulatorProtocol
+import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetStorageService
@@ -32,6 +32,7 @@ import org.openremote.setup.integration.ManagerTestSetup
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
 
 import static org.openremote.container.util.MapAccess.getInteger
@@ -45,8 +46,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
     def "Mqtt broker event test"() {
         given: "the container environment is started"
-        List<SharedEvent> receivedEvents = []
-        List<Object> receivedValues = []
+        List<SharedEvent> receivedEvents = new CopyOnWriteArrayList<>()
+        List<Object> receivedValues = new CopyOnWriteArrayList<>()
         MQTT_IOClient client = null
         MQTT_IOClient newClient = null
         def conditions = new PollingConditions(timeout: 15, initialDelay: 0.1, delay: 0.2)
@@ -55,7 +56,9 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def mqttBrokerService = container.getService(MQTTBrokerService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
         def clientEventService = container.getService(ClientEventService.class)
+        def defaultMQTTHandler = mqttBrokerService.getCustomHandlers().find {it instanceof DefaultMQTTHandler} as DefaultMQTTHandler
         def agentService = container.getService(AgentService.class)
         def mqttClientId = UniqueIdentifierGenerator.generateId()
         def username = keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser.username // realm and OAuth client id
@@ -84,8 +87,6 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
-            def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert clientEventService.sessionKeyInfoMap.containsKey(getConnectionIDString(connection))
         }
 
         when: "the client disconnects"
@@ -94,8 +95,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "the client resources should be freed"
         conditions.eventually {
-            assert clientEventService.sessionKeyInfoMap.isEmpty()
-            assert !clientEventService.sessionKeyInfoMap.containsKey(getConnectionIDString(currentConnection))
+            assert client.getConnectionStatus() == ConnectionStatus.DISCONNECTED
+            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).isEmpty()
         }
 
         when: "a mqtt client connects with valid credentials"
@@ -107,8 +108,6 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
-            def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert clientEventService.sessionKeyInfoMap.containsKey(getConnectionIDString(connection))
         }
 
         when: "a mqtt client subscribes to an asset in another realm"
@@ -119,7 +118,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
+            assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
         }
 
         when: "a mqtt client subscribes with clientId missing"
@@ -130,7 +129,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
+            assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
         }
 
         when: "a mqtt client subscribes with different clientId"
@@ -143,7 +142,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert client.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
+            assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
         }
 
         when: "a mqtt client subscribes to all attributes of an asset"
@@ -157,16 +156,16 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "A subscription should exist"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
-            assert client.topicConsumerMap.get(topic).size() == 1
+            assert client.topicConsumerMap.get(topic).value.size() == 1
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 1
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
         }
 
         when: "An attribute event occurs for a subscribed attribute"
         def attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", 50)
-        ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "A publish event message should be sent"
         conditions.eventually {
@@ -180,7 +179,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         when: "Another asset attribute changed the client is subscribed on"
         attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "presenceDetected", true)
-        ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "A second publish event message should be sent"
         conditions.eventually {
@@ -248,12 +247,12 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) == null
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
+            assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
         }
 
         when: "another asset attribute changed without any subscriptions"
         attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "presenceDetected", false)
-        ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "No publish event message should be sent"
         new PollingConditions(initialDelay: 1, delay: 1, timeout: 10).eventually {
@@ -267,15 +266,15 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "the subscription should be created"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
-            assert client.topicConsumerMap.get(topic).size() == 1
+            assert client.topicConsumerMap.get(topic).value.size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 1
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
         }
 
         when: "that attribute changes"
         attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", 30)
-        ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "a publish event message should be sent to the client"
         conditions.eventually {
@@ -289,7 +288,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         when: "another asset attribute changed without any subscriptions on that attribute"
         attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "presenceDetected", true)
-        ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "no publish event message should be sent"
         new PollingConditions(initialDelay: 1, delay: 1, timeout: 10).eventually {
@@ -303,7 +302,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) == null
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
+            assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
         }
 
         when: "a mqtt client subscribes to attributes for descendants of an asset"
@@ -313,15 +312,15 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "a subscription should exist"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
-            assert client.topicConsumerMap.get(topic).size() == 1
+            assert client.topicConsumerMap.get(topic).value.size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 1
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
         }
 
         when: "a child asset of the subscription attribute event occurs"
         attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", 40)
-        ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "a publish event message should be sent"
         conditions.eventually {
@@ -343,15 +342,15 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "the subscription should be created"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
-            assert client.topicConsumerMap.get(topic).size() == 1
+            assert client.topicConsumerMap.get(topic).value.size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 2
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 2
         }
 
         when: "a subscribed attribute changes"
         attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", 50)
-        ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "A publish value message should be sent to both subscriptions"
         conditions.eventually {
@@ -368,7 +367,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         when: "a subscribed attribute changes"
         attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "presenceDetected", false)
-        ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "only the wildcard subscription should have received a publish"
         conditions.eventually {
@@ -388,8 +387,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert client.topicConsumerMap.get(topic) == null
             assert client.topicConsumerMap.size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 1
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
         }
 
         when: "a client disconnects"
@@ -418,8 +417,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "A subscription should exist"
         conditions.eventually {
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 1
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
         }
 
         when: "an asset is updated with a new attribute"
@@ -445,8 +444,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 2
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 2
         }
 
         when: "an asset is added as a descendant to the subscribed asset"
@@ -471,8 +470,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) == null
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 1
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
         }
 
         when: "the descendant asset is modified"
@@ -536,11 +535,12 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert (receivedEvents.get(0) as AttributeEvent).name == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 1000d
         }
-        receivedEvents.clear()
 
-        when: "the new client tries to publish again"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/motionSensor/${managerTestSetup.apartment1HallwayId}".toString()
-        payload = "170"
+        when: "the new client tries to publish again with a specified timestamp"
+        def specifiedTimestamp = (receivedEvents.get(0) as AttributeEvent).timestamp + 5
+        receivedEvents.clear()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_WRITE_TOPIC/motionSensor/${managerTestSetup.apartment1HallwayId}".toString()
+        payload = "{\"value\": 170, \"timestamp\": ${specifiedTimestamp}}".toString()
         newClient.sendMessage(new MQTTMessage<String>(topic, payload))
 
         then: "The value of the attribute should be updated and the first client should have received the event"
@@ -551,6 +551,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
             assert (receivedEvents.get(0) as AttributeEvent).name == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 170d
+            assert (receivedEvents.get(0) as AttributeEvent).timestamp == specifiedTimestamp
         }
         receivedEvents.clear()
 
@@ -600,7 +601,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert newClient.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
-            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
+            assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
         }
 
         when: "a restricted mqtt client subscribes to a linked asset"
@@ -611,8 +612,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert newClient.topicConsumerMap.get(topic) != null
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 1
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
         }
 
         when: "a user asset link is added for a connected restricted user"
@@ -655,7 +656,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert newClient.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
-            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
+            assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
         }
 
         // TODO: Further MQTT tests

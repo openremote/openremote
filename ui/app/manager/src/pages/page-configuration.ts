@@ -34,10 +34,12 @@ import {i18next} from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
 import {OrConfRealmCard} from "../components/configuration/or-conf-realm/or-conf-realm-card";
 import {OrConfPanel} from "../components/configuration/or-conf-panel";
-import {Input} from "@openremote/or-rules/lib/flow-viewer/services/input";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu, DefaultRealmConfig} from "../index";
 
 declare const CONFIG_URL_PREFIX: string;
+declare const MANAGER_URL: string | undefined;
+declare const APP_VERSION: string;
 
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -66,7 +68,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
                 --or-collapisble-panel-background-color: #fff;
                 --or-panel-background-color: #fff;
-                --or-panel-padding: 18px 24px 24px;
+                --or-panel-padding: 12px 24px 24px;
                 --or-panel-heading-margin: 0 0 10px 0;
                 --or-panel-background-color: var(--or-app-color1, ${unsafeCSS(DefaultColor1)});
                 --or-panel-heading-font-size: 14px;
@@ -250,7 +252,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                             </div>
                             <div id="header-actions">
                                 <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged && !this.mapConfigChanged}" raised type="button" label="save"
-                                              @click="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
+                                              @or-mwc-input-changed="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
                                 ></or-mwc-input>
                             </div>
                         </div>
@@ -286,6 +288,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 </div>
                             `)}
                         </or-panel>
+                        <div  style="margin: 0px auto; font-size: smaller;">
+                            OpenRemote Manager v${APP_VERSION}
+                        </div>
                     </div>
                 `
             })}
@@ -297,9 +302,16 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     // FETCH METHODS
 
-    protected async getManagerConfig(): Promise<ManagerAppConfig | undefined> {
-        const response = await fetch(this.urlPrefix + "/manager_config.json", { cache: "reload" });
-        return await response.json() as ManagerAppConfig;
+    protected async getManagerConfig(): Promise<ManagerAppConfig> {
+        const response = await manager.rest.api.ConfigurationResource.getManagerConfig();
+        return response.status === 200 ? response.data as ManagerAppConfig : {
+            realms: {
+                default: {
+                    appTitle: DefaultRealmConfig.appTitle,
+                    headers: [...Object.keys(DefaultHeaderMainMenu),...Object.keys(DefaultHeaderSecondaryMenu)]
+                }
+            }
+        };
     }
 
     protected async getMapConfig(): Promise<{[id: string]: any}> {
@@ -315,19 +327,22 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         this.loading = true;
         let managerPromise;
 
-        // POST manager config if changed...
-        if (this.managerConfigurationChanged) {
-            managerPromise = manager.rest.api.ConfigurationResource.update(config).then(() => {
-                fetch(this.urlPrefix + "/manager_config.json", {cache: "reload"});
-                this.managerConfiguration = config;
-                Object.entries(this.managerConfiguration.realms).forEach(([name, settings]) => {
-                    fetch(this.urlPrefix + settings?.favicon, {cache: "reload"});
-                    fetch(this.urlPrefix + settings?.logo, {cache: "reload"});
-                    fetch(this.urlPrefix + settings?.logoMobile, {cache: "reload"});
+        // Save the images to the server that have been uploaded by the user.
+        // TODO: Optimize code so it only saves images that have been changed.
+        const imagePromises = [];
+        if(this.realmConfigPanel !== undefined) {
+            const elems = this.realmConfigPanel.getCardElements() as OrConfRealmCard[];
+            elems.forEach((elem, index) => {
+                const files = elem?.getFiles();
+                Object.entries(files).forEach(async ([x, y]) => {
+                    imagePromises.push(
+                        manager.rest.api.ConfigurationResource.fileUpload(y, {path: (y as any).path}).then(file =>{
+                            config.realms[elem.name][x] = file.data;
+                        })
+                    );
                 });
-            }).catch((reason) => {
-                console.error(reason);
-            });
+            })
+            this.managerConfiguration = config;
         }
 
         // POST map config if changed...
@@ -341,25 +356,25 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 });
         }
 
-        // Save the images to the server that have been uploaded by the user.
-        // TODO: Optimize code so it only saves images that have been changed.
-        const imagePromises = [];
-        if(this.realmConfigPanel !== undefined) {
-            const elems = this.realmConfigPanel.getCardElements() as OrConfRealmCard[];
-            elems.forEach((elem, index) => {
-                const files = elem?.getFiles();
-                Object.entries(files).forEach(async ([x, y]) => {
-                    imagePromises.push(manager.rest.api.ConfigurationResource.fileUpload(y, {path: x}));
-                });
-            })
-        }
 
-        // Wait for all requests to complete, then finish loading.
-        const promises = [...imagePromises, managerPromise, mapPromise];
-        Promise.all(promises).finally(() => {
-            this.loading = false;
-            this.managerConfigurationChanged = false;
-            this.mapConfigChanged = false;
+        // We first wait for the imagePromises to finish, so that
+        // we can use the path returned from the backend to store to the
+        // manager_config.
+        Promise.all(imagePromises).then((arr:string[]) => {
+            // Wait for all requests to complete, then finish loading.
+            const promises = [
+                this.managerConfigurationChanged ? manager.rest.api.ConfigurationResource.update(config) : null,
+                this.mapConfigChanged ?  mapPromise : null];
+            Promise.all(promises).finally(() => {
+                this.requestUpdate();
+                this.loading = false;
+                this.managerConfigurationChanged = false;
+                this.mapConfigChanged = false;
+                const configURL =  (MANAGER_URL ?? "") + "/api/master/configuration/manager";
+                fetch(configURL, {cache: "reload"})
+                window.location.reload();
+            })
         })
+
     }
 }

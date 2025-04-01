@@ -1,0 +1,140 @@
+{
+    "rules": [
+        {
+            "recurrence": {
+                "mins": 0
+            },
+            "when": {
+                "operator": "OR",
+                "groups": [
+                    {
+                        "operator": "AND",
+                        "items": [
+                            {
+                                "assets": {
+                                    "types": [
+                                        "LightAsset"
+                                    ],
+                                    "attributes": {
+                                        "items": [
+                                            {
+                                                "name": {
+                                                    "predicateType": "string",
+                                                    "match": "EXACT",
+                                                    "value": "onOff"
+                                                },
+                                                "value": {
+                                                    "predicateType": "boolean",
+                                                    "value": true
+                                                }
+                                            },
+                                            {
+                                                "name": {
+                                                    "predicateType": "string",
+                                                    "match": "EXACT",
+                                                    "value": "brightness"
+                                                },
+                                                "value": {
+                                                    "predicateType": "number",
+                                                    "operator": "GREATER_THAN",
+                                                    "value": 50
+                                                }
+                                            },
+                                            {
+                                                "name": {
+                                                    "predicateType": "string",
+                                                    "match": "EXACT",
+                                                    "value": "brightness"
+                                                },
+                                                "value": {
+                                                    "predicateType": "number",
+                                                    "operator": "GREATER_THAN",
+                                                    "value": 10
+                                                }
+                                            }
+                                        ]
+                                    }
+                                },
+                                "duration": {
+                                    "1": "PT5M",
+                                    "2": "PT3M"
+                                }
+                            },
+                            {
+                                "assets": {
+                                    "types": [
+                                        "ThingAsset"
+                                    ],
+                                    "attributes": {
+                                        "items": [
+                                            {
+                                                "name": {
+                                                    "predicateType": "string",
+                                                    "match": "EXACT",
+                                                    "value": "notes"
+                                                },
+                                                "value": {
+                                                    "predicateType": "string",
+                                                    "negate": false,
+                                                    "match": "EXACT",
+                                                    "value": "Test"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "operator": "AND",
+                        "items": [
+                            {
+                                "assets": {
+                                    "types": [
+                                        "LightAsset"
+                                    ],
+                                    "attributes": {
+                                        "items": [
+                                            {
+                                                "name": {
+                                                    "predicateType": "string",
+                                                    "match": "EXACT",
+                                                    "value": "notes"
+                                                },
+                                                "value": {
+                                                    "predicateType": "string",
+                                                    "negate": false,
+                                                    "match": "EXACT",
+                                                    "value": "TriggerDuration"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                },
+                                "duration": {
+                                    "0": "PT10M"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "then": [
+                {
+                    "action": "write-attribute",
+                    "target": {
+                        "matchedAssets": {
+                            "types": [
+                                "LightAsset"
+                            ]
+                        }
+                    },
+                    "value": "Triggered",
+                    "attributeName": "notes"
+                }
+            ],
+            "name": "Duration Rule"
+        }
+    ]
+}

@@ -58,7 +58,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     protected Object value;
     protected boolean deleted;
     @JsonIgnore
-    protected Object source;
+    protected String source;
     protected String realm;
     @JsonView(Enhanced.class)
     protected String parentId;
@@ -125,7 +125,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         }
     }
 
-    public AttributeEvent(AssetInfo asset, Attribute<?> attribute, Object source, Object value, Long valueTimestamp, Object oldValue, Long oldValueTimestamp) {
+    public AttributeEvent(AssetInfo asset, Attribute<?> attribute, String source, Object value, Long valueTimestamp, Object oldValue, Long oldValueTimestamp) {
         this(new AttributeRef(asset.getId(), attribute.getName()),value, valueTimestamp);
 
         this.oldValue = oldValue;
@@ -186,11 +186,11 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return this;
     }
 
-    public Object getSource() {
+    public String getSource() {
         return source;
     }
 
-    public AttributeEvent setSource(Object source) {
+    public AttributeEvent setSource(String source) {
         this.source = source;
         return this;
     }
@@ -270,6 +270,11 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     @Override
     public MetaMap getMeta() {
         return meta;
+    }
+
+    public AttributeEvent setMeta(MetaMap meta) {
+        this.meta = meta;
+        return this;
     }
 
     @JsonIgnore

@@ -19,6 +19,8 @@
  */
 package org.openremote.model.event.shared;
 
+import org.openremote.model.event.Event;
+
 /**
  * The server returns this message when an {@link EventSubscription} failed.
  * <p>
@@ -26,7 +28,7 @@ package org.openremote.model.event.shared;
  * access rights. It might also fail if the subscription is invalid, for example, if
  * a required filter is not supplied or if the filter is not valid.
  */
-public class UnauthorizedEventSubscription<E extends SharedEvent> {
+public class UnauthorizedEventSubscription<E extends Event> {
 
     public static final String MESSAGE_PREFIX = "UNAUTHORIZED:";
 
