@@ -457,11 +457,13 @@ public class MapService implements ContainerService {
             PreparedStatement query = connection.prepareStatement("PRAGMA integrity_check;");
             ResultSet result = query.executeQuery();
             if (!result.next() || !result.getString(1).equals("ok")) {
+                connection.close();
                 Files.deleteIfExists(path);
                 LOG.log(Level.SEVERE, "MBTiles database file corrupt");
                 return false;
             }
             if (!saveMapMetadata(getMetadata(connection))) {
+                connection.close();
                 Files.deleteIfExists(path);
                 return false;
             };
@@ -471,6 +473,7 @@ public class MapService implements ContainerService {
         } catch (IOException | SQLException | ClassNotFoundException e) {
             LOG.log(Level.SEVERE, "Failed to load " + path.toString() + " file", e);
             try {
+                // TODO: find out how to handle file lock here
                 Files.deleteIfExists(path);
             } catch (IOException deleteError) {
                 LOG.log(Level.SEVERE, "Failed to delete " + path.toString() + " file", deleteError);
@@ -488,9 +491,10 @@ public class MapService implements ContainerService {
 
         boolean deleted = false;
         try {
+            connection.close();
             deleted = Files.deleteIfExists(customTilesPath);
             LOG.info(customTilesPath.toString() + " file deleted successfully");
-        } catch (IOException e) {
+        } catch (IOException | SQLException e) {
             LOG.log(Level.SEVERE, "Failed to delete " + customTilesPath.toString() + " file", e);
         }
         try {
