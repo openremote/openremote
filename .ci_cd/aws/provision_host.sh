@@ -73,6 +73,7 @@ STACK_NAME=$(tr '.' '-' <<< "$HOST")
 SMTP_STACK_NAME="$STACK_NAME-smtp"
 HEALTH_STACK_NAME="$STACK_NAME-healthcheck"
 EBS_STACK_NAME="$STACK_NAME-ebs-data-volume"
+DLM_STACK_NAME="$STACK_NAME-dlm-ebs-snapshot-policy"
 
 # Provision SMTP user using CloudFormation (if stack doesn't already exist).
 echo "Provisioning SMTP user"
@@ -369,6 +370,78 @@ EOF
       exit 1
     else
       echo "Stack creation is complete"
+    fi
+  fi
+fi
+
+# Provision Lifecycle Policy
+echo "Provisioning Lifecycle Policy for EBS Data volume"
+
+# Check for DLM IAM Role
+echo "Check if IAM role exists"
+ROLE_ARN=$(aws iam get-role --role-name AWSDataLifecycleManagerDefaultRole --query "Role.Arn" --output text $ACCOUNT_PROFILE)
+
+if [ -z "$ROLE_ARN" ]; then
+  ROLE=$(aws dlm create-default-role --resource-type snapshot)
+    
+  if [ $? -ne 0 ]; then
+    echo "IAM Role creation has failed"
+    exit 1
+  else
+    echo "IAM Role creation is complete"
+  fi
+    
+  ROLE_ARN=$(aws iam get-role --role-name AWSDataLifecycleManagerDefaultRole --query "Role.Arn" --output text $ACCOUNT_PROFILE)
+fi
+
+STATUS=$(aws cloudformation describe-stacks --stack-name $DLM_STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null)
+
+if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
+  echo "Stack already exists for this host '$HOST' current status is '$STATUS'"
+  STACK_ID=$(aws cloudformation describe-stacks --stack-name $DLM_STACK_NAME --query "Stacks[0].StackId" --output text 2>/dev/null)
+else
+
+  if [ -f "${awsDir}cloudformation-create-dlm-policy.yml" ]; then
+    DLM_TEMPLATE_PATH="${awsDir}cloudformation-create-dlm-policy.yml"
+  elif [ -f ".ci_cd/aws/cloudformation-create-dlm-policy.yml" ]; then
+    DLM_TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-dlm-policy.yml"
+  elif [ -f "openremote/.ci_cd/aws/cloudformation-create-dlm-policy.yml" ]; then
+    DLM_TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-create-dlm-policy.yml"
+  else
+    echo "Cannot determine location of cloudformation-create-dlm-policy.yml"
+    exit 1
+  fi
+
+  # Configure parameters
+  DLM_DESCRIPTION="OpenRemote-${HOST%.*}"
+  PARAMS="ParameterKey=PolicyDescription,ParameterValue='$DLM_DESCRIPTION'"
+  PARAMS="$PARAMS ParameterKey=DLMExecutionRoleArn,ParameterValue='$ROLE_ARN'"
+  PARAMS="$PARAMS ParameterKey=EBSStackId,ParameterValue='$EBS_STACK_ID'"
+
+  # Create standard stack resources in specified account
+  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $DLM_STACK_NAME --template-body file://$DLM_TEMPLATE_PATH --parameters $PARAMS --output text)
+
+  if [ $? -ne 0 ]; then
+    echo "Create stack failed"
+    exit 1
+  fi
+
+  if [ "$WAIT_FOR_STACK" != 'false' ]; then
+    # Wait for CloudFormation stack status to be CREATE_*
+    echo "Waiting for stack to be created"
+    STATUS=$(aws cloudformation describe-stacks --stack-name $DLM_STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text 2>/dev/null)
+
+    while [[ "$STATUS" == 'CREATE_IN_PROGRESS' ]]; do
+        echo "Stack creation is still in progress .. Sleeping 30 seconds"
+        sleep 30
+        STATUS=$(aws cloudformation describe-stacks --stack-name $DLM_STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text 2>/dev/null)
+    done
+
+    if [ "$STATUS" != 'CREATE_COMPLETE' ]; then
+        echo "Stack creation has failed status is '$STATUS'"
+        exit 1
+    else
+        echo "Stack creation is complete"
     fi
   fi
 fi
