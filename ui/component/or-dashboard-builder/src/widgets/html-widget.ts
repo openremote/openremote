@@ -17,23 +17,25 @@ export interface HtmlWidgetConfig extends WidgetConfig {
 
 function getDefaultConfig(): HtmlWidgetConfig {
     return {
-        html: '<!DOCTYPE html>' +
-            '<p class="demoTitle">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ' +
-            '<span style="background: #4d9d2a; color: #fff;"> &nbsp;OpenRemote&nbsp;' +
-            '</span>&nbsp;HTML&nbsp;widget</p> <p class="introText"><strong>Paste your HTML, use any WYSIWYG editor for easy generation.</strong></p> ' +
-            '<!-- This comment is visible in the source code only --> ' +
-            '<p style="text-align: center;"> <img style="width: 90%; max-width: 752px;" src="https://docs.openremote.io/assets/images/architecture-32e43028000b886c4d7a6e76aeba65cb.jpg" alt="screenshot" /></p>' +
-            '<p>Write markup with&nbsp;<a href="https://en.wikipedia.org/wiki/HTML" target="_blank" rel="nofollow">HTML</a>',
+        html: '<!DOCTYPE html> ' +
+            '<html><head></head><body><p class="demoTitle">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ' +
+            '<span style="background: #4d9d2a; color: #fff;"> &nbsp;OpenRemote&nbsp;</span>' +
+            '&nbsp;HTML&nbsp;widget</p> <p class="introText"><strong>Paste your HTML, use any WYSIWYG editor for easy generation.</strong></p>  ' +
+            '<p style="text-align: center;"> <img src="https://docs.openremote.io/assets/images/architecture-32e43028000b886c4d7a6e76aeba65cb.jpg" style="width: 90%; max-width: 752px;"></p>' +
+            '<p>Write markup with&nbsp;<a rel="nofollow" target="_blank" href="https://en.wikipedia.org/wiki/HTML">HTML</a></p></body></html>',
         sanitizerConfig: {
-            ALLOWED_TAGS: ['p', 'div', 'span', 'img', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'br', 'h1', 'h2', 'h3', '!DOCTYPE html'],
+            ALLOWED_TAGS: ['p', 'div', 'span', 'img', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'br', 'h1', 'h2', 'h3'],
             ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style', 'src'],
             ALLOWED_STYLES: [
                 'color', 'font-size', 'text-align', 'margin', 'padding',
                 'font-weight', 'font-style', 'text-decoration', 'background'
             ],
+            ADD_TAGS: ['!doctype'],
             ADD_ATTR: ['target'], // Allow target="_blank" for links
             RETURN_DOM_FRAGMENT: false,
-            RETURN_DOM: false
+            RETURN_DOM: false,
+            WHOLE_DOCUMENT: true,
+            RETURN_TRUSTED_TYPE: true
         }
     }
 }

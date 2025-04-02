@@ -69,18 +69,14 @@ export class HtmlSettings extends WidgetSettings {
                             const editor = editorRef.value;
                             console.log('Editor:', editor)
                             if (!editor!.validate()) {
-                                console.warn("HMTL was not valid");
+                                console.warn("HMTL is not valid");
                                 showSnackbar(undefined, i18next.t('errorOccurred'));
-                                return;
-                            } else {
+                            } else if (editor!.getValue()!.length > 0) {
                                 this.widgetConfig.html = DOMPurify.sanitize(editor!.getValue() ?? "", this.widgetConfig.sanitizerConfig)
-                                console.log("value.value:",editor!.getValue())
-                                console.log("widgetconfigbeforeupdate:", this.widgetConfig.html)
+                                if (DOMPurify.removed.length >= 1) {
+                                    console.warn("Purified Content:", DOMPurify.removed);
+                                }
                                 this.notifyConfigUpdate();
-                                console.log("widgetconfigafterupdate:", this.widgetConfig.html)
-                            }
-                            if (this.widgetConfig.html != editor!.getValue() ) {
-                                console.warn("Potentially Harmful HTML was present, is purified");
                             }
                         }
                     }
