@@ -33,7 +33,6 @@ import {TableWidget} from "./widgets/table-widget";
 import {GatewayWidget} from "./widgets/gateway-widget";
 import {HtmlWidget} from "./widgets/html-widget";
 
-
 // language=CSS
 const styling = css`
     
