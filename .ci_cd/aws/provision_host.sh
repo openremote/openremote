@@ -376,24 +376,6 @@ fi
 
 # Provision Lifecycle Policy
 echo "Provisioning Lifecycle Policy for EBS Data volume"
-
-# Check for DLM IAM Role
-echo "Check if IAM role exists"
-ROLE_ARN=$(aws iam get-role --role-name AWSDataLifecycleManagerDefaultRole --query "Role.Arn" --output text $ACCOUNT_PROFILE)
-
-if [ -z "$ROLE_ARN" ]; then
-  ROLE=$(aws dlm create-default-role --resource-type snapshot)
-    
-  if [ $? -ne 0 ]; then
-    echo "IAM Role creation has failed"
-    exit 1
-  else
-    echo "IAM Role creation is complete"
-  fi
-    
-  ROLE_ARN=$(aws iam get-role --role-name AWSDataLifecycleManagerDefaultRole --query "Role.Arn" --output text $ACCOUNT_PROFILE)
-fi
-
 STATUS=$(aws cloudformation describe-stacks --stack-name $DLM_STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null)
 
 if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
@@ -412,12 +394,29 @@ else
     exit 1
   fi
 
+  # Check for DLM IAM Role
+  echo "Check if IAM Role exists"
+  ROLE_ARN=$(aws iam get-role --role-name AWSDataLifecycleManagerDefaultRole --query "Role.Arn" --output text $ACCOUNT_PROFILE)
+
+  if [ -z "$ROLE_ARN" ]; then
+    ROLE=$(aws dlm create-default-role --resource-type snapshot)
+      
+    if [ $? -ne 0 ]; then
+      echo "IAM Role creation has failed"
+      exit 1
+    else
+      echo "IAM Role creation is complete"
+    fi
+      
+    ROLE_ARN=$(aws iam get-role --role-name AWSDataLifecycleManagerDefaultRole --query "Role.Arn" --output text $ACCOUNT_PROFILE)
+  fi
+
   # Configure parameters
   DLM_DESCRIPTION="OpenRemote-${HOST%.*}"
   PARAMS="ParameterKey=PolicyDescription,ParameterValue='$DLM_DESCRIPTION'"
   PARAMS="$PARAMS ParameterKey=DLMExecutionRoleArn,ParameterValue='$ROLE_ARN'"
   PARAMS="$PARAMS ParameterKey=EBSStackId,ParameterValue='$EBS_STACK_ID'"
-
+  
   # Create standard stack resources in specified account
   STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $DLM_STACK_NAME --template-body file://$DLM_TEMPLATE_PATH --parameters $PARAMS --output text)
 

@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------------------------------------------------
 #
-# CloudFormation Template for creating an separate EBS volume for storing the IoT Data.
+# CloudFormation Template for creating an separate EBS volume for storing the IoT data.
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -26,7 +26,7 @@ Conditions:
   IsSnapshotProvided: !Not [!Equals [!Ref SnapshotId, ""]]
 
 Resources:
-  ORDataVolume:
+  DataVolume:
     Type: AWS::EC2::Volume
     Properties:
       AvailabilityZone: !Ref AvailabilityZone
