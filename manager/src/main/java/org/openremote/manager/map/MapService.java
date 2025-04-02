@@ -94,10 +94,10 @@ public class MapService implements ContainerService {
         String tileUrl = Optional.ofNullable(vectorTiles.get("tiles"))
             .map(tiles -> tiles.get(0))
             .filter(JsonNode::isTextual)
-            .map(url -> url.textValue())
+            .map(JsonNode::textValue)
             .orElse(null);
         // Saves custom tile server url if custom is true in the vector_tiles source and the url follows the required xyz scheme.
-        // Otherwise replace it with the default configuration.
+        // Otherwise, replace it with the default configuration.
         if (vectorTiles.get("custom").booleanValue() && tileUrl != null && tileUrl.contains("/{z}/{x}/{y}")) {
             vectorTiles.put("url", tileUrl);
         } else {
@@ -344,7 +344,7 @@ public class MapService implements ContainerService {
                     Optional.ofNullable(vectorTilesObj.get("tiles"))
                         .map(tiles -> tiles.get(0))
                         .filter(JsonNode::isTextual)
-                        .map(url -> url.textValue())
+                        .map(JsonNode::textValue)
                         .ifPresent(url -> {
                             if (!url.contentEquals(DEFAULT_VECTOR_TILES_URL)) {
                                 tilesArray.remove(0);
@@ -471,12 +471,12 @@ public class MapService implements ContainerService {
             this.setData(connection, metadata);
             return true;
         } catch (IOException | SQLException | ClassNotFoundException e) {
-            LOG.log(Level.SEVERE, "Failed to load " + path.toString() + " file", e);
+            LOG.log(Level.SEVERE, "Failed to load " + path + " file", e);
             try {
                 // TODO: find out how to handle file lock here
                 Files.deleteIfExists(path);
             } catch (IOException deleteError) {
-                LOG.log(Level.SEVERE, "Failed to delete " + path.toString() + " file", deleteError);
+                LOG.log(Level.SEVERE, "Failed to delete " + path + " file", deleteError);
             }
             return false;
         }
@@ -493,9 +493,9 @@ public class MapService implements ContainerService {
         try {
             connection.close();
             deleted = Files.deleteIfExists(customTilesPath);
-            LOG.info(customTilesPath.toString() + " file deleted successfully");
+            LOG.info(customTilesPath + " file deleted successfully");
         } catch (IOException | SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to delete " + customTilesPath.toString() + " file", e);
+            LOG.log(Level.SEVERE, "Failed to delete " + customTilesPath + " file", e);
         }
         try {
             Path mapTilesPath = configurationService.getMapTilesPath();
