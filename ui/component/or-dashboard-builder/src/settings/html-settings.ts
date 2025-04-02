@@ -19,13 +19,6 @@ const styling = css`
     align-items: center;
     justify-content: space-between;
   }
-    
-  //or-mwc-dialog {
-  //    margin-bottom: 20px;
-  //    margin-right: 16px;
-  //    width:100%;
-  //    height:100%;
-  //}
 `;
 
 @customElement("html-settings")
@@ -59,20 +52,18 @@ export class HtmlSettings extends WidgetSettings {
             .setHeading(i18next.t("HTML Editor"))
             .setContent(()=> html `
                 <div>
-                    <or-ace-editor ${ref(editorRef)} .value="${content}" .mode="ace/mode/html" style="height: 60vh; width: 1024px;"></or-ace-editor>
+                    <or-ace-editor ${ref(editorRef)} .value="${content}" .mode="${this._getMode()}"></or-ace-editor>
                 </div>
             `)
             .setActions([
                 {actionName: "cancel", content: "cancel"},
                 {actionName: "save", content: "save", action: () => {
                         if (editorRef.value) {
-                            const editor = editorRef.value;
-                            console.log('Editor:', editor)
-                            if (!editor!.validate()) {
+                            if (!editorRef.value.validate()) {
                                 console.warn("HMTL is not valid");
                                 showSnackbar(undefined, i18next.t('errorOccurred'));
-                            } else if (editor!.getValue()!.length > 0) {
-                                this.widgetConfig.html = DOMPurify.sanitize(editor!.getValue() ?? "", this.widgetConfig.sanitizerConfig)
+                            } else if (editorRef.value.getValue()!.length > 0) {
+                                this.widgetConfig.html = DOMPurify.sanitize(editorRef.value.getValue() ?? "", this.widgetConfig.sanitizerConfig)
                                 if (DOMPurify.removed.length >= 1) {
                                     console.warn("Purified Content:", DOMPurify.removed);
                                 }
@@ -100,10 +91,10 @@ export class HtmlSettings extends WidgetSettings {
                 </style>
             `)
         )
-        console.log("generated config:", this.widgetConfig.html)
-
     }
 
-
+    protected _getMode() {
+        return "ace/mode/html";
+    }
 
 }

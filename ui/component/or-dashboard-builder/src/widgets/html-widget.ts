@@ -4,10 +4,16 @@ import {OrWidget} from "../util/or-widget";
 import {WidgetConfig} from "../util/widget-config";
 import {WidgetManifest} from "../util/or-widget";
 import {WidgetSettings} from "../util/widget-settings";
-import { customElement, query, queryAll, state, property } from "lit/decorators.js";
-import {HtmlSettings} from "../settings/html-settings";
-import { when } from "lit/directives/when.js";
+import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import { customElement, query, queryAll, state} from "lit/decorators.js";
+import {createRef, Ref, ref } from "lit/directives/ref.js";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import {throttle} from "lodash";
+import {i18next} from "@openremote/or-translate";
+import {OrAceEditor} from "@openremote/or-components/or-ace-editor";
+import "ace-builds/src-noconflict/mode-html";
+import "ace-builds/webpack-resolver";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import DOMPurify from 'dompurify'
 
 export interface HtmlWidgetConfig extends WidgetConfig {
@@ -17,11 +23,11 @@ export interface HtmlWidgetConfig extends WidgetConfig {
 
 function getDefaultConfig(): HtmlWidgetConfig {
     return {
-        html: '<!DOCTYPE html> ' +
-            '<html><head></head><body><p class="demoTitle">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ' +
-            '<span style="background: #4d9d2a; color: #fff;"> &nbsp;OpenRemote&nbsp;</span>' +
-            '&nbsp;HTML&nbsp;widget</p> <p class="introText"><strong>Paste your HTML, use any WYSIWYG editor for easy generation.</strong></p>  ' +
-            '<p style="text-align: center;"> <img src="https://docs.openremote.io/assets/images/architecture-32e43028000b886c4d7a6e76aeba65cb.jpg" style="width: 90%; max-width: 752px;"></p>' +
+        html: '<!DOCTYPE html>\n' +
+            '<html><head></head><body><p class="demoTitle">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n' +
+            '<span style="background: #4d9d2a; color: #fff;"> &nbsp;OpenRemote&nbsp;</span>\n' +
+            '&nbsp;HTML&nbsp;widget</p> <p class="introText"><strong>Paste your HTML, use any WYSIWYG editor for easy generation.</strong></p>\n' +
+            '<p style="text-align: center;"> <img src="https://docs.openremote.io/assets/images/architecture-32e43028000b886c4d7a6e76aeba65cb.jpg" style="width: 90%; max-width: 752px;"></p>\n' +
             '<p>Write markup with&nbsp;<a rel="nofollow" target="_blank" href="https://en.wikipedia.org/wiki/HTML">HTML</a></p></body></html>',
         sanitizerConfig: {
             ALLOWED_TAGS: ['p', 'div', 'span', 'img', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'br', 'h1', 'h2', 'h3'],
@@ -60,8 +66,13 @@ const styling = css`
     width: 100%;
     box-sizing: border-box;
   }
+    
+  .switch-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+  }
 `
-//This widget requires some good security checks, free input fields may allow code injection!
 
 @customElement("html-widget")
 export class HtmlWidget extends OrWidget {
@@ -78,20 +89,6 @@ export class HtmlWidget extends OrWidget {
     protected attributeInputElems?: NodeList;
 
     protected resizeObserver?: ResizeObserver;
-
-    // DOMPurify configuration
-    private sanitizerConfig = {
-        ALLOWED_TAGS: ['p', 'div', 'span', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'br', 'h1', 'h2', 'h3'],
-        ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
-        ALLOWED_STYLES: [
-            'color', 'font-size', 'text-align', 'margin', 'padding',
-            'font-weight', 'font-style', 'text-decoration'
-        ],
-        ADD_ATTR: ['target'], // Allow target="_blank" for links
-        RETURN_DOM_FRAGMENT: false,
-        RETURN_DOM: false
-    };
-
 
     static getManifest(): WidgetManifest {
         return {
@@ -159,4 +156,82 @@ export class HtmlWidget extends OrWidget {
     private getSanitizedContent(): string {
         return DOMPurify.sanitize(this.widgetConfig.html, this.widgetConfig.sanitizerConfig);
     }
+}
+
+@customElement("html-settings")
+export class HtmlSettings extends WidgetSettings {
+
+    protected readonly widgetConfig!: HtmlWidgetConfig;
+
+    static get styles() {
+        return [...super.styles, styling];
+    }
+
+    protected render(): TemplateResult {
+        return html`
+            <div>
+                <!-- HTML input -->
+                <settings-panel displayName="Content" expanded="${true}">
+                    <div>
+                        <or-mwc-input .type="${InputType.BUTTON}" outlined label="Custom HTML" icon="language-html5" @or-mwc-input-changed="${() => this.openHtmlInputDialog(this.widgetConfig.html)}"></or-mwc-input>
+                    </div
+                </settings-panel>
+            </div>
+        `;
+    }
+
+
+
+    protected openHtmlInputDialog(content?: string) {
+        const editorRef: Ref<OrAceEditor> = createRef();
+
+        showDialog(new OrMwcDialog()
+            .setHeading(i18next.t("HTML Editor"))
+            .setContent(()=> html `
+                <div>
+                    <or-ace-editor ${ref(editorRef)} .value="${content}" .mode="${this._getMode()}"></or-ace-editor>
+                </div>
+            `)
+            .setActions([
+                {actionName: "cancel", content: "cancel"},
+                {actionName: "save", content: "save", action: () => {
+                        if (editorRef.value) {
+                            if (!editorRef.value.validate()) {
+                                console.warn("HMTL is not valid");
+                                showSnackbar(undefined, i18next.t('errorOccurred'));
+                            } else if (editorRef.value.getValue()!.length > 0) {
+                                this.widgetConfig.html = DOMPurify.sanitize(editorRef.value.getValue() ?? "", this.widgetConfig.sanitizerConfig)
+                                if (DOMPurify.removed.length >= 1) {
+                                    console.warn("Purified Content:", DOMPurify.removed);
+                                }
+                                this.notifyConfigUpdate();
+                            }
+                        }
+                    }
+                }])
+            .setStyles(html`
+                <style>
+                    .mdc-dialog__surface {
+                        width: 1024px;
+                        overflow-x: visible !important;
+                        overflow-y: visible !important;
+                    }
+                    #dialog-content {
+                        border-top-width: 1px;
+                        border-top-style: solid;
+                        border-bottom-width: 1px;
+                        border-bottom-style: solid;
+                        padding: 0;
+                        overflow: visible;
+                        height: 60vh;
+                    }
+                </style>
+            `)
+        )
+    }
+
+    protected _getMode() {
+        return "ace/mode/html";
+    }
+
 }
