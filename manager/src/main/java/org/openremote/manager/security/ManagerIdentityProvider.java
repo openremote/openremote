@@ -358,23 +358,15 @@ public interface ManagerIdentityProvider extends IdentityProvider {
                 return o1.getName().compareTo(o2.getName());
             });
 
-            // TODO: Remove this once migrated to hibernate 6.2.x+
-            realms.forEach(r -> r.getRealmRoles().size());
-
-            return realms.toArray(new Realm[realms.size()]);
+            return realms.toArray(new Realm[0]);
         });
     }
 
-    static Realm getRealmFromDb(PersistenceService persistenceService, String realm) {
-        return persistenceService.doReturningTransaction(em -> {
-                    List<Realm> realms = em.createQuery("select r from Realm r where r.name = :realm", Realm.class)
-                            .setParameter("realm", realm).getResultList();
-
-                    // TODO: Remove this once migrated to hibernate 6.2.x+
-                    realms.forEach(r -> r.getRealmRoles().size());
-
-                    return realms.size() == 1 ? realms.get(0) : null;
-                }
+    static Realm getRealmFromDb(PersistenceService persistenceService, String name) {
+        return persistenceService.doReturningTransaction(em -> em
+                .createQuery("select r from Realm r where r.name = :realm", Realm.class)
+                .setParameter("realm", name)
+                .getSingleResult()
         );
     }
 

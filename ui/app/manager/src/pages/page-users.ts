@@ -332,8 +332,11 @@ export class PageUsers extends Page<AppStateKeyed> {
     private async _createUpdateUser(user: UserModel, action: 'update' | 'create'): Promise<boolean> {
         let result = false;
 
-        if ((this._registrationEmailAsUsername && !user.serviceAccount) ? !user.email : !user.username) {
-            showSnackbar(undefined, ((this._registrationEmailAsUsername && !user.serviceAccount) ? "noEmailSet" : "noUsernameSet"), "dismiss");
+        if (this._registrationEmailAsUsername && !user.serviceAccount && !user.email) {
+            showSnackbar(undefined, "noEmailSet", "dismiss");
+            return false;
+        } else if ((!this._registrationEmailAsUsername || user.serviceAccount) && !user.username) {
+            showSnackbar(undefined, "noUsernameSet", "dismiss");
             return false;
         }
 
