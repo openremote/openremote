@@ -33,7 +33,8 @@ import java.io.Serializable;
 @JsonSubTypes({
     @JsonSubTypes.Type(value = RegexValueFilter.class),
     @JsonSubTypes.Type(value = SubStringValueFilter.class),
-    @JsonSubTypes.Type(value = JsonPathFilter.class)
+    @JsonSubTypes.Type(value = JsonPathFilter.class),
+    @JsonSubTypes.Type(value = MathExpressionValueFilter.class)
 })
 // TODO: Standardise inbound/outbound value processing as ordered list of filters and/or converters
 public abstract class ValueFilter implements Serializable {
