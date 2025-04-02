@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.sql.SQLException;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -101,12 +100,8 @@ public class MapResourceImpl extends WebResource implements MapResource {
                     requestParams.getExternalSchemeHostAndPort()
                 );
             }
-            mapService.setData();
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
-        } catch (IOException | ClassNotFoundException | SQLException e) {
-            try {
-                mapService.setData();
-            } catch (ClassNotFoundException | SQLException err) {}
+        } catch (IOException e) {
             LOG.log(Level.INFO, "Failed to save custom map tiles", e);
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
