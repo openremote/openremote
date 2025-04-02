@@ -452,7 +452,7 @@ public class MapService implements ContainerService {
             }
 
             Class.forName(org.sqlite.JDBC.class.getName());
-            Connection connection = DriverManager.getConnection("jdbc:sqlite:" + path);
+            connection = DriverManager.getConnection("jdbc:sqlite:" + path);
 
             PreparedStatement query = connection.prepareStatement("PRAGMA integrity_check;");
             ResultSet result = query.executeQuery();
