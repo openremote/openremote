@@ -482,9 +482,6 @@ public class MapService implements ContainerService {
         }
     }
 
-    public boolean isCustomUploadedFile() {
-        return Files.exists(getCustomMapDataPath());
-    }
 
     public boolean deleteUploadedFile() {
         Path customTilesPath = getCustomMapDataPath();
@@ -533,7 +530,7 @@ public class MapService implements ContainerService {
 
     /**
      * The filename resolves to a path, when the file ends with {@code .mbtiles} and does not equal {@code configurationService.getMapTilesPath()}.
-     * Otherwise returns {@code null}.
+     * Otherwise, returns {@code null}.
      */
     public Path resolveCustomTilesPath(String filename) {
         Path mapTilesPath = configurationService.getMapTilesPath();
