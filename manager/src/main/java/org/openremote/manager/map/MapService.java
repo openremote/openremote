@@ -440,6 +440,8 @@ public class MapService implements ContainerService {
     }
 
     public boolean saveUploadedFile(Path path, InputStream fileInputStream) {
+        Path previous = getCustomMapDataPath();
+
         try (OutputStream outputStream = Files.newOutputStream(path)) {
             byte[] buffer = new byte[4096];
             int bytesRead;
@@ -452,6 +454,10 @@ public class MapService implements ContainerService {
                 }
                 outputStream.write(buffer, 0, bytesRead);
                 written += bytesRead;
+            }
+            if (previous != null) {
+                connection.close();
+                Files.deleteIfExists(previous);
             }
 
             Class.forName(org.sqlite.JDBC.class.getName());
