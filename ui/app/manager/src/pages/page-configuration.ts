@@ -465,8 +465,11 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     protected async getMapConfig(): Promise<MapConfig> {
         const response = await manager.rest.api.MapResource.getSettings();
-        const { options, sources } = response.data as MapConfig;
-        return { options, sources };
+        if (response.data) {
+          const { options, sources } = response.data as MapConfig;
+          return { options, sources };
+        }
+        return null;
     }
 
     protected async getAccessibleRealms(): Promise<Realm[]> {
