@@ -457,7 +457,7 @@ public class MapService implements ContainerService {
                 outputStream.write(buffer, 0, bytesRead);
                 written += bytesRead;
             }
-            if (previous != null) {
+            if (previous != null && !previous.equals(path)) {
                 connection.close();
                 Files.deleteIfExists(previous);
             }
