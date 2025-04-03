@@ -233,12 +233,14 @@ public class MapService implements ContainerService {
             return;
         }
         Path customMapTilesPath = getCustomMapDataPath();
-        if (delete) {
-            connection.close();
-            Files.deleteIfExists(customMapTilesPath);
-        // Overwrite default map if custom map file exists
-        } else if (customMapTilesPath != null && Files.exists(customMapTilesPath)) {
-            mapTilesPath = customMapTilesPath.toAbsolutePath();
+        if (customMapTilesPath != null) {
+            if (delete) {
+                connection.close();
+                Files.deleteIfExists(customMapTilesPath);
+            // Overwrite default map if custom map file exists
+            } else if (Files.exists(customMapTilesPath)) {
+                mapTilesPath = customMapTilesPath.toAbsolutePath();
+            }
         }
 
         Class.forName(org.sqlite.JDBC.class.getName());
