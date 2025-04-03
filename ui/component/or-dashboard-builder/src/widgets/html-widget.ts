@@ -79,14 +79,8 @@ export class HtmlWidget extends OrWidget {
 
     protected widgetConfig!: HtmlWidgetConfig;
 
-    @state()
-    protected _loading = false;
-
     @query("#widget-wrapper")
     protected widgetWrapperElem?: HTMLElement;
-
-    @queryAll(".attr-input")
-    protected attributeInputElems?: NodeList;
 
     protected resizeObserver?: ResizeObserver;
 
