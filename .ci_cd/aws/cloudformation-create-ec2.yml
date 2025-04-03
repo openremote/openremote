@@ -224,10 +224,10 @@ Resources:
           default:
             - setupCfnHup
             - create_swapfile
-            - cloudwatch_config
-            - restart_amazon-cloudwatch-agent
             - docker_setup
             - prepare_volume
+            - cloudwatch_config
+            - restart_amazon-cloudwatch-agent
             - cron_setup
             - env_vars
             - dns_updater
@@ -278,7 +278,8 @@ Resources:
                             "used_percent"
                           ],
                           "resources": [
-                            "/"
+                            "/",
+                            "/var/lib/docker/volumes"
                           ],
                           "metrics_collection_interval": 900
                         }
@@ -971,7 +972,7 @@ Resources:
         - Name: InstanceId
           Value: !Ref EC2Instance
 
-  DiskUtilizationAlarm:
+  RootDiskUtilizationAlarm:
     Type: AWS::CloudWatch::Alarm
     Condition: MetricsEnabled
     Properties:
@@ -991,6 +992,29 @@ Resources:
           Value: !Ref EC2Instance
         - Name: path
           Value: /
+        - Name: fstype
+          Value: xfs
+
+  DataDiskUtilizationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
+    Properties:
+      Namespace: CWAgent
+      MetricName: disk_used_percent
+      Statistic: Average
+      Period: 3600
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 90
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref EC2Instance
+        - Name: path
+          Value: /var/lib/docker/volumes
         - Name: fstype
           Value: xfs
 
