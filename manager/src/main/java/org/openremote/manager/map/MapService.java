@@ -220,10 +220,10 @@ public class MapService implements ContainerService {
     }
 
     public void setData() throws ClassNotFoundException, SQLException, NullPointerException, IOException {
-        setData(null, null, false);
+        setData(false);
     }
 
-    public void setData(Connection conn, Metadata meta, Boolean delete) throws ClassNotFoundException, SQLException, NullPointerException, IOException {
+    public void setData(Boolean delete) throws ClassNotFoundException, SQLException, NullPointerException, IOException {
         Path mapTilesPath = configurationService.getMapTilesPath();
         if (mapTilesPath == null) {
             return;
@@ -232,10 +232,18 @@ public class MapService implements ContainerService {
         if (!mapTilesPath.toFile().exists()) {
             return;
         }
+
+        try {
+            if (connection != null) {
+                connection.close();
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Could not close connection", e);
+        }
+
         Path customMapTilesPath = getCustomMapDataPath();
         if (customMapTilesPath != null) {
             if (delete) {
-                connection.close();
                 Files.deleteIfExists(customMapTilesPath);
             // Overwrite default map if custom map file exists
             } else if (Files.exists(customMapTilesPath)) {
@@ -244,8 +252,8 @@ public class MapService implements ContainerService {
         }
 
         Class.forName(org.sqlite.JDBC.class.getName());
-        connection = conn == null || delete ? DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath) : conn;
-        metadata = meta == null ? getMetadata(connection) : metadata;
+        connection = DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath);
+        metadata = getMetadata(connection);
 
         if (metadata.isValid()) {
             mapConfig = configurationService.getMapConfig();
@@ -451,7 +459,7 @@ public class MapService implements ContainerService {
             while ((bytesRead = fileInputStream.read(buffer)) != -1) {
                 if (written > customMapLimit) {
                     LOG.log(Level.SEVERE, "Stream continued past content-length, deleting file.");
-                    this.setData(connection, metadata, true);
+                    this.setData(true);
                     return false;
                 }
                 outputStream.write(buffer, 0, bytesRead);
@@ -469,20 +477,20 @@ public class MapService implements ContainerService {
             ResultSet result = query.executeQuery();
             if (!result.next() || !result.getString(1).equals("ok")) {
                 LOG.log(Level.SEVERE, "MBTiles database file corrupt");
-                this.setData(connection, metadata, true);
+                this.setData(true);
                 return false;
             }
             if (!saveMapMetadata(getMetadata(connection))) {
-                this.setData(connection, metadata, true);
+                this.setData(true);
                 return false;
             };
 
-            this.setData(connection, metadata, false);
+            this.setData();
             return true;
         } catch (IOException | SQLException | ClassNotFoundException e) {
             LOG.log(Level.SEVERE, "Failed to load " + path + " file", e);
             try {
-                this.setData(connection, metadata, true);
+                this.setData(true);
             } catch (IOException | ClassNotFoundException | SQLException deleteError) {
                 LOG.log(Level.SEVERE, "Failed to delete " + path + " file", deleteError);
             }
@@ -496,7 +504,7 @@ public class MapService implements ContainerService {
 
         boolean deleted = false;
         try {
-            this.setData(connection, metadata, true);
+            this.setData(true);
             saveMapMetadata(metadata);
             deleted = true;
             LOG.info(customTilesPath + " file deleted successfully");
