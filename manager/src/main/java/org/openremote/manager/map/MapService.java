@@ -465,6 +465,11 @@ public class MapService implements ContainerService {
                 outputStream.write(buffer, 0, bytesRead);
                 written += bytesRead;
             }
+        } catch (IOException | ClassNotFoundException | SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to save custom map file.");
+        }
+
+        try {
             if (previous != null && !previous.equals(path)) {
                 connection.close();
                 Files.deleteIfExists(previous);
