@@ -1516,15 +1516,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jsonforms/core@npm:3.0.0-beta.1":
-  version: 3.0.0-beta.1
-  resolution: "@jsonforms/core@npm:3.0.0-beta.1"
+"@jsonforms/core@npm:^3.5.1":
+  version: 3.5.1
+  resolution: "@jsonforms/core@npm:3.5.1"
   dependencies:
     "@types/json-schema": "npm:^7.0.3"
     ajv: "npm:^8.6.1"
     ajv-formats: "npm:^2.1.0"
-    lodash: "npm:^4.17.15"
-  checksum: 10c0/83bd730afe1b51aa81c5900f3315e0187f7450444af6e34459bbed72e25384c5fa7b7f609c982a76f12d774c6a8230d20b5f5173c4202873025ffb63bbcba040
+    lodash: "npm:^4.17.21"
+  checksum: 10c0/61ee662004033ef5d31aeea0fd44273fb3fa2d9ee40c750c45a017bac35207d3f45acca11d80f134d3cd3c4663b332c08309b374b858a036d38f64b66ea4d336
   languageName: node
   linkType: hard
 
@@ -1549,7 +1549,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lit/reactive-element@npm:^1.0.0 || ^2.0.0":
+"@lit/reactive-element@npm:^1.0.0 || ^2.0.0, @lit/reactive-element@npm:^2.0.4":
   version: 2.0.4
   resolution: "@lit/reactive-element@npm:2.0.4"
   dependencies:
@@ -2667,7 +2667,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/or-json-forms@workspace:ui/component/or-json-forms"
   dependencies:
-    "@jsonforms/core": "npm:3.0.0-beta.1"
+    "@jsonforms/core": "npm:^3.5.1"
     "@openremote/or-components": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/util": "workspace:*"
@@ -2755,6 +2755,7 @@ __metadata:
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@openremote/or-tree-menu": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     "@types/shortid": "npm:^0.0.29"
@@ -2838,6 +2839,19 @@ __metadata:
     "@openremote/util": "workspace:*"
     i18next: "npm:^21.5.3"
     lit: "npm:^2.0.2"
+  languageName: unknown
+  linkType: soft
+
+"@openremote/or-tree-menu@workspace:*, @openremote/or-tree-menu@workspace:ui/component/or-tree-menu":
+  version: 0.0.0-use.local
+  resolution: "@openremote/or-tree-menu@workspace:ui/component/or-tree-menu"
+  dependencies:
+    "@mdi/js": "npm:^5.9.55"
+    "@openremote/core": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
+    "@openremote/util": "workspace:*"
+    lit: "npm:^3.2.1"
   languageName: unknown
   linkType: soft
 
@@ -6969,12 +6983,32 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lit-element@npm:^4.1.0":
+  version: 4.1.1
+  resolution: "lit-element@npm:4.1.1"
+  dependencies:
+    "@lit-labs/ssr-dom-shim": "npm:^1.2.0"
+    "@lit/reactive-element": "npm:^2.0.4"
+    lit-html: "npm:^3.2.0"
+  checksum: 10c0/b3c6c77d60a8239134d7c7e7c002be48414074f5b42f9ad026216749101a4f948266a4db9110a536fb23914044d584dbe4185c87064a4fa98baa4045ba2bbb46
+  languageName: node
+  linkType: hard
+
 "lit-html@npm:^2.8.0":
   version: 2.8.0
   resolution: "lit-html@npm:2.8.0"
   dependencies:
     "@types/trusted-types": "npm:^2.0.2"
   checksum: 10c0/90057dee050803823ac884c1355b0213ab8c05fbe2ec63943c694b61aade5d36272068f3925f45a312835e504f9c9784738ef797009f0a756a750351eafb52d5
+  languageName: node
+  linkType: hard
+
+"lit-html@npm:^3.2.0":
+  version: 3.2.1
+  resolution: "lit-html@npm:3.2.1"
+  dependencies:
+    "@types/trusted-types": "npm:^2.0.2"
+  checksum: 10c0/31c02df2148bf9a73545570cbe57aae01c4de1d9b44060b6ff13641837d38e39e6b1abcf92e13882cc84f5fee37605ed79602b91ad479728549014462808118e
   languageName: node
   linkType: hard
 
@@ -6986,6 +7020,17 @@ __metadata:
     lit-element: "npm:^3.3.0"
     lit-html: "npm:^2.8.0"
   checksum: 10c0/bf33c26b1937ee204aed1adbfa4b3d43a284e85aad8ea9763c7865365917426eded4e5888158b4136095ea42054812561fe272862b61775f1198fad3588b071f
+  languageName: node
+  linkType: hard
+
+"lit@npm:^3.2.1":
+  version: 3.2.1
+  resolution: "lit@npm:3.2.1"
+  dependencies:
+    "@lit/reactive-element": "npm:^2.0.4"
+    lit-element: "npm:^4.1.0"
+    lit-html: "npm:^3.2.0"
+  checksum: 10c0/064a31459fe54ad052c0685d058dd5aef089ddc97a247888ef91a0356dfef60c8cc531e48077bbd2cb4e9f48cb86f0ff0951bb535f1d9f144d2351f253291f66
   languageName: node
   linkType: hard
 
@@ -7060,7 +7105,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash@npm:^4.17.15, lodash@npm:^4.17.20, lodash@npm:^4.17.21":
+"lodash@npm:^4.17.20, lodash@npm:^4.17.21":
   version: 4.17.21
   resolution: "lodash@npm:4.17.21"
   checksum: 10c0/d8cbea072bb08655bb4c989da418994b073a608dffa608b09ac04b43a791b12aeae7cd7ad919aa4c925f33b48490b5cfe6c1f71d827956071dae2e7bb3a6b74c

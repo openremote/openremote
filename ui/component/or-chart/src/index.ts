@@ -1126,6 +1126,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     data.push(dataset);
 
                     dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], predictedFromTimestamp, this._endOfPeriod!, true, asset.name + " " + label + " " + i18next.t("predicted"), options);
+                    (dataset as any).unit = unit;
                     data.push(dataset);
                 });
             }

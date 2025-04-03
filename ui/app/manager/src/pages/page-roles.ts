@@ -323,7 +323,7 @@ export class PageRoles extends Page<AppStateKeyed> {
         return html``;
     }
 
-    const readonly = !manager.hasRole(ClientRole.WRITE_USER);
+    const readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
     const readRoles = this._roles.filter(role => role.name.includes('read')).sort((a, b) => a.name.localeCompare(b.name))
     const writeRoles = this._roles.filter(role => role.name.includes('write')).sort((a, b) => a.name.localeCompare(b.name))
     const otherRoles = this._roles.filter(role => !role.name.includes('read') && !role.name.includes('write')).sort((a, b) => a.name.localeCompare(b.name))
