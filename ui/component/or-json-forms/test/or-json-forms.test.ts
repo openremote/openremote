@@ -1,6 +1,7 @@
 import { ct } from "@openremote/test";
 
 import { OrJSONForms, StandardRenderers } from "@openremote/or-json-forms";
+import { translations } from "./fixtures/data";
 
 const schemas = [
   {
@@ -116,11 +117,89 @@ const typeValueMap = new Map()
 
 ct.beforeEach(async ({ shared }) => {
   await shared.fonts();
-  await shared.locales();
+  await shared.locales(translations);
 });
 
 for (const schema of schemas) {
   ct(`Should render form for: ${schema.title}`, async ({ mount, components }) => {
+    const component = await mount(OrJSONForms, {
+      props: {
+        uischema: { type: "Control", scope: "#" } as any,
+        schema,
+        data: typeValueMap.get(schema.type),
+        renderers: StandardRenderers,
+        onChange: () => null,
+        readonly: false,
+        label: schema.title,
+        required: false,
+      },
+      on: {},
+    });
+    await components.jsonForms.walkForm(component, schema);
+  });
+}
+
+const schemasWithTranslations = [
+  {
+    $schema: "http://json-schema.org/draft-07/schema#",
+    title: "IoT Device Configuration",
+    type: "array",
+    "or:test:item:count": 2,
+    items: {
+      title: "Device",
+      type: "object",
+      "or:test:props": ["deviceId", "deviceName", "online", "sensors"],
+      properties: {
+        deviceId: {
+          title: "Device ID",
+          type: "string",
+          "or:test:value": "abc-123",
+        },
+        deviceName: {
+          title: "Device Name",
+          type: "string",
+          "or:test:value": "Temperature Sensor Hub",
+        },
+        online: {
+          title: "Online Status",
+          type: "boolean",
+          "or:test:value": true,
+        },
+        sensors: {
+          title: "Sensors",
+          type: "array",
+          "or:test:item:count": 2,
+          items: {
+            title: "Sensor",
+            type: "object",
+            "or:test:props": ["type", "unit", "enabled"],
+            properties: {
+              type: {
+                title: "Sensor Type",
+                type: "string",
+                "or:test:value": "temperature",
+              },
+              unit: {
+                title: "Measurement Unit",
+                type: "string",
+                "or:test:value": "Celsius",
+              },
+              enabled: {
+                title: "Enabled",
+                type: "boolean",
+                "or:test:value": true,
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+];
+
+for (const schema of schemasWithTranslations) {
+  ct(`Should render dutch translations for: ${schema.title}`, async ({ mount, components, shared }) => {
+    // await shared.changeLanguage("nl");
     const component = await mount(OrJSONForms, {
       props: {
         uischema: { type: "Control", scope: "#" } as any,

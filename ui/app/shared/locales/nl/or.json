@@ -644,6 +644,13 @@
     "anyOfPickerLabel": "{{label}} type",
     "title": {
       "indexedItem": "Item {{index}}"
+    },
+    "item": {
+      "valueConstraint": {
+        "root": {
+          "label": "DUTCH"
+        }
+      }
     }
   },
   "rowsPerPage": "Rijen per pagina",

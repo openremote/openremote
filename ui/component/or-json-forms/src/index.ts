@@ -1,6 +1,7 @@
 import {css, html, LitElement, PropertyValues} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {ErrorObject} from "ajv";
+import {camelCase} from "lodash";
 import {
     Actions,
     configReducer,
@@ -19,14 +20,17 @@ import {
     JsonSchema,
     mapStateToJsonFormsRendererProps,
     OwnPropsOfJsonFormsRenderer,
+    Paths,
     setConfig,
     UISchemaElement
 } from "@jsonforms/core";
 import {getTemplateWrapper, StandardRenderers} from "./standard-renderers";
 import {getLabel, getTemplateFromProps} from "./util";
 import {baseStyle} from "./styles";
-import {Util} from "@openremote/core";
+import manager, {Util} from "@openremote/core";
 import {AdditionalProps} from "./base-element";
+import i18next from "i18next";
+import { translate } from "@openremote/or-translate";
 
 declare global {
     interface SymbolConstructor {
@@ -58,7 +62,7 @@ const styles = css`
 `;
 
 @customElement("or-json-forms")
-export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRenderer, AdditionalProps {
+export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPropsOfJsonFormsRenderer, AdditionalProps {
 
     @property({type: Object})
     public uischema?: UISchemaElement;
@@ -147,7 +151,20 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
                 config: this.config,
                 uischemas: this.uischemas,
                 readonly: this.readonly,
-                dispatch: (action: CoreActions) => this.updateCore(action)
+                dispatch: (action: CoreActions) => this.updateCore(action),
+                i18n: {
+                    locale: i18next.language,
+                    translate: (id, defaultMessage, values) => {
+                        // console.log(`Locale: ${this.contextValue?.i18n?.locale}, Key: ${id}, Default Message: ${defaultMessage}`, values);
+                        // return i18next.t("schema.item." + id) || defaultMessage!;
+                        return i18next.t(["schema.item", camelCase(this.schema?.title) , id].join("."));
+                        
+                    },
+                    translateError: (error, translate, uischema) => {
+                        console.log(`Locale: ${this.contextValue?.i18n?.locale}, Error: ${error}, UI Schema: ${uischema}`);
+                        return "";
+                    },
+                }
             }
         }
 

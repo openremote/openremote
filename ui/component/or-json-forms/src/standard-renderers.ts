@@ -122,6 +122,7 @@ export const constRenderer = (state: JsonFormsStateContext, props: OwnPropsOfJso
 export const inputControlTester: RankedTester = rankWith(
     3,
     or(
+        // TODO: this is odd, why `schema.type.length === 7`
         schemaMatches(schema => Array.isArray(schema.type) && schema.type.length === 7),
         isStringControl,
         isBooleanControl,

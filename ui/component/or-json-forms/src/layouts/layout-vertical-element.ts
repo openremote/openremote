@@ -396,6 +396,8 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
     protected tableControlRenderer() {
       const rows: TableRow[] = [];
 
+      if (!this.data) return;
+      
       const filteredEntries = Object.entries(this.data).filter(
         ([key]) => "layout:table" in this.schema && (this.schema["layout:table"] as string[]).includes(key)
       );

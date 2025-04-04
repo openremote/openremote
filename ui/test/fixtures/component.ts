@@ -84,6 +84,7 @@ class JsonForms {
           }
         } else {
           for (let i = 0; i < schema["or:test:item:count"]; i++) {
+            // await locator.getByRole("button", { name: "Voeg item toe" }).click();
             await locator.getByRole("button", { name: "Add Item" }).click();
           }
         }
