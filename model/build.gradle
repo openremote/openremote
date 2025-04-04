@@ -111,14 +111,14 @@ signing {
     }
 }
 
-task generateJSONSchema(dependsOn: 'compileJava') {
+tasks.register('generateJSONSchema') {
+    dependsOn 'compileJava'
     doLast {
         def classLoader = new URLClassLoader(
             (sourceSets.main.output.files + configurations.runtimeClasspath).collect { it.toURI().toURL() } as URL[], this.class.classLoader)
 
         def valueUtilClass = classLoader.loadClass('org.openremote.model.util.ValueUtil')
-
-        valueUtilClass.doInitialise()
+        valueUtilClass.doSchemaInit()
 
         def classes = [
             'org.openremote.model.asset.agent.AgentLink',
@@ -127,8 +127,7 @@ task generateJSONSchema(dependsOn: 'compileJava') {
         for (String className : classes) {
             def clazz = classLoader.loadClass(className)
             def schema = valueUtilClass.getSchema(clazz.class)
-            def file = new File("tmp/asset_model/" + className)
-            file.write(schema.toString())
+            new File("tmp/schemas/" + className).with { getParentFile().mkdirs(); write(schema.toString()) }
         }
     }
 }
