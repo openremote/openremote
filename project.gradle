@@ -202,6 +202,43 @@ def getYarnInstallTask() {
     resolveTask(":yarnInstall")
 }
 
+// apply plugin: 'java'
+
+
+/**
+ * This defines reusable JSON Schemas
+
+ This defines reusable config for the typescript generator plugin
+ */
+// def generateJSONSchema() {
+//     // dependsOn compileJava
+
+//         // URL[] urls = sourceSets.main.runtimeClasspath.files.collect { it.toURI().toURL() } as URL[]
+//         // def classloader = new java.net.URLClassloader(urls, null)
+//         // Class type = classloader.loadClass('com.foo.MyClass')
+//         // def myInstance = type.newInstance()
+//         // myInstance.doStuff()
+//     // }
+//     def schema = org.openremote.model.util.ValueUtil.getSchema( org.openremote.model.asset.agent.AgentLink.class)
+//     org.openremote.model.util.ValueUtil.doInitialise()
+
+//     // def schema = org.openremote.model.util.ValueUtil.JSON.getSchema(clazz.class)
+//     def file = new File("schema")
+//     file << schema
+
+//     // TODO: test whether the jsonforms/core library will be needed to generate the right keys
+
+
+//     // Then when we have the keys.
+//     // They should be in the form of `(\w+|.)*`
+//     // That should allow for a recursive function to walk over the first segment of the key and find matching ones and add them onto an object.
+//     //
+
+//     // NOTE: it's important that only nonexistent keys are added to the or.json files. It should also not restructure the translations file in anyway.
+
+//     // TODO: check whether we need to require all keys to be present.
+// }
+
 /**
  * This defines reusable config for the typescript generator plugin
  */
@@ -319,6 +356,7 @@ ext {
     resolveProject = this.&resolveProject
     resolveTask = this.&resolveTask
     getYarnInstallTask = this.&getYarnInstallTask
+    // generateJSONSchema = this.&generateJSONSchema
     createTSGeneratorConfigForClient = this.&createTSGeneratorConfigForClient
     createTSGeneratorConfigForModel = this.&createTSGeneratorConfigForModel
 }

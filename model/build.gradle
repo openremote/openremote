@@ -110,3 +110,25 @@ signing {
         sign publishing.publications.maven
     }
 }
+
+task generateJSONSchema(dependsOn: 'compileJava') {
+    doLast {
+        def classLoader = new URLClassLoader(
+            (sourceSets.main.output.files + configurations.runtimeClasspath).collect { it.toURI().toURL() } as URL[], this.class.classLoader)
+
+        def valueUtilClass = classLoader.loadClass('org.openremote.model.util.ValueUtil')
+
+        valueUtilClass.doInitialise()
+
+        def classes = [
+            'org.openremote.model.asset.agent.AgentLink',
+            'org.openremote.model.value.ValueConstraint'
+        ]
+        for (String className : classes) {
+            def clazz = classLoader.loadClass(className)
+            def schema = valueUtilClass.getSchema(clazz.class)
+            def file = new File("tmp/asset_model/" + className)
+            file.write(schema.toString())
+        }
+    }
+}
