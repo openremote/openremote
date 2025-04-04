@@ -172,6 +172,7 @@ public class GatewayConnector {
             this.sessionId.set(null);
         }
 
+        requestDisconnect.run();
         LOG.fine("Gateway connector disconnected: " + this);
         if (syncProcessorFuture != null) {
             LOG.finest("Aborting active sync process: " + this);
@@ -189,10 +190,9 @@ public class GatewayConnector {
     protected void disconnect(GatewayDisconnectEvent.Reason reason) {
         synchronized (this.sessionId) {
             if (isConnected()) {
-                if (disabled) {
+                if (!disabled) {
                     sendMessageToGateway(new GatewayDisconnectEvent(reason));
                 }
-                requestDisconnect.run();
                 disconnected(getSessionId());
             }
         }
@@ -302,6 +302,8 @@ public class GatewayConnector {
             });
         }
 
+        sendMessageToGateway(new GatewayTunnelStopRequestEvent(tunnelInfo));
+
         return future
             .orTimeout(RESPONSE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
             .whenComplete((result, ex) -> {
@@ -402,7 +404,7 @@ public class GatewayConnector {
     protected boolean syncAborted() {
         if (syncErrors == MAX_SYNC_RETRIES) {
             LOG.warning("Gateway sync max retries reached so disconnecting the gateway: " + this);
-            requestDisconnect.run();
+            disconnect(GatewayDisconnectEvent.Reason.SYNC_ERROR);
             return true;
         }
 
