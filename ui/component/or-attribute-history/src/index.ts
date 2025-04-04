@@ -256,6 +256,9 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _zoomChanged: boolean = false;
 
     @property()
+    protected _zoomReset: boolean = false;
+
+    @property()
     protected _data?: ValueDatapoint<any>[];
 
     @property()
@@ -314,9 +317,9 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             this._type = undefined;
             this._data = undefined;
             this._loadData();
+            this._zoomReset = true; //Flag to avoid retrigger of loadData from zoom eventlistener triggered by next line.
+            this._chart?.dispatchAction({type: 'dataZoom', start: 0, end: 100})
         }
-
-
 
         return super.shouldUpdate(_changedProperties);
     }
@@ -398,7 +401,10 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     grid: {
                         show: true,
                         backgroundColor: this._style.getPropertyValue("--internal-or-asset-viewer-panel-color"),
-                        borderColor: this._style.getPropertyValue("--internal-or-attribute-history-text-color")
+                        borderColor: this._style.getPropertyValue("--internal-or-attribute-history-text-color"),
+                        left: 15,
+                        right: 15,
+                        containLabel: true
                     },
                     backgroundColor: this._style.getPropertyValue("--internal-or-asset-viewer-panel-color"),
                     tooltip: {
@@ -413,11 +419,15 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             }
                     },
                     toolbox: {
-                        right: '9%',
+                        right: '2%',
                         top: '5%',
                         feature: {
                             dataView: {readOnly: true},
-                            saveAsImage: {}
+                            saveAsImage: {
+                                name: ['History', this.assetId, this.attribute?.name, `${new Date(this._startOfPeriod!)} - ${new Date(this._endOfPeriod!)}`]
+                                    .filter(Boolean)
+                                    .join(' ')
+                            },
                         }
                     },
                     xAxis: {
@@ -427,8 +437,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         min: this._startOfPeriod,
                         max: this._endOfPeriod,
                         axisLabel: {
-                            showMinLabel: true,
-                            showMaxLabel: true,
+                            //showMinLabel: true,
+                            //showMaxLabel: true,
                             hideOverlap: true,
                             fontSize: 10,
                             formatter: {
@@ -497,16 +507,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             sampling: 'lttb',
                             itemStyle: {
                                 color: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color")
-                            },
-                            markLine: {
-                                symbol: 'circle',
-                                silent: true,
-                                data: [ { name: '', xAxis: new Date().toISOString(), label: {formatter: '{b}'}} ],
-                                lineStyle: {
-                                    color: this._style.getPropertyValue("--internal-or-attribute-history-text-color"),
-                                    type: 'solid',
-                                    width: 2
-                                }
                             }
                         }
                     ]
@@ -516,8 +516,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 // Set chart options to default
                 this._chart.setOption(this._chartOptions);
                 // Make chart size responsive
-                window.addEventListener("resize", () => this._chart!.resize());
-                const resizeObserver = new ResizeObserver(() => this._chart!.resize());
+                window.addEventListener("resize", () => this._chart?.resize());
+                const resizeObserver = new ResizeObserver(() => this._chart?.resize());
                 resizeObserver.observe(this._chartElem);
                 // Add event listener for zooming
                 this._chart!.on('datazoom', debounce((params: any) => { this._onZoomChange(params); }, 1500));
@@ -875,16 +875,19 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     }
 
     protected _onZoomChange(params: any) {
-        this._zoomChanged = true;
-        const { start: zoomStartPercentage, end: zoomEndPercentage } = params.batch?.[0] ?? params; // Events triggered by scroll and zoombar return different structures
-        //Define the start and end of the period based on the zoomed area
-        this._queryStartOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomStartPercentage / 100);
-        this._queryEndOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomEndPercentage / 100);
+        if (!this._zoomReset) {
+            this._zoomChanged = true;
+            console.log('onZoomChange');
+            const {start: zoomStartPercentage, end: zoomEndPercentage} = params.batch?.[0] ?? params; // Events triggered by scroll and zoombar return different structures
+            //Define the start and end of the period based on the zoomed area
+            this._queryStartOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomStartPercentage / 100);
+            this._queryEndOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomEndPercentage / 100);
 
-       this._loadData().then(() => {
-              this._updateChartData();
-       });
-
+            this._loadData().then(() => {
+                    this._updateChartData()
+            });
+        }
+        this._zoomReset = false;
     }
 
     protected _updateChartData(){
