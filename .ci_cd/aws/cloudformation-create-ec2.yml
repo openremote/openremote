@@ -77,6 +77,14 @@ Parameters:
     Description: Role ARN that can be assumed for updating DNS A record (if Hosted Zone in another account)
     Type: String
     Default: ""
+  SnapshotId:
+    Description: Snapshot ID to create the EBS volume based of an existing snapshot.
+    Type: String
+    Default: ""
+  EBSDeviceName:
+    Description: Device name where data volume needs to be mounted.
+    Type: String
+    Default: ""
   ElasticIP:
     Description: Assign elastic IP address
     Type: String
@@ -92,7 +100,7 @@ Parameters:
       - false
     Default: false
   DiskSize:
-    Description: Root EBS volume size GB
+    Description: Root EBS volume size in GB
     Type: Number
     Default: 30
   HealthChecks:
@@ -216,9 +224,10 @@ Resources:
           default:
             - setupCfnHup
             - create_swapfile
+            - docker_setup
+            - prepare_volume
             - cloudwatch_config
             - restart_amazon-cloudwatch-agent
-            - docker_setup
             - cron_setup
             - env_vars
             - dns_updater
@@ -269,7 +278,8 @@ Resources:
                             "used_percent"
                           ],
                           "resources": [
-                            "/"
+                            "/",
+                            "/var/lib/docker/volumes"
                           ],
                           "metrics_collection_interval": 900
                         }
@@ -447,7 +457,7 @@ Resources:
         daily_cleanup:
           files:
             "/usr/local/bin/daily-cleanup":
-              content: !Sub |
+              content: |
                 #!/bin/bash
                 journalctl --vacuum-time=7d
             "/etc/cron.d/cleanup":
@@ -766,6 +776,27 @@ Resources:
               docker:
                 enabled: "true"
                 ensureRunning: "true"
+        
+        prepare_volume:
+          commands:
+            01_mount_volume:
+              command: !Sub |
+                if [ -n "${SnapshotId}" ]; then
+                  sudo mount "${EBSDeviceName}" /var/lib/docker/volumes
+                else
+                  sudo mkfs -t xfs "${EBSDeviceName}"
+                  sudo mount "${EBSDeviceName}" /var/lib/docker/volumes
+                fi
+            02_configure_fstab:
+              command: !Sub |
+                UUID=$(sudo blkid -o value -s UUID "${EBSDeviceName}")
+                if [ -n $UUID ]; then
+                   sudo cp /etc/fstab /etc/fstab.orig
+                   sudo echo "UUID=$UUID /var/lib/docker/volumes xfs defaults,nofail 0 2" >> /etc/fstab
+                else
+                  echo "Failed to create /etc/fstab entry. UUID is not found"
+                  exit 1
+                fi
 
         cron_setup:
           packages:
@@ -866,7 +897,7 @@ Resources:
       InstanceId: !Ref EC2Instance
       EIP: !Ref IPAddress
 
-  # Telemetry and Alarms
+  # Telemetry and Alarms.
 
   EmailSubscription:
     Condition: CreateHealthChecks
@@ -941,7 +972,7 @@ Resources:
         - Name: InstanceId
           Value: !Ref EC2Instance
 
-  DiskUtilizationAlarm:
+  RootDiskUtilizationAlarm:
     Type: AWS::CloudWatch::Alarm
     Condition: MetricsEnabled
     Properties:
@@ -961,6 +992,29 @@ Resources:
           Value: !Ref EC2Instance
         - Name: path
           Value: /
+        - Name: fstype
+          Value: xfs
+
+  DataDiskUtilizationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
+    Properties:
+      Namespace: CWAgent
+      MetricName: disk_used_percent
+      Statistic: Average
+      Period: 3600
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 90
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref EC2Instance
+        - Name: path
+          Value: /var/lib/docker/volumes
         - Name: fstype
           Value: xfs
 
