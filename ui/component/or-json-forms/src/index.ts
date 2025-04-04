@@ -25,8 +25,9 @@ import {
 import {getTemplateWrapper, StandardRenderers} from "./standard-renderers";
 import {getLabel, getTemplateFromProps} from "./util";
 import {baseStyle} from "./styles";
-import {Util} from "@openremote/core";
+import manager, {Util} from "@openremote/core";
 import {AdditionalProps} from "./base-element";
+import i18next from "i18next";
 
 declare global {
     interface SymbolConstructor {
@@ -147,7 +148,20 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
                 config: this.config,
                 uischemas: this.uischemas,
                 readonly: this.readonly,
-                dispatch: (action: CoreActions) => this.updateCore(action)
+                dispatch: (action: CoreActions) => this.updateCore(action),
+                i18n: {
+                    // TODO: is this the right way to consume the currently configured locale??
+                    locale: manager.language,
+                    translate: (id, defaultMessage, values) => {
+                        console.log(`Locale: ${this.contextValue?.i18n?.locale}, Key: ${id}, Default Message: ${defaultMessage}`, values);
+                        // console.trace("test")
+                        return i18next.t("schema.item." + id) || defaultMessage!;
+                    },
+                    translateError: (error, translate, uischema) => {
+                        console.log(`Locale: ${this.contextValue?.i18n?.locale}, Error: ${error}, UI Schema: ${uischema}`);
+                        return "";
+                    },
+                }
             }
         }
 
