@@ -58,6 +58,6 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         keycloakProvider.createUpdateUser(MASTER_REALM, adminUser, null, true);
 
         // Give admin all roles on application client level
-        keycloakProvider.updateUserRoles(MASTER_REALM, adminUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ.getValue(), ClientRole.WRITE.getValue());
+        keycloakProvider.updateUserClientRoles(MASTER_REALM, adminUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ.getValue(), ClientRole.WRITE.getValue());
     }
 }

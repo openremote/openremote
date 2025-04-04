@@ -47,7 +47,7 @@ import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 public class Realm {
 
     public static final List<RealmRole> DEFAULT_REALM_ROLES = List.of(
-            new RealmRole(RESTRICTED_USER_REALM_ROLE, "Restricted access to assets")
+            new RealmRole(null, RESTRICTED_USER_REALM_ROLE, "Restricted access to assets")
         );
     private static final PasswordPolicyConverter PASSWORD_POLICY_CONVERTER = new PasswordPolicyConverter();
 

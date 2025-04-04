@@ -193,7 +193,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             keycloakProxyUser = createUpdateUser(MASTER_REALM, keycloakProxyUser, password, true);
 
             // Make this proxy user a super user by giving them admin realm role
-            updateUserRealmRoles(MASTER_REALM, keycloakProxyUser.getId(), addRealmRoles(MASTER_REALM, keycloakProxyUser.getId(), REALM_ADMIN_ROLE));
+            updateUserRealmRoles(MASTER_REALM, keycloakProxyUser.getId(), addUserRealmRoles(MASTER_REALM, keycloakProxyUser.getId(), SUPER_USER_REALM_ROLE));
 
             // Use same details as default keycloak grant but change the username and password to our new user
             OAuthPasswordGrant grant = getDefaultKeycloakGrant(container);
@@ -496,7 +496,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public Role[] getRoles(String realm, String client) {
+    public Role[] getClientRoles(String realm, String client) {
         return getRealms(realmsResource -> {
             RealmResource realmResource = realmsResource.realm(realm);
             ClientsResource clientsResource = realmResource.clients();
@@ -623,73 +623,33 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public Role[] getUserRoles(String realm, String userId, String client) {
+    public String[] getUserClientRoles(String realm, String userId, String client) {
         return getRealms(realmsResource -> {
             RealmResource realmResource = realmsResource.realm(realm);
             RoleMappingResource roleMappingResource = realmResource.users().get(userId).roles();
 
-            return withClientResource(realm, client, realmsResource, (clientRepresentation, clientResource) -> {
-                RolesResource rolesResource = clientResource.roles();
-                List<RoleRepresentation> allRoles = rolesResource.list();
-                List<RoleRepresentation> effectiveRoles = roleMappingResource.clientLevel(clientRepresentation.getId()).listEffective();
-
-                List<Role> roles = new ArrayList<>();
-                for (RoleRepresentation roleRepresentation : allRoles) {
-                    boolean isAssigned = false;
-
-                    for (RoleRepresentation effectiveRole : effectiveRoles) {
-                        if (effectiveRole.getId().equals(roleRepresentation.getId()))
-                            isAssigned = true;
-                    }
-
-                    roles.add(new Role(
-                        roleRepresentation.getId(),
-                        roleRepresentation.getName(),
-                        roleRepresentation.isComposite(),
-                        isAssigned,
-                        null)
-                        .setDescription(roleRepresentation.getDescription()));
-                }
-
-                return roles.toArray(new Role[0]);
-            }, () -> new Role[0]);
+            return withClientResource(realm, client, realmsResource, (clientRepresentation, clientResource) ->
+                roleMappingResource.clientLevel(clientRepresentation.getId()).listEffective()
+                    .stream()
+                    .map(RoleRepresentation::getName)
+                    .toArray(String[]::new), () -> new String[0]);
         });
     }
 
     @Override
-    public Role[] getUserRealmRoles(String realm, String userId) {
+    public String[] getUserRealmRoles(String realm, String userId) {
         return getRealms(realmsResource -> {
             RealmResource realmResource = realmsResource.realm(realm);
             RoleMappingResource roleMappingResource = realmResource.users().get(userId).roles();
-
-                RolesResource rolesResource = realmResource.roles();
-                List<RoleRepresentation> allRoles = rolesResource.list();
-                List<RoleRepresentation> effectiveRoles = roleMappingResource.realmLevel().listEffective();
-
-                List<Role> roles = new ArrayList<>();
-                for (RoleRepresentation roleRepresentation : allRoles) {
-                    boolean isAssigned = false;
-
-                    for (RoleRepresentation effectiveRole : effectiveRoles) {
-                        if (effectiveRole.getId().equals(roleRepresentation.getId()))
-                            isAssigned = true;
-                    }
-
-                    roles.add(new Role(
-                            roleRepresentation.getId(),
-                            roleRepresentation.getName(),
-                            roleRepresentation.isComposite(),
-                            isAssigned,
-                            null)
-                            .setDescription(roleRepresentation.getDescription()));
-                }
-
-                return roles.toArray(new Role[0]);
+                return roleMappingResource.realmLevel().listEffective()
+                        .stream()
+                        .filter(rr -> (MASTER_REALM.equals(realm) && SUPER_USER_REALM_ROLE.equals(rr.getName())) || !isBuiltInRealmRole(rr.getName()))
+                        .map(RoleRepresentation::getName).toArray(String[]::new);
         });
     }
 
     @Override
-    public void updateUserRoles(@NotNull String realm, @NotNull String userId, @NotNull String client, String...roles) {
+    public void updateUserClientRoles(@NotNull String realm, @NotNull String userId, @NotNull String client, String...roles) {
         getRealms(realmsResource -> {
             RealmResource realmResource = realmsResource.realm(realm);
             UserRepresentation user = realmResource.users().get(userId).toRepresentation();
@@ -706,42 +666,36 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             }
 
             ClientResource clientResource = realmResource.clients().get(clientRepresentation.getId());
-
-            // Get all roles
-            List<RoleRepresentation> existingRoles = roleMappingResource.clientLevel(clientRepresentation.getId()).listAll();
+            List<String> assignedRoles = roles != null ? Arrays.asList(roles) : Collections.emptyList();
+            // Get all configurable client roles
             List<RoleRepresentation> availableRoles = clientResource.roles().list();
-            List<RoleRepresentation> requestedRoles = availableRoles.stream().filter(role -> Arrays.stream(roles).anyMatch(name -> role.getName().equals(name))).collect(Collectors.toList());
 
-            // Strip out requested roles that are already in a requested composite role
-            List<String> removeRequestedRoles = requestedRoles.stream()
-                .filter(RoleRepresentation::isComposite)
-                .flatMap(role ->
-                    realmResource.rolesById().getRoleComposites(role.getId()).stream().map(RoleRepresentation::getId)
-                ).toList();
-
-            requestedRoles = requestedRoles.stream()
-                .filter(role -> removeRequestedRoles.stream().noneMatch(id -> id.equals(role.getId())))
-                .collect(Collectors.toList());
-
-
-            // Get newly defined roles
-            List<RoleRepresentation> addRoles = requestedRoles.isEmpty() ? Collections.emptyList() : requestedRoles.stream()
-                .filter(requestedRole -> existingRoles.stream().noneMatch(r -> r.getId().equals(requestedRole.getId())))
-                .collect(Collectors.toList());
-
-            // Remove obsolete roles
-            List<RoleRepresentation> finalRequestedRoles = requestedRoles;
-            List<RoleRepresentation> removeRoles = requestedRoles.isEmpty() ? existingRoles : existingRoles.stream()
-                .filter(r -> finalRequestedRoles.stream().noneMatch(requestedRole -> requestedRole.getId().equals(r.getId())))
-                .collect(Collectors.toList());
-
-            if (!removeRoles.isEmpty()) {
-                roleMappingResource.clientLevel(clientRepresentation.getId()).remove(removeRoles);
-            }
-            if (!addRoles.isEmpty()) {
-                roleMappingResource.clientLevel(clientRepresentation.getId()).add(addRoles);
-            }
-
+            // Delete any that are not assigned and add all that are assigned
+            availableRoles.stream()
+                    .collect(Collectors.partitioningBy(rr -> assignedRoles.contains(rr.getName())))
+                    .forEach((isAssigned, realmRoles) -> {
+                        if (isAssigned) {
+                            // Assigned roles
+                            if (!realmRoles.isEmpty()) {
+                                roleMappingResource.clientLevel(clientRepresentation.getId()).add(realmRoles.stream().map(v -> {
+                                    RoleRepresentation rr = new RoleRepresentation();
+                                    rr.setId(v.getId());
+                                    rr.setName(v.getName());
+                                    return rr;
+                                }).toList());
+                            }
+                        } else {
+                            // Unassigned roles
+                            if (!realmRoles.isEmpty()) {
+                                roleMappingResource.clientLevel(clientRepresentation.getId()).remove(realmRoles.stream().map(v -> {
+                                    RoleRepresentation rr = new RoleRepresentation();
+                                    rr.setId(v.getId());
+                                    rr.setName(v.getName());
+                                    return rr;
+                                }).toList());
+                            }
+                        }
+                    });
             return null;
         });
     }
@@ -757,42 +711,37 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             }
 
             RoleMappingResource roleMappingResource = realmResource.users().get(user.getId()).roles();
+            List<String> assignedRoles = roles != null ? Arrays.asList(roles) : Collections.emptyList();
 
-            // Get all roles
-            List<RoleRepresentation> existingRoles = roleMappingResource.realmLevel().listAll();
-            List<RoleRepresentation> availableRoles = realmResource.roles().list();
-            List<RoleRepresentation> requestedRoles = availableRoles.stream().filter(role -> Arrays.stream(roles).anyMatch(name -> role.getName().equals(name))).collect(Collectors.toList());
+            // Get all configurable realm roles from the realm cache
+            Set<RealmRole> availableRealmRoles = getRealm(realm).getRealmRoles();
 
-            // Strip out requested roles that are already in a requested composite role
-            List<String> removeRequestedRoles = requestedRoles.stream()
-                    .filter(RoleRepresentation::isComposite)
-                    .flatMap(role ->
-                            realmResource.rolesById().getRoleComposites(role.getId()).stream().map(RoleRepresentation::getId)
-                    ).collect(Collectors.toList());
-
-            requestedRoles = requestedRoles.stream()
-                    .filter(role -> removeRequestedRoles.stream().noneMatch(id -> id.equals(role.getId())))
-                    .collect(Collectors.toList());
-
-
-            // Get newly defined roles
-            List<RoleRepresentation> addRoles = requestedRoles.isEmpty() ? Collections.emptyList() : requestedRoles.stream()
-                    .filter(requestedRole -> existingRoles.stream().noneMatch(r -> r.getId().equals(requestedRole.getId())))
-                    .collect(Collectors.toList());
-
-            // Remove obsolete roles
-            List<RoleRepresentation> finalRequestedRoles = requestedRoles;
-            List<RoleRepresentation> removeRoles = requestedRoles.isEmpty() ? existingRoles : existingRoles.stream()
-                    .filter(r -> finalRequestedRoles.stream().noneMatch(requestedRole -> requestedRole.getId().equals(r.getId())))
-                    .collect(Collectors.toList());
-
-            if (!removeRoles.isEmpty()) {
-                roleMappingResource.realmLevel().remove(removeRoles);
-            }
-            if (!addRoles.isEmpty()) {
-                roleMappingResource.realmLevel().add(addRoles);
-            }
-
+            // Delete any that are not assigned and add any that are assigned
+            availableRealmRoles.stream()
+                .collect(Collectors.partitioningBy(rr -> assignedRoles.contains(rr.getName())))
+                .forEach((isAssigned, realmRoles) -> {
+                    if (isAssigned) {
+                        // Assigned roles
+                        if (!realmRoles.isEmpty()) {
+                            roleMappingResource.realmLevel().add(realmRoles.stream().map(v -> {
+                                RoleRepresentation rr = new RoleRepresentation();
+                                rr.setId(v.getId());
+                                rr.setName(v.getName());
+                                return rr;
+                            }).toList());
+                        }
+                    } else {
+                        // Unassigned roles
+                        if (!realmRoles.isEmpty()) {
+                            roleMappingResource.realmLevel().remove(realmRoles.stream().map(v -> {
+                                RoleRepresentation rr = new RoleRepresentation();
+                                rr.setId(v.getId());
+                                rr.setName(v.getName());
+                                return rr;
+                            }).toList());
+                        }
+                    }
+                });
             return null;
         });
     }
@@ -828,7 +777,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 realm.setRealmRoles(
                     realm.getRealmRoles()
                             .stream()
-                            .filter(rr -> !isBuiltInRealmRole(rr.getName()))
+                            .filter(rr -> (MASTER_REALM.equals(name) && SUPER_USER_REALM_ROLE.equals(rr.getName())) || !isBuiltInRealmRole(rr.getName()))
                             .collect(Collectors.toSet())
                 );
                 return realm;
@@ -865,7 +814,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             existingRealm.setName(realmRepresentation.getRealm());
             // Inject roles as don't exist in realmRepresentation
             existingRealm.setRealmRoles(existingRealmRoles.stream()
-                    .map(err -> new RealmRole(err.getName(), err.getDescription()))
+                    .map(err -> new RealmRole(err.getId(), err.getName(), err.getDescription()))
                     .collect(Collectors.toSet()));
 
             // Realm only has a subset of realm representation so overlay on actual realm representation
