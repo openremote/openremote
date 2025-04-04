@@ -9,6 +9,7 @@ import {
     getData,
     getRenderers,
     getSchema,
+    getTranslator,
     hasShowRule,
     isVisible,
     JsonFormsRendererRegistryEntry,
@@ -45,7 +46,7 @@ export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFo
     let template: TemplateResult | undefined;
 
     if (renderers && schema && uischema && state.core) {
-      const orderedRenderers: [JsonFormsRendererRegistryEntry, number][] = renderers.map(r => [r, r.tester(uischema, schema, { rootSchema: resolveSubSchemasRecursive(schema as JsonSchema7, state.core!.schema as JsonSchema7), config: state.config })] as [JsonFormsRendererRegistryEntry, number]).sort((a,b) => b[1] - a[1]);
+      const orderedRenderers: [JsonFormsRendererRegistryEntry, number][] = renderers.map(r => [r, r.tester(uischema, schema, { rootSchema: state.core!.schema, config: state.config })] as [JsonFormsRendererRegistryEntry, number]).sort((a,b) => b[1] - a[1]);
         const renderer = orderedRenderers && orderedRenderers.length > 0 ? orderedRenderers[0] : undefined;
         if (renderer && renderer[1] !== -1) {
             template = renderer[0].renderer(state, props) as TemplateResult;
@@ -70,7 +71,7 @@ export interface CombinatorInfo {
  * For a given anyOf schema array this will try and extract a common const property which can be used as a discriminator
  * when creating instances
  */
-export function getCombinatorInfos(schemas: JsonSchema7[], rootSchema: JsonSchema7): CombinatorInfo[] {
+export function getCombinatorInfos(schemas: JsonSchema7[], rootSchema: JsonSchema7, state?: JsonFormsState): CombinatorInfo[] {
 
     return schemas.map(schema => {
         let constProperty: string | undefined;
@@ -165,9 +166,18 @@ export function findSchemaExamples(schema: JsonSchema7, rootSchema: JsonSchema7,
 export function findSchemaTitleAndDescription(schema: JsonSchema7, rootSchema: JsonSchema7, state?: JsonFormsState): [string | undefined, string | undefined] {
     let title: string | undefined;
 
+    const ref = Boolean(schema.$ref)
     if (schema.$ref) {
         title = getLabelFromScopeOrRef(schema.$ref);
         schema = Resolve.schema(schema, '', rootSchema) as JsonSchema7;
+    }
+
+    if (state && title) {
+      const t = getTranslator()(state);
+      if (ref) {
+        return [t("definitions." + title + ".label"), t("definitions." + title + ".description")];
+      }
+      return [t(title + ".label"), t(title + ".description")];
     }
 
     if (schema.title) {
@@ -278,6 +288,16 @@ export function mapStateToCombinatorRendererProps(
         uischemas: state.jsonforms.uischemas!,
         uischema: uischema!,
     };
+}
+
+export interface EnumOption {
+    label: string,
+    description: string,
+    value: any,
+}
+
+export interface OwnPropsOfEnum {
+    options?: EnumOption[];
 }
 
 export function getLabel(schema: JsonSchema7, rootSchema: JsonSchema7, uiElementLabel?: string, uiElementScope?: string): string | undefined {

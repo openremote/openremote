@@ -225,8 +225,8 @@
   "buttonTextConfirm": "确认按键文本",
   "buttonTextDecline": "拒绝按键文本",
   "custom": "自定义参数",
-  "realm": "租户",
-  "realm_plural": "租户",
+  "realm": "场所",
+  "realm_plural": "场所",
   "displayName": "昵称",
   "deleteRealmConfirm": "您确定你要删除该产所吗?",
   "user_plural": "用户",
@@ -258,8 +258,6 @@
   "secured": "安全",
   "clientSecret": "客户端密钥",
   "clientId": "客户端标识",
-  "realm": "场所",
-  "realm_plural": "场所",
   "port": "端口",
   "host": "主机名",
   "errorOccurred": "出现错误",
@@ -459,5 +457,6 @@
     "attributeLabel": "Attribute",
     "attributeValueLabel": "Attribute value",
     "assetTypeDoesNotExist": "Filter : Asset type does not exist"
-  }
+  },
+  "schema": {}
 }

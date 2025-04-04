@@ -100,14 +100,14 @@ export class ControlArrayElement extends ControlBaseElement {
     }
 
     shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (_changedProperties.has("schema")) {
+        if (_changedProperties.has("schema") || (_changedProperties.has("state") && _changedProperties.get("state").i18n.locale !== this.state.i18n?.locale)) {
             this.itemInfos = undefined;
             this.resolvedSchema = Resolve.schema(this.schema, 'items', this.rootSchema) as JsonSchema7;
 
             if (Array.isArray(this.resolvedSchema.anyOf)) {
                 this.itemInfos = getCombinatorInfos(this.resolvedSchema.anyOf, this.rootSchema);
             } else if (Array.isArray(this.resolvedSchema.oneOf)) {
-                this.itemInfos = getCombinatorInfos(this.resolvedSchema.oneOf, this.rootSchema);
+                this.itemInfos = getCombinatorInfos(this.resolvedSchema.oneOf, this.rootSchema, { jsonforms: this.state });
             }
         }
 
@@ -138,7 +138,6 @@ export class ControlArrayElement extends ControlBaseElement {
     }
 
     render() {
-
         const maxItems = this.schema.maxItems ?? Number.MAX_SAFE_INTEGER;
         const itemCount = Array.isArray(this.data) ? (this.data as []).length : 0;
 
@@ -280,9 +279,8 @@ export class ControlArrayElement extends ControlBaseElement {
     protected showAddDialog() {
 
         let selectedItemInfo: CombinatorInfo | undefined;
-
-        const listItems: ListItem[] = this.itemInfos!.map((itemInfo, index) => {
-            const labelStr = itemInfo.title ? computeLabel(itemInfo.title, false, true) : "";
+        const listItems: ListItem[] = this.itemInfos!.map((itemInfo) => {
+            const labelStr = itemInfo.title;
             return {
                 text: labelStr,
                 value: labelStr,
@@ -292,13 +290,14 @@ export class ControlArrayElement extends ControlBaseElement {
 
         const onParamChanged = (itemInfo: CombinatorInfo) => {
             selectedItemInfo = itemInfo;
-            const descElem = dialog.shadowRoot!.getElementById("parameter-desc") as HTMLDivElement;
-            descElem.innerHTML = itemInfo.description || "";
+            // const descElem = dialog.shadowRoot!.getElementById("parameter-desc") as HTMLDivElement;
+            // descElem.innerHTML = itemInfo.description || "";
             (dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput).disabled = false;
+            dialog.requestUpdate();
         };
 
-        const dialog = showDialog(new OrMwcDialog()
-            .setContent(html`
+        const dialogContentProvider: () => TemplateResult = () => {
+            return html`
                 <div class="col">
                     <form id="mdc-dialog-form-add" class="row">
                         <div id="type-list" class="col">
@@ -313,7 +312,11 @@ export class ControlArrayElement extends ControlBaseElement {
                         </div>
                     </form>
                 </div>
-            `)
+            `;
+        };
+
+        const dialog = showDialog(new OrMwcDialog()
+            .setContent(dialogContentProvider)
             .setStyles(addItemOrParameterDialogStyle)
             .setHeading((this.label ? computeLabel(this.label, this.required, false) + " - " : "") + i18next.t("addItem"))
             .setActions([
