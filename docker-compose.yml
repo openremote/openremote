@@ -39,6 +39,8 @@ services:
     volumes:
       - postgresql-data:/var/lib/postgresql/data
       - manager-data:/storage
+    ports:
+      - "5432:5432"
 
   keycloak:
     restart: always

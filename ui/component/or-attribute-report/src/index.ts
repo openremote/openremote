@@ -300,7 +300,8 @@ const style = css`
 
     #table-container {
         height: 100%;
-        min-height: 250px;
+        width: 100%;
+        overflow: hidden;
     }
 
     #table {
@@ -549,7 +550,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
                     left: 50,//'5%', // 5% padding
                     right: 50,//'5%',
-                    top: this.showToolBox ? 28 : 10,
+                    //top: 28,//this.showToolBox ? 28 : 10,
                     bottom:  55,
                     containLabel: true
                 },
@@ -569,9 +570,12 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                         lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}
                     },
                     splitLine: {show: true},
+                    axisTick: {alignWithLabel: true},
                     axisLabel: {
                         hideOverlap: true,
                         rotate: 25,
+                        interval: 0,
+                        fontSize: 10
                     }
                 },
                 yAxis: [
@@ -670,13 +674,8 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         const disabled =  !this.isChart || this._loading || this._latestError;
 
         const tableConfig: any = {
-            fullHeight: true,
-            pagination: {
-                enable: true,
-                options: [10, 25, 100],
-            }
+            fullHeight: true
         } as TableConfig
-
 
         return html`
             
@@ -699,11 +698,8 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                 </div>
                     
                 `, () => html `
-                <div id="chart-container">
-                    <div id="chart" style="visibility: ${disabled ? 'hidden' : 'visible'}"></div>
-                </div>
                 <div id="table-container">
-                    <or-mwc-table .columns="${this.columns}" .rows="${this.rows}" .config="${tableConfig}" .paginationSize="10"></or-mwc-table>
+                    <or-mwc-table .columns="${this.columns}" .rows="${this.rows}" .config="${tableConfig}"></or-mwc-table
                 </div>
                 `)}
                 
@@ -753,24 +749,22 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                                     `}
                                 ` : undefined}
                             </div>
-                            ${this.timeframe ? html`
                                 <div style="margin-left: 18px; font-size: 12px;">
                                     <table style="width: 100%;">
                                         <thead>
                                         <tr>
                                             <th style="font-weight: normal; text-align: left;">${i18next.t('from')}:</th>
-                                            <th style="font-weight: normal; text-align: left;">${moment(this.timeframe[0]).format("L HH:mm")}</th>
+                                            <th style="font-weight: normal; text-align: left;">${moment(this.timeframe?.[0] ?? this._startOfPeriod).format("lll")}</th>
                                         </tr>
                                         </thead>
                                         <tbody>
                                         <tr>
                                             <td>${i18next.t('to')}:</td>
-                                            <td>${moment(this.timeframe[1]).format("L HH:mm")}</td>
+                                            <td>${moment(this.timeframe?.[1] ?? this._endOfPeriod).format("lll")}</td>
                                         </tr>
                                         </tbody>
                                     </table>
                                 </div>
-                            ` : undefined}
                             ${this.attributeControls ? html`
                                 <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="selectAttributes" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
                             ` : undefined}
@@ -1285,6 +1279,10 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                 // @ts-ignore
                 valueFormatter: value => value + unit
             },
+            //showBackground: true,
+            //backgroundStyle: {
+            //    color: 'rgba(180, 180, 180, 0.2)'
+            //}
         }
 
 
