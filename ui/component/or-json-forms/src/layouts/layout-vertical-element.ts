@@ -310,6 +310,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
             // Only set when !dynamic
             let schemaPicker: TemplateResult | undefined = undefined;
 
+            console.log("INSIDE SCHEMA PICKER CONTENT")
             if (selectedParameter && selectedParameter.schema && selectedParameter.schema.oneOf) {
                 const handleChange = (selectedSchema: CombinatorInfo) => {
                     selectedOneOf = selectedSchema;
@@ -318,6 +319,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                 };
                 schemaPicker = getSchemaPicker(rootSchema, selectedParameter.schema, selectedParameter.path, "oneOf", selectedParameter.label, handleChange);
             }
+            console.log(selectedParameter)
 
             return html`
                 <div class="col">
@@ -385,6 +387,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                         const data = {...this.data};
                         const schema = dynamic ? dynamicValueSchema! : selectedParameter!.schema;
                         data[key] = Array.isArray(schema.type) ? null : ((selectedOneOf ? selectedOneOf.defaultValueCreator() : undefined) || createDefaultValue(schema, rootSchema));
+                        console.log(schema)
                         this.handleChange(this.path || "", data);
                     },
                     content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled label="add"></or-mwc-input>`

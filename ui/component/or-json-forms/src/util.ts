@@ -141,6 +141,7 @@ export function getSchemaPicker(rootSchema: JsonSchema, resolvedSchema: JsonSche
         selectedCallback(matchedInfo);
     };
     const pickerLabel = label ? i18next.t("schema.anyOfPickerLabel", {label: label}) : i18next.t("type");
+    console.log(options)
     return html`                
         <or-mwc-input class="any-of-picker" .label="${pickerLabel}" .type="${InputType.SELECT}" .options="${options}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => pickerUpdater(Number(ev.detail.value))}"></or-mwc-input>
     `;

@@ -10,6 +10,7 @@ import {
     Dispatch,
     generateDefaultUISchema,
     generateJsonSchema,
+    getI18nKeyPrefix,
     JsonFormsCellRendererRegistryEntry,
     JsonFormsCore,
     JsonFormsProps,
@@ -122,6 +123,7 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
         if (!this.uischema) {
             this.uischema = generateDefaultUISchema(this.schema!);
         }
+        console.log(this.schema)
 
         if (!this.core) {
             this.core = {
@@ -191,6 +193,8 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
         if (!this.contextValue) {
             return html``;
         }
+        
+        console.log("getI18nKeyPrefix", getI18nKeyPrefix(this.schema, this.uischema, "items.oneOf.4.properties.allowedValueNames"))
 
         const props: JsonFormsProps & AdditionalProps = {
             ...mapStateToJsonFormsRendererProps({jsonforms: {...this.contextValue}}, this),
