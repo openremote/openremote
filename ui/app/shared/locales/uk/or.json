@@ -188,13 +188,13 @@
     "TEXT_SWITCH": "Текстовий перемикач",
     "ROUND_NODE": "Коло",
     "LOG_OUTPUT": "Write to Logs",
-    "DERIVATIVE":  "Attribute derivative",
+    "DERIVATIVE": "Attribute derivative",
     "INTEGRAL": "Attribute integral",
     "HISTORIC_VALUE": "Attribute history",
     "MAX_PROCESSOR": "Maximum",
-    "MIN_PROCESSOR":  "Minimum",
-    "AVERAGE_PROCESSOR":  "Average",
-    "MEDIAN_PROCESSOR":  "Median",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Average",
+    "MEDIAN_PROCESSOR": "Median",
     "SUM_OPERATOR": "Sum",
     "max": "Max",
     "min": "Min",
@@ -555,7 +555,7 @@
   "autoProvisioning": "Автоматичне налаштування",
   "provisioningConfigs": "Конфігурації автоматичного налаштування",
   "loadFailedProvisioningConfigs": "Не вдалося завантажити конфігурації автоматичного налаштування",
-  "deleteProvisioningConfigConfirm":"Ви впевнені, що хочете видалити цю конфігурацію автоматичного налаштування?\nКлієнти, які використовують цю конфігурацію, більше не зможуть підключатися.",
+  "deleteProvisioningConfigConfirm": "Ви впевнені, що хочете видалити цю конфігурацію автоматичного налаштування?\nКлієнти, які використовують цю конфігурацію, більше не зможуть підключатися.",
   "assetTemplate": "Шаблон активу",
   "createAsRestrictedUser": "Створити обмеженого користувача",
   "ignoreExpiryDate": "Ігнорувати дату закінчення",
@@ -567,6 +567,136 @@
     "anyOfPickerLabel": "{{label}} тип",
     "title": {
       "indexedItem": "Елемент {{index}}"
+    },
+    "item": {
+      "size": {
+        "label": "",
+        "description": "",
+        "min": {
+          "label": "",
+          "description": ""
+        },
+        "max": {
+          "label": "",
+          "description": ""
+        },
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "regexp": {
+        "label": "",
+        "description": ""
+      },
+      "flags": {
+        "label": "",
+        "description": ""
+      },
+      "message": {
+        "label": "",
+        "description": ""
+      },
+      "min": {
+        "label": "",
+        "description": "",
+        "min": {
+          "label": "",
+          "description": ""
+        },
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "max": {
+        "label": "",
+        "description": "",
+        "max": {
+          "label": "",
+          "description": ""
+        },
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "allowedValues": {
+        "label": "",
+        "description": "",
+        "allowedValueNames": {
+          "label": "",
+          "description": ""
+        },
+        "allowedValues": {
+          "label": "",
+          "description": ""
+        },
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "AnyType": {
+        "label": "",
+        "description": ""
+      },
+      "past": {
+        "label": "",
+        "description": "",
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "pastOrPresent": {
+        "label": "",
+        "description": "",
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "future": {
+        "label": "",
+        "description": "",
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "futureOrPresent": {
+        "label": "",
+        "description": "",
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "notEmpty": {
+        "label": "",
+        "description": "",
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "notBlank": {
+        "label": "",
+        "description": "",
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "notNull": {
+        "label": "",
+        "description": "",
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      }
     }
   },
   "rowsPerPage": "Рядків на сторінці",
@@ -696,7 +826,7 @@
   "default": "За замовчуванням",
   "appearance": "Вигляд",
   "configuration": {
-    "" : "Вигляд",
+    "": "Вигляд",
     "main": "Головне",
     "realmStyling": "Стилізація області",
     "managerConfigNotFound": "Файл конфігурації менеджера не знайдено.",

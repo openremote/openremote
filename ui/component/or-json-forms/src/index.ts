@@ -150,7 +150,7 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
                 readonly: this.readonly,
                 dispatch: (action: CoreActions) => this.updateCore(action),
                 i18n: {
-                    // TODO: is this the right way to consume the currently configured locale??
+                    // TODO: is this the right way to consume the currently configured locale?? Nope doesn't seemt re-render...
                     locale: manager.language,
                     translate: (id, defaultMessage, values) => {
                         console.log(`Locale: ${this.contextValue?.i18n?.locale}, Key: ${id}, Default Message: ${defaultMessage}`, values);

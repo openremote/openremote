@@ -171,7 +171,7 @@
   "export": "exporteer",
   "addAssetAttribute": "Voeg asset attribuut toe",
   "add": "toevoegen",
-  "flow":{
+  "flow": {
     "EQUALS_COMPARATOR": "Gelijk aan",
     "GREATER_THAN": "Groter dan",
     "LESS_THAN": "Kleiner dan",
@@ -192,13 +192,13 @@
     "TEXT_SWITCH": "Tekst schakeling",
     "ROUND_NODE": "Afronden",
     "LOG_OUTPUT": "Write to Logs",
-    "DERIVATIVE":  "Attribute derivative",
+    "DERIVATIVE": "Attribute derivative",
     "INTEGRAL": "Attribute integral",
     "HISTORIC_VALUE": "Attribute history",
     "MAX_PROCESSOR": "Maximum",
-    "MIN_PROCESSOR":  "Minimum",
-    "AVERAGE_PROCESSOR":  "Average",
-    "MEDIAN_PROCESSOR":  "Median",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Average",
+    "MEDIAN_PROCESSOR": "Median",
     "SUM_OPERATOR": "Sum",
     "max": "Max",
     "min": "Min",
@@ -312,12 +312,12 @@
   "realm": "Realm",
   "realm_plural": "Realms",
   "changeRealm": "Verander realm",
-  "displayName":"Vriendelijke naam",
+  "displayName": "Vriendelijke naam",
   "loginTheme": "Login thema",
   "emailTheme": "Email thema",
   "resetPasswordAllowed": "Wachtwoord kan hersteld worden",
   "rememberMe": "Ingelogd blijven",
-  "deleteRealmConfirm":"Weet je zeker dat je deze realm wil verwijderen?",
+  "deleteRealmConfirm": "Weet je zeker dat je deze realm wil verwijderen?",
   "serviceUser": "Service gebruiker",
   "user_plural": "Gebruikers",
   "regularUser_plural": "Gebruikers",
@@ -333,16 +333,16 @@
   "role": "Rol",
   "role_plural": "Rollen",
   "description": "Omschrijving",
-  "username":"Gebruikersnaam",
+  "username": "Gebruikersnaam",
   "deleteUser": "Gebruiker verwijderen",
   "deleteRole": "Rol verwijderen",
-  "deleteUserConfirm":"De gebruiker '{{userName}}' verwijderen?",
-  "deleteRoleConfirm":"De rol '{{roleName}}' verwijderen?",
-  "passwordMismatch":"Wachtwoorden komen niet overeen",
+  "deleteUserConfirm": "De gebruiker '{{userName}}' verwijderen?",
+  "deleteRoleConfirm": "De rol '{{roleName}}' verwijderen?",
+  "passwordMismatch": "Wachtwoorden komen niet overeen",
   "twoFactorAuth": "Tweestapsverificatie",
   "twoFactorConfigure": "Configureer",
-  "firstName":"Voornaam",
-  "surname":"Achternaam",
+  "firstName": "Voornaam",
+  "surname": "Achternaam",
   "realmRules": "Realm",
   "globalRules": "Globaal",
   "recipients": "Ontvangers",
@@ -437,14 +437,14 @@
   "password-policy-not-username": "Het wachtwoord mag niet de gebruikersnaam zijn",
   "password-policy-not-email": "Het wachtwoord mag niet het emailadres zijn",
   "details": "Details",
-  "permissions":"Rechten",
-  "linkedAssets":"Gekoppelde assets",
-  "realm_role_plural":"Realm rollen",
-  "manager_role_plural":"Manager rollen",
+  "permissions": "Rechten",
+  "linkedAssets": "Gekoppelde assets",
+  "realm_role_plural": "Realm rollen",
+  "manager_role_plural": "Manager rollen",
   "restrictAccess": "Beperkte toegang",
   "selectRestrictedAssets": "{{number}} assets",
   "restrictedAccessToAssets": "Beperkte toegang tot",
-  "fullAccessLabel":"Admin: volledige toegang; gebruikers en rollen beheren",
+  "fullAccessLabel": "Admin: volledige toegang; gebruikers en rollen beheren",
   "noChildAssets": "Geen onderliggende assets",
   "account": "Account",
   "editAttribute": "Attribuut kiezen",
@@ -576,7 +576,7 @@
   "activeFromTo": "Actief van {{start}} tot {{end}}",
   "fromTo": "Van {{start}} tot {{end}}",
   "fromToDays": "van {{start}} tot {{days}} dagen later {{end}}",
-  "forDays":"voor {{days}} dagen",
+  "forDays": "voor {{days}} dagen",
   "scheduleRuleActivity": "Regelplanner",
   "allDay": "Hele dag",
   "apply": "toepassen",
@@ -624,7 +624,7 @@
   "autoProvisioning": "Auto provisioning",
   "provisioningConfigs": "Provisioning configuraties",
   "loadFailedProvisioningConfigs": "Provisioning configuraties ophalen mislukt",
-  "deleteProvisioningConfigConfirm":"Weet je zeker dat je deze provisioning configuratie wil verwijderen?\nClients die deze configuratie gebruiken kunnen niet langer verbinden.",
+  "deleteProvisioningConfigConfirm": "Weet je zeker dat je deze provisioning configuratie wil verwijderen?\nClients die deze configuratie gebruiken kunnen niet langer verbinden.",
   "assetTemplate": "Asset template",
   "createAsRestrictedUser": "Gebruiker met beperkte toegang maken",
   "ignoreExpiryDate": "Vervaldatum negeren",
@@ -636,6 +636,136 @@
     "anyOfPickerLabel": "{{label}} type",
     "title": {
       "indexedItem": "Item {{index}}"
+    },
+    "item": {
+      "size": {
+        "label": "",
+        "description": "",
+        "min": {
+          "label": "",
+          "description": ""
+        },
+        "max": {
+          "label": "",
+          "description": ""
+        },
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "regexp": {
+        "label": "",
+        "description": ""
+      },
+      "flags": {
+        "label": "",
+        "description": ""
+      },
+      "message": {
+        "label": "",
+        "description": ""
+      },
+      "min": {
+        "label": "",
+        "description": "",
+        "min": {
+          "label": "",
+          "description": ""
+        },
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "max": {
+        "label": "",
+        "description": "",
+        "max": {
+          "label": "",
+          "description": ""
+        },
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "allowedValues": {
+        "label": "",
+        "description": "",
+        "allowedValueNames": {
+          "label": "",
+          "description": "De attribuutwaarde moet overeenkomen met een van de opgegeven waarden in de eigenschap `allowedValues`. De bijbehorende invoer in de gebruikersinterface verandert in een select-invoer met de opties die zijn opgegeven in de eigenschap `allowedValues`. De eigenschap `allowedValueNames` accepteert een lijst met namen die de labels in de select-invoer vervangen, als de lijst `allowedValueNames` overeenkomt met de lengte van de lijst `allowedValues`, anders valt deze terug op `allowedValues` als labels. Null-waarden worden als geldig beschouwd. Als `allowedValues` niet is opgegeven of leeg is, accepteert de beperking alleen null-waarden."
+        },
+        "allowedValues": {
+          "label": "",
+          "description": ""
+        },
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "AnyType": {
+        "label": "",
+        "description": ""
+      },
+      "past": {
+        "label": "",
+        "description": "",
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "pastOrPresent": {
+        "label": "",
+        "description": "",
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "future": {
+        "label": "",
+        "description": "",
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "futureOrPresent": {
+        "label": "",
+        "description": "",
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "notEmpty": {
+        "label": "",
+        "description": "",
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "notBlank": {
+        "label": "",
+        "description": "",
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      },
+      "notNull": {
+        "label": "",
+        "description": "",
+        "message": {
+          "label": "",
+          "description": ""
+        }
+      }
     }
   },
   "rowsPerPage": "Rijen per pagina",
@@ -684,7 +814,7 @@
   "layout": "Indeling",
   "display": "Weergave",
   "screen": "Scherm",
-  "uploadFile" : "Uploaden bestand",
+  "uploadFile": "Uploaden bestand",
   "thresholds": "Drempelwaardes",
   "threshold": "Drempelwaarde",
   "noDashboardSelected": "Selecteer een dashboard aan de linkerkant",
@@ -767,13 +897,13 @@
   "default": "Standaard",
   "appearance": "Weergave",
   "configuration": {
-    "" : "Weergave",
+    "": "Weergave",
     "main": "Algemeen",
     "realmStyling": "Realm stijl",
     "managerConfigNotFound": "Kon bestand met manager configuratie niet vinden.",
     "mapSettingsNotFound": "Kon bestand met kaart configuratie niet vinden.",
     "tryAgain": "Probeer opnieuw",
-    "addRealmCustomization" : "Voeg realm stijl toe",
+    "addRealmCustomization": "Voeg realm stijl toe",
     "realmTitle": "Manager app titel",
     "defaultLanguage": "Standaard taal",
     "images": "Afbeeldingen",
@@ -789,16 +919,16 @@
     "--or-app-color2": "Achtergrond: kleur achter panelen met oppervlakkleur",
     "--or-app-color3": "Tekst: pagina en panel titels",
     "--or-app-color8": "Tekst op primair: tekst op onderdelen met de primaire kleur",
-    "navigation" : "Navigatie",
+    "navigation": "Navigatie",
     "navigationDescription": "De primaire navigatie staat in de header, secundaire items kun je in het menu rechtsboven vinden.",
     "notificationLanguages": "Notificatie talen",
     "notificationLanguagesDesc": "Talen die hier ingesteld zijn kunnen gebruikt worden in notificaties voor gebruikers die hun taal hebben ingesteld.",
     "notificationLanguagesLabel": "Zoek naar andere talen...",
-    "primaryNavigation" : "Primair menu",
-    "secondaryNavigation" : "Secundair menu",
-    "reloadPage" : "Om de wijzigingen te zien die gemaakt zijn, herlaad de pagina",
+    "primaryNavigation": "Primair menu",
+    "secondaryNavigation": "Secundair menu",
+    "reloadPage": "Om de wijzigingen te zien die gemaakt zijn, herlaad de pagina",
     "deleteRealmCustomization": "Verwijder stijl",
-    "deleteRealmCustomizationConfirm":"Weet je zeker dat je deze realm stijl wilt verwijderen?",
+    "deleteRealmCustomizationConfirm": "Weet je zeker dat je deze realm stijl wilt verwijderen?",
     "mapBounds": "Randen",
     "mapBoundsDescription": "Overschrijf de standaard kaders van de kaart",
     "mapZoom": "Zoom",
@@ -809,8 +939,8 @@
     "geoJson": "GeoJSON",
     "geoJsonDescription": "Bewerk de GeoJSON; voeg punten, lijnen, en andere vormen toe aan de kaart.",
     "deleteMapCustomization": "Kaartinstelling verwijderen",
-    "deleteMapCustomizationConfirm":"Weet je zeker dat je deze kaart wilt verwijderen",
-    "addMapCustomization" : "Voeg een Kaartinstelling toe"
+    "deleteMapCustomizationConfirm": "Weet je zeker dat je deze kaart wilt verwijderen",
+    "addMapCustomization": "Voeg een Kaartinstelling toe"
   },
   "realmRole": {
     "admin": "Super admin"
