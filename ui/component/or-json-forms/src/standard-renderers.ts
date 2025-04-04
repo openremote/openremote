@@ -5,6 +5,8 @@ import {
     createCombinatorRenderInfos,
     DispatchPropsOfControl,
     findUISchema,
+    getI18nKey,
+    getTranslator,
     hasType,
     isAllOfControl,
     isAnyOfControl,
@@ -43,7 +45,6 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import {JsonFormsStateContext} from "./index";
 import {
     getCombinatorInfos,
-    getLabel,
     getSchemaConst, getSchemaPicker,
     getTemplateFromProps,
     mapStateToCombinatorRendererProps,
@@ -122,6 +123,7 @@ export const constRenderer = (state: JsonFormsStateContext, props: OwnPropsOfJso
 export const inputControlTester: RankedTester = rankWith(
     3,
     or(
+        // TODO: this is odd, why `schema.type.length === 7`
         schemaMatches(schema => Array.isArray(schema.type) && schema.type.length === 7),
         isStringControl,
         isBooleanControl,
@@ -192,7 +194,7 @@ export const objectControlRenderer = (state: JsonFormsStateContext, props: Contr
         path: path,
         renderers: renderers,
         cells: cells,
-        label: props.label || getLabel(schema, rootSchema, label) || "",
+        label: props.label || label,
         required: !!props.required || !!required,
         errors: errors,
         minimal: props.minimal
@@ -278,6 +280,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
 
     // Return template for the anyOf/oneOf schema that matches the data
     const matchedSchema = renderInfos[resolvedProps.indexOfFittingSchema].schema;
+    const definition = resolvedProps.schema.oneOf?.[resolvedProps.indexOfFittingSchema]?.$ref;
     let matchedUischema = renderInfos[resolvedProps.indexOfFittingSchema].uischema;
 
     if (matchedSchema.allOf) {
@@ -296,14 +299,15 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
         // path: [path, matchedSchema.title].filter(Boolean).join("."),
         renderers: renderers,
         cells: cells,
-        label: props.label || getLabel(matchedSchema, rootSchema, label) || "",
         required: props.required || !!required,
         errors: errors,
         minimal: props.minimal,
         type: matchedSchema.title
     }
 
-    return getTemplateFromProps(state, contentProps);
+    const test = mapStateToControlProps({jsonforms: state}, contentProps as any)
+    // TODO: make sure to handle all possible controls here
+    return getTemplateFromProps(state, { ...contentProps, label: test.label, definition });
 }
 
 export const allOfControlTester: RankedTester = rankWith(
