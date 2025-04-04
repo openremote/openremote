@@ -1,0 +1,43 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            url = "https://s01.oss.sonatype.org/content/repositories/snapshots"
+        } // For SNAPSHOT versions
+        maven {
+            url = 'https://jitpack.io'
+        }
+    }
+}
+
+plugins {
+    id 'groovy'
+}
+
+dependencies {
+    // compileOnly project(":model")
+    implementation project(":model")
+    // implementation project(":agent")
+    implementation "com.github.richturner:mbknor-jackson-jsonschema:1.0.40-JAKARTA"
+    implementation "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
+}
+
+// extracti18nKeys generateJSONSchema("AgentLink")
+
+// build.dependsOn extracti18nKeys, npmBuild
+// npmBuild.dependsOn extracti18nKeys
+
+// clean {
+//     doLast {
+//         def dir = new File("${projectDir}/dist")
+//         dir.deleteDir()
+//     }
+// }
+
+// task prepareUi() {
+//     dependsOn clean, npmPrepare
+// }
+
+// task publishUi() {
+//     dependsOn clean, npmPublish
+// }

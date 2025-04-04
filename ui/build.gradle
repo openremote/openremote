@@ -2,16 +2,32 @@
 afterEvaluate {
     // Add dependencies on model and rest typescript generation
     rootProject.getTasksByName('prepareUi', true).forEach {
-        it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
+        it.dependsOn(
+            // resolveTask(":ui:app:shared:extracti18nKeys"), // TODO: doesn't need these dependencies??
+            resolveTask(":ui:component:model:generateTypeScript"),
+            resolveTask(":ui:component:rest:generateTypeScript")
+        )
     }
     rootProject.getTasksByName('publishUi', true).forEach {
-        it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
+        it.dependsOn(
+            // resolveTask(":ui:app:shared:extracti18nKeys"),
+            resolveTask(":ui:component:model:generateTypeScript"),
+            resolveTask(":ui:component:rest:generateTypeScript")
+        )
     }
     rootProject.getTasksByName('npmBuild', true).forEach {
-        it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
+        it.dependsOn(
+            // resolveTask(":ui:app:shared:extracti18nKeys"),
+            resolveTask(":ui:component:model:generateTypeScript"),
+            resolveTask(":ui:component:rest:generateTypeScript")
+        )
     }
 }
 
 task modelWatch {
-    dependsOn resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build")
+    dependsOn(
+        // resolveTask(":ui:app:shared:extracti18nKeys"),
+        resolveTask(":ui:component:model:generateTypeScript"),
+        resolveTask(":ui:component:rest:generateTypeScript")
+    )
 }

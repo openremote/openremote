@@ -84,6 +84,18 @@ tasks.register('installDist', Copy) {
     into project(':manager').layout.buildDirectory.dir("install/manager/web/${project.name}")
 }
 
+tasks.register('extracti18nKeys') {
+
+}
+
+// project(':ui:app:shared') {
+//     task extracti18nKeys {
+//         doLast {
+//             println "Extracting i18n keys..."
+//         }
+//     }
+// }
+
 jar.dependsOn(generateSources)
 processResources.dependsOn(generateSources)
 sourcesJar.dependsOn(generateSources)
