@@ -32,6 +32,8 @@ import java.util.Date;
  */
 public class GatewayDisconnectEvent extends SharedEvent {
 
+    public static final String TYPE = "gateway-disconnect";
+
     public enum Reason {
         TERMINATING,
         DISABLED,

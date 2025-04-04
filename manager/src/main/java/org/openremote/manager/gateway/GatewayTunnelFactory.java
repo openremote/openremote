@@ -38,4 +38,10 @@ public interface GatewayTunnelFactory {
     void startTunnel(GatewayTunnelStartRequestEvent startRequestEvent) throws Exception;
 
     void stopTunnel(GatewayTunnelInfo tunnelInfo) throws Exception;
+
+    /**
+     * Terminate all known tunnel sessions; should perform try/catch to prevent any exceptions bubbling and to ensure
+     * termination of each session is attempted.
+     */
+    void stopAll();
 }
