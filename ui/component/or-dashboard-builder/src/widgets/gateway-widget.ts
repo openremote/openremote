@@ -97,20 +97,9 @@ export class GatewayWidget extends OrWidget {
     }
 
     disconnectedCallback() {
-        if(this._activeTunnel) {
-            if(this._startedByUser) {
-                this._stopTunnel(this._activeTunnel).then(() => {
-                    console.warn("Stopped the active tunnel, as it was created through the widget.");
-                });
-            } else {
-                console.warn("Keeping the active tunnel open, as it is not started through the widget.");
-            }
-        }
-
         if (this._refreshTimer) {
             clearTimeout(this._refreshTimer);
         }
-
         super.disconnectedCallback();
     }
 
