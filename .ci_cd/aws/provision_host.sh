@@ -262,14 +262,14 @@ EOF
     fi
   fi
 
-  DEVICE_NAME="/dev/sdf" # Only change if you know what you are doing.
+  EBS_DEVICE_NAME="/dev/sdf" # Only change if you know what you are doing.
 
   PARAMS="ParameterKey=Host,ParameterValue=$HOST"
   PARAMS="$PARAMS ParameterKey=VpcId,ParameterValue=$VPCID"
   PARAMS="$PARAMS ParameterKey=SSHSecurityGroupId,ParameterValue=$SGID"
   PARAMS="$PARAMS ParameterKey=SubnetId,ParameterValue=$SUBNETID"
   PARAMS="$PARAMS ParameterKey=EFSDNS,ParameterValue=$EFS_DNS"
-  PARAMS="$PARAMS ParameterKey=EBSDeviceName,ParameterValue=$DEVICE_NAME"
+  PARAMS="$PARAMS ParameterKey=EBSDeviceName,ParameterValue=$EBS_DEVICE_NAME"
   PARAMS="$PARAMS ParameterKey=SMTPHost,ParameterValue=$SMTP_HOST"
 
   if [ -n "$INSTANCE_TYPE" ]; then
@@ -314,11 +314,11 @@ EOF
     echo "Create stack in progress"
   fi
 
-  # Retrieve Instance ID and state before EBS data volume can be attached.
+  # Retrieve Instance ID and state before EBS volume can be attached.
   INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values='$HOST'" --query "Reservations[].Instances[?Tags[?Value=='$STACK_ID']].InstanceId" --output text $ACCOUNT_PROFILE 2>/dev/null)
   INSTANCE_STATE=$(aws ec2 describe-instances --filters "Name=tag:Name,Values='$HOST'" --query "Reservations[].Instances[?Tags[?Value=='$STACK_ID']].State.Name" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
-  # Check if instance is created and running.
+  # Check if instance is available and running.
   echo "Check if instance is available"
   count=0
   while [[ -z "$INSTANCE_ID" ]] && [[ "$INSTANCE_STATE" != 'running' ]] && [ $count -lt 30 ]; do
@@ -334,13 +334,13 @@ EOF
     exit 1
   fi
 
-  # Retrieve Volume ID and attach EBS data volume to instance.
-  echo "Instance is ready, attaching volume.."
+  # Retrieve Volume ID and attach EBS volume to instance.
+  echo "Instance is available .. attaching volume"
   VOLUME_ID=$(aws ec2 describe-volumes --filters "Name=tag:Name,Values='$HOST/data'" --query "Volumes[?Tags[?Value=='$EBS_STACK_ID']].VolumeId" --output text $ACCOUNT_PROFILE 2>/dev/null)
-  VOLUME=$(aws ec2 attach-volume --device $DEVICE_NAME --instance-id $INSTANCE_ID --volume-id $VOLUME_ID --output text $ACCOUNT_PROFILE 2>/dev/null)
+  VOLUME=$(aws ec2 attach-volume --device $EBS_DEVICE_NAME --instance-id $INSTANCE_ID --volume-id $VOLUME_ID --output text $ACCOUNT_PROFILE 2>/dev/null)
   STATUS=$(aws ec2 describe-volumes --filters "Name=tag:Name,Values='$HOST/data'" --query "Volumes[?Tags[?Value=='$EBS_STACK_ID']].Attachments[].State" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
-  # Check if EBS data volume is attached.
+  # Check if EBS volume is attached.
   while [[ "$STATUS" == 'attaching' ]]; do
       echo "Volume is still attaching .. Sleeping 30 seconds"
       sleep 30
@@ -374,8 +374,8 @@ EOF
   fi
 fi
 
-# Provision Lifecycle Policy
-echo "Provisioning Lifecycle Policy for EBS Data volume"
+# Provision Lifecycle Policy.
+echo "Provisioning Lifecycle Policy for EBS volume"
 STATUS=$(aws cloudformation describe-stacks --stack-name $DLM_STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null)
 
 if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
@@ -394,7 +394,7 @@ else
     exit 1
   fi
 
-  # Check for DLM IAM Role
+  # Check for DLM IAM Role.
   echo "Check if IAM Role exists"
   ROLE_ARN=$(aws iam get-role --role-name AWSDataLifecycleManagerDefaultRole --query "Role.Arn" --output text $ACCOUNT_PROFILE)
 
@@ -411,13 +411,13 @@ else
     ROLE_ARN=$(aws iam get-role --role-name AWSDataLifecycleManagerDefaultRole --query "Role.Arn" --output text $ACCOUNT_PROFILE)
   fi
 
-  # Configure parameters
+  # Configure parameters.
   DLM_DESCRIPTION="OpenRemote-${HOST%.*}"
   PARAMS="ParameterKey=PolicyDescription,ParameterValue='$DLM_DESCRIPTION'"
   PARAMS="$PARAMS ParameterKey=DLMExecutionRoleArn,ParameterValue='$ROLE_ARN'"
   PARAMS="$PARAMS ParameterKey=EBSStackId,ParameterValue='$EBS_STACK_ID'"
   
-  # Create standard stack resources in specified account
+  # Create standard stack resources in specified account.
   STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $DLM_STACK_NAME --template-body file://$DLM_TEMPLATE_PATH --parameters $PARAMS --output text)
 
   if [ $? -ne 0 ]; then
@@ -426,7 +426,7 @@ else
   fi
 
   if [ "$WAIT_FOR_STACK" != 'false' ]; then
-    # Wait for CloudFormation stack status to be CREATE_*
+    # Wait for CloudFormation stack status to be CREATE_*.
     echo "Waiting for stack to be created"
     STATUS=$(aws cloudformation describe-stacks --stack-name $DLM_STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text 2>/dev/null)
 
@@ -445,7 +445,7 @@ else
   fi
 fi
 
-# Provision S3 bucket
+# Provision S3 bucket.
 if [ "$PROVISION_S3_BUCKET" != 'false' ]; then
   echo "Provisioning S3 bucket for host '$HOST'"
 
