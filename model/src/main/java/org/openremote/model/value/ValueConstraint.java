@@ -20,7 +20,6 @@
 package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.*;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
 
 import org.openremote.model.util.ValueUtil;
@@ -56,7 +55,6 @@ import java.util.regex.PatternSyntaxException;
     @JsonSubTypes.Type(ValueConstraint.NotBlank.class),
     @JsonSubTypes.Type(ValueConstraint.NotNull.class)
 })
-@JsonSchemaDescription("The constraints must be a JSON compatible list of objects.")
 public abstract class ValueConstraint implements Serializable {
 
     public static final String VALUE_CONSTRAINT_INVALID = "{ValueConstraint.Invalid}";
@@ -89,7 +87,6 @@ public abstract class ValueConstraint implements Serializable {
      * are considered valid.
      */
     @JsonTypeName("size")
-    @JsonSchemaDescription("The attribute value must be between the specified boundaries based on the `min` and `max` properties. Supported types are JSON compatible strings, arrays and objects. Null values are considered valid.")
     public static class Size extends ValueConstraint {
 
         @jakarta.validation.constraints.NotNull
@@ -156,7 +153,6 @@ public abstract class ValueConstraint implements Serializable {
      * property. Null values are considered valid.
      */
     @JsonTypeName("min")
-    @JsonSchemaDescription("The attribute value must be a number higher or equal to the specified value on the `min` property. Null values are considered valid.")
     public static class Min extends ValueConstraint {
         @jakarta.validation.constraints.NotNull
         protected Number min;
@@ -238,7 +234,6 @@ public abstract class ValueConstraint implements Serializable {
      * property. Null values are considered valid.
      */
     @JsonTypeName("max")
-    @JsonSchemaDescription("The attribute value must be a number lower or equal to the specified value on the `max` property. Null values are considered valid.")
     public static class Max extends ValueConstraint {
         @jakarta.validation.constraints.NotNull
         protected Number max;
@@ -322,7 +317,6 @@ public abstract class ValueConstraint implements Serializable {
      * UNIX_LINES, UNICODE_CASE, CANON_EQ and COMMENTS. Null values are considered valid.
      */
     @JsonTypeName("pattern")
-    @JsonSchemaDescription("The attribute value must match the regular expression pattern described in the `regexp` property. The regular expression follows the Java regular expression conventions. Flags can be specified using the `flags` property with values: CASE_INSENSITIVE, MULTILINE, DOTALL, UNIX_LINES, UNICODE_CASE, CANON_EQ and COMMENTS. Null values are considered valid.")
     public static class Pattern extends ValueConstraint {
         private static final java.util.regex.Pattern ESCAPE_MESSAGE_PARAMETER_PATTERN = java.util.regex.Pattern.compile("([\\\\{}$])");
         @jakarta.validation.constraints.NotNull
@@ -398,7 +392,6 @@ public abstract class ValueConstraint implements Serializable {
      * accepts null values.
      */
     @JsonTypeName("allowedValues")
-    @JsonSchemaDescription("The attribute value must match any of the specified values in the `allowedValues` property. The associated input in the UI will change to a select input with the options specified in the `allowedValues` property. The `allowedValueNames` property accepts a list of names that replace the labels in the select input, if the `allowedValueNames` list matches the length of the `allowedValues` list otherwise it falls back to the `allowedValues` as labels. Null values are considered valid. If `allowedValues` is not specified or empty the constraint only accepts null values.")
     public static class AllowedValues extends ValueConstraint {
         @jakarta.validation.constraints.NotNull
         Object[] allowedValues;
@@ -624,7 +617,6 @@ public abstract class ValueConstraint implements Serializable {
      * and objects which contain at least 1 character, item or property.
      */
     @JsonTypeName("notEmpty")
-    @JsonSchemaDescription("The attribute value must not be null nor empty. Supported types are JSON compatible strings, arrays and objects which contain at least 1 character, item or property.")
     public static class NotEmpty extends ValueConstraint {
 
         public NotEmpty() {
@@ -673,7 +665,6 @@ public abstract class ValueConstraint implements Serializable {
      * strings.
      */
     @JsonTypeName("notBlank")
-    @JsonSchemaDescription("The attribute value must not be null and must contain at least 1 non-whitespace character. Accepts strings.")
     public static class NotBlank extends ValueConstraint {
         public NotBlank() {
             super(NOT_BLANK_MESSAGE_TEMPLATE);
@@ -704,7 +695,6 @@ public abstract class ValueConstraint implements Serializable {
      * The attribute value must not be null. Accepts any type.
      */
     @JsonTypeName("notNull")
-    @JsonSchemaDescription("The attribute value must not be null. Accepts any type.")
     public static class NotNull extends ValueConstraint {
 
         public NotNull() {
@@ -732,6 +722,10 @@ public abstract class ValueConstraint implements Serializable {
         }
     }
 
+    @JsonSchemaInject(json =
+    """
+        { "i18n": "schema.meta.constraint.message" },
+    """)
     protected String message;
 
     protected ValueConstraint(String message) {

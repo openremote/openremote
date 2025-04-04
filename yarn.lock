@@ -1958,6 +1958,7 @@ __metadata:
     eslint-plugin-node: "npm:^11.1.0"
     eslint-plugin-promise: "npm:^6.0.0"
     html-webpack-plugin: "npm:^5.6.3"
+    json-schema-traverse: "npm:0.4.1"
     prettier: "npm:^2.5.1"
     querystring-es3: "npm:^0.2.1"
     shx: "npm:~0.4.0"
@@ -6363,7 +6364,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"json-schema-traverse@npm:^0.4.1":
+"json-schema-traverse@npm:0.4.1, json-schema-traverse@npm:^0.4.1":
   version: 0.4.1
   resolution: "json-schema-traverse@npm:0.4.1"
   checksum: 10c0/108fa90d4cc6f08243aedc6da16c408daf81793bf903e9fd5ab21983cda433d5d2da49e40711da016289465ec2e62e0324dcdfbc06275a607fe3233fde4942ce

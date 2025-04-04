@@ -212,8 +212,8 @@
   "buttonTextConfirm": "نص لزر التفعيل",
   "buttonTextDecline": "نص لزر عدم التفعيل",
   "custom": "إدخال يدوي",
-  "realm": "نطاق",
-  "realm_plural": "النطاقات",
+  "realm": "عالم دنيا",
+  "realm_plural": "عالم دنيا",
   "displayName": " إسم الظهور ",
   "realm management": "إدخال النطاق",
   "deleteRealmConfirm": "هل أنت متأكد بأنك تريد حذف هذا النطاق؟",
@@ -243,8 +243,6 @@
   "secured": "محمي",
   "clientSecret": "كلمة سر المستخدم",
   "clientId": "الرقم التعريقي للمستخدم",
-  "realm": "عالم دنيا",
-  "realm_plural": "عالم دنيا",
   "port": "المنفذ",
   "host": "أسم المضيف",
   "errorOccurred": "حدث خطأ ",
@@ -410,5 +408,6 @@
     "attributeLabel": "Attribute",
     "attributeValueLabel": "Attribute value",
     "assetTypeDoesNotExist": "Filter : Asset type does not exist"
-  }
+  },
+  "schema": {}
 }

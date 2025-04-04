@@ -676,6 +676,279 @@
     "anyOfPickerLabel": "{{label}} type",
     "title": {
       "indexedItem": "Item {{index}}"
+    },
+    "meta": {
+      "constraint.message": {
+        "label": "Validation message",
+        "description": "Custom message to display when this constraint is violated."
+      }
+    },
+    "item": {
+      "forecastConfiguration": {
+        "pastPeriod": {
+          "label": "Past Period",
+          "description": "The specific time frame in the past used for analysis."
+        },
+        "pastCount": {
+          "label": "Past Count",
+          "description": "The number of past data points or intervals to consider."
+        },
+        "forecastPeriod": {
+          "label": "Forecast Period",
+          "description": "The time frame for which predictions will be made."
+        },
+        "forecastCount": {
+          "label": "Forecast Count",
+          "description": "The number of future data points or intervals to predict."
+        },
+        "definitions": {
+          "wea": {
+            "label": "Weighted Exponential Average",
+            "pastPeriod": {
+              "label": "Past Period",
+              "description": "The specific time frame in the past used for analysis."
+            },
+            "pastCount": {
+              "label": "Past Count",
+              "description": "The number of past data points or intervals to consider."
+            },
+            "forecastPeriod": {
+              "label": "Forecast Period",
+              "description": "The time frame for which predictions will be made."
+            },
+            "forecastCount": {
+              "label": "Forecast Count",
+              "description": "The number of future data points or intervals to predict."
+            }
+          }
+        }
+      },
+      "valueFormat": {
+        "useGrouping": {
+          "label": "Use Grouping",
+          "description": "Whether to use thousands separators in numbers."
+        },
+        "minimumIntegerDigits": {
+          "label": "Minimum Integer Digits",
+          "description": "Minimum number of digits before the decimal point."
+        },
+        "minimumFractionDigits": {
+          "label": "Minimum Fraction Digits",
+          "description": "Minimum number of digits after the decimal point."
+        },
+        "maximumFractionDigits": {
+          "label": "Maximum Fraction Digits",
+          "description": "Maximum number of digits after the decimal point."
+        },
+        "minimumSignificantDigits": {
+          "label": "Minimum Significant Digits",
+          "description": "Minimum number of significant digits to display."
+        },
+        "maximumSignificantDigits": {
+          "label": "Maximum Significant Digits",
+          "description": "Maximum number of significant digits to display."
+        },
+        "asBoolean": {
+          "label": "As Boolean",
+          "description": "Display value as true/false."
+        },
+        "asDate": {
+          "label": "As Date",
+          "description": "Format value as a date."
+        },
+        "asSlider": {
+          "label": "As Slider",
+          "description": "Display value using a slider component."
+        },
+        "resolution": {
+          "label": "Resolution",
+          "description": "The granularity or step size used for formatting."
+        },
+        "dateStyle": {
+          "label": "Date Style",
+          "description": "Style used for formatting date values (e.g. short, medium)."
+        },
+        "timeStyle": {
+          "label": "Time Style",
+          "description": "Style used for formatting time values."
+        },
+        "dayPeriod": {
+          "label": "Day Period",
+          "description": "Whether to show AM/PM or day period."
+        },
+        "hour12": {
+          "label": "12-Hour Format",
+          "description": "Whether to use 12-hour (AM/PM) format."
+        },
+        "iso8601": {
+          "label": "ISO 8601",
+          "description": "Format date/time using ISO 8601 standard."
+        },
+        "weekday": {
+          "label": "Weekday",
+          "description": "Include the name of the weekday in the date."
+        },
+        "era": {
+          "label": "Era",
+          "description": "Include the era (e.g., AD/BC) in the date."
+        },
+        "year": {
+          "label": "Year",
+          "description": "Display the year part of the date."
+        },
+        "month": {
+          "label": "Month",
+          "description": "Display the month part of the date."
+        },
+        "week": {
+          "label": "Week",
+          "description": "Display the week number of the year."
+        },
+        "day": {
+          "label": "Day",
+          "description": "Display the day of the month."
+        },
+        "hour": {
+          "label": "Hour",
+          "description": "Display the hour."
+        },
+        "minute": {
+          "label": "Minute",
+          "description": "Display the minute."
+        },
+        "second": {
+          "label": "Second",
+          "description": "Display the second."
+        },
+        "fractionalSecondDigits": {
+          "label": "Fractional Second Digits",
+          "description": "Number of digits to show for fractional seconds."
+        },
+        "timeZoneName": {
+          "label": "Time Zone Name",
+          "description": "Display the name of the time zone."
+        },
+        "momentJsFormat": {
+          "label": "Moment.js Format",
+          "description": "Custom format using Moment.js syntax."
+        },
+        "asNumber": {
+          "label": "As Number",
+          "description": "Format value as a number."
+        },
+        "asOnOff": {
+          "label": "As On/Off",
+          "description": "Display value as on or off."
+        },
+        "asPressedReleased": {
+          "label": "As Pressed/Released",
+          "description": "Display value as pressed or released."
+        },
+        "asOpenClosed": {
+          "label": "As Open/Closed",
+          "description": "Display value as open or closed."
+        },
+        "asMomentary": {
+          "label": "As Momentary",
+          "description": "Display value as a momentary (transient) state."
+        },
+        "multiline": {
+          "label": "Multiline",
+          "description": "Whether to allow multiline display."
+        }
+      },
+      "valueConstraint": {
+        "definitions": {
+          "size": {
+            "label": "Size",
+            "description": "The attribute value must be between the specified boundaries based on the `min` and `max` properties. Supported types are JSON compatible strings, arrays and objects. Null values are considered valid.",
+            "min": {
+              "label": "Minimum value",
+              "description": "The attribute value must be greater than or equal to this number. Null values are considered valid."
+            },
+            "max": {
+              "label": "Maximum value",
+              "description": "The attribute value must be less than or equal to this number. Null values are considered valid."
+            }
+          },
+          "regexp": {
+            "label": "Regular expression",
+            "description": "The attribute value must match this regular expression. Follows Java regex syntax."
+          },
+          "flags": {
+            "label": "Regex flags",
+            "description": "Modifiers that affect regex matching behavior. Options: CASE_INSENSITIVE, MULTILINE, DOTALL, etc."
+          },
+          "min": {
+            "label": "Minimum value",
+            "description": "The attribute value must be greater than or equal to this number. Null values are considered valid.",
+            "min": {
+              "label": "Minimum value",
+              "description": "The attribute value must be greater than or equal to this number. Null values are considered valid."
+            }
+          },
+          "max": {
+            "label": "Maximum value",
+            "description": "The attribute value must be less than or equal to this number. Null values are considered valid.",
+            "max": {
+              "label": "Maximum value",
+              "description": "The attribute value must be less than or equal to this number. Null values are considered valid."
+            }
+          },
+          "allowedValues": {
+            "label": "Allowed values",
+            "description": "Accepted values for this attribute. If empty or missing, only null is accepted. Enables select input in the UI.",
+            "allowedValueNames": {
+              "label": "Display names",
+              "description": "Names to display instead of the raw allowed values. Must match the number of allowed values to be used."
+            },
+            "allowedValues": {
+              "label": "Allowed values",
+              "description": "Accepted values for this attribute. If empty or missing, only null is accepted. Enables select input in the UI."
+            }
+          },
+          "past": {
+            "label": "Past",
+            "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past. Null values are considered valid."
+          },
+          "pastOrPresent": {
+            "label": "Past or present",
+            "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past or present. Null values are considered valid."
+          },
+          "future": {
+            "label": "Future",
+            "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future. Null values are considered valid."
+          },
+          "futureOrPresent": {
+            "label": "Future or present",
+            "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future or present. Null values are considered valid."
+          },
+          "notEmpty": {
+            "label": "Not empty",
+            "description": "The attribute value must not be null nor empty. Supported types are JSON compatible strings, arrays and objects which contain at least 1 character, item or property."
+          },
+          "notBlank": {
+            "label": "Not blank",
+            "description": "The attribute value must not be null and must contain at least 1 non-whitespace character. Accepts strings."
+          },
+          "notNull": {
+            "label": "Not null",
+            "description": "The attribute value must not be null. Accepts any type."
+          },
+          "pattern": {
+            "label": "Pattern",
+            "description": "The attribute value must match the regular expression pattern described in the `regexp` property. The regular expression follows the Java regular expression conventions. Flags can be specified using the `flags` property with values: CASE_INSENSITIVE, MULTILINE, DOTALL, UNIX_LINES, UNICODE_CASE, CANON_EQ and COMMENTS. Null values are considered valid.",
+            "regexp": {
+              "label": "Regular expression",
+              "description": "The attribute value must match this regular expression. Follows Java regex syntax."
+            },
+            "flags": {
+              "label": "Regex flags",
+              "description": "Modifiers that affect regex matching behavior. Options: CASE_INSENSITIVE, MULTILINE, DOTALL, etc."
+            }
+          }
+        }
+      }
     }
   },
   "rowsPerPage": "Rows per page",

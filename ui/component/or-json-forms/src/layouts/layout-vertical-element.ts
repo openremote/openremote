@@ -22,7 +22,6 @@ import {LayoutBaseElement} from "./layout-base-element";
 import {
     CombinatorInfo,
     controlWithoutLabel,
-    getLabel,
     getSchemaPicker,
     getTemplateFromProps,
     showJsonEditor
@@ -154,7 +153,6 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
 
                     const controlProps = childProps as OwnPropsOfControl;
                     const stateControlProps = mapStateToControlProps(jsonFormsState, controlProps);
-                    stateControlProps.label = stateControlProps.label || getLabel(this.schema, rootSchema, undefined, (childProps.uischema as ControlElement).scope) || "";
                     childProps.label = stateControlProps.label;
                     childProps.required = !!stateControlProps.required;
                     if (!stateControlProps.required && stateControlProps.data === undefined) {
@@ -176,7 +174,6 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                 <div id="content">
                     ${contentTemplate || ``}
                 </div>
-
                 ${this.errors || (optionalProps.length === 0 && !dynamic) ? `` : html`
                         <div id="footer">
                             <or-mwc-input .type="${InputType.BUTTON}" label="addParameter" icon="plus" @or-mwc-input-changed="${() => this._addParameter(rootSchema, optionalProps, dynamicPropertyRegex, dynamicValueSchema)}"></or-mwc-input>
@@ -329,7 +326,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                         `}
                         <div id="parameter-desc" class="col">
                             ${!selectedParameter ? `` : html`
-                                <or-translate id="parameter-title" value="${selectedParameter.label}"></or-translate>
+                                <or-translate id="parameter-title" value="${i18next.t(selectedParameter.label)}"></or-translate>
                                 <p>${selectedParameter.description}</p>`}
                             ${!dynamic ? !schemaPicker ? `` : html`
                                 <style>
