@@ -212,7 +212,7 @@ EOF
 
   if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
       echo "Stack already exists for this host '$HOST' current status is '$STATUS'"
-      STACK_ID=$(aws cloudformation describe-stacks --stack-name $EBS_STACK_NAME --query Stacks[0].StackId --output text 2>/dev/null)
+      EBS_STACK_ID=$(aws cloudformation describe-stacks --stack-name $EBS_STACK_NAME --query Stacks[0].StackId --output text 2>/dev/null)
   else
 
     if [ -f "${awsDir}cloudformation-create-ebs-volume.yml" ]; then
