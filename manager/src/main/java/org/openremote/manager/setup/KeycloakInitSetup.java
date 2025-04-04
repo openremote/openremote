@@ -45,7 +45,7 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         // e.g. Set SMTP server, theme, timeouts, etc.
         Realm masterRealm = keycloakProvider.getRealm(MASTER_REALM);
         masterRealm.setDisplayName("Master");
-        masterRealm.setRealmRoles(masterRealm.getNormalisedRealmRoles());
+        masterRealm.setRealmRoles(null); // Clear out any existing custom realm roles
         keycloakProvider.updateRealm(masterRealm);
 
         // Create our client application with its default roles in the master realm
@@ -58,6 +58,6 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         keycloakProvider.createUpdateUser(MASTER_REALM, adminUser, null, true);
 
         // Give admin all roles on application client level
-        keycloakProvider.updateUserRoles(MASTER_REALM, adminUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ.getValue(), ClientRole.WRITE.getValue());
+        keycloakProvider.updateUserClientRoles(MASTER_REALM, adminUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ.getValue(), ClientRole.WRITE.getValue());
     }
 }

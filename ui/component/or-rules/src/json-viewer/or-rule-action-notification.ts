@@ -184,7 +184,7 @@ export class OrRuleActionNotification extends LitElement {
 
                         // Get realm roles and add as options
                         const realm = await manager.rest.api.RealmResource.get(manager.displayRealm);
-                        let realmRoleOpts: [string, string][] = realm.data.realmRoles!.filter(r => Util.realmRoleFilter(r)).map(r => ["linked-" + r.name!,  linkedLabel + ": " + i18next.t("realmRole." + r.name, Util.camelCaseToSentenceCase(r.name!.replace("_", " ").replace("-", " ")))]);
+                        let realmRoleOpts: [string, string][] = realm.data.realmRoles!.map(r => ["linked-" + r.name!,  linkedLabel + ": " + i18next.t("realmRole." + r.name, Util.camelCaseToSentenceCase(r.name!.replace("_", " ").replace("-", " ")))]);
                         let values: [string, string][] = usersResponse.data.map((user) => [user.id!, user.username!]);
                         return [["linkedUsers", linkedLabel], ...realmRoleOpts, ...values.sort(Util.sortByString(user => user[1]))];
                     }

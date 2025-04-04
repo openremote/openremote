@@ -214,7 +214,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
     def "Get and update roles"() {
 
         when: "a request is made for the roles in the building realm by the admin user"
-        def roles = adminUserResource.getRoles(null, keycloakTestSetup.realmBuilding.name)
+        def roles = adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
 
         then: "the standard client roles should have been returned"
         roles.size() == ClientRole.values().length
@@ -233,7 +233,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         readAssets.compositeRoleIds == null
 
         when: "a request is made for the roles in the smart building realm by a regular user"
-        regularUserBuildingResource.getRoles(null, keycloakTestSetup.realmBuilding.name)
+        regularUserBuildingResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
 
         then: "a not allowed exception should be thrown"
         thrown(ForbiddenException.class)
@@ -251,7 +251,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             ] as String[]
         ).setDescription("This is a test"))
         adminUserResource.updateRoles(null, keycloakTestSetup.realmBuilding.name, updatedRoles as Role[])
-        roles = adminUserResource.getRoles(null, keycloakTestSetup.realmBuilding.name)
+        roles = adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
         def testRole = roles.find {it.name == "test"}
 
         then: "the new composite role should have been saved"
@@ -267,7 +267,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             roles.find {it.name == ClientRole.READ_ASSETS.value}.id
         ]
         adminUserResource.updateRoles(null, keycloakTestSetup.realmBuilding.name, roles)
-        roles = adminUserResource.getRoles(null, keycloakTestSetup.realmBuilding.name)
+        roles = adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
         writeRole = roles.find {it.name == ClientRole.WRITE.value}
 
         then: "the write role should have been updated"

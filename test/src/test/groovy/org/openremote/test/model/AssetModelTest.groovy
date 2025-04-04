@@ -8,6 +8,7 @@ import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.agent.protocol.velbus.VelbusTCPAgent
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.container.timer.TimerService
+import org.openremote.model.asset.impl.UnknownAsset
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetModelService
 import org.openremote.manager.asset.AssetStorageService

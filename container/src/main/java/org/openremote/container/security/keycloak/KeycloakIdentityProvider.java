@@ -495,6 +495,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     }
 
     public static boolean isSuperUser(KeycloakSecurityContext securityContext) {
-        return securityContext != null && Constants.MASTER_REALM.equals(securityContext.getRealm()) && securityContext.getToken().getRealmAccess().isUserInRole(Constants.REALM_ADMIN_ROLE);
+        return securityContext != null && Constants.MASTER_REALM.equals(securityContext.getRealm()) && securityContext.getToken().getRealmAccess().isUserInRole(Constants.SUPER_USER_REALM_ROLE);
     }
 }
