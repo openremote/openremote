@@ -394,7 +394,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
                 ObjectNode item = ValueUtil.JSON.createObjectNode();
                 // item.put("title", "Value Constraint");
                 if (title != null && title.isTextual()) {
-                    schema.put("title", title.textValue() + "s");
+                    schema.put("title", title.textValue());
                     item.set("title", title);
                 }
                 if (type != null) {

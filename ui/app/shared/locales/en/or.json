@@ -645,6 +645,13 @@
     "anyOfPickerLabel": "{{label}} type",
     "title": {
       "indexedItem": "Item {{index}}"
+    },
+    "item": {
+      "valueConstraints": {
+        "root": {
+          "label": "ENGLISH"
+        }
+      }
     }
   },
   "rowsPerPage": "Rows per page",

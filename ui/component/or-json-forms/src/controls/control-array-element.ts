@@ -1,16 +1,19 @@
 import {
     computeLabel,
     createDefaultValue,
+    isControl,
     JsonSchema,
     mapDispatchToArrayControlProps,
+    OwnPropsOfControl,
     OwnPropsOfRenderer,
     Paths,
     Resolve,
+    StatePropsOfControl,
     update
 } from "@jsonforms/core";
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import {CombinatorInfo, controlWithoutLabel, getCombinatorInfos, getTemplateFromProps, showJsonEditor} from "../util";
+import {CombinatorInfo, controlWithoutLabel, getCombinatorInfos, getTemplateFromProps, mapStateToOneOfEnumControlProps, OwnPropsOfEnum, showJsonEditor} from "../util";
 import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -86,6 +89,7 @@ export class ControlArrayElement extends ControlBaseElement {
     protected minimal?: boolean;
     protected resolvedSchema!: JsonSchema;
     protected itemInfos: CombinatorInfo[] | undefined;
+    protected enumControlProps: StatePropsOfControl & OwnPropsOfEnum | undefined;
     protected addItem!: (value: any) => void;
     protected removeItem!: (index: number) => void;
     protected moveItem!: (fromIndex: number, toIndex: number) => void;
@@ -107,6 +111,20 @@ export class ControlArrayElement extends ControlBaseElement {
                 this.itemInfos = getCombinatorInfos(this.resolvedSchema.anyOf, this.rootSchema);
             } else if (Array.isArray(this.resolvedSchema.oneOf)) {
                 this.itemInfos = getCombinatorInfos(this.resolvedSchema.oneOf, this.rootSchema);
+                // TODO: Refactor this into getCombinatorInfos
+                // TODO: Handle langauge change
+                const childProps: OwnPropsOfControl & OwnPropsOfEnum = {
+                    renderers: this.renderers,
+                    uischema: this.uischema,
+                    schema: this.resolvedSchema,
+                    path: this.path
+                }
+                this.enumControlProps = mapStateToOneOfEnumControlProps({ jsonforms: this.state }, childProps);
+                this.itemInfos = this.itemInfos.map((item, i) => ({ 
+                  ...item, 
+                  title: this.enumControlProps?.options?.[i].label || item.title,
+                  description: this.enumControlProps?.options?.[i].description || item.description,
+                }))
             }
         }
 
@@ -279,9 +297,8 @@ export class ControlArrayElement extends ControlBaseElement {
     protected showAddDialog() {
 
         let selectedItemInfo: CombinatorInfo | undefined;
-
         const listItems: ListItem[] = this.itemInfos!.map((itemInfo, index) => {
-            const labelStr = itemInfo.title ? computeLabel(itemInfo.title, false, true) : "";
+            const labelStr = this.enumControlProps?.options?.[index].label ?? itemInfo.title;
             return {
                 text: labelStr,
                 value: labelStr,
@@ -291,22 +308,30 @@ export class ControlArrayElement extends ControlBaseElement {
 
         const onParamChanged = (itemInfo: CombinatorInfo) => {
             selectedItemInfo = itemInfo;
-            const descElem = dialog.shadowRoot!.getElementById("parameter-desc") as HTMLDivElement;
-            descElem.innerHTML = itemInfo.description || "";
+            // const descElem = dialog.shadowRoot!.getElementById("parameter-desc") as HTMLDivElement;
+            // descElem.innerHTML = itemInfo.description || "";
             (dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput).disabled = false;
+            dialog.requestUpdate();
         };
 
-        const dialog = showDialog(new OrMwcDialog()
-            .setContent(html`
+        const dialogContentProvider: () => TemplateResult = () => {
+            return html`
                 <div class="col">
                     <form id="mdc-dialog-form-add" class="row">
                         <div id="type-list" class="col">
                             <or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) onParamChanged((evt.detail[0] as ListItem).data as CombinatorInfo); }}" .listItems="${listItems.sort((a, b) => a.text!.localeCompare(b.text!))}" id="parameter-list"></or-mwc-list>
                         </div>
-                        <div id="parameter-desc" class="col"></div>
+                        <div id="parameter-desc" class="col">
+                            <or-translate id="parameter-title" value="${selectedItemInfo?.title}"></or-translate>
+                            <p>${selectedItemInfo?.description}</p>
+                        </div>
                     </form>
                 </div>
-            `)
+            `;
+        };
+
+        const dialog = showDialog(new OrMwcDialog()
+            .setContent(dialogContentProvider)
             .setStyles(addItemOrParameterDialogStyle)
             .setHeading((this.label ? computeLabel(this.label, this.required, false) + " - " : "") + i18next.t("addItem"))
             .setActions([

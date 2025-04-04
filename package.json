@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@openremote/test": "workspace:*",
-    "@openremote/util": "workspace:*"
+    "@openremote/util": "workspace:*",
+    "json-schema-traverse": "0.4.1"
   }
 }

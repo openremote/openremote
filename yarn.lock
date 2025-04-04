@@ -7482,7 +7482,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"json-schema-traverse@npm:^0.4.1":
+"json-schema-traverse@npm:0.4.1, json-schema-traverse@npm:^0.4.1":
   version: 0.4.1
   resolution: "json-schema-traverse@npm:0.4.1"
   checksum: 10c0/108fa90d4cc6f08243aedc6da16c408daf81793bf903e9fd5ab21983cda433d5d2da49e40711da016289465ec2e62e0324dcdfbc06275a607fe3233fde4942ce
@@ -8490,6 +8490,7 @@ __metadata:
   dependencies:
     "@openremote/test": "workspace:*"
     "@openremote/util": "workspace:*"
+    json-schema-traverse: "npm:0.4.1"
   languageName: unknown
   linkType: soft
 

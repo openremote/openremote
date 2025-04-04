@@ -75,8 +75,8 @@ export class Shared {
     await this.page.route("**/shared/locales/**", (route, request) => {
       route.fulfill({ path: this.urlPathToFsPath(request.url()) });
     });
-    this.page.evaluate((resources) => {
-      window._i18next.init({
+    this.page.evaluate(async (resources) => {
+      await window._i18next.init({
         lng: "en",
         fallbackLng: "en",
         defaultNS: "test",
@@ -85,9 +85,19 @@ export class Shared {
         backend: {
           loadPath: "/shared/locales/{{lng}}/{{ns}}.json",
         },
-        resources,
       });
+      if (resources) {
+        Object.entries(resources).forEach(([locale, r]) =>
+          Object.entries(r).forEach(([ns, translations]) => {
+            window._i18next.addResourceBundle(locale, ns, translations);
+          })
+        );
+      }
     }, resources);
+  }
+
+  async changeLanguage(locale: string) {
+    this.page.evaluate(async (locale) => await window._i18next.changeLanguage(locale), locale);
   }
 
   // TODO: move to `@openremote/util`

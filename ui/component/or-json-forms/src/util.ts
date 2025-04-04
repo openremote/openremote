@@ -7,8 +7,10 @@ import {
     deriveTypes,
     getAjv,
     getData,
+    getI18nKeyPrefix,
     getRenderers,
     getSchema,
+    getTranslator,
     hasShowRule,
     isVisible,
     JsonFormsRendererRegistryEntry,
@@ -16,10 +18,13 @@ import {
     JsonFormsSubStates,
     JsonSchema,
     JsonSchema4,
+    mapStateToControlProps,
     OwnPropsOfControl,
     OwnPropsOfRenderer,
     Resolve,
     StatePropsOfCombinator,
+    StatePropsOfControl,
+    Translator,
 } from "@jsonforms/core";
 import {DefaultColor5, Util} from "@openremote/core";
 import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
@@ -264,6 +269,70 @@ export function mapStateToCombinatorRendererProps(
         uischema: uischema!,
     };
 }
+
+export interface EnumOption {
+    label: string,
+    description: string,
+    value: any,
+}
+
+export interface OwnPropsOfEnum {
+    options?: EnumOption[];
+}
+
+/**
+ * Copied from eclipse source code to resolve translations for oneOf subSchemas
+ */
+export const mapStateToOneOfEnumControlProps = (
+  state: JsonFormsState,
+  ownProps: OwnPropsOfControl & OwnPropsOfEnum
+): StatePropsOfControl & OwnPropsOfEnum => {
+  const props: StatePropsOfControl = mapStateToControlProps(state, ownProps);
+  const options: EnumOption[] =
+    ownProps.options ||
+    (props.schema.oneOf as JsonSchema[])?.map((oneOfSubSchema) =>
+      oneOfToEnumOptionMapper(
+        oneOfSubSchema,
+        getTranslator()(state),
+        getI18nKeyPrefix(props.schema, props.uischema, props.path)
+      )
+    );
+  return {
+    ...props,
+    options,
+  };
+};
+
+/**
+ * Copied from eclipse source code to resolve translations for oneOf subSchemas
+ */
+export const oneOfToEnumOptionMapper = (
+  e: any,
+  t?: Translator,
+  fallbackI18nKey?: string
+): EnumOption & { description: string } => {
+  const base =
+    e.title ??
+    (typeof e.const === 'string' ? e.const : JSON.stringify(e.const));
+  let label = ""
+  let description = ""
+  if (t) {
+    // prefer schema keys as they can be more specialized
+    if (e.i18n) {
+      label = t(`${e.i18n}.label`, base);
+      description = t(`${e.i18n}.description`, base);
+    } else {
+      label = t(`${base}.label`, base);
+      description = t(`${base}.description`, base);
+    }
+  }
+
+  return {
+    label,
+    description,
+    value: e.const,
+  };
+};
 
 export function getLabel(schema: JsonSchema, rootSchema: JsonSchema, uiElementLabel?: string, uiElementScope?: string): string | undefined {
     if (uiElementLabel) {

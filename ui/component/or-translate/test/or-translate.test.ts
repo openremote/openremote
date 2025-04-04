@@ -4,8 +4,18 @@ import { OrTranslate } from "@openremote/or-translate";
 
 ct.beforeEach(async ({ shared }) => {
   await shared.locales({
-    en: { test: { thing: "Thing" } },
-    nl: { test: { thing: "Ding" } },
+    en: {
+      test: {
+        thing: "Thing",
+        "internet.of": { things: "Internet of things" },
+      },
+    },
+    nl: {
+      test: {
+        thing: "Ding",
+        "internet.of": { things: "Internet van dingen" },
+      },
+    },
   });
 });
 
@@ -24,4 +34,21 @@ ct("Should translate text", async ({ mount }) => {
     },
   });
   await expect(component).toContainText("Ding");
+});
+
+ct("Should allow mixed key paths", async ({ mount }) => {
+  const component = await mount(OrTranslate, {
+    props: {
+      value: "internet.of.things",
+      options: { ns: "test", lng: "en" },
+    },
+  });
+  await expect(component).toContainText("Internet of things");
+  await component.update({
+    props: {
+      value: "internet.of.things",
+      options: { ns: "test", lng: "nl" },
+    },
+  });
+  await expect(component).toContainText("Internet van dingen");
 });

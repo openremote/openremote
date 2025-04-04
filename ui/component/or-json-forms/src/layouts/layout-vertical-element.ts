@@ -22,7 +22,6 @@ import {LayoutBaseElement} from "./layout-base-element";
 import {
     CombinatorInfo,
     controlWithoutLabel,
-    getLabel,
     getSchemaPicker,
     getTemplateFromProps,
     showJsonEditor
@@ -154,7 +153,6 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
 
                     const controlProps = childProps as OwnPropsOfControl;
                     const stateControlProps = mapStateToControlProps(jsonFormsState, controlProps);
-                    stateControlProps.label = stateControlProps.label || getLabel(this.schema, rootSchema, undefined, (childProps.uischema as ControlElement).scope) || "";
                     childProps.label = stateControlProps.label;
                     childProps.required = !!stateControlProps.required;
                     if (!stateControlProps.required && stateControlProps.data === undefined) {
@@ -329,7 +327,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                         `}
                         <div id="parameter-desc" class="col">
                             ${!selectedParameter ? `` : html`
-                                <or-translate id="parameter-title" value="${selectedParameter.label}"></or-translate>
+                                <or-translate id="parameter-title" value="${i18next.t(selectedParameter.label)}"></or-translate>
                                 <p>${selectedParameter.description}</p>`}
                             ${!dynamic ? !schemaPicker ? `` : html`
                                 <style>
@@ -396,10 +394,11 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
     protected tableControlRenderer() {
       const rows: TableRow[] = [];
 
+      if (!this.data) return;
+      
       const filteredEntries = Object.entries(this.data).filter(
         ([key]) => "layout:table" in this.schema && (this.schema["layout:table"] as string[]).includes(key)
       );
-      console.log("filteredEntries", filteredEntries)
       for (const [key, value] of filteredEntries) {
         let i = 0;
         for (const item of value as []) {
@@ -410,7 +409,6 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
               .value="${item}"
               style="width: 100%"
               @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                  console.log("PATH", this.path)
                   // Currently always considered a new value
                   this.handleChange([this.path, key, i].join("."), e.detail.value || null);
               }}"
@@ -421,7 +419,6 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
       }
       // TODO: compute the column label names to translate them (hopefully)
       const columns = filteredEntries.map(([key]) => ({ title: key }));
-      console.log("rows", rows, "columns", columns)
       
       return html`<div id="content" slot="content"><or-mwc-table .rows="${rows}" .columns="${columns}"></or-mwc-table></div>`;
     }
