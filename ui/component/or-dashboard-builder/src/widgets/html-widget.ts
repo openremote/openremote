@@ -5,7 +5,7 @@ import {WidgetConfig} from "../util/widget-config";
 import {WidgetManifest} from "../util/or-widget";
 import {WidgetSettings} from "../util/widget-settings";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import { customElement, query, queryAll, state} from "lit/decorators.js";
+import { customElement, query} from "lit/decorators.js";
 import {createRef, Ref, ref } from "lit/directives/ref.js";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import {throttle} from "lodash";
