@@ -17,9 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { css, html, LitElement, unsafeCSS } from "lit";
+import { css, html, LitElement, TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
+import { i18next } from "@openremote/or-translate";
 import { DefaultColor5 } from "@openremote/core";
+import { until } from 'lit/directives/until.js';
 
 // language=CSS
 const style = css`
@@ -116,6 +118,8 @@ export class OrCollapsiblePanel extends LitElement {
         ];
     }
 
+    @property({type: Promise<TemplateResult>})
+    lazycontent!: Promise<TemplateResult>;
     @property({type: Boolean})
     expanded: boolean = false;
     @property({type: Boolean})
@@ -132,7 +136,6 @@ export class OrCollapsiblePanel extends LitElement {
     }
 
     render() {
-
         return html`
             <div id="header" class="${this.expandable ? "expandable" : ""} ${this.expandable && this.expanded ? "expanded" : ""}" @click="${(ev:MouseEvent) => this._onHeaderClicked(ev)}">
                 ${this.expandable ? html`<or-icon icon="chevron-${this.expanded ? "down" : "right"}"></or-icon>` : ""}
@@ -142,7 +145,7 @@ export class OrCollapsiblePanel extends LitElement {
                 </span>
             </div>
             <div id="content" class="${this.expandable && this.expanded ? "expanded" : ""}">
-                <slot name="content"></slot>
+                ${this.lazycontent ? this.expanded && until(this.lazycontent, html`${i18next.t('loading')}`) : html`<slot name="content"></slot>`}
             </div>
         `;
     }
