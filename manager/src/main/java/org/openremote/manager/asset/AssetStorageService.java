@@ -744,14 +744,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             // Validate group child asset type attribute
-            if (asset instanceof GroupAsset) {
-                String childAssetType = ((GroupAsset)asset).getChildAssetType()
-                    .map(childAssetTypeString -> TextUtil.isNullOrEmpty(childAssetTypeString) ? null : childAssetTypeString)
-                    .orElseThrow(() -> {
-                        String msg = "Asset of type GROUP childAssetType attribute must be a valid string: asset=" + asset;
-                        LOG.warning(msg);
-                        return new IllegalStateException(msg);
-                    });
+            if (asset instanceof GroupAsset groupAsset) {
+
+                // Ensure the asset has a childAssetType (set to empty if missing)
+                String childAssetType = groupAsset.getChildAssetType()
+                        .orElseGet(() -> {
+                            groupAsset.setChildAssetType(""); // Set empty on the asset
+                            return "";
+                        });
 
                 String existingChildAssetType = existingAsset != null ? ((GroupAsset)existingAsset)
                     .getChildAssetType()
@@ -761,7 +761,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         return new IllegalStateException(msg);
                     }) : childAssetType;
 
-                if (!childAssetType.equals(existingChildAssetType)) {
+                if (!childAssetType.isEmpty() && !existingChildAssetType.isEmpty() && !childAssetType.equals(existingChildAssetType)) {
                     String msg = "Asset of type GROUP so childAssetType attribute cannot be changed: asset=" + asset;
                     LOG.warning(msg);
                     throw new IllegalStateException(msg);
