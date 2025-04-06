@@ -219,7 +219,7 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
             def msg = (latestWriteMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage);
             assert msg != null
             assert msg.getCount() == 1
-            assert msg.getAddress() == agentLink.getWriteAddress();
+            assert msg.getAddress() == agentLink.getWriteAddress().get();
             assert msg.dataDecodeUnsigned() == [123] as int[];
 
             ship = assetStorageService.find(ship.getId(), true)

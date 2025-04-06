@@ -23,6 +23,8 @@ import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.messages.PlcReadRequest;
 import org.apache.plc4x.java.api.messages.PlcReadResponse;
 import org.apache.plc4x.java.api.messages.PlcWriteRequest;
+import org.apache.plc4x.java.api.messages.PlcWriteResponse;
+import org.apache.plc4x.java.api.types.PlcResponseCode;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.velbus.AbstractVelbusProtocol;
 import org.openremote.model.Container;
@@ -114,8 +116,10 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
         PlcWriteRequest request = builder.build();
 
         try {
-            //TODO: Not sure how/if to check the response, and which response codes warrant an exception
-            request.execute().get();
+            PlcWriteResponse response = request.execute().get(3, TimeUnit.SECONDS);
+            if (response.getResponseCode(response.getRequest().getTags().stream().findFirst().orElseThrow().getAddressString()) != PlcResponseCode.OK){
+                throw new IllegalStateException("PLC Write Response code is something other than \"OK\"");
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
