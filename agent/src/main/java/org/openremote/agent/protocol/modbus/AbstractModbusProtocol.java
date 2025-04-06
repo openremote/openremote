@@ -66,11 +66,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
             client.connect();
 
-            if (client.isConnected()) {
-                setConnectionStatus(ConnectionStatus.CONNECTED);
-            } else {
-                setConnectionStatus(ConnectionStatus.DISCONNECTED);
-            }
+            setConnectionStatus(client.isConnected() ? ConnectionStatus.CONNECTED : ConnectionStatus.ERROR);
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to create PLC4X connection for protocol instance: " + agent, e);
             setConnectionStatus(ConnectionStatus.ERROR);
@@ -79,7 +75,6 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     }
     @Override
     protected void doStop(Container container) throws Exception {
-        //TODO: Do I need to empty the pollingMap too when stopping the protocol?
         pollingMap.forEach((key, value) -> value.cancel(false));
 
         client.close();
@@ -111,6 +106,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
         switch (agentLink.getWriteMemoryArea()){
             case COIL -> builder.addTagAddress("coil", "coil:" + offsetWriteAddress, processedValue);
             case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + offsetWriteAddress, processedValue);
+            default -> throw new IllegalStateException("No other coil is allowed to write to a Modbus server");
         }
 
         PlcWriteRequest request = builder.build();

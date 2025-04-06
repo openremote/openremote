@@ -19,8 +19,6 @@
  */
 package org.openremote.agent.protocol.modbus;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.openremote.model.asset.agent.AgentLink;
 
@@ -36,12 +34,15 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     private long refresh;
 
     @JsonPropertyDescription("Read type: \"coil\" (FC01), \"discrete\" (FC02), \"holding\" (FC03), \"input\" (FC04)")
+    @NotNull
     private ReadMemoryArea readMemoryArea;
 
     @JsonPropertyDescription("Read value type: \"int64\", \"int64_swap\", \"uint64\", \"uint64_swap\", \"float32\", \"float32_swap\", \"int32\", \"int32_swap\", \"uint32\", \"uint32_swap\", \"int16\", \"uint16\", \"int8\", \"uint8\", \"bit\"")
+    @NotNull
     private ModbusDataType readValueType;
 
     @JsonPropertyDescription("Zero based address for reading data")
+    @NotNull
     private int readAddress;
 
     @JsonPropertyDescription("Write type: \"coil\", \"holding\"")
@@ -158,17 +159,5 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     }
 
     protected ModbusAgentLink() {
-    }
-
-    @JsonCreator
-    public ModbusAgentLink(@JsonProperty("id") String id, @JsonProperty("refresh") long refresh, @JsonProperty("readMemoryArea") ReadMemoryArea readMemoryArea, @JsonProperty("readValueType") ModbusDataType readValueType, @JsonProperty("readAddress") int readAddress, @JsonProperty("writeMemoryArea") WriteMemoryArea writeMemoryArea, @JsonProperty("writeAddress") int writeAddress, @JsonProperty("writeValueType") ModbusDataType writeValueType) {
-        super(id);
-        this.refresh = refresh;
-        this.readMemoryArea = readMemoryArea;
-        this.readValueType = readValueType;
-        this.readAddress = readAddress;
-        this.writeMemoryArea = writeMemoryArea;
-        this.writeAddress = writeAddress;
-        this.writeValueType = writeValueType;
     }
 }

@@ -20,7 +20,10 @@
 package org.openremote.agent.protocol.modbus;
 
 import jakarta.persistence.Entity;
+import jakarta.validation.constraints.NotNull;
+import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
+import org.openremote.model.value.AttributeDescriptor;
 
 @Entity
 public class ModbusTcpAgent extends ModbusAgent<ModbusTcpAgent, ModbusTcpProtocol>{
@@ -28,6 +31,11 @@ public class ModbusTcpAgent extends ModbusAgent<ModbusTcpAgent, ModbusTcpProtoco
     public static final AgentDescriptor<ModbusTcpAgent, ModbusTcpProtocol, ModbusAgentLink> DESCRIPTOR = new AgentDescriptor<>(
             ModbusTcpAgent.class, ModbusTcpProtocol.class, ModbusAgentLink.class
     );
+
+    @NotNull
+    public static final AttributeDescriptor<String> HOST = Agent.HOST.withOptional(false);
+    @NotNull
+    public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
