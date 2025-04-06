@@ -26,6 +26,7 @@ import org.openremote.model.asset.agent.AgentLink;
 
 import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
+import java.util.Optional;
 
 //TODO: Make non-primitive parameters required
 public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
@@ -92,8 +93,8 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         this.writeMemoryArea = writeMemoryArea;
     }
 
-    public int getWriteAddress() {
-        return writeAddress;
+    public Optional<Integer> getWriteAddress() {
+        return Optional.ofNullable(writeAddress);
     }
 
     public void setWriteAddress(int writeAddress) {

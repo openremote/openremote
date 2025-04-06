@@ -28,21 +28,32 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         super(agent);
     }
 
+    private String connectionString;
+
     @Override
     protected PlcConnection createIoClient(ModbusSerialAgent agent) throws RuntimeException {
+
+        connectionString = "modbus-rtu://"+agent.getSerialPort() +
+                "?serial.baud-rate=" + agent.getBaudRate() +
+                "&unit-identifier=" + agent.getUnitId() +
+                "&serial.num-data-bits=" + agent.getDataBits() +
+                "&serial.num-stop-bits=" + agent.getStopBits();
         PlcConnection plcConnection;
         try {
-            plcConnection = PlcDriverManager.getDefault().getConnectionManager()
-                    .getConnection("modbus-rtu://"+agent.getSerialPort() +
-                                    "?serial.baud-rate=" + agent.getBaudRate() +
-                                    "&unit-identifier=" + agent.getUnitId() +
-                                    "&serial.num-data-bits=" + agent.getDataBits() +
-                                    "&serial.num-stop-bits=" + agent.getStopBits()
-//                            "&serial.parity=" + agent.getParity()
-                    );
+            plcConnection = PlcDriverManager.getDefault().getConnectionManager().getConnection(connectionString);
         } catch (PlcConnectionException e) {
             throw new RuntimeException(e);
         }
         return plcConnection;
+    }
+
+    @Override
+    public String getProtocolName() {
+        return "Modbus Serial Protocol";
+    }
+
+    @Override
+    public String getProtocolInstanceUri() {
+        return connectionString;
     }
 }

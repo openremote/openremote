@@ -28,15 +28,27 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
         super(agent);
     }
 
+    private String connectionString;
+
     @Override
     protected PlcConnection createIoClient(ModbusTcpAgent agent) throws RuntimeException {
         PlcConnection plcConnection;
+        connectionString = "modbus-tcp://" + agent.getHost().orElseThrow() + ":" + agent.getPort().orElseThrow()+"?unit-identifier=" + agent.getUnitId();
         try {
-            plcConnection = PlcDriverManager.getDefault().getConnectionManager()
-                    .getConnection("modbus-tcp://" + agent.getHost().orElseThrow() + ":" + agent.getPort().orElseThrow()+"?unit-identifier=" + agent.getUnitId());
+            plcConnection = PlcDriverManager.getDefault().getConnectionManager().getConnection(connectionString);
         } catch (PlcConnectionException e) {
             throw new RuntimeException(e);
         }
         return plcConnection;
+    }
+
+    @Override
+    public String getProtocolName() {
+        return "Modbus TCP Protocol";
+    }
+
+    @Override
+    public String getProtocolInstanceUri() {
+        return connectionString;
     }
 }

@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,T>, T extends ModbusAgent<T, S>> extends AbstractProtocol<T, ModbusAgentLink>{
@@ -99,7 +100,9 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
         // Look at comment in schedulePollingRequest for an explanation to this
-        int offsetWriteAddress = agentLink.getWriteAddress() + 1;
+        int offsetWriteAddress = getOrThrowAgentLinkProperty(agentLink.getWriteAddress(), "write address") + 1;
+
+
 
         PlcWriteRequest.Builder builder = client.writeRequestBuilder();
 
@@ -119,16 +122,6 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     }
 
     //TODO: Not sure what these are supposed to be, I think it's only for logging/executor purposes
-
-    @Override
-    public String getProtocolName() {
-        return "Modbus TCP Client";
-    }
-
-    @Override
-    public String getProtocolInstanceUri() {
-        return "modbus-tcp://" + agent.getHost().orElseThrow() + ":" + agent.getPort().orElseThrow();
-    }
 
     protected ScheduledFuture<?> schedulePollingRequest(AttributeRef ref,
                                                         Attribute<?> attribute,
