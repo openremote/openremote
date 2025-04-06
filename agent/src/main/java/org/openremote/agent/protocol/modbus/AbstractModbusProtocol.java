@@ -80,6 +80,8 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     @Override
     protected void doStop(Container container) throws Exception {
         //TODO: Do I need to empty the pollingMap too when stopping the protocol?
+        pollingMap.forEach((key, value) -> value.cancel(false));
+
         client.close();
     }
 
@@ -104,8 +106,6 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
         // Look at comment in schedulePollingRequest for an explanation to this
         int offsetWriteAddress = getOrThrowAgentLinkProperty(agentLink.getWriteAddress(), "write address") + 1;
 
-
-
         PlcWriteRequest.Builder builder = client.writeRequestBuilder();
 
         switch (agentLink.getWriteMemoryArea()){
@@ -124,8 +124,6 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             throw new RuntimeException(e);
         }
     }
-
-    //TODO: Not sure what these are supposed to be, I think it's only for logging/executor purposes
 
     protected ScheduledFuture<?> schedulePollingRequest(AttributeRef ref,
                                                         Attribute<?> attribute,
@@ -153,16 +151,13 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 }
                 PlcReadRequest readRequest = builder.build();
 
-
-                PlcReadResponse response = readRequest.execute().get();
+                PlcReadResponse response = readRequest.execute().get(3, TimeUnit.SECONDS);
 
                 // We currently only request one thing (with the above tag), so we get it from there. If it doesn't exist,
                 // we can assume that the request failed.
 
                 String responseTag = response.getTagNames().stream().findFirst()
                         .orElseThrow(() -> new RuntimeException("Could not retrieve the requested value from the response"));
-
-
 
                 Object responseValue = response.getObject(responseTag);
                 updateLinkedAttribute(ref, responseValue);
