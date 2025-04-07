@@ -1,0 +1,35 @@
+name: Deploy to Hetzner Cloud
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: "1.3.0"
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform apply
+        run: terraform apply -auto-approve
+        env:
+          HETZNER_API_TOKEN: UF0e6vualw36KjuEpc2S5uWJtuI4bxoAGvPsqC7ZRgiSEdVI48DDRUUJPBQTVtaw
+
+      - name: Wait for server to be ready
+        run: |
+          while ! nc -z -v -w30 ${{ steps.terraform.outputs.server_ip }} 22; do
+            echo "Waiting for server to be ready..."
+            sleep 5
+          done
+          echo "Server is ready. IP: ${{ steps.terraform.outputs.server_ip }}"

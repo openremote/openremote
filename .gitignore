@@ -60,3 +60,16 @@ local.properties
 *~
 *.tar.gz
 /balena/manager-build/
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+
+# Crash log files
+.crash
+
+.terraform/
+*.tfvars
+
+override.tf
+override.tf.json
