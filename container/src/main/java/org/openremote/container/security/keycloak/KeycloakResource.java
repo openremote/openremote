@@ -59,4 +59,16 @@ public interface KeycloakResource {
     @Produces(APPLICATION_JSON)
     AdapterConfig getAdapterConfig(@PathParam("realm") String realm, @PathParam("clientId") String clientId);
 
+
+	/**
+	 * Uses Keycloak's built-in healthcheck endpoint: {@link https://www.keycloak.org/server/health}
+	 * From what I understand, by requesting {@code /health}, Keycloak will return a logical "AND" of the other 3
+	 * endpoints.
+	 * @return Response from the health endpoint.
+	 */
+	@GET
+	@Path("health")
+	@Produces(APPLICATION_JSON)
+	Response getInstanceHealth();
+
 }

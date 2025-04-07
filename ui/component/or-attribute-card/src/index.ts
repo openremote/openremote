@@ -12,7 +12,7 @@ import {
     ReadAttributeEvent,
     ValueDatapoint,
     AssetModelUtil,
-    AssetDatapointLTTBQuery
+    AssetDatapointLTTBQuery, AssetDatapointAllQuery
 } from "@openremote/model";
 import {DefaultColor3, DefaultColor4, manager, Util} from "@openremote/core";
 import {isAxiosError} from "@openremote/rest";
@@ -744,8 +744,12 @@ export class OrAttributeCard extends LitElement {
             const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
                 assetId,
                 attributeName,
-                {type: "lttb", fromTimestamp: this._startOfPeriod, toTimestamp: this._endOfPeriod, amountOfPoints: 20} as AssetDatapointLTTBQuery,
-                {signal: this._dataAbortController.signal}
+                {
+                    type: "all",
+                    fromTimestamp: this._startOfPeriod,
+                    toTimestamp: this._endOfPeriod,
+                    amountOfPoints: 20,
+                } as AssetDatapointAllQuery
             );
 
             this._loading = false;

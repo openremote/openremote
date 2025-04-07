@@ -1,7 +1,7 @@
 import {css, html} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {createSlice, Store, PayloadAction} from "@reduxjs/toolkit";
-import "@openremote/or-map";
+// import "@openremote/or-map";
 import {
     MapAssetCardConfig,
     OrMap,
@@ -140,6 +140,17 @@ export class PageMap extends Page<MapStateKeyed> {
                 width: 100vw;
                 z-index: 3;
             }
+
+           or-map-attribute-chart {
+               position: absolute;
+               /*bottom: 10px;*/
+               /*width: 100%;*/
+               /*margin: 0;*/
+               /*height: 400px; !* fallback for IE *!*/
+               /*height: 100%;*/
+               z-index: 4;
+               /*max-height: calc(100vh - 150px);*/
+           }
         
             or-map {
                 display: block;
@@ -157,6 +168,24 @@ export class PageMap extends Page<MapStateKeyed> {
                     height: 400px; /* fallback for IE */
                     height: max-content;
                     max-height: calc(100vh - 150px);
+                }
+                or-map-attribute-chart {
+                    display: flex;
+                    /*max-height: 300px;*/
+                    box-sizing: border-box;
+                    background-clip: content-box;
+                    bottom: 0;
+                    width: 100%;
+                    padding: 20px;
+                    padding-right: 30px;
+                    background-color: white;
+                    height: 100%;
+                    border-radius: 10px;
+                    
+                    max-height: 30%;
+                    
+                    
+                    /*max-height: calc(100vh - 150px);*/
                 }
             }
         `;
@@ -341,33 +370,66 @@ export class PageMap extends Page<MapStateKeyed> {
 
     protected render() {
 
-        return html`
-            
-            ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
-            
-            <or-map id="map" class="or-map" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
-                ${
-          this._assets.filter((asset) => {
-              if (!asset.attributes) {
-                  return false;
-              }
-              const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
-              return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
-          })
-            .sort((a,b) => {
-                if (a.attributes[WellknownAttributes.LOCATION].value && b.attributes[WellknownAttributes.LOCATION].value){
-                    return b.attributes[WellknownAttributes.LOCATION].value.coordinates[1] - a.attributes[WellknownAttributes.LOCATION].value.coordinates[1];
-                } else {
-                    return;
-                }
-            })
-            .map(asset => {
-                return html`
-                            <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}" .config="${this.config.markers}"></or-map-marker-asset>
-                        `;
-            })
+        let currentAssetSelected: boolean = (this._currentAsset != undefined);
+        let isMouseAPointer = false;
+        if(this._map?._map?._mapGl != undefined){
+            isMouseAPointer = this._map._map._mapGl.getCanvas().style.cursor == '';
         }
+        // currentAssetSelected? console.log("render") : console.log("asset unselected");
+            return html`
+<!--                
+                <or-map-location-history-markers .assetId="${this._currentAsset?.id}" .map="${this._map}"></or-map-location-history-markers>
+            -->
+                <or-map-location-history-overlay .assetId="${this._currentAsset?.id}" .map="${this._map}" ></or-map-location-history-overlay>
+${currentAssetSelected ? html`
+                <or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}"
+                                   .markerconfig="${this.config?.markers}" .map="${this._map}"></or-map-asset-card>
+<!--                
+                <or-map-location-history-overlay .assetId="${this._currentAsset.id}" .map="${this._map}" ></or-map-location-history-overlay>
+                -->
+${!isMouseAPointer && currentAssetSelected ? 
+            html`
+            
+            `: `
+            `}
+                
+<!--                <or-map-attribute-chart .assetId="${this._currentAsset.id}" .asset="${this._currentAsset}"></or-map-attribute-chart>-->
+            ` : ``}
+            
+
+            <or-map id="map" class="or-map" showGeoCodingControl
+                    @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {
+                        this._setCenter(ev.detail.geocode);
+                    }}" 
+            >
+                ${
+                        this._assets.filter((asset) => {
+                            if (!asset.attributes) {
+                                return false;
+                            }
+                            const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
+                            return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
+                        })
+                                .sort((a, b) => {
+                                    if (a.attributes[WellknownAttributes.LOCATION].value && b.attributes[WellknownAttributes.LOCATION].value) {
+                                        return b.attributes[WellknownAttributes.LOCATION].value.coordinates[1] - a.attributes[WellknownAttributes.LOCATION].value.coordinates[1];
+                                    } else {
+                                        return;
+                                    }
+                                })
+                                .map(asset => {
+                                    return html`
+                                        <or-map-marker-asset
+                                                ?active="${this._currentAsset && this._currentAsset.id === asset.id}"
+                                                .asset="${asset}"
+                                                .config="${this.config.markers}"></or-map-marker-asset>
+                                    `;
+                                })
+                }
+                
             </or-map>
+            
+            
         `;
     }
 
