@@ -1,0 +1,32 @@
+{
+  "name": "OpenRemote DevContainer",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "workspaceFolder": "/workspaces/openremote",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest"
+    }
+  },
+  "runArgs": [
+    "--privileged",
+    "--network=host"
+  ],
+  "onCreateCommand": "OR_HOSTNAME=localhost docker compose -p openremote -f /workspaces/openremote/profile/dev-testing.yml up --build -d",
+  "postCreateCommand": "echo '✅ Devcontainer ready!'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "redhat.vscode-yaml",
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-gradle"
+      ],
+      "settings": {
+        "telemetry.enableTelemetry": false,
+        "telemetry.enableCrashReporter": false
+      }
+    }
+  }
+}
