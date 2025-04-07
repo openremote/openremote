@@ -60,3 +60,5 @@ local.properties
 *~
 *.tar.gz
 /balena/manager-build/
+
+**.DS_*
