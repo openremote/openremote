@@ -6,14 +6,15 @@ package org.openremote.model.util;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class LockByKey {
 
+    private static final System.Logger LOG = System.getLogger(LockByKey.class.getName());
+
     private static class LockWrapper {
-        private final Lock lock = new ReentrantLock();
+        private final Semaphore lock = new Semaphore(1);
         private final AtomicInteger numberOfThreadsInQueue = new AtomicInteger(1);
 
         private LockWrapper addThreadInQueue() {
@@ -27,19 +28,28 @@ public class LockByKey {
 
     }
 
-    private Map<String, LockWrapper> locks = new ConcurrentHashMap<>();
+    private final Map<String, LockWrapper> locks = new ConcurrentHashMap<>();
 
     public void lock(String key) {
         LockWrapper lockWrapper = locks.compute(key, (k, v) -> v == null ? new LockWrapper() : v.addThreadInQueue());
-        lockWrapper.lock.lock();
+        try {
+            lockWrapper.lock.acquire();
+            LOG.log(System.Logger.Level.TRACE, () -> "Lock acquired: key=" + key);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // Restore interrupted status
+            throw new RuntimeException("Interrupted while acquiring lock for key: " + key, e);
+        }
     }
 
     public void unlock(String key) {
         LockWrapper lockWrapper = locks.get(key);
-        lockWrapper.lock.unlock();
-        if (lockWrapper.removeThreadFromQueue() == 0) {
-            // NB : We pass in the specific value to remove to handle the case where another thread would queue right before the removal
-            locks.remove(key, lockWrapper);
+        if (lockWrapper != null) {
+            LOG.log(System.Logger.Level.TRACE, () -> "Lock release: key=" + key);
+            lockWrapper.lock.release();
+            if (lockWrapper.removeThreadFromQueue() == 0) {
+                // NB : We pass in the specific value to remove to handle the case where another thread would queue right before the removal
+                locks.remove(key, lockWrapper);
+            }
         }
     }
 
