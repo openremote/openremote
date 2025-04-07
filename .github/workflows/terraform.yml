@@ -3,7 +3,7 @@ name: Deploy to Hetzner Cloud
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   deploy:
