@@ -3,7 +3,7 @@ name: Deploy to Hetzner Cloud
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   deploy:
@@ -24,7 +24,7 @@ jobs:
       - name: Terraform apply
         run: terraform apply -auto-approve
         env:
-          HETZNER_API_TOKEN: UF0e6vualw36KjuEpc2S5uWJtuI4bxoAGvPsqC7ZRgiSEdVI48DDRUUJPBQTVtaw
+          HETZNER_API_TOKEN: ${{ secrets.HETZNER_API_TOKEN }}
 
       - name: Wait for server to be ready
         run: |
