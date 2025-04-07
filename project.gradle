@@ -202,29 +202,33 @@ def getYarnInstallTask() {
     resolveTask(":yarnInstall")
 }
 
-// apply plugin: 'java'
-
-
 /**
- * This defines reusable JSON Schemas
-
- This defines reusable config for the typescript generator plugin
+ * This generates reusable JSON Schemas used to render JSON forms
  */
 // def generateJSONSchema() {
-//     // dependsOn compileJava
+    // project.properties.each { key, value ->
+    //     println "$key: $value"
+    // }
 
-//         // URL[] urls = sourceSets.main.runtimeClasspath.files.collect { it.toURI().toURL() } as URL[]
-//         // def classloader = new java.net.URLClassloader(urls, null)
-//         // Class type = classloader.loadClass('com.foo.MyClass')
-//         // def myInstance = type.newInstance()
-//         // myInstance.doStuff()
-//     // }
-//     def schema = org.openremote.model.util.ValueUtil.getSchema( org.openremote.model.asset.agent.AgentLink.class)
-//     org.openremote.model.util.ValueUtil.doInitialise()
+//     def classLoader = new URLClassLoader(
+//         (rootProject.sourceSets.main.output.files + configurations.runtimeClasspath).collect { it.toURI().toURL() } as URL[], this.class.classLoader)
 
-//     // def schema = org.openremote.model.util.ValueUtil.JSON.getSchema(clazz.class)
-//     def file = new File("schema")
-//     file << schema
+//     def valueUtil = classLoader.loadClass('org.openremote.model.util.ValueUtil')
+//     valueUtil.doSchemaInit()
+
+//     def fullyQualifiedClassNames = [
+//         'org.openremote.model.asset.agent.AgentLink',
+//         'org.openremote.model.value.ValueConstraint',
+//         // TODO: move the method to the root build.gradle so it can resolve all classes in openremote
+//         'org.openremote.agent.protocol.http.HTTPAgentLink.java'
+//     ]
+
+//     def classes = fullyQualifiedClassNames.collect { classLoader.loadClass(it) }
+
+//     classes.each { clazz ->
+//         def schema = valueUtil.getSchema(clazz)
+//         new File("tmp/schemas/" + clazz.getName()).with { getParentFile().mkdirs(); write(schema.toString()) }
+//     }
 
 //     // TODO: test whether the jsonforms/core library will be needed to generate the right keys
 

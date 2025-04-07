@@ -19,8 +19,15 @@
  */
 package org.openremote.manager;
 
+import org.openremote.agent.protocol.AgentModelProvider;
 import org.openremote.container.Container;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.util.LogUtil;
+import org.openremote.manager.asset.AssetModelService;
+import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.util.ValueUtil;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class Main {
 
@@ -30,13 +37,20 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        Container container = new Container();
+        // container.getService(PersistenceService.class);
+        // container.getService(AssetModelService.class).initDynamicModel();
 
-        try {
-            container.startBackground();
-        } catch (Exception e) {
-            container.stop();
-            System.exit(1);
-        }
+        ValueUtil.initialise(null);
+        // ValueUtil.doInitialise();
+        JsonNode d = ValueUtil.getSchema(AgentLink.class);
+        System.out.println(d.toString());
+//        Container container = new Container();
+//
+//        try {
+//            container.startBackground();
+//        } catch (Exception e) {
+//            container.stop();
+//            System.exit(1);
+//        }
     }
 }

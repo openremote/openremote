@@ -246,7 +246,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
     }
 
-    protected void initDynamicModel() {
+    public void initDynamicModel() {
         try {
             Path rootStorageDir = persistenceService.getStorageDir();
             storageDir = rootStorageDir.resolve(DIRECTORY_NAME);

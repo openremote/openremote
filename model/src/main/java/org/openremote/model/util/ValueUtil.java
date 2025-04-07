@@ -706,7 +706,9 @@ public class ValueUtil {
         assetModelProviders.add(new StandardModelProvider());
 
         // Find all service loader registered asset model providers
-        ServiceLoader.load(AssetModelProvider.class).forEach(assetModelProviders::add);
+        ServiceLoader.load(AssetModelProvider.class).forEach( d-> {
+            assetModelProviders.add(d);
+        });
 
         if (container != null) {
             // Look for any container services that implement model provider
@@ -728,7 +730,7 @@ public class ValueUtil {
      * Initialise the asset model and throw an {@link IllegalStateException} exception if a problem is detected; this
      * can be called by applications at startup to fail hard and fast if the asset model is un-usable
      */
-    static void doInitialise() throws IllegalStateException {
+    public static void doInitialise() throws IllegalStateException {
         generator = null;
         assetInfoMap.clear();
         assetTypeMap.clear();
@@ -744,6 +746,7 @@ public class ValueUtil {
         assetClasses.add((Class<? extends Asset<?>>)(Class<?>)Asset.class);
         assetDescriptorsMap.put(Asset.class.getSimpleName(), new ArrayList<>(getDescriptorFields(Asset.class)));
 
+        System.out.println("PROVIDERS " + getModelProviders());
         getModelProviders().forEach(assetModelProvider -> {
             LOG.fine("Processing asset model provider: " + assetModelProvider.getClass().getSimpleName());
             LOG.fine("Auto scan = " + assetModelProvider.useAutoScan());

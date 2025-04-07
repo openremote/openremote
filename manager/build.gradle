@@ -176,6 +176,52 @@ tasks.register('setVersionProperties', WriteProperties) {
     property 'version', project.version
 }
 
+tasks.register('generateJSONSchema') {
+    dependsOn 'compileJava'
+    // dependsOn getCompileAgent()
+    doLast {
+        // def currentProjectClasspath = (sourceSets.main.output.files + configurations.runtimeClasspath).collect { it.toURI().toURL() }
+
+        // def dependentProject = project(':agent')
+
+        // def dependentProjectClasspath = (dependentProject.sourceSets.main.output.files + dependentProject.configurations.runtimeClasspath).collect { it.toURI().toURL() }
+
+        // def combinedClasspath = currentProjectClasspath + dependentProjectClasspath
+
+        // def classLoader = new URLClassLoader(combinedClasspath as URL[], this.class.classLoader)
+
+    // rootProject.generateJSONSchema()
+        def agentOutputDir = project(':agent').sourceSets.main.output
+        def classLoader = new URLClassLoader(
+            (sourceSets.main.output.files + configurations.runtimeClasspath + agentOutputDir.classesDirs + agentOutputDir.files).collect { it.toURI().toURL() } as URL[], this.class.classLoader)
+
+        classLoader.getURLs().each { url ->
+            println "ClassLoader URL: $url"
+        }
+
+        def valueUtil = classLoader.loadClass('org.openremote.model.util.ValueUtil')
+//        classLoader.loadClass('org.openremote.agent.protocol.http.HTTPAgentLink')
+//        classLoader.loadClass('org.openremote.model.AssetModelProvider')
+//        classLoader.loadClass('org.openremote.model.StandardModelProvider')
+//        classLoader.loadClass('org.openremote.agent.protocol.AgentModelProvider')
+        valueUtil.initialise(null)
+
+        def fullyQualifiedClassNames = [
+            'org.openremote.model.asset.agent.AgentLink',
+            'org.openremote.model.value.ValueConstraint',
+            // TODO: move the method to the root build.gradle so it can resolve all classes in openremote
+        ]
+
+        def classes = fullyQualifiedClassNames.collect { classLoader.loadClass(it) }
+
+        classes.each { clazz ->
+            def schema = valueUtil.getSchema(clazz)
+            new File("tmp/schemas/" + clazz.getName()).with { getParentFile().mkdirs(); write(schema.toString()) }
+        }
+    }
+}
+
+
 publish.mustRunAfter(setVersionProperties)
 publish.dependsOn(setVersionProperties)
 processResources.dependsOn(setVersionProperties)
