@@ -113,7 +113,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
         try {
             PlcWriteResponse response = request.execute().get(3, TimeUnit.SECONDS);
-            if (response.getResponseCode(response.getRequest().getTags().stream().findFirst().orElseThrow().getAddressString()) != PlcResponseCode.OK){
+            if (response.getResponseCode(response.getTagNames().stream().findFirst().orElseThrow()) != PlcResponseCode.OK){
                 throw new IllegalStateException("PLC Write Response code is something other than \"OK\"");
             }
         } catch (Exception e) {
