@@ -485,12 +485,16 @@ public class MapService implements ContainerService {
                 this.setData(true);
                 return false;
             }
-            if (!saveMapMetadata(getMetadata(connection))) {
+            metadata = getMetadata(connection);
+            if (!metadata.isValid()) {
                 this.setData(true);
+                saveMapMetadata(metadata);
                 return false;
-            };
+            }
 
             this.setData();
+            saveMapMetadata(metadata);
+
             return true;
         } catch (IOException | SQLException | ClassNotFoundException e) {
             LOG.log(Level.SEVERE, "Failed to load " + path + " file", e);
@@ -519,7 +523,7 @@ public class MapService implements ContainerService {
         return deleted;
     }
 
-    private boolean saveMapMetadata(Metadata metadata) {
+    private void saveMapMetadata(Metadata metadata) {
         Optional<JsonNode> options = Optional.ofNullable(mapConfig.get("options"));
         if (metadata.isValid() && options.isPresent()) {
             Iterator<Map.Entry<String, JsonNode>> fields = options.get().fields();
@@ -532,9 +536,7 @@ public class MapService implements ContainerService {
             configurationService.saveMapConfig(mapConfig);
             mapConfig = configurationService.getMapConfig();
             mapSettings.clear();
-            return true;
         }
-        return false;
     }
 
     /**
