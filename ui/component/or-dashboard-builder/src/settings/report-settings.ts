@@ -79,7 +79,7 @@ export class ReportSettings extends WidgetSettings {
                 },
                 {
                     icon: 'calculator-variant-outline',
-                    tooltip: i18next.t('dashboard.algorithmMethod'),
+                    tooltip: i18next.t('algorithmMethod'),
                     disabled: false
                 },
                 {
@@ -287,40 +287,18 @@ export class ReportSettings extends WidgetSettings {
 
         switch (action.icon) {
             case "palette":    // Change color
-                const colorInput = document.createElement('input');
-                colorInput.type = 'color';
-                colorInput.style.border = 'none';
-                colorInput.style.height = '31px';
-                colorInput.style.width = '31px';
-                colorInput.style.padding = '1px 3px';
-                colorInput.style.minHeight = '22px';
-                colorInput.style.minWidth = '30px';
-                colorInput.style.cursor = 'pointer';
-                colorInput.addEventListener('change', (e: any) => {
-                    const color = e.target.value;
-                    const existingIndex = this.widgetConfig.colorPickedAttributes.findIndex(item =>
-                        item.attributeRef.id === attributeRef.id && item.attributeRef.name === attributeRef.name
-                    );
-                    if (existingIndex >= 0) {
-                        this.widgetConfig.colorPickedAttributes[existingIndex].color = color;
-                    } else {
-                        this.widgetConfig.colorPickedAttributes.push({ attributeRef, color });
-                    }
-                    this.notifyConfigUpdate();
-                });
-                colorInput.click();
+                this.openColorPickDialog(attributeRef);
                 break;
             case "arrow-right-bold":
             case "arrow-left-bold":
                 this.toggleAttributeSetting("rightAxisAttributes", attributeRef);
                 break;
             case "calculator-variant-outline":
-                this.algorithmMethodsDialog(attributeRef);
+                this.openAlgorithmMethodsDialog(attributeRef);
                 break;
             default:
                 console.warn('Unknown attribute panel action:', action);
         }
-        console.log("end of onAttributeAction" + JSON.stringify(this.widgetConfig.attributeSettings));
     }
 
     // When the list of attributeRefs is changed by the asset selector,
@@ -361,6 +339,33 @@ export class ReportSettings extends WidgetSettings {
         this.notifyConfigUpdate();
     }
 
+    protected openColorPickDialog(attributeRef: AttributeRef) {
+        const colorInput = document.createElement('input');
+        colorInput.type = 'color';
+        colorInput.style.border = 'none';
+        colorInput.style.height = '31px';
+        colorInput.style.width = '31px';
+        colorInput.style.padding = '1px 3px';
+        colorInput.style.minHeight = '22px';
+        colorInput.style.minWidth = '30px';
+        colorInput.style.cursor = 'pointer';
+        colorInput.addEventListener('change', (e: any) => {
+            const color = e.target.value;
+            const existingIndex = this.widgetConfig.colorPickedAttributes.findIndex(item =>
+                item.attributeRef.id === attributeRef.id && item.attributeRef.name === attributeRef.name
+            );
+            if (existingIndex >= 0) {
+                this.widgetConfig.colorPickedAttributes[existingIndex].color = color;
+            } else {
+                this.widgetConfig.colorPickedAttributes.push({ attributeRef, color });
+            }
+            this.notifyConfigUpdate();
+        });
+        colorInput.click();
+    }
+
+
+
     protected removeFromColorPickedAttributes(attributeRef: AttributeRef) {
         this.widgetConfig.colorPickedAttributes = this.widgetConfig.colorPickedAttributes.filter(
             item => item.attributeRef.id !== attributeRef.id || item.attributeRef.name !== attributeRef.name
@@ -368,50 +373,31 @@ export class ReportSettings extends WidgetSettings {
     }
 
 
-    protected algorithmMethodsDialog(attributeRef: AttributeRef) {
+    protected openAlgorithmMethodsDialog(attributeRef: AttributeRef) {
 
         const methodList: ListItem[] = Object.entries(this.widgetConfig.attributeSettings)
+            .filter(([key]) => key.includes('method'))
             .map(([key, attributeRefs]) => {
                 return {
                     text: key,
-                    value: attributeRefs.includes(attributeRef) ? key : '',
-                    translate: false
-                }
-              }
-            );
-        console.log('methodList:', methodList);
+                    value: key,
+                    data: attributeRefs.includes(attributeRef) ? key : undefined,
+                    translate: true
+                };
+            });
+        let selected: ListItem[] = [];
 
-        let changes: ListItem[] = [];
-
-        const dialog = showDialog(new OrMwcDialog()
+        showDialog(new OrMwcDialog()
             .setContent(html`
                 <div id="method-creator">
-                    <or-mwc-list id="method-creator-list" .type="${ListType.MULTI_CHECKBOX}" .listItems="${methodList}" .values="${methodList.values}"
-                            @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => {
-                                console.log('ev.detail.values:', ev.detail.values);
-                                console.log('methodList.values:', methodList.values);
-                                console.log('methodList:', methodList);
-                                console.log('changesEVENT:', changes);
-                            changes = Array.from(methodList.values()).filter(item => !Array.from(ev.detail.values()).includes(item));
-                        }}"
+                    <or-mwc-list id="method-creator-list" .type="${ListType.MULTI_CHECKBOX}" 
+                                 .listItems="${methodList}" 
+                                 .values="${methodList.map(item => item.data)}"
+                                 @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => {selected = Array.from(ev.detail.values());
+                                     selected = selected.map(item => ({...item, data: item.text}));
+                                 }}"
                     ></or-mwc-list>
                 </div>
-            `)
-            .setStyles(html`
-                <style>
-                    #meta-creator {
-                        height: 600px;
-                        max-height: 100%;
-                    }
-                    
-                    #meta-creator > or-mwc-list {
-                        height: 100%;
-                    }
-
-                    .mdc-dialog .mdc-dialog__content {
-                        padding: 0 !important;
-                    }
-                </style>
             `)
             .setHeading(i18next.t("algorithmMethod"))
             .setActions([
@@ -423,9 +409,21 @@ export class ReportSettings extends WidgetSettings {
                     default: true,
                     actionName: "ok",
                     action: () => {
-                        console.log('changes:', changes);
-                        changes.forEach((item) => {
-                                this.toggleAttributeSetting(item.value as keyof ReportWidgetConfig["attributeSettings"], attributeRef);
+                        // Check which settings need updating
+                        const changedMethods = methodList.filter(input => {
+                            const selectedItem = selected.find(selected => selected.value === input.value);
+                            return (!selectedItem && input.data !== undefined) ||
+                                (selectedItem && selectedItem.data === undefined) ||
+                                (selectedItem && selectedItem.data !== input.data);
+                        });
+                        //Update the settings
+                        changedMethods.forEach((item: ListItem) => {
+                            if (item.value) {
+                                this.toggleAttributeSetting(
+                                    item.value as keyof ReportWidgetConfig["attributeSettings"],
+                                    attributeRef
+                                );
+                            }
                         });
                     },
                     content: "ok"

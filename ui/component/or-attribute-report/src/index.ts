@@ -1214,7 +1214,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             }
 
             this._data = data;
-            console.log("this._data",this._data);
+            //console.log("this._data",this._data);
 
             //Load data into table format
             this.columns = ['Time', ...this._data!.map(entry => entry.name)];
@@ -1224,8 +1224,8 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             }));
 
 
-            console.log("columns:", this.columns);
-            console.log("rows:", this.rows);
+            //console.log("columns:", this.columns);
+            //console.log("rows:", this.rows);
 
 
             this._loading = false;
@@ -1293,19 +1293,19 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
             //if(query.type === 'interval' && !query.interval) {
             const diffInHours = (this._endOfPeriod! - this._startOfPeriod!) / 1000 / 60 / 60;
-            console.log("DiffInHours", diffInHours);
+           // console.log("DiffInHours", diffInHours);
             const intervalArr = this._getInterval(diffInHours);
-            console.log("intervallArr2",intervalArr)
+           // console.log("intervallArr2",intervalArr)
             query.interval = (intervalArr[0].toString() + " " + intervalArr[1].toString()); // for example: "5 minute"
-            console.log('Start:', new Date(this._startOfPeriod!), 'End:', new Date(this._endOfPeriod!));
-            console.log("datapointResoursequery:", query);
+           // console.log('Start:', new Date(this._startOfPeriod!), 'End:', new Date(this._endOfPeriod!));
+           // console.log("datapointResoursequery:", query);
             response = await manager.rest.api.AssetDatapointResource.getDatapoints(asset.id, attribute.name, query, options);
 
 
             let data: ValueDatapoint<any>[] = [];
 
             if (response.status === 200) {
-                console.log("response:", response.data);
+               // console.log("response:", response.data);
                 data = response.data
                     .filter(value => value.y !== null && value.y !== undefined)
                     .map(point => ({x: point.x, y: point.y} as ValueDatapoint<any>))
@@ -1318,7 +1318,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
 
         }
-        console.log("dataset", dataset);
+       // console.log("dataset", dataset);
         return dataset;
     }
 
