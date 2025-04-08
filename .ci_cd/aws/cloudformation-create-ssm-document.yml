@@ -1,24 +1,23 @@
 # ---------------------------------------------------------------------------------------------------------------------
 #
-# CloudFormation Template for creating an SSM Document for detaching the EBS Data volume.
+# CloudFormation Template for creating an SSM Document for detaching the EBS data volume.
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Creates an SSM Document for attaching/detaching the EBS volume'
-
 Parameters:
   Host:
     Description: FQDN for host.
     Type: String
   InstanceId:
-    Description: InstanceId where the script needs to be executed.
+    Description: Instance ID where the script needs to be executed.
     Type: String
   VolumeId:
-    Description: VolumeId that needs to be attached/detached.
+    Description: Volume ID that needs to be attached/detached.
     Type: String
   EBSDeviceName:
-    Description: EBS DeviceName where this volume is mounted on.
+    Description: EBS Device name where this data volume is mounted on.
     Type: String
 
 Resources:
@@ -31,15 +30,15 @@ Resources:
             parameters:
               InstanceId:
                 type: String
-                description: InstanceId where the script needs to be executed.
+                description: Instance ID where the script needs to be executed.
                 default: !Ref InstanceId
               VolumeId:
                 type: String
-                description: VolumeId that needs to be detached.
+                description: Volume ID that needs to be detached.
                 default: !Ref VolumeId
               EBSDeviceName:
                   type: String
-                  description: EBS DeviceName where this volume is mounted on.
+                  description: EBS Device name where this data volume is mounted on.
                   default: !Ref EBSDeviceName
             mainSteps:
               - name: RemoveFstabEntry
@@ -98,15 +97,15 @@ Resources:
             parameters:
               InstanceId:
                 type: String
-                description: InstanceId where the script needs to be executed.
+                description: Instance ID where the script needs to be executed.
                 default: !Ref InstanceId
               VolumeId:
                 type: String
-                description: VolumeId that needs to be attached.
+                description: Volume ID that needs to be attached.
                 default: !Ref VolumeId
               EBSDeviceName:
                   type: String
-                  description: EBS DeviceName where this volume needs to be mounted on.
+                  description: EBS Device name where this data volume needs to be mounted on.
                   default: !Ref EBSDeviceName
             mainSteps:
               - name: AttachVolume

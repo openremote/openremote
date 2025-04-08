@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------------------------------------------------
 #
-# CloudFormation Template for creating an Amazon Data Lifecycle Manager policy for creating snapshots of the EBS Data volume.
+# CloudFormation Template for creating an Amazon Data Lifecycle Manager policy for creating snapshots of the EBS data volume.
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -14,7 +14,7 @@ Parameters:
     Description: Role ARN for executing DLM operations
     Type: String
   EBSStackId:
-    Description: EBS Stack ID of the volume that need to be targeted by this policy
+    Description: EBS Stack ID of the data volume that need to be targeted by this policy
     Type: String
 
 Resources:

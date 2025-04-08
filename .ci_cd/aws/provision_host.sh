@@ -206,7 +206,7 @@ EOF
 
   SUBNET_AZ=$(aws ec2 describe-subnets --filters Name=tag:Name,Values=$SUBNETNAME --query "Subnets[0].AvailabilityZone" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
-  # Provision EBS volume using CloudFormation (if stack doesn't already exist).
+  # Provision EBS data volume using CloudFormation (if stack doesn't already exist).
   echo "Provisioning EBS data volume"
   STATUS=$(aws cloudformation describe-stacks --stack-name $EBS_STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null)
 
@@ -315,7 +315,7 @@ EOF
     echo "Create stack in progress"
   fi
 
-  # Retrieve Instance ID and state before EBS volume can be attached.
+  # Retrieve Instance ID and state before EBS data volume can be attached.
   INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values='$HOST'" --query "Reservations[].Instances[?Tags[?Value=='$STACK_ID']].InstanceId" --output text $ACCOUNT_PROFILE 2>/dev/null)
   INSTANCE_STATE=$(aws ec2 describe-instances --filters "Name=tag:Name,Values='$HOST'" --query "Reservations[].Instances[?Tags[?Value=='$STACK_ID']].State.Name" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
@@ -335,13 +335,13 @@ EOF
     exit 1
   fi
 
-  # Retrieve Volume ID and attach EBS volume to instance.
+  # Retrieve Volume ID and attach EBS data volume to instance.
   echo "Instance is available .. attaching volume"
   VOLUME_ID=$(aws ec2 describe-volumes --filters "Name=tag:Name,Values='$HOST/data'" --query "Volumes[?Tags[?Value=='$EBS_STACK_ID']].VolumeId" --output text $ACCOUNT_PROFILE 2>/dev/null)
   VOLUME=$(aws ec2 attach-volume --device $EBS_DEVICE_NAME --instance-id $INSTANCE_ID --volume-id $VOLUME_ID --output text $ACCOUNT_PROFILE 2>/dev/null)
   STATUS=$(aws ec2 describe-volumes --filters "Name=tag:Name,Values='$HOST/data'" --query "Volumes[?Tags[?Value=='$EBS_STACK_ID']].Attachments[].State" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
-  # Check if EBS volume is attached.
+  # Check if EBS data volume is attached.
   while [[ "$STATUS" == 'attaching' ]]; do
       echo "Volume is still attaching .. Sleeping 30 seconds"
       sleep 30
@@ -376,7 +376,7 @@ EOF
 fi
 
 # Provision Lifecycle Policy.
-echo "Provisioning Lifecycle Policy for EBS volume"
+echo "Provisioning Lifecycle Policy for EBS data volume"
 STATUS=$(aws cloudformation describe-stacks --stack-name $DLM_STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null)
 
 if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
@@ -447,7 +447,7 @@ else
 fi
 
 # Provision SSM Documents
-echo "Provisioning SSM Documents for attaching/detaching EBS Data volume"
+echo "Provisioning SSM Documents for attaching/detaching EBS data volume"
 STATUS=$(aws cloudformation describe-stacks --stack-name $SSM_STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null)
 
 if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
