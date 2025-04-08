@@ -77,4 +77,18 @@ public class JSchGatewayTunnelFactory implements GatewayTunnelFactory {
             session.disconnect();
         }
     }
+
+    public void stopAll() {
+        try {
+            sessionMap.values()
+                    .forEach(session -> {
+                        try {
+                            session.disconnect();
+                        } catch (Exception ignored) {
+                        }
+                    });
+        } finally {
+            sessionMap.clear();
+        }
+    }
 }

@@ -49,7 +49,7 @@ import org.openremote.model.alarm.AlarmEvent;
     @JsonSubTypes.Type(value = RequestSimulatorState.class, name = "request-simulator-state"),
     @JsonSubTypes.Type(value = RulesEngineStatusEvent.class, name = "rules-engine-status"),
     @JsonSubTypes.Type(value = RulesetChangedEvent.class, name = "ruleset-changed"),
-    @JsonSubTypes.Type(value = GatewayDisconnectEvent.class, name = "gateway-disconnect"),
+    @JsonSubTypes.Type(value = GatewayDisconnectEvent.class, name = GatewayDisconnectEvent.TYPE),
     @JsonSubTypes.Type(value = GatewayConnectionStatusEvent.class, name = "gateway-connection-status"),
     @JsonSubTypes.Type(value = GatewayCapabilitiesRequestEvent.class, name = GatewayCapabilitiesRequestEvent.TYPE),
     @JsonSubTypes.Type(value = GatewayCapabilitiesResponseEvent.class, name = GatewayCapabilitiesResponseEvent.TYPE),
