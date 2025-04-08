@@ -11,6 +11,8 @@ import org.openremote.model.attribute.MetaItem
 import org.openremote.model.dashboard.*
 import org.openremote.model.query.DashboardQuery
 import org.openremote.model.query.filter.RealmPredicate
+import org.openremote.model.security.ClientRole
+import org.openremote.model.security.User
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.MetaItemType
 import org.openremote.setup.integration.KeycloakTestSetup
@@ -46,10 +48,22 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
                 "testuser1"
         ).token
 
+        and: "an additional user without READ_INSIGHTS is created"
+        ClientRole[] noInsightsRoles = new ClientRole[] { ClientRole.READ_ASSETS }
+        User noAccessUser = keycloakTestSetup.createUser(MASTER_REALM, "noinsights", "noinsights", "firstName", "lastName", "noinsights@openremote.local", true, noInsightsRoles)
+        def noAccessUserToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, "noinsights", "noinsights").token
+
+        and: "an additional user without WRITE_INSIGHTS is created"
+        ClientRole[] readonlyRoles = new ClientRole[] { ClientRole.READ_ASSETS, ClientRole.READ_INSIGHTS }
+        User readonlyUser = keycloakTestSetup.createUser(MASTER_REALM, "readinsights", "readinsights", "firstName", "lastName", "readinsights@openremote.local", true, readonlyRoles)
+        def readonlyUserToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, "readinsights", "readinsights").token
+
         and: "the dashboard resource"
         def serverUri = serverUri(serverPort)
         def adminUserDashboardResource = getClientApiTarget(serverUri, MASTER_REALM, adminUserAccessToken).proxy(DashboardResource.class)
         def privateUser1DashboardResource = getClientApiTarget(serverUri, MASTER_REALM, privateUser1AccessToken).proxy(DashboardResource.class)
+        def noAccessDashboardResource = getClientApiTarget(serverUri, MASTER_REALM, noAccessUserToken).proxy(DashboardResource.class)
+        def readonlyDashboardResource = getClientApiTarget(serverUri, MASTER_REALM, readonlyUserToken).proxy(DashboardResource.class)
         def publicUserDashboardResource = getClientApiTarget(serverUri, MASTER_REALM).proxy(DashboardResource.class)
         def adminUserAssetResource = getClientApiTarget(serverUri, MASTER_REALM, adminUserAccessToken).proxy(AssetResource.class)
 
@@ -57,9 +71,22 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
 
         // Test to verify dashboards can be CREATED and FETCHED by different users.
 
-        when: "a dashboard is created in the authenticated realm"
+        when: "a user without WRITE_INSIGHTS tries to create dashboard"
         DashboardScreenPreset[] screenPresets = Arrays.asList(new DashboardScreenPreset("preset1", DashboardScalingPreset.KEEP_LAYOUT)).toArray() as DashboardScreenPreset[]
         Dashboard temp1 = new Dashboard(MASTER_REALM, "dashboard1", screenPresets)
+        noAccessDashboardResource.create(null, temp1)
+        readonlyDashboardResource.create(null, temp1)
+
+        then: "an exception is thrown that reflects their permissions"
+        thrown ForbiddenException
+
+        when: "a user without WRITE_INSIGHTS, but with READ_INSIGHTS, tries to create dashboard"
+        readonlyDashboardResource.create(null, temp1)
+
+        then: "an exception is also thrown"
+        thrown ForbiddenException
+
+        when: "a dashboard is created in the authenticated realm"
         adminUserDashboardResource.create(null, temp1)
         Dashboard temp2 = new Dashboard(MASTER_REALM, "dashboard2", screenPresets).setOwnerId(keycloakTestSetup.testuser1Id)
         privateUser1DashboardResource.create(null, temp2)
@@ -74,6 +101,12 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         assert adminDashboard.id == userDashboards[0].id
         assert privateUser1Dashboard.id == userDashboards[1].id
 
+        when: "a user without READ_INSIGHTS tries to fetch a dashboard"
+        def readonlyDashboards = noAccessDashboardResource.getAllRealmDashboards(null, MASTER_REALM)
+
+        then: "an exception is thrown that reflects their lack of READ permissions"
+        assert readonlyDashboards.length == 0
+
         /* ----------------------- */
 
         // Test to verify user can query by displayName
@@ -86,25 +119,43 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         assert displayNameDashboards.length == 1
         assert displayNameDashboards[0].displayName == "dashboard1"
 
+        when: "a user without READ_INSIGHTS tries to query dashboard by display name"
+        def displayNameNoAccessDashboards = noAccessDashboardResource.query(null, displayNameQuery)
+
+        then: "no dashboards with the display name could be found"
+        assert displayNameNoAccessDashboards.length == 0
+
+        when: "an unauthenticated user tries to query dashboard by display name"
+        def displayNamePublicDashboards = publicUserDashboardResource.query(null, displayNameQuery)
+
+        then: "no public dashboards with the display name could be found"
+        assert displayNamePublicDashboards.length == 0
+
         /* ----------------------- */
 
-        // Test to verify "EDIT ACCESS" logic
+        // Test to verify access logic
 
-        when: "dashboard1 is made 'view private' by its original owner"
+        when: "dashboard1 is made 'private' by its original owner"
         privateUser1Dashboard.setAccess(DashboardAccess.PRIVATE)
         assert privateUser1DashboardResource.update(null, privateUser1Dashboard) != null
 
-        and: "dashboard1 is actually private"
+        then: "dashboard1 is actually private"
         def dashboards = privateUser1DashboardResource.getAllRealmDashboards(null, MASTER_REALM)
         assert dashboards.length == 2
         assert dashboards.find((d) -> d.id == privateUser1Dashboard.id).access == DashboardAccess.PRIVATE
 
-        and: "the first dashboard cannot be edited by a different user, even if its admin user"
+        when: "the first dashboard cannot be edited by a different user, even if its admin user"
         privateUser1Dashboard.setDisplayName("another displayname")
         adminUserDashboardResource.update(null, privateUser1Dashboard)
 
         then: "it should throw exception"
         thrown NotFoundException
+
+        when: "the first dashboard cannot be read by a different user, even if its admin user"
+        def adminDisplaynameDashboards = adminUserDashboardResource.query(null, new DashboardQuery().names(privateUser1Dashboard.displayName))
+
+        then: "the dashboard could not be found, since it's made 'private' by its original owner"
+        assert adminDisplaynameDashboards.length == 0
 
         /* ----------------------- */
 
@@ -130,7 +181,7 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
 
         // Test to verify public dashboards CAN be fetched by public/unauthenticated users
 
-        when: "dashboard1 is made 'view public' by its original owner"
+        when: "dashboard1 is made 'public' by its original owner"
         privateUser1Dashboard.setAccess(DashboardAccess.PUBLIC)
         assert privateUser1DashboardResource.update(null, privateUser1Dashboard) != null
 
