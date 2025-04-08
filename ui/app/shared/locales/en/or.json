@@ -761,7 +761,15 @@
     "zoom": "Zoom",
     "center": "Center",
     "imageUrl": "Image URL",
-    "noImageSelected": "No image selected"
+    "noImageSelected": "No image selected",
+    "methodMaxAttributes": "Maximum",
+    "methodMinAttributes": "Minimum",
+    "methodAvgAttributes": "Average",
+    "methodDeltaAttributes": "Difference",
+    "methodMedianAttributes": "Median",
+    "methodModeAttributes": "Mode",
+    "methodSumAttributes": "Datapoints Sum",
+    "methodCountAttributes": "Datapoint Count"
   },
   "south": "South",
   "east": "East",

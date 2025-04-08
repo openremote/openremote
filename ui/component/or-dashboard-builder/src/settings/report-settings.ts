@@ -10,6 +10,8 @@ import {ReportWidgetConfig} from "../widgets/report-widget";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {when} from "lit/directives/when.js";
 import moment from "moment/moment";
+import {ListItem, ListType, OrMwcList, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
+import {showDialog, OrMwcDialog, DialogAction} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 const styling = css`
   .switch-container {
@@ -76,6 +78,11 @@ export class ReportSettings extends WidgetSettings {
                   disabled: false
                 },
                 {
+                    icon: 'calculator-variant-outline',
+                    tooltip: i18next.t('dashboard.algorithmMethod'),
+                    disabled: false
+                },
+                {
                     icon: this.widgetConfig.attributeSettings.rightAxisAttributes.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
                     tooltip: i18next.t('dashboard.toggleAxis'),
                     disabled: false
@@ -128,22 +135,29 @@ export class ReportSettings extends WidgetSettings {
                    <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 16px;">
                             <div class="switch-container">
                                 <span><or-translate value="dashboard.showLegend"></or-translate></span>
-                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showLegend}"
+                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.chartSettings.showLegend}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowLegendToggle(ev)}"
                                 ></or-mwc-input>
                             </div>
                         <!-- Toolbox -->
                             <div class="switch-container">
                                 <span><or-translate value="dashboard.showToolBox"></or-translate></span>
-                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showToolBox}"
+                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.chartSettings.showToolBox}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowToolBoxToggle(ev)}"
                                 ></or-mwc-input>
                             </div>
+                       <!-- Stacked -->
+                       <div class="switch-container">
+                           <span><or-translate value="dashboard.defaultStacked"></or-translate></span>
+                           <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.chartSettings.defaultStacked}"
+                                         @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onDefaultStackedToggle(ev)}"
+                           ></or-mwc-input>
+                       </div>
                        <!-- TEMP isChart -->
                        <div class="switch-container">
                            <span><or-translate value="isChart"></or-translate></span>
                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.isChart}"
-                                         @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onisChartToggle(ev)}"
+                                         @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onIsChartToggle(ev)}"
                            ></or-mwc-input>
                        </div>
                     </div>
@@ -300,6 +314,9 @@ export class ReportSettings extends WidgetSettings {
             case "arrow-left-bold":
                 this.toggleAttributeSetting("rightAxisAttributes", attributeRef);
                 break;
+            case "calculator-variant-outline":
+                this.algorithmMethodsDialog(attributeRef);
+                break;
             default:
                 console.warn('Unknown attribute panel action:', action);
         }
@@ -350,6 +367,73 @@ export class ReportSettings extends WidgetSettings {
         );
     }
 
+
+    protected algorithmMethodsDialog(attributeRef: AttributeRef) {
+
+        const methodList: ListItem[] = Object.entries(this.widgetConfig.attributeSettings)
+            .map(([key, attributeRefs]) => {
+                return {
+                    text: key,
+                    value: attributeRefs.includes(attributeRef) ? key : '',
+                    translate: false
+                }
+              }
+            );
+        console.log('methodList:', methodList);
+
+        let changes: ListItem[] = [];
+
+        const dialog = showDialog(new OrMwcDialog()
+            .setContent(html`
+                <div id="method-creator">
+                    <or-mwc-list id="method-creator-list" .type="${ListType.MULTI_CHECKBOX}" .listItems="${methodList}" .values="${methodList.values}"
+                            @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => {
+                                console.log('ev.detail.values:', ev.detail.values);
+                                console.log('methodList.values:', methodList.values);
+                                console.log('methodList:', methodList);
+                                console.log('changesEVENT:', changes);
+                            changes = Array.from(methodList.values()).filter(item => !Array.from(ev.detail.values()).includes(item));
+                        }}"
+                    ></or-mwc-list>
+                </div>
+            `)
+            .setStyles(html`
+                <style>
+                    #meta-creator {
+                        height: 600px;
+                        max-height: 100%;
+                    }
+                    
+                    #meta-creator > or-mwc-list {
+                        height: 100%;
+                    }
+
+                    .mdc-dialog .mdc-dialog__content {
+                        padding: 0 !important;
+                    }
+                </style>
+            `)
+            .setHeading(i18next.t("algorithmMethod"))
+            .setActions([
+                {
+                    actionName: "cancel",
+                    content: "cancel"
+                },
+                {
+                    default: true,
+                    actionName: "ok",
+                    action: () => {
+                        console.log('changes:', changes);
+                        changes.forEach((item) => {
+                                this.toggleAttributeSetting(item.value as keyof ReportWidgetConfig["attributeSettings"], attributeRef);
+                        });
+                    },
+                    content: "ok"
+                }
+            ])
+            .setDismissAction(null));
+    }
+
     protected onTimePreFixSelect(ev: OrInputChangedEvent) {
         this.widgetConfig.defaultTimePrefixKey = ev.detail.value.toString();
         this.notifyConfigUpdate();
@@ -366,16 +450,21 @@ export class ReportSettings extends WidgetSettings {
     }
 
     protected onShowLegendToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.showLegend = ev.detail.value;
+        this.widgetConfig.chartSettings.showLegend = ev.detail.value;
         this.notifyConfigUpdate();
     }
 
     protected onShowToolBoxToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.showToolBox = ev.detail.value;
+        this.widgetConfig.chartSettings.showToolBox = ev.detail.value;
         this.notifyConfigUpdate();
     }
 
-    protected onisChartToggle(ev: OrInputChangedEvent) {
+    protected onDefaultStackedToggle(ev: OrInputChangedEvent) {
+        this.widgetConfig.chartSettings.defaultStacked = ev.detail.value;
+        this.notifyConfigUpdate();
+    }
+
+    protected onIsChartToggle(ev: OrInputChangedEvent) {
         this.widgetConfig.isChart = ev.detail.value;
         this.notifyConfigUpdate();
     }

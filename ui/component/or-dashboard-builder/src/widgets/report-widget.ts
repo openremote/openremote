@@ -15,16 +15,26 @@ export interface ReportWidgetConfig extends WidgetConfig {
     colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }>;
     attributeSettings: {
         rightAxisAttributes: AttributeRef[],
+        methodMaxAttributes: AttributeRef[],
+        methodMinAttributes: AttributeRef[],
+        methodAvgAttributes: AttributeRef[],
+        methodDeltaAttributes: AttributeRef[],
+        methodMedianAttributes: AttributeRef[],
+        methodModeAttributes: AttributeRef[],
+        methodSumAttributes: AttributeRef[],
+        methodCountAttributes: AttributeRef[],
     },
     datapointQuery: AssetDatapointQueryUnion;
     chartOptions?: any;
     showTimestampControls: boolean;
     defaultTimeWindowKey: string;
     defaultTimePrefixKey: string;
-    showLegend: boolean;
-    showToolBox: boolean;
+    chartSettings: {
+        showLegend: boolean;
+        showToolBox: boolean;
+        defaultStacked: boolean;
+    };
     isChart: boolean;
-
 }
 
 function getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
@@ -63,6 +73,14 @@ function getDefaultWidgetConfig(): ReportWidgetConfig {
         colorPickedAttributes: [],
         attributeSettings: {
             rightAxisAttributes: [],
+            methodMaxAttributes: [],
+            methodMinAttributes: [],
+            methodAvgAttributes: [],
+            methodDeltaAttributes: [],
+            methodMedianAttributes: [],
+            methodModeAttributes: [],
+            methodSumAttributes: [],
+            methodCountAttributes: []
         },
         datapointQuery: {
             type: "interval",
@@ -86,8 +104,11 @@ function getDefaultWidgetConfig(): ReportWidgetConfig {
         showTimestampControls: false,
         defaultTimeWindowKey: preset,
         defaultTimePrefixKey: "last",
-        showLegend: true,
-        showToolBox: false,
+        chartSettings: {
+            showLegend: true,
+            showToolBox: false,
+            defaultStacked: false,
+        },
         isChart: true
     };
 }
@@ -209,8 +230,7 @@ export class ReportWidget extends OrAssetWidget {
                     <or-attribute-report .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
                               .colorPickedAttributes="${this.widgetConfig?.colorPickedAttributes != null ? this.widgetConfig?.colorPickedAttributes : []}"
                               .attributeSettings="${this.widgetConfig?.attributeSettings != null ? this.widgetConfig.attributeSettings : {}}"
-                              .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
-                              .showToolBox="${(this.widgetConfig?.showToolBox != null) ? this.widgetConfig?.showToolBox : true}"
+                              .chartSettings="${this.widgetConfig?.chartSettings}"
                               .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
                               .timeWindowOptions="${getDefaultTimeWindowOptions()}"
                               .timePrefixOptions="${getDefaultTimePreFixOptions()}"

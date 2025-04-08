@@ -381,22 +381,14 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     public attributeQueryFormula: Array<{ attributeRef: AttributeRef; formula: AssetDatapointIntervalQueryFormula }> = [];
 
     @property({type: Object})
-    public attributeSettings: {
-        rightAxisAttributes: AttributeRef[],
-        smoothAttributes: AttributeRef[],
-        steppedAttributes: AttributeRef[],
-        areaAttributes: AttributeRef[],
-        faintAttributes: AttributeRef[],
-        extendedAttributes: AttributeRef[],
-    } = {
-        rightAxisAttributes: [],
-        smoothAttributes: [],
-        steppedAttributes: [],
-        areaAttributes: [],
-        faintAttributes: [],
-        extendedAttributes: [],
+    public attributeSettings = {
+        rightAxisAttributes: [] as AttributeRef[],
+        smoothAttributes: [] as AttributeRef[],
+        steppedAttributes: [] as AttributeRef[],
+        areaAttributes: [] as AttributeRef[],
+        faintAttributes: [] as AttributeRef[],
+        extendedAttributes: [] as AttributeRef[],
     };
-
 
     @property()
     public dataProvider?: () => Promise<[]>
@@ -412,6 +404,15 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
     @property({type: Object})
     public chartOptions?: any
+    public chartSettings: {
+        showLegend: boolean;
+        showToolBox: boolean;
+        defaultStacked: boolean;
+    } = {
+        showLegend: true,
+        showToolBox: true,
+        defaultStacked: false,
+    };
 
     @property({type: String})
     public realm?: string;
@@ -441,13 +442,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     public timeWindowKey?: string;
 
     @property()
-    public showLegend: boolean = true;
-
-    @property()
     public denseLegend: boolean = false;
-
-    @property()
-    public showToolBox: boolean = true;
 
     @property()
     public isChart: boolean = false;
@@ -562,8 +557,8 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                         type: 'shadow'
                     },
                 },
-                legend: {show: true},
-                toolbox: {},
+                legend: this.chartSettings.showLegend ? {show: true} : undefined,
+                toolbox: this.chartSettings.showToolBox ? {show:true, feature: {magicType: {type: ['bar', 'stack']}}} : undefined,
                 xAxis: {
                     type: 'category',
                     axisLine: {
@@ -608,7 +603,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             };
 
             // Add toolbox if enabled
-            if(this.showToolBox) {
+            if(this.chartSettings.showToolBox) {
                 this._chartOptions!.toolbox! = {
                     right: 45,
                     top: 0,
@@ -706,7 +701,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                 
                 
                 
-                ${(this.timestampControls || this.attributeControls || this.showLegend) ? html`
+                ${(this.timestampControls || this.attributeControls || this.chartSettings.showLegend) ? html`
                     <div id="chart-controls">
                         <div id="controls">
                             <div class="period-controls">
@@ -769,7 +764,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                                 <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="selectAttributes" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
                             ` : undefined}
                         </div>
-                        ${cache(this.showLegend ? html`
+                        ${cache(this.chartSettings.showLegend ? html`
                             <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}">
                                 ${this.assetAttributes == null || this.assetAttributes.length == 0 ? html`
                                     <div>
@@ -1264,6 +1259,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             name: label,
             type: 'bar',
             data: [] as [any, any][],
+            stack: this.chartSettings.defaultStacked ? 'stack' : undefined,
             lineStyle: {
                 color: color,
             },
