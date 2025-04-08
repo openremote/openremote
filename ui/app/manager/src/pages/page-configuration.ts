@@ -38,7 +38,6 @@ import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or
 import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu, DefaultRealmConfig, store} from "../index";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
-declare const CONFIG_URL_PREFIX: string;
 declare const MANAGER_URL: string | undefined;
 declare const APP_VERSION: string;
 
@@ -237,8 +236,6 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     @query("#managerConfig-panel")
     protected realmConfigPanel?: OrConfPanel;
-
-    private readonly urlPrefix: string = (CONFIG_URL_PREFIX || "")
 
 
     /* ------------------------------------------ */

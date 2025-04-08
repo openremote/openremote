@@ -4,7 +4,6 @@ import {pageViewProvider} from "./pages/page-view";
 import {ManagerAppConfig} from "@openremote/model";
 
 declare const MANAGER_URL: string | undefined;
-declare const CONFIG_URL_PREFIX: string | undefined;
 
 const rootReducer = combineReducers({
     app: appReducer
@@ -60,12 +59,6 @@ fetch(configURL).then(async (result) => {
         }
     }
 
-    // Add config prefix if defined (used in dev)
-    if (CONFIG_URL_PREFIX) {
-        if (appConfig.manager.translationsLoadPath) {
-            appConfig.manager.translationsLoadPath = CONFIG_URL_PREFIX + appConfig.manager.translationsLoadPath;
-        }
-    }
     // Override specific for Insights app, since it doesn't require login.
     // Login and logout buttons can be found in the sidebar menu of the app.
     appConfig.manager.autoLogin = false;
