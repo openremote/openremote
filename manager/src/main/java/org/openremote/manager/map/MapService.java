@@ -466,7 +466,13 @@ public class MapService implements ContainerService {
                 written += bytesRead;
             }
         } catch (IOException | ClassNotFoundException | SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to save custom map file.");
+            LOG.log(Level.SEVERE, "Failed to save custom map file.", e);
+            try {
+                this.setData(true);
+            } catch (IOException | ClassNotFoundException | SQLException deleteError) {
+                LOG.log(Level.SEVERE, "Failed to delete " + path + " file", deleteError);
+            }
+            return false;
         }
 
         try {
