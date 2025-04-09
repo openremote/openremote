@@ -55,7 +55,7 @@ public class NoTimeLogFormatter extends Formatter {
         if (throwable != null) {
             StringWriter sink = new StringWriter();
             throwable.printStackTrace(new PrintWriter(sink, true));
-            sb.append(sink.toString());
+            sb.append(sink);
         }
 
         return sb.toString();
