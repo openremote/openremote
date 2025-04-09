@@ -1,5 +1,6 @@
 /*
  * Copied from: https://github.com/eugenp/tutorials/blob/master/core-java-modules/core-java-concurrency-advanced-4/src/main/java/com/baeldung/lockbykey/LockByKey.java
+ * Altered to use a Semaphore instead of ReentrantLock to avoid issues with camel thread context switching between lock/unlock calls (see issue #1812)
  */
 
 package org.openremote.model.util;
@@ -14,7 +15,7 @@ public class LockByKey {
     private static final System.Logger LOG = System.getLogger(LockByKey.class.getName());
 
     private static class LockWrapper {
-        private final Semaphore lock = new Semaphore(1);
+        private final Semaphore lock = new Semaphore(1); // Don't change to ReentrantLock as camel switches thread between try/finally blocks on route processors
         private final AtomicInteger numberOfThreadsInQueue = new AtomicInteger(1);
 
         private LockWrapper addThreadInQueue() {
