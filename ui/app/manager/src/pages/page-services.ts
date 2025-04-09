@@ -5,7 +5,7 @@ import {ViewerConfig} from "@openremote/or-log-viewer";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import {Store} from "@reduxjs/toolkit";
-
+import { manager } from "@openremote/core";
 
 export function pageServicesProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -32,7 +32,11 @@ export class PageServices extends Page<AppStateKeyed> {
             }
 
             .sidebar-placeholder {
+                background: #fff;
                 width: 300px;
+                min-width: 300px;
+                box-shadow: rgba(0, 0, 0, 0.21) 0px 1px 3px 0px;
+                z-index: 1;
                 }
 
             iframe {
@@ -54,9 +58,12 @@ export class PageServices extends Page<AppStateKeyed> {
     }
 
     protected render() {
+
+        const realmName = manager.displayRealm;
+
         return html`
             <div class="sidebar-placeholder"></div>
-            <iframe src="http://localhost:8001/smartcity/configs">hello</iframe>
+            <iframe src="http://localhost:8001/${realmName}/configs">hello</iframe>
         `;
     }
 }

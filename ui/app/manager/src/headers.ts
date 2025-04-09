@@ -41,7 +41,7 @@ export function headerItemServices<S extends AppStateKeyed, A extends AnyAction>
     return {
         icon: "puzzle",
         href: "services",
-        text: "services"
+        text: "Services"
     };
 }
 
