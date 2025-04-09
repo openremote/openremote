@@ -50,7 +50,6 @@ import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
 import { pageNotificationsProvider } from "./pages/page-notifications";
 import "./pages/page-notifications";
 
-declare var CONFIG_URL_PREFIX: string | undefined;
 declare var MANAGER_URL: string | undefined;
 
 const rootReducer = combineReducers({
@@ -142,13 +141,6 @@ fetch(configURL).then<ManagerAppConfig>(async (result) => {
 
         if (!appConfig.manager.translationsLoadPath) {
             appConfig.manager.translationsLoadPath = "/locales/{{lng}}/{{ns}}.json";
-        }
-    }
-
-    // Add config prefix if defined (used in dev)
-    if (CONFIG_URL_PREFIX) {
-        if (appConfig.manager.translationsLoadPath) {
-            appConfig.manager.translationsLoadPath = CONFIG_URL_PREFIX + appConfig.manager.translationsLoadPath;
         }
     }
 
