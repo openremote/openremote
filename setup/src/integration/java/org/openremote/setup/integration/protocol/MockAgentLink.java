@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,32 +12,33 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.setup.integration.protocol;
 
-import org.openremote.model.asset.agent.AgentLink;
-
 import java.util.Optional;
+
+import org.openremote.model.asset.agent.AgentLink;
 
 public class MockAgentLink extends AgentLink<MockAgentLink> {
 
-    protected String requiredValue;
+  protected String requiredValue;
 
-    // For Hydrators
-    protected MockAgentLink() {
-    }
+  // For Hydrators
+  protected MockAgentLink() {}
 
-    protected MockAgentLink(String id) {
-        super(id);
-    }
+  protected MockAgentLink(String id) {
+    super(id);
+  }
 
-    public Optional<String> getRequiredValue() {
-        return Optional.ofNullable(requiredValue);
-    }
+  public Optional<String> getRequiredValue() {
+    return Optional.ofNullable(requiredValue);
+  }
 
-    public MockAgentLink setRequiredValue(String requiredValue) {
-        this.requiredValue = requiredValue;
-        return this;
-    }
+  public MockAgentLink setRequiredValue(String requiredValue) {
+    this.requiredValue = requiredValue;
+    return this;
+  }
 }

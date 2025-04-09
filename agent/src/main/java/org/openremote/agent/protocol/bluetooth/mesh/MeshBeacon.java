@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,37 +12,32 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-/**
- * Abstract class containing mesh beacon information
- */
+/** Abstract class containing mesh beacon information */
 public abstract class MeshBeacon {
 
-    private static final String TAG = MeshBeacon.class.getSimpleName();
-    static final int MESH_BEACON = 0x2B;
-    final byte[] beaconData;
-    final int beaconType;
+  private static final String TAG = MeshBeacon.class.getSimpleName();
+  static final int MESH_BEACON = 0x2B;
+  final byte[] beaconData;
+  final int beaconType;
 
+  /**
+   * Constructs a {@link MeshBeacon} object
+   *
+   * @param beaconData beacon data advertised by the mesh beacon
+   * @throws IllegalArgumentException if beacon data provided is empty or null
+   */
+  MeshBeacon(final byte[] beaconData) {
+    if (beaconData == null) throw new IllegalArgumentException("Invalid beacon data");
+    this.beaconData = beaconData;
+    beaconType = beaconData[0];
+  }
 
-    /**
-     * Constructs a {@link MeshBeacon} object
-     *
-     * @param beaconData beacon data advertised by the mesh beacon
-     * @throws IllegalArgumentException if beacon data provided is empty or null
-     */
-    MeshBeacon(final byte[] beaconData) {
-        if (beaconData == null)
-            throw new IllegalArgumentException("Invalid beacon data");
-        this.beaconData = beaconData;
-        beaconType = beaconData[0];
-    }
-
-    /**
-     * Returns the beacon type value
-     */
-    public abstract int getBeaconType();
-
+  /** Returns the beacon type value */
+  public abstract int getBeaconType();
 }

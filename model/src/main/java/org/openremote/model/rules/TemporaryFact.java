@@ -1,9 +1,6 @@
 /*
  * Copyright 2018, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,67 +12,72 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.rules;
-
-import org.openremote.model.event.Event;
-import org.openremote.model.util.TsIgnore;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
-/**
- * A rule fact that has a timestamp, it expires after a certain time.
- */
+import org.openremote.model.event.Event;
+import org.openremote.model.util.TsIgnore;
+
+/** A rule fact that has a timestamp, it expires after a certain time. */
 @TsIgnore
 public class TemporaryFact<T> extends Event {
 
-    final protected long expirationMilliseconds;
-    final protected T fact;
-    // These are only useful for debugging, easier to read than timestamps
-    final public LocalDateTime time;
-    final public LocalDateTime expirationTime;
+  protected final long expirationMilliseconds;
+  protected final T fact;
+  // These are only useful for debugging, easier to read than timestamps
+  public final LocalDateTime time;
+  public final LocalDateTime expirationTime;
 
-    public TemporaryFact(long timestamp, long expirationMilliseconds, T fact) {
-        super(timestamp);
-        this.expirationMilliseconds = expirationMilliseconds;
-        this.fact = fact;
-        this.time = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
-        this.expirationTime = time.plus(expirationMilliseconds, ChronoUnit.MILLIS);
-    }
+  public TemporaryFact(long timestamp, long expirationMilliseconds, T fact) {
+    super(timestamp);
+    this.expirationMilliseconds = expirationMilliseconds;
+    this.fact = fact;
+    this.time = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
+    this.expirationTime = time.plus(expirationMilliseconds, ChronoUnit.MILLIS);
+  }
 
-    public long getExpirationMilliseconds() {
-        return expirationMilliseconds;
-    }
+  public long getExpirationMilliseconds() {
+    return expirationMilliseconds;
+  }
 
-    public T getFact() {
-        return fact;
-    }
+  public T getFact() {
+    return fact;
+  }
 
-    public LocalDateTime getTime() {
-        return time;
-    }
+  public LocalDateTime getTime() {
+    return time;
+  }
 
-    public LocalDateTime getExpirationTime() {
-        return expirationTime;
-    }
+  public LocalDateTime getExpirationTime() {
+    return expirationTime;
+  }
 
-    public boolean isExpired(long currentTimestamp) {
-        return getTimestamp() + getExpirationMilliseconds() < currentTimestamp;
-    }
+  public boolean isExpired(long currentTimestamp) {
+    return getTimestamp() + getExpirationMilliseconds() < currentTimestamp;
+  }
 
-    @Override
-    public String toString() {
-        return TemporaryFact.class.getSimpleName() + "{" +
-            "timestamp=" + timestamp +
-            ", time=" + time +
-            ", expirationMilliseconds=" + expirationMilliseconds +
-            ", expirationTime=" + expirationTime +
-            ", fact=" + fact +
-            '}';
-    }
-
+  @Override
+  public String toString() {
+    return TemporaryFact.class.getSimpleName()
+        + "{"
+        + "timestamp="
+        + timestamp
+        + ", time="
+        + time
+        + ", expirationMilliseconds="
+        + expirationMilliseconds
+        + ", expirationTime="
+        + expirationTime
+        + ", fact="
+        + fact
+        + '}';
+  }
 }

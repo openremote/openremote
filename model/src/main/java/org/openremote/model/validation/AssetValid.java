@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,23 +12,26 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.validation;
 
-import org.openremote.model.util.TsIgnore;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import jakarta.validation.Constraint;
-import jakarta.validation.Payload;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import org.openremote.model.util.TsIgnore;
 
-@Target({ FIELD, METHOD, PARAMETER, ANNOTATION_TYPE, TYPE_USE })
+import jakarta.validation.Constraint;
+import jakarta.validation.Payload;
+
+@Target({FIELD, METHOD, PARAMETER, ANNOTATION_TYPE, TYPE_USE})
 @Retention(RUNTIME)
 @Repeatable(AssetValid.List.class)
 @Constraint(validatedBy = AssetValidator.class)
@@ -39,19 +39,19 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @TsIgnore
 public @interface AssetValid {
 
-    String MESSAGE_TEMPLATE = "{Asset.invalid.message}";
+  String MESSAGE_TEMPLATE = "{Asset.invalid.message}";
 
-    String message() default MESSAGE_TEMPLATE;
+  String message() default MESSAGE_TEMPLATE;
 
-    Class<?>[] groups() default { };
+  Class<?>[] groups() default {};
 
-    Class<? extends Payload>[] payload() default { };
+  Class<? extends Payload>[] payload() default {};
 
-    @Target({ METHOD, FIELD, ANNOTATION_TYPE, PARAMETER, TYPE_USE })
-    @Retention(RUNTIME)
-    @Documented
-    @interface List {
+  @Target({METHOD, FIELD, ANNOTATION_TYPE, PARAMETER, TYPE_USE})
+  @Retention(RUNTIME)
+  @Documented
+  @interface List {
 
-        AssetValid[] value();
-    }
+    AssetValid[] value();
+  }
 }

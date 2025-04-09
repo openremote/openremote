@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,43 +12,39 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-/**
- * Base class for network export configuration
- */
+/** Base class for network export configuration */
 class ExportConfig {
 
-    protected final Builder config;
+  protected final Builder config;
+
+  /** Export configuration builder */
+  protected interface Builder {
 
     /**
-     * Export configuration builder
-     */
-    protected interface Builder {
-
-        /**
-         * Builds the export configuration.
-         *
-         * @return {@link ExportConfig}
-         */
-        ExportConfig build();
-    }
-
-    /**
-     * Constructs the builder configuration
+     * Builds the export configuration.
      *
-     * @param config configuration {@link Builder}
+     * @return {@link ExportConfig}
      */
-    ExportConfig(final Builder config) {
-        this.config = config;
-    }
+    ExportConfig build();
+  }
 
-    /**
-     * Returns the configuration
-     */
-    protected final Builder getConfig() {
-        return config;
-    }
+  /**
+   * Constructs the builder configuration
+   *
+   * @param config configuration {@link Builder}
+   */
+  ExportConfig(final Builder config) {
+    this.config = config;
+  }
+
+  /** Returns the configuration */
+  protected final Builder getConfig() {
+    return config;
+  }
 }
