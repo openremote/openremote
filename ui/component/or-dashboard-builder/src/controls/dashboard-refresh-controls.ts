@@ -5,6 +5,7 @@ import {html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {when} from "lit/directives/when.js";
 import {DashboardRefreshInterval} from "@openremote/model";
+import {i18next} from "@openremote/or-translate";
 
 export function intervalToMillis(interval: DashboardRefreshInterval): number | undefined {
     switch (interval) {
@@ -62,16 +63,16 @@ export class DashboardRefreshControls extends LitElement {
             <div style="height: 100%; display: flex; align-items: center;">
                 ${when(this.readonly, () => html`
                     ${when(this.interval === DashboardRefreshInterval.OFF, () => html`
-                        <or-mwc-input .type="${InputType.BUTTON}" icon="pause" disabled="true" style="height: 36px; margin-top: -12px;"></or-mwc-input>
+                        <or-mwc-input .type="${InputType.BUTTON}" icon="pause" disabled="true" title="${i18next.t("pauseRefresh")}" style="height: 36px; margin-top: -12px;"></or-mwc-input>
                     `, () => html`
-                        <or-mwc-input .type="${InputType.BUTTON}" label="${value}" disabled="true"></or-mwc-input>
+                        <or-mwc-input .type="${InputType.BUTTON}" label="${value}" disabled="true" title="${i18next.t("refreshInterval")}"></or-mwc-input>
                     `)}
                 `, () => html`
                     ${getContentWithMenuTemplate(
                             this.interval === DashboardRefreshInterval.OFF ? html`
-                                <or-mwc-input .type="${InputType.BUTTON}" icon="pause" style="height: 36px; margin-top: -12px;"></or-mwc-input>
+                                <or-mwc-input .type="${InputType.BUTTON}" icon="pause" title="${i18next.t("pauseRefresh")}" style="height: 36px; margin-top: -12px;"></or-mwc-input>
                             ` : html`
-                                <or-mwc-input .type="${InputType.BUTTON}" label="${value}"></or-mwc-input>
+                                <or-mwc-input .type="${InputType.BUTTON}" label="${value}" title="${i18next.t("refreshInterval")}"></or-mwc-input>
                             `,
                             intervalOptions.map(o => ({value: o} as ListItem)),
                             value,
