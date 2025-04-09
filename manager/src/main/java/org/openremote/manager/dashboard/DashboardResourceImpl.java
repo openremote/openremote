@@ -107,11 +107,7 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             throw new WebApplicationException(FORBIDDEN);
         }
         try {
-            dashboard.setOwnerId(getUserId());
-            dashboard.setAccess(DashboardAccess.SHARED);
-
             return this.dashboardStorageService.createNew(ValueUtil.clone(dashboard));
-
         } catch (IllegalStateException ex) {
             ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);

@@ -10,9 +10,12 @@ import org.openremote.model.asset.impl.LightAsset
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.dashboard.*
 import org.openremote.model.query.DashboardQuery
+import org.openremote.model.query.UserQuery
 import org.openremote.model.query.filter.RealmPredicate
+import org.openremote.model.query.filter.StringPredicate
 import org.openremote.model.security.ClientRole
 import org.openremote.model.security.User
+import org.openremote.model.security.UserResource
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.MetaItemType
 import org.openremote.setup.integration.KeycloakTestSetup
@@ -48,6 +51,11 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
                 "testuser1"
         ).token
 
+        and: "the admin user has been retrieved"
+        def serverUri = serverUri(serverPort)
+        def adminUserResource = getClientApiTarget(serverUri, MASTER_REALM, adminUserAccessToken).proxy(UserResource)
+        def adminUser = adminUserResource.getCurrent(null)
+
         and: "an additional user without READ_INSIGHTS is created"
         ClientRole[] noInsightsRoles = new ClientRole[] { ClientRole.READ_ASSETS }
         User noAccessUser = keycloakTestSetup.createUser(MASTER_REALM, "noinsights", "noinsights", "firstName", "lastName", "noinsights@openremote.local", true, noInsightsRoles)
@@ -63,7 +71,6 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         def alternativeUserToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, "alternativeuser", "alternativeuser").token
 
         and: "the dashboard resource"
-        def serverUri = serverUri(serverPort)
         def adminUserDashboardResource = getClientApiTarget(serverUri, MASTER_REALM, adminUserAccessToken).proxy(DashboardResource.class)
         def privateUser1DashboardResource = getClientApiTarget(serverUri, MASTER_REALM, privateUser1AccessToken).proxy(DashboardResource.class)
         def noAccessDashboardResource = getClientApiTarget(serverUri, MASTER_REALM, noAccessUserToken).proxy(DashboardResource.class)
@@ -77,23 +84,25 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         // Test to verify dashboards can be CREATED and FETCHED by different users.
 
         when: "a user without WRITE_INSIGHTS tries to create dashboard"
-        DashboardScreenPreset[] screenPresets = Arrays.asList(new DashboardScreenPreset("preset1", DashboardScalingPreset.KEEP_LAYOUT)).toArray() as DashboardScreenPreset[]
-        Dashboard temp1 = new Dashboard(MASTER_REALM, "dashboard1", screenPresets)
-        noAccessDashboardResource.create(null, temp1)
-        readonlyDashboardResource.create(null, temp1)
+        DashboardScreenPreset[] tempScreenPresets = Arrays.asList(new DashboardScreenPreset("preset1", DashboardScalingPreset.KEEP_LAYOUT)).toArray() as DashboardScreenPreset[]
+        Dashboard temp1NoAccess = new Dashboard(MASTER_REALM, "dashboard1", tempScreenPresets, noAccessUser.id)
+        noAccessDashboardResource.create(null, temp1NoAccess)
 
         then: "an exception is thrown that reflects their permissions"
         thrown ForbiddenException
 
         when: "a user without WRITE_INSIGHTS, but with READ_INSIGHTS, tries to create dashboard"
-        readonlyDashboardResource.create(null, temp1)
+        Dashboard temp1Readonly = new Dashboard(MASTER_REALM, "dashboard1", tempScreenPresets, readonlyUser.id)
+        readonlyDashboardResource.create(null, temp1Readonly)
 
         then: "an exception is also thrown"
         thrown ForbiddenException
 
         when: "a dashboard is created in the authenticated realm"
+        DashboardScreenPreset[] screenPresets = Arrays.asList(new DashboardScreenPreset("preset1", DashboardScalingPreset.KEEP_LAYOUT)).toArray() as DashboardScreenPreset[]
+        Dashboard temp1 = new Dashboard(MASTER_REALM, "dashboard1", screenPresets, adminUser.id)
         adminUserDashboardResource.create(null, temp1)
-        Dashboard temp2 = new Dashboard(MASTER_REALM, "dashboard2", screenPresets).setOwnerId(keycloakTestSetup.testuser1Id)
+        Dashboard temp2 = new Dashboard(MASTER_REALM, "dashboard2", screenPresets, adminUser.id).setOwnerId(keycloakTestSetup.testuser1Id)
         privateUser1DashboardResource.create(null, temp2)
 
         then: "requesting the dashboard should return the same object"
@@ -145,7 +154,8 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         alternativeUserDashboardResource.update(null, privateUser1Dashboard)
 
         then: "updating the dashboard succeeds as it is shared across the realm"
-        assert alternativeUserDashboardResource.get(null, MASTER_REALM, privateUser1Dashboard.id).displayName == "New displayname"
+        def alternativeUpdatedDashboard = alternativeUserDashboardResource.get(null, MASTER_REALM, privateUser1Dashboard.id)
+        assert alternativeUpdatedDashboard.displayName == "New displayname"
 
         when: "dashboard1 is made 'private' by its original owner"
         privateUser1Dashboard.setAccess(DashboardAccess.PRIVATE)
@@ -219,12 +229,14 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
 
         when: "dashboard1 is made 'public' by its original owner"
         privateUser1Dashboard.setAccess(DashboardAccess.PUBLIC)
+        privateUser1Dashboard.setDisplayName("Public dashboard")
         assert privateUser1DashboardResource.update(null, privateUser1Dashboard) != null
 
         then: "when a public user fetches all dashboards, it should only return that dashboard"
         def publicDashboards2 = publicUserDashboardResource.getAllRealmDashboards(null, MASTER_REALM)
         assert publicDashboards2.length == 1
         assert publicDashboards2[0].access == DashboardAccess.PUBLIC
+        assert publicDashboards2[0].displayName == "Public dashboard"
 
         /* ------------------------- */
 
@@ -251,6 +263,8 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
                 .setRealm(keycloakTestSetup.realmBuilding.name)
                 .setDisplayName("Dashboard with assets")
                 .setTemplate(template)
+                .setAccess(DashboardAccess.SHARED)
+                .setOwnerId(adminUser.id)
 
         def newDashboard = adminUserDashboardResource.create(null, buildingDashboard)
 

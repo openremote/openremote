@@ -647,10 +647,12 @@ export class OrDashboardPreview extends LitElement {
     }
 
     protected resizeObserverCallback: ResizeObserverCallback = (entries: ResizeObserverEntry[]) => {
-        if((this.previousObserverEntry?.contentRect.width + "px") !== (entries[0].contentRect.width + "px")) {
-            this._onGridResize();
-        }
-        this.previousObserverEntry = entries[0];
+        requestAnimationFrame(() => {
+            if((this.previousObserverEntry?.contentRect.width + "px") !== (entries[0].contentRect.width + "px")) {
+                this._onGridResize();
+            }
+            this.previousObserverEntry = entries[0];
+        });
     }
 
     protected _onGridResize() {

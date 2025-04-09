@@ -264,7 +264,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
             throw new IllegalArgumentException("No dashboard is specified.");
         }
         return persistenceService.doReturningTransaction(em -> {
-            if(dashboard.getId() != null && dashboard.getId().length() > 0) {
+            if(dashboard.getId() != null && !dashboard.getId().isEmpty()) {
                 Dashboard d = em.find(Dashboard.class, dashboard.getId()); // checking whether dashboard is already in database
                 if(d != null) {
                     throw new IllegalArgumentException("This dashboard has already been created.");

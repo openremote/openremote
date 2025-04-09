@@ -55,10 +55,12 @@ public class Dashboard {
     public Dashboard() {
     }
 
-    public Dashboard(String realm, String displayName, DashboardScreenPreset[] screenPresets) {
+    public Dashboard(String realm, String displayName, DashboardScreenPreset[] screenPresets, String ownerId) {
         this.realm = realm;
         this.template = new DashboardTemplate(screenPresets);
         this.displayName = displayName;
+        this.access = DashboardAccess.SHARED;
+        this.ownerId = ownerId;
     }
 
     public Dashboard setId(String id) {

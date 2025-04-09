@@ -69,18 +69,16 @@ export class OrDashboardBoardsettings extends LitElement {
                 ${when(this.showPerms, () => html`
                     <settings-panel displayName="permissions" expanded="${true}">
                         <div>
-                            <div style="margin-bottom: 24px;">
-                                <div class="label">
-                                    ${html`<span>${unsafeHTML(i18next.t('dashboard.whoCanView').toString())}</span>`}
-                                </div>
-                                <or-mwc-input class="permissionInput" comfortable type="${InputType.SELECT}" style="width: 100%;"
-                                              .options="${accessOptions.map((access) => access.value)}"
-                                              .value="${dashboardAccessToString(this.dashboard.access!)}"
-                                              @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                                  this.setAccess(accessOptions.find((access) => access.value == event.detail.value)?.key!);
-                                              }}"
-                                ></or-mwc-input>
+                            <div class="label">
+                                ${html`<span>${unsafeHTML(i18next.t('dashboard.whoCanView').toString())}</span>`}
                             </div>
+                            <or-mwc-input class="permissionInput" comfortable type="${InputType.SELECT}" style="width: 100%;"
+                                          .options="${accessOptions.map((access) => access.value)}"
+                                          .value="${dashboardAccessToString(this.dashboard.access!)}"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                              this.setAccess(accessOptions.find((access) => access.value == event.detail.value)?.key!);
+                                          }}"
+                            ></or-mwc-input>
                         </div>
                     </settings-panel>
                 `)}
