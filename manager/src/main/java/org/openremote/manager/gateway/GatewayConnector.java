@@ -481,6 +481,12 @@ public class GatewayConnector {
 
         } else {
 
+            if (syncAssetIds == null) {
+                LOG.warning("Unexpected gateway initialisation message, requesting disconnect: " + this);
+                disconnect(GatewayDisconnectEvent.Reason.SYNC_ERROR);
+                return;
+            }
+
             List<String> requestedAssetIds = syncAssetIds.stream().skip(syncIndex).limit(SYNC_ASSET_BATCH_SIZE).collect(Collectors.toList());
             List<Asset<?>> returnedAssets = e.getAssets() == null ? Collections.emptyList() : e.getAssets();
 
