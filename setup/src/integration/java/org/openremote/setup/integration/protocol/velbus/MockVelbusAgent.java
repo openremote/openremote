@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.setup.integration.protocol.velbus;
 
@@ -28,22 +27,20 @@ import jakarta.persistence.Entity;
 @Entity
 public class MockVelbusAgent extends VelbusAgent<MockVelbusAgent, MockVelbusProtocol> {
 
-    public static final AgentDescriptor<MockVelbusAgent, MockVelbusProtocol, VelbusAgentLink> DESCRIPTOR = new AgentDescriptor<>(
-        MockVelbusAgent.class, MockVelbusProtocol.class, VelbusAgentLink.class
-    );
+  public static final AgentDescriptor<MockVelbusAgent, MockVelbusProtocol, VelbusAgentLink>
+      DESCRIPTOR =
+          new AgentDescriptor<>(
+              MockVelbusAgent.class, MockVelbusProtocol.class, VelbusAgentLink.class);
 
-    /**
-     * For use by hydrators (i.e. JPA/Jackson)
-     */
-    protected MockVelbusAgent() {
-    }
+  /** For use by hydrators (i.e. JPA/Jackson) */
+  protected MockVelbusAgent() {}
 
-    public MockVelbusAgent(String name) {
-        super(name);
-    }
+  public MockVelbusAgent(String name) {
+    super(name);
+  }
 
-    @Override
-    public MockVelbusProtocol getProtocolInstance() {
-        return new MockVelbusProtocol(this);
-    }
+  @Override
+  public MockVelbusProtocol getProtocolInstance() {
+    return new MockVelbusProtocol(this);
+  }
 }

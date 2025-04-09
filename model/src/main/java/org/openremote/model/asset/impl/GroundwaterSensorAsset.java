@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,9 +12,15 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.impl;
+
+import static org.openremote.model.Constants.UNITS_CELSIUS;
+
+import java.util.Optional;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -28,37 +31,34 @@ import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
-
-import static org.openremote.model.Constants.UNITS_CELSIUS;
 
 @Entity
 public class GroundwaterSensorAsset extends Asset<GroundwaterSensorAsset> {
 
-    public static final AttributeDescriptor<Double> SOIL_TEMPERATURE = new AttributeDescriptor<>("soilTemperature", ValueType.NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_CELSIUS).withFormat(ValueFormat.NUMBER_1_DP());
-    public static final AttributeDescriptor<Integer> WATER_LEVEL = new AttributeDescriptor<>("waterLevel", ValueType.POSITIVE_INTEGER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
+  public static final AttributeDescriptor<Double> SOIL_TEMPERATURE =
+      new AttributeDescriptor<>(
+              "soilTemperature", ValueType.NUMBER, new MetaItem<>(MetaItemType.READ_ONLY))
+          .withUnits(UNITS_CELSIUS)
+          .withFormat(ValueFormat.NUMBER_1_DP());
+  public static final AttributeDescriptor<Integer> WATER_LEVEL =
+      new AttributeDescriptor<>(
+          "waterLevel", ValueType.POSITIVE_INTEGER, new MetaItem<>(MetaItemType.READ_ONLY));
 
-    public static final AssetDescriptor<GroundwaterSensorAsset> DESCRIPTOR = new AssetDescriptor<>("water-outline", "95d0df", GroundwaterSensorAsset.class);
+  public static final AssetDescriptor<GroundwaterSensorAsset> DESCRIPTOR =
+      new AssetDescriptor<>("water-outline", "95d0df", GroundwaterSensorAsset.class);
 
-    /**
-     * For use by hydrators (i.e. JPA/Jackson)
-     */
-    protected GroundwaterSensorAsset() {
-    }
+  /** For use by hydrators (i.e. JPA/Jackson) */
+  protected GroundwaterSensorAsset() {}
 
-    public GroundwaterSensorAsset(String name) {
-        super(name);
-    }
+  public GroundwaterSensorAsset(String name) {
+    super(name);
+  }
 
-    public Optional<Double> getTemperature() {
-        return getAttributes().getValue(SOIL_TEMPERATURE);
-    }
+  public Optional<Double> getTemperature() {
+    return getAttributes().getValue(SOIL_TEMPERATURE);
+  }
 
-    public Optional<Integer> getWaterLevel() {
-        return getAttributes().getValue(WATER_LEVEL);
-    }
+  public Optional<Integer> getWaterLevel() {
+    return getAttributes().getValue(WATER_LEVEL);
+  }
 }
