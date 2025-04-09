@@ -36,8 +36,6 @@ import java.util.logging.LogRecord;
 public class NoTimeLogFormatter extends Formatter {
 
     public String format(LogRecord record) {
-        OffsetDateTime date = fromMillis(record.getMillis());
-
         StringBuilder sb = new StringBuilder(250);
 
         sb.append(TextUtil.pad(record.getLevel().toString(), 7));
@@ -60,10 +58,4 @@ public class NoTimeLogFormatter extends Formatter {
 
         return sb.toString();
     }
-
-    protected OffsetDateTime fromMillis(long epochMillis) {
-        return OffsetDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
-    }
-
-
 }
