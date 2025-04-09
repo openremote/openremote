@@ -597,7 +597,7 @@ export class OrDashboardBuilder extends LitElement {
                                 <div id="header-title">
                                     <or-icon icon="view-dashboard"></or-icon>
                                     ${this.selectedDashboard != null ? html`
-                                        <or-mwc-input .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t('name') + '*\xa0'}" 
+                                        <or-mwc-input .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t('name')}" 
                                                       ?readonly="${this._isReadonly() || !this._hasEditAccess()}" .value="${this.selectedDashboard.displayName}" 
                                                       .disabled="${this.isLoading}" style="width: 300px;" 
                                                       @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.changeDashboardName(event.detail.value); }}"

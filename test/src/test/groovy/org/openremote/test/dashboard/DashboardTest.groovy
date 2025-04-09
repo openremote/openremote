@@ -58,12 +58,17 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         User readonlyUser = keycloakTestSetup.createUser(MASTER_REALM, "readinsights", "readinsights", "firstName", "lastName", "readinsights@openremote.local", true, readonlyRoles)
         def readonlyUserToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, "readinsights", "readinsights").token
 
+        and: "an additional user with all permissions is created"
+        User alternativeUser = keycloakTestSetup.createUser(MASTER_REALM, "alternativeuser", "alternativeuser", "alternative", "user", "alternativeuser@openremote.local", true, KeycloakTestSetup.REGULAR_USER_ROLES)
+        def alternativeUserToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, "alternativeuser", "alternativeuser").token
+
         and: "the dashboard resource"
         def serverUri = serverUri(serverPort)
         def adminUserDashboardResource = getClientApiTarget(serverUri, MASTER_REALM, adminUserAccessToken).proxy(DashboardResource.class)
         def privateUser1DashboardResource = getClientApiTarget(serverUri, MASTER_REALM, privateUser1AccessToken).proxy(DashboardResource.class)
         def noAccessDashboardResource = getClientApiTarget(serverUri, MASTER_REALM, noAccessUserToken).proxy(DashboardResource.class)
         def readonlyDashboardResource = getClientApiTarget(serverUri, MASTER_REALM, readonlyUserToken).proxy(DashboardResource.class)
+        def alternativeUserDashboardResource = getClientApiTarget(serverUri, MASTER_REALM, alternativeUserToken).proxy(DashboardResource.class)
         def publicUserDashboardResource = getClientApiTarget(serverUri, MASTER_REALM).proxy(DashboardResource.class)
         def adminUserAssetResource = getClientApiTarget(serverUri, MASTER_REALM, adminUserAccessToken).proxy(AssetResource.class)
 
@@ -135,6 +140,13 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
 
         // Test to verify access logic
 
+        when: "dashboard1 is shared, and updated by a different user"
+        privateUser1Dashboard.displayName = "New displayname"
+        alternativeUserDashboardResource.update(null, privateUser1Dashboard)
+
+        then: "updating the dashboard succeeds as it is shared across the realm"
+        assert alternativeUserDashboardResource.get(null, MASTER_REALM, privateUser1Dashboard.id).displayName == "New displayname"
+
         when: "dashboard1 is made 'private' by its original owner"
         privateUser1Dashboard.setAccess(DashboardAccess.PRIVATE)
         assert privateUser1DashboardResource.update(null, privateUser1Dashboard) != null
@@ -159,13 +171,37 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
 
         /* ----------------------- */
 
-        // Test to verify "DELETE" logic
+        // Test to verify private dashboards cannot be fetched by public/unauthenticated users, even if ID is specified
 
-        when: "admin user tries to delete a dashboard he doesn't own"
-        adminUserDashboardResource.delete(null, MASTER_REALM, privateUser1Dashboard.id)
+        when: "when a public user specifically fetches a private dashboard"
+        publicUserDashboardResource.get(null, MASTER_REALM, adminDashboard.id)
 
         then: "it should throw exception"
+        thrown ForbiddenException
+
+        /* ----------------------- */
+
+        // Test to verify "DELETE" logic
+
+        when: "admin user updates his dashboard to be private"
+        adminDashboard.setAccess(DashboardAccess.PRIVATE)
+        adminUserDashboardResource.update(null, adminDashboard)
+
+        and: "a different user tries to delete a dashboard he doesn't own"
+        privateUser1DashboardResource.delete(null, MASTER_REALM, adminDashboard.id)
+
+        then: "it should throw a NOT_FOUND exception, since it isn't visible to him"
         thrown NotFoundException
+
+        when: "admin user makes his dashboard SHARED again"
+        adminDashboard.setAccess(DashboardAccess.SHARED)
+        adminUserDashboardResource.update(null, adminDashboard)
+
+        and: "a different user tries to delete the dashboard again"
+        privateUser1DashboardResource.delete(null, MASTER_REALM, adminDashboard.id)
+
+        then: "it should succeed, and the dashboard cannot be retrieved by the admin again"
+        assert adminUserDashboardResource.getAllRealmDashboards(null, MASTER_REALM).find { it.id === adminDashboard.id } == null
 
         /* ----------------------- */
 
@@ -189,17 +225,6 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         def publicDashboards2 = publicUserDashboardResource.getAllRealmDashboards(null, MASTER_REALM)
         assert publicDashboards2.length == 1
         assert publicDashboards2[0].access == DashboardAccess.PUBLIC
-        /*assert publicDashboards2[0].editAccess == DashboardAccess.PRIVATE*/
-
-        /* ----------------------- */
-
-        // Test to verify private dashboards cannot be fetched by public/unauthenticated users, even if ID is specified
-
-        when: "when a public user specifically fetches a private dashboard"
-        publicUserDashboardResource.get(null, MASTER_REALM, adminDashboard.id)
-
-        then: "it should throw exception"
-        thrown ForbiddenException
 
         /* ------------------------- */
 

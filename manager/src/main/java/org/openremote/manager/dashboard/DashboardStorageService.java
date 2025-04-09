@@ -289,7 +289,6 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         var query = new DashboardQuery()
                 .ids(dashboard.getId())
                 .realm(new RealmPredicate(realm))
-                .userIds(userId)
                 .limit(1);
         Dashboard[] dashboards = this.query(query, userId);
         if(dashboards != null && dashboards.length > 0) {
@@ -319,7 +318,6 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
             Dashboard[] dashboards = this.query(new DashboardQuery()
                     .ids(dashboardId)
                     .realm(new RealmPredicate(realm))
-                    .userIds(userId)
                     .limit(1),
                     userId
             );
