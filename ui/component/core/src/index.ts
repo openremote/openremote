@@ -265,6 +265,10 @@ export class Manager implements EventProviderFactory {
         this._emitEvent(OREvent.DISPLAY_REALM_CHANGED);
     }
 
+    get clientId() {
+        return this._config.clientId || OPENREMOTE_CLIENT_ID;
+    }
+
     getEventProvider(): EventProvider | undefined {
         return this.events;
     }
@@ -837,7 +841,7 @@ export class Manager implements EventProviderFactory {
                 authenticated = true;
 
                 // Get user roles
-                const rolesResponse = await rest.api.UserResource.getCurrentUserClientRoles(this._config.clientId);
+                const rolesResponse = await rest.api.UserResource.getCurrentUserClientRoles(this.clientId);
                 this._basicIdentity!.roles = rolesResponse.data;
             } else {
                 console.debug("Unknown response so aborting");

@@ -972,7 +972,7 @@ async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAsse
     const userId = userAssetLink.id!.userId!;
     const username = userAssetLink.userFullName!;
 
-    const roleNames = await manager.rest.api.UserResource.getUserClientRoles(manager.displayRealm, userId, OPENREMOTE_CLIENT_ID)
+    const roleNames = await manager.rest.api.UserResource.getUserClientRoles(manager.displayRealm, userId, manager.clientId)
         .then((response) => {
             return response.data;
         })
