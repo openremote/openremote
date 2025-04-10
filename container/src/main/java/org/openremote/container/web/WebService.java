@@ -50,6 +50,7 @@ import org.xnio.Options;
 
 import java.net.Inet4Address;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -134,7 +135,12 @@ public abstract class WebService implements ContainerService {
 
 
     protected static String getLocalIpAddress() throws Exception {
-        return Inet4Address.getLocalHost().getHostAddress();
+        try {
+            return Inet4Address.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            // Fallback if hostname is not resolvable
+            return "127.0.0.1";
+        }
     }
 
     public static RequestHandler pathStartsWithHandler(String name, String path, HttpHandler handler) {
