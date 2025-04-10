@@ -2284,7 +2284,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         // ################################ Make user restricted ###################################
         ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
         identityProvider.updateUserRealmRoles(realmManufacturer.getName(), KeycloakDemoSetup.customerUserId, identityProvider
-                .addRealmRoles(realmManufacturer.getName(), 
+                .addUserRealmRoles(realmManufacturer.getName(),
                         KeycloakDemoSetup.customerUserId, RESTRICTED_USER_REALM_ROLE));
     }
 
