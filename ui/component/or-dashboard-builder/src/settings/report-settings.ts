@@ -57,7 +57,6 @@ export class ReportSettings extends WidgetSettings {
         const min = this.widgetConfig.chartOptions.options?.scales?.y?.min;
         const max = this.widgetConfig.chartOptions.options?.scales?.y?.max;
         const isMultiAxis = attrSettings.rightAxisAttributes.length > 0;
-        const samplingValue = Array.from(this.samplingOptions.entries()).find((entry => entry[1] === this.widgetConfig.datapointQuery.type))![0]
         const attributeLabelCallback = (asset: Asset, attribute: Attribute<any>, attributeLabel: string) => {
             const isOnRightAxis = isMultiAxis && attrSettings.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
             return html`
@@ -240,41 +239,8 @@ export class ReportSettings extends WidgetSettings {
                         })}
                     </div>
                 </settings-panel>
-
-                <!-- Data sampling options -->
-                <settings-panel displayName="dataSampling" expanded="${false}">
-                    <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 12px;">
-                        <div>
-                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%" .options="${Array.from(this.samplingOptions.keys())}" .value="${samplingValue}"
-                                          label="${i18next.t('algorithm')}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onSamplingQueryChange(ev)}"
-                            ></or-mwc-input>
-                        </div>
-                        <div>
-                            ${this.getSamplingOptionsTemplate(this.widgetConfig.datapointQuery.type)}
-                        </div>
-                    </div>
-                </settings-panel>
             </div>
         `;
-    }
-
-    protected getSamplingOptionsTemplate(type: any): TemplateResult {
-        switch (type) {
-            case 'interval': {
-                const intervalQuery = this.widgetConfig.datapointQuery as AssetDatapointIntervalQuery;
-                const formulaOptions = [AssetDatapointIntervalQueryFormula.AVG, AssetDatapointIntervalQueryFormula.MIN, AssetDatapointIntervalQueryFormula.MAX, AssetDatapointIntervalQueryFormula.DELTA];
-                return html`
-                    <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${formulaOptions}"
-                                  .value="${intervalQuery.formula}" label="${i18next.t('algorithmMethod')}" @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                        intervalQuery.formula = event.detail.value;
-                        this.notifyConfigUpdate();
-                    }}"
-                    ></or-mwc-input>
-                `;
-            }
-            default:
-                return html``;
-        }
     }
 
     // Check which icon was pressed and act accordingly.
@@ -374,18 +340,24 @@ export class ReportSettings extends WidgetSettings {
 
 
     protected openAlgorithmMethodsDialog(attributeRef: AttributeRef) {
-
+        console.log('attributeRef:', attributeRef);
         const methodList: ListItem[] = Object.entries(this.widgetConfig.attributeSettings)
             .filter(([key]) => key.includes('method'))
             .map(([key, attributeRefs]) => {
+                const isActive = attributeRefs.some(
+                    (ref: AttributeRef) =>
+                        ref.id === attributeRef.id && ref.name === attributeRef.name
+                );
+
                 return {
                     text: key,
                     value: key,
-                    data: attributeRefs.includes(attributeRef) ? key : undefined,
-                    translate: true
+                    data: isActive ? key : undefined,
+                    translate: true,
                 };
             });
         let selected: ListItem[] = [];
+        console.log('InputList:', methodList);
 
         showDialog(new OrMwcDialog()
             .setContent(html`
@@ -410,6 +382,7 @@ export class ReportSettings extends WidgetSettings {
                     actionName: "ok",
                     action: () => {
                         // Check which settings need updating
+                        console.log('Selected:', selected)
                         const changedMethods = methodList.filter(input => {
                             const selectedItem = selected.find(selected => selected.value === input.value);
                             return (!selectedItem && input.data !== undefined) ||
@@ -490,11 +463,6 @@ export class ReportSettings extends WidgetSettings {
 
     protected onMinMaxValueToggle(axis: 'left' | 'right', type: 'min' | 'max', ev: OrInputChangedEvent) {
         this.setAxisMinMaxValue(axis, type, (ev.detail.value ? (type === 'min' ? 0 : 100) : undefined));
-    }
-
-    protected onSamplingQueryChange(ev: OrInputChangedEvent) {
-        this.widgetConfig.datapointQuery.type = this.samplingOptions.get(ev.detail.value)! as any;
-        this.notifyConfigUpdate();
     }
 
 }

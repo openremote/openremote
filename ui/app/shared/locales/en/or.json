@@ -769,7 +769,8 @@
     "zoom": "Zoom",
     "center": "Center",
     "imageUrl": "Image URL",
-    "noImageSelected": "No image selected"
+    "noImageSelected": "No image selected",
+    "noData": "No data for selected timeperiod or no interval selected"
   },
   "south": "South",
   "east": "East",

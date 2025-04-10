@@ -22,7 +22,7 @@ import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {ECharts, EChartsOption, init} from "echarts";
 import {MDCDataTable} from "@material/data-table";
-import {OrMwcTableRowClickEvent, TableColumn, TableRow, TableConfig} from "@openremote/or-mwc-components/or-mwc-table";
+import {TableColumn, TableRow, TableConfig} from "@openremote/or-mwc-components/or-mwc-table";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
@@ -300,7 +300,7 @@ const style = css`
 
     #table-container {
         height: 100%;
-        width: 100%;
+        max-width: 100%;
         overflow: hidden;
     }
 
@@ -320,6 +320,7 @@ const style = css`
         text-overflow: ellipsis;
     }
 
+    
     @media screen and (max-width: 1280px) {
         #chart-container {
             max-height: 330px;
@@ -377,17 +378,17 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     @property({type: Array})
     public colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }> = [];
 
-    @property({type: Array})
-    public attributeQueryFormula: Array<{ attributeRef: AttributeRef; formula: AssetDatapointIntervalQueryFormula }> = [];
-
     @property({type: Object})
     public attributeSettings = {
         rightAxisAttributes: [] as AttributeRef[],
-        smoothAttributes: [] as AttributeRef[],
-        steppedAttributes: [] as AttributeRef[],
-        areaAttributes: [] as AttributeRef[],
-        faintAttributes: [] as AttributeRef[],
-        extendedAttributes: [] as AttributeRef[],
+        methodMaxAttributes:[] as AttributeRef[],
+        methodMinAttributes: [] as AttributeRef[],
+        methodAvgAttributes: [] as AttributeRef[],
+        methodDeltaAttributes: [] as AttributeRef[],
+        methodMedianAttributes: [] as AttributeRef[],
+        methodModeAttributes: [] as AttributeRef[],
+        methodSumAttributes: [] as AttributeRef[],
+        methodCountAttributes: [] as AttributeRef[]
     };
 
     @property()
@@ -523,28 +524,15 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             return;
         }
 
-        if (!this._chart) {
-
-            let bgColor = this._style.getPropertyValue("--internal-or-chart-graph-fill-color").trim();
-            const opacity = Number(this._style.getPropertyValue("--internal-or-chart-graph-fill-opacity").trim());
-            if (!isNaN(opacity)) {
-                if (bgColor.startsWith("#") && (bgColor.length === 4 || bgColor.length === 7)) {
-                    bgColor += (bgColor.length === 4 ? Math.round(opacity * 255).toString(16).substr(0, 1) : Math.round(opacity * 255).toString(16));
-                } else if (bgColor.startsWith("rgb(")) {
-                    bgColor = bgColor.substring(0, bgColor.length - 1) + opacity;
-                }
-            }
-
-
-
+        if (!this._chart && this.isChart) {
             this._chartOptions = {
                 //animation: false,
                 grid: {
                     show: true,
                     backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                     borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
-                    left: 50,//'5%', // 5% padding
-                    right: 50,//'5%',
+                    left: 25,//'5%', // 5% padding
+                    right: 25,//'5%',
                     //top: 28,//this.showToolBox ? 28 : 10,
                     bottom:  55,
                     containLabel: true
@@ -626,7 +614,9 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
         if (changedProperties.has("_data")) {
             //Update chart to data from set period
-            this._updateChartData();
+            if (this._chart) {
+                this._updateChartData();
+            }
         }
 
         this.onCompleted().then(() => {
@@ -687,6 +677,11 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                             <or-translate .value="${this._latestError || 'errorOccurred'}"></or-translate>
                         </div>
                     `)}
+                    ${when(this._data?.every(entry => entry.data.length === 0), () => html`
+                        <div style="position: absolute; height: 100%; width: 100%; display: flex; justify-content: center; align-items: center; z-index: 1; pointer-events: none;">
+                            <or-translate .value="${'dashboard.noData'}"></or-translate>
+                        </div>
+                    `)}
                 ${when(this.isChart, () => html`
                 <div id="chart-container">
                     <div id="chart" style="visibility: ${disabled ? 'hidden' : 'visible'}"></div>
@@ -694,7 +689,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     
                 `, () => html `
                 <div id="table-container">
-                    <or-mwc-table .columns="${this.columns}" .rows="${this.rows}" .config="${tableConfig}"></or-mwc-table
+                    <or-mwc-table id="table" .columns="${this.columns}" .rows="${this.rows}" .config="${tableConfig}" style="${style}"></or-mwc-table
                 </div>
                 `)}
                 
@@ -1165,8 +1160,6 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
         this._loading = true;
         const dates: [Date, Date] = this._getTimeSelectionDates(this.timePrefixKey!, this.timeWindowKey!);
-        //if(!this._startOfPeriod || !this._endOfPeriod) {
-        //Above is commented to work BUT WHY IS IT LIKE THIS, OR CHART WORKS WITH IT
         this._startOfPeriod = this.timeframe ? this.timeframe[0].getTime() : dates[0].getTime();
         this._endOfPeriod = this.timeframe ? this.timeframe[1].getTime() : dates[1].getTime();
         //}
@@ -1190,21 +1183,36 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
                     const colourIndex = index % this.colors.length;
                     const options = { signal: this._dataAbortController?.signal };
-                    let formula = 'Max'
-                    //Load Historic Data
-                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, false, asset.name + " " + label, options, unit);
-                    (dataset as any).assetId = asset.id;
-                    (dataset as any).attrName = attribute.name;
-                    (dataset as any).unit = unit;
-                    (dataset as any).yAxisIndex = shownOnRightAxis ? '1' : '0';
-                    (dataset as any).color = color ?? this.colors[colourIndex];
-                    //(dataset as any).label.formatter = `{@[1]}${unit} ${formula}`; this does not scale well
 
-                    data.push(dataset);
 
-                    //Load Comparison Data
-                    // this is predicted dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], predictedFromTimestamp, this._endOfPeriod!, true, smooth, stepped, area, faint, false , asset.name + " " + label + " " + i18next.t("predicted"), options, unit);
-                    //data.push(dataset);
+                    // Map calculation methods to their corresponding attribute arrays and formulas
+                    const methodMapping: { [key: string]: { active: boolean; formula: AssetDatapointIntervalQueryFormula } } = {
+                            AVG: { active: !!this.attributeSettings.methodAvgAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.AVG },
+                            MIN: { active: !!this.attributeSettings.methodMinAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MIN },
+                            MAX: { active: !!this.attributeSettings.methodMaxAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MAX },
+                            DELTA: { active: !!this.attributeSettings.methodDeltaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.DELTA },
+                            //MEDIAN: { active: !!this.attributeSettings.methodMedianAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MEDIAN },
+                            //MODE: { active: !!this.attributeSettings.methodModeAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MODE },
+                            //SUM: { active: !!this.attributeSettings.methodSumAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.SUM },
+                            //COUNT: { active: !!this.attributeSettings.methodCountAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.COUNT }
+                        };
+                    // Iterate over the mapping, make a dataset for every active method
+                    for (const [key, value] of Object.entries(methodMapping)) {
+                        console.log(`Key: ${key}, Active: ${value.active}, Formula: ${value.formula}`);
+                        if (value.active) {
+                            //Initiate query Attribute Data
+                            let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, value.formula, asset.name + " " + label + " | " + i18next.t(value.formula), options, unit);
+                            (dataset as any).assetId = asset.id;
+                            (dataset as any).attrName = attribute.name;
+                            (dataset as any).unit = unit;
+                            (dataset as any).yAxisIndex = shownOnRightAxis ? '1' : '0';
+                            (dataset as any).color = color ?? this.colors[colourIndex];
+
+                            data.push(dataset);
+
+                        }
+                    }
+
 
                 });
             }
@@ -1214,19 +1222,16 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             }
 
             this._data = data;
-            //console.log("this._data",this._data);
+            console.log("this._data",this._data);
 
             //Load data into table format
-            this.columns = ['Time', ...this._data!.map(entry => entry.name)];
+            if (!this.isChart && this._data![0]) {
+                this.columns = ['Time', ...this._data!.map(entry => entry.name)];
 
-            this.rows= this._data![0].data.map((subArray: any[]) => ({
-                content: [subArray[0], ...this._data!.map(entry => entry.data[subArray[0] === entry.data[0][0] ? 0 : 1][1])]
-            }));
-
-
-            //console.log("columns:", this.columns);
-            //console.log("rows:", this.rows);
-
+                this.rows = this._data![0].data.map((subArray: any[]) => ({
+                    content: [subArray[0], ...this._data!.map(entry => entry.data[subArray[0] === entry.data[0][0] ? 0 : 1][1])]
+                }));
+            }
 
             this._loading = false;
 
@@ -1253,32 +1258,31 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     }
 
 
-    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string, from: number, to: number, predicted: boolean, label?: string, options?: any, unit?: any) {
+    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string, from: number, to: number, formula: AssetDatapointIntervalQueryFormula, label?: string, options?: any, unit?: any) {
 
         const dataset = {
             name: label,
             type: 'bar',
             data: [] as [any, any][],
-            stack: this.chartSettings.defaultStacked ? 'stack' : undefined,
+            stack: this.chartSettings.defaultStacked ? `${formula}` : undefined,
             lineStyle: {
                 color: color,
             },
-            //label: { Does not scale well
-            //    show: true,
-            //    position: 'insideBottom',
-            //    distance: 15,
-            //    align: 'left',
-            //    verticalAlign: 'middle',
-            //    rotate: 90,
-            //},
             tooltip: {
                 // @ts-ignore
                 valueFormatter: value => value + unit
             },
-            //showBackground: true,
-            //backgroundStyle: {
-            //    color: 'rgba(180, 180, 180, 0.2)'
-            //}
+            label: {
+                show: true,
+                align: 'left',
+                verticalAlign: 'middle',
+                position: 'insideBottom',
+                rotate: '90',
+                distance: 15,
+                formatter: (params: { dataIndex: number; value: number }): string => {
+                    // Show labels only for the first index (index 0)
+                    return params.dataIndex === 0 ? `${formula}` : '';  //Or make it i18next.t(formula) to display longer text
+                }}
         }
 
 
@@ -1289,43 +1293,33 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
             query.fromTimestamp = this._startOfPeriod;
             query.toTimestamp = this._endOfPeriod;
-
-
-            //if(query.type === 'interval' && !query.interval) {
+            query.formula = formula;
             const diffInHours = (this._endOfPeriod! - this._startOfPeriod!) / 1000 / 60 / 60;
-           // console.log("DiffInHours", diffInHours);
             const intervalArr = this._getInterval(diffInHours);
-           // console.log("intervallArr2",intervalArr)
             query.interval = (intervalArr[0].toString() + " " + intervalArr[1].toString()); // for example: "5 minute"
-           // console.log('Start:', new Date(this._startOfPeriod!), 'End:', new Date(this._endOfPeriod!));
-           // console.log("datapointResoursequery:", query);
+
             response = await manager.rest.api.AssetDatapointResource.getDatapoints(asset.id, attribute.name, query, options);
 
 
             let data: ValueDatapoint<any>[] = [];
 
             if (response.status === 200) {
-               // console.log("response:", response.data);
                 data = response.data
                     .filter(value => value.y !== null && value.y !== undefined)
                     .map(point => ({x: point.x, y: point.y} as ValueDatapoint<any>))
 
                 dataset.data = data.map(point => [moment(point.x).format(intervalArr[2]), point.y]);
-                //dataset.label.show =data.length <= 12 // this does not scale well
-
             }
 
 
 
         }
-       // console.log("dataset", dataset);
         return dataset;
     }
 
 
     protected _updateChartData(){
         this._chart!.setOption({
-            //legend: {data: this._data!.map((data) => `${data.name} ${data.unit}`)},
             series: this._data!.map(series => ({
                 ...series,
             }))
@@ -1355,4 +1349,5 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
 
     }
+
 }
