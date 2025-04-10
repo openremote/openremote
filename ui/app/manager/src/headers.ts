@@ -1,4 +1,4 @@
-import {manager, RESTRICTED_USER_REALM_ROLE} from "@openremote/core";
+import { manager } from "@openremote/core";
 import { AppStateKeyed, HeaderItem, OrApp } from "@openremote/or-app";
 import {AnyAction} from "@reduxjs/toolkit";
 import { getMapRoute } from "./routes";
