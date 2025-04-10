@@ -301,7 +301,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             UserQuery userQuery = new UserQuery()
                     .realm(new RealmPredicate(alarm.getRealm()))
                     .clientRoles(new StringPredicate(Constants.WRITE_ALARMS_ROLE))
-                    .realmRoles(new StringPredicate(Constants.REALM_ADMIN_ROLE))
+                    .realmRoles(new StringPredicate(Constants.SUPER_USER_REALM_ROLE))
                     .serviceUsers(false);
             users.addAll(Arrays.asList(identityProvider.queryUsers(userQuery)));
         } else {

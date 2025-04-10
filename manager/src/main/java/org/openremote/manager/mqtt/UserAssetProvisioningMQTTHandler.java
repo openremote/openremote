@@ -60,7 +60,6 @@ import java.util.logging.Logger;
 
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
@@ -482,7 +481,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         if (provisioningConfig.getUserRoles() != null && provisioningConfig.getUserRoles().length > 0) {
             LOG.finest("Setting user roles: realm=" + realm + ", username=" + username + ", roles=" + Arrays.toString(provisioningConfig.getUserRoles()));
-            identityProvider.updateUserRoles(
+            identityProvider.updateUserClientRoles(
                 realm,
                 serviceUser.getId(),
                 Constants.KEYCLOAK_CLIENT_ID,
@@ -494,7 +493,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         if (provisioningConfig.isRestrictedUser()) {
             LOG.finest("User will be made restricted: realm=" + realm + ", username=" + username);
-            identityProvider.updateUserRealmRoles(realm, serviceUser.getId(), identityProvider.addRealmRoles(realm, serviceUser.getId(),RESTRICTED_USER_REALM_ROLE));
+            identityProvider.updateUserRealmRoles(realm, serviceUser.getId(), identityProvider.addUserRealmRoles(realm, serviceUser.getId(),RESTRICTED_USER_REALM_ROLE));
         }
 
         // Inject secret
