@@ -837,7 +837,7 @@ export class Manager implements EventProviderFactory {
                 authenticated = true;
 
                 // Get user roles
-                const rolesResponse = await rest.api.UserResource.getCurrentUserClientRoles(OPENREMOTE_CLIENT_ID);
+                const rolesResponse = await rest.api.UserResource.getCurrentUserClientRoles(this._config.clientId);
                 this._basicIdentity!.roles = rolesResponse.data;
             } else {
                 console.debug("Unknown response so aborting");
