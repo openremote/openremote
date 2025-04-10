@@ -1171,10 +1171,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
     }
 
-    public void withAssetLock(String assetId, Runnable action) {
-        withAssetLock(assetId, action);
-    }
-
     protected void createUserAssetLinks(EntityManager em, List<UserAssetLink> userAssets) {
 
         em.unwrap(Session.class).doWork(connection -> {
