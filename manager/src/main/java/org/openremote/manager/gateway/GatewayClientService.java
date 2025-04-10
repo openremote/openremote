@@ -421,6 +421,10 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     protected void onGatewayClientConnectionStatusChanged(GatewayConnection connection, ConnectionStatus connectionStatus) {
         LOG.info("Connection status change for gateway IO client '" + connectionStatus + "': " + connection);
         clientEventService.publishEvent(new GatewayConnectionStatusEvent(timerService.getCurrentTimeMillis(), connection.getLocalRealm(), connectionStatus));
+        if (gatewayTunnelFactory != null) {
+            LOG.finer("Terminating all gateway tunnel sessions");
+            gatewayTunnelFactory.stopAll();
+        }
     }
 
     protected void onCentralManagerMessage(GatewayConnection connection, String message) {
@@ -442,6 +446,9 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                         messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent)
                 );
             } else if (event instanceof GatewayTunnelStartRequestEvent gatewayTunnelStartRequestEvent) {
+                if (gatewayTunnelFactory == null) {
+                    return;
+                }
                 LOG.info("Start tunnel request received: " + gatewayTunnelStartRequestEvent);
                 String error = null;
 
@@ -458,6 +465,9 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 );
 
             } else if (event instanceof GatewayTunnelStopRequestEvent stopRequestEvent) {
+                if (gatewayTunnelFactory == null) {
+                    return;
+                }
                 LOG.info("Stop tunnel request received: " +  stopRequestEvent);
                 String error = null;
 
