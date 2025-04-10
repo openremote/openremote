@@ -1478,12 +1478,12 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             } catch (e) {
                 // We can ignore this as it should indicate that the asset has changed
             }
-            this.wrapperElem?.classList.remove("saving");
             if (this.saveBtnElem) {
                 this.saveBtnElem.disabled = false;
             }
         }
         this._saveInProgress = false;
+        this.wrapperElem?.classList.remove("saving");
         this.dispatchEvent(new OrAssetViewerSaveEvent(saveResult));
     }
 
