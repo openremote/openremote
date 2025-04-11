@@ -441,6 +441,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             filenameEl.value = file.name;
         }
         this.tilesForUpload = file;
+        this.tilesForDeletion = false;
     }
 
     protected async deleteCustomMap() {
