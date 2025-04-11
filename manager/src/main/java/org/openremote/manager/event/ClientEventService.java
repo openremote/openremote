@@ -529,7 +529,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             try {
                 webSocketChannel.close();
             } catch (IOException e) {
-                LOG.log(INFO, () -> "Failed to close websocket session: " + sessionKey);
+                LOG.log(DEBUG, () -> "Failed to close websocket session: " + sessionKey);
                 throw new RuntimeException(e);
             }
         }

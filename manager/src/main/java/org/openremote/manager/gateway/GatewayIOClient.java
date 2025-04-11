@@ -23,6 +23,7 @@ package org.openremote.manager.gateway;
 import org.openremote.agent.protocol.websocket.WebsocketIOClient;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.gateway.GatewayCapabilitiesRequestEvent;
+import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.syslog.SyslogCategory;
 
 import java.net.URI;
@@ -69,7 +70,11 @@ public class GatewayIOClient extends WebsocketIOClient<String> {
                 .orTimeout(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
                 .handle((result, ex) -> {
                     syncFuture = null;
-                    if (ex instanceof TimeoutException) {
+                    if (ex instanceof TimeoutException && !channel.isOpen()) {
+                        // Channel could have been closed whilst waiting for sync
+                        LOG.info("Channel has been closed unexpectedly during sync");
+                        throw new RuntimeException("Channel has been closed unexpectedly during sync");
+                    } else if (ex instanceof TimeoutException) {
                         LOG.finest("Timeout reached whilst waiting for sync complete event");
                     } else if (ex != null) {
                         throw new RuntimeException(ex.getMessage());
@@ -97,6 +102,10 @@ public class GatewayIOClient extends WebsocketIOClient<String> {
             syncFuture.complete(null);
         }
 
+        if (syncFuture != null && message.contains(GatewayDisconnectEvent.TYPE)) {
+            LOG.finest("Gateway disconnect event received during sync: " + message);
+            syncFuture.completeExceptionally(new RuntimeException("Gateway disconnect event received during sync"));
+        }
         super.onMessageReceived(message);
     }
 }
