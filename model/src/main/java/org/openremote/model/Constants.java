@@ -28,7 +28,7 @@ public interface Constants {
     String MANAGER_CLIENT_ID = "manager-keycloak";
     String MASTER_REALM = "master";
     String MASTER_REALM_ADMIN_USER = "admin";
-    String REALM_ADMIN_ROLE = "admin";
+    String SUPER_USER_REALM_ROLE = "admin";
     String READ_LOGS_ROLE = "read:logs";
     String READ_USERS_ROLE = "read:users";
     String READ_ADMIN_ROLE = "read:admin";
