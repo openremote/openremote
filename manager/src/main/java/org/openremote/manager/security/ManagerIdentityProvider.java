@@ -62,15 +62,15 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     String resetSecret(String realm, String userId, String secret);
 
-    Role[] getRoles(String realm, String client);
+    Role[] getClientRoles(String realm, String client);
 
     void updateClientRoles(String realm, String client, Role[] roles);
 
-    Role[] getUserRoles(String realm, String userId, String client);
+    String[] getUserClientRoles(String realm, String userId, String client);
 
-    Role[] getUserRealmRoles(String realm, String userId);
+    String[] getUserRealmRoles(String realm, String userId);
 
-    void updateUserRoles(String realm, String userId, String client, String... roles);
+    void updateUserClientRoles(String realm, String userId, String client, String... roles);
 
     void updateUserRealmRoles(String realm, String userId, String... roles);
 
@@ -113,10 +113,10 @@ public interface ManagerIdentityProvider extends IdentityProvider {
      * BELOW ARE STATIC HELPER METHODS
      */
 
-    default String[] addRealmRoles(String realm, String userId, String... roles) {
-        Set<String> realmRoles = Arrays.stream(getUserRealmRoles(realm, userId)).filter(role -> role.isAssigned() || Arrays.stream(roles).anyMatch(r -> role.getName().equals(r))).map(Role::getName).collect(Collectors.toCollection(LinkedHashSet::new));
-        realmRoles.addAll(Arrays.asList(roles));
-        return realmRoles.toArray(new String[0]);
+    default String[] addUserRealmRoles(String realm, String userId, String... roles) {
+        List<String> existingRoles = new ArrayList<>(Arrays.asList(getUserRealmRoles(realm, userId)));
+        existingRoles.addAll(Arrays.asList(roles));
+        return existingRoles.toArray(new String[0]);
     }
 
     @SuppressWarnings("unchecked")
@@ -358,23 +358,15 @@ public interface ManagerIdentityProvider extends IdentityProvider {
                 return o1.getName().compareTo(o2.getName());
             });
 
-            // TODO: Remove this once migrated to hibernate 6.2.x+
-            realms.forEach(r -> r.getRealmRoles().size());
-
-            return realms.toArray(new Realm[realms.size()]);
+            return realms.toArray(new Realm[0]);
         });
     }
 
-    static Realm getRealmFromDb(PersistenceService persistenceService, String realm) {
-        return persistenceService.doReturningTransaction(em -> {
-                    List<Realm> realms = em.createQuery("select r from Realm r where r.name = :realm", Realm.class)
-                            .setParameter("realm", realm).getResultList();
-
-                    // TODO: Remove this once migrated to hibernate 6.2.x+
-                    realms.forEach(r -> r.getRealmRoles().size());
-
-                    return realms.size() == 1 ? realms.get(0) : null;
-                }
+    static Realm getRealmFromDb(PersistenceService persistenceService, String name) {
+        return persistenceService.doReturningTransaction(em -> em
+                .createQuery("select r from Realm r where r.name = :realm", Realm.class)
+                .setParameter("realm", name)
+                .getSingleResult()
         );
     }
 
