@@ -6,17 +6,6 @@
 
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'SSM documents for attaching/detaching the EBS data volume'
-Parameters:
-  InstanceId:
-    Description: Instance ID where the script needs to be executed.
-    Type: String
-  VolumeId:
-    Description: Volume ID that needs to be attached/detached.
-    Type: String
-  EBSDeviceName:
-    Description: EBS Device name where this volume is mounted on.
-    Type: String
-
 Resources:
   SSMDetachEBSDocument:
     Type: AWS::SSM::Document
@@ -28,15 +17,12 @@ Resources:
               InstanceId:
                 type: String
                 description: Instance ID where the script needs to be executed.
-                default: !Ref InstanceId
               VolumeId:
                 type: String
-                description: Volume UD that needs to be detached.
-                default: !Ref VolumeId
-              EBSDeviceName:
-                  type: String
-                  description: EBS Device name where this volume is mounted on.
-                  default: !Ref EBSDeviceName
+                description: Volume ID that needs to be detached.
+              DeviceName:
+                type: String
+                description: EBS Device name where this volume is mounted on.
             mainSteps:
               - name: StopDocker
                 action: aws:runShellScript
@@ -48,7 +34,7 @@ Resources:
                 inputs:
                   runCommand: 
                     - |
-                      UUID=$(sudo blkid -o value -s UUID {{ EBSDeviceName }})
+                      UUID=$(sudo blkid -o value -s UUID {{ DeviceName }})
                       if [ -n "$UUID" ]; then
                         cp /etc/fstab /etc/fstab.orig
                         sed -i '/UUID='$UUID'/d' /etc/fstab
@@ -60,7 +46,7 @@ Resources:
                 action: aws:runShellScript
                 inputs:
                   runCommand:
-                    - umount {{ EBSDeviceName }}
+                    - umount {{ DeviceName }}
               - name: DetachVolume
                 action: aws:runShellScript
                 inputs:
@@ -97,15 +83,12 @@ Resources:
               InstanceId:
                 type: String
                 description: Instance ID where the script needs to be executed.
-                default: !Ref InstanceId
               VolumeId:
                 type: String
-                description: Volume UD that needs to be attached.
-                default: !Ref VolumeId
-              EBSDeviceName:
-                  type: String
-                  description: EBS Device name where this volume needs to be mounted on.
-                  default: !Ref EBSDeviceName
+                description: Volume ID that needs to be attached.
+              DeviceName:
+                type: String
+                description: EBS Device name where this volume needs to be mounted on.
             mainSteps:
               - name: StopDocker
                 action: aws:runShellScript
@@ -117,7 +100,7 @@ Resources:
                 inputs:
                   runCommand: 
                     - |
-                      VOLUME=$(aws ec2 attach-volume --volume-id {{ VolumeId }} --instance-id {{ InstanceId }} --device {{ EBSDeviceName }} 2>/dev/null)
+                      VOLUME=$(aws ec2 attach-volume --volume-id {{ VolumeId }} --instance-id {{ InstanceId }} --device {{ DeviceName }} 2>/dev/null)
                       STATUS=$(aws ec2 describe-volumes --query "Volumes[?VolumeId=='{{ VolumeId }}'].State" --output text 2>/dev/null)
                       
                       count=0
@@ -139,19 +122,19 @@ Resources:
                 inputs:
                   runCommand: 
                     - |
-                      FILESYSTEM=$(blkid -o value -s TYPE {{ EBSDeviceName }})
+                      FILESYSTEM=$(blkid -o value -s TYPE {{ DeviceName }})
                       if [ -z "$FILESYSTEM" ]; then
-                        mkfs -t xfs {{ EBSDeviceName }}
-                        mount {{ EBSDeviceName }} /var/lib/docker/volumes
+                        mkfs -t xfs {{ DeviceName }}
+                        mount {{ DeviceName }} /var/lib/docker/volumes
                       else
-                        mount {{ EBSDeviceName }} /var/lib/docker/volumes
+                        mount {{ DeviceName }} /var/lib/docker/volumes
                       fi
               - name: AddFstabEntry
                 action: aws:runShellScript
                 inputs:
                   runCommand:
                     -  |
-                       UUID=$(blkid -o value -s UUID {{ EBSDeviceName }})
+                       UUID=$(blkid -o value -s UUID {{ DeviceName }})
                        if [ -n "$UUID" ]; then
                           cp /etc/fstab /etc/fstab.orig
                           echo "UUID=$UUID /var/lib/docker/volumes xfs defaults,nofail 0 2" >> /etc/fstab

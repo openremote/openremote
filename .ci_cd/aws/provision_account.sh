@@ -278,14 +278,14 @@ else
 fi
 
 # Provision SSM Documents
-if [ -f "${awsDir}cloudformation-create-ssm-document.yml" ]; then
-  TEMPLATE_PATH="${awsDir}cloudformation-create-ssm-document.yml"
-elif [ -f ".ci_cd/aws/cloudformation-create-ssm-document.yml" ]; then
-  TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-ssm-document.yml"
-elif [ -f "openremote/.ci_cd/aws/cloudformation-create-ssm-document.yml" ]; then
-  TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-create-ssm-document.yml"
+if [ -f "${awsDir}cloudformation-create-ssm-documents.yml" ]; then
+  TEMPLATE_PATH="${awsDir}cloudformation-create-ssm-documents.yml"
+elif [ -f ".ci_cd/aws/cloudformation-create-ssm-documents.yml" ]; then
+  TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-ssm-documents.yml"
+elif [ -f "openremote/.ci_cd/aws/cloudformation-create-ssm-documents.yml" ]; then
+  TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-create-ssm-documents.yml"
 else
-  echo "Cannot determine location of cloudformation-create-ssm-document.yml"
+  echo "Cannot determine location of cloudformation-create-ssm-documents.yml"
   exit 1
 fi
 
@@ -328,7 +328,7 @@ STACK_NAME=or-dashboard-default
 # Create dashboard in specified account
 STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --output text $ACCOUNT_PROFILE)
 
-# Wait for cloud formation stack status to be CREATE_*
+# Wait for CloudFormation stack status to be CREATE_*
 echo "Waiting for stack to be created"
 STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
 

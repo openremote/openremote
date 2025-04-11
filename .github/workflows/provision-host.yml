@@ -38,7 +38,7 @@ on:
         default: '16'
         required: false
       SNAPSHOT_ID:
-        description: 'Create EBS data volume based on snapshot'
+        description: 'Snapshot ID to create volume based of an existing snapshot'
         type: string
         required: false
       ENABLE_METRICS:
