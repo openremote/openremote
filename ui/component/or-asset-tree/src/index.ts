@@ -492,7 +492,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                       this._onFilterInput((e.detail.value as string) || undefined, true);
                                   }}">
                     </or-mwc-input>
-                    <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" @click="${() => {
+                    <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" title="${i18next.t(this._filterSettingOpen ? "closeFilter" : "openFilter")}" @click="${() => {
                         if (this._filterSettingOpen) {
                             this._filterSettingOpen = false;
                         } else {

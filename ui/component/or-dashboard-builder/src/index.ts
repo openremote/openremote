@@ -632,7 +632,7 @@ export class OrDashboardBuilder extends LitElement {
                             <div id="fullscreen-header-wrapper">
                                 <div id="fullscreen-header-title" style="display: flex; align-items: center;">
                                     <or-icon class="showMobile" style="margin-right: 10px; cursor: pointer;" icon="chevron-left" @click="${() => { this.selectedDashboard = undefined; }}"></or-icon>
-                                    <or-icon class="hideMobile" style="margin-right: 10px; cursor: pointer;" icon="menu" @click="${() => { this.showDashboardTree = !this.showDashboardTree; }}"></or-icon>
+                                    <or-icon class="hideMobile" style="margin-right: 10px; cursor: pointer;" icon="menu" title="${i18next.t(this.showDashboardTree ? "closeList" : "openList")}" @click="${() => { this.showDashboardTree = !this.showDashboardTree; }}"></or-icon>
                                     <span>${this.selectedDashboard?.displayName}</span>
                                 </div>
                                 <div id="fullscreen-header-actions">

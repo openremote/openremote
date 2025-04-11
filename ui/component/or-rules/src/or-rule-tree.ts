@@ -443,7 +443,7 @@ export class OrRuleTree extends OrTreeMenu {
 
         return getContentWithMenuTemplate(
             html`
-                <or-mwc-input type=${InputType.BUTTON} icon="plus"></or-mwc-input>`,
+                <or-mwc-input type=${InputType.BUTTON} icon="plus" title="${i18next.t("addRule")}"></or-mwc-input>`,
             menuOptions,
             undefined,
             value => onValueChange(String(value))
