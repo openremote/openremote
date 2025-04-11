@@ -277,6 +277,40 @@ else
   echo "PARENT_DNS_ZONE not set so no DNS configuration will be attempted"
 fi
 
+# Provision SSM Documents
+if [ -f "${awsDir}cloudformation-create-ssm-document.yml" ]; then
+  TEMPLATE_PATH="${awsDir}cloudformation-create-ssm-document.yml"
+elif [ -f ".ci_cd/aws/cloudformation-create-ssm-document.yml" ]; then
+  TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-ssm-document.yml"
+elif [ -f "openremote/.ci_cd/aws/cloudformation-create-ssm-document.yml" ]; then
+  TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-create-ssm-document.yml"
+else
+  echo "Cannot determine location of cloudformation-create-ssm-document.yml"
+  exit 1
+fi
+
+STACK_NAME=or-ebs-volume-ssm-documents
+
+# Create SSM Documents for attaching/detaching EBS data volume in specified account
+STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --output text $ACCOUNT_PROFILE)
+
+# Wait for CloudFormation stack status to be CREATE_*
+echo "Waiting for stack to be created"
+STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+while [[ "$STATUS" == 'CREATE_IN_PROGRESS' ]]; do
+    echo "Stack creation is still in progress .. Sleeping 30 seconds"
+    sleep 30
+    STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+done
+
+if [ "$STATUS" != 'CREATE_COMPLETE' ] && [ "$STATUS" != 'UPDATE_COMPLETE' ]; then
+  echo "Stack creation has failed status is '$STATUS'" >&2
+  exit 1
+else
+  echo "Stack creation is complete"
+fi
+
 # Provision default dashboard
 if [ -f "${awsDir}cloudformation-create-dashboard.yml" ]; then
   TEMPLATE_PATH="${awsDir}cloudformation-create-dashboard.yml"

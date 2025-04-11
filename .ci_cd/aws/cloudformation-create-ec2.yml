@@ -77,8 +77,11 @@ Parameters:
     Description: Role ARN that can be assumed for updating DNS A record (if Hosted Zone in another account)
     Type: String
     Default: ""
+  DLMExecutionRoleArn:
+    Description: Role ARN for executing the DLM operations.
+    Type: String
   SnapshotId:
-    Description: Snapshot ID to create the EBS volume based of an existing snapshot.
+    Description: Snapshot ID to create the EBS volume based of an existing Snapshot.
     Type: String
     Default: ""
   EBSDeviceName:
@@ -99,10 +102,14 @@ Parameters:
       - true
       - false
     Default: false
-  DiskSize:
-    Description: Root EBS volume size in GB
+  RootDiskSize:
+    Description: Root EBS volume size GB
     Type: Number
     Default: 30
+  DataDiskSize:
+    Description: Amount of storage you want to provision for this EBS volume.
+    Type: Number
+    Default: 16
   HealthChecks:
     Description: Create health checks
     Type: String
@@ -136,6 +143,7 @@ Conditions:
   AssignElasticIP: !Equals [!Ref ElasticIP, "true"]
   MetricsEnabled: !Equals [!Ref Metrics, "true"]
   CreateHealthChecks: !Equals [!Ref HealthChecks, "true"]
+  SnapshotProvided: !Not [!Equals [!Ref SnapshotId, ""]]
   UseAMIID: !Equals [!Ref ImageId, ""]
 
 Resources:
@@ -859,7 +867,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: !Ref DiskSize
+            VolumeSize: !Ref RootDiskSize
             VolumeType: gp3
             DeleteOnTermination: true
       Ipv6AddressCount: 1
@@ -896,6 +904,47 @@ Resources:
     Properties:
       InstanceId: !Ref EC2Instance
       EIP: !Ref IPAddress
+
+  EBSDataVolume:
+    Type: AWS::EC2::Volume
+    Properties:
+      AvailabilityZone: !GetAtt EC2Instance.AvailabilityZone
+      Size: !Ref DataDiskSize
+      VolumeType: gp3
+      SnapshotId: !If [SnapshotProvided, !Ref SnapshotId, !Ref 'AWS::NoValue']
+      Tags:
+        - Key: Name
+          Value: !Sub ${Host}/data
+    DeletionPolicy: Snapshot
+
+  # DLM Policy for automatic snapshot creation
+
+  DLMPolicy:
+    Type: AWS::DLM::LifecyclePolicy
+    Properties:
+      ExecutionRoleArn: !Ref DLMExecutionRoleArn
+      Description: 'OpenRemote-Data'
+      State: ENABLED
+      PolicyDetails:
+        PolicyLanguage: STANDARD
+        PolicyType: EBS_SNAPSHOT_MANAGEMENT
+        TargetTags:
+          - Key: aws:cloudformation:stack-id
+            Value: !Sub ${AWS::StackId}
+        ResourceTypes: 
+          - VOLUME
+        Schedules:
+          - Name: Daily Backup
+            CreateRule:
+              Interval: 24
+              IntervalUnit: HOURS
+              Times:
+              - '05:00'
+            RetainRule:
+              Count: 5
+      Tags:
+        - Key: Name
+          Value: !Ref Host
 
   # Telemetry and Alarms.
 
