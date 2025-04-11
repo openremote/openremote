@@ -55,6 +55,7 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         def serverUri = serverUri(serverPort)
         def adminUserResource = getClientApiTarget(serverUri, MASTER_REALM, adminUserAccessToken).proxy(UserResource)
         def adminUser = adminUserResource.getCurrent(null)
+        def testUser1 = adminUserResource.query(null, new UserQuery().usernames(new StringPredicate("testuser1")))[0]
 
         and: "an additional user without READ_INSIGHTS is created"
         ClientRole[] noInsightsRoles = new ClientRole[] { ClientRole.READ_ASSETS }
@@ -132,6 +133,7 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         then: "the correct dashboard should be returned"
         assert displayNameDashboards.length == 1
         assert displayNameDashboards[0].displayName == "dashboard1"
+        assert displayNameDashboards[0].access == DashboardAccess.SHARED
 
         when: "a user without READ_INSIGHTS tries to query dashboard by display name"
         def displayNameNoAccessDashboards = noAccessDashboardResource.query(null, displayNameQuery)
@@ -157,6 +159,8 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         def alternativeUpdatedDashboard = alternativeUserDashboardResource.get(null, MASTER_REALM, privateUser1Dashboard.id)
         assert alternativeUpdatedDashboard.displayName == "New displayname"
 
+        /* ----------- */
+
         when: "dashboard1 is made 'private' by its original owner"
         privateUser1Dashboard.setAccess(DashboardAccess.PRIVATE)
         assert privateUser1DashboardResource.update(null, privateUser1Dashboard) != null
@@ -166,12 +170,28 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         assert dashboards.length == 2
         assert dashboards.find((d) -> d.id == privateUser1Dashboard.id).access == DashboardAccess.PRIVATE
 
+        /* ----------- */
+
+        when: "the original owner of dashboard1 has been changed to a user without READ_INSIGHTS and WRITE_INSIGHTS role"
+        privateUser1Dashboard.setOwnerId(noAccessUser.id)
+        adminUserDashboardResource.update(null, privateUser1Dashboard)
+
+        and: "the user without READ_INSIGHTS and WRITE_INSIGHTS tries to retrieve their personal dashboard"
+        noAccessDashboardResource.get(null, MASTER_REALM, privateUser1Dashboard.id)
+
+        then: "a NOT_FOUND exception is thrown as no READ_INSIGHTS role is assigned"
+        thrown NotFoundException
+
+        /* ----------- */
+
         when: "the first dashboard cannot be edited by a different user, even if its admin user"
         privateUser1Dashboard.setDisplayName("another displayname")
         adminUserDashboardResource.update(null, privateUser1Dashboard)
 
         then: "it should throw exception"
         thrown NotFoundException
+
+        /* ----------- */
 
         when: "the first dashboard cannot be read by a different user, even if its admin user"
         def adminDisplaynameDashboards = adminUserDashboardResource.query(null, new DashboardQuery().names(privateUser1Dashboard.displayName))
@@ -237,6 +257,13 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         assert publicDashboards2.length == 1
         assert publicDashboards2[0].access == DashboardAccess.PUBLIC
         assert publicDashboards2[0].displayName == "Public dashboard"
+
+        and: "all users should be able to fetch the public dashboard"
+        assert adminUserDashboardResource.get(null, MASTER_REALM, publicDashboards2[0].id).displayName == publicDashboards2[0].displayName
+        assert privateUser1DashboardResource.get(null, MASTER_REALM, publicDashboards2[0].id).displayName == publicDashboards2[0].displayName
+        assert noAccessDashboardResource.get(null, MASTER_REALM, publicDashboards2[0].id).displayName == publicDashboards2[0].displayName
+        assert readonlyDashboardResource.get(null, MASTER_REALM, publicDashboards2[0].id).displayName == publicDashboards2[0].displayName
+        assert alternativeUserDashboardResource.get(null, MASTER_REALM, publicDashboards2[0].id).displayName == publicDashboards2[0].displayName
 
         /* ------------------------- */
 
