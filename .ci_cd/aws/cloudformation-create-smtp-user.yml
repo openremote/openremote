@@ -12,7 +12,6 @@ Parameters:
     #AllowedPattern: "^\S{4,}$"
 
 Resources:
-
   SMTPUser:
     Type: AWS::IAM::User
     Properties:
