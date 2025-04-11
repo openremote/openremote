@@ -37,7 +37,6 @@ import {OrConfPanel} from "../components/configuration/or-conf-panel";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu, DefaultRealmConfig} from "../index";
 
-declare const MANAGER_URL: string | undefined;
 declare const APP_VERSION: string;
 
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
@@ -367,7 +366,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 this.loading = false;
                 this.managerConfigurationChanged = false;
                 this.mapConfigChanged = false;
-                const configURL =  (MANAGER_URL ?? "") + "/api/master/configuration/manager";
+                const configURL = (manager.managerUrl ?? "") + "/api/master/configuration/manager";
                 fetch(configURL, {cache: "reload"})
                 window.location.reload();
             })
