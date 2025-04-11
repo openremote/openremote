@@ -29,6 +29,7 @@ import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Map;
 
 public class AssetModelResourceImpl extends ManagerWebResource implements AssetModelResource {
@@ -63,5 +64,10 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     @Override
     public Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(RequestParams requestParams, String parentId) {
         return assetModelService.getMetaItemDescriptors(parentId);
+    }
+
+    @Override
+    public JsonNode getConfigurationItemSchemas(RequestParams requestParams, String item) {
+        return assetModelService.getConfigurationItemSchemas(item);
     }
 }
