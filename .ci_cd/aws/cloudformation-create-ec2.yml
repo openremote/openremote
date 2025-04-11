@@ -84,10 +84,6 @@ Parameters:
     Description: Snapshot ID to create the EBS volume based of an existing Snapshot.
     Type: String
     Default: ""
-  EBSDeviceName:
-    Description: Device name where data volume needs to be mounted.
-    Type: String
-    Default: ""
   ElasticIP:
     Description: Assign elastic IP address
     Type: String
