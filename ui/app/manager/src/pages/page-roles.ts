@@ -6,7 +6,7 @@ import {
   unsafeCSS,
 } from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import manager, { OREvent, DefaultColor3 } from "@openremote/core";
+import manager, {OREvent, DefaultColor3, OPENREMOTE_CLIENT_ID} from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import { Store } from "@reduxjs/toolkit";
@@ -253,7 +253,7 @@ export class PageRoles extends Page<AppStateKeyed> {
   }
 
   protected async getRoles() {
-    const roleResponse = await manager.rest.api.UserResource.getRoles(this.realm);
+    const roleResponse = await manager.rest.api.UserResource.getClientRoles(this.realm, OPENREMOTE_CLIENT_ID);
     this._compositeRoles = [...roleResponse.data.filter(role => role.composite)];
     this._roles = [...roleResponse.data.filter(role => !role.composite)];
     this._roles.map(role => {

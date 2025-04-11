@@ -28,7 +28,9 @@ export * from "./console";
 export * from "./event";
 export * from "./defaults";
 
-export const DEFAULT_ICONSET: string = "mdi";
+export const DEFAULT_ICONSET = "mdi";
+export const OPENREMOTE_CLIENT_ID = "openremote";
+export const RESTRICTED_USER_REALM_ROLE = "restricted_user";
 
 export declare type KeycloakPromise<T> = {
     success<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | KeycloakPromise<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | KeycloakPromise<TResult2>) | undefined | null): KeycloakPromise<TResult1 | TResult2>;
@@ -144,7 +146,7 @@ export function normaliseConfig(config: ManagerConfig): ManagerConfig {
     }
 
     if (normalisedConfig.clientId === undefined) {
-        normalisedConfig.clientId = "openremote";
+        normalisedConfig.clientId = OPENREMOTE_CLIENT_ID;
     }
 
     return normalisedConfig;
@@ -192,7 +194,7 @@ export class Manager implements EventProviderFactory {
                 }
             }
         } else if (this._basicIdentity && this._basicIdentity.roles) {
-            roleMap.set(this._config.clientId!, this._basicIdentity.roles.map((r) => r.name!));
+            roleMap.set(this._config.clientId!, this._basicIdentity.roles!);
         }
 
         return roleMap;
@@ -263,6 +265,10 @@ export class Manager implements EventProviderFactory {
         this._emitEvent(OREvent.DISPLAY_REALM_CHANGED);
     }
 
+    get clientId() {
+        return this._config.clientId || OPENREMOTE_CLIENT_ID;
+    }
+
     getEventProvider(): EventProvider | undefined {
         return this.events;
     }
@@ -283,7 +289,7 @@ export class Manager implements EventProviderFactory {
     private _basicIdentity?: {
         token: string | undefined,
         user: User | undefined,
-        roles: Role[] | undefined
+        roles: string[] | undefined
     };
     private _keycloakUpdateTokenInterval?: number = undefined;
     private _managerVersion: string = "";
@@ -835,7 +841,7 @@ export class Manager implements EventProviderFactory {
                 authenticated = true;
 
                 // Get user roles
-                const rolesResponse = await rest.api.UserResource.getCurrentUserRoles();
+                const rolesResponse = await rest.api.UserResource.getCurrentUserClientRoles(this.clientId);
                 this._basicIdentity!.roles = rolesResponse.data;
             } else {
                 console.debug("Unknown response so aborting");
@@ -854,7 +860,7 @@ export class Manager implements EventProviderFactory {
     }
 
     public isRestrictedUser(): boolean {
-        return !!this.hasRealmRole("restricted_user");
+        return !!this.hasRealmRole(RESTRICTED_USER_REALM_ROLE);
     }
 
     public getApiBaseUrl(): string {
@@ -1061,7 +1067,7 @@ export class Manager implements EventProviderFactory {
         if (!this._disconnected) {
             return;
         }
-        
+
         if (this._reconnectTimer) {
             window.clearTimeout(this._reconnectTimer);
             this._reconnectTimer = undefined;
@@ -1076,7 +1082,7 @@ export class Manager implements EventProviderFactory {
                 return false;
             }
             console.debug("Keycloak is reachable");
-            
+
             // Check if access token can be refreshed
             console.debug("Checking keycloak access token");
             try {
