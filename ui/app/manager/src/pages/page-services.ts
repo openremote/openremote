@@ -1,10 +1,10 @@
 import {css, html} from "lit";
-import {customElement, property} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import "@openremote/or-log-viewer";
 import {ViewerConfig} from "@openremote/or-log-viewer";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
-import {Store} from "@reduxjs/toolkit";
+import {createSelector, Store} from "@reduxjs/toolkit";
 import { manager } from "@openremote/core";
 
 export function pageServicesProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
@@ -52,18 +52,35 @@ export class PageServices extends Page<AppStateKeyed> {
 
     constructor(store: Store<AppStateKeyed>) {
         super(store);
+
+
+        this.realmName = manager.displayRealm;
     }
 
     public stateChanged(state: AppStateKeyed) {
+        this.getRealmState(state);
     }
+
+    protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.displayRealm;
+
+    protected getRealmState = createSelector(
+        [this._realmSelector],
+        async (realm) => {
+            this.realmName = realm;
+        }
+    )
+
+
+
+    @state()
+    protected realmName: string;
 
     protected render() {
 
-        const realmName = manager.displayRealm;
 
         return html`
             <div class="sidebar-placeholder"></div>
-            <iframe src="http://localhost:8001/${realmName}/configs">hello</iframe>
+            <iframe src="http://localhost:8001/${this.realmName}/configs">hello</iframe>
         `;
     }
 }
