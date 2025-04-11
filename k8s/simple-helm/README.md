@@ -75,7 +75,8 @@ The most important configuration information has been exposed in the helm values
 It is sometimes necessary to provide more configuration to the containers.  
 This is done through environment variables, as it was done before with docker compose.  
 In the values files, there is `or.env` property available to define any environment variable that will get passed to the container.  
-For instance, this snippet of values file defines a value for the KC_HOSTNAME_STRICT_HTTPS environment variable passed to the keycloak container.
+For instance, this snippet of a values file defines a value for the KC_HOSTNAME_STRICT_HTTPS environment variable passed to the keycloak container.  
+Important: the value always needs to be encloded in double quotes, even for boolean or numeric values.  
 ```yaml
 or:
   env:
