@@ -219,11 +219,11 @@ public class MapService implements ContainerService {
         setData();
     }
 
-    public void setData() throws ClassNotFoundException, SQLException, NullPointerException, IOException {
+    public void setData() throws ClassNotFoundException, SQLException, NullPointerException {
         setData(false);
     }
 
-    public void setData(Boolean delete) throws ClassNotFoundException, SQLException, NullPointerException, IOException {
+    public void setData(Boolean delete) throws ClassNotFoundException, SQLException, NullPointerException {
         Path mapTilesPath = configurationService.getMapTilesPath();
         if (mapTilesPath == null) {
             return;
@@ -244,7 +244,12 @@ public class MapService implements ContainerService {
         Path customMapTilesPath = getCustomMapDataPath();
         if (customMapTilesPath != null) {
             if (delete) {
-                Files.deleteIfExists(customMapTilesPath);
+                try {
+                    Files.deleteIfExists(customMapTilesPath);
+                    LOG.info(customMapTilesPath + " file deleted successfully");
+                } catch (IOException e) {
+                    LOG.log(Level.WARNING, "Could not delete " + customMapTilesPath, e);
+                }
             // Overwrite default map if custom map file exists
             } else if (Files.exists(customMapTilesPath)) {
                 mapTilesPath = customMapTilesPath.toAbsolutePath();
@@ -469,7 +474,7 @@ public class MapService implements ContainerService {
             LOG.log(Level.SEVERE, "Failed to save custom map file.", e);
             try {
                 this.setData(true);
-            } catch (IOException | ClassNotFoundException | SQLException deleteError) {
+            } catch (ClassNotFoundException | SQLException deleteError) {
                 LOG.log(Level.SEVERE, "Failed to delete " + path + " file", deleteError);
             }
             return false;
@@ -506,30 +511,14 @@ public class MapService implements ContainerService {
             LOG.log(Level.SEVERE, "Failed to load " + path + " file", e);
             try {
                 this.setData(true);
-            } catch (IOException | ClassNotFoundException | SQLException deleteError) {
+            } catch (ClassNotFoundException | SQLException deleteError) {
                 LOG.log(Level.SEVERE, "Failed to delete " + path + " file", deleteError);
             }
             return false;
         }
     }
 
-
-    public boolean deleteUploadedFile() {
-        Path customTilesPath = getCustomMapDataPath();
-
-        boolean deleted = false;
-        try {
-            this.setData(true);
-            saveMapMetadata(metadata);
-            deleted = true;
-            LOG.info(customTilesPath + " file deleted successfully");
-        } catch (IOException | SQLException | ClassNotFoundException | NullPointerException e) {
-            LOG.log(Level.SEVERE, "Failed to delete " + customTilesPath + " file", e);
-        }
-        return deleted;
-    }
-
-    private void saveMapMetadata(Metadata metadata) {
+    public void saveMapMetadata(Metadata metadata) {
         Optional<JsonNode> options = Optional.ofNullable(mapConfig.get("options"));
         if (metadata.isValid() && options.isPresent()) {
             Iterator<Map.Entry<String, JsonNode>> fields = options.get().fields();

@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.sql.SQLException;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -117,13 +118,16 @@ public class MapResourceImpl extends WebResource implements MapResource {
 
     @Override
     public ObjectNode deleteMap(RequestParams requestParams) {
-        boolean deleted = mapService.deleteUploadedFile();
-        if (deleted) {
+        try {
+            mapService.setData(true);
+            mapService.saveMapMetadata(mapService.metadata);
             return mapService.getMapSettings(
                 getRequestRealmName(),
                 requestParams.getExternalSchemeHostAndPort()
             );
+        } catch (ClassNotFoundException | SQLException | NullPointerException e) {
+            LOG.log(Level.INFO, "Failed to delete custom map tiles", e);
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
-        throw new WebApplicationException(Response.Status.BAD_REQUEST);
     }
 }
