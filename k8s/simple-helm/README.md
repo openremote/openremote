@@ -1,7 +1,11 @@
 # Simple Helm charts
 
 This folder contains Helm charts for each individual OR component to deploy within kubernetes.  
-It has been tested under Docker Desktop on macOS.
+It supposes you have already installed the required tools on your machine:
+- a Kubernetes installation, tests were performed with Docker Desktop on macOS.
+- an Ingress controller installed in the cluster, tests were performed with [Nginx Controller](https://kubernetes.github.io/ingress-nginx/deploy/#quick-start)
+- kubectl
+- helm
 
 ## TL;DR
 
