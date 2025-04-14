@@ -27,7 +27,6 @@ import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.util.TimeUtil
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.*
-import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.impl.ColourRGB
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.setup.integration.model.asset.ModelTestAsset

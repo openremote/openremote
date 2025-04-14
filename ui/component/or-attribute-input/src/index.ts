@@ -18,7 +18,6 @@ import {
     WellknownValueTypes,
     AssetModelUtil,
     ClientRole,
-    ValueConstraint,
 } from "@openremote/model";
 import manager, {subscribe, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -120,118 +119,20 @@ export function getHelperText(sending: boolean, error: boolean, timestamp: numbe
 const jsonFormsAttributeRenderers = [...StandardRenderers, agentIdRendererRegistryEntry];
 type ErrorMessage = "agentNotFound" | "agentTypeMismatch";
 
-const d = (fqcn: string, disabled: boolean, readonly: boolean, label: string, valueChangeNotifier: (value: (OrInputChangedEventDetail | undefined)) => void) => {
-    const uiSchema: any = {type: "Control", scope: "#"};
-    let schema: any;
-    const jsonForms: Ref<OrJSONForms> = createRef();
-    const loadingWrapper: Ref<OrLoadingWrapper> = createRef();
-    let initialised = false;
-    let valueConstraints: ValueConstraint[] = [];
-
-    const onConstraintsChanged = (dataAndErrors: {errors: ErrorObject[] | undefined, data: any}) => {
-        if (!initialised) {
-            return;
-        }
-
-        const newConstraints: ValueConstraint[] | undefined = dataAndErrors.data;
-
-        if (newConstraints?.length) {
-            valueChangeNotifier({
-                value: newConstraints
-            });
-        }
-    };
-
-    const doLoad = async (constraints: ValueConstraint[]) => {
-        if (!initialised && constraints) {
-            valueConstraints = constraints;
-        }
-        initialised = true;
-
-        if (!schema) {
-            // TODO: dynamically generate the Schema from the backend.
-            schema = (await manager.rest.api.AssetModelResource.getConfigurationItemSchemas({ item: fqcn })).data as any;
-        }
-        if (jsonForms.value && loadingWrapper.value) {
-            const forms = jsonForms.value;
-            forms.schema = schema;
-            forms.data = valueConstraints;
-            loadingWrapper.value.loading = false;
-        }
-    }
-
-    const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
-        if (!value) {
-            value = {
-                id: "",
-                type: "DefaultAgentLink"
-            };
-        }
-        window.setTimeout(() => doLoad(value), 0);
-
-        return html`
-              <style>
-                  .disabled {
-                      opacity: 0.5;
-                      pointer-events: none;
-                  }
-                  or-loading-wrapper {
-                      width: 100%;
-                  }
-              </style>
-              <or-loading-wrapper ${ref(loadingWrapper)} .loading="${true}">
-                  <or-json-forms .renderers="${jsonFormsAttributeRenderers}" ${ref(jsonForms)}
-                                 .disabled="${disabled}" .readonly="${readonly}" .label="${label}"
-                                 .schema="${schema}" label="Constraints" .uischema="${uiSchema}" .onChange="${onConstraintsChanged}"></or-json-forms>
-              </or-loading-wrapper>
-          `;
-    }
-
-    return {
-        templateFunction,
-        supportsHelperText: false,
-        supportsLabel: false,
-        supportsSendButton: false,
-        validator: () => {
-            if (!jsonForms.value) {
-                return false;
-            }
-            return jsonForms.value.checkValidity();
-        }
-    }
-}
-
 export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => ValueInputProviderGenerator = (fallback) => (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
-
-    const disabled = !!(options && options.disabled);
-    const readonly = !!(options && options.readonly);
-    const label = options.label;
-
-    // TODO: map WellknownValueTypes to the classes 
-    // const d = {'agentLink': "test"}[WellknownValueTypes.AGENTLINK];
-    // on the backend create an endpoint that sends over an object (later this could be builtin initial page load)
-    // then use that map to index. it should contain the 
-
-    console.log(valueDescriptor)
-    // @ts-ignore
-    console.log(window['simpleClassNameToFQCN'][valueDescriptor.name!])
-    // @ts-ignore
-    if ((window['simpleClassNameToFQCN'] as any)[valueDescriptor.name!]) {
-        // @ts-ignore
-        return d(valueDescriptor.type, disabled, readonly, label!, valueChangeNotifier)
-    }
-
-    // Agent link needs some special handling as we need an agent picker no matter what
-    if (false && valueDescriptor.name === WellknownValueTypes.AGENTLINK) {
+    if (valueDescriptor.jsonType === "object" || valueDescriptor.arrayDimensions && valueDescriptor.arrayDimensions > 0) {
+        const disabled = !!(options && options.disabled);
+        const readonly = !!(options && options.readonly);
+        const label = options.label;
 
         // Apply a custom UI schema to remove the outer VerticalLayout
         const uiSchema: any = {type: "Control", scope: "#"};
         let schema: any;
         const jsonForms: Ref<OrJSONForms> = createRef();
         const loadingWrapper: Ref<OrLoadingWrapper> = createRef();
-        let loadedAgents: Agent[] = [];
+        let loadedAgents: Agent[] = []; // TODO: handle CUSTOM field properly
         let initialised = false;
-        let agentLink: AgentLink | undefined;
+        let agentLink: AgentLink | undefined; // TODO: handle CUSTOM field properly
 
         const onAgentLinkChanged = (dataAndErrors: {errors: ErrorObject[] | undefined, data: any}) => {
             if (!initialised) {
@@ -258,7 +159,6 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
             }
         };
 
-
         const doLoad = async (link: AgentLink) => {
 
             if (!initialised) {
@@ -267,8 +167,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
             initialised = true;
 
             if (!schema) {
-                // TODO: Load agent link schema from AssetModelUtil - For now run AssetModelTest in debug and copy paste the result of def schema = ValueUtil.getSchema(AgentLink.class)
-                schema = (await manager.rest.api.AssetModelResource.getConfigurationItemSchemas({ item: "AgentLink" })).data as any;
+                schema = (await manager.rest.api.AssetModelResource.getConfigurationItemSchemas(valueDescriptor)).data as any;
             }
 
             loadedAgents = await loadAgents();
@@ -278,17 +177,17 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
                 return;
             }
 
-            if (link) {
-                if (link.id) {
-                    const matchedAgent = loadedAgents.find(agent => agent.id === link.id);
-                    if (!matchedAgent) {
-                        console.warn("Agent link: linked agent could not be found");
-                        link.id = "";
-                    }
-                } else {
-                    link.id = "";
-                }
-            }
+            // if (link) {
+            //     if (link.id) {
+            //         const matchedAgent = loadedAgents.find(agent => agent.id === link.id);
+            //         if (!matchedAgent) {
+            //             console.warn("Agent link: linked agent could not be found");
+            //             link.id = "";
+            //         }
+            //     } else {
+            //         link.id = "";
+            //     }
+            // }
 
             // let error: ErrorMessage | undefined;
             //
@@ -359,84 +258,6 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
             }
         };
     }
-
-    if (false && valueDescriptor.name === "valueConstraint") {
-
-      const uiSchema: any = {type: "Control", scope: "#"};
-      let schema: any;
-      const jsonForms: Ref<OrJSONForms> = createRef();
-      const loadingWrapper: Ref<OrLoadingWrapper> = createRef();
-      let initialised = false;
-      let valueConstraints: ValueConstraint[] = [];
-
-      const onConstraintsChanged = (dataAndErrors: {errors: ErrorObject[] | undefined, data: any}) => {
-          if (!initialised) {
-              return;
-          }
-
-          const newConstraints: ValueConstraint[] | undefined = dataAndErrors.data;
-
-          if (newConstraints?.length) {
-              valueChangeNotifier({
-                  value: newConstraints
-              });
-          }
-      };
-
-      const doLoad = async (constraints: ValueConstraint[]) => {
-          if (!initialised && constraints) {
-              valueConstraints = constraints;
-          }
-          initialised = true;
-
-          if (!schema) {
-              // TODO: dynamically generate the Schema from the backend.
-              schema = (await manager.rest.api.AssetModelResource.getConfigurationItemSchemas({ item: "ValueConstraint" })).data as any;
-          }
-          if (jsonForms.value && loadingWrapper.value) {
-              const forms = jsonForms.value;
-              forms.schema = schema;
-              forms.data = valueConstraints;
-              loadingWrapper.value.loading = false;
-          }
-      }
-
-      const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
-
-          window.setTimeout(() => doLoad(value), 0);
-
-          return html`
-              <style>
-                  .disabled {
-                      opacity: 0.5;
-                      pointer-events: none;
-                  }
-                  or-loading-wrapper {
-                      width: 100%;
-                  }
-              </style>
-              <or-loading-wrapper ${ref(loadingWrapper)} .loading="${true}">
-                  <or-json-forms .renderers="${jsonFormsAttributeRenderers}" ${ref(jsonForms)}
-                                 .disabled="${disabled}" .readonly="${readonly}" .label="${label}"
-                                 .schema="${schema}" label="Constraints" .uischema="${uiSchema}" .onChange="${onConstraintsChanged}"></or-json-forms>
-              </or-loading-wrapper>
-          `;
-      }
-
-      return {
-        templateFunction,
-        supportsHelperText: false,
-        supportsLabel: false,
-        supportsSendButton: false,
-        validator: () => {
-            if (!jsonForms.value) {
-                return false;
-            }
-            return jsonForms.value.checkValidity();
-          }
-      }
-    }
-
     return fallback;
 };
 
@@ -608,7 +429,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     protected _sendError = false;
     protected _attributeDescriptor?: AttributeDescriptor;
     protected _valueDescriptor?: ValueDescriptor;
-    protected _simpleFQCNMap?: Record<string, string>;
 
     public disconnectedCallback() {
         super.disconnectedCallback();
@@ -618,10 +438,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     langChangedCallback = () => {
         this._updateTemplate();
         this.requestUpdate();
-    }
-
-    public async firstUpdated(): Promise<void> {
-      this._simpleFQCNMap = (await manager.rest.api.AssetModelResource.getSimpleClassNameToFQCN()).data
     }
 
     public shouldUpdate(_changedProperties: PropertyValues): boolean {

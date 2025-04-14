@@ -79,17 +79,12 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     }
 
     @Override
-    public Map<String, String> getSimpleClassNameToFQCN() {
-        return assetModelService.getSimpleClassNameToFQCN();
-    }
-
-    @Override
-    public JsonNode getConfigurationItemSchemas(RequestParams requestParams, String item) {
+    public JsonNode getConfigurationItemSchemas(RequestParams requestParams, ValueDescriptor<?> valueDescriptor) {
         try {
-            return assetModelService.getConfigurationItemSchemas(item);
+            return assetModelService.getConfigurationItemSchemas(valueDescriptor);
         } catch (ClassNotFoundException | RuntimeException | IllegalAccessException | InstantiationException | InvocationTargetException | NoSuchMethodException e) {
             LOG.log(Level.SEVERE, "Error: ", e);
-            throw new WebApplicationException(Response.Status.NO_CONTENT);
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
     }
 }

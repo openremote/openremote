@@ -20,6 +20,7 @@
 package org.openremote.model.asset;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.value.MetaItemDescriptor;
@@ -102,15 +103,9 @@ public interface AssetModelResource {
     @Operation(operationId = "getMetaItemDescriptors", summary = "Retrieve the available meta item descriptors")
     Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
 
-    @GET
-    @Path("getSimpleClassNameToFQCN")
-    @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getSimpleClassNameToFQCN", summary = "Retrieve the fqcn map.")
-    Map<String, String> getSimpleClassNameToFQCN();
-
-    @GET
+    @POST
     @Path("getItemSchemas")
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getItemSchemas", summary = "Retrieve the available configuration item JSON Schemas.")
-    JsonNode getConfigurationItemSchemas(@BeanParam RequestParams requestParams, @QueryParam("item") String item);
+    JsonNode getConfigurationItemSchemas(@BeanParam RequestParams requestParams, @RequestBody ValueDescriptor<?> item);
 }

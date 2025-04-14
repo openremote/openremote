@@ -30,7 +30,6 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
-import net.fortuna.ical4j.model.property.Clazz;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -42,7 +41,6 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.AssetModelProvider;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.attribute.MetaMap;
@@ -51,21 +49,17 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemDescriptor;
-import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueDescriptor;
-import org.openremote.model.value.ValueConstraint;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.ParameterizedType;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -215,8 +209,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
     protected GatewayService gatewayService;
     protected PersistenceService persistenceService;
     protected Map<String, AssetTypeInfo> dynamicAssetTypeInfos;
-    protected HashMap<String, String> simpleClassNameToFQCNs = new HashMap();
-    protected Map<String, ObjectNode> dynamicJsonSchemas;
+    protected Map<String, ObjectNode> dynamicJsonSchemas = new ConcurrentHashMap<>();
     protected Path storageDir;
 
     @Override
@@ -387,73 +380,36 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         return ValueUtil.getMetaItemDescriptors();
     }
 
-    public Map<String, String> getSimpleClassNameToFQCN() {
-        if (simpleClassNameToFQCNs.isEmpty()) {
-//            Optional<Type>[] types = (Optional<Type>[]) Arrays.stream(MetaItemType.class.getFields())
-//                .filter(f -> f.getType() == MetaItemDescriptor.class)
-//                .map(field -> Optional.of(field)
-//                    .map(Field::getGenericType)
-//                    .filter(ParameterizedType.class::isInstance)
-//                    .map(ParameterizedType.class::cast)
-//                    .map(ParameterizedType::getActualTypeArguments)
-//                    .filter(args -> args.length > 0)
-//                    .map(args -> args[0])
-//                ).toArray();
+    public JsonNode getConfigurationItemSchemas(ValueDescriptor<?> valueDescriptor) throws ClassNotFoundException, RuntimeException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
+        return dynamicJsonSchemas.computeIfAbsent(valueDescriptor.getType().getName(), key -> {
+            Class<?> clazz = valueDescriptor.getType();
+            ObjectNode schema = (ObjectNode)ValueUtil.getSchema(clazz);
 
-            for (ValueDescriptor field : ValueUtil.getValueDescriptors().values()) {
-                System.out.println(field);
-            }
-            for (Field field : MetaItemType.class.getFields()) {
-                Optional.of(field)
-                    .map(Field::getGenericType)
-                    .filter(ParameterizedType.class::isInstance)
-                    .map(ParameterizedType.class::cast)
-                    .map(ParameterizedType::getActualTypeArguments)
-                    .filter(args -> args.length > 0)
-                    .map(args -> args[0])
-                    .ifPresent(value -> {
-                        System.out.println(value);
+            if (valueDescriptor.isArray()) {
+                JsonNode title = schema.get("title");
+                JsonNode type = schema.remove("type");
+                JsonNode oneOf = schema.remove("oneOf");
+                JsonNode properties = schema.remove("properties");
 
-                        var f = ValueUtil.getValueDescriptors().values().stream().filter(v -> {
-//                            System.out.println("1: " + v.getType().getName());
-//                            System.out.println("2: " + value.getTypeName());
-//                            System.out.println("3: " + v.getType().getTypeName());
-                            // TODO: figure this out
-                            return v.getType().getName().equals(value.getTypeName().replaceAll("\\[\\]", ""));
-                        }).findFirst();
-                        if (f.isPresent()) {
-                            simpleClassNameToFQCNs.put(f.get().getName(), value.getTypeName());
-                        }
-                    });
+                ObjectNode item = ValueUtil.JSON.createObjectNode();
+                // item.put("title", "Value Constraint");
+                if (title != null && title.isTextual()) {
+                    schema.put("title", title.textValue() + "s");
+                    item.set("title", title);
+                }
+                if (type != null) {
+                    item.putPOJO("type", type);
+                }
+                if (oneOf != null) {
+                    item.putPOJO("oneOf", oneOf);
+                }
+                if (properties != null) {
+                    item.putPOJO("properties", properties);
+                }
+                return schema.put("type", "array").putPOJO("items", item);
             }
-        }
-        return simpleClassNameToFQCNs;
-    }
-
-    public JsonNode getConfigurationItemSchemas(String fqcn) throws ClassNotFoundException, RuntimeException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
-        Class<?> clazz = Class.forName(fqcn.replaceAll("\\[\\]", ""));
-        ObjectNode schema = (ObjectNode)ValueUtil.getSchema(clazz);
-
-        if (fqcn.contains("[]")) {
-            JsonNode title = schema.get("title");
-            JsonNode oneOf = schema.remove("oneOf");
-            JsonNode properties = schema.remove("properties");
-
-            ObjectNode item = ValueUtil.JSON.createObjectNode();
-            // item.put("title", "Value Constraint");
-            if (title != null) {
-                schema.put("title", title + "s");
-                item.set("title", title);
-            }
-            if (oneOf != null) {
-                item.putPOJO("oneOf", oneOf);
-            }
-            if (properties != null) {
-                item.putPOJO("properties", properties);
-            }
-            return schema.put("type", "array").putPOJO("items", item);
-        }
-        return schema;
+            return schema;
+        });
     }
 
     protected <T> T parse(String jsonString, Class<T> type) throws JsonProcessingException {

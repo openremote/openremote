@@ -26,20 +26,9 @@ import cz.habarta.typescript.generator.emitter.EmitterExtensionFeatures;
 import cz.habarta.typescript.generator.emitter.TsModel;
 import org.openremote.agent.protocol.AgentModelProvider;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.agent.AgentLink;
-import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.rules.Ruleset;
-import org.openremote.model.value.ForecastConfiguration;
 import org.openremote.model.value.MetaItemDescriptor;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueConstraint;
-import org.openremote.model.value.ValueFormat;
 
-import com.google.common.base.Optional;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
