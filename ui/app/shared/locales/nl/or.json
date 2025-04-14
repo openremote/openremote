@@ -110,6 +110,7 @@
   "rulesEditorAddGroup": "Groep",
   "rulesEditorAddAction": "Voeg actie toe",
   "rulesEditorDuration": "Tijdsduur (min)",
+  "rulesEditorAddDuration": "Voeg tijdsduur aan conditie toe",
   "sortBy": "Sorteren op",
   "assetType": "Asset type",
   "creationDate": "Aangemaakt op",

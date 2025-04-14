@@ -110,6 +110,7 @@
   "rulesEditorAddGroup": "Add group",
   "rulesEditorAddAction": "Add action",
   "rulesEditorDuration": "Duration (min)",
+  "rulesEditorAddDuration": "Add duration to condition",
   "sortBy": "Sort by",
   "assetType": "Asset type",
   "creationDate": "Creation date",
