@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------------------------------------------------
 #
-# CloudFormation Template for creating SSM Documents for attaching/detaching the EBS Data volume.
+# CloudFormation Template for creating SSM Documents for attaching/detaching the EBS data volume.
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -14,9 +14,6 @@ Resources:
             schemaVersion: '2.2'
             description: 'Script for detaching the EBS data volume'
             parameters:
-              InstanceId:
-                type: String
-                description: Instance ID where the script needs to be executed.
               VolumeId:
                 type: String
                 description: Volume ID that needs to be detached.
@@ -28,7 +25,7 @@ Resources:
                 action: aws:runShellScript
                 inputs:
                     runCommand:
-                      - systemctl stop docker
+                      - systemctl stop docker.socket docker.service
               - name: RemoveFstabEntry
                 action: aws:runShellScript
                 inputs:
@@ -94,7 +91,7 @@ Resources:
                 action: aws:runShellScript
                 inputs:
                   runCommand:
-                    - systemctl stop docker
+                    - systemctl stop docker.socket docker.service
               - name: AttachVolume
                 action: aws:runShellScript
                 inputs:
@@ -123,6 +120,15 @@ Resources:
                   runCommand: 
                     - |
                       FILESYSTEM=$(blkid -o value -s TYPE {{ DeviceName }})
+
+                      count=0
+                      while [[ -z "$FILESYSTEM" ]] && [ $count -lt 30 ]; do
+                        echo "Filesystem is currently not available .. Sleeping 30 seconds"
+                        sleep 30
+                        FILESYSTEM=$(blkid -o value -s TYPE {{ DeviceName }})
+                        count=$((count+1))
+                      done
+
                       if [ -z "$FILESYSTEM" ]; then
                         mkfs -t xfs {{ DeviceName }}
                         mount {{ DeviceName }} /var/lib/docker/volumes
@@ -146,7 +152,7 @@ Resources:
                 action: aws:runShellScript
                 inputs:
                     runCommand:
-                      - systemctl start docker
+                      - systemctl start docker.socket docker.service
          DocumentFormat: YAML
          TargetType: /AWS::EC2::Instance
          UpdateMethod: Replace
