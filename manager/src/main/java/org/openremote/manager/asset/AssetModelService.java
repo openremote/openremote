@@ -389,41 +389,46 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
 
     public Map<String, String> getSimpleClassNameToFQCN() {
         if (simpleClassNameToFQCNs.isEmpty()) {
-            Type[] types = (Type[]) Arrays.stream(MetaItemType.class.getFields())
-                .filter(f -> f.getType() == MetaItemDescriptor.class)
-                .map(field -> Optional.of(field)
+//            Optional<Type>[] types = (Optional<Type>[]) Arrays.stream(MetaItemType.class.getFields())
+//                .filter(f -> f.getType() == MetaItemDescriptor.class)
+//                .map(field -> Optional.of(field)
+//                    .map(Field::getGenericType)
+//                    .filter(ParameterizedType.class::isInstance)
+//                    .map(ParameterizedType.class::cast)
+//                    .map(ParameterizedType::getActualTypeArguments)
+//                    .filter(args -> args.length > 0)
+//                    .map(args -> args[0])
+//                ).toArray();
+
+            for (ValueDescriptor field : ValueUtil.getValueDescriptors().values()) {
+                System.out.println(field);
+            }
+            for (Field field : MetaItemType.class.getFields()) {
+                Optional.of(field)
                     .map(Field::getGenericType)
                     .filter(ParameterizedType.class::isInstance)
                     .map(ParameterizedType.class::cast)
                     .map(ParameterizedType::getActualTypeArguments)
                     .filter(args -> args.length > 0)
-                    .map(args -> args[0]).filter(Optional::isPresent)               
-                ).toArray();
+                    .map(args -> args[0])
+                    .ifPresent(value -> {
+                        System.out.println(value);
 
-
-            for (Type t : types) {
-                System.out.println(t);
-                System.out.println(ValueUtil.getMetaItemDescriptors());
-//                Class<?> c = t.getClass();
-//                ValueUtil.getMetaItemDescriptors().entrySet().stream().filter( f -> f.getValue() instanceof ).findFirst();
-//                var f = ValueUtil.getMetaItemDescriptors().values().stream().filter(f -> f.getType() == MetaItemDescriptor.class).findFirst(()d -> t instanceof d);
-//                if (f != null) {
-//                    simpleClassNameToFQCNs.put(metaItemDescriptor.getName(), type.getTypeName());
+                        var f = ValueUtil.getValueDescriptors().values().stream().filter(v -> {
+//                            System.out.println("1: " + v.getType().getName());
+//                            System.out.println("2: " + value.getTypeName());
+//                            System.out.println("3: " + v.getType().getTypeName());
+                            // TODO: figure this out
+                            return v.getType().getName().equals(value.getTypeName().replaceAll("\\[\\]", ""));
+                        }).findFirst();
+                        if (f.isPresent()) {
+                            simpleClassNameToFQCNs.put(f.get().getName(), value.getTypeName());
+                        }
+                    });
             }
-
-//            for (var metaItemDescriptor : ValueUtil.getMetaItemDescriptors().values()) {
-//                if (metaItemDescriptor)
-//                simpleClassNameToFQCNs.put(metaItemDescriptor.getName(), ""), type)
-//            }
         }
         return simpleClassNameToFQCNs;
     }
-
-    
-    // ValueUtil.getMetaItemDescriptors().values().forEach(metaItemDescriptor -> {
-    //     String metaName = metaItemDescriptor.getName();
-    //     otherMap.put(metaName.toUpperCase(Locale.ROOT), metaName);
-    // });
 
     public JsonNode getConfigurationItemSchemas(String fqcn) throws ClassNotFoundException, RuntimeException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
         Class<?> clazz = Class.forName(fqcn.replaceAll("\\[\\]", ""));

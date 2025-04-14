@@ -46,6 +46,8 @@ import { pageConfigurationProvider } from "./pages/page-configuration";
 import {pageAlarmsProvider} from "./pages/page-alarms";
 import { ManagerAppConfig } from "@openremote/model";
 import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
+import manager from "@openremote/core";
+import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 
 declare var MANAGER_URL: string | undefined;
 
@@ -60,6 +62,7 @@ type RootState = ReturnType<typeof rootReducer>;
 export const store = configureStore({
     reducer: rootReducer
 });
+
 
 const orApp = new OrApp(store);
 
@@ -142,6 +145,7 @@ fetch(configURL).then<ManagerAppConfig>(async (result) => {
     orApp.managerConfig = appConfig.manager;
 
     orApp.appConfigProvider = (manager) => {
+        manager.rest.api.AssetModelResource.getSimpleClassNameToFQCN().then(({ data }) => window['simpleClassNameToFQCN'] = data);
 
         // Build pages
         let pages: PageProvider<any>[] = [...DefaultPagesConfig];
