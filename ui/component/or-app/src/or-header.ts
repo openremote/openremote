@@ -427,7 +427,7 @@ export class OrHeader extends LitElement {
                     <div id="desktop-right">
                         <div id="alarm-btn">
                             <a class="menu-item" @click="${(e: MouseEvent) => router.navigate('alarms')}">
-                                <or-icon icon="${this.alarmButton}" style="color:var(${this.alarmColor})" title="${i18next.t("alarms")}"></or-icon>
+                                <or-icon icon="${this.alarmButton}" style="color:var(${this.alarmColor})" title="${i18next.t("alarm.alarm_plural")}"></or-icon>
                             </a>
                         </div>
                         ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}

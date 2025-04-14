@@ -607,13 +607,13 @@ export class OrDashboardBuilder extends LitElement {
                                 <div id="header-actions">
                                     <div id="header-actions-content">
                                         ${when(this.selectedDashboard, () => html`
-                                            <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${this.isLoading}" type="${InputType.BUTTON}" icon="refresh" title="${i18next.t("refresh")}"
+                                            <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${this.isLoading}" type="${InputType.BUTTON}" icon="refresh" title="${i18next.t("dashboard.refresh")}"
                                                           @or-mwc-input-changed="${() => { this.deselectWidget(); this.dashboardPreview?.refreshPreview(); }}">
                                             </or-mwc-input>
-                                            <or-mwc-input id="responsive-btn" class="small-btn" .disabled="${this.isLoading}" type="${InputType.BUTTON}" icon="responsive" title="${i18next.t("previewScreenSizes")}"
+                                            <or-mwc-input id="responsive-btn" class="small-btn" .disabled="${this.isLoading}" type="${InputType.BUTTON}" icon="responsive" title="${i18next.t("dashboard.previewScreenSizes")}"
                                                           @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('fullscreenToggle', { detail: !this.fullscreen })); }}">
                                             </or-mwc-input>
-                                            <or-mwc-input id="share-btn" class="small-btn" .disabled="${this.isLoading}" type="${InputType.BUTTON}" icon="open-in-new" title="${i18next.t("openInTab")}"
+                                            <or-mwc-input id="share-btn" class="small-btn" .disabled="${this.isLoading}" type="${InputType.BUTTON}" icon="open-in-new" title="${i18next.t("dashboard.openInNewTab")}"
                                                           @or-mwc-input-changed="${() => { this.openDashboardInInsights(); }}">
                                             </or-mwc-input>
                                             <or-mwc-input id="save-btn" ?hidden="${this._isReadonly() || !this._hasEditAccess()}" .disabled="${this.isLoading || !this.hasChanged}" type="${InputType.BUTTON}" raised label="save"
@@ -638,13 +638,13 @@ export class OrDashboardBuilder extends LitElement {
                                 <div id="fullscreen-header-actions">
                                     <div id="fullscreen-header-actions-content">
                                         ${when(this.selectedDashboard, () => html`
-                                            <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh" title="${i18next.t("refresh")}"
+                                            <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh" title="${i18next.t("dashboard.refresh")}"
                                                       @or-mwc-input-changed="${() => { this.deselectWidget(); this.dashboardPreview?.refreshPreview(); }}"
                                             ></or-mwc-input>
                                             <dashboard-refresh-controls .interval="${this.refreshInterval}" .readonly="${false}"
                                                                         @interval-select="${(ev: IntervalSelectEvent) => this.onIntervalSelect(ev)}"
                                             ></dashboard-refresh-controls>
-                                            <or-mwc-input id="share-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="open-in-new" title="${i18next.t("openInTab")}"
+                                            <or-mwc-input id="share-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="open-in-new" title="${i18next.t("dashboard.openInNewTab")}"
                                                           @or-mwc-input-changed="${() => { this.openDashboardInInsights(); }}"
                                             ></or-mwc-input>
                                             <or-mwc-input id="view-btn" class="hideMobile" ?hidden="${this.selectedDashboard == null || this._isReadonly() || !this._hasEditAccess()}" type="${InputType.BUTTON}" outlined icon="pencil" label="editAsset"

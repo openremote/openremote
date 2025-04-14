@@ -251,7 +251,7 @@ export class OrDashboardTree extends LitElement {
                                 this.selectDashboard(undefined);
                             }}"></or-mwc-input>
                             ${!this.readonly ? html`
-                                <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="content-duplicate" title="${i18next.t("duplicate")}"
+                                <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="content-copy" title="${i18next.t("duplicate")}"
                                               @or-mwc-input-changed="${() => {
                                                   this.duplicateDashboard(this.selected!);
                                               }}"
