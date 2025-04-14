@@ -898,7 +898,7 @@ Resources:
     DependsOn: EBSDataVolume
     Properties:
       ExecutionRoleArn: !Ref DLMExecutionRoleArn
-      Description: 'OpenRemote-Data'
+      Description: OpenRemote-Data
       State: ENABLED
       PolicyDetails:
         PolicyLanguage: STANDARD
