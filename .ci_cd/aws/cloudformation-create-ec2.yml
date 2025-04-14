@@ -895,6 +895,7 @@ Resources:
 
   DLMPolicy:
     Type: AWS::DLM::LifecyclePolicy
+    DependsOn: EBSDataVolume
     Properties:
       ExecutionRoleArn: !Ref DLMExecutionRoleArn
       Description: 'OpenRemote-Data'
