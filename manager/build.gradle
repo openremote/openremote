@@ -51,7 +51,7 @@ dependencies {
     }
 
     implementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
-    implementation "io.prometheus:simpleclient_httpserver:$prometheusVersion"
+    implementation "io.prometheus:prometheus-metrics-exporter-httpserver:$prometheusVersion"
 
     implementation "com.github.mwiede:jsch:$jSchVersion"
 }
