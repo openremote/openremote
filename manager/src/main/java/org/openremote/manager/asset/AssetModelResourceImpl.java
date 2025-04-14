@@ -30,10 +30,22 @@ import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import com.fasterxml.jackson.databind.JsonNode;
+
+import jakarta.ws.rs.NotFoundException;
+
+import static java.util.logging.Level.INFO;
+
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
 
 public class AssetModelResourceImpl extends ManagerWebResource implements AssetModelResource {
 
+    private static final Logger LOG = Logger.getLogger(AssetModelResourceImpl.class.getName());
     protected AssetModelService assetModelService;
 
     public AssetModelResourceImpl(TimerService timerService, ManagerIdentityService identityService, AssetModelService assetModelService) {
@@ -67,7 +79,17 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     }
 
     @Override
+    public Map<String, String> getSimpleClassNameToFQCN() {
+        return assetModelService.getSimpleClassNameToFQCN();
+    }
+
+    @Override
     public JsonNode getConfigurationItemSchemas(RequestParams requestParams, String item) {
-        return assetModelService.getConfigurationItemSchemas(item);
+        try {
+            return assetModelService.getConfigurationItemSchemas(item);
+        } catch (ClassNotFoundException | RuntimeException | IllegalAccessException | InstantiationException | InvocationTargetException | NoSuchMethodException e) {
+            LOG.log(Level.SEVERE, "Error: ", e);
+            throw new WebApplicationException(Response.Status.NO_CONTENT);
+        }
     }
 }

@@ -103,6 +103,12 @@ public interface AssetModelResource {
     Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
 
     @GET
+    @Path("getSimpleClassNameToFQCN")
+    @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getSimpleClassNameToFQCN", summary = "Retrieve the fqcn map.")
+    Map<String, String> getSimpleClassNameToFQCN();
+
+    @GET
     @Path("getItemSchemas")
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getItemSchemas", summary = "Retrieve the available configuration item JSON Schemas.")

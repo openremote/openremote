@@ -18,7 +18,7 @@ import {
     WellknownValueTypes,
     AssetModelUtil,
     ClientRole,
-    ValueConstraint
+    ValueConstraint,
 } from "@openremote/model";
 import manager, {subscribe, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -125,6 +125,22 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
     const disabled = !!(options && options.disabled);
     const readonly = !!(options && options.readonly);
     const label = options.label;
+
+    // TODO: map WellknownValueTypes to the classes 
+    // const d = {'agentLink': "test"}[WellknownValueTypes.AGENTLINK];
+    // on the backend create an endpoint that sends over an object (later this could be builtin initial page load)
+    // then use that map to index. it should contain the 
+
+    manager.rest.api.AssetModelResource.getSimpleClassNameToFQCN().then(({ data }) => {
+      console.log(data)
+      console.log(valueDescriptor.name?.toUpperCase())
+      console.log(data?.[valueDescriptor.name!.toUpperCase()])
+      // manager.rest.api.AssetModelResource.getConfigurationItemSchemas({ item: data[WellknownMetaItems[valueDescriptor.name!]] }).then(console.log)
+    }).catch()
+    // if (simpleFQCNMap) {
+      // console.log(simpleFQCNMap)
+      // manager.rest.api.AssetModelResource.getConfigurationItemSchemas({ item: simpleFQCNMap[WellknownMetaItems[valueDescriptor.name!]] }).then(console.log)
+    // }
 
     // Agent link needs some special handling as we need an agent picker no matter what
     if (valueDescriptor.name === WellknownValueTypes.AGENTLINK) {
@@ -513,6 +529,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     protected _sendError = false;
     protected _attributeDescriptor?: AttributeDescriptor;
     protected _valueDescriptor?: ValueDescriptor;
+    protected _simpleFQCNMap?: Record<string, string>;
 
     public disconnectedCallback() {
         super.disconnectedCallback();
@@ -522,6 +539,10 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     langChangedCallback = () => {
         this._updateTemplate();
         this.requestUpdate();
+    }
+
+    public async firstUpdated(): Promise<void> {
+      this._simpleFQCNMap = (await manager.rest.api.AssetModelResource.getSimpleClassNameToFQCN()).data
     }
 
     public shouldUpdate(_changedProperties: PropertyValues): boolean {
