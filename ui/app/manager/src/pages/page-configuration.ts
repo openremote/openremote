@@ -428,7 +428,6 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         this.mapConfig.sources.vector_tiles = {
             type: "vector",
             ...(e.detail.value ? { tiles: [e.detail.value], custom: true } : {}),
-            custom: true
         }
         this.mapConfigChanged = true;
     }
