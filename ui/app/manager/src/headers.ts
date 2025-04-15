@@ -41,7 +41,8 @@ export function headerItemServices<S extends AppStateKeyed, A extends AnyAction>
     return {
         icon: "puzzle",
         href: "services",
-        text: "Services"
+        text: "Services",
+        roles: () => !manager.hasRealmRole("restricted_user")
     };
 }
 

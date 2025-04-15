@@ -80,7 +80,8 @@ export class PageServices extends Page<AppStateKeyed> {
 
         return html`
             <div class="sidebar-placeholder"></div>
-            <iframe src="http://localhost:8001/${this.realmName}/configs">hello</iframe>
+            <!-- Hardcoded for testing -->
+            <iframe src="https://test3.openremote.app/services/ml-forecast/service/${this.realmName}/configs">hello</iframe>
         `;
     }
 }
