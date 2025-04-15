@@ -218,7 +218,6 @@ public class DashboardQuery implements Serializable {
         this.select = new Select();
         this.conditions = new Conditions();
         this.start = 0;
-        this.limit = 50;
     }
 
     public DashboardQuery select(Select select) {
@@ -268,5 +267,37 @@ public class DashboardQuery implements Serializable {
     public DashboardQuery limit(Integer limit) {
         this.limit = limit;
         return this;
+    }
+
+    public Select getSelect() {
+        return select;
+    }
+
+    public Conditions getConditions() {
+        return conditions;
+    }
+
+    public String[] getIds() {
+        return ids;
+    }
+
+    public StringPredicate[] getNames() {
+        return names;
+    }
+
+    public String[] getUserIds() {
+        return userIds;
+    }
+
+    public RealmPredicate getRealm() {
+        return realm;
+    }
+
+    public Integer getStart() {
+        return start;
+    }
+
+    public Integer getLimit() {
+        return limit;
     }
 }

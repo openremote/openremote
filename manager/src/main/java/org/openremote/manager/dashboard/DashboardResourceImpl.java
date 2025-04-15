@@ -162,18 +162,18 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
      */
     protected DashboardQuery sanitizeDashboardQuery(DashboardQuery query) {
         Set<DashboardAccess> userAccess = new HashSet<>(Set.of(
-                Optional.ofNullable(query.conditions.getDashboard().getAccess()).orElse(new DashboardAccess[0])
+                Optional.ofNullable(query.getConditions().getDashboard().getAccess()).orElse(new DashboardAccess[0])
         ));
         Set<DashboardQuery.AssetAccess> assetAccess = new HashSet<>(Set.of(
-                Optional.ofNullable(query.conditions.getAsset().getAccess()).orElse(new DashboardQuery.AssetAccess[0])
+                Optional.ofNullable(query.getConditions().getAsset().getAccess()).orElse(new DashboardQuery.AssetAccess[0])
         ));
 
-        if(query.realm == null || query.realm.name == null) {
+        if(query.getRealm() == null || query.getRealm().name == null) {
             query.realm(new RealmPredicate(getRequestRealmName()));
         }
 
         // Detect cross realm access
-        if(isAuthenticated() && !isSuperUser() && !query.realm.name.equals(getAuthenticatedRealmName())) {
+        if(isAuthenticated() && !isSuperUser() && !query.getRealm().name.equals(getAuthenticatedRealmName())) {
             throw new WebApplicationException(FORBIDDEN);
         }
 

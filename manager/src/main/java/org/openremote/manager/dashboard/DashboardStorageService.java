@@ -90,24 +90,27 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      */
     @SuppressWarnings({"unchecked", "SqlSourceToSinkFlow"})
     protected Dashboard[] query(DashboardQuery dashboardQuery, String userId) {
+        if(dashboardQuery.getRealm() == null) {
+            return new Dashboard[0];
+        }
 
         StringBuilder sql = new StringBuilder("SELECT * FROM Dashboard WHERE realm LIKE :realm");
         Map<String, Object> parameters = new HashMap<>();
-        parameters.put("realm", dashboardQuery.realm.name);
+        parameters.put("realm", dashboardQuery.getRealm().name);
 
-        if(dashboardQuery.ids != null) {
+        if(dashboardQuery.getIds() != null) {
             this.appendSqlIdFilter(sql, dashboardQuery, parameters);
         }
-        if(dashboardQuery.names != null) {
+        if(dashboardQuery.getNames() != null) {
             this.appendSqlNamesFilter(sql, dashboardQuery, parameters);
         }
-        if(dashboardQuery.userIds != null) {
+        if(dashboardQuery.getUserIds() != null) {
             this.appendSqlUserIdsFilter(sql, dashboardQuery, parameters);
         }
-        if(dashboardQuery.conditions.getDashboard() != null) {
+        if(dashboardQuery.getConditions().getDashboard() != null) {
             this.appendSqlDashboardConditionsFilter(sql, dashboardQuery, parameters, userId);
         }
-        if(dashboardQuery.conditions.getAsset() != null) {
+        if(dashboardQuery.getConditions().getAsset() != null) {
             this.appendSqlAssetConditionsFilter(sql, dashboardQuery, parameters, userId);
         }
 
@@ -140,7 +143,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      */
     protected StringBuilder appendSqlIdFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams) {
         sqlBuilder.append(" AND id IN (:ids)");
-        sqlParams.put("ids", List.of(query.ids));
+        sqlParams.put("ids", List.of(Optional.ofNullable(query.getIds()).orElse(new String[0])));
         return sqlBuilder;
     }
 
@@ -150,9 +153,9 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      * @return {@link StringBuilder} used for building
      */
     protected StringBuilder appendSqlNamesFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams) {
-        IntStream.range(0, query.names.length).forEach(index -> {
+        IntStream.range(0, query.getNames().length).forEach(index -> {
             String key = "name" + index;
-            StringPredicate pred = query.names[index];
+            StringPredicate pred = query.getNames()[index];
             sqlBuilder.append(" AND ").append(pred.caseSensitive ? "display_name" : "UPPER(display_name)").append(pred.negate ? " NOT" : "");
             switch (pred.match) {
                 case BEGIN -> sqlBuilder.append(" LIKE :").append(key).append(" || '%'");
@@ -167,7 +170,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
 
     protected StringBuilder appendSqlUserIdsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams) {
         sqlBuilder.append(" AND owner_id IN (:ownerIds)");
-        sqlParams.put("ownerIds", List.of(query.userIds));
+        sqlParams.put("ownerIds", List.of(Optional.ofNullable(query.getUserIds()).orElse(new String[0])));
         return sqlBuilder;
     }
 
@@ -177,7 +180,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      * @return {@link StringBuilder} used for building
      */
     protected StringBuilder appendSqlDashboardConditionsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams, String userId) {
-        var dashboardConditions = query.conditions.getDashboard();
+        var dashboardConditions = query.getConditions().getDashboard();
         if(dashboardConditions.getAccess() != null) {
 
             List<DashboardAccess> access = new ArrayList<>(Arrays.asList(dashboardConditions.getAccess()));
@@ -209,13 +212,13 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      * @return {@link StringBuilder} used for building
      */
     protected StringBuilder appendSqlAssetConditionsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams, String userId) {
-        var assetConditions = query.conditions.getAsset();
+        var assetConditions = query.getConditions().getAsset();
         if(assetConditions.getAccess() != null) {
             List<DashboardQuery.AssetAccess> levels = Arrays.asList(Optional.ofNullable(assetConditions.getAccess()).orElse(new DashboardQuery.AssetAccess[0]));
             if (levels.size() == 1 && levels.contains(DashboardQuery.AssetAccess.RESTRICTED)) {
 
                 // Gather asset ids the user is linked to
-                List<UserAssetLink> userAssetLinks = assetStorageService.findUserAssetLinks(query.realm.name, userId, null);
+                List<UserAssetLink> userAssetLinks = assetStorageService.findUserAssetLinks(query.getRealm().name, userId, null);
                 List<String> assetIds = userAssetLinks.stream().map(ua -> ua.getId().getAssetId()).collect(Collectors.toList());
 
                 // AT_LEAST_ONE - When user has access to the assets of at least 1 widget
