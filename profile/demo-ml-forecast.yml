@@ -48,6 +48,7 @@ services:
       - "127.0.0.1:8404:8404" # Localhost metrics access
     volumes:
       - proxy-data:/deployment
+      - deployment-data:/data
     environment:
       LE_EMAIL: ${OR_EMAIL_FROM:-}
       DOMAINNAME: ${OR_HOSTNAME:-localhost}
@@ -121,8 +122,8 @@ services:
     environment:
       ML_LOG_LEVEL: INFO
       ML_ENVIRONMENT: production
-      ML_OR_URL: ${OR_HOSTNAME:-localhost}
-      ML_OR_KEYCLOAK_URL: ${OR_HOSTNAME:-localhost}
+      ML_OR_URL: http://${OR_HOSTNAME:-localhost}
+      ML_OR_KEYCLOAK_URL: http://${OR_HOSTNAME:-localhost}
       ML_OR_SERVICE_USER: mlserviceuser
       ML_OR_SERVICE_USER_SECRET: ${ML_OR_SERVICE_USER_SECRET:-secret}
     volumes:
