@@ -424,7 +424,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         feature: {
                             dataView: {readOnly: true},
                             saveAsImage: {
-                                name: ['History', this.assetId, this.attribute?.name, `${new Date(this._startOfPeriod!)} - ${new Date(this._endOfPeriod!)}`]
+                                name: ['History', this.assetId, this.attribute?.name, `${moment(this._startOfPeriod).format("DD-MM-YYYY HH:mm")} - ${moment(this._endOfPeriod).format("DD-MM-YYYY HH:mm")}`]
                                     .filter(Boolean)
                                     .join(' ')
                             },
@@ -877,7 +877,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _onZoomChange(params: any) {
         if (!this._zoomReset) {
             this._zoomChanged = true;
-            console.log('onZoomChange');
             const {start: zoomStartPercentage, end: zoomEndPercentage} = params.batch?.[0] ?? params; // Events triggered by scroll and zoombar return different structures
             //Define the start and end of the period based on the zoomed area
             this._queryStartOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomStartPercentage / 100);
