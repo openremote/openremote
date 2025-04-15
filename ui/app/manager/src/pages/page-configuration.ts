@@ -305,6 +305,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             ${when(this.loading, () => html`
                 <or-loading-indicator></or-loading-indicator>
             `, () => {
+                const saveDisabled = !this.managerConfigurationChanged && !this.mapConfigChanged && !this.tilesForUpload && !this.tilesForDeletion;
                 const realmHeading = html`
                     <div id="heading" style="justify-content: space-between;">
                         <span style="margin: 0;"><or-translate style="text-transform: uppercase;" value="configuration.realmStyling"></or-translate></span>
@@ -331,7 +332,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 <or-translate value="appearance"></or-translate>
                             </div>
                             <div id="header-actions">
-                                <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged && !this.mapConfigChanged && !this.tilesForUpload && !this.tilesForDeletion}" raised type="button" label="save"
+                                <or-mwc-input id="save-btn" .disabled="${saveDisabled}" raised type="button" label="save"
                                               @or-mwc-input-changed="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
                                 ></or-mwc-input>
                             </div>
