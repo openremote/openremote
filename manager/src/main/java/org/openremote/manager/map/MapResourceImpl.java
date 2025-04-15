@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.sql.SQLException;
-import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,7 +33,6 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.manager.MapConfig;
 import org.openremote.model.map.MapResource;
-import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;

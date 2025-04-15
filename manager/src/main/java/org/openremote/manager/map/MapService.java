@@ -37,7 +37,6 @@ import org.openremote.model.manager.MapSourceConfig;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
