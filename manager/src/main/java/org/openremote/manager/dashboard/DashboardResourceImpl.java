@@ -34,8 +34,8 @@ import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
 
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -91,7 +91,7 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
         if(query == null) {
             query = this.createDashboardQuery(getRequestRealmName());
         } else {
-            query = this.fixDashboardQuery(query);
+            query = this.sanitizeDashboardQuery(query);
         }
 
         return dashboardStorageService.query(query, getUserId());
@@ -160,9 +160,13 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
      * @param query The query to correct
      * @return A DashboardQuery with the correct permissions based on the user.
      */
-    protected DashboardQuery fixDashboardQuery(DashboardQuery query) {
-        Set<DashboardAccess> userAccess = new HashSet<>(Set.of(query.conditions.getDashboard().getAccess()));
-        Set<DashboardQuery.AssetAccess> assetAccess = new HashSet<>(Set.of(query.conditions.getAsset().getAccess()));
+    protected DashboardQuery sanitizeDashboardQuery(DashboardQuery query) {
+        Set<DashboardAccess> userAccess = new HashSet<>(Set.of(
+                Optional.ofNullable(query.conditions.getDashboard().getAccess()).orElse(new DashboardAccess[0])
+        ));
+        Set<DashboardQuery.AssetAccess> assetAccess = new HashSet<>(Set.of(
+                Optional.ofNullable(query.conditions.getAsset().getAccess()).orElse(new DashboardQuery.AssetAccess[0])
+        ));
 
         if(query.realm == null || query.realm.name == null) {
             query.realm(new RealmPredicate(getRequestRealmName()));
@@ -216,6 +220,6 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
         if(realm == null) {
             realm = getRequestRealmName();
         }
-        return this.fixDashboardQuery(new DashboardQuery().realm(new RealmPredicate(realm)));
+        return this.sanitizeDashboardQuery(new DashboardQuery().realm(new RealmPredicate(realm)));
     }
 }

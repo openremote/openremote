@@ -50,12 +50,18 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
                 "testuser1",
                 "testuser1"
         ).token
+        def smartcityUserAccessToken = authenticate(
+                container,
+                keycloakTestSetup.realmCity.name,
+                KEYCLOAK_CLIENT_ID,
+                "smartcity",
+                "smartcity"
+        ).token
 
         and: "the admin user has been retrieved"
         def serverUri = serverUri(serverPort)
         def adminUserResource = getClientApiTarget(serverUri, MASTER_REALM, adminUserAccessToken).proxy(UserResource)
         def adminUser = adminUserResource.getCurrent(null)
-        def testUser1 = adminUserResource.query(null, new UserQuery().usernames(new StringPredicate("testuser1")))[0]
 
         and: "an additional user without READ_INSIGHTS is created"
         ClientRole[] noInsightsRoles = new ClientRole[] { ClientRole.READ_ASSETS }
@@ -78,6 +84,7 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         def readonlyDashboardResource = getClientApiTarget(serverUri, MASTER_REALM, readonlyUserToken).proxy(DashboardResource.class)
         def alternativeUserDashboardResource = getClientApiTarget(serverUri, MASTER_REALM, alternativeUserToken).proxy(DashboardResource.class)
         def publicUserDashboardResource = getClientApiTarget(serverUri, MASTER_REALM).proxy(DashboardResource.class)
+        def smartcityDashboardResource = getClientApiTarget(serverUri, keycloakTestSetup.realmCity.name, smartcityUserAccessToken).proxy(DashboardResource.class)
         def adminUserAssetResource = getClientApiTarget(serverUri, MASTER_REALM, adminUserAccessToken).proxy(AssetResource.class)
 
         /* ----------------------- */
@@ -128,45 +135,54 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
 
         when: "admin user tries to query dashboard by display name"
         def displayNameQuery = new DashboardQuery().names("dashboard1")
-        def displayNameDashboards = adminUserDashboardResource.query(null, displayNameQuery)
+        def dashboards = adminUserDashboardResource.query(null, displayNameQuery)
 
         then: "the correct dashboard should be returned"
-        assert displayNameDashboards.length == 1
-        assert displayNameDashboards[0].displayName == "dashboard1"
-        assert displayNameDashboards[0].access == DashboardAccess.SHARED
+        assert dashboards.length == 1
+        assert dashboards[0].displayName == "dashboard1"
+        assert dashboards[0].access == DashboardAccess.SHARED
 
         when: "a user without READ_INSIGHTS tries to query dashboard by display name"
-        def displayNameNoAccessDashboards = noAccessDashboardResource.query(null, displayNameQuery)
+        dashboards = noAccessDashboardResource.query(null, displayNameQuery)
 
         then: "no dashboards with the display name could be found"
-        assert displayNameNoAccessDashboards.length == 0
+        assert dashboards.length == 0
 
         when: "an unauthenticated user tries to query dashboard by display name"
-        def displayNamePublicDashboards = publicUserDashboardResource.query(null, displayNameQuery)
+        dashboards = publicUserDashboardResource.query(null, displayNameQuery)
 
         then: "no public dashboards with the display name could be found"
-        assert displayNamePublicDashboards.length == 0
+        assert dashboards.length == 0
 
         /* ----------------------- */
 
         // Test to verify access logic
 
+        when: "dashboard1 is shared, and updated from a different realm"
+        privateUser1Dashboard.setDisplayName("New displayname")
+        smartcityDashboardResource.update(null, privateUser1Dashboard)
+
+        then: "an forbidden exception is thrown for not having cross-realm access"
+        thrown ForbiddenException
+
         when: "dashboard1 is shared, and updated by a different user"
-        privateUser1Dashboard.displayName = "New displayname"
         alternativeUserDashboardResource.update(null, privateUser1Dashboard)
 
         then: "updating the dashboard succeeds as it is shared across the realm"
         def alternativeUpdatedDashboard = alternativeUserDashboardResource.get(null, MASTER_REALM, privateUser1Dashboard.id)
-        assert alternativeUpdatedDashboard.displayName == "New displayname"
+        assert alternativeUpdatedDashboard.setDisplayName("New displayname 2")
 
         /* ----------- */
 
         when: "dashboard1 is made 'private' by its original owner"
         privateUser1Dashboard.setAccess(DashboardAccess.PRIVATE)
-        assert privateUser1DashboardResource.update(null, privateUser1Dashboard) != null
+        privateUser1Dashboard = privateUser1DashboardResource.update(null, privateUser1Dashboard)
+        assert privateUser1Dashboard != null
+
+        and: "all dashboards of the original owner are retrieved"
+        dashboards = privateUser1DashboardResource.getAllRealmDashboards(null, MASTER_REALM)
 
         then: "dashboard1 is actually private"
-        def dashboards = privateUser1DashboardResource.getAllRealmDashboards(null, MASTER_REALM)
         assert dashboards.length == 2
         assert dashboards.find((d) -> d.id == privateUser1Dashboard.id).access == DashboardAccess.PRIVATE
 
@@ -174,7 +190,7 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
 
         when: "the original owner of dashboard1 has been changed to a user without READ_INSIGHTS and WRITE_INSIGHTS role"
         privateUser1Dashboard.setOwnerId(noAccessUser.id)
-        adminUserDashboardResource.update(null, privateUser1Dashboard)
+        privateUser1Dashboard = adminUserDashboardResource.update(null, privateUser1Dashboard)
 
         and: "the user without READ_INSIGHTS and WRITE_INSIGHTS tries to retrieve their personal dashboard"
         noAccessDashboardResource.get(null, MASTER_REALM, privateUser1Dashboard.id)
@@ -186,7 +202,7 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
 
         when: "the first dashboard cannot be edited by a different user, even if its admin user"
         privateUser1Dashboard.setDisplayName("another displayname")
-        adminUserDashboardResource.update(null, privateUser1Dashboard)
+        privateUser1Dashboard = adminUserDashboardResource.update(null, privateUser1Dashboard)
 
         then: "it should throw exception"
         thrown NotFoundException

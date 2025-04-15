@@ -91,39 +91,39 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
     @SuppressWarnings({"unchecked", "SqlSourceToSinkFlow"})
     protected Dashboard[] query(DashboardQuery dashboardQuery, String userId) {
 
+        StringBuilder sql = new StringBuilder("SELECT * FROM Dashboard WHERE realm LIKE :realm");
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("realm", dashboardQuery.realm.name);
+
+        if(dashboardQuery.ids != null) {
+            this.appendSqlIdFilter(sql, dashboardQuery, parameters);
+        }
+        if(dashboardQuery.names != null) {
+            this.appendSqlNamesFilter(sql, dashboardQuery, parameters);
+        }
+        if(dashboardQuery.userIds != null) {
+            this.appendSqlUserIdsFilter(sql, dashboardQuery, parameters);
+        }
+        if(dashboardQuery.conditions.getDashboard() != null) {
+            this.appendSqlDashboardConditionsFilter(sql, dashboardQuery, parameters, userId);
+        }
+        if(dashboardQuery.conditions.getAsset() != null) {
+            this.appendSqlAssetConditionsFilter(sql, dashboardQuery, parameters, userId);
+        }
+
+        /** TODO: Implement SELECT filtering {@link org.openremote.model.query.DashboardQuery.Select} */
+
+        // Apply pagination
+        if(dashboardQuery.start != null) {
+            sql.append(" OFFSET :start");
+            parameters.put("start", dashboardQuery.start);
+        }
+        if(dashboardQuery.limit != null) {
+            sql.append(" LIMIT :limit");
+            parameters.put("limit", dashboardQuery.limit);
+        }
+
         return (Dashboard[]) persistenceService.doReturningTransaction((em) -> {
-
-            StringBuilder sql = new StringBuilder("SELECT * FROM Dashboard WHERE realm LIKE :realm");
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put("realm", dashboardQuery.realm.name);
-
-            if(dashboardQuery.ids != null) {
-                this.appendSqlIdFilter(sql, dashboardQuery, parameters);
-            }
-            if(dashboardQuery.names != null) {
-                this.appendSqlNamesFilter(sql, dashboardQuery, parameters);
-            }
-            if(dashboardQuery.userIds != null) {
-                this.appendSqlUserIdsFilter(sql, dashboardQuery, parameters);
-            }
-            if(dashboardQuery.conditions.getDashboard() != null) {
-                this.appendSqlDashboardConditionsFilter(sql, dashboardQuery, parameters, userId);
-            }
-            if(dashboardQuery.conditions.getAsset() != null) {
-                this.appendSqlAssetConditionsFilter(sql, dashboardQuery, parameters, userId);
-            }
-
-            /** TODO: Implement SELECT filtering {@link org.openremote.model.query.DashboardQuery.Select} */
-
-            // Apply pagination
-            if(dashboardQuery.start != null) {
-                sql.append(" OFFSET :start");
-                parameters.put("start", dashboardQuery.start);
-            }
-            if(dashboardQuery.limit != null) {
-                sql.append(" LIMIT :limit");
-                parameters.put("limit", dashboardQuery.limit);
-            }
 
             // Create query object and apply parameters
             Query query = em.createNativeQuery(sql.toString(), Dashboard.class);
@@ -210,8 +210,8 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      */
     protected StringBuilder appendSqlAssetConditionsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams, String userId) {
         var assetConditions = query.conditions.getAsset();
-        if(assetConditions.access != null) {
-            List<DashboardQuery.AssetAccess> levels = Arrays.asList(assetConditions.access);
+        if(assetConditions.getAccess() != null) {
+            List<DashboardQuery.AssetAccess> levels = Arrays.asList(Optional.ofNullable(assetConditions.getAccess()).orElse(new DashboardQuery.AssetAccess[0]));
             if (levels.size() == 1 && levels.contains(DashboardQuery.AssetAccess.RESTRICTED)) {
 
                 // Gather asset ids the user is linked to
@@ -219,14 +219,14 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
                 List<String> assetIds = userAssetLinks.stream().map(ua -> ua.getId().getAssetId()).collect(Collectors.toList());
 
                 // AT_LEAST_ONE - When user has access to the assets of at least 1 widget
-                if(assetConditions.minAmount == DashboardQuery.ConditionMinAmount.AT_LEAST_ONE) {
+                if(assetConditions.getMinAmount() == DashboardQuery.ConditionMinAmount.AT_LEAST_ONE) {
                     sqlBuilder.append(" AND (template IS NULL OR template->'widgets' IS NULL OR EXISTS (");
                     sqlBuilder.append("SELECT 1 FROM jsonb_array_elements(COALESCE(template->'widgets', '[]')) AS j(widget) ");
                     sqlBuilder.append("LEFT JOIN jsonb_array_elements(COALESCE(widget->'widgetConfig'->'attributeRefs', '[]')) AS a(attributeRef) ");
                     sqlBuilder.append("ON a->>'id' IN (:assetIds)))");
                 }
                 // ALL - User needs access to the assets of ALL widgets (or the dashboard has no widgets)
-                else if(assetConditions.minAmount == DashboardQuery.ConditionMinAmount.ALL) {
+                else if(assetConditions.getMinAmount() == DashboardQuery.ConditionMinAmount.ALL) {
                     sqlBuilder.append(" AND NOT EXISTS (");
                     sqlBuilder.append("SELECT 1 FROM jsonb_array_elements(template->'widgets') AS j(widget), ");
                     sqlBuilder.append("jsonb_array_elements(widget->'widgetConfig'->'attributeRefs') AS a(attributeRef) ");
@@ -294,7 +294,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         if(dashboards != null && dashboards.length > 0) {
             Dashboard d = dashboards[0];
             return persistenceService.doReturningTransaction(em -> {
-                dashboard.setVersion(d.getVersion());
+                dashboard.setVersion(d.getVersion()); // TODO: Investigate why versioning is not correct for Dashboard model
                 return em.merge(dashboard);
             });
         } else {
