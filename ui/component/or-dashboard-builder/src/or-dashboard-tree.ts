@@ -247,16 +247,16 @@ export class OrDashboardTree extends LitElement {
                 ${this.showControls ? html`
                     <div id="header-btns">
                         ${this.selected != null ? html`
-                            <or-mwc-input type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => {
+                            <or-mwc-input type="${InputType.BUTTON}" icon="close" title="${i18next.t("deselect")}" @or-mwc-input-changed="${() => {
                                 this.selectDashboard(undefined);
                             }}"></or-mwc-input>
                             ${!this.readonly ? html`
-                                <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="content-copy"
+                                <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="content-copy" title="${i18next.t("duplicate")}"
                                               @or-mwc-input-changed="${() => {
                                                   this.duplicateDashboard(this.selected!);
                                               }}"
                                 ></or-mwc-input>
-                                <or-mwc-input type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => {
+                                <or-mwc-input type="${InputType.BUTTON}" icon="delete" title="${i18next.t("delete")}" @or-mwc-input-changed="${() => {
                                     if (this.selected != null) {
                                         showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deletePermanentWarning', {dashboard: this.selected.displayName}), i18next.t('delete')).then((ok: boolean) => {
                                             if (ok) {
@@ -268,7 +268,7 @@ export class OrDashboardTree extends LitElement {
                             ` : undefined}
                         ` : undefined}
                         ${!this.readonly ? html`
-                            <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="plus"
+                            <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="plus" title="${i18next.t("addInsights")}"
                                           @or-mwc-input-changed="${() => {
                                               this.createDashboard(DashboardSizeOption.DESKTOP);
                                           }}"
