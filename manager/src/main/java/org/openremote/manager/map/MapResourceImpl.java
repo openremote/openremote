@@ -110,10 +110,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
 
     @Override
     public ObjectNode getCustomMapInfo() {
-        return ValueUtil.JSON
-            .createObjectNode()
-            .put("limit", mapService.customMapLimit)
-            .put("filename", Optional.ofNullable(mapService.getCustomMapDataPath()).map(Path::getFileName).map(Object::toString).orElse(null));
+        return mapService.getCustomMapInfo();
     }
 
     @Override

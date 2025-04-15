@@ -241,7 +241,7 @@ public class MapService implements ContainerService {
             LOG.log(Level.WARNING, "Could not close connection", e);
         }
 
-        Path customMapTilesPath = getCustomMapDataPath();
+        Path customMapTilesPath = configurationService.getCustomMapTilesPath();
         if (customMapTilesPath != null) {
             if (delete) {
                 try {
@@ -455,7 +455,7 @@ public class MapService implements ContainerService {
     }
 
     public boolean saveUploadedFile(Path path, InputStream fileInputStream) {
-        Path previous = getCustomMapDataPath();
+        Path previous = configurationService.getCustomMapTilesPath();
 
         try (OutputStream outputStream = Files.newOutputStream(path)) {
             byte[] buffer = new byte[4096];
@@ -535,30 +535,44 @@ public class MapService implements ContainerService {
     }
 
     /**
-     * The filename resolves to a path, when the file ends with {@code .mbtiles} and does not equal {@code configurationService.getMapTilesPath()}.
+     * The filename resolves to the parent directory of {@code configurationService.getCustomMapTilesPath()} or to the
+     * directory returned by {@code configurationService.getCustomMapTilesParent()} if no custom tiles previously existed,
+     * when the file ends with {@code .mbtiles} and does not equal {@code configurationService.getMapTilesPath()}.
      * Otherwise, returns {@code null}.
      */
     public Path resolveCustomTilesPath(String filename) {
         Path mapTilesPath = configurationService.getMapTilesPath();
-        if (!filename.endsWith(".mbtiles") || filename.equals(mapTilesPath.toString())) {
+        // Prevent overriding the default map tiles
+        if (!filename.endsWith(".mbtiles") || filename.equals(mapTilesPath.getFileName().toString())) {
             return null;
         }
-        return mapTilesPath.getParent().resolve(filename);
+        Path customMaptTilesPath = configurationService.getCustomMapTilesPath();
+        if (customMaptTilesPath == null) {
+            Path parent = configurationService.getCustomMapTilesParent();
+            if (parent == null) {
+                return null;
+            }
+            try {
+                if (!Files.exists(parent)) Files.createDirectories(parent);
+            } catch (IOException e) {
+                LOG.log(Level.SEVERE, "Could not create parent directory for custom tiles", e);
+                return null;
+            }
+            return parent.resolve(filename);
+        }
+        return configurationService.getCustomMapTilesPath().getParent().resolve(filename);
     }
 
-    /**
-     * Gets the first matching map tiles path that doesn't match {@code configurationService.getMapTilesPath()}
-     */
-    public Path getCustomMapDataPath() {
-        Path mapTilesPath = configurationService.getMapTilesPath();
-        File parent = configurationService.getMapTilesPath().getParent().toFile();
-        if (parent.isDirectory()) {
-            File[] matchingFiles = parent.listFiles((dir, name) -> !name.equals(mapTilesPath.getFileName().toString()) && name.endsWith(".mbtiles"));
-            if (matchingFiles != null && matchingFiles.length != 0) {
-                return matchingFiles[0].toPath();
-            }
-        }
-        return null;
+    public ObjectNode getCustomMapInfo() {
+        return ValueUtil.JSON
+            .createObjectNode()
+            .put("limit", this.customMapLimit)
+            .put("filename",
+                Optional.ofNullable(configurationService.getCustomMapTilesPath())
+                    .map(Path::getFileName)
+                    .map(Object::toString)
+                    .orElse(null)
+            );
     }
 
     /**

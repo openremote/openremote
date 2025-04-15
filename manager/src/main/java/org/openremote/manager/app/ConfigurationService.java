@@ -110,6 +110,10 @@ public class ConfigurationService implements ContainerService {
         LOG.info("\t- manager_config.json: " + managerConfigPath);
         LOG.info("\t- mapsettings.json: " + mapSettingsPath);
         LOG.info("\t- mapdata.mbtiles: " + mapTilesPath);
+        Path customMapTilesPath = getCustomMapTilesPath();
+        if (customMapTilesPath != null) {
+            LOG.info("\t- " + customMapTilesPath.getFileName() + ": " + customMapTilesPath);
+        }
     }
 
     @Override
@@ -162,6 +166,28 @@ public class ConfigurationService implements ContainerService {
 
     public Path getMapTilesPath() {
         return mapTilesPath;
+    }
+
+    public Path getCustomMapTilesParent() {
+        return Optional.of(getPersistedCustomTilesPath().toString())
+            .map(Path::of)
+            .map(Path::toAbsolutePath)
+            .orElse(null);
+    }
+
+    public Path getCustomMapTilesPath() {
+        return Optional.of(getPersistedCustomTilesPath().toString())
+            .map(Path::of)
+            .map(Path::toAbsolutePath)
+            .map(path -> {
+                File[] matchingFiles = path.toFile().listFiles((dir, name) -> name.endsWith(".mbtiles") && !name.equals(this.mapTilesPath.getFileName().toString()));
+                if (matchingFiles != null && matchingFiles.length != 0) {
+                    return matchingFiles[0].toPath();
+                }
+                return path;
+            })
+            .filter(Files::isRegularFile)
+            .orElse(null);
     }
 
     public ManagerAppConfig getManagerConfig() {
@@ -261,6 +287,10 @@ public class ConfigurationService implements ContainerService {
 
     protected Path getPersistedMapConfigPath() {
         return persistenceService.getStorageDir().resolve("manager").resolve("mapsettings.json");
+    }
+
+    protected Path getPersistedCustomTilesPath() {
+        return persistenceService.getStorageDir().resolve("map");
     }
 
     protected Path getPersistedManagerConfigImagePath() {
