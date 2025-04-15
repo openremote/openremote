@@ -91,6 +91,10 @@ volumeMounts: []
 #   mountPath: "/etc/foo"
 #   readOnly: true
 
+# Should an init container run to fix the permissions on the mounted data volume ?
+# This is not required on macOS but is on linux
+requiresPermissionsFix: false
+
 nodeSelector: {}
 
 tolerations: []

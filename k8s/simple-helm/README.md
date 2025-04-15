@@ -37,6 +37,11 @@ helm install keycloak keycloak
 helm install manager manager
 ```
 
+If running under linux, you must enable to requiresPermissionsFix flag when instaling postgresql
+```bash
+helm install postgresql postgresql --set requiresPermissionsFix=true
+```
+
 ## Caveats
 
 ### Persistent Volumes lifecycle
