@@ -390,7 +390,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                                 </or-mwc-input>
                                                 ${when(this.customMapFilename, () => html`<or-mwc-input type="${InputType.BUTTON}" iconColor="black" icon="delete"
                                                     @or-mwc-input-changed="${async () => await this.deleteCustomMap()}"
-                                                />`)}
+                                                ></or-mwc-input>`)}
                                             </div>
                                         </div>
                                     </div>
