@@ -116,9 +116,6 @@ services:
   ml-forecast:
     image: dkleeven/service-ml-forecast:latest
     restart: always
-    depends_on:
-      manager:
-        condition: service_healthy
     ports:
       - "8000:8000"
     environment:
