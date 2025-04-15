@@ -113,24 +113,23 @@ services:
       - deployment-data:/deployment
     <<: *awslogs
 
-
-    # https://hub.docker.com/r/dkleeven/service-ml-forecast
-    ml-forecast:
-      image: dkleeven/service-ml-forecast:latest
-      restart: always
-      depends_on:
-        manager:
-          condition: service_healthy
-      ports:
-        - "8000:8000"
-      environment:
-        ML_LOG_LEVEL: INFO
-        ML_ENVIRONMENT: production
-        ML_OR_URL: ${OR_HOSTNAME:-localhost}
-        ML_OR_KEYCLOAK_URL: ${OR_HOSTNAME:-localhost}
-        ML_OR_SERVICE_USER: mlserviceuser
-        ML_OR_SERVICE_USER_SECRET: ${ML_OR_SERVICE_USER_SECRET:-secret}
-      volumes:
-        - service-ml-forecast-data:/deployment
+  ml-forecast:
+    image: dkleeven/service-ml-forecast:latest
+    restart: always
+    depends_on:
+      manager:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      ML_LOG_LEVEL: INFO
+      ML_ENVIRONMENT: production
+      ML_OR_URL: ${OR_HOSTNAME:-localhost}
+      ML_OR_KEYCLOAK_URL: ${OR_HOSTNAME:-localhost}
+      ML_OR_SERVICE_USER: mlserviceuser
+      ML_OR_SERVICE_USER_SECRET: ${ML_OR_SERVICE_USER_SECRET:-secret}
+    volumes:
+      - service-ml-forecast-data:/deployment
+    <<: *awslogs
 
 
