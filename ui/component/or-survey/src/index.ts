@@ -12,7 +12,6 @@ import filter from "lodash-es/filter";
 import "@openremote/or-translate";
 
 const moment = momentImported;
-declare var MANAGER_URL: string;
 
 export interface OrComputeGridEventDetail {
 }
