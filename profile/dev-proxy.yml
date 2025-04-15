@@ -40,6 +40,7 @@ services:
       KEYCLOAK_ISSUER_BASE_URI: https://localhost/auth
       KC_HOSTNAME_STRICT: false
       KC_HOSTNAME:
+      KC_LOG_CONSOLE_FORMAT: '%-5p [%c] (%t) %s%e%n'
     depends_on:
       postgresql:
         condition: service_healthy
