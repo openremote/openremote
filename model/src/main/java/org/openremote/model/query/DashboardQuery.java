@@ -71,15 +71,13 @@ public class DashboardQuery implements Serializable {
      */
     public static class DashboardConditions {
         protected DashboardAccess[] access;
-        protected Integer minWidgets;
 
         public DashboardConditions() {
             this.access = new DashboardAccess[]{DashboardAccess.PUBLIC, DashboardAccess.SHARED, DashboardAccess.PRIVATE};
         }
 
-        public DashboardConditions(DashboardAccess[] access, Integer minWidgets) {
+        public DashboardConditions(DashboardAccess[] access) {
             this.access = access;
-            this.minWidgets = minWidgets;
         }
 
         public DashboardConditions access(DashboardAccess[] access) {
@@ -87,17 +85,8 @@ public class DashboardQuery implements Serializable {
             return this;
         }
 
-        public DashboardConditions minWidgets(Integer minWidgets) {
-            this.minWidgets = minWidgets;
-            return this;
-        }
-
         public DashboardAccess[] getAccess() {
             return access;
-        }
-
-        public Integer getMinWidgets() {
-            return minWidgets;
         }
     }
 
