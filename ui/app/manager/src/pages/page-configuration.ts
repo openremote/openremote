@@ -367,14 +367,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                             .type="${InputType.URL}"
                                             .label="${i18next.t("configuration.global.tileServerPlaceholder")}"
                                             placeholder="https://api.example.com/tileset/{z}/{x}/{y}"
-                                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                    this.mapConfig.sources.vector_tiles = {
-                                                        type: "vector",
-                                                        ...(e.detail.value ? { tiles: [e.detail.value], custom: true } : {}),
-                                                        custom: true
-                                                    }
-                                                    this.mapConfigChanged = true;
-                                                }}"
+                                            @or-mwc-input-changed="${this.setCustomVectorTilesUrl}"
                                         ></or-mwc-input>
                                     </div>
 
@@ -430,6 +423,15 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     /* ---------------- */
 
     // FETCH METHODS
+
+    protected async setCustomVectorTilesUrl(e: OrInputChangedEvent) {
+        this.mapConfig.sources.vector_tiles = {
+            type: "vector",
+            ...(e.detail.value ? { tiles: [e.detail.value], custom: true } : {}),
+            custom: true
+        }
+        this.mapConfigChanged = true;
+    }
 
     protected async uploadCustomMap(e: CustomEvent) {
         const file = (e.target as HTMLInputElement).files[0];
