@@ -128,7 +128,7 @@ services:
         ML_ENVIRONMENT: production
         ML_OR_URL: ${OR_HOSTNAME:-localhost}
         ML_OR_KEYCLOAK_URL: ${OR_HOSTNAME:-localhost}
-        ML_OR_SERVICE_USER: serviceuser
+        ML_OR_SERVICE_USER: mlserviceuser
         ML_OR_SERVICE_USER_SECRET: ${ML_OR_SERVICE_USER_SECRET:-secret}
       volumes:
         - service-ml-forecast-data:/deployment
