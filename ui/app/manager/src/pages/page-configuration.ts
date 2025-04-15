@@ -35,7 +35,7 @@ import "@openremote/or-components/or-loading-indicator";
 import {OrConfRealmCard} from "../components/configuration/or-conf-realm/or-conf-realm-card";
 import {OrConfPanel} from "../components/configuration/or-conf-panel";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu, DefaultRealmConfig, store} from "../index";
+import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu, DefaultRealmConfig} from "../index";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 declare const MANAGER_URL: string | undefined;
