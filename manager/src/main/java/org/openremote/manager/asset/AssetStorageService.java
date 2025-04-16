@@ -69,6 +69,7 @@ import org.postgresql.util.PGobject;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -555,8 +556,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     /**
      * @return The current stored asset state.
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
+     * @throws ConstraintViolationException if the asset fails validation.
+     * @throws TimeoutException if the asset lock could not be acquired in time.
      */
-    public <T extends Asset<?>> T merge(T asset) throws IllegalStateException, ConstraintViolationException {
+    public <T extends Asset<?>> T merge(T asset) throws IllegalStateException, ConstraintViolationException, TimeoutException {
         return merge(asset, false);
     }
 
@@ -565,8 +568,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      *                        version.
      * @return The current stored asset state.
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
+     * @throws ConstraintViolationException if the asset fails validation.
+     * @throws TimeoutException if the asset lock could not be acquired in time.
      */
-    public <T extends Asset<?>> T merge(T asset, boolean overrideVersion) throws IllegalStateException, ConstraintViolationException {
+    public <T extends Asset<?>> T merge(T asset, boolean overrideVersion) throws IllegalStateException, ConstraintViolationException, TimeoutException {
         return merge(asset, overrideVersion, null, null);
     }
 
@@ -574,8 +579,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * @param userName the user which this asset needs to be assigned to.
      * @return The current stored asset state.
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
+     * @throws ConstraintViolationException if the asset fails validation.
+     * @throws TimeoutException if the asset lock could not be acquired in time.
      */
-    public <T extends Asset<?>> T merge(T asset, String userName) throws IllegalStateException, ConstraintViolationException {
+    public <T extends Asset<?>> T merge(T asset, String userName) throws IllegalStateException, ConstraintViolationException, TimeoutException {
         return merge(asset, false, null, userName);
     }
 
@@ -589,9 +596,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * @param userName               the user which this asset needs to be assigned to.
      * @return The current stored asset state.
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
+     * @throws ConstraintViolationException if the asset fails validation.
+     * @throws TimeoutException if the asset lock could not be acquired in time.
      */
     @SuppressWarnings("unchecked")
-    public <T extends Asset<?>> T merge(T asset, boolean overrideVersion, GatewayAsset requestingGatewayAsset, String userName) throws IllegalStateException, ConstraintViolationException {
+    public <T extends Asset<?>> T merge(T asset, boolean overrideVersion, GatewayAsset requestingGatewayAsset, String userName) throws IllegalStateException, ConstraintViolationException, TimeoutException {
 
         if (LOG.isLoggable(Level.FINEST)) {
             LOG.finest("Merging asset: " + asset);
@@ -866,9 +875,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         if (!ids.isEmpty()) {
+            List<String> lockedIds = new ArrayList<>(ids.size());
             try {
                 // Get locks for each asset ID
-                ids.forEach(assetLocks::lock);
+                for (String id : ids) {
+                    assetLocks.lock(id);
+                    lockedIds.add(id);
+                }
 
                 persistenceService.doTransaction(em -> {
                     List<Asset<?>> assets = em
@@ -888,8 +901,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 LOG.log(SEVERE, "Failed to delete one or more requested assets: " + Arrays.toString(assetIds.toArray()), e);
                 return false;
             } finally {
-                // Release all of the locks
-                ids.forEach(assetLocks::unlock);
+                // Release all of the acquired locks
+                lockedIds.forEach(assetLocks::unlock);
             }
         }
         return true;
@@ -1162,7 +1175,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         });
     }
 
-    public <R> R withAssetLock(String assetId, Supplier<R> action) {
+    public <R> R withAssetLock(String assetId, Supplier<R> action) throws TimeoutException {
         try {
             assetLocks.lock(assetId);
             return action.get();

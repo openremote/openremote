@@ -7,15 +7,19 @@ package org.openremote.model.util;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class LockByKey {
 
     private static final System.Logger LOG = System.getLogger(LockByKey.class.getName());
+    private static final long DEFAULT_TIMEOUT_MILLIS = 10000;
 
     private static class LockWrapper {
-        private final Semaphore lock = new Semaphore(1); // Don't change to ReentrantLock as camel switches thread between try/finally blocks on route processors
+        private final Lock lock = new ReentrantLock(true);
         private final AtomicInteger numberOfThreadsInQueue = new AtomicInteger(1);
 
         private LockWrapper addThreadInQueue() {
@@ -31,27 +35,54 @@ public class LockByKey {
 
     private final Map<String, LockWrapper> locks = new ConcurrentHashMap<>();
 
-    public void lock(String key) {
+    public void lock(String key) throws TimeoutException {
+        lock(key, DEFAULT_TIMEOUT_MILLIS);
+    }
+
+    public void lock(String key, long timeoutMillis) throws TimeoutException {
         LockWrapper lockWrapper = locks.compute(key, (k, v) -> v == null ? new LockWrapper() : v.addThreadInQueue());
         try {
-            lockWrapper.lock.acquire();
-            LOG.log(System.Logger.Level.TRACE, () -> "Lock acquired: key=" + key);
+            boolean success = lockWrapper.lock.tryLock(timeoutMillis, TimeUnit.MILLISECONDS);
+            if (!success) {
+                if (lockWrapper.removeThreadFromQueue() == 1) {
+                    locks.remove(key, lockWrapper);
+                }
+                throw new TimeoutException("Timeout reached whilst waiting to acquire lock");
+            }
+            LOG.log(System.Logger.Level.TRACE, () -> "Lock acquired: key=" + key + ", threadName=" + Thread.currentThread().getName());
         } catch (InterruptedException e) {
+            if (lockWrapper.removeThreadFromQueue() == 1) {
+                locks.remove(key, lockWrapper);
+            }
             Thread.currentThread().interrupt(); // Restore interrupted status
             throw new RuntimeException("Interrupted while acquiring lock for key: " + key, e);
         }
     }
 
-    public void unlock(String key) {
-        LockWrapper lockWrapper = locks.get(key);
-        if (lockWrapper != null) {
-            LOG.log(System.Logger.Level.TRACE, () -> "Lock release: key=" + key);
-            lockWrapper.lock.release();
+    public boolean tryLock(String key) {
+        LockWrapper lockWrapper = locks.compute(key, (k, v) -> v == null ? new LockWrapper() : v.addThreadInQueue());
+        if (lockWrapper.lock.tryLock()) {
+            LOG.log(System.Logger.Level.TRACE, () -> "Lock acquired: key=" + key + ", threadName=" + Thread.currentThread().getName());
+            return true;
+        } else {
             if (lockWrapper.removeThreadFromQueue() == 0) {
-                // NB : We pass in the specific value to remove to handle the case where another thread would queue right before the removal
                 locks.remove(key, lockWrapper);
             }
+            return false;
         }
+    }
+
+    public void unlock(String key) {
+        locks.compute(key, (k, lockWrapper) -> {
+            if (lockWrapper != null) {
+                LOG.log(System.Logger.Level.TRACE, () -> "Lock release: key=" + key + ", threadName=" + Thread.currentThread().getName());
+                lockWrapper.lock.unlock();
+                if (lockWrapper.removeThreadFromQueue() == 0) {
+                    return null; // Remove the entry
+                }
+            }
+            return lockWrapper;
+        });
     }
 
 }

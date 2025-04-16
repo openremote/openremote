@@ -30,6 +30,7 @@ import org.apache.camel.impl.health.ConsumersHealthCheckRepository;
 import org.apache.camel.impl.health.ContextHealthCheck;
 import org.apache.camel.impl.health.DefaultHealthCheckRegistry;
 import org.apache.camel.impl.health.RoutesHealthCheckRepository;
+import org.apache.camel.model.RedeliveryPolicyDefinition;
 import org.apache.camel.spi.ExecutorServiceManager;
 import org.apache.camel.spi.StreamCachingStrategy;
 import org.apache.camel.spi.ThreadPoolFactory;
@@ -122,8 +123,11 @@ public class MessageBrokerService implements ContainerService {
         StreamCachingStrategy streamCachingStrategy = new DefaultStreamCachingStrategy();
         streamCachingStrategy.setSpoolThreshold(524288); // Half megabyte
         context.setStreamCachingStrategy(streamCachingStrategy);
-
-        context.getCamelContextExtension().setErrorHandlerFactory(new DefaultErrorHandlerBuilder());
+        RedeliveryPolicyDefinition redeliveryPolicy = new RedeliveryPolicyDefinition();
+        redeliveryPolicy.setAsyncDelayedRedelivery("false");
+        DefaultErrorHandlerBuilder errorHandler = new DefaultErrorHandlerBuilder();
+        errorHandler.setRedeliveryPolicy(redeliveryPolicy);
+        context.getCamelContextExtension().setErrorHandlerFactory(errorHandler);
 
         if (container.isDevMode()) {
             context.setMessageHistory(true);

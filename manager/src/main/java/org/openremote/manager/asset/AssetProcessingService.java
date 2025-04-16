@@ -54,6 +54,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.openremote.model.attribute.AttributeWriteFailure.*;
 
@@ -289,9 +291,24 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     counter.increment();
                 }
 
-                boolean processed = eventTimer != null ?
-                    eventTimer.record(() -> processAttributeEvent(event)) :
-                    processAttributeEvent(event);
+                boolean processed;
+
+                if (eventTimer != null) {
+                    AtomicReference<TimeoutException> ex = new AtomicReference<>();
+                    processed = eventTimer.record(() -> {
+                        try {
+                            return processAttributeEvent(event);
+                        } catch (TimeoutException e) {
+                            ex.set(e);
+                        }
+                        return false;
+                    });
+                    if (ex.get() != null) {
+                        throw ex.get();
+                    }
+                } else {
+                    processed = processAttributeEvent(event);
+                }
 
                 exchange.getIn().setBody(processed);
             });
@@ -338,7 +355,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
      * The {@link AttributeEvent} is passed to each registered {@link AttributeEventInterceptor} and if no interceptor
      * handles the event then the {@link Attribute} value is updated in the DB with the new event value and timestamp.
      */
-    protected boolean processAttributeEvent(AttributeEvent event) throws AssetProcessingException {
+    protected boolean processAttributeEvent(AttributeEvent event) throws AssetProcessingException, TimeoutException {
 
         return assetStorageService.withAssetLock(event.getId(),() -> {
 
