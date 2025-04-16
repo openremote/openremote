@@ -37,6 +37,7 @@ import org.openremote.model.manager.MapSourceConfig;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -215,58 +216,91 @@ public class MapService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
-        setData();
-    }
-
-    public void setData() throws ClassNotFoundException, SQLException, NullPointerException {
         setData(false);
     }
 
-    public void setData(Boolean delete) throws ClassNotFoundException, SQLException, NullPointerException {
-        Path mapTilesPath = configurationService.getMapTilesPath();
-        if (mapTilesPath == null) {
-            return;
-        }
-        mapTilesPath = mapTilesPath.toAbsolutePath();
-        if (!mapTilesPath.toFile().exists()) {
-            return;
-        }
-
+    /**
+     * Connects to mbtiles DB and loads metadata
+     * @return Path of connected mbtiles file
+     * @throws IOException
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     * @throws NullPointerException
+     */
+    public Path setData(boolean skipCustom) {
         try {
             if (connection != null) {
                 connection.close();
             }
         } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Could not close connection", e);
+            LOG.log(Level.WARNING, "Could not close existing connection", e);
         }
 
-        Path customMapTilesPath = configurationService.getCustomMapTilesPath(true);
-        if (customMapTilesPath != null) {
-            if (delete) {
-                try {
-                    Files.deleteIfExists(customMapTilesPath);
-                    LOG.info(customMapTilesPath + " file deleted successfully");
-                } catch (IOException e) {
-                    LOG.log(Level.WARNING, "Could not delete " + customMapTilesPath, e);
+        Path connectedFile = null;
+
+        if (!skipCustom) {
+            // Try and load custom map tiles first
+            try {
+                Path customMapTilesPath = configurationService.getCustomMapTilesPath(true);
+
+                if (customMapTilesPath.toFile().isFile()) {
+                    Class.forName(org.sqlite.JDBC.class.getName());
+                    connection = DriverManager.getConnection("jdbc:sqlite:" + customMapTilesPath);
+                    metadata = getMetadata(connection);
+
+                    if (!metadata.isValid()) {
+                        LOG.warning("Custom map meta data could not be loaded, falling back to default map");
+                        try {
+                            if (connection != null) {
+                                connection.close();
+                            }
+                        } catch (SQLException e) {
+                            LOG.log(Level.WARNING, "Could not close connection", e);
+                        }
+                    } else {
+                        connectedFile = customMapTilesPath;
+                    }
                 }
-            // Overwrite default map if custom map file exists
-            } else if (Files.exists(customMapTilesPath)) {
-                mapTilesPath = customMapTilesPath.toAbsolutePath();
+            } catch (IOException | ClassNotFoundException | SQLException e) {
+                LOG.log(Level.WARNING, "An error occurred whilst trying to load custom map tiles file", e);
             }
         }
 
-        Class.forName(org.sqlite.JDBC.class.getName());
-        connection = DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath);
-        metadata = getMetadata(connection);
+        // Fallback on default map tiles
+        if (connectedFile == null) {
+            try {
+                Path mapTilesPath = configurationService.getMapTilesPath();
+                if (mapTilesPath != null) {
+                    Class.forName(org.sqlite.JDBC.class.getName());
+                    connection = DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath);
+                    metadata = getMetadata(connection);
 
-        if (metadata.isValid()) {
-            mapConfig = configurationService.getMapConfig();
-            if (mapConfig == null) {
-                return;
+                    if (!metadata.isValid()) {
+                        LOG.warning("Default map meta data could not be loaded, map will not work");
+                        try {
+                            if (connection != null) {
+                                connection.close();
+                            }
+                        } catch (SQLException e) {
+                            LOG.log(Level.WARNING, "Could not close connection", e);
+                        }
+                    } else {
+                        connectedFile = mapTilesPath;
+                    }
+                }
+            } catch (ClassNotFoundException | SQLException e) {
+                LOG.log(Level.WARNING, "An error occurred whilst trying to load map tiles file", e);
             }
-        } else {
-            LOG.warning("Map meta data could not be loaded, map functionality will not work");
-            return;
+        }
+
+        if (connectedFile == null) {
+            return null;
+        }
+
+        mapConfig = configurationService.getMapConfig();
+
+        if (mapConfig == null) {
+            return connectedFile;
         }
 
         ObjectNode options = Optional.ofNullable((ObjectNode)mapConfig.get("options")).orElse(mapConfig.objectNode());
@@ -295,6 +329,8 @@ public class MapService implements ContainerService {
         if (!defaultOptions.has("bounds") && metadata.getBounds() != null) {
             defaultOptions.set("bounds", metadata.getBounds());
         }
+
+        return connectedFile;
     }
 
     @Override
@@ -453,67 +489,80 @@ public class MapService implements ContainerService {
         }
     }
 
-    public boolean saveUploadedFile(Path path, InputStream fileInputStream) {
-        Path previous = configurationService.getCustomMapTilesPath(true);
+    public void saveUploadedFile(String filename, InputStream fileInputStream) throws IOException, IllegalArgumentException {
+        Path customTilesDir = configurationService.getCustomMapTilesPath(false);
+        Path tilesPath = customTilesDir.resolve(filename);
+        Path previousCustomTilesPath = configurationService.getCustomMapTilesPath(true);
 
-        try (OutputStream outputStream = Files.newOutputStream(path)) {
+        // Check there's no back refs in the filename
+        boolean isValid = tilesPath.toFile().getCanonicalPath().contains(customTilesDir.toFile().getCanonicalPath() + File.separator);
+        if (!isValid) {
+            String msg = "Filename outside permitted directory: " + filename;
+            LOG.warning(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
+        try (OutputStream outputStream = Files.newOutputStream(tilesPath)) {
             byte[] buffer = new byte[4096];
             int bytesRead;
             int written = 0;
             while ((bytesRead = fileInputStream.read(buffer)) != -1) {
                 if (written > customMapLimit) {
-                    LOG.log(Level.SEVERE, "Stream continued past content-length, deleting file.");
-                    this.setData(true);
-                    return false;
+                    String msg = "Stream continued passed custom map limit size: " + tilesPath;
+                    LOG.log(Level.SEVERE, msg);
+                    throw new IOException(msg);
                 }
                 outputStream.write(buffer, 0, bytesRead);
                 written += bytesRead;
             }
-        } catch (IOException | ClassNotFoundException | SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to save custom map file.", e);
+        } catch (IOException e) {
             try {
-                this.setData(true);
-            } catch (ClassNotFoundException | SQLException deleteError) {
-                LOG.log(Level.SEVERE, "Failed to delete " + path + " file", deleteError);
+                // Attempt to delete this invalid map data file
+                Files.deleteIfExists(tilesPath);
+            } catch (IOException ex) {
+                LOG.log(Level.WARNING, "Could not delete partially written file: " + filename, ex);
             }
-            return false;
+            throw e;
         }
 
-        try {
-            if (previous != null && !previous.equals(path)) {
-                connection.close();
-                Files.deleteIfExists(previous);
-            }
+        // Ensure we can access this new file and that it is a valid mbtiles file
+        Path loadedFile = setData(false);
+        // TODO: Is this save necessary?
+        saveMapMetadata(metadata);
 
-            Class.forName(org.sqlite.JDBC.class.getName());
-            connection = DriverManager.getConnection("jdbc:sqlite:" + path);
-
-            PreparedStatement query = connection.prepareStatement("PRAGMA integrity_check;");
-            ResultSet result = query.executeQuery();
-            if (!result.next() || !result.getString(1).equals("ok")) {
-                LOG.log(Level.SEVERE, "MBTiles database file corrupt");
-                this.setData(true);
-                return false;
+        if (loadedFile == null || !loadedFile.toAbsolutePath().equals(tilesPath.toAbsolutePath())) {
+            try {
+                // Attempt to delete this invalid map data file
+                Files.deleteIfExists(tilesPath);
+            } catch (IOException ex) {
+                LOG.log(Level.WARNING, "Could not delete partially written file: " + filename, ex);
             }
-            metadata = getMetadata(connection);
-            if (!metadata.isValid()) {
-                this.setData(true);
-                saveMapMetadata(metadata);
-                return false;
-            }
+            throw new IOException("Failed to load map data ensure the uploaded file is a valid mbtiles file: " + filename);
+        }
 
-            this.setData();
+        // Now delete any previous custom mbtiles file
+        if (previousCustomTilesPath.toFile().isFile()) {
+            try {
+                // Attempt to delete this old map data file
+                Files.deleteIfExists(previousCustomTilesPath);
+            } catch (IOException ex) {
+                LOG.log(Level.WARNING, "Could not delete old file: " + previousCustomTilesPath, ex);
+                // This is problematic as which custom file gets discovered first on next startup??
+            }
+        }
+    }
+
+    public void deleteUploadedFile() throws IOException {
+        Path previousCustomTilesPath = configurationService.getCustomMapTilesPath(true);
+
+        if (previousCustomTilesPath.toFile().isFile()) {
+
+            setData(true);
+            // TODO: Is this save necessary?
             saveMapMetadata(metadata);
 
-            return true;
-        } catch (IOException | SQLException | ClassNotFoundException e) {
-            LOG.log(Level.SEVERE, "Failed to load " + path + " file", e);
-            try {
-                this.setData(true);
-            } catch (ClassNotFoundException | SQLException deleteError) {
-                LOG.log(Level.SEVERE, "Failed to delete " + path + " file", deleteError);
-            }
-            return false;
+            // Attempt to delete this old map data file
+            Files.deleteIfExists(previousCustomTilesPath);
         }
     }
 
@@ -533,18 +582,14 @@ public class MapService implements ContainerService {
         }
     }
 
-    public Path resolveCustomTilesPath(String filename) {
-        return Optional.ofNullable(configurationService.getCustomMapTilesPath(false)).map(p -> p.resolve(filename)).orElse(null);
-    }
-
-    public ObjectNode getCustomMapInfo() {
+    public ObjectNode getCustomMapInfo() throws IOException {
         return ValueUtil.JSON
             .createObjectNode()
             .put("limit", this.customMapLimit)
             .put("filename",
                 Optional.ofNullable(configurationService.getCustomMapTilesPath(true))
-                    .map(Path::getFileName)
-                    .map(Object::toString)
+                    .map(p -> p.toFile().isFile() ? p : null)
+                    .map(p -> p.getFileName().toString())
                     .orElse(null)
             );
     }
