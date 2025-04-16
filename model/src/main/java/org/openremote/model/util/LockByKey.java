@@ -12,6 +12,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class LockByKey {
 
+    private static final System.Logger LOG = System.getLogger(LockByKey.class.getName());
+
     private static class LockWrapper {
         private final Lock lock = new ReentrantLock();
         private final AtomicInteger numberOfThreadsInQueue = new AtomicInteger(1);
@@ -32,9 +34,11 @@ public class LockByKey {
     public void lock(String key) {
         LockWrapper lockWrapper = locks.compute(key, (k, v) -> v == null ? new LockWrapper() : v.addThreadInQueue());
         lockWrapper.lock.lock();
+        LOG.log(System.Logger.Level.TRACE, () -> "Lock acquired: key=" + key + ", threadName=" + Thread.currentThread().getName());
     }
 
     public void unlock(String key) {
+        LOG.log(System.Logger.Level.TRACE, () -> "Lock release: key=" + key + ", threadName=" + Thread.currentThread().getName());
         LockWrapper lockWrapper = locks.get(key);
         lockWrapper.lock.unlock();
         if (lockWrapper.removeThreadFromQueue() == 0) {
