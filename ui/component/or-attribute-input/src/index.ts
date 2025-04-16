@@ -218,10 +218,16 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
 
             // Need to have a value so that the agent ID picker is shown
             if (!value) {
-                value = {
-                    id: "",
-                    type: "DefaultAgentLink"
-                };
+                if (valueDescriptor.arrayDimensions && valueDescriptor.arrayDimensions > 0) {
+                    value = [];
+                } else if (valueDescriptor.name === "agentLink") { // TODO: resolve default and all required properties on root object
+                    value = {
+                        id: "",
+                        type: "DefaultAgentLink"
+                    };
+                } else if (valueDescriptor.jsonType === "object") {
+                    value = {}
+                }
             }
 
             // Schedule loading

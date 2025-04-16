@@ -381,7 +381,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
     }
 
     public JsonNode getConfigurationItemSchemas(ValueDescriptor<?> valueDescriptor) throws ClassNotFoundException, RuntimeException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
-        return dynamicJsonSchemas.computeIfAbsent(valueDescriptor.getType().getName(), key -> {
+        return dynamicJsonSchemas.computeIfAbsent(valueDescriptor.getType().getName() + valueDescriptor.isArray(), key -> {
             Class<?> clazz = valueDescriptor.getType();
             ObjectNode schema = (ObjectNode)ValueUtil.getSchema(clazz);
 
