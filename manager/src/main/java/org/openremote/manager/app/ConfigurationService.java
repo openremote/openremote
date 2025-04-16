@@ -109,11 +109,7 @@ public class ConfigurationService implements ContainerService {
         LOG.info("Configuration Service Used files:");
         LOG.info("\t- manager_config.json: " + managerConfigPath);
         LOG.info("\t- mapsettings.json: " + mapSettingsPath);
-        LOG.info("\t- mapdata.mbtiles: " + mapTilesPath);
-        Path customMapTilesPath = getCustomMapTilesPath();
-        if (customMapTilesPath != null) {
-            LOG.info("\t- " + customMapTilesPath.getFileName() + ": " + customMapTilesPath);
-        }
+        LOG.info("\t- mapdata.mbtiles: " + Optional.ofNullable(getCustomMapTilesPath(true)).orElse(mapTilesPath));
     }
 
     @Override
@@ -168,26 +164,38 @@ public class ConfigurationService implements ContainerService {
         return mapTilesPath;
     }
 
-    public Path getCustomMapTilesParent() {
-        return Optional.of(getPersistedCustomTilesPath().toString())
-            .map(Path::of)
-            .map(Path::toAbsolutePath)
-            .orElse(null);
-    }
+    /**
+     * Must be called after {@link #mapTilesPath} is initialized.
+     * @return the parent directory path for custom mbtiles, or the custom mbtiles path. Returns {@code null}
+     * if persistent directory could not be created, or the mbtiles file could not be found.
+     */
+    public Path getCustomMapTilesPath(boolean findMBTilesFile) {
+        Path parent = getPersistedCustomTilesPath();
 
-    public Path getCustomMapTilesPath() {
-        return Optional.of(getPersistedCustomTilesPath().toString())
+        try {
+            if (!Files.exists(parent)) Files.createDirectories(parent);
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "Could not create parent directory for custom tiles", e);
+            return null;
+        }
+
+        String defaultMapTilesFilename = Optional.ofNullable(this.mapTilesPath)
+            .map(Path::getFileName)
+            .map(Path::toString).orElse("");
+
+        return findMBTilesFile ? Optional.of(parent.toString())
             .map(Path::of)
             .map(Path::toAbsolutePath)
             .map(path -> {
-                File[] matchingFiles = path.toFile().listFiles((dir, name) -> name.endsWith(".mbtiles") && !name.equals(this.mapTilesPath.getFileName().toString()));
+                File[] matchingFiles = path.toFile().listFiles((dir, name) -> name.endsWith(".mbtiles") && !name.equals(defaultMapTilesFilename));
                 if (matchingFiles != null && matchingFiles.length != 0) {
                     return matchingFiles[0].toPath();
                 }
                 return path;
             })
             .filter(Files::isRegularFile)
-            .orElse(null);
+            .orElse(null)
+        : parent;
     }
 
     public ManagerAppConfig getManagerConfig() {
