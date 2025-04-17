@@ -122,8 +122,8 @@ services:
     environment:
       ML_LOG_LEVEL: INFO
       ML_ENVIRONMENT: production
-      ML_OR_URL: http://${OR_HOSTNAME:-localhost}
-      ML_OR_KEYCLOAK_URL: http://${OR_HOSTNAME:-localhost}
+      ML_OR_URL: https://${OR_HOSTNAME:-localhost}
+      ML_OR_KEYCLOAK_URL: https://${OR_HOSTNAME:-localhost}
       ML_OR_SERVICE_USER: mlserviceuser
       ML_OR_SERVICE_USER_SECRET: ${ML_OR_SERVICE_USER_SECRET:-secret}
     volumes:
