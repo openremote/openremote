@@ -38,7 +38,7 @@ on:
         default: '16'
         required: false
       SNAPSHOT_ID:
-        description: 'Snapshot ID to create volume based of an existing snapshot'
+        description: 'Snapshot ID to create volume based off an existing snapshot'
         type: string
         required: false
       ENABLE_METRICS:

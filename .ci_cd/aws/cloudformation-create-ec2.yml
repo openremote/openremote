@@ -888,7 +888,7 @@ Resources:
       SnapshotId: !If [SnapshotProvided, !Ref SnapshotId, !Ref 'AWS::NoValue']
       Tags:
         - Key: Name
-          Value: !Sub ${Host}/data
+          Value: !Sub ${Host}-data
     DeletionPolicy: Snapshot
 
   # DLM Policy for automatic snapshot creation

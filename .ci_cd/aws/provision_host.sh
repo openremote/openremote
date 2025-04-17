@@ -20,7 +20,7 @@
 # 3 - INSTANCE_TYPE EC2 instance type see cloud formation template parameter
 # 4 - ROOT_DISK_SIZE to use for created EBS root volume (GB)
 # 5 - DATA_DISK_SIZE to use for created EBS data volume (GB)
-# 6 - SNAPSHOT_ID to use for creating the data volume based of an existing snapshot.
+# 6 - SNAPSHOT_ID to use for creating the EBS data volume based off an existing snapshot
 # 7 - ELASTIC_IP if 'true' then create an elastic public IP for this host
 # 8 - PROVISION_S3_BUCKET set to 'false' to not provision an S3 bucket for this host
 # 9 - ENABLE_METRICS set to 'false' to not enable cloudwatch metrics for this instance
@@ -296,7 +296,7 @@ echo "Attaching/Mounting EBS data volume"
 
 EBS_DEVICE_NAME="/dev/sdf" # Only change if you know what you are doing.
 INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values='$HOST'" --query "Reservations[].Instances[?Tags[?Value=='$STACK_ID']].InstanceId" --output text $ACCOUNT_PROFILE 2>/dev/null)
-VOLUME_ID=$(aws ec2 describe-volumes --filters "Name=tag:Name,Values='$HOST/data'" --query "Volumes[?Tags[?Value=='$STACK_ID']].VolumeId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+VOLUME_ID=$(aws ec2 describe-volumes --filters "Name=tag:Name,Values='$HOST-data'" --query "Volumes[?Tags[?Value=='$STACK_ID']].VolumeId" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
 PARAMS="InstanceId=$INSTANCE_ID,VolumeId=$VOLUME_ID,DeviceName=$EBS_DEVICE_NAME"
 

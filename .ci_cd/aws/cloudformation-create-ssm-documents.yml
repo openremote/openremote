@@ -111,23 +111,9 @@ Resources:
                       if [ "$STATUS" != 'in-use' ]; then
                         echo "Volume attaching failed with status $STATUS"
                         exit 1
-                      else
-                        echo "Volume successfully attached"
                       fi
-              - name: PrepareVolume
-                action: aws:runShellScript
-                inputs:
-                  runCommand: 
-                    - |
-                      FILESYSTEM=$(blkid -o value -s TYPE {{ DeviceName }})
 
-                      count=0
-                      while [[ -z "$FILESYSTEM" ]] && [ $count -lt 30 ]; do
-                        echo "Filesystem is currently not available .. Sleeping 30 seconds"
-                        sleep 30
-                        FILESYSTEM=$(blkid -o value -s TYPE {{ DeviceName }})
-                        count=$((count+1))
-                      done
+                      FILESYSTEM=$(blkid -o value -s TYPE {{ DeviceName }})
 
                       if [ -z "$FILESYSTEM" ]; then
                         mkfs -t xfs {{ DeviceName }}
