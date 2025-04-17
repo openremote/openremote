@@ -697,6 +697,8 @@
   "display": "Display",
   "screen": "Screen",
   "uploadFile" : "Upload file",
+  "fileSelected" : "File selected",
+  "fileSaved" : "File saved",
   "thresholds": "Thresholds",
   "threshold": "Threshold",
   "addInsights": "Add dashboard",
@@ -791,6 +793,7 @@
     "tryAgain": "Try again",
     "addRealmCustomization" : "Add Realm Style",
     "realmTitle": "Manager app title",
+    "realmMapSettingsTitle": "Realm Map Settings",
     "defaultLanguage": "Default language",
     "images": "Images",
     "logo": "Logo",
@@ -826,7 +829,19 @@
     "geoJsonDescription": "Customize the GeoJSON; add points, lines and polygons to be drawn on the map.",
     "deleteMapCustomization": "Delete map settings",
     "deleteMapCustomizationConfirm":"Are you sure you want to delete this Map customization?",
-    "addMapCustomization" : "Add map settings"
+    "addMapCustomization" : "Add map settings",
+    "global": {
+      "tileServer": "Tile Server",
+      "tileServerDescription": "Configure a tile server.",
+      "tileServerNote": "The map through a tile server gets priority over custom map tiles.",
+      "tileServerPlaceholder": "Map Server URL",
+      "mapTiles": "Custom Map Tiles",
+      "uploadMapTiles": "Upload custom map tiles.",
+      "uploadMapTilesPrecedence": "The maximum allowed file size is {{customMapLimit}}.",
+      "uploadingMapTiles": "Uploading map tiles... This may take a moment.",
+      "uploadMapTilesError": "Custom map tiles file exceeds size limit.",
+      "uploadingMapTilesError": "Failed to upload map tiles"
+    }
   },
   "mqttSessions": "MQTT sessions",
   "address": "Address",
