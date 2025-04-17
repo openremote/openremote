@@ -12,6 +12,8 @@
 #
 # Please see profile/deploy.yml for configuration details for each service.
 #
+# This profile also includes the ML Forecast service.
+#
 volumes:
   proxy-data:
   manager-data:
@@ -123,8 +125,9 @@ services:
       ML_LOG_LEVEL: INFO
       ML_ENVIRONMENT: production
       ML_OR_URL: https://${OR_HOSTNAME:-localhost}
-      ML_OR_KEYCLOAK_URL: https://${OR_HOSTNAME:-localhost}
+      ML_OR_KEYCLOAK_URL: https://${OR_HOSTNAME:-localhost}/auth
       ML_OR_SERVICE_USER: mlserviceuser
+      # Injected via CI/CD pipeline
       ML_OR_SERVICE_USER_SECRET: ${ML_OR_SERVICE_USER_SECRET:-secret}
     volumes:
       - service-ml-forecast-data:/deployment
