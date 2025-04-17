@@ -20,6 +20,7 @@
     "@openremote/model": "workspace:*",
     "@openremote/or-chart": "workspace:*",
     "@openremote/rest": "workspace:*",
+    "dompurify": "^3.2.4",
     "gridstack": "^7.2.0",
     "lit": "^2.0.2"
   },
