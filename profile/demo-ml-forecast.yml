@@ -72,7 +72,7 @@ services:
       postgresql:
         condition: service_healthy
     volumes:
-      - ../deployment:/deployment
+      - deployment-data:/deployment
     environment:
       KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
@@ -92,7 +92,7 @@ services:
       OR_SETUP_TYPE: ${OR_SETUP_TYPE:-demo}
       OR_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
       OR_LOGGING_CONFIG_FILE:
-      OR_SETUP_RUN_ON_RESTART:
+      OR_SETUP_RUN_ON_RESTART: false
       OR_EMAIL_HOST:
       OR_EMAIL_USER:
       OR_EMAIL_PASSWORD:
