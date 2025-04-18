@@ -1,0 +1,70 @@
+{
+  "id": "6H1lYy6pcpt68Rdh3FCwpY",
+  "createdOn": 1744961487610,
+  "realm": "master",
+  "version": 38,
+  "ownerId": "2743a891-7fe4-4725-8572-84faa36eb5ed",
+  "viewAccess": "SHARED",
+  "editAccess": "SHARED",
+  "displayName": "Temperature",
+  "template": {
+    "id": "0dhyyvznszi",
+    "columns": 12,
+    "maxScreenWidth": 4000,
+    "refreshInterval": "OFF",
+    "screenPresets": [
+      {
+        "id": "mobile",
+        "displayName": "dashboard.size.mobile",
+        "breakpoint": 640,
+        "scalingPreset": "WRAP_TO_SINGLE_COLUMN"
+      }
+    ],
+    "widgets": [
+      {
+        "id": "hpkrcm580m",
+        "displayName": "Line Chart",
+        "gridItem": {
+          "id": "hpkrcm580m",
+          "x": 0,
+          "y": 0,
+          "w": 7,
+          "h": 4,
+          "minH": 2,
+          "minW": 2,
+          "minPixelH": 0,
+          "minPixelW": 0,
+          "noResize": false,
+          "noMove": false,
+          "locked": false
+        },
+        "widgetTypeId": "linechart",
+        "widgetConfig": {
+          "showLegend": true,
+          "chartOptions": {
+            "options": {
+              "scales": {
+                "y": {},
+                "y1": {}
+              }
+            }
+          },
+          "attributeRefs": [
+            {
+              "id": "5VtY3Lcz7ayfneVpaU2Z8b",
+              "name": "temperature"
+            }
+          ],
+          "datapointQuery": {
+            "type": "lttb",
+            "toTimestamp": 1744961495090,
+            "fromTimestamp": 1744875095090
+          },
+          "rightAxisAttributes": [],
+          "defaultTimePresetKey": "lastHour",
+          "showTimestampControls": false
+        }
+      }
+    ]
+  }
+}

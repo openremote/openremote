@@ -4,6 +4,7 @@ sourceSets {
     integration
     demo
     load1
+    djf
 }
 
 // dependencies declaration
@@ -11,6 +12,7 @@ configurations {
     integrationImplementation.extendsFrom(implementation)
     demoImplementation.extendsFrom(implementation)
     load1Implementation.extendsFrom(implementation)
+    djfImplementation.extendsFrom(implementation)
 }
 
 dependencies {
@@ -22,6 +24,13 @@ task (load1Jar, type: Jar) {
         archivesName = "openremote-load1-${project.name}"
     }
     from sourceSets.load1.output
+}
+
+task (djfJar, type: Jar) {
+    base {
+        archivesName = "openremote-djf-${project.name}"
+    }
+    from sourceSets.djf.output
 }
 
 // Order of JAR tasks affects the name of the final jar but not the contents which is odd

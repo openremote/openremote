@@ -131,6 +131,12 @@ if (project == rootProject) {
                             OR_SETUP_TYPE: "demo"
                     ]
                 }
+                "Dynamic JSON Forms"(Application) {
+                    moduleName = getProject().idea.module.name + ".setup.djf"
+                    envs = [
+                            OR_SETUP_TYPE: "djf"
+                    ]
+                }
                 "Test Setup"(Application) {
                     moduleName = getProject().idea.module.name + ".setup.integration"
                 }
