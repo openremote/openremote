@@ -119,8 +119,6 @@ services:
   ml-forecast:
     image: dkleeven/service-ml-forecast:latest
     restart: always
-    ports:
-      - "8000:8000"
     environment:
       ML_LOG_LEVEL: INFO
       ML_ENVIRONMENT: production
