@@ -1,0 +1,207 @@
+# Default values for manager.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+replicaCount: 1
+
+# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
+image:
+  repository: openremote/manager
+  # This sets the pull policy for images.
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+# This is for the secretes for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+imagePullSecrets: []
+# This is to override the chart name.
+nameOverride: ""
+fullnameOverride: ""
+
+# This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# This is for setting Kubernetes Annotations to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+podAnnotations: {}
+# This is for setting Kubernetes Labels to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
+service:
+  # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+  type: ClusterIP
+  # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
+  port: 8080
+
+# This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: localhost
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - hosts:
+        - localhost
+      secretName: ""
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+# This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+livenessProbe:
+  httpGet:
+    path: /
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 5
+readinessProbe:
+  httpGet:
+    path: /
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+# Additional volumes on the output Deployment definition.
+volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+or:
+  # Additional environment variables passed to the container
+  env: []
+  # - name: foo
+  #   value: bar
+
+  # The public HOSTNAME and SSL PORT of this manager
+  hostname: "localhost"
+  port: "-1"
+
+  # It is important that all services have the same timezone and are time synchronized.
+  # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts
+  timeZone: "Europe/Amsterdam"
+
+  # Console applications can register for push notifications through FCM.
+  firebaseConfigFile: "/deployment/manager/fcm.json"
+
+  # Developer mode (see code for usages of OR_DEV_MODE flag)
+  devMode: false
+
+  # !! WARNING: This will wipe your database !!
+  # Force a full clean and setup on startup irrespective of whether there is existing data
+  # Default behaviour is false unless OR_DEV_MODE = true or openremote database doesn't already exist
+  setupRunOnRestart: false
+
+  # Location of built in web content.
+  appDocroot: /opt/web
+  # Location of the custom web content.
+  customAppDocroot: /deployment/manager/app
+  # Location for the provisioning files
+  provisioningDocroot: /deployment/manager/provisioning
+  # Redirect path when root URI is requested
+  rootRedirectPath: /manager
+
+  # Map related settings.
+  # Provide a path to the map tiles database file (see https://openmaptiles.com/).
+  mapTilesPath: /deployment/map/mapdata.mbtiles
+
+  # Override the map settings such as center location and zoom when opening the
+  # manager's map, as well as other style details and colours.
+  mapSettingsPath: /deployment/map/mapsettings.json
+
+  # When asset attributes are enabled for rule events, each value update will be a temporary
+  # fact in rules. You can set the global default expiration time span used when no other
+  # attribute-level configuration exists. Default is 1 hour.
+  ruleEventExpires: "PT1H"
+
+  # The identity provider implementation to use for managing user identities, roles, and
+  # access authorization. The default is 'keycloak' which requires a separate service but
+  # provides full multi-tenancy identity, role permissions, and user session timeouts.
+  # The 'basic' provider supports only superusers and their text passwords, managed in a
+  # simple database table, and always requires a new login when a page is reloaded.
+  identityProvider: "keycloak"
+
+  # For the Keycloak identity provider, you may configure session timeouts of frontend apps. This
+  # will only be applied on newly created realms, or once on the master realm when clean setup runs.
+
+  # Validity of non-offline refresh tokens, force login when expired on web app, default is 1 day.
+  identitySessionMaxMinutes: 1440
+
+  # Validity of offline refresh tokens, force login on native console app, default is 5 years.
+  # Note that production offline tokens should be valid for months or years: When the offline token
+  # expires, the native console app can no longer contact the service in the background (e.g. when
+  # processing push notifications) and will therefore fail silently until the user logs in again.
+  identitySessionOfflineTimeoutMinutes: 2628000
+
+  # Enable/disable Prometheus metrics collection
+  metricsEnabled: true
+  # Web server port used to host metrics endpoint
+  metricsPort: 8405
+
+  # The service-internal host name and port of the keycloak identity provider; defaults:
+  keycloak:
+    host: "keycloak"
+    port: "8080"
+    path: "auth"
+
+  # Database settings
+  dbVendor: "postgres"
+  postgresql:
+    host: "postgresql"
+    port: "5432"
+    database: "openremote"
+    schema: "openremote"
+    poolMinSize: 5
+    poolMaxSize: 20
+    connectionTimeoutSeconds: 300
