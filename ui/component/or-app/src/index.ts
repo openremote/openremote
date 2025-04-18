@@ -372,15 +372,15 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             if (!this._config.logo) {
                 this._config.logo = DefaultLogo;
             }else{
-                this._config.logo = (MANAGER_URL || "")+this._config.logo
+                this._config.logo = (manager.managerUrl ?? "") + this._config.logo
             }
             if (!this._config.logoMobile) {
                 this._config.logoMobile = DefaultMobileLogo;
             }else{
-                this._config.logoMobile = (MANAGER_URL || "")+this._config.logoMobile
+                this._config.logoMobile = (manager.managerUrl ?? "") + this._config.logoMobile
             }
 
-            const favIcon = this._config && this._config.favicon ? (MANAGER_URL || "")+this._config.favicon : DefaultFavIcon;
+            const favIcon = this._config && this._config.favicon ? (manager.managerUrl || "") + this._config.favicon : DefaultFavIcon;
 
             let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
 
