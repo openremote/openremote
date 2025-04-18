@@ -3,14 +3,12 @@
 # ---------------------------------------------------------------------------------------------------------------------
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Route 53 Healthcheck alarm'
-
 Parameters:
   Host:
     Description: FQDN for host
     Type: String
 
 Resources:
-
   HealthCheck:
     Type: AWS::Route53::HealthCheck
     Properties:

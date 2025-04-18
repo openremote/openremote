@@ -1,0 +1,146 @@
+# ---------------------------------------------------------------------------------------------------------------------
+#
+# CloudFormation Template for creating SSM Documents for attaching/detaching the EBS data volume.
+#
+# ---------------------------------------------------------------------------------------------------------------------
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'SSM documents for attaching/detaching the EBS data volume'
+Resources:
+  SSMDetachEBSDocument:
+    Type: AWS::SSM::Document
+    Properties:
+         Content:
+            schemaVersion: '2.2'
+            description: 'Script for detaching the EBS data volume'
+            parameters:
+              VolumeId:
+                type: String
+                description: Volume ID that needs to be detached.
+              DeviceName:
+                type: String
+                description: EBS Device name where this volume is mounted on.
+            mainSteps:
+              - name: StopDocker
+                action: aws:runShellScript
+                inputs:
+                    runCommand:
+                      - systemctl stop docker.socket docker.service
+              - name: RemoveFstabEntry
+                action: aws:runShellScript
+                inputs:
+                  runCommand: 
+                    - |
+                      UUID=$(sudo blkid -o value -s UUID {{ DeviceName }})
+                      if [ -n "$UUID" ]; then
+                        cp /etc/fstab /etc/fstab.orig
+                        sed -i '/UUID='$UUID'/d' /etc/fstab
+                      else
+                        echo "Failed to remove /etc/fstab entry. UUID is not found"
+                        exit 1
+                      fi
+              - name: UmountVolume
+                action: aws:runShellScript
+                inputs:
+                  runCommand:
+                    - umount {{ DeviceName }}
+              - name: DetachVolume
+                action: aws:runShellScript
+                inputs:
+                  runCommand: 
+                    - |
+                      VOLUME=$(aws ec2 detach-volume --volume-id {{ VolumeId }} 2>/dev/null)
+                      STATUS=$(aws ec2 describe-volumes --query "Volumes[?VolumeId=='{{ VolumeId }}'].State" --output text 2>/dev/null)
+                      
+                      count=0
+                      while [[ "$STATUS" == 'in-use' ]] && [[ $count -lt 30 ]] do
+                        echo "Volume is still detaching .. Sleeping 30 seconds"
+                        sleep 30
+                        STATUS=$(aws ec2 describe-volumes --query "Volumes[?VolumeId=='{{ VolumeId }}'].State" --output text 2>/dev/null)
+                        count=$((count+1))
+                      done
+
+                      if [ "$STATUS" != "available" ]; then
+                        echo "Failed to detach volume"
+                        exit 1
+                      fi
+         DocumentFormat: YAML
+         TargetType: /AWS::EC2::Instance
+         UpdateMethod: Replace
+         DocumentType: Command
+         Name: detach_volume
+  
+  SSMAttachEBSDocument:
+    Type: AWS::SSM::Document
+    Properties:
+         Content:
+            schemaVersion: '2.2'
+            description: 'Script for attaching the EBS data volume'
+            parameters:
+              InstanceId:
+                type: String
+                description: Instance ID where the script needs to be executed.
+              VolumeId:
+                type: String
+                description: Volume ID that needs to be attached.
+              DeviceName:
+                type: String
+                description: EBS Device name where this volume needs to be mounted on.
+            mainSteps:
+              - name: StopDocker
+                action: aws:runShellScript
+                inputs:
+                  runCommand:
+                    - systemctl stop docker.socket docker.service
+              - name: AttachVolume
+                action: aws:runShellScript
+                inputs:
+                  runCommand: 
+                    - |
+                      VOLUME=$(aws ec2 attach-volume --volume-id {{ VolumeId }} --instance-id {{ InstanceId }} --device {{ DeviceName }} 2>/dev/null)
+                      STATUS=$(aws ec2 describe-volumes --query "Volumes[?VolumeId=='{{ VolumeId }}'].State" --output text 2>/dev/null)
+                      
+                      count=0
+                      while [[ "$STATUS" == 'available' ]] && [ $count -lt 30 ]; do
+                        echo "Volume is still attaching .. Sleeping 30 seconds"
+                        sleep 30
+                        STATUS=$(aws ec2 describe-volumes --query "Volumes[?VolumeId=='{{ VolumeId }}'].State" --output text 2>/dev/null)
+                        count=$((count+1))
+                      done
+
+                      if [ "$STATUS" != 'in-use' ]; then
+                        echo "Volume attaching failed with status $STATUS"
+                        exit 1
+                      fi
+
+                      FILESYSTEM=$(blkid -o value -s TYPE {{ DeviceName }})
+
+                      if [ -z "$FILESYSTEM" ]; then
+                        mkfs -t xfs {{ DeviceName }}
+                        mount {{ DeviceName }} /var/lib/docker/volumes
+                      else
+                        mount {{ DeviceName }} /var/lib/docker/volumes
+                      fi
+              - name: AddFstabEntry
+                action: aws:runShellScript
+                inputs:
+                  runCommand:
+                    -  |
+                       UUID=$(blkid -o value -s UUID {{ DeviceName }})
+                       if [ -n "$UUID" ]; then
+                          cp /etc/fstab /etc/fstab.orig
+                          echo "UUID=$UUID /var/lib/docker/volumes xfs defaults,nofail 0 2" >> /etc/fstab
+                       else
+                          echo "Failed to add /etc/fstab entry. UUID is not found"
+                          exit 1
+                       fi
+              - name: StartDocker
+                action: aws:runShellScript
+                inputs:
+                    runCommand:
+                      - systemctl start docker.socket docker.service
+         DocumentFormat: YAML
+         TargetType: /AWS::EC2::Instance
+         UpdateMethod: Replace
+         DocumentType: Command
+         Name: attach_volume
