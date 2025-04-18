@@ -756,6 +756,9 @@
     "showLegend": "Show legend",
     "showGeoJson": "Show GeoJSON overlay",
     "showValueAs": "Show value as",
+    "defaultStacked": "Stack by default",
+    "showToolBox": "Show Toolbox",
+    "isChart": "Bar chart instead of table",
     "customLabel": "Custom label",
     "customTimeSpan": "Custom",
     "userCanEdit": "Allow user input",
@@ -770,7 +773,7 @@
     "center": "Center",
     "imageUrl": "Image URL",
     "noImageSelected": "No image selected",
-    "noData": "No data for selected timeperiod or no interval selected"
+    "noData": "No data"
   },
   "south": "South",
   "east": "East",

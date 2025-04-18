@@ -23,19 +23,20 @@ import "@openremote/or-translate";
 import {ECharts, EChartsOption, init} from "echarts";
 import {MDCDataTable} from "@material/data-table";
 import {TableColumn, TableRow, TableConfig} from "@openremote/or-mwc-components/or-mwc-table";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
-import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {cache} from "lit/directives/cache.js";
 import {throttle} from "lodash";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {when} from "lit/directives/when.js";
+import {createRef, Ref, ref } from "lit/directives/ref.js";
 
 export class OrAttributeReportEvent extends CustomEvent<OrAttributeReportEventDetail> {
 
@@ -193,6 +194,7 @@ const style = css`
         width: 100%;
         flex-direction: row;
         margin: 0;
+        border-top: 3px solid var(--or-app-color2);
     }
 
     #attribute-list {
@@ -200,8 +202,9 @@ const style = css`
         min-height: 50px;
         flex: 1 1 0;
         width: 100%;
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
     }
     .attribute-list-dense {
         flex-wrap: wrap;
@@ -238,6 +241,7 @@ const style = css`
         --or-icon-fill: var(--or-app-color4);
     }
     
+    
     .attribute-list-item-label {
         display: flex;
         flex: 1 1 0;
@@ -263,6 +267,7 @@ const style = css`
     #controls > * {
         margin-top: 5px;
         margin-bottom: 5px;
+        justify-content: center;
     }
 
     .dialog-container {
@@ -302,6 +307,7 @@ const style = css`
         height: 100%;
         max-width: 100%;
         overflow: hidden;
+        flex: 1 1 0;
     }
 
     #table {
@@ -533,8 +539,8 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
                     left: 25,//'5%', // 5% padding
                     right: 25,//'5%',
-                    //top: 28,//this.showToolBox ? 28 : 10,
-                    bottom:  55,
+                    top: this.chartSettings.showToolBox ? 28 : 10,
+                    bottom:  25, //55
                     containLabel: true
                 },
                 backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
@@ -545,7 +551,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                         type: 'shadow'
                     },
                 },
-                legend: this.chartSettings.showLegend ? {show: true} : undefined,
+                //legend: this.chartSettings.showLegend ? {show: true} : undefined,
                 toolbox: this.chartSettings.showToolBox ? {show:true, feature: {magicType: {type: ['bar', 'stack']}}} : undefined,
                 xAxis: {
                     type: 'category',
@@ -678,7 +684,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                         </div>
                     `)}
                     ${when(this._data?.every(entry => entry.data.length === 0), () => html`
-                        <div style="position: absolute; height: 100%; width: 100%; display: flex; justify-content: center; align-items: center; z-index: 1; pointer-events: none;">
+                        <div style="position: inherit; height: 100%; width: 100%; display: flex; justify-content: center; align-items: center; z-index: 1; pointer-events: none;">
                             <or-translate .value="${'dashboard.noData'}"></or-translate>
                         </div>
                     `)}
@@ -698,12 +704,55 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                 
                 ${(this.timestampControls || this.attributeControls || this.chartSettings.showLegend) ? html`
                     <div id="chart-controls">
+                        ${cache(this.chartSettings.showLegend ? html`
+                            <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}">
+                                ${this.assetAttributes == null || this.assetAttributes.length == 0 ? html`
+                                    <div>
+                                        <span>${i18next.t('noAttributesConnected')}</span>
+                                    </div>
+                                ` : undefined}
+                                ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
+                            const asset: Asset | undefined = this.assets[assetIndex];
+                            const colourIndex = index % this.colors.length;
+                            const color = this.colorPickedAttributes.find(({ attributeRef }) => attributeRef.name === attr.name && attributeRef.id === asset.id)?.color;
+                            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset!.type, attr.name, attr);
+                            const label = Util.getAttributeLabel(attr, descriptors[0], asset!.type, true);
+                            const axisNote = (this.attributeSettings.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
+                            const bgColor = ( color ?? this.colors[colourIndex] ) || "";
+                            //Find which calculation methods are active
+                            const methodList: { data: string | undefined; }[] = Object.entries(this.attributeSettings)
+                                    .filter(([key]) => key.includes('method'))
+                                    .map(([key, attributeRefs]) => {
+                                        const isActive = attributeRefs.some(
+                                                (ref: AttributeRef) =>
+                                                        ref.id === asset!.id && ref.name === attr.name
+                                        );
+                                        return {
+                                            data: isActive ? ` (${i18next.t(key)})` : undefined,
+                                        };
+                                    });
+
+
+
+                            return html`
+                                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}">
+                                            <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
+                                            <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
+                                                <div style="display: flex; justify-content: space-between;">
+                                                    <span style="font-size:12px; ${this.denseLegend ? 'margin-right: 8px' : undefined}">${this.assets[assetIndex].name}</span>
+                                                    ${when(axisNote, () => html`<span style="font-size:12px; color:grey">(${axisNote})</span>`)}
+                                                </div>
+                                                <span style="font-size:12px; color:grey;">${label} ${methodList.map(item => item.data)}</span>
+                                            </div>
+                                        </div>
+                                    `
+                        })}
+                            </div>
+                        ` : undefined)}
                         <div id="controls">
                             <div class="period-controls">
                                 ${this.timePrefixKey && this.timePrefixOptions && this.timeWindowKey && this.timeWindowOptions ? html`
                                     ${this.timestampControls ? html`
-                                        <!-- Scroll left button -->
-                                        <or-mwc-input .type="${InputType.BUTTON}" icon="chevron-left" @or-mwc-input-changed="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeWindowKey!, "previous")}"></or-mwc-input>
                                         <!-- Time prefix selection -->
                                         ${getContentWithMenuTemplate(
                                                 html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}"></or-mwc-input>`,
@@ -720,7 +769,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                                         )}
                                         <!-- Time window selection -->
                                         ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeWindowKey}"></or-mwc-input>`,
+                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "timeframe" : this.timeWindowKey}"></or-mwc-input>`,
                                                 Array.from(this.timeWindowOptions!.keys()).map((key) => ({ value: key } as ListItem)),
                                                 this.timeWindowKey,
                                                 (value: string | string[]) => {
@@ -732,8 +781,12 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                                                 undefined,
                                                 true
                                         )}
+                                        <!-- Scroll left button -->
+                                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeWindowKey!, "previous")}"></or-icon>
                                         <!-- Scroll right button -->
-                                        <or-mwc-input .type="${InputType.BUTTON}" icon="chevron-right" @or-mwc-input-changed="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeWindowKey!, "next")}"></or-mwc-input>
+                                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeWindowKey!, "next")}"></or-icon>
+                                        <!-- Button that opens custom time selection -->
+                                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="calendar-clock" @click="${() => this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-icon>
                                     ` : html`
                                         <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePrefixKey} ${this.timeWindowKey}" disabled="true"></or-mwc-input>
                                     `}
@@ -759,36 +812,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                                 <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="selectAttributes" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
                             ` : undefined}
                         </div>
-                        ${cache(this.chartSettings.showLegend ? html`
-                            <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}">
-                                ${this.assetAttributes == null || this.assetAttributes.length == 0 ? html`
-                                    <div>
-                                        <span>${i18next.t('noAttributesConnected')}</span>
-                                    </div>
-                                ` : undefined}
-                                ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
-                                    const asset: Asset | undefined = this.assets[assetIndex];
-                                    const colourIndex = index % this.colors.length;
-                                    const color = this.colorPickedAttributes.find(({ attributeRef }) => attributeRef.name === attr.name && attributeRef.id === asset.id)?.color;
-                                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset!.type, attr.name, attr);
-                                    const label = Util.getAttributeLabel(attr, descriptors[0], asset!.type, true);
-                                    const axisNote = (this.attributeSettings.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
-                                    const bgColor = ( color ?? this.colors[colourIndex] ) || "";
-                                    return html`
-                                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseenter="${() => this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseleave="${()=> this.removeDatasetHighlight()}">
-                                            <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
-                                            <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
-                                                <div style="display: flex; justify-content: space-between;">
-                                                    <span style="font-size:12px; ${this.denseLegend ? 'margin-right: 8px' : undefined}">${this.assets[assetIndex].name}</span>
-                                                    ${when(axisNote, () => html`<span style="font-size:12px; color:grey">(${axisNote})</span>`)}
-                                                </div>
-                                                <span style="font-size:12px; color:grey;">${label}</span>
-                                            </div>
-                                        </div>
-                                    `
-                                })}
-                            </div>
-                        ` : undefined)}
+                        
                     </div>
                 ` : undefined}
             </div>
@@ -814,42 +838,6 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             this.activeAsset = assetEvent.asset;
         }
     }
-
-    removeDatasetHighlight() {
-        if(this._chart){
-            let options = this._chart.getOption();
-            if (options.series && Array.isArray(options.series)) {
-                options.series.forEach(function (series) {
-                    if (series.lineStyle.opacity == 0.2 || series.lineStyle.opacity == 0.99) {
-                        series.lineStyle.opacity = 0.31;
-                    } else {
-                        series.lineStyle.opacity = 1;
-                    }
-                });
-            }
-            this._chart.setOption(options);
-        }
-    }
-
-    addDatasetHighlight(assetId?:string, attrName?:string) {
-        if (this._chart) {
-            let options = this._chart.getOption();
-            if (options.series && Array.isArray(options.series)) {
-                options.series.forEach(function (series) {
-                    if (series.assetId != assetId || series.attrName != attrName) {
-                        if (series.lineStyle.opacity == 0.31) { // 0.31 is faint setting, 1 is normal
-                            series.lineStyle.opacity = 0.2;
-                        } else {
-                            series.lineStyle.opacity = 0.3;
-                        }
-                    } else if (series.lineStyle.opacity == 0.31) { // extra highlight if selected is faint
-                        series.lineStyle.opacity = 0.99;
-                    }
-                });
-            }
-            this._chart.setOption(options)
-        }
-    };
 
 
 
@@ -992,6 +980,32 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         dialog.addEventListener(OrAttributePickerPickedEvent.NAME, (ev: any) => this._addAttribute(ev.detail));
     }
 
+    protected _openTimeDialog(startTimestamp?: number, endTimestamp?: number) {
+        const startRef: Ref<OrMwcInput> = createRef();
+        const endRef: Ref<OrMwcInput> = createRef();
+        const dialog = showDialog(new OrMwcDialog()
+            .setHeading(i18next.t('timeframe'))
+            .setContent(() => html`
+                <div>
+                    <or-mwc-input ${ref(startRef)} type="${InputType.DATETIME}" required label="${i18next.t('start')}" .value="${startTimestamp}"></or-mwc-input>
+                    <or-mwc-input ${ref(endRef)} type="${InputType.DATETIME}" required label="${i18next.t('ending')}" .value="${endTimestamp}"></or-mwc-input>
+                </div>
+            `)
+            .setActions([{
+                actionName: "cancel",
+                content: "cancel"
+            }, {
+                actionName: "ok",
+                content: "ok",
+                action: () => {
+                    if(startRef.value?.value && endRef.value?.value) {
+                        this.timeframe = [new Date(startRef.value.value), new Date(endRef.value.value)];
+                    }
+                }
+            }])
+        )
+    }
+
 
     protected async _addAttribute(selectedAttrs?: AttributeRef[]) {
         if (!selectedAttrs) return;
@@ -1131,15 +1145,15 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             return [20, DatapointInterval.MINUTE,"h:mmA"];
         } else if(diffInHours <= 6) {
             return [30, DatapointInterval.MINUTE,"h:mmA"];
-        } else if(diffInHours <= 24) { // one day
+        } else if(diffInHours <= 24) { // hour if up to one day
             return [1, DatapointInterval.HOUR,"h:mmA"];
-        } else if(diffInHours <= 48) { // two days
+        } else if(diffInHours <= 48) { // hour if up to two days
             return [6, DatapointInterval.HOUR,"h:mmA"];
-        } else if(diffInHours <= 96) {
-            return [12, DatapointInterval.HOUR,"MMM Do hA"];
-        } else if(diffInHours <= 744) { // one month
+        } else if(diffInHours <= 744) { // one day if up to one month
             return [1, DatapointInterval.DAY,"ddd | MMM Do"];
-        } else {
+        } else if(diffInHours <= 8760) { // one week if up to 1 year
+            return [1, DatapointInterval.WEEK,"[Week] w 'YY"];
+        } else { // one month if more than a year
             return [1, DatapointInterval.MONTH,"MMM 'YY"];
         }
     }
@@ -1272,17 +1286,17 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                 // @ts-ignore
                 valueFormatter: value => value + unit
             },
-            label: {
-                show: true,
-                align: 'left',
-                verticalAlign: 'middle',
-                position: 'insideBottom',
-                rotate: '90',
-                distance: 15,
-                formatter: (params: { dataIndex: number; value: number }): string => {
-                    // Show labels only for the first index (index 0)
-                    return params.dataIndex === 0 ? `${formula}` : '';  //Or make it i18next.t(formula) to display longer text
-                }}
+            //label: {
+            //    show: true,
+            //    align: 'left',
+            //    verticalAlign: 'middle',
+            //    position: 'insideBottom',
+            //    rotate: '90',
+            //    distance: 15,
+            //    formatter: (params: { dataIndex: number; value: number }): string => {
+            //        // Show labels only for the first index (index 0)
+            //        return params.dataIndex === 0 ? `${formula}` : '';  //Or make it i18next.t(formula) to display longer text
+            //    }}
         }
 
 
