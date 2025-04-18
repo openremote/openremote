@@ -5,6 +5,7 @@ const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const ForkTsCheckerNotifierWebpackPlugin = require("fork-ts-checker-notifier-webpack-plugin");
 const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
+const OrCustomElementsManifestPlugin = require('./custom-elements-plugin');
 
 function getStandardModuleRules() {
     return {
@@ -266,7 +267,7 @@ function generateExternals(bundle) {
     return externals;
 }
 
-function generateExports(dirname) {
+function generateExports(dirname, customElement) {
 
     let libName = getLibName(dirname.split(path.sep).pop());
 
@@ -274,7 +275,7 @@ function generateExports(dirname) {
         const entry = {};
         entry[name] = "./src/index.ts";
 
-        return {
+        const config = {
             entry: entry,
             mode: "production",
             output: {
@@ -288,8 +289,15 @@ function generateExports(dirname) {
                 fallback: { "vm": false }
             },
             module: {...getStandardModuleRules()},
-            externals: generateExternals(bundle)
+            externals: generateExternals(bundle),
         };
+
+        if(customElement) {
+            if(!config.plugins) config.plugins = [];
+            config.plugins.push(new OrCustomElementsManifestPlugin());
+        }
+
+        return config;
     });
 }
 
