@@ -128,7 +128,7 @@ services:
       ML_OR_SERVICE_USER: mlserviceuser
       ML_OR_SERVICE_USER_SECRET: ${ML_OR_SERVICE_USER_SECRET:-secret}
     volumes:
-      - service-ml-forecast-data:/deployment
+      - service-ml-forecast-data:/app/deployment
     <<: *awslogs
 
 
