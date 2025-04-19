@@ -174,13 +174,12 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
                 AGENT_LINK,
                 new ModbusAgentLink(
                         id: agent.getId(),
-                        refresh: 1000,
+                        pollInterval: 1000,
                         readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                         readValueType: ModbusAgentLink.ModbusDataType.UINT,
                         readAddress: 2,
                         writeMemoryArea: ModbusAgentLink.WriteMemoryArea.HOLDING,
-                        writeAddress: 3,
-                        writeValueType: ModbusAgentLink.ModbusDataType.UINT
+                        writeAddress: 3
                 )
         )));
 
@@ -201,7 +200,7 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
 
             assert (latestReadMessage.get() as ModbusMessage).getUnitId() === 1
             assert (latestReadMessage.get() as ModbusMessage).getFunction() === ModbusFunctionCode.ReadHoldingRegisters
-            assert (latestReadMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage.class).getAddress() == agentLink.getReadAddress();
+            assert (latestReadMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage.class).getAddress() == agentLink.getReadAddress()-1;
             assert (latestReadMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage.class).getCount() == 1
         }
 
@@ -219,7 +218,7 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
             def msg = (latestWriteMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage);
             assert msg != null
             assert msg.getCount() == 1
-            assert msg.getAddress() == agentLink.getWriteAddress().get();
+            assert msg.getAddress() == agentLink.getWriteAddress().get()-1;
             assert msg.dataDecodeUnsigned() == [123] as int[];
 
             ship = assetStorageService.find(ship.getId(), true)
@@ -234,13 +233,12 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
                 AGENT_LINK,
                 new ModbusAgentLink(
                         id: agent.getId(),
-                        refresh: 1000,
+                        pollInterval: 1000,
                         readMemoryArea: ModbusAgentLink.ReadMemoryArea.COIL,
                         readValueType: ModbusAgentLink.ModbusDataType.BOOL,
                         readAddress: 5,
                         writeMemoryArea: ModbusAgentLink.WriteMemoryArea.COIL,
-                        writeAddress: 6,
-                        writeValueType: ModbusAgentLink.ModbusDataType.BOOL
+                        writeAddress: 6
                 )
         )));
 
@@ -263,7 +261,7 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
             def msg = (latestReadMessage.get() as ModbusMessage).unwrap(BitsModbusMessage);
             assert msg != null
             assert msg.getCount() == 1
-            assert msg.getAddress() == agentLink.getReadAddress()
+            assert msg.getAddress() == agentLink.getReadAddress()-1
 
             ship = assetStorageService.find(ship.getId(), true)
             assert ship.getAttribute("coil1").flatMap { it.getValue() }.orElse(null) == true
@@ -279,14 +277,11 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
             def msg = (latestWriteMessage.get() as ModbusMessage).unwrap(BitsModbusMessage);
             assert msg != null
             assert msg.getCount() == 1
-            assert msg.getAddress() == 6
+            assert msg.getAddress() == 5
             assert msg.getBits() == BigInteger.valueOf(0x0001)
 
             ship = assetStorageService.find(ship.getId(), true)
             assert ship.getAttribute("coil1").flatMap { it.getValue() }.orElse(null) == true
         }
-//        and: "I send the correct boolean to the coil"
-
-
     }
 }

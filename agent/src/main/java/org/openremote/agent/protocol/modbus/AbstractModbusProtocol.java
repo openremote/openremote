@@ -26,7 +26,6 @@ import org.apache.plc4x.java.api.messages.PlcWriteRequest;
 import org.apache.plc4x.java.api.messages.PlcWriteResponse;
 import org.apache.plc4x.java.api.types.PlcResponseCode;
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.agent.protocol.velbus.AbstractVelbusProtocol;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
@@ -44,9 +43,10 @@ import java.util.logging.Logger;
 import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
-public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,T>, T extends ModbusAgent<T, S>> extends AbstractProtocol<T, ModbusAgentLink>{
+public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,T>, T extends ModbusAgent<T, S>>
+        extends AbstractProtocol<T, ModbusAgentLink>{
 
-    public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractVelbusProtocol.class);
+    public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractModbusProtocol.class);
 
     protected final Map<AttributeRef, ScheduledFuture<?>> pollingMap = new HashMap<>();
 
@@ -83,7 +83,15 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     @Override
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) throws RuntimeException {
         AttributeRef ref = new AttributeRef(assetId, attribute.getName());
-        pollingMap.put(ref, schedulePollingRequest(ref, attribute, ((int) agentLink.getRefresh()), agentLink.getReadMemoryArea(), agentLink.getReadValueType(), agentLink.getReadAddress()));
+        pollingMap.put(ref,
+                scheduleModbusPollingReadRequest(
+                    ref,
+                    agentLink.getPollInterval(),
+                    agentLink.getReadMemoryArea(),
+                    agentLink.getReadValueType(),
+                    agentLink.getReadAddress()
+                )
+        );
     }
 
     @Override
@@ -99,14 +107,14 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
         // Look at comment in schedulePollingRequest for an explanation to this
-        int offsetWriteAddress = getOrThrowAgentLinkProperty(agentLink.getWriteAddress(), "write address") + 1;
+        int writeAddress = getOrThrowAgentLinkProperty(agentLink.getWriteAddress(), "write address");
 
         PlcWriteRequest.Builder builder = client.writeRequestBuilder();
 
         switch (agentLink.getWriteMemoryArea()){
-            case COIL -> builder.addTagAddress("coil", "coil:" + offsetWriteAddress, processedValue);
-            case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + offsetWriteAddress, processedValue);
-            default -> throw new IllegalStateException("No other coil is allowed to write to a Modbus server");
+            case COIL -> builder.addTagAddress("coil", "coil:" + writeAddress, processedValue);
+            case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + writeAddress, processedValue);
+            default -> throw new IllegalStateException("No other memory area is allowed to write to a Modbus server");
         }
 
         PlcWriteRequest request = builder.build();
@@ -121,44 +129,36 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
         }
     }
 
-    protected ScheduledFuture<?> schedulePollingRequest(AttributeRef ref,
-                                                        Attribute<?> attribute,
-                                                        int pollingMillis,
-                                                        ModbusAgentLink.ReadMemoryArea readType,
-                                                        ModbusAgentLink.ModbusDataType dataType,
-                                                        int readAddress) {
+    protected ScheduledFuture<?> scheduleModbusPollingReadRequest(AttributeRef ref,
+                                                                  long pollingMillis,
+                                                                  ModbusAgentLink.ReadMemoryArea readType,
+                                                                  ModbusAgentLink.ModbusDataType dataType,
+                                                                  int readAddress) {
 
-        LOG.log(Level.FINE,"Scheduling polling request '" + "clientRequest" + "' to execute every " + pollingMillis + "ms for attribute: " + attribute);
+        PlcReadRequest.Builder builder = client.readRequestBuilder();
+        switch (readType) {
+            case COIL -> builder.addTagAddress("coils", "coil:" + readAddress + ":" + dataType);
+            case DISCRETE -> builder.addTagAddress("discreteInputs", "discrete-input:" + readAddress + ":" + dataType);
+            case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + readAddress + ":" + dataType);
+            case INPUT -> builder.addTagAddress("inputRegisters", "input-register:" + readAddress + ":" + dataType);
+            default -> throw new IllegalArgumentException("Unsupported read type: " + readType);
+        }
+        PlcReadRequest readRequest = builder.build();
+
+        LOG.log(Level.FINE,"Scheduling Modbus Read Value polling request '" + "clientRequest" + "' to execute every " + pollingMillis + "ms for attributeRef: " + ref);
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
-                // PLC4X accounts for zero-based addressing by removing 1 from the readAddress that is being read/written, so we compensate for that.
-                // So when I try to read address 3, it is really reading address 2, which is the 3rd element of the values.
-                // I think this could lead to some confusion, so I'll add that 1 back.
-
-                int offsetReadAddress = readAddress + 1;
-
-                PlcReadRequest.Builder builder = client.readRequestBuilder();
-                switch (readType) {
-                    case COIL -> builder.addTagAddress("coils", "coil:" + offsetReadAddress + ":" + dataType);
-                    case DISCRETE -> builder.addTagAddress("discreteInputs", "discrete-input:" + offsetReadAddress + ":" + dataType);
-                    case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + offsetReadAddress + ":" + dataType);
-                    case INPUT -> builder.addTagAddress("inputRegisters", "input-register:" + offsetReadAddress + ":" + dataType);
-                    default -> throw new IllegalArgumentException("Unsupported read type: " + readType);
-                }
-                PlcReadRequest readRequest = builder.build();
-
                 PlcReadResponse response = readRequest.execute().get(3, TimeUnit.SECONDS);
 
                 // We currently only request one thing (with the above tag), so we get it from there. If it doesn't exist,
                 // we can assume that the request failed.
-
                 String responseTag = response.getTagNames().stream().findFirst()
                         .orElseThrow(() -> new RuntimeException("Could not retrieve the requested value from the response"));
 
                 Object responseValue = response.getObject(responseTag);
                 updateLinkedAttribute(ref, responseValue);
             } catch (Exception e) {
-                LOG.log(Level.WARNING, prefixLogMessage("Exception thrown whilst processing polling response"));
+                LOG.log(Level.FINE,"Exception thrown during Modbus Read Value polling request '" + readRequest.toString());
             }
         }, 0, pollingMillis, TimeUnit.MILLISECONDS);
     }

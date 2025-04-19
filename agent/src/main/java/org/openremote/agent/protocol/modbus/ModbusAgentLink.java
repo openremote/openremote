@@ -29,37 +29,36 @@ import java.util.Optional;
 //TODO: Make non-primitive parameters required
 public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
 
+    @NotNull
     @JsonPropertyDescription("Poll interval in milliseconds")
-    @NotNull
-    private long refresh;
+    private long pollInterval;
 
-    @JsonPropertyDescription("Read type: \"coil\" (FC01), \"discrete\" (FC02), \"holding\" (FC03), \"input\" (FC04)")
     @NotNull
+    @JsonPropertyDescription("Memory area to read from during read request")
     private ReadMemoryArea readMemoryArea;
 
-    @JsonPropertyDescription("Read value type: \"int64\", \"int64_swap\", \"uint64\", \"uint64_swap\", \"float32\", \"float32_swap\", \"int32\", \"int32_swap\", \"uint32\", \"uint32_swap\", \"int16\", \"uint16\", \"int8\", \"uint8\", \"bit\"")
     @NotNull
+    @JsonPropertyDescription("Type to convert the returned data to. As specified by the PLC4X Modbus data types.")
     private ModbusDataType readValueType;
 
-    @JsonPropertyDescription("Zero based address for reading data")
     @NotNull
+    @JsonPropertyDescription("Zero based address from which the value is read from")
     private int readAddress;
 
-    @JsonPropertyDescription("Write type: \"coil\", \"holding\"")
+    @NotNull
+    @JsonPropertyDescription("Memory area to write to. \"HOLDING\" or \"COIL\" allowed.")
     private WriteMemoryArea writeMemoryArea;
 
-    @JsonPropertyDescription("Zero based address for writing data")
+    @NotNull
+    @JsonPropertyDescription("Zero-based address to which the value sent is written to")
     private int writeAddress;
 
-    @JsonPropertyDescription("Write value type: \"int64\", \"int64_swap\", \"float32\", \"float32_swap\", \"int32\", \"int32_swap\", \"int16\", \"bit\"")
-    private ModbusDataType writeValueType;
-
-    public long getRefresh() {
-        return refresh;
+    public long getPollInterval() {
+        return pollInterval;
     }
 
-    public void setRefresh(long refresh) {
-        this.refresh = refresh;
+    public void setPollInterval(long pollInterval) {
+        this.pollInterval = pollInterval;
     }
 
     public ReadMemoryArea getReadMemoryArea() {
@@ -95,22 +94,13 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     }
 
     public Optional<Integer> getWriteAddress() {
-        return Optional.ofNullable(writeAddress);
+        return Optional.of(writeAddress);
     }
 
     public void setWriteAddress(int writeAddress) {
         this.writeAddress = writeAddress;
     }
 
-    public ModbusDataType getWriteValueType() {
-        return writeValueType;
-    }
-
-    public void setWriteValueType(ModbusDataType writeValueType) {
-        this.writeValueType = writeValueType;
-    }
-
-    // Enums for readMemoryArea, readValueType, and writeValueType
     public enum ReadMemoryArea {
         COIL, DISCRETE, HOLDING, INPUT
     }
@@ -149,14 +139,8 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         COIL, HOLDING
     }
 
-    public enum WriteValueType {
-        INT64, INT64_SWAP, FLOAT32, FLOAT32_SWAP,
-        INT32, INT32_SWAP, INT16, BIT
-    }
 
-    public ModbusAgentLink(String id) {
-        super(id);
-    }
+    public ModbusAgentLink(String id) {super(id);}
 
     protected ModbusAgentLink() {
     }
