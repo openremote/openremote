@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "postgresql.fullname" . }}
+  labels:
+    {{- include "postgresql.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "postgresql.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "postgresql.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "postgresql.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: TZ
+              value: "{{ .Values.or.timeZone }}"
+            - name: PGTZ
+              value: "{{ .Values.or.timeZone }}"
+            - name: POSTGRES_DB
+              value: "{{ .Values.or.postgresql.database }}"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: openremote-secret
+                  key: postgresql-username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: openremote-secret
+                  key: postgresql-password
+            - name: POSTGRES_MAX_CONNECTIONS
+              value: "{{ .Values.or.postgresql.maxConnections }}"
+          {{- with .Values.or.env }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgresql-data
+          {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- if .Values.requiresPermissionsFix }}
+      initContainers:
+        - name: psql-data-ownership
+          image: alpine:latest
+          command: ['sh', '-c', 'chown -R 70:70 /var/lib/postgresql/data && chmod -R 0750 /var/lib/postgresql/data']
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgresql-data
+      {{- end }}
+      volumes:
+        - name: postgresql-data
+          persistentVolumeClaim:
+            claimName: {{ include "postgresql.fullname" . }}
+      {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
