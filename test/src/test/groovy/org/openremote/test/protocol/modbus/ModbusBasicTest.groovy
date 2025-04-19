@@ -149,7 +149,7 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
         def agent = new ModbusTcpAgent("Modbus")
         agent.setRealm(MASTER_REALM)
 
-        agent.setHost("localhost")
+        agent.setHost("127.0.0.1")
         agent.setPort(modbusServerPort)
         agent.setUnitId(1)
 
