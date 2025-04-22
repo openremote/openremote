@@ -43,7 +43,7 @@ public interface MapResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @Operation(operationId = "saveSettings", summary = "Update map settings")
-    Object saveSettings(@BeanParam RequestParams requestParams, MapConfig mapConfig);
+    ObjectNode saveSettings(@BeanParam RequestParams requestParams, MapConfig mapConfig);
 
     /**
      * Returns style used to initialise Mapbox GL
