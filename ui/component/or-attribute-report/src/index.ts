@@ -449,10 +449,16 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     public timeWindowKey?: string;
 
     @property()
+    public isCustomWindow?: boolean = false;
+
+    @property()
     public denseLegend: boolean = false;
 
     @property()
     public isChart: boolean = false;
+
+    @property()
+    public decimals: number = 2;
 
     @property()
     protected _loading: boolean = false;
@@ -755,7 +761,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                                     ${this.timestampControls ? html`
                                         <!-- Time prefix selection -->
                                         ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}"></or-mwc-input>`,
+                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}" ?disabled="${!!this.timeframe}" ></or-mwc-input>`,
                                                 this.timePrefixOptions.map((option) => ({ value: option } as ListItem)),
                                                 this.timePrefixKey,
                                                 (value: string | string[]) => {
@@ -769,7 +775,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                                         )}
                                         <!-- Time window selection -->
                                         ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "timeframe" : this.timeWindowKey}"></or-mwc-input>`,
+                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.isCustomWindow ? "timeframe" : this.timeWindowKey}" ?disabled="${!!this.timeframe}" ></or-mwc-input>`,
                                                 Array.from(this.timeWindowOptions!.keys()).map((key) => ({ value: key } as ListItem)),
                                                 this.timeWindowKey,
                                                 (value: string | string[]) => {
@@ -782,11 +788,11 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                                                 true
                                         )}
                                         <!-- Scroll left button -->
-                                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeWindowKey!, "previous")}"></or-icon>
+                                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!),this.timeframe? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "previous")}"></or-icon>
                                         <!-- Scroll right button -->
-                                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeWindowKey!, "next")}"></or-icon>
-                                        <!-- Button that opens custom time selection -->
-                                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="calendar-clock" @click="${() => this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-icon>
+                                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!),this.timeframe? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "next")}"></or-icon>
+                                        <!-- Button that opens custom time selection or restores to widget setting-->
+                                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="${this.timeframe ? 'restore' : 'calendar-clock'}" @click="${() => this.timeframe ? (this.isCustomWindow = false, this.timeframe = undefined)  : this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-icon>
                                     ` : html`
                                         <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePrefixKey} ${this.timeWindowKey}" disabled="true"></or-mwc-input>
                                     `}
@@ -981,6 +987,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     }
 
     protected _openTimeDialog(startTimestamp?: number, endTimestamp?: number) {
+        this.isCustomWindow = true;
         const startRef: Ref<OrMwcInput> = createRef();
         const endRef: Ref<OrMwcInput> = createRef();
         const dialog = showDialog(new OrMwcDialog()
@@ -1122,7 +1129,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     }
 
 
-    protected _shiftTimeframe(currentStart: Date, timeWindowSelected: string, direction: string) {
+    protected _shiftTimeframe(currentStart: Date, currentEnd: Date, timeWindowSelected: string, direction: string) {
         const timeWindow = this.timeWindowOptions!.get(timeWindowSelected);
 
         if (!timeWindow) {
@@ -1132,7 +1139,8 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         const [unit, value] = timeWindow;
         let newStart = moment(currentStart);
         direction === "previous" ? newStart.subtract(value, unit as moment.unitOfTime.DurationConstructor) : newStart.add(value, unit as moment.unitOfTime.DurationConstructor);
-        let newEnd = moment(newStart).add(value, unit as moment.unitOfTime.DurationConstructor);
+        let newEnd = moment(currentEnd)
+        direction === "previous" ? newEnd.subtract(value, unit as moment.unitOfTime.DurationConstructor) : newEnd.add(value, unit as moment.unitOfTime.DurationConstructor);
         this.timeframe = [newStart.toDate(), newEnd.toDate()];
     }
 
@@ -1322,7 +1330,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     .filter(value => value.y !== null && value.y !== undefined)
                     .map(point => ({x: point.x, y: point.y} as ValueDatapoint<any>))
 
-                dataset.data = data.map(point => [moment(point.x).format(intervalArr[2]), point.y]);
+                dataset.data = data.map(point => [moment(point.x).format(intervalArr[2]), +point.y.toFixed(this.decimals)]);
             }
 
 

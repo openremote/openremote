@@ -79,7 +79,7 @@ export class ReportSettings extends WidgetSettings {
                 ${when(isOnRightAxis, () => html`
                     <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="right"></or-translate></span>   
                 `)}
-                <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value=${methodList.map(item => item.data)}></or-translate></span>
+                <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value=${methodList}></or-translate></span>
             `
         }
 
@@ -174,6 +174,12 @@ export class ReportSettings extends WidgetSettings {
                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onIsChartToggle(ev)}"
                            ></or-mwc-input>
                        </div>
+                       <!-- Decimal places -->
+                       <div>
+                            <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${this.widgetConfig.decimals}" label="${i18next.t('decimals')}" .min="${0}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onDecimalsChange(ev)}"
+                            ></or-mwc-input>
+                        </div>
                     </div>
                 </settings-panel>
 
@@ -303,7 +309,7 @@ export class ReportSettings extends WidgetSettings {
     protected removeFromAttributeSettings(attributeRef: AttributeRef) {
         const settings = this.widgetConfig.attributeSettings;
         (Object.keys(settings) as (keyof typeof settings)[]).forEach(key => {
-            settings[key] = settings[key].filter((ar: AttributeRef) => ar.id !== attributeRef.id || ar.name !== attributeRef.name);
+            settings[key] = settings[key].filter((ar: AttributeRef) => !(ar.id === attributeRef.id && ar.name === attributeRef.name));
         });
     }
 
@@ -481,6 +487,11 @@ export class ReportSettings extends WidgetSettings {
 
     protected onMinMaxValueToggle(axis: 'left' | 'right', type: 'min' | 'max', ev: OrInputChangedEvent) {
         this.setAxisMinMaxValue(axis, type, (ev.detail.value ? (type === 'min' ? 0 : 100) : undefined));
+    }
+
+    protected onDecimalsChange(ev: OrInputChangedEvent) {
+        this.widgetConfig.decimals = ev.detail.value;
+        this.notifyConfigUpdate();
     }
 
 }
