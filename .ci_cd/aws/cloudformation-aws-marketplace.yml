@@ -1,12 +1,12 @@
 # ---------------------------------------------------------------------------------------------------------------------
 #
-# OpenRemote AWS Marketplace CloudFormation Template
-# This template will be used for spinning up an OpenRemote instance via the AWS Marketplace.
+# OpenRemote AWS Marketplace CloudFormation template
+# This template will be used for spinning up an OpenRemote instance via the AWS Marketplace
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Deploy an OpenRemote instance via the AWS Marketplace.'
+Description: 'Deploy an OpenRemote instance via the AWS Marketplace'
 Metadata:
   AWS::CloudFormation::Interface: 
     ParameterGroups:
@@ -154,7 +154,7 @@ Resources:
       InstanceTenancy: default
       Tags:
         - Key: Name
-          Value: !Sub ${AWS::StackName}/or-vpc
+          Value: !Sub ${AWS::StackName}-or-vpc
   
   IPv6CIDRBlock:
     Type: AWS::EC2::VPCCidrBlock
@@ -167,7 +167,7 @@ Resources:
     Properties:
       Tags: 
         - Key: Name
-          Value: !Sub ${AWS::StackName}/or-internet-gateway
+          Value: !Sub ${AWS::StackName}-or-internet-gateway
   
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -186,7 +186,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub ${AWS::StackName}/or-public-subnet
+          Value: !Sub ${AWS::StackName}-or-public-subnet
   
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
@@ -194,7 +194,7 @@ Resources:
       VpcId: !Ref VPC
       Tags: 
         - Key: Name
-          Value: !Sub ${AWS::StackName}/or-routetable
+          Value: !Sub ${AWS::StackName}-or-routetable
   
   PublicRouteIPv4:
     Type: AWS::EC2::Route
@@ -222,7 +222,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Access OpenRemote Services
-      GroupName: !Sub ${AWS::StackName}/or-securitygroup
+      GroupName: !Sub ${AWS::StackName}-or-securitygroup
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -268,8 +268,8 @@ Resources:
   SSHSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: OpenRemote SSH Whitelist
-      GroupName: !Sub ${AWS::StackName}/or-ssh-whitelist
+      GroupDescription: OpenRemote SSH whitelist
+      GroupName: !Sub ${AWS::StackName}-or-ssh-whitelist
       VpcId: !Ref VPC
     
   EC2Instance:
@@ -283,6 +283,7 @@ Resources:
         configSets:
           openremote:
             - docker_installation
+            - openremote_installation
             - start_openremote
         
         docker_installation:
@@ -296,16 +297,18 @@ Resources:
                 chkconfig docker on
                 curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose
               test: docker-compose --version >/dev/null 2>&1; (( $? != 0 ))
-
-            02_download_docker_compose_openremote:
-              command: |
-                wget https://raw.githubusercontent.com/openremote/openremote/refs/heads/master/docker-compose.yml -P /openremote
-              test: ls /openremote/docker-compose.yml >/dev/null 2>&1; (( $? != 0 ))
           services:
             systemd:
               docker:
                 enabled: true
                 ensureRunning: true
+        
+        openremote_installation:
+          commands:
+            01_openremote_installation:
+              command: |
+                wget https://raw.githubusercontent.com/openremote/openremote/refs/heads/master/docker-compose.yml -P /openremote
+              test: ls /openremote/docker-compose.yml >/dev/null 2>&1; (( $? != 0 ))
 
         start_openremote:
           commands:
@@ -335,7 +338,7 @@ Resources:
       Ipv6AddressCount: 1
       Tags:
       - Key: Name
-        Value: !Sub ${AWS::StackName}/AWS Marketplace
+        Value: !Sub ${AWS::StackName}-AWS Marketplace
       BlockDeviceMappings:
       - DeviceName: /dev/xvda
         Ebs:
@@ -343,7 +346,7 @@ Resources:
           VolumeType: gp3
           DeleteOnTermination: true
       UserData:
-        !Base64
+        Fn::Base64: 
           Fn::Sub: |
             #!/bin/bash -xe
             # Install CFN scripts.
@@ -361,7 +364,7 @@ Resources:
     Properties:
       Tags:
         - Key: Name
-          Value: !Sub ${AWS::StackName}/Hostname
+          Value: !Sub ${AWS::StackName}-host
   
   ElasticIPAssoc:
     Type: AWS::EC2::EIPAssociation
