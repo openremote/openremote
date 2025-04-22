@@ -209,11 +209,11 @@ export class Manager implements EventProviderFactory {
     }
 
     get managerUrl() {
-        return this._config.managerUrl;
+        return this._config?.managerUrl;
     }
 
     get keycloakUrl() {
-        return this._config.keycloakUrl;
+        return this._config?.keycloakUrl;
     }
 
     get isError() {
@@ -655,7 +655,7 @@ export class Manager implements EventProviderFactory {
         if (this._config.loadIcons) {
             IconSets.addIconSet(
                 "mdi",
-                createMdiIconSet(manager.config.managerUrl!)
+                createMdiIconSet(manager.managerUrl!)
             );
             IconSets.addIconSet(
                 "or",
@@ -666,7 +666,7 @@ export class Manager implements EventProviderFactory {
 
     protected async getConsoleAppConfig(): Promise<boolean> {
         try {
-            const response = await fetch(manager.config.managerUrl + "/consoleappconfig/" + manager.displayRealm + ".json");
+            const response = await fetch((manager.managerUrl ?? "") + "/consoleappconfig/" + manager.displayRealm + ".json");
             this._consoleAppConfig = await response.json() as ConsoleAppConfig;
             return true;
         } catch (e) {
