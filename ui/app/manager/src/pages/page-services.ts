@@ -61,7 +61,7 @@ export class PageServices extends Page<AppStateKeyed> {
         this.getRealmState(state);
     }
 
-    protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.displayRealm;
+    protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.config.realm;
 
     protected getRealmState = createSelector(
         [this._realmSelector],
@@ -76,12 +76,16 @@ export class PageServices extends Page<AppStateKeyed> {
     protected realmName: string;
 
     protected render() {
+        // Super user doesnt need to provide realm query param
+        //const serviceUrl = manager.isSuperUser() ? `http://localhost:8001/${this.realmName}` : `http://localhost:8001/?realm=${this.realmName}`;
+        const serviceUrl = manager.isSuperUser() ? `https://test3.openremote.app/services/ml-forecast/ui/${this.realmName}` : `https://test3.openremote.app/services/ml-forecast/ui/?realm=${this.realmName}`;
 
+        console.log("Loading service via: ", serviceUrl);
 
         return html`
             <div class="sidebar-placeholder"></div>
             <!-- Hardcoded for testing -->
-            <iframe src="https://test3.openremote.app/services/ml-forecast/ui/${this.realmName}">hello</iframe>
+            <iframe id="services-iframe" src="${serviceUrl}"></iframe>
         `;
     }
 }
