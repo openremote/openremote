@@ -620,7 +620,7 @@ public class MapService implements ContainerService {
 
             boolean boundsValid = this.bounds.size() == 4
                 && StreamSupport.stream(Spliterators.spliterator(this.bounds.elements(), 0, 4), false).allMatch(v -> v.numberType() != null);
-            boolean centerValid = this.center.size() == 3
+            boolean centerValid = this.center.size() >= 2
                 && StreamSupport.stream(Spliterators.spliterator(this.bounds.elements(), 0, 3), false).allMatch(v -> v.numberType() != null);
             if (!boundsValid) {
                 LOG.log(Level.WARNING, "Map bounds are invalid.");
