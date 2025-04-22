@@ -280,6 +280,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
     }
 
+    // TODO: AssetResource update should not overwrite the existing asset
     @Override
     public Asset<?> update(RequestParams requestParams, String assetId, Asset<?> asset) {
 

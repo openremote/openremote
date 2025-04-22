@@ -1,6 +1,6 @@
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import manager, {DefaultColor3, DefaultColor4, Util} from "@openremote/core";
+import manager, {DefaultColor3, DefaultColor4, OPENREMOTE_CLIENT_ID, Util} from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
@@ -38,15 +38,13 @@ interface UserModel extends User {
     password?: string;
     loaded?: boolean;
     loading?: boolean;
-    previousRoles?: Role[];
-    roles?: Role[];
-    previousRealmRoles?: Role[];
-    realmRoles?: Role[];
+    previousRoles?: string[];
+    roles?: string[];
+    previousRealmRoles?: string[];
+    realmRoles?: string[];
     previousAssetLinks?: UserAssetLink[];
     userAssetLinks?: UserAssetLink[];
 }
-
-const RESTRICTED_USER_REALM_ROLE = "restricted_user";
 
 @customElement("page-users")
 export class PageUsers extends Page<AppStateKeyed> {
@@ -213,7 +211,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     @state()
     protected _roles: Role[] = [];
     @state()
-    protected _realmRoles: Role[] = [];
+    protected _realmRoles: string[] = [];
     @state()
     protected _registrationEmailAsUsername: boolean = false;
 
@@ -302,7 +300,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             return this.getState().app.realm === this.realm && this.isConnected;
         }
 
-        const roleResponse = await manager.rest.api.UserResource.getRoles(manager.displayRealm);
+        const roleResponse = await manager.rest.api.UserResource.getClientRoles(manager.displayRealm, OPENREMOTE_CLIENT_ID);
 
         if (!this.responseAndStateOK(stateChecker, roleResponse, "loadFailedRoles")) {
             return;
@@ -323,7 +321,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         this._compositeRoles = roleResponse.data.filter(role => role.composite).sort(Util.sortByString(role => role.name));
         this._roles = roleResponse.data.filter(role => !role.composite).sort(Util.sortByString(role => role.name));
         this._registrationEmailAsUsername = realmResponse.data.registrationEmailAsUsername;
-        this._realmRoles = (realmResponse.data.realmRoles || []).sort(Util.sortByString(role => role.name));
+        this._realmRoles = (realmResponse.data.realmRoles || []).map(role => role.name).sort();
         this._passwordPolicy = realmResponse.data.passwordPolicy;
         this._users = usersResponse.data.filter(user => !user.serviceAccount).sort(Util.sortByString(u => u.username));
         this._serviceUsers = usersResponse.data.filter(user => user.serviceAccount).sort(Util.sortByString(u => u.username));
@@ -332,8 +330,11 @@ export class PageUsers extends Page<AppStateKeyed> {
     private async _createUpdateUser(user: UserModel, action: 'update' | 'create'): Promise<boolean> {
         let result = false;
 
-        if ((this._registrationEmailAsUsername && !user.serviceAccount) ? !user.email : !user.username) {
-            showSnackbar(undefined, ((this._registrationEmailAsUsername && !user.serviceAccount) ? "noEmailSet" : "noUsernameSet"), "dismiss");
+        if (this._registrationEmailAsUsername && !user.serviceAccount && !user.email) {
+            showSnackbar(undefined, "noEmailSet", "dismiss");
+            return false;
+        } else if ((!this._registrationEmailAsUsername || user.serviceAccount) && !user.username) {
+            showSnackbar(undefined, "noUsernameSet", "dismiss");
             return false;
         }
 
@@ -345,7 +346,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         const isUpdate = !!user.id;
 
         try {
-            const response = action == 'update'
+            const response = action === 'update'
                 ? await manager.rest.api.UserResource.update(manager.displayRealm, user)
                 : await manager.rest.api.UserResource.create(manager.displayRealm, user);
 
@@ -391,19 +392,20 @@ export class PageUsers extends Page<AppStateKeyed> {
      * the names will match so that's ok
      */
     private async _updateRoles(user: UserModel, realmRoles: boolean) {
-        const roles = realmRoles ? user.realmRoles.filter(role => role.assigned) : user.roles.filter(role => role.assigned);
-        const previousRoles = realmRoles ? user.previousRealmRoles : user.previousRoles;
-        const removedRoles = previousRoles.filter(previousRole => !roles.some(role => role.name === previousRole.name));
-        const addedRoles = roles.filter(role => !previousRoles.some(previousRole => previousRole.name === role.name));
-
-        if (removedRoles.length === 0 && addedRoles.length === 0) {
-            return;
-        }
-
         if (realmRoles) {
-            await manager.rest.api.UserResource.updateUserRealmRoles(manager.displayRealm, user.id, roles);
+            if (!Util.objectsEqual(user.realmRoles, user.previousRealmRoles)) {
+                await manager.rest.api.UserResource.updateUserRealmRoles(manager.displayRealm, user.id, user.realmRoles);
+            }
         } else {
-            await manager.rest.api.UserResource.updateUserRoles(manager.displayRealm, user.id, roles);
+            const roles = user.roles;
+            const previousRoles = user.previousRoles;
+            const removedRoles = previousRoles.filter(previousRole => !roles.some(role => role === previousRole));
+            const addedRoles = roles.filter(role => !previousRoles.some(previousRole => previousRole === role));
+
+            if (removedRoles.length === 0 && addedRoles.length === 0) {
+                return;
+            }
+            await manager.rest.api.UserResource.updateUserClientRoles(manager.displayRealm, user.id, OPENREMOTE_CLIENT_ID, roles);
         }
     }
 
@@ -459,7 +461,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         const serviceUsers = this._serviceUserFilter(this._serviceUsers);
 
         const compositeRoleOptions: string[] = this._compositeRoles.map(cr => cr.name);
-        const realmRoleOptions: [string, string][] = this._realmRoles ? this._realmRoles.filter(r => Util.realmRoleFilter(r)).map(r => [r.name, i18next.t("realmRole." + r.name, Util.camelCaseToSentenceCase(r.name.replace("_", " ").replace("-", " ")))]) : [];
+        const realmRoleOptions: [string, string][] = this._realmRoles.map(r => [r, i18next.t("realmRole." + r, Util.camelCaseToSentenceCase(r.replace("_", " ").replace("-", " ")))]);
         const readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
 
         // Content of User Table
@@ -499,30 +501,30 @@ export class PageUsers extends Page<AppStateKeyed> {
         }
 
         const mergedUserList: UserModel[] = [...users, ...serviceUsers];
-        const index: number | undefined = (this.userId ? mergedUserList.findIndex((user) => user.id == this.userId) : undefined);
+        const index: number | undefined = (this.userId ? mergedUserList.findIndex((user) => user.id === this.userId) : undefined);
 
         return html`
             <div id="wrapper">
 
                 <!-- Breadcrumb on top of the page-->
-                ${when((this.userId && index != undefined) || this.creationState, () => html`
+                ${when((this.userId && index !== undefined) || this.creationState, () => html`
                     <div class="breadcrumb-container">
                         <span class="breadcrumb-clickable"
                               @click="${() => this.reset()}">${i18next.t("user_plural")}</span>
                         <or-icon class="breadcrumb-arrow" icon="chevron-right"></or-icon>
-                        <span style="margin-left: 2px;">${index != undefined ? mergedUserList[index]?.username : (this.creationState.userModel.serviceAccount ? i18next.t('creating_serviceUser') : i18next.t('creating_regularUser'))}</span>
+                        <span style="margin-left: 2px;">${index !== undefined ? mergedUserList[index]?.username : (this.creationState.userModel.serviceAccount ? i18next.t('creating_serviceUser') : i18next.t('creating_regularUser'))}</span>
                     </div>
                 `)}
 
                 <div id="title">
                     <or-icon icon="account-group"></or-icon>
-                    <span>${this.userId && index != undefined ? mergedUserList[index]?.username : i18next.t('user_plural')}</span>
+                    <span>${this.userId && index !== undefined ? mergedUserList[index]?.username : i18next.t('user_plural')}</span>
                 </div>
 
                 <!-- User Specific page -->
-                ${when((this.userId && index != undefined) || this.creationState, () => html`
-                    ${when(mergedUserList[index] != undefined || this.creationState, () => {
-                        const user: UserModel = (index != undefined ? mergedUserList[index] : this.creationState.userModel);
+                ${when((this.userId && index !== undefined) || this.creationState, () => html`
+                    ${when(mergedUserList[index] !== undefined || this.creationState, () => {
+                        const user: UserModel = (index !== undefined ? mergedUserList[index] : this.creationState.userModel);
                         return html`
                             <div id="content" class="panel">
                                 <p class="panel-title">
@@ -644,7 +646,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         }
 
         // Load users assigned roles
-        const userRolesResponse = await (manager.rest.api.UserResource.getUserRoles(manager.displayRealm, user.id));
+        const userRolesResponse = await (manager.rest.api.UserResource.getUserClientRoles(manager.displayRealm, user.id, OPENREMOTE_CLIENT_ID));
         if (!this.responseAndStateOK(() => true, userRolesResponse, "loadFailedUserInfo")) {
             return;
         }
@@ -662,9 +664,8 @@ export class PageUsers extends Page<AppStateKeyed> {
             return;
         }
 
-        user.roles = userRolesResponse.data.filter(r => r.assigned);
-        user.realmRoles = userRealmRolesResponse.data.filter(r => r.assigned);
-        this._realmRoles = [...userRealmRolesResponse.data];
+        user.roles = userRolesResponse.data;
+        user.realmRoles = userRealmRolesResponse.data;
         user.previousRealmRoles = [...user.realmRoles];
         user.previousRoles = [...user.roles];
         user.userAssetLinks = userAssetLinksResponse.data;
@@ -786,12 +787,12 @@ export class PageUsers extends Page<AppStateKeyed> {
             const roleName = checkbox.label;
             const r = this._roles.find(role => roleName === role.name);
             checkbox.disabled = !!implicitRoleNames.find(name => r.name === name);
-            checkbox.value = !!user.roles.find(userRole => userRole.name === r.name) || implicitRoleNames.some(implicitRoleName => implicitRoleName === r.name);
+            checkbox.value = !!user.roles.find(userRole => userRole === r.name) || implicitRoleNames.some(implicitRoleName => implicitRoleName === r.name);
         });
     }
 
     protected getImplicitUserRoles(user: UserModel) {
-        return this._compositeRoles.filter((role) => user.roles.some(ur => ur.name === role.name)).flatMap((role) => role.compositeRoleIds).map(id => this._roles.find(r => r.id === id).name);
+        return this._compositeRoles.filter((role) => user.roles.some(ur => ur === role.name)).flatMap((role) => role.compositeRoleIds).map(id => this._roles.find(r => r.id === id).name);
     }
 
     protected getSingleUserView(user: UserModel, compositeRoleOptions: string[], realmRoleOptions: [string, string][], suffix: string, readonly: boolean = true): TemplateResult {
@@ -965,18 +966,13 @@ export class PageUsers extends Page<AppStateKeyed> {
                             ?readonly="${readonly}"
                             ?disabled="${isSameUser}"
                             class = "validate"
-                            .value="${user.realmRoles && user.realmRoles.length > 0 ? user.realmRoles.filter(r => Util.realmRoleFilter(r)).map(r => r.name) : undefined}"
+                            .value="${user.realmRoles}"
                             .type="${InputType.SELECT}" multiple
                             .options="${realmRoleOptions}"
                             .label="${i18next.t("realm_role_plural")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                 this.onUserChanged(suffix);
-                                const roleNames = e.detail.value as string[];
-                                const excludedAndCompositeRoles = user.realmRoles.filter(r => !Util.realmRoleFilter(r));
-                                const selectedRoles = this._realmRoles.filter(cr => roleNames.some(name => cr.name === name)).map(r => {
-                                    return {...r, assigned: true} as Role;
-                                });
-                                user.realmRoles = [...excludedAndCompositeRoles, ...selectedRoles];
+                                user.realmRoles = e.detail.value as string[];
                             }}"></or-mwc-input>
 
                     <!-- composite client roles -->
@@ -984,15 +980,12 @@ export class PageUsers extends Page<AppStateKeyed> {
                             ?readonly="${readonly}"
                             ?disabled="${isSameUser}"
                             class = "validate"
-                            .value="${user.roles && user.roles.length > 0 ? user.roles.filter(r => r.composite).map(r => r.name) : undefined}"
+                            .value="${user.roles && user.roles.length > 0 ? user.roles.filter(r => this._compositeRoles.some(cr => cr.name === r)) : undefined}"
                             .type="${InputType.SELECT}" multiple
                             .options="${compositeRoleOptions}"
                             .label="${i18next.t("manager_role_plural")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                const roleNames = e.detail.value as string[];
-                                user.roles = this._compositeRoles.filter(cr => roleNames.some(name => cr.name === name)).map(r => {
-                                    return {...r, assigned: true};
-                                });
+                                user.roles = e.detail.value as string[];
                                 this._updateUserSelectedRoles(user, suffix);
                                 this.onUserChanged(suffix);
                             }}"></or-mwc-input>
@@ -1006,15 +999,16 @@ export class PageUsers extends Page<AppStateKeyed> {
                                         ?readonly="${readonly}"
                                         ?disabled="${implicitRoleNames.find(name => r.name === name)}"
                                         class = "validate"
-                                        .value="${!!user.roles.find(userRole => userRole.name === r.name) || implicitRoleNames.some(implicitRoleName => implicitRoleName === r.name)}"
+                                        .value="${!!user.roles.find(userRole => userRole === r.name) || implicitRoleNames.some(implicitRoleName => implicitRoleName === r.name)}"
                                         .type="${InputType.CHECKBOX}"
                                         .label="${r.name}"
+                                        title="${r.description}"
                                         style="flex: 0 1 160px; margin: 0; overflow: hidden;"
                                         @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                             if (!!e.detail.value) {
-                                                user.roles.push({...r, assigned: true});
+                                                user.roles.push(r.name);
                                             } else {
-                                                user.roles = user.roles.filter(e => e.name !== r.name);
+                                                user.roles = user.roles.filter(ur => ur !== r.name);
                                             }
                                             this.onUserChanged(suffix);
                                         }}"></or-mwc-input>

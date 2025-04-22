@@ -21,6 +21,9 @@ services:
       service: proxy
     environment:
       MANAGER_HOST: 'host.docker.internal'
+      # Uncomment to use sish in development
+      #SISH_HOST: sish
+      #SISH_PORT: 8090
 
   keycloak:
     extends:
@@ -37,6 +40,7 @@ services:
       KEYCLOAK_ISSUER_BASE_URI: https://localhost/auth
       KC_HOSTNAME_STRICT: false
       KC_HOSTNAME:
+      KC_LOG_CONSOLE_FORMAT: '%-5p [%c] (%t) %s%e%n'
     depends_on:
       postgresql:
         condition: service_healthy
@@ -50,3 +54,25 @@ services:
     # Access directly if needed on localhost
     ports:
       - "5432:5432"
+
+# Uncomment to use sish in development tunnels won't be usable without wildcard dns but the start/stop tunnel logic can be tested
+#  sish:
+#    image: antoniomika/sish:latest
+#    depends_on:
+#      - proxy
+#    healthcheck:
+#      test: ["CMD", "/app/app", "-v"]
+#    ports:
+#      - "2222:2222"
+#      - "9000-9002:9000-9002"
+#    command: |
+#      --ssh-address=:2222
+#      --http-address=:8090
+#      --https=false
+#      --verify-ssl=false
+#      --idle-connection=false
+#      --port-bind-range="9000-9002"
+#      --bind-random-ports=false
+#      --bind-random-subdomains=false
+#      --force-requested-subdomains=true
+#    restart: always

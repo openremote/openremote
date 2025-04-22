@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.security;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
@@ -34,7 +33,6 @@ import org.openremote.model.security.*;
 
 import jakarta.ws.rs.*;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.ValueUtil;
 
 import java.util.*;
 
@@ -191,12 +189,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public Role[] getCurrentUserRoles(RequestParams requestParams) {
-        return getCurrentUserClientRoles(requestParams, KEYCLOAK_CLIENT_ID);
-    }
-
-    @Override
-    public Role[] getCurrentUserClientRoles(RequestParams requestParams, String clientId) {
+    public String[] getCurrentUserClientRoles(RequestParams requestParams, String clientId) {
         if (!isAuthenticated()) {
             throw new ForbiddenException("Must be authenticated");
         }
@@ -205,7 +198,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public Role[] getCurrentUserRealmRoles(RequestParams requestParams) {
+    public String[] getCurrentUserRealmRoles(RequestParams requestParams) {
         if (!isAuthenticated()) {
             throw new ForbiddenException("Must be authenticated");
         }
@@ -214,12 +207,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public Role[] getUserRoles(RequestParams requestParams, String realm, String userId) {
-        return getUserClientRoles(requestParams, realm, userId, KEYCLOAK_CLIENT_ID);
-    }
-
-    @Override
-    public Role[] getUserClientRoles(@BeanParam RequestParams requestParams, String realm, String userId, String clientId) {
+    public String[] getUserClientRoles(@BeanParam RequestParams requestParams, String realm, String userId, String clientId) {
         boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
         if (!hasAdminReadRole && !Objects.equals(getUserId(), userId)) {
@@ -227,7 +215,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         }
 
         try {
-            return identityService.getIdentityProvider().getUserRoles(
+            return identityService.getIdentityProvider().getUserClientRoles(
                 realm, userId, clientId
             );
         } catch (ClientErrorException ex) {
@@ -238,7 +226,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public Role[] getUserRealmRoles(RequestParams requestParams, String realm, String userId) {
+    public String[] getUserRealmRoles(RequestParams requestParams, String realm, String userId) {
         boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
         if (!hasAdminReadRole && !Objects.equals(getUserId(), userId)) {
@@ -257,21 +245,13 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public void updateUserRoles(RequestParams requestParams, String realm, String userId, Role[] roles) {
-        updateUserClientRoles(requestParams, realm, userId, roles, KEYCLOAK_CLIENT_ID);
-    }
-
-    @Override
-    public void updateUserClientRoles(@BeanParam RequestParams requestParams, String realm, String userId, Role[] roles, String clientId) {
+    public void updateUserClientRoles(@BeanParam RequestParams requestParams, String realm, String userId, String[] roles, String clientId) {
         try {
-            identityService.getIdentityProvider().updateUserRoles(
+            identityService.getIdentityProvider().updateUserClientRoles(
                 realm,
                 userId,
                 clientId,
-                Arrays.stream(roles)
-                    .filter(Role::isAssigned)
-                    .map(Role::getName)
-                    .toArray(String[]::new));
+                roles);
         } catch (ClientErrorException ex) {
             ex.printStackTrace(System.out);
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -281,32 +261,24 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public void updateUserRealmRoles(RequestParams requestParams, String realm, String userId, Role[] roles) {
+    public void updateUserRealmRoles(RequestParams requestParams, String realm, String userId, String[] roles) {
         try {
             identityService.getIdentityProvider().updateUserRealmRoles(
                     realm,
                     userId,
-                    Arrays.stream(roles)
-                            .filter(Role::isAssigned)
-                            .map(Role::getName)
-                            .toArray(String[]::new));
+                    roles);
         } catch (ClientErrorException ex) {
             ex.printStackTrace(System.out);
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
             throw new WebApplicationException(ex);
         }
-    }
-
-    @Override
-    public Role[] getRoles(RequestParams requestParams, String realm) {
-        return getClientRoles(requestParams, realm, KEYCLOAK_CLIENT_ID);
     }
 
     @Override
     public Role[] getClientRoles(RequestParams requestParams, String realm, String clientId) {
         try {
-            return identityService.getIdentityProvider().getRoles(
+            return identityService.getIdentityProvider().getClientRoles(
                 realm,
                 clientId);
         } catch (ClientErrorException ex) {
