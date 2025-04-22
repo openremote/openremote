@@ -46,7 +46,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public Object saveSettings(RequestParams requestParams, MapConfig mapConfig) {
+    public ObjectNode saveSettings(RequestParams requestParams, MapConfig mapConfig) {
         return mapService.saveMapConfig(mapConfig);
     }
 
