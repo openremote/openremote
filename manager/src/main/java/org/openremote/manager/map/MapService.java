@@ -259,6 +259,7 @@ public class MapService implements ContainerService {
                         }
                     } else {
                         connectedFile = customMapTilesPath;
+                        saveMapMetadata(metadata);
                     }
                 }
             } catch (IOException | ClassNotFoundException | SQLException e) {
@@ -286,6 +287,7 @@ public class MapService implements ContainerService {
                         }
                     } else {
                         connectedFile = mapTilesPath;
+                        saveMapMetadata(metadata);
                     }
                 }
             } catch (ClassNotFoundException | SQLException e) {
@@ -527,9 +529,6 @@ public class MapService implements ContainerService {
 
         // Ensure we can access this new file and that it is a valid mbtiles file
         Path loadedFile = setData(false);
-        // TODO: Investigate whether this can be combined into setData (see https://github.com/openremote/openremote/issues/1833).
-        // The metadata is set to ensure the bounding box is not outside the visible tile area.
-        saveMapMetadata(metadata);
 
         if (loadedFile == null || !loadedFile.toAbsolutePath().equals(tilesPath.toAbsolutePath())) {
             try {
@@ -557,11 +556,7 @@ public class MapService implements ContainerService {
         Path previousCustomTilesPath = configurationService.getCustomMapTilesPath(true);
 
         if (previousCustomTilesPath.toFile().isFile()) {
-
             setData(true);
-            // TODO: Investigate whether this can be combined into setData (see https://github.com/openremote/openremote/issues/1833).
-            // The metadata is set to ensure the bounding box is not outside the visible tile area.
-            saveMapMetadata(metadata);
 
             // Attempt to delete this old map data file
             Files.deleteIfExists(previousCustomTilesPath);
