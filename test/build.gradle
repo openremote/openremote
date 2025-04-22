@@ -32,6 +32,9 @@ dependencies {
     testImplementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
     testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
     testImplementation "com.icegreen:greenmail:$greenmailVersion"
+
+    testImplementation "com.github.moquette-io:moquette:$moquetteVersion"
+    testImplementation "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
 }
 
 tasks.withType(Test) {
