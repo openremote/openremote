@@ -696,6 +696,8 @@
   "display": "Weergave",
   "screen": "Scherm",
   "uploadFile" : "Uploaden bestand",
+  "fileSelected" : "Bestand geselecteerd",
+  "fileSaved" : "Bestand opgeslagen",
   "thresholds": "Drempelwaardes",
   "threshold": "Drempelwaarde",
 	"addInsights": "Dashboard toevoegen"															 
@@ -787,6 +789,7 @@
     "tryAgain": "Probeer opnieuw",
     "addRealmCustomization" : "Voeg realm stijl toe",
     "realmTitle": "Manager app titel",
+    "realmMapSettingsTitle": "Realm Kaart Stijl",
     "defaultLanguage": "Standaard taal",
     "images": "Afbeeldingen",
     "logo": "Logo",
@@ -822,7 +825,19 @@
     "geoJsonDescription": "Bewerk de GeoJSON; voeg punten, lijnen, en andere vormen toe aan de kaart.",
     "deleteMapCustomization": "Kaartinstelling verwijderen",
     "deleteMapCustomizationConfirm":"Weet je zeker dat je deze kaart wilt verwijderen",
-    "addMapCustomization" : "Voeg een Kaartinstelling toe"
+    "addMapCustomization" : "Voeg een Kaartinstelling toe",
+    "global": {
+      "tileServer": "Kaartserver",
+      "tileServerDescription": "Configureer een kaartserver.",
+      "tileServerNote": "De kaart van de server URL heeft voorrang op de kaarttegels.",
+      "tileServerPlaceholder": "Kaartserver URL",
+      "mapTiles": "Eigen Kaarttegels",
+      "uploadMapTiles": "Upload aangepaste kaarttegels.",
+      "uploadMapTilesPrecedence": "De maximaal toegestaande bestandsgrootte is {{customMapLimit}}.",
+      "uploadingMapTiles": "Kaarttegels uploaden... Dit kan even duren.",
+      "uploadMapTilesError": "Kaarttegel bestand overschrijdt de maximale bestandsgrootte.",
+      "uploadingMapTilesError": "Het uploaden van kaarttegels is mislukt."
+    }
   },
   "realmRole": {
     "admin": "Super admin"
