@@ -4,12 +4,15 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import groovy.json.JsonSlurper
 import jakarta.ws.rs.client.Entity
 import jakarta.ws.rs.core.MediaType
+import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
 import org.openremote.manager.map.MapService
 import org.openremote.model.manager.MapConfig
 import org.openremote.model.map.MapResource
 import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
+import spock.lang.Shared
 import spock.lang.Specification
+import spock.util.concurrent.PollingConditions
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -20,12 +23,17 @@ import static org.openremote.model.Constants.*
 
 // TODO: Remove this once map service is removed and we fallback to standalone tile server
 class MapResourceTest extends Specification implements ManagerContainerTrait {
+    @Shared
+    static ResteasyWebTarget clientTarget
 
-    def "Retrieve map settings"() {
+    @Shared
+    static MapResource mapResource
+
+    def setupSpec() {
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
 
-        and: "an authenticated user"
+        and: "an access_token is retrieved"
         def realm = MASTER_REALM
         def accessToken = authenticate(
                 container,
@@ -35,12 +43,14 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
         ).token
 
-        and: "a test client target"
-        def clientTarget = getClientApiTarget(serverUri(serverPort), realm, accessToken)
+        and: "a test client target set"
+        clientTarget = getClientApiTarget(serverUri(serverPort), realm, accessToken)
 
-        and: "the map resource"
-        def mapResource = clientTarget.proxy(MapResource.class)
+        and: "the map resource is configured"
+        mapResource = clientTarget.proxy(MapResource.class)
+    }
 
+    def "Retrieve map settings"() {
         when: "a request has been made"
         def mapSettings = mapResource.getSettings(null)
 
@@ -58,27 +68,7 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
     }
 
     def "Upload custom map tiles"() {
-        given: "the server container is started"
-        def container = startContainer(defaultConfig(), defaultServices())
-
-        and: "an access_token is retrieved"
-        def realm = MASTER_REALM
-        def accessToken = authenticate(
-                container,
-                realm,
-                KEYCLOAK_CLIENT_ID,
-                MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
-
-        and: "a test client target set"
-        def clientTarget = getClientApiTarget(serverUri(serverPort), realm, accessToken)
-
-        and: "the map resource is configured"
-        def mapResource = clientTarget.proxy(MapResource.class)
-
         when: "valid tiles are uploaded"
-//        def mapSettings = mapResource.uploadMap(null, "eindhoven.mbtiles")
         def response = clientTarget
                 .path("map/upload")
                 .queryParam("filename", "eindhoven.mbtiles")
@@ -86,8 +76,9 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
                 .post(Entity.entity(Files.readAllBytes(Path.of("manager/src/map/mapdata.mbtiles")), MediaType.APPLICATION_OCTET_STREAM_TYPE))
 
         then: "the custom tiles should be saved"
-        Thread.sleep(500)
-        Files.exists(Path.of("tmp/map/eindhoven.mbtiles"))
+        new PollingConditions(timeout: 20, delay: 1).eventually {
+            assert Files.exists(Path.of("tmp/map/eindhoven.mbtiles"))
+        }
 
         and: "and the mapsettings match with the custom mbtiles metadata"
         def json = ValueUtil.JSON.readValue(response.getEntity(), MapConfig.class)
@@ -136,25 +127,6 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
     }
 
     def "Configure custom tile server URL"() {
-        given: "the server container is started"
-        def container = startContainer(defaultConfig(), defaultServices())
-
-        and: "an access_token is retrieved"
-        def realm = MASTER_REALM
-        def accessToken = authenticate(
-                container,
-                realm,
-                KEYCLOAK_CLIENT_ID,
-                MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
-
-        and: "a test client target set"
-        def clientTarget = getClientApiTarget(serverUri(serverPort), realm, accessToken)
-
-        and: "the map resource is configured"
-        def mapResource = clientTarget.proxy(MapResource.class)
-
         when: "mapsettings with a valid tile server URL is configured"
         def mapSettings = ValueUtil.parse("""{
             "options" : { "default": {} },
