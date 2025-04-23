@@ -31,7 +31,7 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
 
     @NotNull
     @JsonPropertyDescription("Poll interval in milliseconds")
-    private long pollInterval;
+    private long pollingMillis;
 
     @NotNull
     @JsonPropertyDescription("Memory area to read from during read request")
@@ -53,12 +53,12 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     @JsonPropertyDescription("Zero-based address to which the value sent is written to")
     private int writeAddress;
 
-    public long getPollInterval() {
-        return pollInterval;
+    public long getPollingMillis() {
+        return pollingMillis;
     }
 
-    public void setPollInterval(long pollInterval) {
-        this.pollInterval = pollInterval;
+    public void setPollingMillis(long pollingMillis) {
+        this.pollingMillis = pollingMillis;
     }
 
     public ReadMemoryArea getReadMemoryArea() {

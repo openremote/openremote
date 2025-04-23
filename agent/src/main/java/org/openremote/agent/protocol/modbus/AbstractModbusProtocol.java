@@ -86,7 +86,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
         pollingMap.put(ref,
                 scheduleModbusPollingReadRequest(
                     ref,
-                    agentLink.getPollInterval(),
+                    agentLink.getPollingMillis(),
                     agentLink.getReadMemoryArea(),
                     agentLink.getReadValueType(),
                     agentLink.getReadAddress()

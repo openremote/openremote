@@ -63,59 +63,59 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK
 class ModbusBasicTest extends Specification implements ManagerContainerTrait {
 
     @Shared
-    int modbusServerPort;
+    int modbusServerPort
 
     @Shared
-    NettyTcpModbusServer server;
+    NettyTcpModbusServer server
 
     @Shared
-    AtomicReference<ModbusMessage> latestReadMessage = new AtomicReference(null);
+    AtomicReference<ModbusMessage> latestReadMessage = new AtomicReference(null)
 
     @Shared
-    AtomicReference<ModbusMessage> latestWriteMessage = new AtomicReference(null);
+    AtomicReference<ModbusMessage> latestWriteMessage = new AtomicReference(null)
 //    @Shared
 //    Map<, Number> messageMap = [:]
 
     def setupSpec() {
-        modbusServerPort = findEphemeralPort();
+        modbusServerPort = findEphemeralPort()
         server = new NettyTcpModbusServer(modbusServerPort)
         server.setMessageHandler((msg, sender) -> {
-            ModbusMessage modbusMessage = null;
+            ModbusMessage modbusMessage = null
             switch (msg.getFunction().blockType()) {
                 case ModbusBlockType.Coil -> {
-                    BitsModbusMessage tcpRequest = msg.unwrap(BitsModbusMessage.class);
+                    BitsModbusMessage tcpRequest = msg.unwrap(BitsModbusMessage.class)
                     if (msg.getFunction().isReadFunction()) {
-                        modbusMessage = readCoilsResponse(tcpRequest.getUnitId(), tcpRequest.getAddress(), tcpRequest.getCount(), BigInteger.valueOf(0xFFFF));
+                        modbusMessage = readCoilsResponse(tcpRequest.getUnitId(), tcpRequest.getAddress(), tcpRequest.getCount(), BigInteger.valueOf(0xFFFF))
                     } else {
                         if (tcpRequest.getFunction().getCode() == WRITE_COILS) {
-                            modbusMessage = writeCoilsResponse(tcpRequest.getUnitId(), tcpRequest.getAddress(), tcpRequest.getCount());
+                            modbusMessage = writeCoilsResponse(tcpRequest.getUnitId(), tcpRequest.getAddress(), tcpRequest.getCount())
                         } else if (tcpRequest.getFunction().getCode() == WRITE_COIL) {
-                            modbusMessage = writeCoilResponse(tcpRequest.getUnitId(), tcpRequest.getAddress(), true);
+                            modbusMessage = writeCoilResponse(tcpRequest.getUnitId(), tcpRequest.getAddress(), true)
                         }
                     }
                 }
                 case ModbusBlockType.Discrete -> {
-                    BitsModbusMessage tcpRequest = msg.unwrap(BitsModbusMessage.class);
-                    modbusMessage = readDiscretesResponse(tcpRequest.getUnitId(), tcpRequest.getAddress(), tcpRequest.getCount(), BigInteger.valueOf(0xFFFF));
+                    BitsModbusMessage tcpRequest = msg.unwrap(BitsModbusMessage.class)
+                    modbusMessage = readDiscretesResponse(tcpRequest.getUnitId(), tcpRequest.getAddress(), tcpRequest.getCount(), BigInteger.valueOf(0xFFFF))
                 }
                 case ModbusBlockType.Holding -> {
-                    RegistersModbusMessage registerRequest = msg.unwrap(RegistersModbusMessage.class);
+                    RegistersModbusMessage registerRequest = msg.unwrap(RegistersModbusMessage.class)
                     if (msg.getFunction().isReadFunction()) {
-                        modbusMessage = readHoldingsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), new short[]{1, 2, 3, 4, 5, 6, 7, 8, 12.3f, 10});
+                        modbusMessage = readHoldingsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), new short[]{1, 2, 3, 4, 5, 6, 7, 8, 12.3f, 10})
                     } else {
                         if (registerRequest.getFunction().getCode() == WRITE_HOLDING_REGISTERS) {
-                            modbusMessage = writeHoldingsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), registerRequest.getCount());
+                            modbusMessage = writeHoldingsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), registerRequest.getCount())
                         } else if (registerRequest.getFunction().getCode() == WRITE_HOLDING_REGISTER) {
-                            modbusMessage = writeHoldingResponse(registerRequest.getUnitId(), registerRequest.getAddress(), 21);
+                            modbusMessage = writeHoldingResponse(registerRequest.getUnitId(), registerRequest.getAddress(), 21)
                         }
                     }
                 }
                 case ModbusBlockType.Input -> {
-                    RegistersModbusMessage registerRequest = msg.unwrap(RegistersModbusMessage.class);
-                    modbusMessage = readInputsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), new short[]{11, 12, 13, 14, 15, 16, 17, 18, 19, 20});
+                    RegistersModbusMessage registerRequest = msg.unwrap(RegistersModbusMessage.class)
+                    modbusMessage = readInputsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), new short[]{11, 12, 13, 14, 15, 16, 17, 18, 19, 20})
                 }
                 case ModbusBlockType.Diagnostic -> {
-                    modbusMessage = new BaseModbusMessage(msg.getUnitId(), msg.getFunction(), ModbusErrorCode.Acknowledge);
+                    modbusMessage = new BaseModbusMessage(msg.getUnitId(), msg.getFunction(), ModbusErrorCode.Acknowledge)
                 }
             }
 
@@ -124,14 +124,14 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
             } else {
                 latestWriteMessage.set(msg)
             }
-            sender.accept(modbusMessage);
+            sender.accept(modbusMessage)
 
-    });
-        server.start();
+    })
+        server.start()
     }
 
     def cleanupSpec() {
-        server.stop();
+        server.stop()
     }
 
 
@@ -163,29 +163,27 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
 
         and: "the connection status should be CONNECTED"
         conditions.eventually {
-            agent = assetStorageService.find(agent.getId());
+            agent = assetStorageService.find(agent.getId())
             agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
         }
 
         when: "A ShipAsset is created with an agent link"
-        ShipAsset ship = new ShipAsset("testAsset");
+        ShipAsset ship = new ShipAsset("testAsset")
         ship.setRealm(MASTER_REALM)
         ship.addOrReplaceAttributes(new Attribute<Object>(ShipAsset.SPEED).addOrReplaceMeta(new MetaItem<>(
                 AGENT_LINK,
                 new ModbusAgentLink(
                         id: agent.getId(),
-                        pollInterval: 1000,
+                        pollingMillis: 1000,
                         readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                         readValueType: ModbusAgentLink.ModbusDataType.UINT,
                         readAddress: 2,
                         writeMemoryArea: ModbusAgentLink.WriteMemoryArea.HOLDING,
                         writeAddress: 3
                 )
-        )));
-
-        ship = assetStorageService.merge(ship);
-
-        ModbusAgentLink agentLink;
+        )))
+        ship = assetStorageService.merge(ship)
+        ModbusAgentLink agentLink
 
         then: "a client should be created and the pollingMap is populated"
         conditions.eventually {
@@ -195,57 +193,48 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
             assert ((ModbusTcpProtocol)agentService.getProtocolInstance(agent.id)).pollingMap.size() == 1
 
             ship = assetStorageService.find(ship.getId(), true)
-            agentLink = ship.getAttribute(ShipAsset.SPEED).get().getMetaItem(AGENT_LINK).get().getValue(ModbusAgentLink.class).get();
+            agentLink = ship.getAttribute(ShipAsset.SPEED).get().getMetaItem(AGENT_LINK).get().getValue(ModbusAgentLink.class).get()
             assert ship.getAttribute(ShipAsset.SPEED).flatMap { it.getValue() }.orElse(null) == 1
 
             assert (latestReadMessage.get() as ModbusMessage).getUnitId() === 1
             assert (latestReadMessage.get() as ModbusMessage).getFunction() === ModbusFunctionCode.ReadHoldingRegisters
-            assert (latestReadMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage.class).getAddress() == agentLink.getReadAddress()-1;
+            assert (latestReadMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage.class).getAddress() == agentLink.getReadAddress()-1
             assert (latestReadMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage.class).getCount() == 1
         }
 
         when: "the attribute is updated"
-
         assetProcessingService.sendAttributeEvent(new AttributeEvent(ship.getId(), ShipAsset.SPEED, 123D))
-
-
-
-        ship.addOrReplaceAttributes(new Attribute<?>(ShipAsset.SPEED, 10));
+        ship.addOrReplaceAttributes(new Attribute<?>(ShipAsset.SPEED, 10))
 
         then: "the value is sent to the Modbus server"
 
         conditions.eventually {
-            def msg = (latestWriteMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage);
+            def msg = (latestWriteMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage)
             assert msg != null
             assert msg.getCount() == 1
-            assert msg.getAddress() == agentLink.getWriteAddress().get()-1;
-            assert msg.dataDecodeUnsigned() == [123] as int[];
+            assert msg.getAddress() == agentLink.getWriteAddress().get()-1
+            assert msg.dataDecodeUnsigned() == [123] as int[]
 
             ship = assetStorageService.find(ship.getId(), true)
             assert ship.getAttribute(ShipAsset.SPEED).get().getValue().orElse(0) == 1.0
         }
-
-
-
 
         when: "I add a new coil attribute and remove the Agent Link from the speed attribute"
         ship.addOrReplaceAttributes(new Attribute<Integer>("coil1", ValueType.BOOLEAN).addOrReplaceMeta(new MetaItem<>(
                 AGENT_LINK,
                 new ModbusAgentLink(
                         id: agent.getId(),
-                        pollInterval: 1000,
+                        pollingMillis: 1000,
                         readMemoryArea: ModbusAgentLink.ReadMemoryArea.COIL,
                         readValueType: ModbusAgentLink.ModbusDataType.BOOL,
                         readAddress: 5,
                         writeMemoryArea: ModbusAgentLink.WriteMemoryArea.COIL,
                         writeAddress: 6
                 )
-        )));
-
-        ship.addOrReplaceAttributes(new Attribute<Object>(ShipAsset.SPEED).setMeta(Map.of() as MetaMap));
-
-        latestReadMessage.set(null);
-        latestWriteMessage.set(null);
+        )))
+        ship.addOrReplaceAttributes(new Attribute<Object>(ShipAsset.SPEED).setMeta(Map.of() as MetaMap))
+        latestReadMessage.set(null)
+        latestWriteMessage.set(null)
 
         and: "I merge it"
         ship = assetStorageService.merge(ship)
@@ -253,12 +242,12 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
         then: "I should receive the correct value in the coil"
 
         conditions.eventually {
-            agentLink = ship.getAttribute("coil1").get().getMetaItem(AGENT_LINK).get().getValue(ModbusAgentLink.class).get();
+            agentLink = ship.getAttribute("coil1").get().getMetaItem(AGENT_LINK).get().getValue(ModbusAgentLink.class).get()
 
             assert agentService.getProtocolInstance(agent.id) != null
             assert ((ModbusTcpProtocol)agentService.getProtocolInstance(agent.id)) != null
 
-            def msg = (latestReadMessage.get() as ModbusMessage).unwrap(BitsModbusMessage);
+            def msg = (latestReadMessage.get() as ModbusMessage).unwrap(BitsModbusMessage)
             assert msg != null
             assert msg.getCount() == 1
             assert msg.getAddress() == agentLink.getReadAddress()-1
@@ -274,7 +263,7 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
         then: "the coil is read properly"
 
         conditions.eventually {
-            def msg = (latestWriteMessage.get() as ModbusMessage).unwrap(BitsModbusMessage);
+            def msg = (latestWriteMessage.get() as ModbusMessage).unwrap(BitsModbusMessage)
             assert msg != null
             assert msg.getCount() == 1
             assert msg.getAddress() == 5
