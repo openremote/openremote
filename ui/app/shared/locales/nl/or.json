@@ -675,7 +675,7 @@
   },
   "realmDeleteConfirm": "Let op! Hiermee verwijder je alles in deze realm, typ de realm naam '{{realmName}}' om te bevestigen.",
   "realmDeleteFailed": "Realm verwijderen mislukt",
-	"addRule": "Regel toevoegen"											
+	"addRule": "Regel toevoegen",
   "rulesetStatus": {
     "DEPLOYED": "Succesvol aangemaakt",
     "NOSTATUS": "Uitgeschakeld",
@@ -700,7 +700,7 @@
   "fileSaved" : "Bestand opgeslagen",
   "thresholds": "Drempelwaardes",
   "threshold": "Drempelwaarde",
-	"addInsights": "Dashboard toevoegen"															 
+	"addInsights": "Dashboard toevoegen",
   "noDashboardSelected": "Selecteer een dashboard aan de linkerkant",
   "noDashboardSelected-mobile": "Selecteer een dashboard in het menu linksboven",
   "noDashboardFound": "Geen dashboard gevonden.",
