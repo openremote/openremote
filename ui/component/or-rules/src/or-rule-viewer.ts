@@ -28,7 +28,7 @@ import {
     RuleView,
     RuleViewInfoMap
 } from "./index";
-import {ClientRole, RulesetStatus, RulesetUnion} from "@openremote/model";
+import {ClientRole, RulesetUnion} from "@openremote/model";
 import manager, {Util} from "@openremote/core";
 import "./json-viewer/or-rule-json-viewer";
 import "./or-rule-text-viewer";
@@ -39,7 +39,7 @@ import {translate} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {GenericAxiosResponse} from "@openremote/rest";
-import {showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog, showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {project} from "./flow-viewer/components/flow-editor";
 
 // language=CSS
@@ -68,13 +68,13 @@ export const style = css`
         opacity: 0.5;
         pointer-events: none;
     }
-    
+
     #rule-name {
         max-width: 400px;
         flex: 1 1 0;
         display: flex;
     }
-    
+
     #rule-header {
         display: flex;
         align-items: center;
@@ -86,28 +86,28 @@ export const style = css`
         padding: 15px 20px;
         --or-icon-fill: var(--internal-or-rules-panel-color);
     }
-    
+
     #rule-header-controls {
         margin-left: auto;
         display: flex;
         align-items: center;
     }
-    
+
     #rule-id {
         margin-left: 10px;
         font-size: small;
     }
-    
+
     #active-wrapper {
         display: flex;
         align-items: center;
     }
-    
+
     #rule-view {
         flex-grow: 1;
         background-color: var(--internal-or-rules-background-color);
     }
-    
+
     .iconfill-gray {
         margin-left: 10px;
         --or-icon-fill: var(--internal-or-rules-list-icon-color-ok);
@@ -121,6 +121,7 @@ export const style = css`
 
 @customElement("or-rule-viewer")
 export class OrRuleViewer extends translate(i18next)(LitElement) {
+    private _askMarcText: string = "";
 
     static get styles() {
         return [
@@ -188,7 +189,10 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     protected render(): TemplateResult | void {
 
         if (!this.ruleset) {
-            return html`<div class="wrapper" style="justify-content: center"><or-translate value="noRuleSelected"></or-translate></div>`;
+            return html`
+                <div class="wrapper" style="justify-content: center">
+                    <or-translate value="noRuleSelected"></or-translate>
+                </div>`;
         }
 
         let viewer = RuleViewInfoMap[this.ruleset!.lang!].viewTemplateProvider(this.ruleset, this.config, this.readonly);
@@ -197,7 +201,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         let statusText: string = "NOSTATUS";
         if (this.ruleset.status) statusText = this.ruleset.status;
 
-        switch (this.ruleset.status){
+        switch (this.ruleset.status) {
             case "DEPLOYED":
                 statusIcon = "play";
                 statusClass = "iconfill-gray";
@@ -237,19 +241,32 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         }
 
         return html`
-            <div id="main-wrapper" class="wrapper">            
+            <div id="main-wrapper" class="wrapper">
                 <div id="rule-header">
-                    <or-mwc-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleName")}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${this._isReadonly()}" required minlength="1" maxlength="255" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-mwc-input>
-                    <or-icon class="${statusClass}" title="${i18next.t("rulesetStatus." + statusText)}" icon="${statusIcon}"></or-icon>
+                    <or-mwc-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleName")}"
+                                  ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}"
+                                  ?disabled="${this._isReadonly()}" required minlength="1" maxlength="255"
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-mwc-input>
+                    <or-icon class="${statusClass}" title="${i18next.t("rulesetStatus." + statusText)}"
+                             icon="${statusIcon}"></or-icon>
                     <span id="rule-id">${this.ruleset.id ? "ID: " + this.ruleset.id : ""}</span>
                     <div id="rule-header-controls">
                         <span id="active-wrapper">
                             <or-translate value="enabled"></or-translate>
-                            <or-mwc-input .type="${InputType.CHECKBOX}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${!this.ruleset.id}" @or-mwc-input-changed="${this._toggleEnabled}"></or-mwc-input>
+                            <or-mwc-input .type="${InputType.CHECKBOX}" .value="${this.ruleset && this.ruleset.enabled}"
+                                          ?disabled="${!this.ruleset.id}"
+                                          @or-mwc-input-changed="${this._toggleEnabled}"></or-mwc-input>
                         </span>
+                        <or-mwc-input
+                                .type="${InputType.BUTTON}"
+                                id="ask-marc-btn"
+                                label="Ask Marc"
+                                @or-mwc-input-changed="${this._onAskMarcClick}"></or-mwc-input>
                         <or-rule-validity id="rule-header-validity" .ruleset="${this.ruleset}"></or-rule-validity>
-                        <or-mwc-input .type="${InputType.BUTTON}" id="save-btn" label="save" raised ?disabled="${this._cannotSave()}" @or-mwc-input-changed="${this._onSaveClicked}"></or-mwc-input>
-                    </div>                        
+                        <or-mwc-input .type="${InputType.BUTTON}" id="save-btn" label="save" raised
+                                      ?disabled="${this._cannotSave()}"
+                                      @or-mwc-input-changed="${this._onSaveClicked}"></or-mwc-input>
+                    </div>
                 </div>
 
                 ${viewer}
@@ -272,6 +289,40 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     protected _cannotSave() {
         return this._isReadonly() || !this.ruleset || !this.modified || !this.valid;
     }
+
+    private _onAskMarcClick() {
+        let dialog = showDialog(new OrMwcDialog().setHeading("Ask Marc"));
+        dialog
+            .setContent(() => html`
+                <or-mwc-input
+                        .type="${InputType.TEXTAREA}"
+                        label="Your question"
+                        .value="${this._askMarcText}"
+                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._askMarcText = e.detail.value}"
+                ></or-mwc-input>
+            `)
+            .setActions([
+                {
+                    actionName: "cancel",
+                    content: html`
+                        <or-mwc-input class="button" .type="${InputType.BUTTON}" label="cancel"></or-mwc-input>`,
+                    action: () => {
+                        dialog.close();
+                    }
+                },
+                {
+                    actionName: "send",
+                    default: true,
+                    content: html`
+                        <or-mwc-input class="button" .type="${InputType.BUTTON}" label="send"></or-mwc-input>`,
+                    action: () => {
+                        // this.dispatchEvent(new CustomEvent("ask-marc", {detail: this._askMarcText}));
+                        dialog.close();
+                    }
+                }
+            ]);
+    }
+
 
     protected _changeName(name: string) {
         if (this.ruleset && this.ruleset.name !== name) {
