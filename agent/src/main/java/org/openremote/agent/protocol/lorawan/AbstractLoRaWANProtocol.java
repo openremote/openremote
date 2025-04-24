@@ -54,6 +54,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.APPLICATION_ID;
+import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.ASSET_TYPE_MAP;
 import static org.openremote.agent.protocol.lorawan.LoRaWANConstants.*;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
@@ -152,6 +153,9 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
 
     @Override
     public boolean onAgentAttributeChanged(AttributeEvent event) {
+        if (ASSET_TYPE_MAP.getName().equals(event.getName())) {
+            this.classNameResolver = new ClassNameResolver(agent.getAssetTypeMap().orElse(null));
+        }
         return mqttProtocol.onAgentAttributeChanged(event);
     }
 
