@@ -15,9 +15,9 @@ export interface ReportWidgetConfig extends WidgetConfig {
     colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }>;
     attributeSettings: {
         rightAxisAttributes: AttributeRef[],
-        methodMaxAttributes: AttributeRef[],
-        methodMinAttributes: AttributeRef[],
         methodAvgAttributes: AttributeRef[],
+        methodMinAttributes: AttributeRef[],
+        methodMaxAttributes: AttributeRef[],
         methodDeltaAttributes: AttributeRef[],
         methodMedianAttributes: AttributeRef[],
         methodModeAttributes: AttributeRef[],
@@ -74,9 +74,9 @@ function getDefaultWidgetConfig(): ReportWidgetConfig {
         colorPickedAttributes: [],
         attributeSettings: {
             rightAxisAttributes: [],
-            methodMaxAttributes: [],
-            methodMinAttributes: [],
             methodAvgAttributes: [],
+            methodMinAttributes: [],
+            methodMaxAttributes: [],
             methodDeltaAttributes: [],
             methodMedianAttributes: [],
             methodModeAttributes: [],
@@ -181,7 +181,6 @@ export class ReportWidget extends OrAssetWidget {
 
         if(changedProps.has('widgetConfig') && this.widgetConfig) {
             this.datapointQuery = this.widgetConfig.datapointQuery;
-            console.log("WidgetConfig:", this.widgetConfig)
 
             const attributeRefs = this.widgetConfig.attributeRefs;
             if(attributeRefs.length === 0) {

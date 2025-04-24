@@ -62,6 +62,7 @@ export class ReportSettings extends WidgetSettings {
             //Find which calculation methods are active
             const methodList = Object.entries(this.widgetConfig.attributeSettings)
                 .filter(([key]) => key.includes('method'))
+                .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
                 .reduce((activeKeys, [key, attributeRefs]) => {
                     const isActive = attributeRefs.some(
                         (ref: AttributeRef) => ref.id === asset?.id && ref.name === attribute.name
@@ -69,7 +70,6 @@ export class ReportSettings extends WidgetSettings {
                     if (isActive) {
                         activeKeys.push(i18next.t(key));
                     }
-                    console.log('activeKeys:', activeKeys)
                     return activeKeys;
                 }, [] as any[]);
 
@@ -295,8 +295,6 @@ export class ReportSettings extends WidgetSettings {
     // Also update the WidgetConfig attributeRefs field as usual
     protected onAttributesSelect(ev: AttributesSelectEvent) {
         const removedAttributeRefs = this.widgetConfig.attributeRefs.filter(ar => !ev.detail.attributeRefs.includes(ar));
-        console.log('evdetail:', ev.detail.attributeRefs)
-        console.log('removedAttributeRefs:', removedAttributeRefs)
         removedAttributeRefs.forEach(raf => {
             this.removeFromAttributeSettings(raf);
             this.removeFromColorPickedAttributes(raf);
@@ -309,7 +307,7 @@ export class ReportSettings extends WidgetSettings {
     protected removeFromAttributeSettings(attributeRef: AttributeRef) {
         const settings = this.widgetConfig.attributeSettings;
         (Object.keys(settings) as (keyof typeof settings)[]).forEach(key => {
-            settings[key] = settings[key].filter((ar: AttributeRef) => !(ar.id === attributeRef.id && ar.name === attributeRef.name));
+            settings[key] = settings[key].filter((ar: AttributeRef) => (ar.id !== attributeRef.id && ar.name !== attributeRef.name));
         });
     }
 
@@ -364,9 +362,9 @@ export class ReportSettings extends WidgetSettings {
 
 
     protected openAlgorithmMethodsDialog(attributeRef: AttributeRef) {
-        console.log('attributeRef:', attributeRef);
         const methodList: ListItem[] = Object.entries(this.widgetConfig.attributeSettings)
             .filter(([key]) => key.includes('method'))
+            .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
             .map(([key, attributeRefs]) => {
                 const isActive = attributeRefs.some(
                     (ref: AttributeRef) =>
@@ -381,7 +379,6 @@ export class ReportSettings extends WidgetSettings {
                 };
             });
         let selected: ListItem[] = [];
-        console.log('InputList:', methodList);
 
         showDialog(new OrMwcDialog()
             .setContent(html`
@@ -406,7 +403,6 @@ export class ReportSettings extends WidgetSettings {
                     actionName: "ok",
                     action: () => {
                         // Check which settings need updating
-                        console.log('Selected:', selected)
                         const changedMethods = methodList.filter(input => {
                             const selectedItem = selected.find(selected => selected.value === input.value);
                             return (!selectedItem && input.data !== undefined) ||

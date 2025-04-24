@@ -195,12 +195,13 @@ const style = css`
         flex-direction: row;
         margin: 0;
         border-top: 3px solid var(--or-app-color2);
+        justify-content: center;
     }
 
     #attribute-list {
         overflow: hidden auto;
         min-height: 50px;
-        flex: 1 1 0;
+        max-height: 120px;
         width: 100%;
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -329,7 +330,6 @@ const style = css`
     
     @media screen and (max-width: 1280px) {
         #chart-container {
-            max-height: 330px;
         }
     }
 
@@ -396,9 +396,6 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         methodSumAttributes: [] as AttributeRef[],
         methodCountAttributes: [] as AttributeRef[]
     };
-
-    @property()
-    public dataProvider?: () => Promise<[]>
 
     @property({type: Array})
     public colors: string[] = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
@@ -519,7 +516,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         }
 
         const reloadData = changedProperties.has('colorPickedAttributes') || changedProperties.has("datapointQuery") || changedProperties.has("timeframe") || changedProperties.has("timePrefixKey") || changedProperties.has("timeWindowKey")||
-            changedProperties.has("attributeSettings") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
+            changedProperties.has("attributeSettings") || changedProperties.has("assetAttributes") || changedProperties.has("realm");
 
         if (reloadData) {
             this._data = undefined;
@@ -691,7 +688,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     `)}
                     ${when(this._data?.every(entry => entry.data.length === 0), () => html`
                         <div style="position: inherit; height: 100%; width: 100%; display: flex; justify-content: center; align-items: center; z-index: 1; pointer-events: none;">
-                            <or-translate .value="${'dashboard.noData'}"></or-translate>
+                            <or-translate .value="${'dashboard.noDataOrMethod'}"></or-translate>
                         </div>
                     `)}
                 ${when(this.isChart, () => html`
@@ -725,9 +722,10 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                             const label = Util.getAttributeLabel(attr, descriptors[0], asset!.type, true);
                             const axisNote = (this.attributeSettings.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
                             const bgColor = ( color ?? this.colors[colourIndex] ) || "";
-                            //Find which calculation methods are active
+                            //Find which aggregation methods are active
                             const methodList: { data: string | undefined; }[] = Object.entries(this.attributeSettings)
                                     .filter(([key]) => key.includes('method'))
+                                    .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
                                     .map(([key, attributeRefs]) => {
                                         const isActive = attributeRefs.some(
                                                 (ref: AttributeRef) =>
@@ -1167,7 +1165,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
-        if ( this._data  || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
+        if ( this._data  || !this.assetAttributes || !this.assets || (this.assets.length === 0) || (this.assetAttributes.length === 0) || !this.datapointQuery) {
             return;
         }
 
@@ -1189,11 +1187,6 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         let promises;
 
         try {
-            if(this.dataProvider) {
-                await this.dataProvider().then((dataset) => {
-                    dataset.forEach((set) => { data.push(set); });
-                });
-            } else {
                 this._dataAbortController = new AbortController();
                 promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
 
@@ -1209,18 +1202,18 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
                     // Map calculation methods to their corresponding attribute arrays and formulas
                     const methodMapping: { [key: string]: { active: boolean; formula: AssetDatapointIntervalQueryFormula } } = {
-                            AVG: { active: !!this.attributeSettings.methodAvgAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.AVG },
-                            MIN: { active: !!this.attributeSettings.methodMinAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MIN },
-                            MAX: { active: !!this.attributeSettings.methodMaxAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MAX },
-                            DELTA: { active: !!this.attributeSettings.methodDeltaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.DELTA },
-                            //MEDIAN: { active: !!this.attributeSettings.methodMedianAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MEDIAN },
-                            //MODE: { active: !!this.attributeSettings.methodModeAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MODE },
-                            //SUM: { active: !!this.attributeSettings.methodSumAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.SUM },
-                            //COUNT: { active: !!this.attributeSettings.methodCountAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.COUNT }
+                        AVG: { active: !!this.attributeSettings.methodAvgAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.AVG },
+                        //COUNT: { active: !!this.attributeSettings.methodCountAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.COUNT },
+                        DELTA: { active: !!this.attributeSettings.methodDeltaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.DELTA },
+                        MAX: { active: !!this.attributeSettings.methodMaxAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MAX },
+                        //MEDIAN: { active: !!this.attributeSettings.methodMedianAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MEDIAN },
+                        MIN: { active: !!this.attributeSettings.methodMinAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MIN },
+                        //MODE: { active: !!this.attributeSettings.methodModeAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MODE },
+                        //SUM: { active: !!this.attributeSettings.methodSumAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.SUM }
                         };
+
                     // Iterate over the mapping, make a dataset for every active method
-                    for (const [key, value] of Object.entries(methodMapping)) {
-                        console.log(`Key: ${key}, Active: ${value.active}, Formula: ${value.formula}`);
+                    for (const [key, value] of (Object.entries(methodMapping)).sort(([keyA], [keyB]) => keyA.localeCompare(keyB))) {
                         if (value.active) {
                             //Initiate query Attribute Data
                             let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, value.formula, asset.name + " " + label + " | " + i18next.t(value.formula), options, unit);
@@ -1237,14 +1230,13 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
 
                 });
-            }
+
 
             if(promises) {
                 await Promise.all(promises);
             }
 
             this._data = data;
-            console.log("this._data",this._data);
 
             //Load data into table format
             if (!this.isChart && this._data![0]) {
@@ -1294,17 +1286,19 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                 // @ts-ignore
                 valueFormatter: value => value + unit
             },
-            //label: {
-            //    show: true,
-            //    align: 'left',
-            //    verticalAlign: 'middle',
-            //    position: 'insideBottom',
-            //    rotate: '90',
-            //    distance: 15,
-            //    formatter: (params: { dataIndex: number; value: number }): string => {
-            //        // Show labels only for the first index (index 0)
-            //        return params.dataIndex === 0 ? `${formula}` : '';  //Or make it i18next.t(formula) to display longer text
-            //    }}
+            label: {
+                show: true,
+                align: 'left',
+                verticalAlign: 'middle',
+                position: 'top',
+                fontStyle: 'italic',
+                fontSize: 10,
+                rotate: '90',
+                distance: 15,
+                formatter: (params: { dataIndex: number; value: number }): string => {
+                    // Show labels only for the first index (index 0)
+                    return params.dataIndex === 0 ? `${formula}` : '';  //Or make it i18next.t(formula) to display longer text
+                }}
         }
 
 
