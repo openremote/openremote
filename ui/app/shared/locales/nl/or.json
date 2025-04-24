@@ -675,7 +675,7 @@
   },
   "realmDeleteConfirm": "Let op! Hiermee verwijder je alles in deze realm, typ de realm naam '{{realmName}}' om te bevestigen.",
   "realmDeleteFailed": "Realm verwijderen mislukt",
-	"addRule": "Regel toevoegen"											
+	"addRule": "Regel toevoegen",
   "rulesetStatus": {
     "DEPLOYED": "Succesvol aangemaakt",
     "NOSTATUS": "Uitgeschakeld",
@@ -700,7 +700,7 @@
   "fileSaved" : "Bestand opgeslagen",
   "thresholds": "Drempelwaardes",
   "threshold": "Drempelwaarde",
-	"addInsights": "Dashboard toevoegen"															 
+	"addInsights": "Dashboard toevoegen",
   "noDashboardSelected": "Selecteer een dashboard aan de linkerkant",
   "noDashboardSelected-mobile": "Selecteer een dashboard in het menu linksboven",
   "noDashboardFound": "Geen dashboard gevonden.",
@@ -742,8 +742,7 @@
     "saveSuccessful": "Dashboard succesvol opgeslagen!",
     "initialName": "Nieuw dashboard",
     "openInNewTab": "Openen in een nieuw tabblad",
-    "whoCanView": "Wie kan het dashboard <b>bekijken</b>?",
-    "whoCanEdit": "Wie kan het dashboard <b>bewerken</b>?",
+    "whoCanView": "Wie heeft er toegang tot het dashboard?",
     "numberOfColumns": "Aantal kolommen",
     "numberOfRows": "Aantal rijen",
     "maxScreenWidth": "Max schermbreedte",
@@ -768,8 +767,6 @@
     "showHelperText": "Toon moment van bijwerken",
     "tableSettings": "Tabeleigenschappen",
     "deleteWidget": "Verwijder widget",
-    "myDashboards": "Mijn dashboards",
-    "createdByOthers": "Gemaakt door anderen",
     "showUnits": "Toon eenheden",
     "showLabels": "Toon labels",
     "zoom": "Zoom",
