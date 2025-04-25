@@ -25,7 +25,9 @@
     "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
     "test": "cucumber-js --config test/cucumber.js ./test/features/*.feature --tags 'not @separate'",
     "testTagged": "cucumber-js --config test/cucumber.js ./test/features/*.feature --tags",
-    "testSeparated": "cucumber-js --config test/cucumber.js ./test/features/*.feature --tags @separate"
+    "testSeparated": "cucumber-js --config test/cucumber.js ./test/features/*.feature --tags @separate",
+    "playwright": "playwright test",
+    "cucumber": "cucumber-js"
   },
   "dependencies": {
     "@openremote/or-app": "workspace:*",

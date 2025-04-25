@@ -1,0 +1,552 @@
+import { test as base, expect, Response, type Page } from "@playwright/test";
+import { getAppUrl } from "../utils";
+import { assets, passwords } from "./data/assets";
+
+interface Fixtures {
+  /**
+   * Open page on the specified realm
+   * @param realm The realm to open
+   */
+  openRealm: (realm: string) => Promise<null | Response>;
+  goToRealmStartPage: (realm: string) => Promise<void>;
+  /**
+   * Login as user
+   * @param user Username (admin or other)
+   */
+  login: (user: string) => void;
+  /**
+   * Logout and delete login certification
+   */
+  logout: (user: string) => void;
+  /**
+   * Navigate to a setting page inside the manager
+   * for the setting list menu at the top right
+   * @param setting Name of the setting menu item
+   */
+  navigateToMenuItem: (setting: string) => Promise<void>;
+  /**
+   * Navigate to a certain tab page
+   * @param tab Tab name
+   */
+  navigateToTab: (tab: string) => Promise<void>;
+  /**
+   * Create Realm with name
+   * @param name realm name
+   */
+  addRealm: (name: string, first?: boolean) => Promise<void>;
+  /**
+   * Switch to a realm in the manager's realm picker
+   * @param name Name of custom realm
+   */
+  switchToRealmByRealmPicker: (name: string) => Promise<void>;
+  /**
+   * Create user
+   * @param username
+   * @param password
+   */
+  addUser: (username: string, password: string) => Promise<void>;
+  /**
+   * Switch between modify mode and view mode
+   * @param targetMode view or modify
+   */
+  switchMode: (targetMode: string) => Promise<void>;
+  /**
+   * create new empty assets
+   * @param update for checking if updating values is needed
+   */
+  addAssets: (update: boolean, configOrLoction) => Promise<void>;
+  /**
+   * unselect the asset
+   */
+  unselect: () => Promise<void>;
+  /**
+   * update asset in the general panel
+   * @param attr attribute's name
+   * @param type attribute's input type
+   * @param value input value
+   */
+  updateAssets: (attr: string, type: string, value: string) => Promise<void>;
+  /**
+   * update the data in the modify mode
+   * @param attr attribute's name
+   * @param type attribute's input type
+   * @param value input value
+   */
+  updateInModify: (attr: string, type: string, value: string) => Promise<void>;
+  /**
+   * update location so we can see in the map
+   * @param location_x horizental coordinator (start from left edge)
+   * @param location_y vertail coordinator (start from top edge)
+   */
+  updateLocation: (location_x: number, location_y: number) => Promise<void>;
+  /**
+   * select two config items for an attribute
+   * @param item_1 the first config item
+   * @param item_2 the second config item
+   * @param attr attribute's name
+   */
+  configItem: (item_1: string, item_2: string, attr: string) => Promise<void>;
+  /**
+   * set config item for rule and insight to use
+   * @param item1 the first config item
+   * @param item2 the second config item
+   * @param attr1 attribute's name
+   * @param attr2 attribute's name
+   */
+  setConfigItem: (item_1: string, item_2: string, attr_1: string, attr_2: string) => Promise<void>;
+  /**
+   * Delete a certain realm by its name
+   * @param name Realm's name
+   */
+  deleteRealm: (realm: string) => Promise<void>;
+  /**
+   * Delete a certain asset by its name
+   * @param asset asset's name
+   */
+  deleteSelectedAsset: (asset: string) => Promise<void>;
+  /**
+   * Save
+   */
+  save: () => Promise<void>;
+  /**
+   *  setup the testing environment by giving the realm name and setup level
+   *  // lv0 is no setup at all
+   *  // lv1 is to create a realm
+   *  // lv2 is to create a user
+   *  // lv3 is to create empty assets
+   *  // lv4 is to set the values for assets
+   * @param realm realm name
+   * @param level level (lv0, lv1, etc.)
+   * @param configOrLoction update on config or location, default as no
+   */
+  setup: (realm: string, level: string, configOrLocation: string) => Promise<void>;
+  /**
+   *  Clean up the environment
+   *  Called in After()
+   */
+  cleanUp: () => Promise<void>;
+}
+
+export const test = base.extend<Fixtures>({
+  async openRealm({ baseURL, page }, use) {
+    // TODO: handle this per app ?
+    await use((realm) => page.goto(getAppUrl(baseURL!, realm)));
+  },
+  async goToRealmStartPage({ baseURL, page }, use) {
+    await use(async (realm) => {
+      const url = getAppUrl(baseURL!, realm);
+      await page.goto(url);
+      await page.waitForTimeout(1500);
+    });
+  },
+  async login({ page }, use) {
+    await use(async (user) => {
+      await page.waitForTimeout(500);
+      // const isLogin = (await page.isVisible('input[id="username"]')) || false;
+      const username = page.getByRole("textbox", { name: "Username or email" });
+      const password = page.getByRole("textbox", { name: "Password" });
+      await username.waitFor()
+      if ((await username.isVisible()) && (await password.isVisible())) {
+        await username.fill(user);
+        console.log(passwords[user as keyof typeof passwords])
+        await password.fill(passwords[user as keyof typeof passwords]);
+        await page.keyboard.press("Enter");
+        // console.log(`User: "${user}" logged in,   ` + timeCost(false) + "s");
+      }
+    });
+  },
+  async logout({ page }, use) {
+    await use(async (user) => {
+      const isPanelVisibile = await page.isVisible('button:has-text("Cancel")');
+      if (isPanelVisibile) {
+        await page.click('button:has-text("Cancel")');
+      }
+      const isMenuBtnVisible = await page.isVisible("#menu-btn-desktop");
+      if (isMenuBtnVisible) {
+        await page.click("#menu-btn-desktop");
+        await page.click("text=Log out");
+      }
+    });
+  },
+  /**
+   * Repeatable actions
+   */
+  async navigateToMenuItem({ page }, use) {
+    await use(async (setting) => {
+      // setStepStartTime();
+      await page.waitForTimeout(500);
+      await page.click('button[id="menu-btn-desktop"]');
+      await page.waitForTimeout(500);
+      const isItemVisible = await page.isVisible(`text=${setting}`);
+      if (isItemVisible) {
+        await page.click(`text=${setting}`);
+      } else {
+        console.log("not rendered yet");
+      }
+      // console.log(`Navigated to "${setting}" meun item,   ` + timeCost(false) + "s");
+    });
+  },
+  async navigateToTab({ page }, use) {
+    await use(async (tab) => {
+      await page.click(`#desktop-left a:has-text("${tab}")`);
+      // await page.wait(1500);
+    });
+  },
+  async addRealm({ page }, use) {
+    await use(async (name, first = false) => {
+      await page.waitForTimeout(500);
+      const isVisible = await page.isVisible(`[aria-label="attribute list"] span:has-text("${name}")`);
+      if (!isVisible) {
+        await page.click("text=Add Realm");
+        await page.fill('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]', name);
+
+        await page.locator('input[type="text"]').nth(3).fill(name);
+        await page.click('button:has-text("create")');
+
+        // await page.wait(first == true ? 15000 : 10000);
+        // const count = await page.count(`[aria-label="attribute list"] span:has-text("${name}")`)
+        // await expect(count).toEqual(1)
+        // await console.log("Realm: " + `"${name}"` + " added,   " + timeCost(false) + "s");
+      }
+    });
+  },
+  async switchToRealmByRealmPicker({ page }, use) {
+    await use(async (name) => {
+      await page.waitForTimeout(500);
+      await page.click("#realm-picker");
+      await page.waitForTimeout(500);
+      await page.click(`li[role="menuitem"]:has-text("${name}")`);
+    });
+  },
+  async addUser({ page }, use) {
+    await use(async (username, password) => {
+      // setStepStartTime();
+      /**
+       * add user
+       */
+      await page.waitForTimeout(100);
+      // go to user page
+      await page.click("#menu-btn-desktop");
+      await page.click("text=Users");
+      await page.waitForTimeout(500);
+      const isVisible = await page.isVisible('main[role="main"] >> text=' + username);
+      // add user if not exist
+      if (!isVisible) {
+        // type in name
+        await page.click(".mdi-plus >> nth=0");
+        await page.fill('input[type="text"] >> nth=0', username);
+        // type in password
+        await page.fill('#password-user0 input[type="password"]', password);
+        await page.fill('#repeatPassword-user0 input[type="password"]', password);
+        // select permissions
+        await page.click('div[role="button"]:has-text("Realm Roles")');
+        await page.click('li[role="menuitem"]:has-text("Default-roles-smartcity")');
+        await page.click('div[role="button"]:has-text("Manager Roles")');
+        await page.click('li[role="menuitem"]:has-text("Read")');
+        await page.click('li[role="menuitem"]:has-text("Write")');
+        await page.waitForTimeout(1500);
+
+        await page.click('div[role="button"]:has-text("Manager Roles")');
+        // create user
+        await page.click('button:has-text("create")');
+        await page.waitForTimeout(1500);
+        // console.log(`User: "${username}" added,    ` + timeCost(false) + "s");
+      } else {
+      }
+    });
+  },
+  async switchMode({ page }, use) {
+    await use(async (targetMode) => {
+      await page.waitForTimeout(400);
+      const atModifyMode = await page.isVisible('button:has-text("View")');
+      const atViewMode = await page.isVisible('button:has-text("Modify")');
+
+      if (atModifyMode && targetMode == "view") {
+        await page.click('button:has-text("View")');
+        console.log(":::::: at view mode");
+      }
+      if (atViewMode && targetMode == "modify") {
+        await page.click('button:has-text("Modify")');
+        console.log(":::::: at modify mode");
+      }
+    });
+  },
+  async addAssets(
+    { page, switchMode, unselect, updateLocation, setConfigItem, updateInModify, save, updateAssets },
+    use
+  ) {
+    await use(async (update, configOrLoction) => {
+      // const addAssetTime = new Date() / 1000;
+
+      await page.waitForTimeout(500);
+
+      // Goes to asset page
+      await page.click("#desktop-left a:nth-child(2)");
+
+      // select conosle first to enter into the modify mode
+      await page.click(`#list-container >> text="Consoles"`);
+      await switchMode("modify");
+      await unselect();
+
+      // create assets accroding to assets array
+      for (let asset of assets) {
+        // setStepStartTime();
+        let isAssetVisible = await page.isVisible(`#list-container >> text=${asset.name}`);
+        try {
+          if (!isAssetVisible) {
+            await page.click(".mdi-plus");
+            await page.click(`text=${asset.asset}`);
+            await page.fill('#name-input input[type="text"]', asset.name);
+            await page.click("#add-btn");
+            await page.waitForTimeout(500);
+            // check if at modify mode
+            // if yes we should see the save button then save
+            const isSaveBtnVisible = await page.isVisible('button:has-text("Save")');
+            console.log("save btn is " + isSaveBtnVisible);
+            if (isSaveBtnVisible) {
+              console.log("ready to save");
+              await page.click('button:has-text("Save")');
+            }
+            console.log(":::::: emtpy asset has been added");
+            await switchMode("modify");
+            // await page.unselect()
+            // await page.click(`#list-container >> text=${asset.name}`)
+            if (update) {
+              // switch to modify mode if at view mode
+
+              // update in modify mode
+              if (configOrLoction == "location") {
+                await updateLocation(asset.location_x, asset.location_y);
+                console.log(":::::: location updated");
+              } else if (configOrLoction == "config") {
+                await setConfigItem(asset.config_item_1, asset.config_item_2, asset.config_attr_1, asset.config_attr_2);
+                console.log(":::::: config items have been added");
+              } else {
+                await updateLocation(asset.location_x, asset.location_y);
+                await setConfigItem(asset.config_item_1, asset.config_item_2, asset.config_attr_1, asset.config_attr_2);
+                console.log(":::::: both settings have been added");
+              }
+
+              await updateInModify(asset.attr_1, asset.a1_type, asset.v1);
+              await updateInModify(asset.attr_2, asset.a2_type, asset.v2);
+
+              await save();
+
+              //switch to view mode
+              await switchMode("view");
+              // update value in view mode
+              await updateAssets(asset.attr_3, asset.a3_type, asset.v3);
+              await page.waitForTimeout(500);
+
+              //switch to modify mode
+              await switchMode("modify");
+            }
+            await unselect();
+            // console.log(
+            //   "Asset: " +
+            //     `"${asset.name}"` +
+            //     " with " +
+            //     configOrLoction +
+            //     " updated has been added,  " +
+            //     timeCost(false) +
+            //     "s"
+            // );
+          }
+        } catch (error) {
+          console.log("error" + error);
+        }
+      }
+      // console.log("Adding assets takes " + (new Date() / 1000 - addAssetTime).toFixed(3) + "s");
+    });
+  },
+  async unselect({ page }, use) {
+    await use(async () => {
+      await page.waitForTimeout(500);
+      const isCloseVisible = await page.isVisible(".mdi-close >> nth=0");
+
+      // leave modify mode
+      // if (isViewVisible) {
+      //     await page.click('button:has-text("View")')
+      //     let btnDisgard = await page.isVisible('button:has-text("Disgard")')
+      //     if (btnDisgard) {
+      //         await page.click('button:has-text("Disgard")')
+      //         console.log("didn't save successfully")
+      //     }
+      // }
+
+      // unselect the asset
+      if (isCloseVisible) {
+        //await page.page?.locator('.mdi-close').first().click()
+        await page.click(".mdi-close >> nth=0");
+      }
+
+      await page.waitForTimeout(500);
+    });
+  },
+  async updateAssets({ page }, use) {
+    await use(async (attr, type, value) => {
+      await page.fill(`#field-${attr} input[type="${type}"]`, value);
+      await page.click(`#field-${attr} #send-btn span`);
+    });
+  },
+  async updateInModify({ page }, use) {
+    await use(async (attr, type, value) => {
+      await page.fill(`text=${attr} ${type} >> input[type="number"]`, value);
+      console.log("::::::  " + attr + " has been updated");
+    });
+  },
+  async updateLocation({ page }, use) {
+    await use(async (location_x, location_y) => {
+      await page.click("text=location GEO JSON point >> button span");
+      await page.mouse.click(location_x, location_y, { delay: 1000 });
+      await page.click('button:has-text("OK")');
+    });
+  },
+  async configItem({ page }, use) {
+    await use(async (item_1, item_2, attr) => {
+      await page.waitForTimeout(500);
+      await page.click(`td:has-text("${attr} ") >> nth=0`);
+      await page.waitForTimeout(500);
+      await page.click(".attribute-meta-row.expanded td .meta-item-container div .item-add or-mwc-input #component");
+      await page.click(`li[role="checkbox"]:has-text("${item_1}")`);
+      await page.click(`li[role="checkbox"]:has-text("${item_2}")`);
+      await page.click('div[role="alertdialog"] button:has-text("Add")');
+      await page.waitForTimeout(500);
+
+      // close attribute menu
+      await page.click(`td:has-text("${attr}") >> nth=0`);
+    });
+  },
+  async setConfigItem({ page, configItem }, use) {
+    await use(async (item_1, item_2, attr_1, attr_2) => {
+      await configItem(item_1, item_2, attr_1);
+      await page.waitForTimeout(500);
+      await configItem(item_1, item_2, attr_2);
+      await page.waitForTimeout(500);
+    });
+  },
+  async deleteRealm({ page, goToRealmStartPage }, use) {
+    await use(async (realm) => {
+      // setStepStartTime();
+      await page.waitForTimeout(500);
+      await page.click(`[aria-label="attribute list"] span:has-text("${realm}")`);
+      await page.click('button:has-text("Delete")');
+      await page.waitForTimeout(500);
+      await page.fill('div[role="alertdialog"] input[type="text"]', realm);
+      await page.click('button:has-text("OK")');
+      // wait for backend to response
+      await page.waitForTimeout(5000);
+      try {
+        const count = await page.count('[aria-label="attribute list"] span:has-text("smartcity")');
+        await expect(count).toBe(0);
+
+        await goToRealmStartPage("master");
+        await page.waitForTimeout(500);
+        const isVisible = await page.isVisible("#realm-picker");
+        await expect(isVisible).toBeFalsy();
+        // await console.log(`Realm: "${realm}" deleted,    ` + timeCost(false) + "s");
+      } catch (e) {
+        console.log(e);
+      }
+    });
+  },
+  async deleteSelectedAsset({ page, navigateToTab }, use) {
+    await use(async (asset) => {
+      // setStepStartTime();
+      await navigateToTab("Assets");
+      let assetSelected = await page.count(`text=${asset}`);
+      if (assetSelected > 0) {
+        await page.click(`text=${asset}`);
+        await page.click(".mdi-delete");
+        await page.click('button:has-text("Delete")');
+        await page.waitForTimeout(1500);
+        let visibile = await page.count(`text=${asset}`);
+        await expect(visibile).toBeFalsy();
+      } else {
+        console.log(`Asset: "${asset}" does not exsit`);
+      }
+      // console.log(`Asset: "${asset}" has been deleted,    ` + timeCost(false) + "s");
+    });
+  },
+  async save({ page }, use) {
+    await use(async () => {
+      console.log(":::::: in saving");
+      await page.waitForTimeout(200);
+      await page.click("#edit-container");
+      await page.waitForTimeout(200); // wait for button to enabled
+      const isSaveBtnVisible = await page.isVisible('button:has-text("Save")');
+      if (isSaveBtnVisible) {
+        await page.click('button:has-text("Save")');
+      }
+      await page.waitForTimeout(200);
+      const isDisabled = await page.page.locator('button:has-text("Save")').isDisabled();
+      //asset modify
+      const ifModifyMode = await page.isVisible('button:has-text("OK")');
+      if (ifModifyMode) {
+        await page.click('button:has-text("OK")');
+        console.log("panel closed");
+      }
+      if (!isDisabled) {
+        await page.click('button:has-text("Save")');
+        await page.waitForTimeout(200);
+      }
+      await expect(await page.page.locator('button:has-text("Save")')).toBeDisabled();
+    });
+  },
+  async setup({ page, logout, goToRealmStartPage, login, addAssets }, use) {
+    await use(async (realm, level, configOrLocation = "no") => {
+      // global.startTime = new Date() / 1000;
+
+      if (level !== "lv0") {
+        await page.openApp("master");
+        await page.login("admin");
+
+        await page.wait(1500);
+        const isPickerVisible = await page.isVisible("#realm-picker");
+        // add realm
+        if (!isPickerVisible) {
+          await navigateToMenuItem("Realms");
+          await addRealm(realm);
+        }
+        await switchToRealmByRealmPicker(realm);
+
+        const update = level == "lv4" ? true : false;
+        // add user
+        if (level >= "lv2") {
+          await page.addUser("smartcity", global.passwords["smartcity"]);
+          // add assets
+          if (level >= "lv3") {
+            await logout();
+            await goToRealmStartPage(realm);
+            await login("smartcity");
+            await addAssets(update, configOrLocation);
+          }
+        }
+        await page.logout();
+        // console.log(level + " setup takes " + timeCost(true) + "s");
+      }
+    });
+  },
+  async cleanUp({ page }, use) {
+    await use(async () => {
+      // const cleanTime = new Date() / 1000;
+
+      // ensure login as admin into master
+      await page.waitForTimeout(500);
+      await goToRealmStartPage("master");
+      await login("admin");
+      // must wait for the realm picker to be rendered
+      await page.waitForTimeout(1500);
+      const isPickerVisible = await page.isVisible("#realm-picker");
+      if (isPickerVisible) {
+        // switch to master realm to ensure being able to delete custom realm
+        await page.switchToRealmByRealmPicker("master");
+        // delete realms
+        // should delete everything and set the envrioment to beginning
+        await navigateToMenuItem("Realms");
+        await deleteRealm("smartcity");
+      }
+      // console.log("Clean up takes " + (new Date() / 1000 - cleanTime).toFixed(3) + "s");
+    });
+  },
+});
