@@ -1,12 +1,12 @@
 # ---------------------------------------------------------------------------------------------------------------------
 #
 # OpenRemote AWS Marketplace CloudFormation template
-# This template will be used for spinning up an OpenRemote instance via the AWS Marketplace
+# This template will be used for deploying OpenRemote via the AWS Marketplace
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Deploy an OpenRemote instance via the AWS Marketplace'
+Description: 'Deploy OpenRemote via the AWS Marketplace'
 Metadata:
   AWS::CloudFormation::Interface: 
     ParameterGroups:
@@ -326,7 +326,7 @@ Resources:
                 [ -z "${Host}" ] && HOST=$(curl v4.ident.me 2>/dev/null) || HOST="${Host}"
 
                 # Set environment variables and start OpenRemote with the Docker Compose file.
-                OR_HOSTNAME=$HOST \
+                OR_HOSTNAME="$HOST" \
                 OR_ADMIN_PASSWORD="${Password}" \
                 OR_EMAIL_HOST="${SMTPHost}" \
                 OR_EMAIL_USER="${SMTPUser}" \
