@@ -12,3 +12,6 @@ openremote/**/*.js.map
 screenshots/
 .env
 reports/**
+test-results
+playwright-report
+.direnv
