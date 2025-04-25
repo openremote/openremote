@@ -47,7 +47,7 @@ Metadata:
       Password:
         default: Would you like to change the default administrator password?
       RepeatPassword:
-        default: If changed the password, please repeat the password above.
+        default: If changed the password, please repeat the password entered above.
       SMTPHost:
         default: Please enter the SMTP Hostname.
       SMTPUser:
@@ -72,7 +72,7 @@ Parameters:
       - m6g.large
       - m6g.xlarge
   ImageId:
-    Description: Amazon AMI ID that will be used for this instance
+    Description: Amazon AMI ID that will be used for this instance.
     Type: AWS::EC2::Image::Id
     Default: ami-0ba7cd530ab0a970a
   DiskSize:
@@ -322,10 +322,10 @@ Resources:
             01_start_openremote:
               command: !Sub |
                 
-                # If no hostname is provided, use the IPv4 address of the virtual machine, otherwise use the hostname.
+                # If hostname is not provided, use the IPv4 address of the EC2 instance, otherwise use the hostname.
                 [ -z "${Host}" ] && HOST=$(curl v4.ident.me 2>/dev/null) || HOST="${Host}"
 
-                # Set Environment variables and start OpenRemote with the Docker Compose file.
+                # Set environment variables and start OpenRemote with the Docker Compose file.
                 OR_HOSTNAME=$HOST \
                 OR_ADMIN_PASSWORD="${Password}" \
                 OR_EMAIL_HOST="${SMTPHost}" \
