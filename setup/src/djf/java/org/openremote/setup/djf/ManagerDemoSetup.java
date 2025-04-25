@@ -41,6 +41,8 @@ public class ManagerDemoSetup extends ManagerSetup {
 
     public String realmMasterName;
 
+    public String httpAgentId;
+
     public ManagerDemoSetup(Container container) {
         super(container);
     }
@@ -79,13 +81,15 @@ public class ManagerDemoSetup extends ManagerSetup {
 
         // ################################ Realm master ###################################
 
-        // SimulatorAgent smartcitySimulatorAgent = new SimulatorAgent("Simulator agent");
-        // smartcitySimulatorAgent.setRealm(this.realmMaster);
+        HTTPAgent httpAgent = new HTTPAgent("HTTP Agent");
+        httpAgent.setRealm(realmMasterName);
+        httpAgent.setBaseURI("http://localhost:8082");
 
-        // smartcitySimulatorAgent = assetStorageService.merge(smartcitySimulatorAgent);
-        // smartcitySimulatorAgentId = smartcitySimulatorAgent.getId();
+        httpAgent = assetStorageService.merge(httpAgent);
+        httpAgentId = httpAgent.getId();
 
-        // LocalTime midnight = LocalTime.of(0, 0);
+        HTTPAgentLink agentLink = new HTTPAgentLink(httpAgentId);
+        agentLink.setPollingMillis(500);
 
         // ################################ Realm master - thermostat ###################################
 
@@ -95,7 +99,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             thermostatAsset.getAttributes().addOrReplace(
                 new Attribute<>("temperature" + i, ValueType.NUMBER)
                     .addOrReplaceMeta(
-                        // new MetaItem<>(MetaItemType.AGENT_LINK, ),
+                        new MetaItem<>(MetaItemType.AGENT_LINK, agentLink),
                         // new MetaItem<>(MetaItemType.ATTRIBUTE_LINKS, {}),
                         new MetaItem<>(MetaItemType.ACCESS_PUBLIC_READ, true),
                         new MetaItem<>(MetaItemType.ACCESS_PUBLIC_WRITE, true),
