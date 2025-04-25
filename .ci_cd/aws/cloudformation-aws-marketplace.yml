@@ -335,7 +335,7 @@ Resources:
                 docker-compose -f /openremote/docker-compose.yml -p openremote up -d
     
     Properties:
-      ImageId: !Ref ImageId # Fetch latest Amazon Linux 2023 AMI
+      ImageId: !Ref ImageId
       InstanceType: !Ref InstanceType
       KeyName: !Ref Keypair
       SubnetId: !Ref PublicSubnet
