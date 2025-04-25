@@ -15,7 +15,7 @@ Metadata:
         Parameters:
           - Host
           - InstanceType
-          - ImageId
+         # - ImageId
           - DiskSize
           - Keypair
           - ElasticIP
@@ -36,8 +36,8 @@ Metadata:
         default: Would you like to use your own domain name? If so, please enter it here.
       InstanceType:
         default: Which instance would you like to use?
-      ImageId:
-        default: Which AMI (Amazon Machine Image) do you want to use for this instance?
+     # ImageId:
+     #   default: Which AMI (Amazon Machine Image) do you want to use for this instance?
       DiskSize:
         default: How much storage would you like to allocate to the virtual machine?
       Keypair: 
@@ -71,10 +71,10 @@ Parameters:
       - t4g.xlarge
       - m6g.large
       - m6g.xlarge
-  ImageId:
-    Description: Amazon AMI ID that will be used for this instance
-    Type: AWS::EC2::Image::Id
-    Default: ami-0ba7cd530ab0a970a
+  # ImageId:
+  #   Description: Amazon AMI ID that will be used for this instance
+  #   Type: AWS::EC2::Image::Id
+  #   Default: ami-0ba7cd530ab0a970a
   DiskSize:
     Description: Choose the amount of storage (in GB)
     Type: String
@@ -335,7 +335,7 @@ Resources:
                 docker-compose -f /openremote/docker-compose.yml -p openremote up -d
     
     Properties:
-      ImageId: !Ref ImageId
+      ImageId: '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64}}'
       InstanceType: !Ref InstanceType
       KeyName: !Ref Keypair
       SubnetId: !Ref PublicSubnet
@@ -379,3 +379,8 @@ Resources:
     Properties:
       InstanceId: !Ref EC2Instance
       EIP: !Ref IPAddress
+
+Outputs:
+  PublicIP:
+    Description: The Public IP of the OpenRemote instance
+    Value: !GetAtt EC2Instance.PublicIp
