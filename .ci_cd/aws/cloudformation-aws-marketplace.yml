@@ -74,7 +74,6 @@ Parameters:
   ImageId:
     Description: Amazon AMI ID that will be used for this instance.
     Type: AWS::EC2::Image::Id
-    Default: ami-0ba7cd530ab0a970a
   DiskSize:
     Description: Choose the amount of storage (in GB)
     Type: String
