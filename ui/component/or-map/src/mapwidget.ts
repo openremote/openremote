@@ -207,6 +207,10 @@ export class MapWidget {
         }
         const settings = settingsResponse.data as any;
 
+        if (settings.override) {
+          return settings.override
+        }
+
         // Load options for current realm or fallback to default if exist
         const realmName = manager.displayRealm || "default";
         this._viewSettings = settings.options ? settings.options[realmName] ? settings.options[realmName] : settings.options.default : null;
