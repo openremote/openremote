@@ -60,3 +60,6 @@ local.properties
 *~
 *.tar.gz
 /balena/manager-build/
+
+# Nix (temp)
+.direnv
