@@ -143,9 +143,8 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
 
     @Override
     public void setAssetLinks(RequestParams requestParams, List<AlarmAssetLink> links) {
-        Set<String> realms = links.stream().map(link -> link.getId().getRealm()).collect(Collectors.toSet());
-        if (!isRealmAccessibleByUser(realms.stream().findFirst().orElse(null)) && !isSuperUser()) {
-            throw new ForbiddenException("Realm '" + realms.stream().findFirst() + "' is not active or inaccessible");
+        if (!isRealmAccessibleByUser(getAuthenticatedRealmName()) && !isSuperUser()) {
+            throw new ForbiddenException("Realm '" + getAuthenticatedRealmName() + "' is not active or inaccessible");
         }
         mapExceptions(() -> alarmService.linkAssets(links));
     }

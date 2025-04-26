@@ -152,6 +152,15 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     /**
+     * Validates if the {@code alarm} is non-null.
+     */
+    protected void validateAlarm(SentAlarm alarm) {
+        if (alarm == null) {
+            throw new EntityNotFoundException("Alarm does not exist");
+        }
+    }
+
+    /**
      * Validates if the {@code alarms} are non-null, match the alarmIds length.
      */
     protected void validateAlarms(List<Long> alarmIds, List<SentAlarm> alarms) {
@@ -406,6 +415,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         } catch (PersistenceException e) {
             alarm = null;
         }
+        validateAlarm(alarm);
         return alarm;
     }
 
