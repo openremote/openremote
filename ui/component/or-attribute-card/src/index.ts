@@ -454,7 +454,14 @@ export class OrAttributeCard extends LitElement {
                                                     return option;
                                                 }),
                                                 this.period,
-                                                (value) => this._setPeriodOption(value)
+                                                (value) => this._setPeriodOption(value),
+                                                undefined,
+                                                false,
+                                                true,
+                                                false,
+                                                false,
+                                                // Use fixed positioning to prevent the menu from disrupting the card layout (Fixes #1829)
+                                                true
                                         )}
                                     </div>
                                 ` : html`
