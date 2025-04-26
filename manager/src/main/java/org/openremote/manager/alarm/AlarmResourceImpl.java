@@ -35,7 +35,9 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.TextUtil;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static org.openremote.model.alarm.Alarm.Source.CLIENT;
 import static org.openremote.model.alarm.Alarm.Source.MANUAL;
@@ -78,7 +80,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     @Override
     public SentAlarm[] getAlarms(RequestParams requestParams, String realm, Alarm.Status status, String assetId, String assigneeId) {
         String filterRealm = TextUtil.isNullOrEmpty(realm) ? getAuthenticatedRealm().getName() : realm;
-        if (!isRealmActiveAndAccessible(filterRealm)) {
+        if (!isRealmActiveAndAccessible(filterRealm) && !isSuperUser()) {
             throw new ForbiddenException("Realm '" + filterRealm + "' is not active or inaccessible");
         }
         return mapExceptions(() -> alarmService.getAlarms(filterRealm, status, assetId, assigneeId).toArray(new SentAlarm[0]));
@@ -86,17 +88,26 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
 
     @Override
     public void removeAlarms(RequestParams requestParams, List<Long> alarmIds) {
-        mapExceptions(() -> alarmService.removeAlarms(alarmIds, getUserId()));
+        if (!isRealmAccessibleByUser(getAuthenticatedRealmName()) && !isSuperUser()) {
+            throw new ForbiddenException("Realm '" + getAuthenticatedRealmName() + "' is not active or inaccessible");
+        }
+        mapExceptions(() -> alarmService.removeAlarms(alarmIds));
     }
 
     @Override
     public SentAlarm getAlarm(RequestParams requestParams, Long alarmId) {
-        return mapExceptions(() -> alarmService.getAlarm(alarmId, getUserId()));
+        if (!isRealmAccessibleByUser(getAuthenticatedRealmName()) && !isSuperUser()) {
+            throw new ForbiddenException("Realm '" + getAuthenticatedRealmName() + "' is not active or inaccessible");
+        }
+        return mapExceptions(() -> alarmService.getAlarm(alarmId));
     }
 
     @Override
     public void removeAlarm(RequestParams requestParams, Long alarmId) {
-        mapExceptions(() -> alarmService.removeAlarm(alarmId, getUserId()));
+        if (!isRealmAccessibleByUser(getAuthenticatedRealmName()) && !isSuperUser()) {
+            throw new ForbiddenException("Realm '" + getAuthenticatedRealmName() + "' is not active or inaccessible");
+        }
+        mapExceptions(() -> alarmService.removeAlarm(alarmId));
     }
 
     @Override
@@ -108,22 +119,35 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
             alarm.setSource(CLIENT);
             alarm.setSourceId(getClientId());
         }
-        return mapExceptions(() -> alarmService.sendAlarm(alarm, assetIds, getUserId()));
+        if (!isRealmAccessibleByUser(alarm.getRealm()) && !isSuperUser()) {
+            throw new ForbiddenException("Realm '" + getAuthenticatedRealmName() + "' is not active or inaccessible");
+        }
+        return mapExceptions(() -> alarmService.sendAlarm(alarm, assetIds));
     }
 
     @Override
     public void updateAlarm(RequestParams requestParams, Long alarmId, SentAlarm alarm) {
-        mapExceptions(() -> alarmService.updateAlarm(alarmId, getUserId(), alarm));
+        if (!isRealmAccessibleByUser(alarm.getRealm()) && !isSuperUser()) {
+            throw new ForbiddenException("Realm '" + getAuthenticatedRealmName() + "' is not active or inaccessible");
+        }
+        mapExceptions(() -> alarmService.updateAlarm(alarmId, alarm));
     }
 
     @Override
     public List<AlarmAssetLink> getAssetLinks(RequestParams requestParams, Long alarmId, String realm) {
-        return mapExceptions(() -> alarmService.getAssetLinks(alarmId, getUserId(), realm));
+        if (!isRealmAccessibleByUser(realm) && !isSuperUser()) {
+            throw new ForbiddenException("Realm '" + getAuthenticatedRealmName() + "' is not active or inaccessible");
+        }
+        return mapExceptions(() -> alarmService.getAssetLinks(alarmId, realm));
     }
 
     @Override
     public void setAssetLinks(RequestParams requestParams, List<AlarmAssetLink> links) {
-        mapExceptions(() -> alarmService.linkAssets(links, getUserId()));
+        Set<String> realms = links.stream().map(link -> link.getId().getRealm()).collect(Collectors.toSet());
+        if (!isRealmAccessibleByUser(realms.stream().findFirst().orElse(null)) && !isSuperUser()) {
+            throw new ForbiddenException("Realm '" + realms.stream().findFirst() + "' is not active or inaccessible");
+        }
+        mapExceptions(() -> alarmService.linkAssets(links));
     }
 
 }
