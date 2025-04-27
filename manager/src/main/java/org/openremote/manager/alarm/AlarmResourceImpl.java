@@ -23,6 +23,8 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
@@ -35,9 +37,7 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.TextUtil;
 
 import java.util.List;
-import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static org.openremote.model.alarm.Alarm.Source.CLIENT;
 import static org.openremote.model.alarm.Alarm.Source.MANUAL;
@@ -53,61 +53,72 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
         this.alarmService = alarmService;
     }
 
-    private <T> T mapExceptions(Supplier<T> supplier) {
-        try {
-            return supplier.get();
-        } catch (IllegalArgumentException | NullPointerException e) {
-            throw new BadRequestException(e.getMessage(), e);
-        } catch (EntityNotFoundException e) {
-            throw new NotFoundException(e.getMessage(), e);
-        } catch (SecurityException e) {
-            throw new ForbiddenException(e.getMessage(), e);
-        }
-    }
-
-    private void mapExceptions(Runnable runnable) {
-        try {
-            runnable.run();
-        } catch (IllegalArgumentException | NullPointerException e) {
-            throw new BadRequestException(e.getMessage(), e);
-        } catch (EntityNotFoundException e) {
-            throw new NotFoundException(e.getMessage(), e);
-        } catch (SecurityException e) {
-            throw new ForbiddenException(e.getMessage(), e);
-        }
-    }
-
     @Override
     public SentAlarm[] getAlarms(RequestParams requestParams, String realm, Alarm.Status status, String assetId, String assigneeId) {
         String filterRealm = TextUtil.isNullOrEmpty(realm) ? getAuthenticatedRealm().getName() : realm;
+
         if (!isRealmActiveAndAccessible(filterRealm) && !isSuperUser()) {
             throw new ForbiddenException("Realm '" + filterRealm + "' is not active or inaccessible");
         }
-        return mapExceptions(() -> alarmService.getAlarms(filterRealm, status, assetId, assigneeId).toArray(new SentAlarm[0]));
+
+        try {
+           return alarmService.getAlarms(filterRealm, status, assetId, assigneeId).toArray(new SentAlarm[0]);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        } catch (ForbiddenException e) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
     }
 
     @Override
     public void removeAlarms(RequestParams requestParams, List<Long> alarmIds) {
-        if (!isRealmAccessibleByUser(getAuthenticatedRealmName()) && !isSuperUser()) {
-            throw new ForbiddenException("Realm '" + getAuthenticatedRealmName() + "' is not active or inaccessible");
+        try {
+            List<SentAlarm> alarms = alarmService.getAlarms(alarmIds);
+            alarms.forEach(alarm -> {
+                if (!isRealmAccessibleByUser(alarm.getRealm()) && !isSuperUser()) {
+                    throw new ForbiddenException("Realm '" + alarm.getRealm() + "' is not active or inaccessible");
+                }
+            });
+            alarmService.removeAlarms(alarms, alarmIds);
+        } catch (EntityNotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        } catch (ForbiddenException e) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        } catch (IllegalArgumentException e) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
-        mapExceptions(() -> alarmService.removeAlarms(alarmIds));
     }
 
     @Override
     public SentAlarm getAlarm(RequestParams requestParams, Long alarmId) {
-        if (!isRealmAccessibleByUser(getAuthenticatedRealmName()) && !isSuperUser()) {
-            throw new ForbiddenException("Realm '" + getAuthenticatedRealmName() + "' is not active or inaccessible");
+        try {
+            SentAlarm alarm = alarmService.getAlarm(alarmId);
+            if (!isRealmAccessibleByUser(alarm.getRealm()) && !isSuperUser()) {
+                throw new ForbiddenException("Realm '" + alarm.getRealm() + "' is not active or inaccessible");
+            }
+            return alarmService.getAlarm(alarmId);
+        } catch (EntityNotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        } catch (ForbiddenException e) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        return mapExceptions(() -> alarmService.getAlarm(alarmId));
     }
 
     @Override
     public void removeAlarm(RequestParams requestParams, Long alarmId) {
-        if (!isRealmAccessibleByUser(getAuthenticatedRealmName()) && !isSuperUser()) {
-            throw new ForbiddenException("Realm '" + getAuthenticatedRealmName() + "' is not active or inaccessible");
+        try {
+            SentAlarm alarm = alarmService.getAlarm(alarmId);
+            if (!isRealmAccessibleByUser(alarm.getRealm()) && !isSuperUser()) {
+                throw new ForbiddenException("Realm '" + alarm.getRealm() + "' is not active or inaccessible");
+            }
+            alarmService.removeAlarm(alarm);
+        } catch (EntityNotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        } catch (ForbiddenException e) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        } catch (IllegalArgumentException e) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
-        mapExceptions(() -> alarmService.removeAlarm(alarmId));
     }
 
     @Override
@@ -119,26 +130,48 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
             alarm.setSource(CLIENT);
             alarm.setSourceId(getClientId());
         }
+
         if (!isRealmAccessibleByUser(alarm.getRealm()) && !isSuperUser()) {
-            throw new ForbiddenException("Realm '" + getAuthenticatedRealmName() + "' is not active or inaccessible");
+            throw new ForbiddenException("Realm '" + alarm.getRealm() + "' is not active or inaccessible");
         }
-        return mapExceptions(() -> alarmService.sendAlarm(alarm, assetIds));
+
+        try {
+            return alarmService.sendAlarm(alarm, assetIds);
+        } catch (NullPointerException e) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        } catch (ForbiddenException e) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
     }
 
     @Override
-    public void updateAlarm(RequestParams requestParams, Long alarmId, SentAlarm alarm) {
-        if (!isRealmAccessibleByUser(alarm.getRealm()) && !isSuperUser()) {
-            throw new ForbiddenException("Realm '" + getAuthenticatedRealmName() + "' is not active or inaccessible");
+    public void updateAlarm(RequestParams requestParams, Long alarmId, SentAlarm newAlarm) {
+        try {
+            SentAlarm oldAlarm = alarmService.getAlarm(alarmId);
+            if (!isRealmAccessibleByUser(oldAlarm.getRealm()) && !isSuperUser()) {
+                throw new ForbiddenException("Realm '" + oldAlarm.getRealm() + "' is not active or inaccessible");
+            }
+            alarmService.updateAlarm(oldAlarm, newAlarm);
+        } catch (EntityNotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        } catch (ForbiddenException e) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        mapExceptions(() -> alarmService.updateAlarm(alarmId, alarm));
     }
 
     @Override
     public List<AlarmAssetLink> getAssetLinks(RequestParams requestParams, Long alarmId, String realm) {
-        if (!isRealmAccessibleByUser(realm) && !isSuperUser()) {
-            throw new ForbiddenException("Realm '" + getAuthenticatedRealmName() + "' is not active or inaccessible");
+        try {
+            SentAlarm alarm = alarmService.getAlarm(alarmId);
+            if (!isRealmAccessibleByUser(realm) && !isSuperUser()) {
+                throw new ForbiddenException("Realm '" + realm + "' is not active or inaccessible");
+            }
+            return alarmService.getAssetLinks(alarm, realm);
+        } catch (EntityNotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        } catch (ForbiddenException e) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        return mapExceptions(() -> alarmService.getAssetLinks(alarmId, realm));
     }
 
     @Override
@@ -146,7 +179,16 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
         if (!isRealmAccessibleByUser(getAuthenticatedRealmName()) && !isSuperUser()) {
             throw new ForbiddenException("Realm '" + getAuthenticatedRealmName() + "' is not active or inaccessible");
         }
-        mapExceptions(() -> alarmService.linkAssets(links));
+
+        try {
+            alarmService.linkAssets(links);
+        } catch (EntityNotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        } catch (ForbiddenException e) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        } catch (NullPointerException | IllegalArgumentException e) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
     }
 
 }

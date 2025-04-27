@@ -152,24 +152,6 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     /**
-     * Validates if the {@code alarm} is non-null.
-     */
-    protected void validateAlarm(SentAlarm alarm) {
-        if (alarm == null) {
-            throw new EntityNotFoundException("Alarm does not exist");
-        }
-    }
-
-    /**
-     * Validates if the {@code alarms} are non-null, match the alarmIds length.
-     */
-    protected void validateAlarms(List<Long> alarmIds, List<SentAlarm> alarms) {
-        if (alarms == null || alarmIds.size() != alarms.size()) {
-            throw new EntityNotFoundException("One or more alarms do not exist");
-        }
-    }
-
-    /**
      * Throws an {@link IllegalArgumentException} if the given {@code assetIds} are null or empty.
      */
     protected void validateAssetIds(Collection<String> assetIds) {
@@ -294,7 +276,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         result.put("Severity", alarm.getSeverity().name());
         result.put("Status", alarm.getStatus().name());
 
-        List<String> assetLinks = getAssetLinks(alarm.getId(), alarm.getRealm()).stream().map(AlarmAssetLink::getAssetName).toList();
+        List<String> assetLinks = getAssetLinks(alarm, alarm.getRealm()).stream().map(AlarmAssetLink::getAssetName).toList();
         result.put("Linked assets", assetLinks.isEmpty() ? "None" : String.join(", ", assetLinks));
 
         result.put("Assignee", TextUtil.isNullOrEmpty(alarm.getAssigneeUsername()) ? "None" : alarm.getAssigneeUsername());
@@ -322,29 +304,28 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     /**
      * Updates an existing alarm if the given user has access to the alarm realm.
      */
-    public void updateAlarm(Long alarmId, SentAlarm alarm) {
-        SentAlarm oldAlarm = getAlarm(alarmId);
+    public void updateAlarm(SentAlarm oldAlarm, SentAlarm newAlarm) {
         String oldAssigneeId = oldAlarm.getAssigneeId();
-        String newAssigneeId = alarm.getAssigneeId();
+        String newAssigneeId = newAlarm.getAssigneeId();
 
         persistenceService.doTransaction(entityManager -> entityManager.createQuery("""
                         update SentAlarm set title=:title, content=:content, severity=:severity, status=:status, lastModified=:lastModified, assigneeId=:assigneeId
                         where id =:id
                         """)
-                .setParameter("id", alarmId)
-                .setParameter("title", alarm.getTitle())
-                .setParameter("content", alarm.getContent())
-                .setParameter("severity", alarm.getSeverity())
-                .setParameter("status", alarm.getStatus())
+                .setParameter("id", oldAlarm.getId())
+                .setParameter("title", newAlarm.getTitle())
+                .setParameter("content", newAlarm.getContent())
+                .setParameter("severity", newAlarm.getSeverity())
+                .setParameter("status", newAlarm.getStatus())
                 .setParameter("lastModified", new Timestamp(timerService.getCurrentTimeMillis()))
                 .setParameter("assigneeId", newAssigneeId)
                 .executeUpdate());
 
-        clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.UPDATE));
+        clientEventService.publishEvent(new AlarmEvent(newAlarm.getRealm(), PersistenceEvent.Cause.UPDATE));
 
-        if (alarm.getSeverity() == Alarm.Severity.HIGH) {
+        if (newAlarm.getSeverity() == Alarm.Severity.HIGH) {
             Set<String> excludeUserIds = Stream.of(oldAssigneeId).filter(Objects::nonNull).collect(Collectors.toSet());
-            sendAssigneeNotification(getAlarm(alarmId), excludeUserIds);
+            sendAssigneeNotification(oldAlarm, excludeUserIds);
         }
     }
 
@@ -388,8 +369,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     /**
      * Returns the assets linked to an alarm if the given user has access to the alarm realm.
      */
-    public List<AlarmAssetLink> getAssetLinks(Long alarmId, String realm) throws IllegalArgumentException {
-        getAlarm(alarmId);
+    public List<AlarmAssetLink> getAssetLinks(SentAlarm alarm, String realm) throws IllegalArgumentException {
         return persistenceService.doReturningTransaction(entityManager ->
                 entityManager.createQuery("""
                                 select aal from AlarmAssetLink aal
@@ -397,7 +377,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                                 order by aal.createdOn desc
                                 """, AlarmAssetLink.class)
                         .setParameter("realm", realm)
-                        .setParameter("alarmId", alarmId)
+                        .setParameter("alarmId", alarm.getId())
                         .getResultList()
         );
     }
@@ -415,7 +395,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         } catch (PersistenceException e) {
             alarm = null;
         }
-        validateAlarm(alarm);
+
+        if (alarm == null) {
+            throw new EntityNotFoundException("Alarm does not exist");
+        }
+
         return alarm;
     }
 
@@ -434,7 +418,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         } catch (PersistenceException e) {
             alarms = null;
         }
-        validateAlarms(alarmIds, alarms);
+
+        if (alarms == null || alarmIds.size() != alarms.size()) {
+            throw new EntityNotFoundException("One or more alarms do not exist");
+        }
+
         return alarms;
     }
 
@@ -474,11 +462,10 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     /**
      * Removes an existing alarm if the given user has access to the alarm realm.
      */
-    public void removeAlarm(Long alarmId) {
-        SentAlarm alarm = getAlarm(alarmId);
+    public void removeAlarm(SentAlarm alarm) {
         persistenceService.doTransaction(entityManager -> entityManager
                 .createQuery("delete SentAlarm where id = :id")
-                .setParameter("id", alarmId)
+                .setParameter("id", alarm.getId())
                 .executeUpdate()
         );
         clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.DELETE));
@@ -487,8 +474,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     /**
      * Removes existing alarms if the given user has access to the alarm realms.
      */
-    public void removeAlarms(List<Long> alarmIds) throws IllegalArgumentException {
-        List<SentAlarm> alarms = getAlarms(alarmIds);
+    public void removeAlarms(List<SentAlarm> alarms, List<Long> alarmIds) throws IllegalArgumentException {
         persistenceService.doTransaction(entityManager ->
                 entityManager.createQuery("delete from SentAlarm sa where sa.id in :ids")
                         .setParameter("ids", alarmIds)
