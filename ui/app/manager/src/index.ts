@@ -114,7 +114,9 @@ export const DefaultRealmConfig: RealmAppConfig = {
 };
 
 // Try and load the app config from JSON and if anything is found amalgamate it with default
-const configURL =  (MANAGER_URL ?? "") + "/api/master/configuration/manager";
+const managerURL = MANAGER_URL || window.location.protocol + "//" + window.location.hostname + (window.location.port ? ":" + window.location.port : "")
+    + window.location.pathname.replace(/\/[^/]+\/?$/, '');
+const configURL = managerURL + "/api/master/configuration/manager";
 
 fetch(configURL).then<ManagerAppConfig>(async (result) => {
     let appConfig: ManagerAppConfig;
