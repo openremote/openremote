@@ -340,10 +340,6 @@ public class AlarmService extends RouteBuilder implements ContainerService {
      * Links multiple assets to existing alarms if the given user has access to the alarm realms.
      */
     public void linkAssets(List<AlarmAssetLink> links) {
-        if (links == null || links.isEmpty()) {
-            throw new IllegalArgumentException("Missing links");
-        }
-
         Set<Long> alarmIds = links.stream().map(link -> link.getId().getAlarmId()).collect(Collectors.toSet());
         validateAlarmIds(alarmIds);
 
