@@ -23,14 +23,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
+import jakarta.ws.rs.core.Response;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.manager.MapRealmConfig;
+import org.openremote.model.manager.MapConfig;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
-
-import java.util.Map;
 
 @Tag(name = "Map", description = "Operations on maps")
 @Path("map")
@@ -44,7 +43,7 @@ public interface MapResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @Operation(operationId = "saveSettings", summary = "Update map settings")
-    Object saveSettings(@BeanParam RequestParams requestParams, Map<String, MapRealmConfig> mapConfig);
+    ObjectNode saveSettings(@BeanParam RequestParams requestParams, MapConfig mapConfig);
 
     /**
      * Returns style used to initialise Mapbox GL
@@ -73,4 +72,35 @@ public interface MapResource {
     @Path("tile/{zoom}/{column}/{row}")
     @Operation(operationId = "getTile", summary = "Retrieve the vector tile data for Mapbox GL")
     byte[] getTile(@PathParam("zoom")int zoom, @PathParam("column")int column, @PathParam("row")int row);
+
+    /**
+     * Saves mbtiles file
+     */
+    @POST
+    @Path("upload")
+    @Consumes(MediaType.APPLICATION_OCTET_STREAM)
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
+    @Operation(operationId = "uploadMap", summary = "Saves mbtiles file")
+    ObjectNode uploadMap(@BeanParam RequestParams requestParams, @QueryParam("filename") String filename);
+
+    /**
+     * Retrieve if the map is custom and custom map limit
+     */
+    @GET
+    @Path("getCustomMapInfo")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({Constants.READ_ADMIN_ROLE})
+    @Operation(operationId = "getCustomMapInfo", summary = "Retrieve if the map is custom and custom map limit")
+    ObjectNode getCustomMapInfo();
+
+    /**
+     * Removes mbtiles file
+     */
+    @DELETE
+    @Path("deleteMap")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
+    @Operation(operationId = "deleteMap", summary = "Removes mbtiles file")
+    ObjectNode deleteMap(@BeanParam RequestParams requestParams);
 }

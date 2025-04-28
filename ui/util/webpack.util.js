@@ -66,7 +66,7 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
         },
         output: {
             path: dirname + "/dist",
-            publicPath: "/" + dirname.split(path.sep).slice(-1)[0] + "/",
+            publicPath: isDevServer ? "/" + dirname.split(path.sep).slice(-1)[0] + "/" : "./",
             filename: production ? "[name].[contenthash].js" : "[name].js"
         },
         module: {...getStandardModuleRules()},

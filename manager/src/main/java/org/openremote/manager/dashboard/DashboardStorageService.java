@@ -90,40 +90,43 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      */
     @SuppressWarnings({"unchecked", "SqlSourceToSinkFlow"})
     protected Dashboard[] query(DashboardQuery dashboardQuery, String userId) {
+        if(dashboardQuery.getRealm() == null) {
+            return new Dashboard[0];
+        }
+
+        StringBuilder sql = new StringBuilder("SELECT * FROM Dashboard WHERE realm LIKE :realm");
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("realm", dashboardQuery.getRealm().name);
+
+        if(dashboardQuery.getIds() != null) {
+            this.appendSqlIdFilter(sql, dashboardQuery, parameters);
+        }
+        if(dashboardQuery.getNames() != null) {
+            this.appendSqlNamesFilter(sql, dashboardQuery, parameters);
+        }
+        if(dashboardQuery.getUserIds() != null) {
+            this.appendSqlUserIdsFilter(sql, dashboardQuery, parameters);
+        }
+        if(dashboardQuery.getConditions().getDashboard() != null) {
+            this.appendSqlDashboardConditionsFilter(sql, dashboardQuery, parameters, userId);
+        }
+        if(dashboardQuery.getConditions().getAsset() != null) {
+            this.appendSqlAssetConditionsFilter(sql, dashboardQuery, parameters, userId);
+        }
+
+        /** TODO: Implement SELECT filtering {@link org.openremote.model.query.DashboardQuery.Select} */
+
+        // Apply pagination
+        if(dashboardQuery.start != null) {
+            sql.append(" OFFSET :start");
+            parameters.put("start", dashboardQuery.start);
+        }
+        if(dashboardQuery.limit != null) {
+            sql.append(" LIMIT :limit");
+            parameters.put("limit", dashboardQuery.limit);
+        }
 
         return (Dashboard[]) persistenceService.doReturningTransaction((em) -> {
-
-            StringBuilder sql = new StringBuilder("SELECT * FROM Dashboard WHERE realm LIKE :realm");
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put("realm", dashboardQuery.realm.name);
-
-            if(dashboardQuery.ids != null) {
-                this.appendSqlIdFilter(sql, dashboardQuery, parameters);
-            }
-            if(dashboardQuery.names != null) {
-                this.appendSqlNamesFilter(sql, dashboardQuery, parameters);
-            }
-            if(dashboardQuery.userIds != null) {
-                this.appendSqlUserIdsFilter(sql, dashboardQuery, parameters);
-            }
-            if(dashboardQuery.conditions.getDashboard() != null) {
-                this.appendSqlDashboardConditionsFilter(sql, dashboardQuery, parameters, userId);
-            }
-            if(dashboardQuery.conditions.getAsset() != null) {
-                this.appendSqlAssetConditionsFilter(sql, dashboardQuery, parameters, userId);
-            }
-
-            /** TODO: Implement SELECT filtering {@link org.openremote.model.query.DashboardQuery.Select} */
-
-            // Apply pagination
-            if(dashboardQuery.start != null) {
-                sql.append(" OFFSET :start");
-                parameters.put("start", dashboardQuery.start);
-            }
-            if(dashboardQuery.limit != null) {
-                sql.append(" LIMIT :limit");
-                parameters.put("limit", dashboardQuery.limit);
-            }
 
             // Create query object and apply parameters
             Query query = em.createNativeQuery(sql.toString(), Dashboard.class);
@@ -140,7 +143,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      */
     protected StringBuilder appendSqlIdFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams) {
         sqlBuilder.append(" AND id IN (:ids)");
-        sqlParams.put("ids", List.of(query.ids));
+        sqlParams.put("ids", List.of(Optional.ofNullable(query.getIds()).orElse(new String[0])));
         return sqlBuilder;
     }
 
@@ -150,9 +153,9 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      * @return {@link StringBuilder} used for building
      */
     protected StringBuilder appendSqlNamesFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams) {
-        IntStream.range(0, query.names.length).forEach(index -> {
+        IntStream.range(0, query.getNames().length).forEach(index -> {
             String key = "name" + index;
-            StringPredicate pred = query.names[index];
+            StringPredicate pred = query.getNames()[index];
             sqlBuilder.append(" AND ").append(pred.caseSensitive ? "display_name" : "UPPER(display_name)").append(pred.negate ? " NOT" : "");
             switch (pred.match) {
                 case BEGIN -> sqlBuilder.append(" LIKE :").append(key).append(" || '%'");
@@ -167,7 +170,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
 
     protected StringBuilder appendSqlUserIdsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams) {
         sqlBuilder.append(" AND owner_id IN (:ownerIds)");
-        sqlParams.put("ownerIds", List.of(query.userIds));
+        sqlParams.put("ownerIds", List.of(Optional.ofNullable(query.getUserIds()).orElse(new String[0])));
         return sqlBuilder;
     }
 
@@ -177,30 +180,23 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      * @return {@link StringBuilder} used for building
      */
     protected StringBuilder appendSqlDashboardConditionsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams, String userId) {
-        var dashboardConditions = query.conditions.getDashboard();
-        if(dashboardConditions.getViewAccess() != null || dashboardConditions.getEditAccess() != null) {
+        var dashboardConditions = query.getConditions().getDashboard();
+        if(dashboardConditions.getAccess() != null) {
 
-            List<DashboardAccess> viewAccess = new ArrayList<>(Arrays.asList(dashboardConditions.getViewAccess()));
-            List<DashboardAccess> editAccess = new ArrayList<>(Arrays.asList(dashboardConditions.getEditAccess()));
+            List<DashboardAccess> access = new ArrayList<>(Arrays.asList(dashboardConditions.getAccess()));
             sqlBuilder.append(" AND (");
 
             // When requesting PRIVATE dashboards, check whether the user is also the owner
-            if(userId != null && viewAccess.contains(DashboardAccess.PRIVATE)) {
-                viewAccess.remove(DashboardAccess.PRIVATE);
-                sqlBuilder.append("(view_access = 2 AND owner_id = :userId) OR ");
-                sqlParams.put("userId", userId);
-            }
-            if(userId != null && editAccess.contains(DashboardAccess.PRIVATE)) {
-                editAccess.remove(DashboardAccess.PRIVATE);
-                sqlBuilder.append("(edit_access = 2 AND owner_id = :userId) OR ");
+            if(userId != null && access.contains(DashboardAccess.PRIVATE)) {
+                access.remove(DashboardAccess.PRIVATE);
+                sqlBuilder.append("(access = 2 AND owner_id = :userId) OR ");
                 sqlParams.put("userId", userId);
             }
 
             // Append simple SQL filter by dashboard access
-            sqlBuilder.append("(view_access IN (:viewAccess) OR edit_access IN (:editAccess)))");
+            sqlBuilder.append("(access IN (:access)))");
 
-            sqlParams.put("viewAccess", viewAccess.stream().map(DashboardAccess::ordinal).collect(Collectors.toList()));
-            sqlParams.put("editAccess", editAccess.stream().map(DashboardAccess::ordinal).collect(Collectors.toList()));
+            sqlParams.put("access", access.stream().map(DashboardAccess::ordinal).collect(Collectors.toList()));
 
             /** TODO: Implement filtering by {@link org.openremote.model.query.DashboardQuery.DashboardConditions.minWidgets} */
 
@@ -216,24 +212,24 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      * @return {@link StringBuilder} used for building
      */
     protected StringBuilder appendSqlAssetConditionsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams, String userId) {
-        var assetConditions = query.conditions.getAsset();
-        if(assetConditions.access != null) {
-            List<DashboardQuery.AssetAccess> levels = Arrays.asList(assetConditions.access);
+        var assetConditions = query.getConditions().getAsset();
+        if(assetConditions.getAccess() != null) {
+            List<DashboardQuery.AssetAccess> levels = Arrays.asList(Optional.ofNullable(assetConditions.getAccess()).orElse(new DashboardQuery.AssetAccess[0]));
             if (levels.size() == 1 && levels.contains(DashboardQuery.AssetAccess.RESTRICTED)) {
 
                 // Gather asset ids the user is linked to
-                List<UserAssetLink> userAssetLinks = assetStorageService.findUserAssetLinks(query.realm.name, userId, null);
+                List<UserAssetLink> userAssetLinks = assetStorageService.findUserAssetLinks(query.getRealm().name, userId, null);
                 List<String> assetIds = userAssetLinks.stream().map(ua -> ua.getId().getAssetId()).collect(Collectors.toList());
 
                 // AT_LEAST_ONE - When user has access to the assets of at least 1 widget
-                if(assetConditions.minAmount == DashboardQuery.ConditionMinAmount.AT_LEAST_ONE) {
+                if(assetConditions.getMinAmount() == DashboardQuery.ConditionMinAmount.AT_LEAST_ONE) {
                     sqlBuilder.append(" AND (template IS NULL OR template->'widgets' IS NULL OR EXISTS (");
                     sqlBuilder.append("SELECT 1 FROM jsonb_array_elements(COALESCE(template->'widgets', '[]')) AS j(widget) ");
                     sqlBuilder.append("LEFT JOIN jsonb_array_elements(COALESCE(widget->'widgetConfig'->'attributeRefs', '[]')) AS a(attributeRef) ");
                     sqlBuilder.append("ON a->>'id' IN (:assetIds)))");
                 }
                 // ALL - User needs access to the assets of ALL widgets (or the dashboard has no widgets)
-                else if(assetConditions.minAmount == DashboardQuery.ConditionMinAmount.ALL) {
+                else if(assetConditions.getMinAmount() == DashboardQuery.ConditionMinAmount.ALL) {
                     sqlBuilder.append(" AND NOT EXISTS (");
                     sqlBuilder.append("SELECT 1 FROM jsonb_array_elements(template->'widgets') AS j(widget), ");
                     sqlBuilder.append("jsonb_array_elements(widget->'widgetConfig'->'attributeRefs') AS a(attributeRef) ");
@@ -271,7 +267,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
             throw new IllegalArgumentException("No dashboard is specified.");
         }
         return persistenceService.doReturningTransaction(em -> {
-            if(dashboard.getId() != null && dashboard.getId().length() > 0) {
+            if(dashboard.getId() != null && !dashboard.getId().isEmpty()) {
                 Dashboard d = em.find(Dashboard.class, dashboard.getId()); // checking whether dashboard is already in database
                 if(d != null) {
                     throw new IllegalArgumentException("This dashboard has already been created.");
@@ -292,22 +288,16 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         if(userId == null) {
             throw new IllegalArgumentException("No userId is specified.");
         }
-        // Query the dashboards with the same ID (which is only 1), and that userId is able to EDIT
+        // Query the dashboards with the same ID (which is only 1)
         var query = new DashboardQuery()
                 .ids(dashboard.getId())
                 .realm(new RealmPredicate(realm))
-                .userIds(userId)
-                .limit(1)
-                .conditions(new DashboardQuery.Conditions().dashboard(
-                        new DashboardQuery.DashboardConditions()
-                                .viewAccess(new DashboardAccess[]{})
-                                .editAccess(new DashboardAccess[]{DashboardAccess.SHARED, DashboardAccess.PRIVATE})
-                ));
+                .limit(1);
         Dashboard[] dashboards = this.query(query, userId);
         if(dashboards != null && dashboards.length > 0) {
             Dashboard d = dashboards[0];
             return persistenceService.doReturningTransaction(em -> {
-                dashboard.setVersion(d.getVersion());
+                dashboard.setVersion(d.getVersion()); // TODO: Investigate why versioning is not correct for Dashboard model
                 return em.merge(dashboard);
             });
         } else {
@@ -327,15 +317,11 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         }
         return persistenceService.doReturningTransaction(em -> {
 
-            // Query the dashboards with the same ID (which is only 1), and that userId is able to EDIT
+            // Query the dashboards with the same ID (which is only 1)
             Dashboard[] dashboards = this.query(new DashboardQuery()
                     .ids(dashboardId)
                     .realm(new RealmPredicate(realm))
-                    .userIds(userId)
-                    .limit(1)
-                    .conditions(new DashboardQuery.Conditions().dashboard(
-                            new DashboardQuery.DashboardConditions().editAccess(new DashboardAccess[]{ DashboardAccess.SHARED, DashboardAccess.PRIVATE })
-                    )),
+                    .limit(1),
                     userId
             );
             if(dashboards == null || dashboards.length == 0) {

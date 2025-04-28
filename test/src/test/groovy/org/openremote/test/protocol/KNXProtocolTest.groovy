@@ -87,9 +87,21 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         
 
         when: "KNX agents are created"
+
+        // Some machines have multiple IPs associated with the loopback interface e.g.
+        // lo0: flags=8049<UP,LOOPBACK,RUNNING,MULTICAST> mtu 16384
+        // options=1203<RXCSUM,TXCSUM,TXSTATUS,SW_TIMESTAMP>
+        //         inet 127.0.0.1 netmask 0xff000000
+        // inet6 ::1 prefixlen 128
+        // inet6 fe80::1%lo0 prefixlen 64 scopeid 0x1
+        // inet 127.51.68.120 netmask 0xff000000
+        // nd6 options=201<PERFORMNUD,DAD>
+        // Use the same code as Calimero uses to find the address to listen on
+        def loopbackIP = ni.inetAddresses().filter(Inet4Address.class::isInstance).findFirst()
+                .map((ia) -> ia.getHostAddress()).orElse("127.0.0.1")
         def knxAgent1 = new KNXAgent("KNX Agent 1")
-            .setHost("127.0.0.1")
-            .setBindHost("127.0.0.1")
+            .setHost(loopbackIP)
+            .setBindHost(loopbackIP)
             .setRealm(Constants.MASTER_REALM)
         def knxAgent2 = new KNXAgent("KNX Agent 2")
             .setRealm(Constants.MASTER_REALM)
