@@ -95,7 +95,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         def users = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
 
         then: "all users should be returned including system users"
-        users.size() == 3
+        users.size() == 4
         users.find {it.isSystemAccount() && it.username == Constants.MANAGER_CLIENT_ID} != null
         users.find {it.username == MASTER_REALM_ADMIN_USER} != null
         users.find {it.id == keycloakTestSetup.testuser1Id} != null
@@ -309,7 +309,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
 
         then: "user1 is fetched correctly"
         User[] users = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
-        assert users.size() == (3 + 1)
+        assert users.size() == (4 + 1)
         assert users.any { it.username == username1 }
 
         /* ---------- */
