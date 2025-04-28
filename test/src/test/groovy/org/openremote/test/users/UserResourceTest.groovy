@@ -104,7 +104,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         users = regularUserMasterResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
 
         then: "only non system users of the users realm should be returned"
-        users.size() == 2
+        users.size() == 3
         users.find {it.username == MASTER_REALM_ADMIN_USER} != null
         users.find {it.id == keycloakTestSetup.testuser1Id} != null
 
@@ -349,7 +349,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
 
         then: "user4 is created correctly"
         User[] users4 = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
-        assert users4.size() == (3 + 2)
+        assert users4.size() == (4 + 2)
         assert users4.any { it.username == username4 }
 
         /* ---------- */
@@ -361,7 +361,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
 
         then: "user5 is created correctly"
         User[] users5 = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
-        assert users5.size() == (3 + 3)
+        assert users5.size() == (4 + 3)
         assert users5.any { it.username == username5 }
     }
 }
