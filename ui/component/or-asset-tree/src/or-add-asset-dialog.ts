@@ -82,6 +82,12 @@ export class OrAddAssetDialog extends LitElement {
     public static get styles() {
         // language=CSS
         return css`
+            :host{
+                border-style: solid;
+                border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+                border-width: 1px 0;
+            }
+            
             #name-wrapper {
                 display: flex;
                 flex-direction: column;
@@ -114,11 +120,9 @@ export class OrAddAssetDialog extends LitElement {
             
             #mdc-dialog-form-add {
                 display: flex;
-                height: 600px;
+                height: 100%;
+                max-height: 600px;
                 width: 1000px;
-                border-style: solid;
-                border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-                border-width: 1px 0;
             }
 
             .msg {
@@ -225,7 +229,7 @@ export class OrAddAssetDialog extends LitElement {
         const parentStr = this.parent ? this.parent.name + " (" + this.parent.id + ")" : i18next.t("none");
 
         return html`
-            <div class="col">
+            <div class="col" style="height: 100%;">
                 <form id="mdc-dialog-form-add" class="row">
                     <div id="type-list" class="col">
                         ${createListGroup(lists)}

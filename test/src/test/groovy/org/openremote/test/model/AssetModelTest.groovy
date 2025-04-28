@@ -53,6 +53,8 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
 
     @Shared
     static AssetModelResource assetModelResource
+    @Shared
+    static AssetStorageService assetStorageService
 
     static String CUSTOM_ASSET_TYPE = "CustomAsset"
     static ValueDescriptor[] dynamicValueDescriptors = [new ValueDescriptor("dynamicValue", null, ValueConstraint.constraints(new ValueConstraint.AllowedValues("value1", "value2")), null, null, null)]
@@ -75,6 +77,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         container.getService(AssetModelService).initDynamicModel()
         ValueUtil.doInitialise()
         assetModelResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AssetModelResource.class)
+        assetStorageService = container.getService(AssetStorageService.class)
     }
 
     def "Check AttributeMap equality checking"() {
@@ -388,6 +391,14 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         customAsset.getAttribute("attr1").get().type == ValueType.TIMESTAMP
         customAsset.getAttribute("attr2").get().type == ValueType.POSITIVE_INTEGER
         customAsset.getAttribute("attr2").get().value.orElse(0) == 3
+
+        when: "we make a change to the asset and merge it directly into the asset storage service (bypassing any cloning logic in AssetResource)"
+        customAsset.getAttribute("dynamic1").ifPresent {it.setValue("value2")}
+        customAsset = assetStorageService.merge(customAsset, false, null, null)
+
+        then: "it should succeed"
+        customAsset.getAttribute("dynamic1").flatMap {it.value}.orElse(null) == "value2"
+        customAsset.type == "CustomAsset"
     }
 
     def "Retrieving all asset model info"() {

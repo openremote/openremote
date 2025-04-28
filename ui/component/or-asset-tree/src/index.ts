@@ -461,13 +461,13 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 </div>
 
                 <div id="header-btns">
-                    <or-mwc-input ?hidden="${!this.selectedIds || this.selectedIds.length === 0 || !this.showDeselectBtn}" type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => this._onDeselectClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length !== 1 || !canAdd}" type="${InputType.BUTTON}" icon="content-copy" @or-mwc-input-changed="${() => this._onCopyClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0 || this._gatewayDescendantIsSelected()}" type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => this._onDeleteClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !canAdd}" type="${InputType.BUTTON}" icon="plus" @or-mwc-input-changed="${() => this._onAddClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${!this.selectedIds || this.selectedIds.length === 0 || !this.showDeselectBtn}" type="${InputType.BUTTON}" icon="close" title="${i18next.t("deselect")}" @or-mwc-input-changed="${() => this._onDeselectClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length !== 1 || !canAdd}" type="${InputType.BUTTON}" icon="content-copy" title="${i18next.t("duplicate")}" @or-mwc-input-changed="${() => this._onCopyClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0 || this._gatewayDescendantIsSelected()}" type="${InputType.BUTTON}" icon="delete" title="${i18next.t("delete")}" @or-mwc-input-changed="${() => this._onDeleteClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${this._isReadonly() || !canAdd}" type="${InputType.BUTTON}" icon="plus" title="${i18next.t("addAsset")}" @or-mwc-input-changed="${() => this._onAddClicked()}"></or-mwc-input>
                     
                     ${getContentWithMenuTemplate(
-                            html`<or-mwc-input type="${InputType.BUTTON}" ?hidden="${!this.showSortBtn}" icon="sort-variant"></or-mwc-input>`,
+                            html`<or-mwc-input type="${InputType.BUTTON}" ?hidden="${!this.showSortBtn}" icon="sort-variant" title="${i18next.t("sort")}" ></or-mwc-input>`,
                             ["name", "type", "createdOn"].map((sort) => { return {value: sort, text: i18next.t(sort)} as ListItem; }),
                             this.sortBy,
                             (v) => this._onSortClicked(v as string))}
@@ -492,7 +492,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                       this._onFilterInput((e.detail.value as string) || undefined, true);
                                   }}">
                     </or-mwc-input>
-                    <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" @click="${() => {
+                    <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" title="${i18next.t(this._filterSettingOpen ? "filter.close" : "filter.open")}" @click="${() => {
                         if (this._filterSettingOpen) {
                             this._filterSettingOpen = false;
                         } else {
@@ -1747,15 +1747,20 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             this._nodes = [];
         } else {
             if (manager.isRestrictedUser()) {
-                // Any assets whose parents aren't accessible need to be re-parented
+                // Restricted users might have access to children, without access to the parent asset.
+                // Any assets whose parents aren't accessible need to be 're-parented'.
                 assets.forEach(asset => {
                     if (!!asset.parentId && !!asset.path && assets.find(a => a.id === asset.parentId) === undefined) {
                         let reparentId = null;
-                        for (let i = 2; i < asset.path!.length; i++) {
+
+                        // Loop through ALL assets in the path, and check if they're present in the (restricted) asset list
+                        // Once found, update its parent ID without replacing the original (that's why it's named 'reparentId').
+                        for (let i = 0; i < asset.path!.length; i++) {
                             const ancestorId = asset.path![i];
-                            if (assets.find(a => a.id === ancestorId) !== undefined) {
+                            if (asset.id !== ancestorId && assets.find(a => a.id === ancestorId) !== undefined) {
                                 reparentId = ancestorId;
-                                break;
+
+                                // break; No break statement here, as when an asset further down the tree has been found, it should overwrite the parent ID.
                             }
                         }
                         (asset as AssetWithReparentId).reparentId = reparentId;
