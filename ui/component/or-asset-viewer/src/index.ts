@@ -15,7 +15,7 @@ import {showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or
 import "@openremote/or-mwc-components/or-mwc-list";
 import {translate} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import manager, {subscribe, Util, DefaultColor5} from "@openremote/core";
+import manager, {OPENREMOTE_CLIENT_ID, RESTRICTED_USER_REALM_ROLE, subscribe, Util} from "@openremote/core";
 import {OrMwcTable, OrMwcTableRowClickEvent} from "@openremote/or-mwc-components/or-mwc-table";
 import {OrChartConfig} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory} from "@openremote/or-attribute-history";
@@ -44,8 +44,7 @@ import "./or-edit-asset-panel";
 import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-edit-asset-panel";
 import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import { progressCircular } from "@openremote/or-mwc-components/style";
-import { OrAssetTree } from "@openremote/or-asset-tree";
+import {progressCircular} from "@openremote/or-mwc-components/style";
 
 export interface PanelConfig {
     type: "info" | "setup" | "history" | "group" | "survey" | "survey-results" | "linkedUsers" | "alarm.linkedAlarms";
@@ -973,9 +972,9 @@ async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAsse
     const userId = userAssetLink.id!.userId!;
     const username = userAssetLink.userFullName!;
 
-    const roleNames = await manager.rest.api.UserResource.getUserRoles(manager.displayRealm, userId)
+    const roleNames = await manager.rest.api.UserResource.getUserClientRoles(manager.displayRealm, userId, manager.clientId)
         .then((response) => {
-            return response.data.filter(role => role.composite && role.assigned).map(r => r.name!);
+            return response.data;
         })
         .catch((err) => {
             console.info('User not allowed to get roles', err);
@@ -984,7 +983,7 @@ async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAsse
 
     const isRestrictedUser = await manager.rest.api.UserResource.getUserRealmRoles(manager.displayRealm, userId)
         .then((rolesRes) => {
-            return rolesRes.data ? !!rolesRes.data.find(r => r.assigned && r.name === "restricted_user") : false;
+            return rolesRes.data ? !!rolesRes.data.find(r => r === RESTRICTED_USER_REALM_ROLE) : false;
         });
 
     return {
