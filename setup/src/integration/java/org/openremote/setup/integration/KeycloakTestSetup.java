@@ -34,7 +34,8 @@ import java.util.Arrays;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import static org.openremote.model.Constants.*;
+import static org.openremote.model.Constants.MASTER_REALM;
+import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 
 /**
  * We have the following demo users:
