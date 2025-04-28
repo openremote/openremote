@@ -1,4 +1,4 @@
-import {css, html} from "lit";
+import {css, html, PropertyValues} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import "@openremote/or-log-viewer";
 import {ViewerConfig} from "@openremote/or-log-viewer";
@@ -20,8 +20,27 @@ export function pageServicesProvider(store: Store<AppStateKeyed>): PageProvider<
     };
 }
 
+
+export interface ExternalService {
+    label: string;
+    name: string;
+    iframe_url: string;
+    health_url: string;
+    tenancy: boolean;
+}
+
 @customElement("page-services")
 export class PageServices extends Page<AppStateKeyed> {
+
+    services: ExternalService[] = [
+        {
+            label: "ML Forecast Service",
+            name: "ml-forecast",
+            iframe_url: "https://test3.openremote.app/services/ml-forecast/ui",
+            health_url: "https://test3.openremote.app/services/ml-forecast/api/system/health",
+            tenancy: true,
+        }
+    ]
 
     static get styles() {
         // language=CSS
@@ -57,6 +76,24 @@ export class PageServices extends Page<AppStateKeyed> {
         this.realmName = manager.displayRealm;
     }
 
+
+    getIframePath(service: ExternalService) {
+        const isSuperUser = manager.isSuperUser();
+
+        // If no tenancy, we can just use the iframe_url
+        if (!service.tenancy) {
+            return service.iframe_url;
+        }
+
+        // If its super user use realm as param
+        if (isSuperUser) {
+            return `${service.iframe_url}/${this.realmName}`;
+        }
+
+        // If not its a query param
+        return `${service.iframe_url}?realm=${this.realmName}`;
+    }
+
     public stateChanged(state: AppStateKeyed) {
         this.getRealmState(state);
     }
@@ -71,21 +108,16 @@ export class PageServices extends Page<AppStateKeyed> {
     )
 
 
-
     @state()
     protected realmName: string;
 
     protected render() {
         // Super user doesnt need to provide realm query param
-        //const serviceUrl = manager.isSuperUser() ? `http://localhost:8001/${this.realmName}` : `http://localhost:8001/?realm=${this.realmName}`;
-        const serviceUrl = manager.isSuperUser() ? `https://test3.openremote.app/services/ml-forecast/ui/${this.realmName}` : `https://test3.openremote.app/services/ml-forecast/ui/?realm=${this.realmName}`;
-
-        console.log("Loading service via: ", serviceUrl);
+        console.log("Loading service via: ", this.getIframePath(this.services[0]));
 
         return html`
             <div class="sidebar-placeholder"></div>
-            <!-- Hardcoded for testing -->
-            <iframe id="services-iframe" src="${serviceUrl}"></iframe>
+            <iframe id="services-iframe" src="${this.getIframePath(this.services[0])}"></iframe>
         `;
     }
 }
