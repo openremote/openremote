@@ -31,6 +31,7 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.model.notification.AbstractNotificationMessage
 import org.openremote.model.notification.Notification
 import org.openremote.model.notification.NotificationSendResult
+import org.openremote.model.security.ClientRole
 import org.openremote.model.security.User
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
@@ -47,6 +48,8 @@ import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 import jakarta.ws.rs.WebApplicationException
+
+import static org.openremote.model.Constants.SUPER_USER_REALM_ROLE
 
 class AlarmResourceTest extends Specification implements ManagerContainerTrait {
     @Shared
@@ -68,6 +71,9 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
     static String alarmsReadWriteUserId
 
     @Shared
+    static String testuser4Id
+
+    @Shared
     static NotificationService notificationService
 
     @Shared
@@ -87,6 +93,17 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
         ).token
 
+        regularUserResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AlarmResource.class)
+        adminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(AlarmResource.class)
+
+        User alarmsReadWriteUser = keycloakTestSetup.createUser(MASTER_REALM, "alarmsrwuser1", "alarmsrwuser1", "Alarms R/W", "User", "alarmsrwuser@openremote.local", true, KeycloakTestSetup.REGULAR_USER_ROLES)
+        alarmsReadWriteUserId = alarmsReadWriteUser.getId();
+
+        User superUser = keycloakTestSetup.createUser(MASTER_REALM, "testuser4", "testuser4", "Demo4", "Demo4", null, true, new ClientRole[] {ClientRole.WRITE, ClientRole.READ});
+        testuser4Id = superUser.getId();
+        keycloakTestSetup.keycloakProvider.updateUserClientRoles(MASTER_REALM, testuser4Id, "account");
+        keycloakTestSetup.keycloakProvider.updateUserRealmRoles(MASTER_REALM, testuser4Id, keycloakTestSetup.keycloakProvider.addUserRealmRoles(MASTER_REALM, testuser4Id, SUPER_USER_REALM_ROLE));
+
         def superAdminAccessToken = authenticate(
                 container,
                 MASTER_REALM,
@@ -95,12 +112,7 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
                 "testuser4",
         ).token
 
-        regularUserResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AlarmResource.class)
-        adminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(AlarmResource.class)
         superAdminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, superAdminAccessToken).proxy(AlarmResource.class)
-        User alarmsReadWriteUser = keycloakTestSetup.createUser(MASTER_REALM, "alarmsrwuser1", "alarmsrwuser1", "Alarms R/W", "User", "alarmsrwuser@openremote.local", true, KeycloakTestSetup.REGULAR_USER_ROLES)
-
-        alarmsReadWriteUserId = alarmsReadWriteUser.getId()
 
         def emailNotificationHandler = container.getService(EmailNotificationHandler.class)
         def throwPushHandlerException = false

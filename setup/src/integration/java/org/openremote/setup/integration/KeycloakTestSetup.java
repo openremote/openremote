@@ -56,7 +56,6 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
     public String testuser1Id;
     public String testuser2Id;
     public String testuser3Id;
-    public String testuser4Id;
     public String smartCityUserId;
     public String buildingUserId;
     public Realm realmMaster;
@@ -66,7 +65,6 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
     public User testuser1;
     public User testuser2;
     public User testuser3;
-    public User testuser4;
     public User buildingUser;
     public User smartCityUser;
     public User serviceUser;
@@ -124,11 +122,6 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         smartCityUser = createUser(realmCity.getName(), "smartcity", "smartcity", "Smart", "City", null, true, noWriteAccess);
         this.smartCityUserId = smartCityUser.getId();
         keycloakProvider.updateUserClientRoles(realmCity.getName(), smartCityUserId, "account"); // Remove all roles for account client
-
-        testuser4 = createUser(MASTER_REALM, "testuser4", "testuser4", "Demo4", "Demo4", null, true, new ClientRole[] {ClientRole.WRITE, ClientRole.READ});
-        this.testuser4Id = testuser4.getId();
-        keycloakProvider.updateUserClientRoles(MASTER_REALM, testuser4Id, "account");
-        keycloakProvider.updateUserRealmRoles(MASTER_REALM, testuser4Id, keycloakProvider.addUserRealmRoles(MASTER_REALM, testuser4Id, SUPER_USER_REALM_ROLE));
 
         /*
          * Service user clients
