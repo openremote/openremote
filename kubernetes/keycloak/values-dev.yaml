@@ -1,0 +1,5 @@
+or:
+  env:
+    - name: KC_HOSTNAME_STRICT_HTTPS
+      value: "false"
+  port: "8080"

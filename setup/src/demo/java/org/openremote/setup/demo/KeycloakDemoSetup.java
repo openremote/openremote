@@ -73,12 +73,12 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         // Users
         User smartCityUser = createUser(realmCity.getName(), "smartcity", "smartcity", "Smart", "City", null, true, demoUserRoles);
         this.smartCityUserId = smartCityUser.getId();
-        keycloakProvider.updateUserRoles(realmCity.getName(), smartCityUserId, "account"); // Remove all roles for account client
+        keycloakProvider.updateUserClientRoles(realmCity.getName(), smartCityUserId, "account"); // Remove all roles for account client
         User manufacturerUser = createUser(realmManufacturer.getName(), "manufacturer", "manufacturer", "Agri", "Tech", null, true, demoUserRoles);
         manufacturerUserId = manufacturerUser.getId();
-        keycloakProvider.updateUserRoles(realmManufacturer.getName(), manufacturerUserId, "account"); // Remove all roles for account client
+        keycloakProvider.updateUserClientRoles(realmManufacturer.getName(), manufacturerUserId, "account"); // Remove all roles for account client
         User customerUser = createUser(realmManufacturer.getName(), "customer", "customer", "Bert", "Frederiks", null, true, demoUserRoles);
         customerUserId = customerUser.getId();
-        keycloakProvider.updateUserRoles(realmManufacturer.getName(), customerUserId, "account"); // Remove all roles for account client
+        keycloakProvider.updateUserClientRoles(realmManufacturer.getName(), customerUserId, "account"); // Remove all roles for account client
     }
 }

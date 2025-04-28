@@ -33,8 +33,7 @@ import java.sql.PreparedStatement;
 import java.util.*;
 import java.util.logging.Logger;
 
-import static org.openremote.model.Constants.MASTER_REALM;
-import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
+import static org.openremote.model.Constants.*;
 
 public class ManagerBasicIdentityProvider extends BasicIdentityProvider implements ManagerIdentityProvider {
 
@@ -153,7 +152,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public Role[] getRoles(String realm, String client) {
+    public Role[] getClientRoles(String realm, String client) {
         if (client != null && !MASTER_REALM.equals(client)) {
             throw new IllegalStateException("This provider only has a single master realm");
         }
@@ -168,19 +167,20 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public Role[] getUserRoles(String realm, String userId, String client) {
-        return ClientRole.ALL_ROLES.stream()
-            .map(role -> new Role(UUID.randomUUID().toString(), role, false, true, null))
-            .toArray(Role[]::new);
+    public String[] getUserClientRoles(String realm, String userId, String client) {
+        if (KEYCLOAK_CLIENT_ID .equals(client)) {
+            return ClientRole.ALL_ROLES.toArray(new String[0]);
+        }
+        return new String[0];
     }
 
     @Override
-    public Role[] getUserRealmRoles(String realm, String userId) {
+    public String[] getUserRealmRoles(String realm, String userId) {
         throw new UnsupportedOperationException("This provider does not support user realm roles");
     }
 
     @Override
-    public void updateUserRoles(String realm, String userId, String client, String... roles) {
+    public void updateUserClientRoles(String realm, String userId, String client, String... roles) {
         throw new UnsupportedOperationException("This provider does not support updating user roles");
     }
 
