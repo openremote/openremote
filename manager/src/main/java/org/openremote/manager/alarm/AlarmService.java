@@ -325,7 +325,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
         if (newAlarm.getSeverity() == Alarm.Severity.HIGH) {
             Set<String> excludeUserIds = Stream.of(oldAssigneeId).filter(Objects::nonNull).collect(Collectors.toSet());
-            sendAssigneeNotification(oldAlarm, excludeUserIds);
+            sendAssigneeNotification(newAlarm, excludeUserIds);
         }
     }
 
