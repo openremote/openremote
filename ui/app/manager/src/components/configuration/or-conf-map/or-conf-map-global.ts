@@ -2,9 +2,9 @@ import { MapConfig } from "@openremote/model";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import {i18next} from "@openremote/or-translate";
-import {when} from "lit/directives/when.js"
+import { when } from "lit/directives/when.js"
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { i18next } from "@openremote/or-translate";
 
 @customElement("or-conf-map-global")
 export class OrConfMapGlobal extends LitElement {
@@ -88,12 +88,13 @@ export class OrConfMapGlobal extends LitElement {
                             <or-translate style="font-style: italic;" class="note" value="configuration.global.mapTileJsonUrlNote"></or-translate>
                         </span>
                         <or-mwc-input class="input" style="width: fit-content; margin-left: auto; padding: 0"
-                            .value="${this.config.sources.vector_tiles.custom}"
+                            .value="${isCustom}"
                             .type="${InputType.CHECKBOX}"
                             .label="${i18next.t("configuration.global.configureMap")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                 this.config.sources.vector_tiles.custom = e.detail.value
                                 this.notifyConfigChange(this.config)
+                                this.requestUpdate();
                             }}"
                         ></or-mwc-input>
                     </div>
