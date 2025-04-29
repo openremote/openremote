@@ -174,7 +174,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     public void setAssetLinks(RequestParams requestParams, List<AlarmAssetLink> links) {
         try {
             if (links == null || links.isEmpty()) {
-                throw new IllegalArgumentException("Missing links");
+                throw new IllegalArgumentException("No AlarmAssetLink objects were provided.");
             }
             Set<String> realms = links.stream().map(link -> link.getId().getRealm()).collect(Collectors.toSet());
 
