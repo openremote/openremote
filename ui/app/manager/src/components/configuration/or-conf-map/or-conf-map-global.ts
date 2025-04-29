@@ -32,11 +32,11 @@ export class OrConfMapGlobal extends LitElement {
         }
 
         @media screen and (max-width: 768px) {
-            .custom-tile-group, .global-server-group {
+            .server-group, .settings-misc {
                 width: 100%;
                 padding: unset;
             }
-            .global-settings-container {
+            .settings-container {
                 display: block;
             }
         }
