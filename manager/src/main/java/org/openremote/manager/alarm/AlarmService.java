@@ -276,7 +276,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         result.put("Severity", alarm.getSeverity().name());
         result.put("Status", alarm.getStatus().name());
 
-        List<String> assetLinks = getAssetLinks(alarm, alarm.getRealm()).stream().map(AlarmAssetLink::getAssetName).toList();
+        List<String> assetLinks = getAssetLinks(alarm.getId(), alarm.getRealm()).stream().map(AlarmAssetLink::getAssetName).toList();
         result.put("Linked assets", assetLinks.isEmpty() ? "None" : String.join(", ", assetLinks));
 
         result.put("Assignee", TextUtil.isNullOrEmpty(alarm.getAssigneeUsername()) ? "None" : alarm.getAssigneeUsername());
@@ -365,7 +365,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     /**
      * Returns the assets linked to an alarm if the given user has access to the alarm realm.
      */
-    public List<AlarmAssetLink> getAssetLinks(SentAlarm alarm, String realm) throws IllegalArgumentException {
+    public List<AlarmAssetLink> getAssetLinks(Long alarmId, String realm) throws IllegalArgumentException {
         return persistenceService.doReturningTransaction(entityManager ->
                 entityManager.createQuery("""
                                 select aal from AlarmAssetLink aal
@@ -373,7 +373,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                                 order by aal.createdOn desc
                                 """, AlarmAssetLink.class)
                         .setParameter("realm", realm)
-                        .setParameter("alarmId", alarm.getId())
+                        .setParameter("alarmId", alarmId)
                         .getResultList()
         );
     }

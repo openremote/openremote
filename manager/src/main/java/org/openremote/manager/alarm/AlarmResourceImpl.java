@@ -58,12 +58,10 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     @Override
     public SentAlarm[] getAlarms(RequestParams requestParams, String realm, Alarm.Status status, String assetId, String assigneeId) {
         try {
-            String filterRealm = TextUtil.isNullOrEmpty(realm) ? getAuthenticatedRealm().getName() : realm;
-
-            if (!isRealmActiveAndAccessible(filterRealm) && !isSuperUser()) {
-                throw new ForbiddenException("Realm '" + filterRealm + "' is not active or inaccessible");
+            if (!isRealmActiveAndAccessible(getAuthenticatedRealmName())) {
+                throw new ForbiddenException("Realm '" + getAuthenticatedRealmName() + "' is not active or inaccessible");
             }
-           return alarmService.getAlarms(filterRealm, status, assetId, assigneeId).toArray(new SentAlarm[0]);
+           return alarmService.getAlarms(getAuthenticatedRealmName(), status, assetId, assigneeId).toArray(new SentAlarm[0]);
         } catch (IllegalArgumentException | NullPointerException e) {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         } catch (ForbiddenException e) {
@@ -74,12 +72,10 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     @Override
     public void removeAlarms(RequestParams requestParams, List<Long> alarmIds) {
         try {
-            List<SentAlarm> alarms = alarmService.getAlarms(alarmIds);
-            alarms.forEach(alarm -> {
-                if (!isRealmAccessibleByUser(alarm.getRealm()) && !isSuperUser()) {
-                    throw new ForbiddenException("Realm '" + alarm.getRealm() + "' is not active or inaccessible");
-                }
-            });
+            if (!isRealmActiveAndAccessible(getAuthenticatedRealmName())) {
+                throw new ForbiddenException("Realm '" + getAuthenticatedRealmName() + "' is not active or inaccessible");
+            }
+            List<SentAlarm> alarms = alarmService.getAlarms(alarmIds);;
             alarmService.removeAlarms(alarms, alarmIds);
         } catch (EntityNotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
@@ -94,7 +90,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     public SentAlarm getAlarm(RequestParams requestParams, Long alarmId) {
         try {
             SentAlarm alarm = alarmService.getAlarm(alarmId);
-            if (!isRealmAccessibleByUser(alarm.getRealm()) && !isSuperUser()) {
+            if (!isRealmActiveAndAccessible(alarm.getRealm())) {
                 throw new ForbiddenException("Realm '" + alarm.getRealm() + "' is not active or inaccessible");
             }
             return alarmService.getAlarm(alarmId);
@@ -109,7 +105,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     public void removeAlarm(RequestParams requestParams, Long alarmId) {
         try {
             SentAlarm alarm = alarmService.getAlarm(alarmId);
-            if (!isRealmAccessibleByUser(alarm.getRealm()) && !isSuperUser()) {
+            if (!isRealmActiveAndAccessible(alarm.getRealm())) {
                 throw new ForbiddenException("Realm '" + alarm.getRealm() + "' is not active or inaccessible");
             }
             alarmService.removeAlarm(alarm);
@@ -133,7 +129,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
                 alarm.setSourceId(getClientId());
             }
 
-            if (!isRealmAccessibleByUser(alarm.getRealm()) && !isSuperUser()) {
+            if (!isRealmActiveAndAccessible(alarm.getRealm())) {
                 throw new ForbiddenException("Realm '" + alarm.getRealm() + "' is not active or inaccessible");
             }
             return alarmService.sendAlarm(alarm, assetIds);
@@ -148,7 +144,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     public void updateAlarm(RequestParams requestParams, Long alarmId, SentAlarm newAlarm) {
         try {
             SentAlarm oldAlarm = alarmService.getAlarm(alarmId);
-            if (!isRealmAccessibleByUser(oldAlarm.getRealm()) && !isSuperUser()) {
+            if (!isRealmActiveAndAccessible(oldAlarm.getRealm())) {
                 throw new ForbiddenException("Realm '" + oldAlarm.getRealm() + "' is not active or inaccessible");
             }
             alarmService.updateAlarm(oldAlarm, newAlarm);
@@ -162,11 +158,10 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     @Override
     public List<AlarmAssetLink> getAssetLinks(RequestParams requestParams, Long alarmId, String realm) {
         try {
-            SentAlarm alarm = alarmService.getAlarm(alarmId);
-            if (!isRealmAccessibleByUser(realm) && !isSuperUser()) {
+            if (!isRealmActiveAndAccessible(realm)) {
                 throw new ForbiddenException("Realm '" + realm + "' is not active or inaccessible");
             }
-            return alarmService.getAssetLinks(alarm, realm);
+            return alarmService.getAssetLinks(alarmId, realm);
         } catch (EntityNotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         } catch (ForbiddenException e) {
@@ -182,7 +177,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
             }
             Set<String> realms = links.stream().map(link -> link.getId().getRealm()).collect(Collectors.toSet());
 
-            if (!isRealmAccessibleByUser(realms.stream().findFirst().orElse(null)) && !isSuperUser()) {
+            if (!isRealmActiveAndAccessible(realms.stream().findFirst().orElse(null))) {
                 throw new ForbiddenException("Realm '" + realms.stream().findFirst() + "' is not active or inaccessible");
             }
             alarmService.linkAssets(links);

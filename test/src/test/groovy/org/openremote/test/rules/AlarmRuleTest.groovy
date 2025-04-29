@@ -178,7 +178,7 @@ Value: 6000
         alarm.assigneeId == assigneeId
 
         and: "the asset is linked to the alarm"
-        def assetLinks = alarmService.getAssetLinks(alarm, managerTestSetup.realmBuildingName)
+        def assetLinks = alarmService.getAssetLinks(alarm.id, managerTestSetup.realmBuildingName)
         assetLinks.size() == 1
         def assetLink = assetLinks.get(0)
         assetLink.id.alarmId == alarm.id
