@@ -177,6 +177,7 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
             "sources" : {
                 "vector_tiles" : {
                     "type" : "vector" ,
+                    "url" : "https://example.com/tileset/tile.json",
                     "tiles" : [ "https://example.com/tileset/{z}/{x}/{y}.mvt" ],
                     "custom" : true
                 }
@@ -187,6 +188,7 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
         def savedSettings = (ObjectNode)mapResource.saveSettings(null, mapSettings.get())
 
         then: "the custom tile server URL should be returned"
+        savedSettings.get("sources").get("vector_tiles").get("url").textValue() == "https://example.com/tileset/tile.json"
         savedSettings.get("sources").get("vector_tiles").get("tiles").get(0).textValue() == "https://example.com/tileset/{z}/{x}/{y}.mvt"
         savedSettings.get("sprite").textValue() == "https://api.example.com/maps/streets/sprite"
         savedSettings.get("glyphs").textValue() == "https://api.example.com/fonts/{fontstack}/{range}.pbf"
@@ -199,7 +201,7 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
                 "vector_tiles" : {
                     "type" : "vector" ,
                     "tiles" : [ "https://example.com/tileset.mvt" ],
-                    "custom" : true
+                    "custom" : false
                 }
             }
         }""", MapConfig.class)
