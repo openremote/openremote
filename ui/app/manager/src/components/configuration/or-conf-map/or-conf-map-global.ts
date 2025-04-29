@@ -100,12 +100,25 @@ export class OrConfMapGlobal extends LitElement {
                     </div>
                     <or-mwc-input class="input"
                         .disabled="${!isCustom}"
-                        .value="${this.config.sources.vector_tiles.url}"
+                        .required="${isCustom}"
+                        .value="${isCustom ? this.config.sources.vector_tiles.url : undefined}"
                         .type="${InputType.URL}"
                         .label="${i18next.t("configuration.global.mapTileJsonUrlPlaceholder")}"
                         placeholder="https://api.example.com/tiles/tile.json"
                         @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                             this.config.sources.vector_tiles.url = e.detail.value;
+                            this.notifyConfigChange(this.config);
+                        }}"
+                    ></or-mwc-input>
+                    <or-mwc-input class="input"
+                        .disabled="${!isCustom}"
+                        .required="${isCustom}"
+                        .value="${isCustom ? this.config.glyphs : undefined}"
+                        .type="${InputType.URL}"
+                        .label="${i18next.t("configuration.global.mapGlyphUrlPlaceholder")}"
+                        placeholder="https://api.example.com/fonts/{fontstack}/{range}.pbf"
+                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                            this.config.glyphs = e.detail.value;
                             this.notifyConfigChange(this.config);
                         }}"
                     ></or-mwc-input>
@@ -117,17 +130,6 @@ export class OrConfMapGlobal extends LitElement {
                         placeholder="https://api.example.com/maps/tileset/sprite"
                         @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                             this.config.sprite = e.detail.value;
-                            this.notifyConfigChange(this.config);
-                        }}"
-                    ></or-mwc-input>
-                    <or-mwc-input class="input"
-                        .disabled="${!isCustom}"
-                        .value="${isCustom ? this.config.glyphs : undefined}"
-                        .type="${InputType.URL}"
-                        .label="${i18next.t("configuration.global.mapGlyphUrlPlaceholder")}"
-                        placeholder="https://api.example.com/fonts/{fontstack}/{range}.pbf"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                            this.config.glyphs = e.detail.value;
                             this.notifyConfigChange(this.config);
                         }}"
                     ></or-mwc-input>
