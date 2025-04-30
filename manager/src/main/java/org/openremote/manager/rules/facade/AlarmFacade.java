@@ -53,7 +53,7 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
         alarm.setRealm(rulesEngineId.getRealm().orElseThrow());
         alarm.setSource(source);
 
-        return alarmService.sendAlarm(alarm, assetIds, null).getId();
+        return alarmService.sendAlarm(alarm, assetIds).getId();
     }
 
     public void linkAssets(List<String> assetIds, Long alarmId) {
