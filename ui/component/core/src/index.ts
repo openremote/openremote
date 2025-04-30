@@ -687,7 +687,6 @@ export class Manager implements EventProviderFactory {
      * Checks the keycloak access token to gather the preferred language of a user.
      */
     public async getUserPreferredLanguage(keycloak = this._keycloak): Promise<string | undefined> {
-        console.debug("Getting user preferred language... Are they logged in?", keycloak?.authenticated);
 
         if(keycloak && keycloak.authenticated) {
             const profile: Keycloak.KeycloakProfile | undefined = keycloak?.profile || await keycloak?.loadUserProfile();
