@@ -1,0 +1,42 @@
+{
+  "name": "@openremote/or-attribute-report",
+  "version": "1.3.3",
+  "description": "OpenRemote attribute report",
+  "main": "dist/umd/index.bundle.js",
+  "module": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./*": "./lib/*.js"
+  },
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "test": "echo \"No tests\" && exit 0",
+    "prepack": "npx webpack"
+  },
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@material/data-table": "^9.0.0",
+    "@material/dialog": "^9.0.0",
+    "@openremote/core": "workspace:*",
+    "@openremote/or-asset-tree": "workspace:*",
+    "@openremote/or-attribute-picker": "workspace:*",
+    "@openremote/or-components": "workspace:*",
+    "@openremote/or-icon": "workspace:*",
+    "@openremote/or-mwc-components": "workspace:*",
+    "@openremote/or-translate": "workspace:*",
+    "chart.js": "^3.6.0",
+    "echarts": "^5.6.0",
+    "jsonpath-plus": "^6.0.1",
+    "lit": "^2.0.2",
+    "moment": "^2.29.4"
+  },
+  "devDependencies": {
+    "@openremote/util": "workspace:*",
+    "@types/chart.js": "^2.9.34",
+    "@types/offscreencanvas": "^2019.6.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
