@@ -79,8 +79,11 @@ export class PageView extends Page<AppStateKeyed> {
         super(props);
 
         // Register user
-        const userPromise = manager.rest.api.UserResource.getCurrent().then((response: any) => { this._userId = response.data.id; });
-        this.registerPromise('user', userPromise, true, true);
+        console.debug("Loading view dashboard page.. Login state:", manager.authenticated);
+        if(manager.authenticated) {
+            const userPromise = manager.rest.api.UserResource.getCurrent().then((response: any) => { this._userId = response.data.id; });
+            this.registerPromise('user', userPromise, true, true);
+        }
 
         // Load available realms
         const realmPromise = manager.rest.api.RealmResource.getAccessible().then((response: any) => { this._loadedRealms = response.data; });
