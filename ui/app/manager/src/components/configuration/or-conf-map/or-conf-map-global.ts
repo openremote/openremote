@@ -92,10 +92,10 @@ export class OrConfMapGlobal extends LitElement {
         return html`
             <div class="map-tile-settings">
                 <div class="custom-tile-server-group">
-                    <div class="subheader"><or-translate value="configuration.global.mapTileJsonUrl"></or-translate></div>
+                    <div class="subheader"><or-translate value="configuration.global.mapTileServer"></or-translate></div>
                     <span>
-                        <or-translate value="configuration.global.mapTileJsonUrlDescription"></or-translate><br>
-                        <or-translate style="font-style: italic;" class="note" value="configuration.global.mapTileJsonUrlNote"></or-translate>
+                        <or-translate value="configuration.global.mapTileServerDescription"></or-translate><br>
+                        <or-translate style="font-style: italic;" class="note" value="configuration.global.mapTileServerNote"></or-translate>
                     </span>
                     <or-mwc-input class="input"
                         .value="${isCustom ? this.config.sources?.vector_tiles?.tiles?.[0] : undefined}"
@@ -151,7 +151,8 @@ export class OrConfMapGlobal extends LitElement {
                             this.requestUpdate();
                         }}"
                     ></or-mwc-input>
-                    <or-mwc-input class="input fit-content" type="button" outlined icon="import" label="Import"
+                    <or-mwc-input class="input fit-content" type="button" outlined icon="import" 
+                        .label="${i18next.t("configuration.global.import")}"
                         .disabled="${!this.config.override}" @or-mwc-input-changed="${this.importMapSettings}"
                     ></or-mwc-input>
                     <or-conf-json class="input fit-content hide-mobile" .heading="${i18next.t("configuration.global.mapLayers")}"
@@ -172,7 +173,8 @@ export class OrConfMapGlobal extends LitElement {
                     }}"
                     ></or-conf-json>
                     ${when(hasExternalSource, () => html`
-                        <or-mwc-input class="input fit-content" outlined type="button" icon="undo" label="Reset" 
+                        <or-mwc-input class="input fit-content" outlined type="button" icon="undo" 
+                            .label="${i18next.t("configuration.global.reset")}"
                             @or-mwc-input-changed="${this.resetMapSettings}"
                         ></or-mwc-input>
                     `)}
