@@ -5,6 +5,7 @@ import { customElement, property } from "lit/decorators.js";
 import { when } from "lit/directives/when.js"
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
+import { StyleSpecification } from "maplibre-gl";
 
 @customElement("or-conf-map-global")
 export class OrConfMapGlobal extends LitElement {
@@ -15,28 +16,33 @@ export class OrConfMapGlobal extends LitElement {
             font-weight: bolder;
         }
 
-        .settings-container {
+        .map-style-settings {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .map-tile-settings {
             display: flex;
         }
 
-        .settings-misc {
+        .custom-tile-server-group {
+            flex-direction: column;
+            width: 50%;
+        }
+
+        .custom-tile-upload-group {
             display: flex;
             flex-direction: column;
             padding-left: 12px;
             width: 50%;
         }
 
-        .server-group {
-            flex-direction: column;
-            width: 50%;
-        }
-
         @media screen and (max-width: 768px) {
-            .server-group, .settings-misc {
+            .custom-tile-server-group, .custom-tile-upload-group {
                 width: 100%;
                 padding: unset;
             }
-            .settings-container {
+            .map-tile-settings{
                 display: block;
             }
         }
@@ -63,6 +69,10 @@ export class OrConfMapGlobal extends LitElement {
         .d-inline-flex {
             display: inline-flex;
         }
+        
+        .fit-content {
+            width: fit-content;
+        }
     `;
 
     @property()
@@ -79,8 +89,55 @@ export class OrConfMapGlobal extends LitElement {
     protected render() {
         const isCustom = this.config.sources?.vector_tiles?.custom;
         return html`
-            <div class="settings-container">
-                <div class="server-group">
+            <div class="map-style-settings">
+                <div class="subheader"><or-translate value="configuration.global.mapStyleJsonUrl"></or-translate></div>
+                <span>
+                    <or-translate value="configuration.global.mapStyleJsonUrlDescription"></or-translate><br>
+                    <or-translate style="font-style: italic;" class="note" value="configuration.global.mapStyleJsonUrlNote"></or-translate>
+                </span>
+                <div style="display: flex; gap: 12px; width: 50%">
+                    <or-mwc-input class="input"
+                        .value="${this.config.override}"
+                        .type="${InputType.URL}"
+                        .label="${i18next.t("configuration.global.mapStyleJsonUrlPlaceholder")}"
+                        placeholder="https://api.example.com/tileset/style.json"
+                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                            this.config.override = e.detail.value || undefined
+                            this.notifyConfigChange(this.config)
+                        }}"
+                    ></or-mwc-input>
+                    ${when(false, () => html`
+                        <or-mwc-input class="input fit-content" type="button" outlined icon="import" label="Import" 
+                            @or-mwc-input-changed="${async () => {
+                                if (this.config.override) {
+                                    const data = await (await fetch(this.config.override)).json() as StyleSpecification
+                                    Object.assign(this.config.sources, data.sources)
+                                    this.config.layers.push(data.layers);
+                                    this.config.sprite = data.sprite as string
+                                    this.config.glyphs = data.glyphs
+                                    delete this.config.override
+                                    this.notifyConfigChange(this.config)
+                                    this.requestUpdate()
+                                }
+                            }}"
+                        ></or-mwc-input>
+                        `, () => html`
+                            <or-conf-json class="input fit-content" .managerConfig="${this.config.layers.filter(({ source }) => source !== "vector_tiles")}" class="hide-mobile"
+                                @saveLocalManagerConfig="${(ev: CustomEvent) => {
+                                    // 
+                            }}"
+                            ></or-conf-json>
+                            <or-mwc-input class="input fit-content" outlined type="button" icon="undo" label="Reset" @or-mwc-input-changed="${
+                                (e: OrInputChangedEvent) => {
+                                    this.config.override = e.detail.value || undefined
+                                    this.notifyConfigChange(this.config)
+                                }}"
+                            ></or-mwc-input>
+                    `)}
+                </div>
+            </div>
+            <div class="map-tile-settings">
+                <div class="custom-tile-server-group">
                     <div class="subheader"><or-translate value="configuration.global.mapTileJsonUrl"></or-translate></div>
                     <div style="display: flex;">
                         <span>
@@ -100,41 +157,6 @@ export class OrConfMapGlobal extends LitElement {
                     </div>
                     <or-mwc-input class="input"
                         .disabled="${!isCustom}"
-                        .required="${isCustom}"
-                        .value="${isCustom ? this.config.sources.vector_tiles.url : undefined}"
-                        .type="${InputType.URL}"
-                        .label="${i18next.t("configuration.global.mapTileJsonUrlPlaceholder")}"
-                        placeholder="https://api.example.com/tiles/tile.json"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                            this.config.sources.vector_tiles.url = e.detail.value;
-                            this.notifyConfigChange(this.config);
-                        }}"
-                    ></or-mwc-input>
-                    <or-mwc-input class="input"
-                        .disabled="${!isCustom}"
-                        .required="${isCustom}"
-                        .value="${isCustom ? this.config.glyphs : undefined}"
-                        .type="${InputType.URL}"
-                        .label="${i18next.t("configuration.global.mapGlyphUrlPlaceholder")}"
-                        placeholder="https://api.example.com/fonts/{fontstack}/{range}.pbf"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                            this.config.glyphs = e.detail.value;
-                            this.notifyConfigChange(this.config);
-                        }}"
-                    ></or-mwc-input>
-                    <or-mwc-input class="input"
-                        .disabled="${!isCustom}"
-                        .value="${isCustom ? this.config.sprite : undefined}"
-                        .type="${InputType.URL}"
-                        .label="${i18next.t("configuration.global.mapSpriteUrlPlaceholder")}"
-                        placeholder="https://api.example.com/maps/tileset/sprite"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                            this.config.sprite = e.detail.value;
-                            this.notifyConfigChange(this.config);
-                        }}"
-                    ></or-mwc-input>
-                    <or-mwc-input class="input"
-                        .disabled="${!isCustom}"
                         .value="${isCustom ? this.config.sources?.vector_tiles?.tiles?.[0] : undefined}"
                         .type="${InputType.URL}"
                         .label="${i18next.t("configuration.global.mapTileServerPlaceholder")}"
@@ -145,43 +167,26 @@ export class OrConfMapGlobal extends LitElement {
                         }}"
                     ></or-mwc-input>
                 </div>
-                <div class="settings-misc">
-                    <div class="subheader"><or-translate value="configuration.global.mapStyleJsonUrl"></or-translate></div>
+                <div class="custom-tile-upload-group">
+                    <div class="subheader"><or-translate value="configuration.global.mapTiles"></or-translate></div>
                     <span>
-                        <or-translate value="configuration.global.mapStyleJsonUrlDescription"></or-translate><br>
-                        <or-translate style="font-style: italic;" class="note" value="configuration.global.mapStyleJsonUrlNote"></or-translate>
+                        <or-translate value="configuration.global.uploadMapTiles"></or-translate><br>
+                        <or-translate style="font-style: italic;" class="note" value="configuration.global.uploadMapTilesNote"
+                            .options=${{limit: this.humanReadableBytes(this.limit)}}
+                        ></or-translate>
                     </span>
-                    <or-mwc-input class="input"
-                        .value="${this.config.override}"
-                        .type="${InputType.URL}"
-                        .label="${i18next.t("configuration.global.mapStyleJsonUrlPlaceholder")}"
-                        placeholder="https://api.example.com/tileset/style.json"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                            this.config.override = e.detail.value || undefined
-                            this.notifyConfigChange(this.config)
-                        }}"
-                    ></or-mwc-input>
-                    <div class="custom-tile-group">
-                        <div class="subheader"><or-translate value="configuration.global.mapTiles"></or-translate></div>
-                        <span>
-                            <or-translate value="configuration.global.uploadMapTiles"></or-translate><br>
-                            <or-translate style="font-style: italic;" class="note" value="configuration.global.uploadMapTilesNote"
-                                .options=${{limit: this.humanReadableBytes(this.limit)}}
-                            ></or-translate>
-                        </span>
-                        <div class="input d-inline-flex" style="height: 56px">
-                            <div id="fileupload" style="display: flex; align-items: center">
-                                <or-mwc-input outlined label="selectFile" style="width: fit-content; padding-right: 12px;" .type="${InputType.BUTTON}" @or-mwc-input-changed="${
-                                    () => this.shadowRoot.getElementById('fileupload-elem').click()
-                                }">
-                                    <input id="fileupload-elem" name="configfile" type="file" accept=".mbtiles" @change="${this.notifyMapFileChange}"/>
-                                </or-mwc-input>
-                                <or-mwc-input id="filename-elem" style="width: unset" .value="${this.filename}" .label="${i18next.t("file")}" .type="${InputType.TEXT}" disabled>
-                                </or-mwc-input>
-                                ${when(this.filename, () => html`<or-mwc-input type="${InputType.BUTTON}" iconColor="black" icon="delete"
-                                    @or-mwc-input-changed="${this.notifyMapFileChange}"
-                                ></or-mwc-input>`)}
-                            </div>
+                    <div class="input d-inline-flex" style="height: 56px">
+                        <div id="fileupload" style="display: flex; align-items: center">
+                            <or-mwc-input outlined label="selectFile" style="width: fit-content; padding-right: 12px;" .type="${InputType.BUTTON}" @or-mwc-input-changed="${
+                                () => this.shadowRoot.getElementById('fileupload-elem').click()
+                            }">
+                                <input id="fileupload-elem" name="configfile" type="file" accept=".mbtiles" @change="${this.notifyMapFileChange}"/>
+                            </or-mwc-input>
+                            <or-mwc-input id="filename-elem" style="width: unset" .value="${this.filename}" .label="${i18next.t("file")}" .type="${InputType.TEXT}" disabled>
+                            </or-mwc-input>
+                            ${when(this.filename, () => html`<or-mwc-input type="${InputType.BUTTON}" iconColor="black" icon="delete"
+                                @or-mwc-input-changed="${this.notifyMapFileChange}"
+                            ></or-mwc-input>`)}
                         </div>
                     </div>
                 </div>

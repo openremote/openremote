@@ -93,7 +93,8 @@ public class MapService implements ContainerService {
             mapConfig = ValueUtil.JSON.createObjectNode();
         }
 
-        ObjectNode vectorTiles = ValueUtil.JSON.valueToTree(mapConfiguration.sources.get("vector_tiles"));
+        ObjectNode sources = ValueUtil.JSON.valueToTree(mapConfiguration.sources);
+        ObjectNode vectorTiles = (ObjectNode)sources.get("vector_tiles");
         String tileJsonUrl = Optional.ofNullable(vectorTiles.get("url"))
             .filter(JsonNode::isTextual)
             .map(JsonNode::textValue)
@@ -109,6 +110,7 @@ public class MapService implements ContainerService {
                     return result;
                 })
                 .orElseGet(JsonNodeFactory.instance::arrayNode);
+
         // Saves custom tile server url if custom is true in the vector_tiles source and the url follows the required template parameters.
         // Otherwise, replace it with the default configuration.
         if (vectorTiles.has("custom") && vectorTiles.get("custom").booleanValue()) {
@@ -123,7 +125,14 @@ public class MapService implements ContainerService {
             mapConfig.put("sprite", DEFAULT_SPRITE_PATH);
             mapConfig.put("glyphs", DEFAULT_GLYPHS_PATH);
         }
+        mapConfiguration.sources.clear();
         mapConfiguration.sources.put("vector_tiles", ValueUtil.JSON.convertValue(vectorTiles, MapSourceConfig.class));
+
+        Iterator<Map.Entry<String, JsonNode>> fields = sources.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> field = fields.next();
+            mapConfiguration.sources.put(field.getKey(), ValueUtil.JSON.convertValue(field.getValue(), MapSourceConfig.class));
+        }
 
         mapConfig.remove("override");
         if (mapConfiguration.override != null) {

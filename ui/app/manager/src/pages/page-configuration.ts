@@ -260,14 +260,19 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 <or-loading-indicator></or-loading-indicator>
             `, () => {
                 const saveDisabled = !this.managerConfigurationChanged && !this.mapConfigChanged && !this.tilesForUpload && !this.tilesForDeletion;
-                const realmHeading = this.getHeaderTemplate(this.managerConfiguration, "configuration.realmStyling", (ev: CustomEvent) => {
-                    this.managerConfiguration = ev.detail.value as ManagerAppConfig;
-                    this.managerConfigurationChanged = true;
-                });
-                const mapHeading = this.getHeaderTemplate(this.mapConfig, "configuration.mapSettings", (ev: CustomEvent) => {
-                    this.mapConfig = ev.detail.value as MapConfig;
-                    this.mapConfigChanged = true;
-                });
+                const realmHeading = html`
+                    <div id="heading" style="justify-content: space-between;">
+                        <span style="margin: 0;"><or-translate style="text-transform: uppercase;" value="configuration.realmStyling"></or-translate></span>
+                        <or-conf-json .managerConfig="${this.managerConfiguration}" class="hide-mobile" @saveLocalManagerConfig="${(ev: CustomEvent) => {
+                            this.managerConfiguration = ev.detail.value as ManagerAppConfig;
+                            this.managerConfigurationChanged = true;
+                        }}"
+                        ></or-conf-json>
+                    </div>`;
+                const mapHeading = html`
+                    <div id="heading" style="justify-content: space-between;">
+                        <span style="margin: 0;"><or-translate style="text-transform: uppercase;" value="configuration.mapSettings"></or-translate></span>
+                    </div>`;
                 const realmOptions = this.realms?.map((r) => ({name: r.name, displayName: r.displayName, canDelete: true}));
                 realmOptions.push({name: 'default', displayName: 'Default', canDelete: false});
                 return html`
