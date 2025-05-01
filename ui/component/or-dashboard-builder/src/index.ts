@@ -31,6 +31,8 @@ import {MapWidget} from "./widgets/map-widget";
 import {AttributeInputWidget} from "./widgets/attribute-input-widget";
 import {TableWidget} from "./widgets/table-widget";
 import {GatewayWidget} from "./widgets/gateway-widget";
+import {HtmlWidget} from "./widgets/html-widget";
+import {ReportWidget} from "./widgets/report-widget";
 
 // language=CSS
 const styling = css`
@@ -218,6 +220,8 @@ export function registerWidgetTypes() {
     widgetTypes.set("attributeinput", AttributeInputWidget.getManifest());
     widgetTypes.set("table", TableWidget.getManifest());
     widgetTypes.set("gateway", GatewayWidget.getManifest());
+    widgetTypes.set("html", HtmlWidget.getManifest());
+    widgetTypes.set("report", ReportWidget.getManifest());
 }
 
 @customElement("or-dashboard-builder")

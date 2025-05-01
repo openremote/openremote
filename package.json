@@ -10,5 +10,8 @@
   ],
   "devDependencies": {
     "@openremote/util": "workspace:*"
+  },
+  "dependencies": {
+    "@openremote/or-attribute-report": "workspace:^"
   }
 }

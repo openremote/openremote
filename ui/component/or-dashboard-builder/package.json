@@ -18,8 +18,10 @@
   "dependencies": {
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
+    "@openremote/or-attribute-report": "workspace:*",
     "@openremote/or-chart": "workspace:*",
     "@openremote/rest": "workspace:*",
+    "dompurify": "^3.2.4",
     "gridstack": "^7.2.0",
     "lit": "^2.0.2"
   },
