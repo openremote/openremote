@@ -116,8 +116,6 @@ public class MapService implements ContainerService {
         if (vectorTiles.has("custom") && vectorTiles.get("custom").booleanValue()) {
             vectorTiles.put("url", tileJsonUrl);
             vectorTiles.set("tiles", tileServerUrls);
-            mapConfig.put("sprite", Optional.ofNullable(mapConfiguration.sprite).orElse(DEFAULT_SPRITE_PATH));
-            mapConfig.put("glyphs", Optional.ofNullable(mapConfiguration.glyphs).orElse(DEFAULT_GLYPHS_PATH));
         } else {
             vectorTiles = ValueUtil.JSON.createObjectNode()
                 .put("type", "vector")
@@ -131,7 +129,9 @@ public class MapService implements ContainerService {
         Iterator<Map.Entry<String, JsonNode>> fields = sources.fields();
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> field = fields.next();
-            mapConfiguration.sources.put(field.getKey(), ValueUtil.JSON.convertValue(field.getValue(), MapSourceConfig.class));
+            if (!Objects.equals(field.getKey(), "vector_tiles")) {
+                mapConfiguration.sources.put(field.getKey(), ValueUtil.JSON.convertValue(field.getValue(), MapSourceConfig.class));
+            }
         }
 
         mapConfig.remove("override");
@@ -140,6 +140,8 @@ public class MapService implements ContainerService {
         }
         mapConfig.putPOJO("options", mapConfiguration.options);
         mapConfig.putPOJO("sources", mapConfiguration.sources);
+        mapConfig.put("sprite", Optional.ofNullable(mapConfiguration.sprite).orElse(DEFAULT_SPRITE_PATH));
+        mapConfig.put("glyphs", Optional.ofNullable(mapConfiguration.glyphs).orElse(DEFAULT_GLYPHS_PATH));
         mapConfig.putPOJO("layers", Optional.ofNullable(mapConfiguration.layers).filter(v -> v.length > 0).orElse(
             StreamSupport.stream(configurationService.getMapConfig().get("layers").spliterator(), false).toArray())
         );

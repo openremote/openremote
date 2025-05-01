@@ -241,16 +241,6 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     /* ------------------------ */
 
-    protected getHeaderTemplate(config: MapConfig | ManagerAppConfig, value: string, handler: (ev: CustomEvent) => void): TemplateResult {
-      return html`
-          <div id="heading" style="justify-content: space-between;">
-              <span style="margin: 0;"><or-translate style="text-transform: uppercase;" value="${value}"></or-translate></span>
-              <or-conf-json .managerConfig="${config}" class="hide-mobile"
-                  @saveLocalManagerConfig="${handler}"
-              ></or-conf-json>
-          </div>`
-    }
-
     protected render(): TemplateResult | void {
         if (!manager.authenticated) {
             return html`<or-translate value="notAuthenticated"></or-translate>`;
@@ -263,14 +253,13 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 const realmHeading = html`
                     <div id="heading" style="justify-content: space-between;">
                         <span style="margin: 0;"><or-translate style="text-transform: uppercase;" value="configuration.realmStyling"></or-translate></span>
-                        <or-conf-json .managerConfig="${this.managerConfiguration}" class="hide-mobile" @saveLocalManagerConfig="${(ev: CustomEvent) => {
+                        <or-conf-json .heading="${'manager_config.json'}" .config="${this.managerConfiguration}" class="hide-mobile" @saveLocalConfig="${(ev: CustomEvent) => {
                             this.managerConfiguration = ev.detail.value as ManagerAppConfig;
                             this.managerConfigurationChanged = true;
                         }}"
                         ></or-conf-json>
                     </div>`;
-                const mapHeading = html`
-                    <div id="heading" style="justify-content: space-between;">
+                const mapHeading = html`<div id="heading" style="justify-content: space-between;">
                         <span style="margin: 0;"><or-translate style="text-transform: uppercase;" value="configuration.mapSettings"></or-translate></span>
                     </div>`;
                 const realmOptions = this.realms?.map((r) => ({name: r.name, displayName: r.displayName, canDelete: true}));
@@ -284,22 +273,22 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                             </div>
                             <div id="header-actions">
                                 <or-mwc-input id="save-btn" .disabled="${saveDisabled}" raised type="button" label="save"
-                                              @or-mwc-input-changed="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
+                                    @or-mwc-input-changed="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
                                 ></or-mwc-input>
                             </div>
                         </div>
                         <or-panel .heading="${realmHeading}">
                             ${when(this.managerConfiguration, () => html`
                                 <or-conf-panel id="managerConfig-panel" .config="${this.managerConfiguration}" .realmOptions="${realmOptions}"
-                                               @change="${() => { this.managerConfigurationChanged = true; }}"
+                                    @change="${() => { this.managerConfigurationChanged = true; }}"
                                 ></or-conf-panel>
                             `, () => html`
                                 <div class="notFound-container">
                                     <span><or-translate value="configuration.managerConfigNotFound"></or-translate></span>
                                     <or-mwc-input type="${InputType.BUTTON}" label="configuration.tryAgain"
-                                                  @or-mwc-input-changed="${() => this.getManagerConfig().then(val => {
-                                                      this.managerConfiguration = val;
-                                                  }).catch(e => console.error(e))}"
+                                        @or-mwc-input-changed="${() => this.getManagerConfig().then(val => {
+                                            this.managerConfiguration = val;
+                                        }).catch(e => console.error(e))}"
                                     ></or-mwc-input>
                                 </div>
                             `)}
@@ -319,9 +308,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 <div class="notFound-container">
                                     <span><or-translate value="configuration.mapSettingsNotFound"></or-translate></span>
                                     <or-mwc-input type="${InputType.BUTTON}" label="configuration.tryAgain"
-                                                  @or-mwc-input-changed="${() => this.getMapConfig().then(val => {
-                                                      this.mapConfig = val;
-                                                  }).catch(e => console.error(e))}"
+                                        @or-mwc-input-changed="${() => this.getMapConfig().then(val => {
+                                            this.mapConfig = val;
+                                        }).catch(e => console.error(e))}"
                                     ></or-mwc-input>
                                 </div>
                             `)}

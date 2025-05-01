@@ -88,81 +88,23 @@ export class OrConfMapGlobal extends LitElement {
 
     protected render() {
         const isCustom = this.config.sources?.vector_tiles?.custom;
+        const hasExternalSource = Object.keys(this.config.sources).length > 1;
         return html`
-            <div class="map-style-settings">
-                <div class="subheader"><or-translate value="configuration.global.mapStyleJsonUrl"></or-translate></div>
-                <span>
-                    <or-translate value="configuration.global.mapStyleJsonUrlDescription"></or-translate><br>
-                    <or-translate style="font-style: italic;" class="note" value="configuration.global.mapStyleJsonUrlNote"></or-translate>
-                </span>
-                <div style="display: flex; gap: 12px; width: 50%">
-                    <or-mwc-input class="input"
-                        .value="${this.config.override}"
-                        .type="${InputType.URL}"
-                        .label="${i18next.t("configuration.global.mapStyleJsonUrlPlaceholder")}"
-                        placeholder="https://api.example.com/tileset/style.json"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                            this.config.override = e.detail.value || undefined
-                            this.notifyConfigChange(this.config)
-                        }}"
-                    ></or-mwc-input>
-                    ${when(false, () => html`
-                        <or-mwc-input class="input fit-content" type="button" outlined icon="import" label="Import" 
-                            @or-mwc-input-changed="${async () => {
-                                if (this.config.override) {
-                                    const data = await (await fetch(this.config.override)).json() as StyleSpecification
-                                    Object.assign(this.config.sources, data.sources)
-                                    this.config.layers.push(data.layers);
-                                    this.config.sprite = data.sprite as string
-                                    this.config.glyphs = data.glyphs
-                                    delete this.config.override
-                                    this.notifyConfigChange(this.config)
-                                    this.requestUpdate()
-                                }
-                            }}"
-                        ></or-mwc-input>
-                        `, () => html`
-                            <or-conf-json class="input fit-content" .managerConfig="${this.config.layers.filter(({ source }) => source !== "vector_tiles")}" class="hide-mobile"
-                                @saveLocalManagerConfig="${(ev: CustomEvent) => {
-                                    // 
-                            }}"
-                            ></or-conf-json>
-                            <or-mwc-input class="input fit-content" outlined type="button" icon="undo" label="Reset" @or-mwc-input-changed="${
-                                (e: OrInputChangedEvent) => {
-                                    this.config.override = e.detail.value || undefined
-                                    this.notifyConfigChange(this.config)
-                                }}"
-                            ></or-mwc-input>
-                    `)}
-                </div>
-            </div>
             <div class="map-tile-settings">
                 <div class="custom-tile-server-group">
                     <div class="subheader"><or-translate value="configuration.global.mapTileJsonUrl"></or-translate></div>
-                    <div style="display: flex;">
-                        <span>
-                            <or-translate value="configuration.global.mapTileJsonUrlDescription"></or-translate><br>
-                            <or-translate style="font-style: italic;" class="note" value="configuration.global.mapTileJsonUrlNote"></or-translate>
-                        </span>
-                        <or-mwc-input class="input" style="width: fit-content; margin-left: auto; padding: 0"
-                            .value="${isCustom}"
-                            .type="${InputType.CHECKBOX}"
-                            .label="${i18next.t("configuration.global.configureMap")}"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                this.config.sources.vector_tiles.custom = e.detail.value
-                                this.notifyConfigChange(this.config)
-                                this.requestUpdate();
-                            }}"
-                        ></or-mwc-input>
-                    </div>
+                    <span>
+                        <or-translate value="configuration.global.mapTileJsonUrlDescription"></or-translate><br>
+                        <or-translate style="font-style: italic;" class="note" value="configuration.global.mapTileJsonUrlNote"></or-translate>
+                    </span>
                     <or-mwc-input class="input"
-                        .disabled="${!isCustom}"
                         .value="${isCustom ? this.config.sources?.vector_tiles?.tiles?.[0] : undefined}"
                         .type="${InputType.URL}"
                         .label="${i18next.t("configuration.global.mapTileServerPlaceholder")}"
                         placeholder="https://api.example.com/tileset/{z}/{x}/{y}"
                         @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                            this.config.sources.vector_tiles.tiles = [e.detail.value];
+                            this.config.sources.vector_tiles.tiles = e.detail.value ? [e.detail.value] : undefined;
+                            this.config.sources.vector_tiles.custom = !!e.detail.value;
                             this.notifyConfigChange(this.config);
                         }}"
                     ></or-mwc-input>
@@ -191,6 +133,51 @@ export class OrConfMapGlobal extends LitElement {
                     </div>
                 </div>
             </div>
+            <div class="map-style-settings">
+                <div class="subheader"><or-translate value="configuration.global.mapStyleJsonUrl"></or-translate></div>
+                <span>
+                    <or-translate value="configuration.global.mapStyleJsonUrlDescription"></or-translate><br>
+                    <or-translate style="font-style: italic;" class="note" value="configuration.global.mapStyleJsonUrlNote"></or-translate>
+                </span>
+                <div style="display: flex; gap: 12px;">
+                    <or-mwc-input class="input" style="width: 50%"
+                        .value="${this.config.override}"
+                        .type="${InputType.URL}"
+                        .label="${i18next.t("configuration.global.mapStyleJsonUrlPlaceholder")}"
+                        placeholder="https://api.example.com/tileset/style.json"
+                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                            this.config.override = e.detail.value || undefined
+                            this.notifyConfigChange(this.config)
+                            this.requestUpdate();
+                        }}"
+                    ></or-mwc-input>
+                    <or-mwc-input class="input fit-content" type="button" outlined icon="import" label="Import"
+                        .disabled="${!this.config.override}" @or-mwc-input-changed="${this.importMapSettings}"
+                    ></or-mwc-input>
+                    <or-conf-json class="input fit-content hide-mobile" .heading="${i18next.t("configuration.global.mapLayers")}"
+                        .config="${hasExternalSource ? this.config.layers.filter(({ id }) => !id.startsWith("or:")) : this.config.layers}"
+                        @saveLocalConfig="${(ev: CustomEvent) => {
+                            if (Array.isArray(ev.detail.value)) {
+                                if (hasExternalSource) {
+                                    // Set default layers
+                                    this.config.layers =  this.config.layers.filter(({ id }) => id.startsWith("or:"))
+                                    // Push changed layers
+                                    this.config.layers.push(...ev.detail.value);
+                                } else {
+                                    this.config.layers = ev.detail.value;
+                                }
+                                this.notifyConfigChange(this.config);
+                                this.requestUpdate();
+                            }
+                    }}"
+                    ></or-conf-json>
+                    ${when(hasExternalSource, () => html`
+                        <or-mwc-input class="input fit-content" outlined type="button" icon="undo" label="Reset" 
+                            @or-mwc-input-changed="${this.resetMapSettings}"
+                        ></or-mwc-input>
+                    `)}
+                </div>
+            </div>
         `
     }
 
@@ -213,6 +200,38 @@ export class OrConfMapGlobal extends LitElement {
         } else {
             this.dispatchEvent(new CustomEvent("delete"));
         }
+    }
+
+    protected resetMapSettings() {
+        this.config.glyphs = undefined;
+        this.config.sprite = undefined;
+        this.config.sources = { vector_tiles: this.config.sources.vector_tiles };
+        this.config.layers = this.config.layers
+            .filter(({ id }) => id.startsWith("or:"))
+            .map(({ id, ...layer }) => ({ ...layer, id: id.replace("or:", "") }));
+        this.notifyConfigChange(this.config);
+        this.requestUpdate();
+    }
+
+    protected async importMapSettings() {
+      if (this.config.override) {
+          const data = await (await fetch(this.config.override)).json() as StyleSpecification
+          if (Object.keys(this.config.sources).length > 1) {
+              // Set default layers
+              this.config.layers =  this.config.layers.filter(({ id }) => id.startsWith("or:"))
+              // Push new layers
+              this.config.layers.push(...data.layers);
+          } else {
+              this.config.layers = this.config.layers.map(({ id, ...layer }) => ({ ...layer, id: "or:" + id }));
+              this.config.layers.push(...data.layers);
+          }
+          Object.assign(this.config.sources, data.sources)
+          this.config.sprite = data.sprite as string;
+          this.config.glyphs = data.glyphs;
+          delete this.config.override;
+          this.notifyConfigChange(this.config);
+          this.requestUpdate();
+      }
     }
 
     private humanReadableBytes(bytes: number) {
