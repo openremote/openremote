@@ -16,11 +16,11 @@ Resources:
       Name: umount_volume
       Content:
         schemaVersion: '2.2'
-        description: 'Script for umounting the EBS data volume.'
+        description: 'Script for umounting the EBS data volume'
         parameters:
           DeviceName:
             type: String
-            description: Device name where this volume is mounted on.
+            description: '(Required) Device name where this volume is mounted on'
             default: ''
         mainSteps:
           - name: StopDocker
@@ -62,11 +62,11 @@ Resources:
       Name: detach_volume
       Content:
         schemaVersion: '0.3'
-        description: 'Script for detaching the EBS data volume.'
+        description: 'Script for detaching the EBS data volume'
         parameters:
           VolumeId:
             type: String
-            description: 'VolumeId that needs to be detached.'
+            description: '(Required) VolumeId that needs to be detached'
             default: ''
         mainSteps:
           - name: GetVolumeDetails
@@ -115,7 +115,7 @@ Resources:
               InstanceId: '{{ GetVolumeDetails.InstanceId }}'
               PropertySelector: '$.StatusDetails'
               DesiredValues:
-                - 'Success'
+                - Success
             nextStep: DetachVolume
           - name: DetachVolume
             action: aws:executeAwsApi
@@ -137,7 +137,7 @@ Resources:
                 - '{{ VolumeId }}'
               PropertySelector: '$.Volumes[0].State'
               DesiredValues:
-                - 'available'
+                - available
   
   SSMMountVolumeDocument:
     Type: AWS::SSM::Document
@@ -148,11 +148,11 @@ Resources:
       Name: mount_volume
       Content:
         schemaVersion: '2.2'
-        description: 'Script for mounting the EBS data volume.'
+        description: 'Script for mounting the EBS data volume'
         parameters:
           DeviceName:
             type: String
-            description: EBS Device name where this volume needs to be mounted.
+            description: '(Required) EBS Device name where this volume needs to be mounted'
             default: ''
         mainSteps:
           - name: MountVolume
@@ -195,19 +195,19 @@ Resources:
       Name: attach_volume
       Content:
         schemaVersion: '0.3'
-        description: 'Script for attaching the EBS data volume.'
+        description: 'Script for attaching the EBS data volume'
         parameters:
           VolumeId:
             type: String
-            description: 'VolumeId that needs to be attached.'
+            description: '(Required) VolumeId that needs to be attached'
             default: ''
           InstanceId:
             type: String
-            description: 'InstanceId where the volume needs to be attached.'
+            description: '(Required) InstanceId where the volume needs to be attached'
             default: ''
           DeviceName:
             type: String
-            description: 'Device name where this volume needs to be mounted on.'
+            description: '(Required) Device name where this volume needs to be mounted on'
             default: ''
         mainSteps:
           - name: AttachVolume
@@ -232,7 +232,7 @@ Resources:
                 - '{{ VolumeId }}'
               PropertySelector: '$.Volumes[0].Attachments[0].State'
               DesiredValues:
-                - 'attached'
+                - attached
             nextStep: MountVolume
           - name: MountVolume
             action: aws:executeAwsApi
@@ -263,7 +263,7 @@ Resources:
               InstanceId: '{{ InstanceId }}'
               PropertySelector: '$.StatusDetails'
               DesiredValues:
-                - 'Success'
+                - Success
 
   SSMReplaceSnapshotDocument:
     Type: AWS::SSM::Document
@@ -274,37 +274,17 @@ Resources:
       Name: replace_snapshot
       Content:
         schemaVersion: '0.3'
-        description: 'Script for replacing EBS data volume with a new snapshot.'
+        description: 'Script for replacing EBS data volume with a new snapshot'
         parameters:
-          InstanceId:
-            type: String
-            description: 'InstanceId where the new volume needs to be attached.'
-            default: ''
           VolumeId:
             type: String
-            description: 'VolumeId that needs to be replaced.'
+            description: '(Required) VolumeId that needs to be replaced'
             default: ''
           SnapshotId:
             type: String
-            description: 'SnapshotId to specify which snapshot will be used for volume creation.'
+            description: '(Required) SnapshotId to specify the snapshot for the new volume'
             default: ''
         mainSteps:
-          - name: GetInstanceDetails
-            action: aws:executeAwsApi
-            timeoutSeconds: 60
-            onFailure: Abort
-            inputs:
-              Service: ec2
-              Api: DescribeInstances
-              InstanceIds:
-                - '{{ InstanceId }}'
-            outputs:
-              - Name: AvailabilityZone
-                Selector: '$.Reservations[0].Instances[0].Placement.AvailabilityZone'
-                Type: String
-              - Name: Host
-                Selector: '$.Reservations[0].Instances[0].Tags[1].Value'
-            nextStep: GetVolumeDetails
           - name: GetVolumeDetails
             action: aws:executeAwsApi
             timeoutSeconds: 60
@@ -317,6 +297,24 @@ Resources:
             outputs:
               - Name: DeviceName
                 Selector: '$.Volumes[0].Attachments[0].Device'
+              - Name: InstanceId
+                Selector: '$.Volumes[0].Attachments[0].InstanceId'
+            nextStep: GetInstanceDetails
+          - name: GetInstanceDetails
+            action: aws:executeAwsApi
+            timeoutSeconds: 60
+            onFailure: Abort
+            inputs:
+              Service: ec2
+              Api: DescribeInstances
+              InstanceIds:
+                - '{{ GetVolumeDetails.InstanceId }}'
+            outputs:
+              - Name: AvailabilityZone
+                Selector: '$.Reservations[0].Instances[0].Placement.AvailabilityZone'
+                Type: String
+              - Name: Host
+                Selector: '$.Reservations[0].Instances[0].Tags[1].Value'
             nextStep: CreateVolume
           - name: CreateVolume
             action: aws:executeAwsApi
@@ -347,7 +345,7 @@ Resources:
                 - '{{ CreateVolume.VolumeId }}'
               PropertySelector: '$.Volumes[0].State'
               DesiredValues:
-                - 'available'
+                - available
             nextStep: DetachVolume
           - name: DetachVolume
             action: aws:executeAwsApi
@@ -375,7 +373,7 @@ Resources:
               AutomationExecutionId: '{{ DetachVolume.AutomationId }}'
               PropertySelector: '$.AutomationExecution.AutomationExecutionStatus'
               DesiredValues:
-                - 'Success'
+                - Success
             nextStep: AttachVolume
           - name: AttachVolume
             action: aws:executeAwsApi
@@ -391,7 +389,7 @@ Resources:
                 VolumeId: 
                   - '{{ CreateVolume.VolumeId }}'
                 InstanceId: 
-                  - '{{ InstanceId }}'
+                  - '{{ GetVolumeDetails.InstanceId }}'
             outputs:
               - Name: AutomationId
                 Selector: '$.AutomationExecutionId'
@@ -407,4 +405,4 @@ Resources:
               AutomationExecutionId: '{{ AttachVolume.AutomationId }}'
               PropertySelector: '$.AutomationExecution.AutomationExecutionStatus'
               DesiredValues:
-                - 'Success'
+                - Success
