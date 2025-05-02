@@ -38,4 +38,9 @@ public class HibernateUniqueIdentifierGenerator implements IdentifierGenerator {
         }
         return UniqueIdentifierGenerator.generateId();
     }
+
+    @Override
+    public boolean allowAssignedIdentifiers() {
+        return true;
+    }
 }
