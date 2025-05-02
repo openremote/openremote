@@ -52,22 +52,38 @@ import { i18next } from "@openremote/or-translate";
 import { styleMap } from "lit/directives/style-map.js";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
-const buttonStyle = require("@material/button/dist/mdc.button.css");
-const buttonFabStyle = require("@material/fab/dist/mdc.fab.css");
-const iconButtonStyle = require("@material/icon-button/dist/mdc.icon-button.css");
-const textfieldStyle = require("@material/textfield/dist/mdc.textfield.css");
-const rippleStyle = require("@material/ripple/dist/mdc.ripple.css");
-const lineRippleStyle = require("@material/line-ripple/dist/mdc.line-ripple.css");
-const floatingLabelStyle = require("@material/floating-label/dist/mdc.floating-label.css");
-const formFieldStyle = require("@material/form-field/dist/mdc.form-field.css");
-const checkboxStyle = require("@material/checkbox/dist/mdc.checkbox.css");
-const radioStyle = require("@material/radio/dist/mdc.radio.css");
-const switchStyle = require("@material/switch/dist/mdc.switch.css");
-const selectStyle = require("@material/select/dist/mdc.select.css");
-const listStyle = require("@material/list/dist/mdc.list.css");
-const menuSurfaceStyle = require("@material/menu-surface/dist/mdc.menu-surface.css");
-const menuStyle = require("@material/menu/dist/mdc.menu.css");
-const sliderStyle = require("@material/slider/dist/mdc.slider.css");
+//@ts-ignore
+const buttonStyle = await import("@material/button/dist/mdc.button.css");
+//@ts-ignore
+const buttonFabStyle = await import("@material/fab/dist/mdc.fab.css");
+//@ts-ignore
+const iconButtonStyle = await import("@material/icon-button/dist/mdc.icon-button.css");
+//@ts-ignore
+const textfieldStyle = await import("@material/textfield/dist/mdc.textfield.css");
+//@ts-ignore
+const rippleStyle = await import("@material/ripple/dist/mdc.ripple.css");
+//@ts-ignore
+const lineRippleStyle = await import("@material/line-ripple/dist/mdc.line-ripple.css");
+//@ts-ignore
+const floatingLabelStyle = await import("@material/floating-label/dist/mdc.floating-label.css");
+//@ts-ignore
+const formFieldStyle = await import("@material/form-field/dist/mdc.form-field.css");
+//@ts-ignore
+const checkboxStyle = await import("@material/checkbox/dist/mdc.checkbox.css");
+//@ts-ignore
+const radioStyle = await import("@material/radio/dist/mdc.radio.css");
+//@ts-ignore
+const switchStyle = await import("@material/switch/dist/mdc.switch.css");
+//@ts-ignore
+const selectStyle = await import("@material/select/dist/mdc.select.css");
+//@ts-ignore
+const listStyle = await import("@material/list/dist/mdc.list.css");
+//@ts-ignore
+const menuSurfaceStyle = await import("@material/menu-surface/dist/mdc.menu-surface.css");
+//@ts-ignore
+const menuStyle = await import("@material/menu/dist/mdc.menu.css");
+//@ts-ignore
+const sliderStyle = await import("@material/slider/dist/mdc.slider.css");
 
 export class OrInputChangedEvent extends CustomEvent<OrInputChangedEventDetail> {
 

@@ -4,7 +4,8 @@ import {AxiosResponse} from "axios";
 import {Deferred} from "./util";
 
 // No ES6 module support in platform lib
-let platform = require('platform');
+// @ts-ignore
+let platform = await import('platform');
 
 export interface ProviderAction {
     provider: string;

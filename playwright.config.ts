@@ -1,12 +1,15 @@
-import { defineConfig, devices } from "@playwright/test";
-
+import { defineConfig, devices } from "@sand4rt/experimental-ct-web";
 const { CI } = process.env;
 
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  testMatch: "tests/**/*.js",
+  testMatch: [
+    "ui/app/**/tests/**/*.ts",
+    "ui/component/**/tests/**/*.ts",
+    "ui/demo/**/tests/**/*.ts",
+  ],
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -20,7 +23,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: process.env.managerUrl || "localhost:8080/",
+    // baseURL: process.env.managerUrl || "localhost:9000/",
     launchOptions: {
       // force GPU hardware acceleration (even in headless mode)
       // without hardware acceleration, tests will be much slower
@@ -29,33 +32,30 @@ export default defineConfig({
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "retain-on-failure",
     video: "on",
+    // ctPort: 3100,
+    ctViteConfig: {
+      // optimizeDeps: {
+      //   include: ["@openremote/or-icon", "lodash"],
+      // },
+    },
   },
-  webServer: {
-    command: "npm run serve",
-    reuseExistingServer: true,
-  },
+  // webServer: {
+  //   command: "npm run serveNoModelBuild",
+  //   reuseExistingServer: true,
+  // },
   /* Configure projects for major browsers */
   projects: [
     {
       name: "chromium",
-      use: {
-        ...devices["Desktop Chrome"],
-        permissions: ["clipboard-write", "clipboard-read"],
-      },
+      use: { ...devices["Desktop Chrome"] },
     },
-
     {
       name: "firefox",
       use: { ...devices["Desktop Firefox"] },
     },
-
-    ...(CI
-      ? [
-          {
-            name: "webkit",
-            use: { ...devices["Desktop Safari"] },
-          },
-        ]
-      : []),
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
+    },
   ],
 });

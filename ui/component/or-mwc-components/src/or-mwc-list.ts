@@ -13,8 +13,10 @@ import {MDCList, MDCListActionEvent} from "@material/list";
 import { DefaultColor8, DefaultColor4, Util } from "@openremote/core";
 import "@openremote/or-translate";
 import { i18next } from "@openremote/or-translate";
-const listStyle = require("@material/list/dist/mdc.list.css");
-const checkboxStyle = require("@material/checkbox/dist/mdc.checkbox.css");
+//@ts-ignore
+const listStyle = await import("@material/list/dist/mdc.list.css");
+//@ts-ignore
+const checkboxStyle = await import("@material/checkbox/dist/mdc.checkbox.css");
 
 export {MDCListActionEvent};
 

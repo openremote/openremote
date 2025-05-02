@@ -9,6 +9,12 @@
     "ui/demo/*"
   ],
   "devDependencies": {
-    "@openremote/util": "workspace:*"
+    "@openremote/util": "workspace:*",
+    "@sand4rt/experimental-ct-web": "1.50.1",
+    "vite": "*"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "codegen": "playwright codegen"
   }
 }
