@@ -898,14 +898,14 @@ Resources:
     DependsOn: EBSDataVolume
     Properties:
       ExecutionRoleArn: !Ref DLMExecutionRoleArn
-      Description: OpenRemote-Data
+      Description: 'OpenRemote-Data'
       State: ENABLED
       PolicyDetails:
         PolicyLanguage: STANDARD
         PolicyType: EBS_SNAPSHOT_MANAGEMENT
         TargetTags:
-          - Key: aws:cloudformation:stack-id
-            Value: !Sub ${AWS::StackId}
+          - Key: Name
+            Value: !Sub ${Host}-data
         ResourceTypes: 
           - VOLUME
         Schedules:
