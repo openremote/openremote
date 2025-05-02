@@ -835,6 +835,8 @@
       "mapStyleJsonUrlDescription": "Override mapsettings with external JSON map styles.",
       "mapStyleJsonUrlNote": "All other mapsettings will be ignored.",
       "mapStyleJsonUrlPlaceholder": "Style JSON URL",
+      "mapImportStyle": "Optionally import the style URL to edit the map layers through the JSON editor.",
+      "mapImportStyleNote": "Reset to the default map to edit the default map layers.",
       "mapTileServer": "Tile Server",
       "mapTileServerDescription": "Configure a tile server.",
       "mapTileServerNote": "The map through a tile server gets priority over custom map tiles.",

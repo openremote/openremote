@@ -834,6 +834,8 @@
       "mapStyleJsonUrlDescription": "Overschrijf kaartinstellingen met externe JSON-kaartstijlen.",
       "mapStyleJsonUrlNote": "Alle andere kaartinstellingen worden genegeerd.",
       "mapStyleJsonUrlPlaceholder": "Stijl JSON-URL",
+      "mapImportStyle": "Optioneel kunt u de stijl-URL importeren om de kaart lagen te bewerken via de JSON-editor.",
+      "mapImportStyleNote": "Reset naar de standaardkaart om de standaardkaartlagen te bewerken.",
       "mapTileServer": "Kaartserver",
       "mapTileServerDescription": "Configureer een kaartserver.",
       "mapTileServerNote": "De kaart van de server URL heeft voorrang op de kaarttegels.",
