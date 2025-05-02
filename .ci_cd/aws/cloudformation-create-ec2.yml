@@ -343,7 +343,7 @@ Resources:
                               },
                               {
                                 "source_labels": [ "job", "source" ],
-                                "label_matcher": "manager;(RulesEngine|AgentService|DefaultMQTTHandler|AssetResource|WebsocketClient)",
+                                "label_matcher": "manager;.*",
                                 "dimensions": [
                                   [ "InstanceName", "source" ]
                                 ],
