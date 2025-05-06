@@ -968,48 +968,38 @@ async function getAssetChildren(parentId: string, childAssetType: string): Promi
     return response.data.filter((asset) => asset.type === childAssetType);
 }
 
-async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAssetLinkInfo> {
-    const userId = userAssetLink.id!.userId!;
-    const username = userAssetLink.userFullName!;
-
-    const roleNames = await manager.rest.api.UserResource.getUserClientRoles(manager.displayRealm, userId, manager.clientId)
-        .then((response) => {
-            return response.data;
-        })
-        .catch((err) => {
-            console.info('User not allowed to get roles', err);
-            return [];
-        });
-
-    const isRestrictedUser = await manager.rest.api.UserResource.getUserRealmRoles(manager.displayRealm, userId)
-        .then((rolesRes) => {
-            return rolesRes.data ? !!rolesRes.data.find(r => r === RESTRICTED_USER_REALM_ROLE) : false;
-        });
-
-    return {
-        userId: userId,
-        usernameAndId: username,
-        roles: roleNames,
-        restrictedUser: isRestrictedUser
-    };
-}
-
 async function getLinkedUsers(asset: Asset): Promise<UserAssetLinkInfo[]> {
-
     try {
-        return await manager.rest.api.AssetResource.getUserAssetLinks(
-            {realm: manager.displayRealm, assetId: asset.id}
-        ).then((response) => {
-            const userAssetLinks = response.data;
-            const infoPromises = userAssetLinks.map(userAssetLink => {
-                return getLinkedUserInfo(userAssetLink)
-            });
+        const links = (
+            await manager.rest.api.AssetResource.getUserAssetLinks({
+                realm: manager.displayRealm,
+                assetId: asset.id
+            })
+        ).data;
+        const userIds = links.map(link => link.id!.userId!);
+        const userRolesList = (
+            await manager.rest.api.UserResource.getUsersRoles(
+                manager.displayRealm,
+                userIds,
+                { clientId: manager.clientId }
+            )
+        ).data;
 
-            return Promise.all(infoPromises);
+        const rolesMap = new Map(userRolesList.map(ur => [ur.userId, ur]));
+
+        return links.map(link => {
+            const userId = link.id!.userId!;
+            const userRoles = rolesMap.get(userId);
+
+            return {
+                userId: userId,
+                usernameAndId: link.userFullName!,
+                roles: userRoles?.clientRoles ?? [],
+                restrictedUser: userRoles?.restrictedUser ?? false
+            };
         });
-
     } catch (e) {
-        console.log("Failed to get child assets: " + e);
+        console.error("Failed to get linked users:", e);
         return [];
     }
 }

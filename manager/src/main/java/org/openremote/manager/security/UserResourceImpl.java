@@ -39,7 +39,7 @@ import java.util.*;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.Constants.MASTER_REALM;
 
-public class UserResourceImpl extends ManagerWebResource implements UserResource {
+public class UserResourceImpl extends ManagerWebResource implements org.openremote.model.security.UserResource {
 
     protected MQTTBrokerService mqttBrokerService;
 
@@ -55,7 +55,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         boolean isRestricted = !isAdmin && authContext.hasResourceRole(ClientRole.READ_USERS.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
         if (!isAdmin && !isRestricted) {
-             throw new ForbiddenException("Insufficient permissions to read users");
+            throw new ForbiddenException("Insufficient permissions to read users");
         }
 
         if (query == null) {
@@ -104,7 +104,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
         try {
             return identityService.getIdentityProvider().getUser(
-                userId
+                    userId
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -216,7 +216,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
         try {
             return identityService.getIdentityProvider().getUserClientRoles(
-                realm, userId, clientId
+                    realm, userId, clientId
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -245,13 +245,43 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
+    public UserRoles[] getUsersRoles(RequestParams params, String realm, String clientId, String[] userIds) {
+
+        boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
+        String me = getUserId();
+
+        // enforce “you can only fetch your own roles unless you're admin”
+        for (String uId : userIds) {
+            if (!hasAdminReadRole && !Objects.equals(me, uId)) {
+                throw new ForbiddenException("Can only retrieve own user roles unless you have role '" + ClientRole.READ_ADMIN + "'");
+            }
+        }
+        //location of try good?
+        List<UserRoles> result = new ArrayList<>();
+        for (String uId : userIds) {
+            try {
+                String[] clientRoles = identityService.getIdentityProvider().getUserClientRoles(realm, uId, clientId);
+                String[] realmRoles = identityService.getIdentityProvider().getUserRealmRoles(realm, uId);
+                boolean isRestricted = Arrays.asList(realmRoles).contains(Constants.RESTRICTED_USER_REALM_ROLE);
+
+                result.add(new UserRoles(uId, clientRoles, realmRoles, isRestricted));
+            } catch (ClientErrorException ex) {
+                throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
+            } catch (Exception ex) {
+                throw new WebApplicationException(ex);
+            }
+        }
+        return result.toArray(new UserRoles[0]);
+    }
+
+    @Override
     public void updateUserClientRoles(@BeanParam RequestParams requestParams, String realm, String userId, String[] roles, String clientId) {
         try {
             identityService.getIdentityProvider().updateUserClientRoles(
-                realm,
-                userId,
-                clientId,
-                roles);
+                    realm,
+                    userId,
+                    clientId,
+                    roles);
         } catch (ClientErrorException ex) {
             ex.printStackTrace(System.out);
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -279,8 +309,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     public Role[] getClientRoles(RequestParams requestParams, String realm, String clientId) {
         try {
             return identityService.getIdentityProvider().getClientRoles(
-                realm,
-                clientId);
+                    realm,
+                    clientId);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -297,9 +327,9 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     public void updateClientRoles(RequestParams requestParams, String realm, Role[] roles, String clientId) {
         try {
             identityService.getIdentityProvider().updateClientRoles(
-                realm,
-                clientId,
-                roles);
+                    realm,
+                    clientId,
+                    roles);
         } catch (ClientErrorException ex) {
             ex.printStackTrace(System.out);
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -333,10 +363,10 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         }
 
         return mqttBrokerService.getUserConnections(userId).stream().map(connection -> new UserSession(
-            MQTTBrokerService.getConnectionIDString(connection),
-            connection.getSubject() != null ? KeycloakIdentityProvider.getSubjectName(connection.getSubject()) : userId,
-            connection.getCreationTime(),
-            connection.getRemoteAddress())).toArray(UserSession[]::new);
+                MQTTBrokerService.getConnectionIDString(connection),
+                connection.getSubject() != null ? KeycloakIdentityProvider.getSubjectName(connection.getSubject()) : userId,
+                connection.getCreationTime(),
+                connection.getRemoteAddress())).toArray(UserSession[]::new);
     }
 
     @Override
