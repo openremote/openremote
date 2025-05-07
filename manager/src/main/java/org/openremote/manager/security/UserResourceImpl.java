@@ -246,17 +246,15 @@ public class UserResourceImpl extends ManagerWebResource implements org.openremo
 
     @Override
     public UserRoles[] getUsersRoles(RequestParams params, String realm, String clientId, String[] userIds) {
-
         boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
         String me = getUserId();
 
-        // enforce “you can only fetch your own roles unless you're admin”
         for (String uId : userIds) {
             if (!hasAdminReadRole && !Objects.equals(me, uId)) {
                 throw new ForbiddenException("Can only retrieve own user roles unless you have role '" + ClientRole.READ_ADMIN + "'");
             }
         }
-        //location of try good?
+        
         List<UserRoles> result = new ArrayList<>();
         for (String uId : userIds) {
             try {
