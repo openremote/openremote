@@ -1,16 +1,147 @@
-import { test as base, expect } from "@playwright/test";
+import { test as base, expect, Response, type Page } from "@playwright/test";
 import { getAppUrl } from "../utils";
 import assets from "./data/assets";
 import passwords from "./data/passwords";
 
-export const test = base.extend({
+interface Fixtures {
+  /**
+   * Open page on the specified realm
+   * @param realm The realm to open
+   */
+  openRealm: (realm: string) => Promise<null | Response>;
+  goToRealmStartPage: (realm: string) => Promise<void>;
+  /**
+   * Login as user
+   * @param user Username (admin or other)
+   */
+  login: (user: string) => Promise<void>;
+  /**
+   * Logout and delete login certification
+   */
+  logout: () => Promise<void>;
+  /**
+   * Navigate to a setting page inside the manager
+   * for the setting list menu at the top right
+   * @param setting Name of the setting menu item
+   */
+  navigateToMenuItem: (setting: string) => Promise<void>;
+  /**
+   * Navigate to a certain tab page
+   * @param tab Tab name
+   */
+  navigateToTab: (tab: string) => Promise<void>;
+  /**
+   * Create Realm with name
+   * @param name realm name
+   */
+  addRealm: (name: string, first?: boolean) => Promise<void>;
+  /**
+   * Switch to a realm in the manager's realm picker
+   * @param name Name of custom realm
+   */
+  switchToRealmByRealmPicker: (name: string) => Promise<void>;
+  /**
+   * Create user
+   * @param username
+   * @param password
+   */
+  addUser: (username: string, password: string) => Promise<void>;
+  /**
+   * Switch between modify mode and view mode
+   * @param targetMode view or modify
+   */
+  switchMode: (targetMode: string) => Promise<void>;
+  /**
+   * create new empty assets
+   * @param update for checking if updating values is needed
+   */
+  addAssets: (update: boolean, configOrLoction) => Promise<void>;
+  /**
+   * unselect the asset
+   */
+  unselect: () => Promise<void>;
+  /**
+   * update asset in the general panel
+   * @param attr attribute's name
+   * @param type attribute's input type
+   * @param value input value
+   */
+  updateAssets: (attr: string, type: string, value: string) => Promise<void>;
+  /**
+   * update the data in the modify mode
+   * @param attr attribute's name
+   * @param type attribute's input type
+   * @param value input value
+   */
+  updateInModify: (attr: string, type: string, value: string) => Promise<void>;
+  /**
+   * update location so we can see in the map
+   * @param location_x horizental coordinator (start from left edge)
+   * @param location_y vertail coordinator (start from top edge)
+   */
+  updateLocation: (location_x: number, location_y: number) => Promise<void>;
+  /**
+   * select two config items for an attribute
+   * @param item_1 the first config item
+   * @param item_2 the second config item
+   * @param attr attribute's name
+   */
+  configItem: (item_1: string, item_2: string, attr: string) => Promise<void>;
+  /**
+   * set config item for rule and insight to use
+   * @param item1 the first config item
+   * @param item2 the second config item
+   * @param attr1 attribute's name
+   * @param attr2 attribute's name
+   */
+  setConfigItem: (item_1: string, item_2: string, attr_1: string, attr_2: string) => Promise<void>;
+  /**
+   * Delete a certain realm by its name
+   * @param name Realm's name
+   */
+  deleteRealm: (realm: string) => Promise<void>;
+  /**
+   * Delete a certain asset by its name
+   * @param asset asset's name
+   */
+  deleteSelectedAsset: (asset: string) => Promise<void>;
+  /**
+   * Save
+   */
+  save: () => Promise<void>;
+  /**
+   *  setup the testing environment by giving the realm name and setup level
+   *  // lv0 is no setup at all
+   *  // lv1 is to create a realm
+   *  // lv2 is to create a user
+   *  // lv3 is to create empty assets
+   *  // lv4 is to set the values for assets
+   * @param realm realm name
+   * @param level level (lv0, lv1, etc.)
+   * @param configOrLoction update on config or location, default as no
+   */
+  setup: (realm: string, level: string, configOrLocation?: string) => Promise<void>;
+  /**
+   *  Clean up the environment
+   *  Called in After()
+   */
+  cleanUp: () => Promise<void>;
+  /**
+   * drag to position_x and position_y
+   * @param {Int} position_x coordinator of screen pixel
+   * @param {Int} position_y coordinator of screen pixel
+   */
+  drag: (position_x: number, position_y: number) => Promise<void>;
+}
+
+export const test = base.extend<Fixtures>({
   async openRealm({ baseURL, page }, use) {
     // TODO: handle this per app ?
-    await use((realm) => page.goto(getAppUrl(baseURL, realm)));
+    await use((realm) => page.goto(getAppUrl(baseURL!, realm)));
   },
   async goToRealmStartPage({ baseURL, page }, use) {
     await use(async (realm) => {
-      const url = getAppUrl(baseURL, realm);
+      const url = getAppUrl(baseURL!, realm);
       await page.goto(url);
       await page.waitForTimeout(1500);
     });
@@ -24,7 +155,7 @@ export const test = base.extend({
       await username.waitFor();
       if ((await username.isVisible()) && (await password.isVisible())) {
         await username.fill(user);
-        await password.fill(passwords[user]);
+        await password.fill(passwords[user as keyof typeof passwords]);
         await page.keyboard.press("Enter");
         // console.log(`User: "${user}" logged in,   ` + timeCost(false) + "s");
       }
