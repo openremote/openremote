@@ -432,7 +432,7 @@ jobs:
       - name: Define UI test command
         id: test-ui-command
         if: ${{ steps.skip-ui-tests.outputs.value != 'true' }}
-        run: echo ""
+        run: echo "::set-output name=value::./gradlew uiTest"
 
       - name: Define manager docker build command
         id: manager-docker-command
@@ -688,6 +688,13 @@ jobs:
           MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
         timeout-minutes: 20
         continue-on-error: true
+
+      - name: Archive frontend test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-test-results
+          path: ui/app/manager/test/screenshots
 
       - name: Run install dist
         if: steps.install-command.outputs.value != ''
