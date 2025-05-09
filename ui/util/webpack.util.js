@@ -266,7 +266,7 @@ function generateExternals(bundle) {
     return externals;
 }
 
-function generateExports(dirname, isCustomElement) {
+function generateExports(dirname) {
 
     let libName = getLibName(dirname.split(path.sep).pop());
 
