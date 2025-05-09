@@ -13,4 +13,4 @@ bundles = {
     "index.orbundle": undefined
 };
 
-module.exports = util.generateExports(__dirname, true);
+module.exports = util.generateExports(__dirname);

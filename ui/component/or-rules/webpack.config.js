@@ -4,4 +4,4 @@ bundles = {
     "index.bundle": undefined
 };
 
-module.exports = util.generateExports(__dirname, true);
+module.exports = util.generateExports(__dirname);

@@ -13,4 +13,4 @@ bundles = {
     }
 };
 
-module.exports = util.generateExports(__dirname, false);
+module.exports = util.generateExports(__dirname);
