@@ -10,6 +10,7 @@
   },
   "types": "lib/or-bottom-navigation.d.ts",
   "scripts": {
+    "analyze": "npx cem analyze --config ../custom-elements-manifest.config.js",
     "test": "echo \"No tests\" && exit 0"
   },
   "author": "OpenRemote",

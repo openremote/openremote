@@ -292,10 +292,11 @@ function generateExports(dirname, customElement) {
             externals: generateExternals(bundle),
         };
 
-        if(customElement) {
+        // TODO: Remove this after integrated in Gradle scripts
+        /*if(customElement) {
             if(!config.plugins) config.plugins = [];
             config.plugins.push(new OrCustomElementsManifestPlugin());
-        }
+        }*/
 
         return config;
     });
