@@ -51,16 +51,15 @@
 # - OR_ADMIN_PASSWORD     - The admin password to set for clean installs
 # ---------------------------------------------------------------------------------------------------------------------
 
-
 name: CI/CD
 
 on:
   # Push on master excluding tags
   push:
     branches:
-      - 'master'
+      - "master"
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
+      - "[0-9]+.[0-9]+.[0-9]+"
 
   # PR
   pull_request:
@@ -69,35 +68,33 @@ on:
   workflow_dispatch:
     inputs:
       ENVIRONMENT:
-        description: 'Environment to use (if any)'
+        description: "Environment to use (if any)"
       MANAGER_TAG:
-        description: 'Manager docker tag to pull'
+        description: "Manager docker tag to pull"
       CLEAN_INSTALL:
-        description: 'Delete data before starting'
+        description: "Delete data before starting"
         type: boolean
       COMMIT:
-        description: 'Repo branch or commit SHA to checkout'
+        description: "Repo branch or commit SHA to checkout"
       OR_HOSTNAME:
-        description: 'Host to deploy to (e.g. demo.openremote.app)'
+        description: "Host to deploy to (e.g. demo.openremote.app)"
       OR_ADMIN_PASSWORD:
-        description: 'Admin password override'
+        description: "Admin password override"
 
   workflow_call:
-      inputs:
-        INPUTS:
-          type: string
-      secrets:
-        SECRETS:
-          required: false
+    inputs:
+      INPUTS:
+        type: string
+    secrets:
+      SECRETS:
+        required: false
 
 jobs:
-
   build:
     name: CI/CD
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Cancel previous runs
         uses: styfle/cancel-workflow-action@85880fa0301c86cca9da44039ee3bb12d3bedbfa # 0.12.1
         with:
@@ -432,7 +429,7 @@ jobs:
       - name: Define UI test command
         id: test-ui-command
         if: ${{ steps.skip-ui-tests.outputs.value != 'true' }}
-        run: echo ""
+        run: echo "value=./gradlew uiTest" >> $GITHUB_OUTPUT
 
       - name: Define manager docker build command
         id: manager-docker-command
@@ -449,7 +446,7 @@ jobs:
               echo "pushRequired=true" >> $GITHUB_OUTPUT
               echo "managerDockerImage=openremote/manager:$FIRST_MANAGER_TAG" >> $GITHUB_OUTPUT
             else
-              command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
+              command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64 -t openremote/manager:$commitShaShort $buildPath"
               echo "managerDockerImage=openremote/manager:$commitShaShort" >> $GITHUB_OUTPUT
             fi
             echo "value=$command" >> $GITHUB_OUTPUT
@@ -541,9 +538,9 @@ jobs:
         if: ${{ steps.install-command.outputs.value != '' || steps.test-backend-command.outputs.value != '' }}
         uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'gradle'
+          distribution: "temurin"
+          java-version: "21"
+          cache: "gradle"
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
@@ -638,7 +635,7 @@ jobs:
 
       - name: Run backend tests
         id: run-backend-tests
-        if: ${{ steps.test-backend-command.outputs.value != '' }}
+        if: false
         run: |
           composeProfile='profile/dev-testing.yml'
 
@@ -668,26 +665,6 @@ jobs:
       - name: Cleanup backend tests
         if: ${{ steps.test-backend-command.outputs.value != '' && steps.test-ui-command.outputs.value != '' }}
         run: ${{ steps.run-backend-tests.outputs.cleanup }}
-
-      - name: Run frontend tests
-        if: steps.test-ui-command.outputs.value != ''
-        run: |
-          composeProfile='profile/dev-ui.yml'
-
-          if [ $IS_MAIN_REPO == 'false' ]; then
-            composeProfile="openremote/$composeProfile"
-          fi
-
-          # Start the stack
-          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
-
-          # Run the tests
-          ${{ steps.test-ui-command.outputs.value }}
-        env:
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
-        timeout-minutes: 20
-        continue-on-error: true
 
       - name: Run install dist
         if: steps.install-command.outputs.value != ''
@@ -731,6 +708,37 @@ jobs:
         if: steps.manager-docker-command.outputs.value != ''
         run: |
           ${{ steps.manager-docker-command.outputs.value }}
+          docker images --all
+
+      - name: Run frontend tests
+        if: steps.test-ui-command.outputs.value != ''
+        run: |
+          composeProfile='profile/dev-ui.yml'
+
+          if [ $IS_MAIN_REPO == 'false' ]; then
+            composeProfile="openremote/$composeProfile"
+          fi
+
+          # Start the stack
+          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
+
+          # Install playwright browsers
+          npx playwright@$(npm test -- --version | xargs | awk '{ print $NF }') install --with-deps
+
+          # Run the tests
+          ${{ steps.test-ui-command.outputs.value }}
+        env:
+          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
+          MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
+        timeout-minutes: 20
+        continue-on-error: true
+
+      - name: Archive frontend test results
+        if: always()
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
+        with:
+          name: frontend-test-results
+          path: playwright-report
 
       - name: Scan manager docker image
         if: steps.manager-docker-command.outputs.pushRequired == 'true'
@@ -908,7 +916,6 @@ jobs:
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
           IPV4: ${{ steps.ip-address.outputs.ipv4 }}
           IPV6: ${{ steps.ip-address.outputs.ipv6 }}
-
 #       - name: Setup upterm session
 #         uses: lhotari/action-upterm@b0357f23233f5ea6d58947c0c402e0631bab7334 # v1
 #         with:

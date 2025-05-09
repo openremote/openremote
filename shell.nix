@@ -11,5 +11,8 @@ pkgs.mkShell {
   shellHook = ''
     export PLAYWRIGHT_BROWSERS_PATH=${unstable.playwright-driver.browsers}
     export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
+    export WEBSERVER_LISTEN_HOST=0.0.0.0
+    export IDENTITY_NETWORK_WEBSERVER_PORT=443
+    export IDENTITY_NETWORK_SECURE=true
   '';
 }

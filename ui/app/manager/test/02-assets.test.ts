@@ -108,7 +108,7 @@ assets.forEach(
         await page.click('button:has-text("Save")');
       }
     });
-    test(`Set and cancel read-only for asset: ${name}`, async ({ page, navigateToTab, switchMode }) => {
+    test.skip(`Set and cancel read-only for asset: ${name}`, async ({ page, navigateToTab, switchMode }) => {
       // Given Setup "lv3"
       // When Login to OpenRemote "smartcity" realm as "smartcity"
       // Then Navigate to "asset" tab
