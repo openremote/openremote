@@ -677,8 +677,12 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         notificationIds.clear()
         messages.clear()
 
-        and: "an existing ruleset containing a radial location predicate is updated"
-        newRuleset.rules = getClass().getResource("/org/openremote/test/rules/BasicLocationPredicates.groovy").text
+        and: "a new ruleset is created containing a radial location predicate"
+        newRuleset = new AssetRuleset(
+                testUser3Console1.parentId,
+                "Console test location predicates",
+                Ruleset.Lang.GROOVY,
+                getClass().getResource("/org/openremote/test/rules/BasicLocationPredicates.groovy").text)
         newRuleset = rulesetStorageService.merge(newRuleset)
 
         then: "a push notification should have been sent to all consoles telling them to refresh their geofences"
