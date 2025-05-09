@@ -3,7 +3,10 @@
   "version": "1.3.3",
   "description": "OpenRemote basic UI components",
   "customElements": "custom-elements.json",
+  "main": "dist/umd/index.bundle.js",
+  "module": "lib/index.js",
   "exports": {
+    ".": "./lib/index.js",
     "./*": "./lib/*.js"
   },
   "typesVersions": {
@@ -14,8 +17,9 @@
     }
   },
   "scripts": {
+    "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
-    "prepack": "npx tsc -b"
+    "prepack": "npx webpack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",

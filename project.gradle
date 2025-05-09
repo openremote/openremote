@@ -353,6 +353,11 @@ task npmServe(type: Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "run", "serve"
 }
+/* TODO: Replace workspaces foreach with simple yarn run */
+/*task npmPrepack(type: Exec) {
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "workspaces", "foreach", "--all", "--no-private", "--topological", "run", "prepack"
+}*/
 task npmPrepare(type: Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "pack"
