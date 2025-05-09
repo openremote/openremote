@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-components",
-  "version": "1.3.3",
+  "version": "1.5.0",
   "description": "OpenRemote basic UI components",
   "exports": {
     "./*": "./lib/*.js"

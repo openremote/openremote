@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-attribute-picker",
-  "version": "1.3.3",
+  "version": "1.5.0",
   "description": "OpenRemote attribute picker dialog",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",

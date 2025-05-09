@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-asset-viewer",
-  "version": "1.3.3",
+  "version": "1.5.0",
   "description": "OpenRemote Asset Viewer",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",

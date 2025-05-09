@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-survey",
-  "version": "1.3.3",
+  "version": "1.5.0",
   "description": "Displays survey",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
