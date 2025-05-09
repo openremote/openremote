@@ -28,7 +28,7 @@ public interface Constants {
     String MANAGER_CLIENT_ID = "manager-keycloak";
     String MASTER_REALM = "master";
     String MASTER_REALM_ADMIN_USER = "admin";
-    String REALM_ADMIN_ROLE = "admin";
+    String SUPER_USER_REALM_ROLE = "admin";
     String READ_LOGS_ROLE = "read:logs";
     String READ_USERS_ROLE = "read:users";
     String READ_ADMIN_ROLE = "read:admin";
@@ -52,7 +52,6 @@ public interface Constants {
     String SESSION_CLOSE_ERROR = "connection.sessionCloseError";
     int ACCESS_TOKEN_LIFESPAN_SECONDS = 60; // 1 minute
     String PERSISTENCE_SEQUENCE_ID_GENERATOR = "OPENREMOTE_SEQUENCE";
-    String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
 
     String OR_HOSTNAME = "OR_HOSTNAME";
     String OR_ADDITIONAL_HOSTNAMES = "OR_ADDITIONAL_HOSTNAMES";

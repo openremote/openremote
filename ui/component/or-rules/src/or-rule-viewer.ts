@@ -1,3 +1,22 @@
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {
@@ -149,7 +168,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     }
 
     public get valid() {
-        return this.ruleset && this.view && this._ruleValid && this.ruleset.name && this.ruleset.name.length >= 3 && this.ruleset.name.length < 255;
+        return this.ruleset && this.view && this._ruleValid && this.ruleset.name && this.ruleset.name.length >= 1 && this.ruleset.name.length < 255;
     }
 
     public shouldUpdate(_changedProperties: PropertyValues): boolean {
@@ -193,7 +212,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
             case "EXECUTION_ERROR":
                 statusIcon = "alert-octagon";
                 statusClass = "iconfill-red";
-                statusText = this.ruleset.error;
+                statusText = this.ruleset.error!;
                 break;
             case "DISABLED":
                 statusIcon = "minus-circle";
@@ -220,7 +239,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         return html`
             <div id="main-wrapper" class="wrapper">            
                 <div id="rule-header">
-                    <or-mwc-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleName")}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${this._isReadonly()}" required minlength="3" maxlength="255" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-mwc-input>
+                    <or-mwc-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleName")}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${this._isReadonly()}" required minlength="1" maxlength="255" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-mwc-input>
                     <or-icon class="${statusClass}" title="${i18next.t("rulesetStatus." + statusText)}" icon="${statusIcon}"></or-icon>
                     <span id="rule-id">${this.ruleset.id ? "ID: " + this.ruleset.id : ""}</span>
                     <div id="rule-header-controls">
@@ -239,7 +258,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     }
 
     protected updated(_changedProperties: PropertyValues): void {
-        if (_changedProperties.has("ruleset")) {
+        if (_changedProperties.has("ruleset") || _changedProperties.has("modified")) {
             if (this.ruleset && this.view) {
                 this._ruleValid = this.view.validate();
             }

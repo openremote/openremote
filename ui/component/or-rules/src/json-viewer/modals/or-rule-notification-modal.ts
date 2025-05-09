@@ -26,8 +26,10 @@ const checkValidity = (form:HTMLElement | null) => {
                 if(input && input.checkValidity()) {
                     return true;
                 } else {
-                    element._mdcComponent.valid = false;
-                    element._mdcComponent.helperTextContent = 'required';
+                    if(element._mdcComponent) {
+                        element._mdcComponent.valid = false;
+                        element._mdcComponent.helperTextContent = 'required';
+                    }
 
                     return false;
                 }

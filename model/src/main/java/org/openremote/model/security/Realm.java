@@ -20,6 +20,9 @@
 package org.openremote.model.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
 
@@ -27,6 +30,9 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import org.openremote.model.persistence.PasswordPolicyConverter;
+
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -40,7 +46,22 @@ import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 @Subselect("select * from PUBLIC.REALM") // Map this immutable to an SQL view, don't use/create table
 public class Realm {
 
-    protected static Field[] propertyFields;
+    public static final List<RealmRole> DEFAULT_REALM_ROLES = List.of(
+            new RealmRole(null, RESTRICTED_USER_REALM_ROLE, "Restricted access to assets")
+        );
+    private static final PasswordPolicyConverter PASSWORD_POLICY_CONVERTER = new PasswordPolicyConverter();
+
+    public static class PasswordPolicyDeserializer extends JsonDeserializer<List<String>> {
+        @Override
+        public List<String> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+            JsonNode node = p.getCodec().readTree(p);
+            List<String> policies = new ArrayList<>();
+            if (node.isArray()) {
+                node.forEach(element -> policies.add(element.asText()));
+            }
+            return policies;
+        }
+    }
 
     @Id
     protected String id;
@@ -56,6 +77,15 @@ public class Realm {
 
     @Column(name = "NOT_BEFORE")
     protected Double notBefore; // This will explode in 2038
+
+    /**
+     * List of password policies, using the "policy(value)" format. Example: "specialChars(1)".
+     * Stored in column as "policy(value) and policy(value) and policy(value)", and converted using {@link PasswordPolicyConverter}
+     */
+    @Column(name = "password_policy")
+    @Convert(converter = PasswordPolicyConverter.class)
+    @JsonDeserialize(using = PasswordPolicyDeserializer.class)
+    protected List<String> passwordPolicy;
 
     @Column(name = "reset_password_allowed")
     protected Boolean resetPasswordAllowed;
@@ -119,7 +149,7 @@ public class Realm {
     @Size(min = 3, max = 255, message = "{Realm.realm.Size}")
     @Pattern(regexp = "[a-zA-Z0-9\\-_]+", message = "{Realm.realm.Pattern}")
     public String getName() {
-        return name;
+        return name != null ? name.toLowerCase() : null;
     }
 
     public Realm setName(String name) {
@@ -144,6 +174,24 @@ public class Realm {
 
     public Realm setEnabled(Boolean enabled) {
         this.enabled = enabled;
+        return this;
+    }
+
+    public List<String> getPasswordPolicy() {
+        return passwordPolicy;
+    }
+
+    public String getPasswordPolicyString() {
+        return PASSWORD_POLICY_CONVERTER.convertToDatabaseColumn(passwordPolicy);
+    }
+
+    public Realm setPasswordPolicy(List<String> passwordPolicy) {
+        this.passwordPolicy = passwordPolicy;
+        return this;
+    }
+
+    public Realm setPasswordPolicy(String passwordPolicy) {
+        this.passwordPolicy = PASSWORD_POLICY_CONVERTER.convertToEntityAttribute(passwordPolicy);
         return this;
     }
 
@@ -274,38 +322,9 @@ public class Realm {
         return realmRoles;
     }
 
-    @JsonIgnore
-    public Set<RealmRole> getNormalisedRealmRoles() {
-        Set<RealmRole> tempSet = new HashSet<>(getDefaultRealmRoles(getName()));
-        if (realmRoles != null) {
-            tempSet.addAll(realmRoles);
-        }
-        return tempSet;
-    }
-
     public Realm setRealmRoles(Set<RealmRole> realmRoles) {
         this.realmRoles = realmRoles;
         return this;
-    }
-
-    protected static List<RealmRole> getDefaultRealmRoles(String realm) {
-        if (MASTER_REALM.equals(realm)) {
-            return Arrays.asList(
-                new RealmRole("default-roles-master"),
-                new RealmRole("admin"),
-                new RealmRole("create-realm"),
-                new RealmRole("offline_access"),
-                new RealmRole("uma_authorization"),
-                new RealmRole(RESTRICTED_USER_REALM_ROLE, "Restricted access to assets")
-            );
-        }
-
-        return Arrays.asList(
-            new RealmRole("default-roles-" + realm),
-            new RealmRole("offline_access"),
-            new RealmRole("uma_authorization"),
-            new RealmRole(RESTRICTED_USER_REALM_ROLE, "Restricted access to assets")
-        );
     }
 
     @Override
@@ -321,6 +340,7 @@ public class Realm {
             ", displayName='" + displayName + '\'' +
             ", enabled=" + enabled +
             ", notBefore=" + notBefore +
+            ", passwordPolicy=" + passwordPolicy +
             ", resetPasswordAllowed=" + resetPasswordAllowed +
             ", duplicateEmailsAllowed=" + duplicateEmailsAllowed +
             ", rememberMe=" + rememberMe +

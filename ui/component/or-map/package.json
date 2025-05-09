@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-map",
-  "version": "1.1.0",
+  "version": "1.5.0",
   "description": "Displays s vector or raster map",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
@@ -12,7 +12,7 @@
   "scripts": {
     "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
-    "prepublishOnly": "npx rspack"
+    "prepack": "npx rspack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
@@ -20,9 +20,9 @@
     "@maplibre/maplibre-gl-geocoder": "^1.5.0",
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
-    "@openremote/or-icon": "^1.1.0",
-    "@openremote/or-mwc-components": "^1.1.0",
-    "@openremote/or-translate": "^1.1.0",
+    "@openremote/or-icon": "workspace:*",
+    "@openremote/or-mwc-components": "workspace:*",
+    "@openremote/or-translate": "workspace:*",
     "@openremote/rest": "workspace:*",
     "@polymer/polymer": "^3.3.1",
     "@types/mapbox": "^1.6.42",

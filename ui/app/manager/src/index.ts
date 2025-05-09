@@ -47,7 +47,7 @@ import {pageAlarmsProvider} from "./pages/page-alarms";
 import { ManagerAppConfig } from "@openremote/model";
 import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
 
-declare var CONFIG_URL_PREFIX: string;
+declare var MANAGER_URL: string | undefined;
 
 const rootReducer = combineReducers({
     app: appReducer,
@@ -89,7 +89,7 @@ export const DefaultHeaderMainMenu: {[name: string]: HeaderItem} = {
 };
 
 export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
-    gateway: headerItemGatewayConnection(orApp),
+    gatewayConnection: headerItemGatewayConnection(orApp),
     gatewayTunnel: headerItemGatewayTunnel(orApp),
     language: headerItemLanguage(orApp),
     logs: headerItemLogs(orApp),
@@ -99,7 +99,7 @@ export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
     realms: headerItemRealms(orApp),
     export: headerItemExport(orApp),
     provisioning: headerItemProvisioning(orApp),
-    configuration: headerItemConfiguration(orApp),
+    appearance: headerItemConfiguration(orApp),
     logout: headerItemLogout(orApp)
 };
 
@@ -113,24 +113,19 @@ export const DefaultRealmConfig: RealmAppConfig = {
     header: DefaultHeaderConfig
 };
 
-export const DefaultAppConfig: AppConfig<RootState> = {
-    pages: DefaultPagesConfig,
-    superUserHeader: DefaultHeaderConfig,
-    realms: {
-        default: DefaultRealmConfig
-    }
-};
-
 // Try and load the app config from JSON and if anything is found amalgamate it with default
-const configURL = (CONFIG_URL_PREFIX || "") + "/manager_config.json";
+const managerURL = MANAGER_URL || window.location.protocol + "//" + window.location.hostname + (window.location.port ? ":" + window.location.port : "")
+    + window.location.pathname.replace(/\/[^/]+\/?$/, '');
+const configURL = managerURL + "/api/master/configuration/manager";
 
-fetch(configURL).then(async (result) => {
-    if (!result.ok) {
-        return DefaultAppConfig;
+fetch(configURL).then<ManagerAppConfig>(async (result) => {
+    let appConfig: ManagerAppConfig;
+
+    if (result.status === 200) {
+        appConfig = await result.json() as ManagerAppConfig;
     }
 
-    return await result.json() as ManagerAppConfig;
-
+    return {...appConfig};
 }).then((appConfig: ManagerAppConfig) => {
 
     // Set locales and load path
@@ -143,13 +138,6 @@ fetch(configURL).then(async (result) => {
 
         if (!appConfig.manager.translationsLoadPath) {
             appConfig.manager.translationsLoadPath = "/locales/{{lng}}/{{ns}}.json";
-        }
-    }
-
-    // Add config prefix if defined (used in dev)
-    if (CONFIG_URL_PREFIX) {
-        if (appConfig.manager.translationsLoadPath) {
-            appConfig.manager.translationsLoadPath = CONFIG_URL_PREFIX + appConfig.manager.translationsLoadPath;
         }
     }
 
@@ -273,18 +261,6 @@ fetch(configURL).then(async (result) => {
                 })
             }
         })
-
-        // Add config prefix if defined (used in dev)
-        if (CONFIG_URL_PREFIX) {
-            Object.values(orAppConfig.realms).forEach((realmConfig) => {
-                if (typeof (realmConfig.logo) === "string") {
-                    realmConfig.logo = CONFIG_URL_PREFIX + realmConfig.logo;
-                }
-                if (typeof (realmConfig.logoMobile) === "string") {
-                    realmConfig.logoMobile = CONFIG_URL_PREFIX + realmConfig.logoMobile;
-                }
-            });
-        }
 
         return orAppConfig;
     };

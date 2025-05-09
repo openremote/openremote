@@ -4,4 +4,4 @@ test/
 src/
 tsconfig.json
 dist/*.map
-.tsbuildinfo
+*.tsbuildinfo

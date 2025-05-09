@@ -3,7 +3,7 @@ import { customElement } from "lit/decorators.js";
 import {AssetWidgetSettings} from "../util/or-asset-widget";
 import {TableWidgetConfig} from "../widgets/table-widget";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import {AssetIdsSelectEvent, AssetTypeSelectEvent, AssetTypesFilterConfig, AttributeNamesSelectEvent} from "../panels/assettypes-panel";
+import {AssetIdsSelectEvent, AssetTypeSelectEvent, AssetAllOfTypeSwitchEvent, AssetTypesFilterConfig, AttributeNamesSelectEvent} from "../panels/assettypes-panel";
 
 const styling = css`
   .customMwcInputContainer {
@@ -26,7 +26,8 @@ export class TableSettings extends AssetWidgetSettings {
         const config = {
             assets: {
                 enabled: true,
-                multi: true
+                multi: true,
+                allOfTypeOption: true
             },
             attributes: {
                 enabled: true,
@@ -40,7 +41,9 @@ export class TableSettings extends AssetWidgetSettings {
                     <div style="padding-bottom: 12px;">
                         <assettypes-panel .assetType="${this.widgetConfig.assetType}" .config="${config}"
                                           .assetIds="${this.widgetConfig.assetIds}" .attributeNames="${this.widgetConfig.attributeNames}"
+                                          .allOfType="${this.widgetConfig.allOfType}"
                                           @assettype-select="${(ev: AssetTypeSelectEvent) => this.onAssetTypeSelect(ev)}"
+                                          @alloftype-switch="${(ev: AssetAllOfTypeSwitchEvent) => this.onAssetAllOfTypeSwitch(ev)}"
                                           @assetids-select="${(ev: AssetIdsSelectEvent) => this.onAssetIdsSelect(ev)}"
                                           @attributenames-select="${(ev: AttributeNamesSelectEvent) => this.onAttributesSelect(ev)}"
                         ></assettypes-panel>
@@ -66,6 +69,11 @@ export class TableSettings extends AssetWidgetSettings {
         this.widgetConfig.assetType = ev.detail;
         this.widgetConfig.assetIds = [];
         this.widgetConfig.attributeNames = [];
+        this.notifyConfigUpdate();
+    }
+
+    protected onAssetAllOfTypeSwitch(ev: AssetAllOfTypeSwitchEvent) {
+        this.widgetConfig.allOfType = ev.detail as boolean;
         this.notifyConfigUpdate();
     }
 

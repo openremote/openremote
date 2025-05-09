@@ -1126,6 +1126,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     data.push(dataset);
 
                     dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], predictedFromTimestamp, this._endOfPeriod!, true, asset.name + " " + label + " " + i18next.t("predicted"), options);
+                    (dataset as any).unit = unit;
                     data.push(dataset);
                 });
             }
@@ -1145,10 +1146,15 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._loading = false;
 
             if(isAxiosError(ex)) {
-                if(ex.message.includes("timeout of 10000ms exceeded")) {
+                if(ex.message.includes("timeout")) {
                     this._latestError = "noAttributeDataTimeout";
+                    return;
+                } else if(ex.response?.status === 413) {
+                    this._latestError = "datapointRequestTooLarge";
+                    return;
                 }
             }
+            this._latestError = "errorOccurred";
         }
     }
 

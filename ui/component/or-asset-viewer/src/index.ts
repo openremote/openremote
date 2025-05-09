@@ -11,11 +11,11 @@ import "@openremote/or-chart";
 import "@openremote/or-mwc-components/or-mwc-table";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-mwc-components/or-mwc-dialog";
-import {DialogAction, OrMwcDialog, showDialog, showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {translate} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import manager, {subscribe, Util, DefaultColor5} from "@openremote/core";
+import manager, {OPENREMOTE_CLIENT_ID, RESTRICTED_USER_REALM_ROLE, subscribe, Util} from "@openremote/core";
 import {OrMwcTable, OrMwcTableRowClickEvent} from "@openremote/or-mwc-components/or-mwc-table";
 import {OrChartConfig} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory} from "@openremote/or-attribute-history";
@@ -44,8 +44,7 @@ import "./or-edit-asset-panel";
 import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-edit-asset-panel";
 import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import { progressCircular } from "@openremote/or-mwc-components/style";
-import { OrAssetTree } from "@openremote/or-asset-tree";
+import {progressCircular} from "@openremote/or-mwc-components/style";
 
 export interface PanelConfig {
     type: "info" | "setup" | "history" | "group" | "survey" | "survey-results" | "linkedUsers" | "alarm.linkedAlarms";
@@ -178,9 +177,8 @@ export class OrAssetViewerComputeGridEvent extends CustomEvent<void> {
 
 export type SaveResult = {
     success: boolean,
-    assetId: string,
-    isNew?: boolean,
-    isCopy?: boolean
+    asset: Asset | undefined,
+    isNew?: boolean
 };
 
 export class OrAssetViewerRequestSaveEvent extends CustomEvent<Util.RequestEventDetail<Asset>> {
@@ -208,22 +206,6 @@ export class OrAssetViewerSaveEvent extends CustomEvent<SaveResult> {
             bubbles: true,
             composed: true,
             detail: saveResult
-        });
-    }
-}
-
-export class OrAssetViewerChangeParentEvent extends CustomEvent<{ parentId: string | undefined, assetsIds: string[] }> {
-
-    public static readonly NAME = "or-asset-viewer-change-parent";
-
-    constructor(parent: string | undefined, assetsIds: string[]) {
-        super(OrAssetViewerChangeParentEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: {
-                parentId: parent,
-                assetsIds: assetsIds
-            }
         });
     }
 }
@@ -290,7 +272,6 @@ declare global {
         [OrAssetViewerSaveEvent.NAME]: OrAssetViewerSaveEvent;
         [OrAssetViewerRequestEditToggleEvent.NAME]: OrAssetViewerRequestEditToggleEvent;
         [OrAssetViewerEditToggleEvent.NAME]: OrAssetViewerEditToggleEvent;
-        [OrAssetViewerChangeParentEvent.NAME]: OrAssetViewerChangeParentEvent;
         [OrAssetViewerLoadUserEvent.NAME]: OrAssetViewerLoadUserEvent;
         [OrAssetViewerLoadAlarmEvent.NAME]: OrAssetViewerLoadAlarmEvent;
     }
@@ -618,6 +599,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                    flex: 0;
                    margin: 0 0 10px 0;
                    position: unset;
+                   z-index: 1;
                }
                
                #attribute-picker > or-mwc-input {
@@ -907,10 +889,12 @@ export function getPropertyTemplate(asset: Asset, property: string, hostElement:
             if (ancestors.length > 0) {
                 getAssetNames(ancestors).then(
                     (names) => {
-                        if (hostElement && hostElement.shadowRoot) {
-                            const pathField = hostElement.shadowRoot.getElementById("property-parentId") as OrMwcInput;
-                            if (pathField) {
-                                pathField.value = names.join(" > ");
+                        if (names) {
+                            if (hostElement && hostElement.shadowRoot) {
+                                const pathField = hostElement.shadowRoot.getElementById("property-parentId") as OrMwcInput;
+                                if (pathField) {
+                                    pathField.value = names.join(" > ");
+                                }
                             }
                         }
                     }
@@ -941,19 +925,24 @@ export function getField(name: string, itemConfig?: InfoPanelItemConfig, content
         `;
 }
 
-async function getAssetNames(ids: string[]): Promise<string[]> {
-    const response = await manager.rest.api.AssetResource.queryAssets({
-        select: {
-            attributes: []
-        },
-        ids: ids
-    });
+async function getAssetNames(ids: string[]): Promise<string[] | undefined> {
+    try {
+        const response = await manager.rest.api.AssetResource.queryAssets({
+            select: {
+                attributes: []
+            },
+            ids: ids
+        });
 
-    if (response.status !== 200 || !response.data || response.data.length !== ids.length) {
-        return ids;
+        if (response.status !== 200 || !response.data || response.data.length !== ids.length) {
+            return ids;
+        }
+
+        return ids.map((id) => response.data.find((asset) => asset.id === id)!.name!);
+    } catch (e) {
+        console.error("Failed to fetch parent asset names", e);
+        return undefined;
     }
-
-    return ids.map((id) => response.data.find((asset) => asset.id === id)!.name!);
 }
 
 async function getAssetChildren(parentId: string, childAssetType: string): Promise<Asset[]> {
@@ -983,9 +972,9 @@ async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAsse
     const userId = userAssetLink.id!.userId!;
     const username = userAssetLink.userFullName!;
 
-    const roleNames = await manager.rest.api.UserResource.getUserRoles(manager.displayRealm, userId)
+    const roleNames = await manager.rest.api.UserResource.getUserClientRoles(manager.displayRealm, userId, manager.clientId)
         .then((response) => {
-            return response.data.filter(role => role.composite && role.assigned).map(r => r.name!);
+            return response.data;
         })
         .catch((err) => {
             console.info('User not allowed to get roles', err);
@@ -994,7 +983,7 @@ async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAsse
 
     const isRestrictedUser = await manager.rest.api.UserResource.getUserRealmRoles(manager.displayRealm, userId)
         .then((rolesRes) => {
-            return rolesRes.data ? !!rolesRes.data.find(r => r.assigned && r.name === "restricted_user") : false;
+            return rolesRes.data ? !!rolesRes.data.find(r => r === RESTRICTED_USER_REALM_ROLE) : false;
         });
 
     return {
@@ -1044,8 +1033,7 @@ export async function saveAsset(asset: Asset): Promise<SaveResult> {
 
     const isUpdate = !!asset.id && asset.version !== undefined;
     let success: boolean;
-    let id: string = "";
-
+    let savedAsset: Asset | undefined;
     try {
         if (isUpdate) {
             if (!asset.id) {
@@ -1053,12 +1041,12 @@ export async function saveAsset(asset: Asset): Promise<SaveResult> {
             }
             const response = await manager.rest.api.AssetResource.update(asset.id!, asset);
             success = response.status === 200;
-            id = asset.id!;
+            savedAsset = response.data;
         } else {
             const response = await manager.rest.api.AssetResource.create(asset);
             success = response.status === 200;
             if (success) {
-                id = response.data.id!;
+                savedAsset = response.data;
             }
         }
     } catch (e) {
@@ -1068,7 +1056,7 @@ export async function saveAsset(asset: Asset): Promise<SaveResult> {
     }
 
     return {
-        assetId: id,
+        asset: savedAsset,
         success: success,
         isNew: !isUpdate
     };
@@ -1164,8 +1152,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     @property({type: Object, reflect: false})
     public asset?: Asset;
 
-    @property({type: Array})
-    public ids: string[] | undefined;
+    @property({type: String})
+    public assetId: string | undefined;
 
     @property({type: Object})
     public config?: ViewerConfig;
@@ -1200,7 +1188,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     @query("#view-container")
     protected containerElem!: HTMLDivElement;
 
-    protected _saveResult?: SaveResult;
+    protected _saveInProgress = false;
 
     constructor() {
         super();
@@ -1228,13 +1216,13 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             this.editMode = false;
         }
 
-        if (changedProperties.has("ids")) {
+        if (changedProperties.has("assetId")) {
             this._assetInfo = undefined;
             this.asset = undefined;
 
             // Set asset ID on mixin which will go and load the asset
-            if (this.ids && this.ids.length === 1) {
-                super.assetIds = [this.ids[0]];
+            if (this.assetId) {
+                super.assetIds = [this.assetId];
             } else {
                 super.assetIds = undefined;
             }
@@ -1242,8 +1230,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         if (changedProperties.has("asset")) {
             this._assetInfo = undefined;
-            this.ids = undefined;
-            super.assetIds = undefined;
 
             if (this.asset) {
                 this.loadAssetInfo(this.asset)
@@ -1291,7 +1277,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         const alarms = await getLinkedAlarms(asset);
 
         // Check this asset is still the correct one
-        if (!this.ids || this.ids.length != 1 || this.ids[0] !== asset.id) {
+        if (!this.assetId || this.assetId !== asset.id) {
             throw new Error("Asset has changed");
         }
 
@@ -1302,7 +1288,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         // Check this asset is still the correct one
-        if (!this.ids || this.ids.length != 1 || this.ids[0] !== asset.id) {
+        if (!this.assetId || this.assetId !== asset.id) {
             throw new Error("Asset has changed");
         }
 
@@ -1323,96 +1309,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
     }
 
-    protected _onParentChangeClick() {
-        let dialog: OrMwcDialog;
-
-        const blockEvent = (ev: Event) => {
-            ev.stopPropagation();
-        };
-
-        const dialogContent = html`
-            <or-asset-tree id="parent-asset-tree" disableSubscribe readonly .selectedIds="${[]}"
-                           @or-asset-tree-request-select="${blockEvent}"
-                           @or-asset-tree-selection-changed="${blockEvent}"></or-asset-tree>`;
-
-        const setParent = () => {
-            const assetTree = dialog.shadowRoot!.getElementById("parent-asset-tree") as OrAssetTree;
-            let idd = assetTree.selectedIds!.length === 1 ? assetTree.selectedIds![0] : undefined;
-
-            this.dispatchEvent(new OrAssetViewerChangeParentEvent(idd, this.ids || []));
-        };
-
-        const clearParent = () => {
-            this.dispatchEvent(new OrAssetViewerChangeParentEvent(undefined, this.ids || []));
-        };
-
-        const dialogActions: DialogAction[] = [
-            {
-                actionName: "clear",
-                content: "none",
-                action: clearParent
-            },
-            {
-                actionName: "ok",
-                content: "ok",
-                action: setParent
-            },
-            {
-                default: true,
-                actionName: "cancel",
-                content: "cancel"
-            }
-        ];
-
-        dialog = showDialog(new OrMwcDialog()
-            .setContent(dialogContent)
-            .setActions(dialogActions)
-            .setStyles(html`
-                <style>
-                    .mdc-dialog__surface {
-                        width: 400px;
-                        height: 800px;
-                        display: flex;
-                        overflow: visible;
-                        overflow-x: visible !important;
-                        overflow-y: visible !important;
-                    }
-
-                    #dialog-content {
-                        flex: 1;
-                        overflow: visible;
-                        min-height: 0;
-                        padding: 0;
-                    }
-
-                    footer.mdc-dialog__actions {
-                        border-top: 1px solid ${unsafeCSS(DefaultColor5)};
-                    }
-
-                    or-asset-tree {
-                        height: 100%;
-                    }
-                </style>
-            `)
-            .setHeading(i18next.t("setParent"))
-            .setDismissAction(null));
-    }
-
     protected render(): TemplateResult | void {
 
-        const noSelection = !this.asset && (!this.ids || this.ids.length === 0);
-        const multiSelection = !this.asset && (this.ids && this.ids.length > 1);
-
-        if (multiSelection) {
-            return html `
-                <div class="msg">
-                    <div class="multipleAssetsView">
-                        <or-translate value="multiAssetSelected" .options="${ { assetNbr: this.ids!.length } }"></or-translate>
-                        <or-mwc-input .type="${InputType.BUTTON}" label="changeParent" @click="${() => this._onParentChangeClick()}" outlined></or-mwc-input>
-                    </div>
-                </div>
-            `;
-        }
+        const noSelection = !this.asset && !this.assetId;
 
         if (noSelection) {
             return html`
@@ -1554,37 +1453,38 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         Util.dispatchCancellableEvent(this, new OrAssetViewerRequestSaveEvent(this._assetInfo.asset))
             .then((detail) => {
                 if (detail.allow) {
-                    this._doSave();
+                    this.save();
                 }
             });
     }
 
-    protected async _doSave() {
+    async save() {
         if (!this._assetInfo) {
             return;
         }
 
         const asset = this._assetInfo.asset;
         this.saveBtnElem.disabled = true;
+        this._saveInProgress = true;
         this.wrapperElem.classList.add("saving");
 
-        this._saveResult = await saveAsset(asset);
+        const saveResult = await saveAsset(asset);
 
-        this.wrapperElem.classList.remove("saving");
-        this.saveBtnElem.disabled = false;
-
-        if (!this._assetInfo || this._assetInfo.asset !== asset) {
-            // Asset has changed during save so ignore save result
-            return;
+        if (saveResult.success) {
+            try {
+                const assetInfo = await this.loadAssetInfo(saveResult.asset!);
+                this._assetInfo = assetInfo;
+                this.assetId = saveResult.asset?.id;
+            } catch (e) {
+                // We can ignore this as it should indicate that the asset has changed
+            }
+            if (this.saveBtnElem) {
+                this.saveBtnElem.disabled = false;
+            }
         }
-
-        if (this._saveResult.success) {
-            this._assetInfo.modified = false;
-            this.asset = undefined;
-            this.ids = [this._saveResult.assetId];
-        }
-
-        this.dispatchEvent(new OrAssetViewerSaveEvent(this._saveResult));
+        this._saveInProgress = false;
+        this.wrapperElem?.classList.remove("saving");
+        this.dispatchEvent(new OrAssetViewerSaveEvent(saveResult));
     }
 
     protected _onAssetModified(validationResults: ValidatorResult[]) {
@@ -1594,9 +1494,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
     }
 
-    _onEvent(event: SharedEvent) {
-        const assetId = this.ids && this.ids.length > 0 ? this.ids[0] : undefined;
-        const processEvent = (event.eventType === "asset" && (event as AssetEvent).asset!.id === assetId) || (event.eventType === "attribute" && (event as AttributeEvent).ref!.id == assetId);
+    async _onEvent(event: SharedEvent) {
+        const processEvent = (event.eventType === "asset" && (event as AssetEvent).asset!.id === this.assetId) || (event.eventType === "attribute" && (event as AttributeEvent).ref!.id == this.assetId);
 
         if (!processEvent) {
             return;
@@ -1606,49 +1505,23 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
             const asset = (event as AssetEvent).asset!;
 
-            if (!this._assetInfo) {
-                this.loadAssetInfo(asset)
-                    .then(assetInfo => this._assetInfo = assetInfo)
-                    .catch(reason => {
-                        // We can ignore this as it should indicate that the asset has changed
-                    });
-                return;
-            }
-
-            if (asset.id !== assetId) {
-                return;
-            }
-
-            if (this.editMode) {
-                // Asset hasn't been modified yet so just re-render with new version of asset
-                if (!this._assetInfo.modified || (this._saveResult?.assetId === assetId)) {
-                    this._assetInfo = undefined;
-                    this._saveResult = undefined;
-                    this.loadAssetInfo(asset)
-                        .then(assetInfo => this._assetInfo = assetInfo)
-                        .catch(reason => {
-                            // We can ignore this as it should indicate that the asset has changed
-                        });
-                    return;
-                }
-
+            // Reload the asset if...
+            const reloadAsset = !this.editMode // Only in view mode
+                || !this._assetInfo // Nothing currently loaded
+                || (asset.version !== this._assetInfo.asset?.version // Version is different from what is loaded
+                    && !this._saveInProgress) // And save isn't in progress
+            if (reloadAsset && this.editMode && this._assetInfo?.modified) {
                 // Asset has changed whilst we're editing it so inform the user and reload
-                showOkDialog("assetModified", i18next.t("assetModifiedMustRefresh")).then(() => {
-                    this._assetInfo = undefined;
-                    this.loadAssetInfo(asset)
-                        .then(assetInfo => this._assetInfo = assetInfo)
-                        .catch(reason => {
-                            // We can ignore this as it should indicate that the asset has changed
-                        });
-                });
-            } else {
-                // Just reload the whole view
+                await showOkDialog("assetModified", i18next.t("assetModifiedMustRefresh"));
+            }
+
+            if (reloadAsset) {
                 this._assetInfo = undefined;
-                this.loadAssetInfo(asset)
-                    .then(assetInfo => this._assetInfo = assetInfo)
-                    .catch(reason => {
-                        // We can ignore this as it should indicate that the asset has changed
-                    });
+                try {
+                    this._assetInfo = await this.loadAssetInfo(asset);
+                } catch (e) {
+                    // We can ignore this as it should indicate that the asset has changed
+                }
             }
         }
 

@@ -44,8 +44,10 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.*;
+import org.openremote.model.asset.impl.GatewayAsset;
 import org.openremote.model.asset.impl.GroupAsset;
 import org.openremote.model.asset.impl.ThingAsset;
+import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
@@ -68,7 +70,10 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -562,7 +567,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
     public <T extends Asset<?>> T merge(T asset, boolean overrideVersion) throws IllegalStateException, ConstraintViolationException {
-        return merge(asset, overrideVersion, false, null);
+        return merge(asset, overrideVersion, null, null);
     }
 
     /**
@@ -571,41 +576,49 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
     public <T extends Asset<?>> T merge(T asset, String userName) throws IllegalStateException, ConstraintViolationException {
-        return merge(asset, false, false, userName);
+        return merge(asset, false, null, userName);
     }
 
     /**
      * Merge the requested {@link Asset} checking that it meets all constraint requirements before doing so; the
      * timestamp of each {@link Attribute} will also be updated to the current system time if it has changed to assist
      * with {@link Attribute} equality (see {@link Attribute#equals}).
-     * @param overrideVersion If <code>true</code>, the merge will override the data in the database, independent of
-     *                        version.
-     * @param skipGatewayCheck Don't check if asset is a gateway asset and merge asset into local persistence service.
-     * @param userName        the user which this asset needs to be assigned to.
+     * @param overrideVersion        If <code>true</code>, the merge will override the data in the database, independent of
+     *                               version.
+     * @param requestingGatewayAsset If set this is the {@link GatewayAsset} merging the asset so skip standard checks
+     * @param userName               the user which this asset needs to be assigned to.
      * @return The current stored asset state.
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
     @SuppressWarnings("unchecked")
-    public <T extends Asset<?>> T merge(T asset, boolean overrideVersion, boolean skipGatewayCheck, String userName) throws IllegalStateException, ConstraintViolationException {
+    public <T extends Asset<?>> T merge(T asset, boolean overrideVersion, GatewayAsset requestingGatewayAsset, String userName) throws IllegalStateException, ConstraintViolationException {
 
         if (LOG.isLoggable(Level.FINEST)) {
             LOG.finest("Merging asset: " + asset);
         }
 
-        if (asset.getId() != null || asset.getParentId() != null) {
-            String gatewayId = gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
+        long startTime = System.currentTimeMillis();
+        String assetId = asset.getId() != null ? asset.getId() : "";
 
-            if (!skipGatewayCheck && gatewayId != null) {
+        // We skip all standard checks as asset is coming from a gateway and would be validated from there
+        if (requestingGatewayAsset != null) {
+            if (asset.getId() == null || asset.getParentId() == null || asset.getRealm() == null) {
+                String msg = "GatewayAsset descendant must have an ID, parent ID and realm defined: asset=" + asset;
+                LOG.warning(msg);
+                throw new IllegalStateException(msg);
+            }
+        } else {
+            String gatewayId = null;
+
+            if (asset.getId() != null || asset.getParentId() != null) {
+                gatewayId = gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
+            }
+
+            if (gatewayId != null) {
                 String msg = "Cannot directly add or modify a descendant asset on a gateway asset, do this on the gateway itself: Gateway ID=" + gatewayId;
                 LOG.info(msg);
                 throw new IllegalStateException(msg);
             }
-        }
-
-        String assetId = asset.getId() != null ? asset.getId() : "";
-        return withAssetLock(assetId, () -> persistenceService.doReturningTransaction(em -> {
-
-            long startTime = System.currentTimeMillis();
 
             // Validate realm
             if (asset.getRealm() == null) {
@@ -615,6 +628,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             // Do standard JSR-380 validation on the asset (includes custom validation using descriptors and constraints)
+            // Only do validation on non gateway descendants as the asset types in the central instance may not
+            // match the edge gateway
             Set<ConstraintViolation<Asset<?>>> validationFailures = ValueUtil.validate(asset);
 
             if (!validationFailures.isEmpty()) {
@@ -623,6 +638,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 LOG.log(Level.WARNING, msg + ", exception=" + ex.getMessage());
                 throw ex;
             }
+        }
+
+        return withAssetLock(assetId, () -> persistenceService.doReturningTransaction(em -> {
 
             T existingAsset = TextUtil.isNullOrEmpty(asset.getId()) ? null : (T)em.find(Asset.class, asset.getId());
 
@@ -770,7 +788,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             }
 
-            T updatedAsset = em.merge(asset);
+            T updatedAsset;
+
+            if (existingAsset instanceof UnknownAsset && !(asset instanceof UnknownAsset)) {
+                // This occurs when an existing asset is merged but the type is unknown
+                // We'll copy updates into existing asset
+                existingAsset.setAttributes(asset.getAttributes());
+                existingAsset.setName(asset.getName());
+                existingAsset.setVersion(asset.getVersion());
+                existingAsset.setParentId(asset.getParentId());
+                existingAsset.setAccessPublicRead(asset.isAccessPublicRead());
+                updatedAsset = em.merge(existingAsset);
+            } else {
+                updatedAsset = em.merge(asset);
+            }
 
             if (LOG.isLoggable(FINE)) {
                 LOG.fine("Asset merge took: " + (System.currentTimeMillis() - startTime) + "ms");
@@ -1140,10 +1171,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
     }
 
-    public void withAssetLock(String assetId, Runnable action) {
-        withAssetLock(assetId, action);
-    }
-
     protected void createUserAssetLinks(EntityManager em, List<UserAssetLink> userAssets) {
 
         em.unwrap(Session.class).doWork(connection -> {
@@ -1351,6 +1378,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             newAttribute.getTimestamp().orElse(0L),
                             newAttribute.getValue().orElse(null),
                             newAttribute.getTimestamp().orElse(0L))
+                                .setSource(getClass().getSimpleName())
                     ));
             }
             case UPDATE -> {
@@ -1376,6 +1404,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         .forEach(obsoleteAttribute ->
                             clientEventService.publishEvent(
                                 new AttributeEvent(asset, obsoleteAttribute, getClass().getSimpleName(), null, timerService.getCurrentTimeMillis(), null, 0L)
+                                    .setSource(getClass().getSimpleName())
                                     .setDeleted(true)
                             ));
                 }
@@ -1401,7 +1430,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             newOrModifiedAttribute.getTimestamp().orElse(0L),
                             oldAttribute.flatMap(Attribute::getValue).orElse(null),
                             oldAttribute.flatMap(Attribute::getTimestamp).orElse(0L)
-                        ));
+                        ).setSource(getClass().getSimpleName()));
                     });
             }
             case DELETE -> {
@@ -1419,6 +1448,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 deletedAttributes.forEach(obsoleteAttribute ->
                     clientEventService.publishEvent(
                         new AttributeEvent(asset, obsoleteAttribute, getClass().getSimpleName(), null, timerService.getCurrentTimeMillis(), null, 0L)
+                            .setSource(getClass().getSimpleName())
                             .setDeleted(true)
                     ));
             }
@@ -1671,7 +1701,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 binders.add((em, st) -> st.setParameter(pos, query.userIds));
             }
 
-            if (level == 1 && query.access == Access.PUBLIC) {
+            if (query.access == Access.PUBLIC) {
                 sb.append(" and A.ACCESS_PUBLIC_READ is true");
             }
 
@@ -1769,7 +1799,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                 if (attributePredicate.meta != null && attributePredicate.meta.length > 0) {
                     String metaJsonObjName = jsonObjName + "_AM" + metaIndex++;
-                    selectInserter.accept(" LEFT JOIN jsonb_each(" + jsonObjName + ".VALUE #> '{meta}') as " + metaJsonObjName + " ON true");
+                    selectInserter.accept(" LEFT JOIN jsonb_each(jsonb_strip_nulls(" + jsonObjName + ".VALUE) #> '{meta}') as " + metaJsonObjName + " ON true");
                     sb.append(" and (");
                     addNameValuePredicates(Arrays.asList(attributePredicate.meta.clone()), sb, binders, metaJsonObjName, selectInserter, true, timeProvider);
                     sb.append(")");

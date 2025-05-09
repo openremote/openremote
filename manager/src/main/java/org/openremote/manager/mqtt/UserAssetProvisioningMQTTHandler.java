@@ -116,6 +116,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     protected boolean isKeycloak;
     protected final ConcurrentMap<Long, Set<RemotingConnection>> provisioningConfigAuthenticatedConnectionMap = new ConcurrentHashMap<>();
     protected Timer provisioningTimer;
+    protected final Map<String, RemotingConnection> responseSubscribedConnections = new ConcurrentHashMap<>();
 
     @Override
     public void init(Container container, Configuration serverConfiguration) throws Exception {
@@ -203,19 +204,30 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             return false;
         }
 
-        return isResponseTopic(topic)
+        boolean allowed = isResponseTopic(topic)
             && !TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 1))
             && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 1));
+
+        if (allowed) {
+            // Only allow if there is no existing subscription for this topic
+            RemotingConnection existingConnection = responseSubscribedConnections.get(topic.getString());
+            if (existingConnection != null) {
+                LOG.warning("Subscription already exists possible eavesdropping");
+                allowed = false;
+            }
+        }
+
+        return allowed;
     }
 
     @Override
     public void onSubscribe(RemotingConnection connection, Topic topic) {
-        // Nothing to do here as we'll publish to this topic in response to client messages
+        responseSubscribedConnections.put(topic.getString(), connection);
     }
 
     @Override
     public void onUnsubscribe(RemotingConnection connection, Topic topic) {
-
+        responseSubscribedConnections.remove(topic.getString());
     }
 
     @Override
@@ -398,7 +410,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         provisioningConfigAuthenticatedConnectionMap.compute(matchingConfig.getId(), (id, connections) -> {
             if (connections == null) {
-                connections = new HashSet<>();
+                connections = ConcurrentHashMap.newKeySet();
             }
             connections.add(connection);
             return connections;
@@ -469,7 +481,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         if (provisioningConfig.getUserRoles() != null && provisioningConfig.getUserRoles().length > 0) {
             LOG.finest("Setting user roles: realm=" + realm + ", username=" + username + ", roles=" + Arrays.toString(provisioningConfig.getUserRoles()));
-            identityProvider.updateUserRoles(
+            identityProvider.updateUserClientRoles(
                 realm,
                 serviceUser.getId(),
                 Constants.KEYCLOAK_CLIENT_ID,
@@ -481,7 +493,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         if (provisioningConfig.isRestrictedUser()) {
             LOG.finest("User will be made restricted: realm=" + realm + ", username=" + username);
-            identityProvider.updateUserRealmRoles(realm, serviceUser.getId(), identityProvider.addRealmRoles(realm, serviceUser.getId(),RESTRICTED_USER_REALM_ROLE));
+            identityProvider.updateUserRealmRoles(realm, serviceUser.getId(), identityProvider.addUserRealmRoles(realm, serviceUser.getId(),RESTRICTED_USER_REALM_ROLE));
         }
 
         // Inject secret

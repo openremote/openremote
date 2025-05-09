@@ -5,7 +5,7 @@ apply plugin: "signing"
 
 dependencies {
 
-    api resolveProject(":container")
+    api project(":container")
 
     api "io.netty:netty-codec:$nettyVersion"
     api "io.netty:netty-codec-http:$nettyVersion"
@@ -21,6 +21,9 @@ dependencies {
 
     api "net.sf.saxon:Saxon-HE:$saxonHEVersion"
 
+    implementation "org.apache.plc4x:plc4j-api:$plc4xVersion"
+    runtimeOnly "org.apache.plc4x:plc4j-driver-modbus:$plc4xVersion"
+
     //IKEA Tradfri agent dependencies
     api "org.eclipse.californium:californium-core:$californiumCoreVersion"
     api "org.eclipse.californium:scandium:$californiumScandiumVersion"
@@ -31,7 +34,9 @@ dependencies {
 
     api "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
 
-    api "com.github.weliem:blessed-bluez:$bluetoothVersion"
+    api("com.github.weliem:blessed-bluez:$bluetoothVersion") {
+        exclude group: "com.github.weliem.blessed-bluez", module: "blessed-test"
+    }
 
     implementation "dev.failsafe:failsafe:$failsafeVersion"
 
@@ -40,8 +45,8 @@ dependencies {
     implementation "org.jdom:jdom2:$jdomVersion"
 }
 
-jar {
-    archivesBaseName = "openremote-${project.name}"
+base {
+    archivesName = "openremote-${project.name}"
 }
 
 javadoc {
@@ -91,8 +96,8 @@ publishing {
         maven {
             if (!version.endsWith('-LOCAL')) {
                 credentials {
-                    username findProperty("publishUsername")
-                    password findProperty("publishPassword")
+                    username = findProperty("publishUsername")
+                    password = findProperty("publishPassword")
                 }
             }
             url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
@@ -103,6 +108,8 @@ publishing {
 signing {
     def signingKey = findProperty("signingKey")
     def signingPassword = findProperty("signingPassword")
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign publishing.publications.maven
+    if (signingKey && signingPassword) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign publishing.publications.maven
+    }
 }

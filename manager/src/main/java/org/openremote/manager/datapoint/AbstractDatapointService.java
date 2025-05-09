@@ -20,6 +20,7 @@
 package org.openremote.manager.datapoint;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.Session;
@@ -34,8 +35,10 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.datapoint.DatapointPeriod;
+import org.openremote.model.datapoint.DatapointQueryTooLargeException;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 import org.postgresql.util.PGobject;
 
@@ -47,28 +50,28 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.time.temporal.ChronoUnit.DAYS;
+import static org.openremote.container.util.MapAccess.getInteger;
 
 /**
  * Base class for all classes that store and retrieve {@link org.openremote.model.datapoint.Datapoint}.
  */
 public abstract class AbstractDatapointService<T extends Datapoint> implements ContainerService {
 
+    public static final String OR_DATA_POINTS_QUERY_LIMIT = "OR_DATA_POINTS_QUERY_LIMIT";
     public static final int PRIORITY = AssetStorageService.PRIORITY + 100;
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
     protected TimerService timerService;
     protected ScheduledExecutorService scheduledExecutorService;
     protected ScheduledFuture<?> dataPointsPurgeScheduledFuture;
+    protected int maxAmountOfQueryPoints;
 
     @Override
     public int getPriority() {
@@ -81,6 +84,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         assetStorageService = container.getService(AssetStorageService.class);
         timerService = container.getService(TimerService.class);
         scheduledExecutorService = container.getScheduledExecutor();
+        maxAmountOfQueryPoints = getInteger(container.getConfig(), OR_DATA_POINTS_QUERY_LIMIT, 100000);
     }
 
     @Override
@@ -189,8 +193,59 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
         Map<Integer, Object> parameters = datapointQuery.getSQLParameters(attributeRef);
 
-        getLogger().finest("Querying datapoints for: " + attributeRef);
+        // Gather the query based on the AssetDatapointQuery type
+        String query;
+        try {
+            query = datapointQuery.getSQLQuery(getDatapointTableName(), attribute.getTypeClass());
+        } catch (IllegalStateException ise) {
+            getLogger().log(Level.WARNING, ise.getMessage());
+            throw ise;
+        }
 
+        // Verify the query is 'legal' and can be executed
+        try {
+            if(canQueryDatapoints(query, parameters, maxAmountOfQueryPoints)) {
+                getLogger().finest("Querying datapoints for: " + attributeRef);
+
+                return doQueryDatapoints(assetId, attribute, query, parameters);
+            }
+
+            return Collections.emptyList();
+        } catch (DatapointQueryTooLargeException dex) {
+            String msg = "Could not query data points for " + assetId + ". It exceeds the data limit of " + maxAmountOfQueryPoints + " data points.";
+            getLogger().log(Level.WARNING, msg, dex);
+            throw dex;
+        } catch (IllegalStateException | IllegalArgumentException ex) {
+            getLogger().log(Level.WARNING, ex.getMessage());
+            throw ex;
+        }
+    }
+
+    protected boolean canQueryDatapoints(String query, Map<Integer, Object> parameters, int datapointLimit) {
+        if(TextUtil.isNullOrEmpty(query)) {
+            throw new IllegalArgumentException("Query is null or empty");
+        }
+
+        // If only a maximum amount of data points is allowed,
+        // use SQL COUNT() to verify if the query does not exceed the maximum.
+        if(datapointLimit > 0) {
+            String countQueryStr = "SELECT COUNT(*) FROM (" + query + ") AS count_query";
+            int amount = persistenceService.doReturningTransaction(entityManager -> {
+                Query countQuery = entityManager.createNativeQuery(countQueryStr);
+                if(parameters != null) {
+                    parameters.forEach(countQuery::setParameter);
+                }
+                return ((Number) countQuery.getSingleResult()).intValue();
+            });
+            if (amount > datapointLimit) {
+                throw new DatapointQueryTooLargeException();
+            }
+        }
+
+        return true;
+    }
+
+    protected List<ValueDatapoint<?>> doQueryDatapoints(String assetId, Attribute<?> attribute, String query, Map<Integer, Object> parameters) {
         return persistenceService.doReturningTransaction(entityManager ->
                 entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<>() {
 
@@ -201,21 +256,17 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                         boolean isNumber = Number.class.isAssignableFrom(attributeType);
                         boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
 
-                        String query;
-                        try {
-                            query = datapointQuery.getSQLQuery(getDatapointTableName(), attributeType);
-                        } catch (IllegalStateException ise) {
-                            getLogger().log(Level.WARNING, ise.getMessage());
-                            throw ise;
-                        }
                         try (PreparedStatement st = connection.prepareStatement(query)) {
 
                             if(!parameters.isEmpty()) {
+                                int paramCount = st.getParameterMetaData().getParameterCount();
                                 for(Map.Entry<Integer, Object> param : parameters.entrySet()) {
-                                    if(param.getValue() instanceof String) {
-                                        st.setString(param.getKey(), param.getValue().toString());
-                                    } else {
-                                        st.setObject(param.getKey(), param.getValue());
+                                    if(param.getKey() <= paramCount) {
+                                        if(param.getValue() instanceof String) {
+                                            st.setString(param.getKey(), param.getValue().toString());
+                                        } else {
+                                            st.setObject(param.getKey(), param.getValue());
+                                        }
                                     }
                                 }
                             }

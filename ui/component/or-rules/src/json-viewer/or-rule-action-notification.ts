@@ -96,7 +96,7 @@ export class OrRuleActionNotification extends LitElement {
         if(this.action.notification) {
             const message = this.action.notification.message;
             if(message?.type === "localized") {
-                const locale = this.config?.notifications?.[manager.displayRealm]?.defaultLanguage || this.config?.notifications?.["default"]?.defaultLanguage || manager.config.defaultLanguage;
+                const locale = this.config?.notifications?.[manager.displayRealm]?.defaultLanguage || this.config?.notifications?.default?.defaultLanguage || manager.config.defaultLanguage!;
                 const msg = message.languages?.[locale]; // if localized, we use the default language
                 if(msg?.type === "push") {
                     this.action.notification.name = msg.title;
@@ -184,9 +184,9 @@ export class OrRuleActionNotification extends LitElement {
 
                         // Get realm roles and add as options
                         const realm = await manager.rest.api.RealmResource.get(manager.displayRealm);
-                        let realmRoleOpts: [string, string][] = realm.data.realmRoles!.filter(r => Util.realmRoleFilter(r)).map(r => ["linked-" + r.name!,  linkedLabel + ": " + i18next.t("realmRole." + r.name, Util.camelCaseToSentenceCase(r.name!.replace("_", " ").replace("-", " ")))]);
+                        let realmRoleOpts: [string, string][] = realm.data.realmRoles!.map(r => ["linked-" + r.name!,  linkedLabel + ": " + i18next.t("realmRole." + r.name, Util.camelCaseToSentenceCase(r.name!.replace("_", " ").replace("-", " ")))]);
                         let values: [string, string][] = usersResponse.data.map((user) => [user.id!, user.username!]);
-                        return [["linkedUsers", linkedLabel], ...realmRoleOpts, ...values];
+                        return [["linkedUsers", linkedLabel], ...realmRoleOpts, ...values.sort(Util.sortByString(user => user[1]))];
                     }
                 );
                 label = i18next.t("user_plural");

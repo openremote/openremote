@@ -39,7 +39,7 @@ public interface AuthContext {
      * @return <code>true</code> if the user is authenticated in the "master" realm and has the realm role "admin".
      */
     default boolean isSuperUser() {
-        return Constants.MASTER_REALM.equals(getAuthenticatedRealmName()) && hasRealmRole(Constants.REALM_ADMIN_ROLE);
+        return Constants.MASTER_REALM.equals(getAuthenticatedRealmName()) && hasRealmRole(Constants.SUPER_USER_REALM_ROLE);
     }
 
     boolean hasRealmRole(String role);

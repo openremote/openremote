@@ -102,6 +102,10 @@ services:
       PROXY_HOST_REDIRECT_10_NAME:
       PROXY_HOST_REDIRECT_10_TARGET:
 
+      # The proxy removes path prefixes when configured before sending the request to the manager or keycloak.
+      #MANAGER_PATH_PREFIX: /openremote
+      #KEYCLOAK_PATH_PREFIX: /keycloak
+
     # Expose public services (web server, MQTT broker)
     ports:
       - "80:80" # HTTP for letsencrypt cert generation and in general it redirects to 443 for HTTPS
@@ -267,6 +271,9 @@ services:
       # manager's map, as well as other style details and colours.
       OR_MAP_SETTINGS_PATH: ${OR_MAP_SETTINGS_PATH:-/deployment/map/mapsettings.json}
 
+      # Override the maximum allowed custom map tiles database file size in bytes.
+      OR_CUSTOM_MAP_SIZE_LIMIT: ${OR_CUSTOM_MAP_SIZE_LIMIT:-30000000}
+
       # Set the tileserver host name and port; the manager will reverse proxy to this server
       # to provide raster map tiles to frontend apps
       OR_MAP_TILESERVER_HOST:
@@ -335,11 +342,21 @@ services:
       # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).
       # OR_DATA_POINTS_MAX_AGE_DAYS: 30
 
+      # Configure the limit of data points that can be queried.
+      # Defaults to 100.000. When set to 0, it disables the limit.
+      # OR_DATA_POINTS_QUERY_LIMIT: 100000
+
+      # Configure the limit of data points that can be exported to CSV. Defaults to 1 million data points.
+      # OR_DATA_POINTS_EXPORT_LIMIT: 10000000
+
       # App id for the API of OpenWeather: https://openweathermap.org
       # OR_OPEN_WEATHER_API_APP_ID
 
       # API key for the API of ForecastSolar: https://forecast.solar
       # OR_FORECAST_SOLAR_API_KEY
+
+      # When using path based proxying this prefix is added to the URLs returned via the REST API.
+      # OR_PATH_PREFIX: /openremote
 
       # Custom JVM options (override default manager options)
   #OR_JAVA_OPTS: ${OR_JAVA_OPTS:--Xms500m -Xmx2g

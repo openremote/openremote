@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-log-viewer",
-  "version": "1.1.0",
+  "version": "1.3.3",
   "description": "OpenRemote syslog viewer",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
@@ -11,17 +11,17 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "test": "echo \"No tests\" && exit 0",
-    "prepublishOnly": "npx rspack"
+    "prepack": "npx rspack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@material/data-table": "^9.0.0",
     "@openremote/core": "workspace:*",
-    "@openremote/or-mwc-components": "^1.1.0",
+    "@openremote/or-mwc-components": "workspace:*",
+    "http-link-header": "^1.1.3",
     "lit": "^2.0.2",
     "moment": "^2.29.4",
-    "parse-link-header": "^2.0.0",
     "url": "^0.11.0"
   },
   "devDependencies": {

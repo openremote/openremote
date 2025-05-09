@@ -25,7 +25,7 @@ export function headerItemRules<S extends AppStateKeyed, A extends AnyAction>(or
         href: "rules",
         text: "rule_plural",
         hideMobile: true,
-        roles: () => !manager.hasRealmRole("restricted_user")
+        roles: () => !manager.isRestrictedUser()
     };
 }
 
@@ -52,7 +52,7 @@ export function headerItemGatewayTunnel<S extends AppStateKeyed, A extends AnyAc
         icon: "lan-connect",
         value: "gateway-tunnel",
         href: "gateway-tunnel",
-        text: "gatewayTunnels.",
+        text: "gatewayTunnel",
         roles: ["write:admin", "read:admin"]
     }
 }

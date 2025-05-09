@@ -1,5 +1,5 @@
 import {css, html, LitElement, PropertyValues, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+import {customElement, property, state, query} from "lit/decorators.js";
 import i18next from "i18next";
 import {
     Asset,
@@ -15,6 +15,7 @@ import {
     AssetDatapointLTTBQuery
 } from "@openremote/model";
 import {DefaultColor3, DefaultColor4, manager, Util} from "@openremote/core";
+import {isAxiosError} from "@openremote/rest";
 import {Chart, ScatterDataPoint, LineController, LineElement, PointElement, LinearScale, TimeSeriesScale, Title} from "chart.js";
 import "chartjs-adapter-moment";
 import {OrChartConfig} from "@openremote/or-chart";
@@ -27,6 +28,7 @@ import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
+import {when} from "lit/directives/when.js";
 import {debounce} from "lodash";
 
 export type ContextMenuOption = "editAttribute" | "editDelta" | "editCurrentValue" | "delete";
@@ -148,9 +150,11 @@ const style = css`
         height: 75%;
     }
     .controls-wrapper {
+        flex: 0 0 80px;
         height: 100%;
         display: flex;
         flex-direction: column;
+        align-items: end;
         place-content: space-between;
     }
     
@@ -213,22 +217,26 @@ export class OrAttributeCard extends LitElement {
     @property()
     public showControls: boolean = true;
     @property()
+    public hideAttributePicker: boolean = false;
+    @property()
     public showTitle: boolean = true;
     @property()
     protected _loading: boolean = false;
-
-    private error: boolean = false;
 
     @property()
     private period: moment.unitOfTime.Base = "day";
     private asset?: Asset;
     private formattedMainValue?: {value: number|undefined, unit: string};
 
+    @state()
+    protected _error?: string;
+
     @query("#chart")
     private _chartElem!: HTMLCanvasElement;
     private _chart?: Chart<"line", ScatterDataPoint[]>;
     protected _startOfPeriod?: number;
     protected _endOfPeriod?: number;
+    protected _dataAbortController?: AbortController;
     private resizeObserver?: ResizeObserver;
 
     static get styles() {
@@ -345,6 +353,9 @@ export class OrAttributeCard extends LitElement {
         }
     }
 
+    shouldHideAttributePicker(): boolean {
+        return (this.hideAttributePicker && this.hideAttributePicker.toString() == "true");
+    }
     shouldShowControls(): boolean { // Checking for string input as well since that was not working
         return (this.showControls && this.showControls.toString() == "true");
     }
@@ -354,31 +365,16 @@ export class OrAttributeCard extends LitElement {
 
     protected render() {
 
-        if (!this.assets || !this.assetAttributes || this.assetAttributes.length === 0) {
+        if (!this._error && (!this.assets || !this.assetAttributes || this.assetAttributes.length === 0)) {
             return html`
                 <div class="panel panel-empty">
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
-                            ${this.shouldShowControls() ? html`
+                            ${!this.shouldHideAttributePicker() ? html`
                                 <or-mwc-input class="button" .type="${InputType.BUTTON}" label="selectAttribute" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
                             ` : html`
-                                <span>${i18next.t('noAttributeConnected')}</span>
+                                <span style="text-align: center;">${i18next.t('noAttributeConnected')}</span>
                             `}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        if (this.error) {
-            return html`
-                <div class="panel panel-empty">
-                    <div class="panel-content-wrapper">
-                        <div class="panel-content">
-                            <span>${i18next.t("couldNotRetrieveAttribute")}</span>
-                            ${this.shouldShowControls() ? html`
-                                <or-mwc-input class="button" .type="${InputType.BUTTON}" label="selectAttribute" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
-                            ` : undefined}
                         </div>
                     </div>
                 </div>
@@ -424,14 +420,27 @@ export class OrAttributeCard extends LitElement {
                     </div>
                     <div class="panel-content">
                         <div class="mainvalue-wrapper">
-                            <span class="main-number-icon">${this.assets && this.assets.length === 1 ? getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[0].type!)) : ""}</span>
-                            <span class="main-number ${this.mainValueSize}">${this.formattedMainValue ? this.formattedMainValue.value : ""}</span>
-                            <span class="main-number-unit ${this.mainValueSize}">${this.formattedMainValue ? this.formattedMainValue.unit : ""}</span>      
+                            ${when(!this._loading, () => html`
+                                <span class="main-number-icon">${this.assets && this.assets.length === 1 ? getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[0].type!)) : ""}</span>
+                                <span class="main-number ${this.mainValueSize}">${this.formattedMainValue ? this.formattedMainValue.value : ""}</span>
+                                <span class="main-number-unit ${this.mainValueSize}">${this.formattedMainValue ? this.formattedMainValue.unit : ""}</span>      
+                            `)}
                         </div>
                         <div class="graph-wrapper">
-                            <div class="chart-wrapper">
-                                <canvas id="chart"></canvas>
-                            </div>
+                            
+                            ${when(this._error, () => html`
+                                <div style="flex: 0 0 80px;"></div>
+                                <or-translate .value="${this._error}" style="flex: 1; text-align: center;"></or-translate>
+                            `, () => html`
+                                <div class="chart-wrapper">
+                                    ${when(this._loading, () => html`
+                                        <or-loading-indicator></or-loading-indicator>
+                                    `, () => html`
+                                        <canvas id="chart"></canvas>
+                                    `)}
+                                </div>
+                            `)}
+
                             <div class="controls-wrapper">
                                 <div class="delta-wrapper">
                                     <span class="delta">${this.delta ? this.deltaPlus + (this.delta.val !== undefined && this.delta.val !== null ? this.delta.val : "") + (this.delta.unit || "") : ""}</span>
@@ -685,8 +694,14 @@ export class OrAttributeCard extends LitElement {
 
     protected async loadData() {
 
-        if (this._loading || this.data || !this.assetAttributes || !this.assets || this.assets.length === 0 || this.assetAttributes.length === 0 || !this.period) {
+        if (this.data || !this.assetAttributes || !this.assets || this.assets.length === 0 || this.assetAttributes.length === 0 || !this.period) {
             return;
+        }
+
+        // If a new requests comes in, we override it with this one using AbortController.
+        if(this._dataAbortController) {
+            this._dataAbortController.abort("Data request overridden");
+            delete this._dataAbortController;
         }
 
         this._loading = true;
@@ -720,40 +735,62 @@ export class OrAttributeCard extends LitElement {
         const lowerCaseInterval = interval.toLowerCase();
         this._startOfPeriod = moment().subtract(1, this.period).toDate().getTime();
         this._endOfPeriod = moment().toDate().getTime();
-        this.mainValue = undefined;
-        this.formattedMainValue = undefined;
         const assetId = this.assets[0].id!;
         const attributeName = this.assetAttributes[0][1].name!;
 
-        const currentValue: AttributeEvent = await manager.events!.sendEventWithReply({
-            eventType: "read-asset-attribute",
-            ref: {
-                id: assetId,
-                name: attributeName
+        this._dataAbortController = new AbortController();
+
+        try {
+            const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
+                assetId,
+                attributeName,
+                {type: "lttb", fromTimestamp: this._startOfPeriod, toTimestamp: this._endOfPeriod, amountOfPoints: 20} as AssetDatapointLTTBQuery,
+                {signal: this._dataAbortController.signal}
+            );
+
+            this._loading = false;
+
+            if (response.status === 200) {
+                this.data = response.data;
+                this.delta = this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data));
+                this.deltaPlus = this.delta && this.delta.val! > 0 ? "+" : "";
+                this._error = undefined;
             }
-        } as ReadAttributeEvent);
 
-        this.mainValue = currentValue.value;
-        this.formattedMainValue = this.getFormattedValue(this.mainValue!);
+        } catch (ex) {
+            console.error(ex);
+            if((ex as Error)?.message === "canceled") {
+                return; // If request has been canceled (using AbortController); return, and prevent _loading is set to false.
+            }
+            this._loading = false;
 
-        const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
-            assetId,
-            attributeName,
-            {
-                type: "lttb",
-                fromTimestamp: this._startOfPeriod,
-                toTimestamp: this._endOfPeriod,
-                amountOfPoints: 20,
-            } as AssetDatapointLTTBQuery
-        );
+            if(isAxiosError(ex)) {
+                if(ex.message.includes("timeout")) {
+                    this._error = "noAttributeDataTimeout";
+                    return;
+                } else if(ex.response?.status === 413) {
+                    this._error = "datapointRequestTooLarge";
+                    return;
+                }
+            }
 
-        this._loading = false;
+            this._error = "couldNotRetrieveAttribute";
 
-        if (response.status === 200) {
-            this.data = response.data;
-            this.delta = this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data));
-            this.deltaPlus = this.delta && this.delta.val! > 0 ? "+" : "";
-            this.error = false;
+        } finally {
+
+            // Finally, request the current value through WS request/response
+            this.mainValue = undefined;
+            this.formattedMainValue = undefined;
+            const currentValue: AttributeEvent = await manager.events!.sendEventWithReply({
+                eventType: "read-asset-attribute",
+                ref: {
+                    id: assetId,
+                    name: attributeName
+                }
+            } as ReadAttributeEvent);
+
+            this.mainValue = currentValue.value;
+            this.formattedMainValue = this.getFormattedValue(this.mainValue!);
         }
     }
 

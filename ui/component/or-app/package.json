@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-app",
-  "version": "1.1.0",
+  "version": "1.5.0",
   "description": "OpenRemote app template",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
@@ -12,27 +12,28 @@
   },
   "types": "lib/index.d.ts",
   "scripts": {
-    "clean": "npx tsc -b --clean && npx shx rm -rf dist",
+    "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
     "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack --mode production",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepack": "npx tsc -b"
   },
   "dependencies": {
     "@lit/task": "^1.0.0",
     "@openremote/core": "workspace:*",
-    "@openremote/or-asset-tree": "^1.1.0",
-    "@openremote/or-asset-viewer": "^1.1.0",
-    "@openremote/or-attribute-input": "^1.1.0",
-    "@openremote/or-attribute-picker": "^1.1.0",
-    "@openremote/or-chart": "^1.1.0",
-    "@openremote/or-dashboard-builder": "^1.0.0",
-    "@openremote/or-gauge": "^1.0.0",
-    "@openremote/or-map": "^1.1.0",
-    "@openremote/or-mwc-components": "^1.1.0",
-    "@openremote/or-rules": "^1.1.0",
-    "@openremote/or-smart-notify": "^1.1.0",
-    "@openremote/or-timeline": "^1.1.0",
+    "@openremote/or-asset-tree": "workspace:*",
+    "@openremote/or-asset-viewer": "workspace:*",
+    "@openremote/or-attribute-input": "workspace:*",
+    "@openremote/or-attribute-picker": "workspace:*",
+    "@openremote/or-chart": "workspace:*",
+    "@openremote/or-dashboard-builder": "workspace:*",
+    "@openremote/or-gauge": "workspace:*",
+    "@openremote/or-map": "workspace:*",
+    "@openremote/or-mwc-components": "workspace:*",
+    "@openremote/or-rules": "workspace:*",
+    "@openremote/or-smart-notify": "workspace:*",
+    "@openremote/or-timeline": "workspace:*",
     "@openremote/rest": "workspace:*",
     "@reduxjs/toolkit": "^1.8.1",
     "@webcomponents/webcomponentsjs": "^2.6.0",
@@ -43,5 +44,8 @@
   },
   "devDependencies": {
     "@openremote/util": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

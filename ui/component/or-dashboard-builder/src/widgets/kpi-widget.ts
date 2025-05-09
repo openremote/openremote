@@ -76,7 +76,12 @@ export class KpiWidget extends OrAssetWidget {
     }
 
     protected loadAssets(attributeRefs: AttributeRef[]) {
+        if(attributeRefs.length === 0) {
+            this._error = "noAttributesConnected";
+            return;
+        }
         this._loading = true;
+        this._error = undefined;
         this.fetchAssets(attributeRefs).then((assets) => {
             this.loadedAssets = assets;
             this.assetAttributes = attributeRefs?.map((attrRef: AttributeRef) => {
@@ -84,6 +89,8 @@ export class KpiWidget extends OrAssetWidget {
                 const foundAsset = assetIndex >= 0 ? assets[assetIndex] : undefined;
                 return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
             }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
+        }).catch(e => {
+            this._error = e.message;
         }).finally(() => {
             this._loading = false;
         });
@@ -92,17 +99,21 @@ export class KpiWidget extends OrAssetWidget {
     protected render(): TemplateResult {
         return html`
             <div style="position: relative; height: 100%; overflow: hidden;">
-                ${when(this._loading, () => {
+                ${when(this._loading || this._error, () => {
                     // Have to use `position: absolute` with white background due to rendering inconsistencies in or-attribute-card
                     return html`
-                        <div style="position: absolute; top: -5%; width: 100%; height: 105%; background: white; z-index: 1;">
-                            <or-loading-indicator></or-loading-indicator>
+                        <div style="position: absolute; top: -5%; width: 100%; height: 105%; background: white; z-index: 1; display: flex; justify-content: center; align-items: center; text-align: center;">
+                            ${when(this._loading, () => html`
+                                <or-loading-indicator></or-loading-indicator>
+                            `, () => html`
+                                <or-translate .value="${this._error}"></or-translate>
+                            `)}
                         </div>
                     `;
                 })}
                 <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .period="${this.widgetConfig.period}"
                                    .deltaFormat="${this.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widgetConfig.decimals}"
-                                   showControls="${this.widgetConfig?.showTimestampControls}" showTitle="${false}" style="height: 100%;">
+                                   showControls="${this.widgetConfig?.showTimestampControls}" showTitle="${false}" hideAttributePicker="${true}" style="height: 100%;">
                 </or-attribute-card>
             </div>
         `;

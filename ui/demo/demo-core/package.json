@@ -1,10 +1,10 @@
 {
   "name": "@openremote/demo-core",
-  "version": "1.0.4",
+  "version": "1.3.3",
   "description": "Demo",
   "private": true,
   "scripts": {
-    "clean": "npx tsc -b --clean && npx shx rm -rf dist",
+    "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
     "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack --mode production",
@@ -15,8 +15,8 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/core": "workspace:*",
-    "@openremote/or-icon": "^1.1.0",
-    "@openremote/or-translate": "^1.1.0",
+    "@openremote/or-icon": "workspace:*",
+    "@openremote/or-translate": "workspace:*",
     "i18next": "^21.5.3",
     "lit": "^2.0.2"
   },
