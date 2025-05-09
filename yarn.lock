@@ -2732,8 +2732,6 @@ __metadata:
   resolution: "@openremote/or-icon@workspace:ui/component/or-icon"
   dependencies:
     "@mdi/font": "npm:latest"
-    "@rspack/cli": "npm:^1.1.3"
-    "@rspack/core": "npm:^1.1.3"
     lit: "npm:^2.0.2"
     terser-webpack-plugin: "npm:^5.2.5"
     typescript: "npm:^5.3.3"

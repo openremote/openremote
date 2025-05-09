@@ -12,7 +12,6 @@
   "scripts": {
     "test": "echo \"No tests\" && exit 0",
     "prepack": "npx rspack"
->>>>>>> 069f2ecb06be5e03368ead9016accf2cfd7b27c3
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
