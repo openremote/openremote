@@ -61,5 +61,10 @@ local.properties
 *.tar.gz
 /balena/manager-build/
 
+# Playwright
+test-results
+playwright-report
+playwright/.cache
+
 # Nix (temp)
 .direnv
