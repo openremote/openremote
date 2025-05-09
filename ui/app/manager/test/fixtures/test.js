@@ -1,3 +1,5 @@
+import assets from "./data/assets";
+import passwords from "./data/passwords";
 const { setWorldConstructor, World, BeforeAll, AfterAll, After, Status, setDefaultTimeout } = require("@cucumber/cucumber");
 const { ChromiumBroswer: ChromiumBrowser } = require("playwright");
 const playwright = require('playwright');
@@ -29,52 +31,8 @@ const global = {
         const appUrl = managerUrl + "manager/?realm=";
         return appUrl + realm;
     },
-    passwords: {
-        admin: "secret",
-        smartcity: "smartcity"
-    }
+    passwords
 }
-
-const assets = [
-    {
-        asset: "Electricity battery asset",
-        name: "Battery",
-        attr_1: "energyLevel",
-        attr_2: "power",
-        attr_3: "powerSetpoint",
-        a1_type: "Positive number",
-        a2_type: "Number",
-        a3_type: "number",
-        v1: "30",
-        v2: "50",
-        v3: "70",
-        location_x: 705,
-        location_y: 210,
-        config_item_1: "Rule state",
-        config_item_2: "Store data points",
-        config_attr_1: "energyLevel",
-        config_attr_2: "power"
-    },
-    {
-        asset: "PV solar asset",
-        name: "Solar Panel",
-        attr_1: "panelPitch",
-        attr_2: "power",
-        attr_3: "powerForecast",
-        a1_type: "Positive integer",
-        a2_type: "Number",
-        a3_type: "number",
-        v1: "30",
-        v2: "70",
-        v3: "100",
-        location_x: 600,
-        location_y: 200,
-        config_item_1: "Rule state",
-        config_item_2: "Store data points",
-        config_attr_1: "power",
-        config_attr_2: "powerForecast"
-    }
-]
 
 class CustomWorld extends World {
 
