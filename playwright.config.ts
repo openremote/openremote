@@ -5,7 +5,7 @@ const { CI } = process.env;
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  testMatch: ["ui/app/*/test/**/*.test.js"],
+  testMatch: ["ui/app/*/test/**/*.test.ts"],
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
