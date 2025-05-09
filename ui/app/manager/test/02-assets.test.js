@@ -1,182 +1,170 @@
-const { When, Then } = require("@cucumber/cucumber");
-const { expect } = require("@playwright/test");
+import { expect } from "@playwright/test";
+import { test } from "./fixtures/test.js";
+import assets from "./fixtures/data/assets.js";
 
-/**
- * add new asset
- */
-Then('Create a {string} with name of {string}', { timeout: 30000 }, async function (asset, name) {
-    let startTime = new Date() / 1000
-    // select conosle first to get into the modify mode
-    await this.click(`#list-container >> text="Consoles"`)
-    await this.switchMode("modify")
-    await this.unselect()
+test.beforeEach(async ({ setup, login, goToRealmStartPage }) => {
+  await setup("smartcity", "lv2");
+  // When Login to OpenRemote "smartcity" realm as "smartcity"
+  await goToRealmStartPage("smartcity");
+  await login("smartcity");
+});
 
-    // start adding assets
-    await this.click('.mdi-plus')
-    await this.click(`text=${asset}`)
-    await this.fill('#name-input input[type="text"]', name)
-    await this.click('#add-btn')
-    await this.wait(400)
-
-    // check if at modify mode
-    // if yes we should see the save button then save
-    const isSaveBtnVisible = await this.isVisible('button:has-text("Save")')
-    console.log("save btn is " + isSaveBtnVisible)
-    if (isSaveBtnVisible) {
-        console.log("ready to save")
-        await this.click('button:has-text("Save")')
-    }
-
-    await this.unselect()
-    this.logTime(startTime)
-})
-
-When('Go to asset {string} info page', { timeout: 30000 }, async function (name) {
-    let startTime = new Date() / 1000
-    await this.click(`#list-container >> text=${name}`)
-    this.logTime(startTime)
-})
-
-Then('Go to modify mode', { timeout: 30000 }, async function () {
-    let startTime = new Date() / 1000
-    await this.wait(1000)
-    await this.switchMode("modify")
-    this.logTime(startTime)
-})
-
-Then('Give {string} to the {string} with type of {string}', async function (value, attribute, type) {
-    let startTime = new Date() / 1000
-    await this.fill(`text=${attribute} ${type} >> input[type="number"]`, value)
-    this.logTime(startTime)
-})
-
-Then('Save', async function () {
-    const { page } = this
-    let startTime = new Date() / 1000
-    await this.save()
-    this.logTime(startTime)
-})
-
-Then('We see the asset with name of {string}', async function (name) {
-    let startTime = new Date() / 1000
-    await this.wait(500)
-    const count = await this.count(`text=${name}`)
-
-    // reason why it's 1 is because that this scnario runs in a outline
-    // each time only one set of data will be used in one run of outlines
-    // thus, only one asset will be added and removed in one run and next time will start with the empty envrioment
-    await expect(count).toBe(1)
-    this.logTime(startTime)
-})
-
-/**
- * select an asset
- */
-When('Search for the {string}', async function (name) {
-    let startTime = new Date() / 1000
-
-    await this.fill('#filterInput input[type="text"]', name)
-    this.logTime(startTime)
-})
-
-When('Select the {string}', async function (name) {
-    let startTime = new Date() / 1000
-    await this.click(`text=${name}`)
-    this.logTime(startTime)
-})
-
-Then('We see the {string} page', async function (name) {
-    let startTime = new Date() / 1000
-    const { page } = this;
-    await expect(await page.waitForSelector(`#asset-header >> text=${name}`)).not.toBeNull()
-    this.logTime(startTime)
-})
-
-/**
- * update
- */
-Then('Update {string} to the {string} with type of {string}', async function (value, attribute, type) {
-    let startTime = new Date() / 1000
-    await this.switchMode("view")
-    await this.fill(`#field-${attribute} input[type="${type}"]`, value)
-    await this.click(`#field-${attribute} #send-btn span`)
-    this.logTime(startTime)
-})
-
-Then('Update location of {int} and {int}', { timeout: 30000 }, async function (location_x, location_y) {
-    let startTime = new Date() / 1000
-    const { page } = this;
-    await this.switchMode("modify")
-    await this.click('text=location GEO JSON point >> button span')
-    await this.wait(2000)
-    // location_x and location_y are given by the example data
-    // currently it's not implmented as dragging the map and clicking on a random place (could be possible in the future)
-    await page.mouse.click(location_x, location_y, { delay: 1000 })
-    await this.click('button:has-text("OK")')
-    this.logTime(startTime)
-})
-
-/**
- * read only
- */
-Then('Uncheck on readonly of {string}', async function (attribute) {
-    let startTime = new Date() / 1000
-    await this.click(`td:has-text("${attribute}") >> nth=0`)
-
-    // bad solution 
-    // nth number is decided by the default state
-    // if default stete changes, please change the nth number
-    if (attribute == "energyLevel")
-        await this.click('text=Read only >> nth=2')
-    else
-        await this.click('text=Read only >> nth=1')
-
-    this.logTime(startTime)
-})
-
-Then('Check on readonly of {string}', async function (attribute) {
-    let startTime = new Date() / 1000
-    await this.click(`td:has-text("${attribute}")`)
-
-    // bad solution
-    // in this case, i assume that the config items are as the beginning state, namely default state
-    // if the default state changes, the following nth-chlid should change as well
-    if (attribute == "efficiencyExport")
-        await this.click('.item-add or-mwc-input #component >> nth=0')
-    else
-        await this.click('tr:nth-child(14) td .meta-item-container div .item-add or-mwc-input #component')
-    await this.click('li[role="checkbox"]:has-text("Read only")')
-    await this.click('div[role="alertdialog"] button:has-text("Add")')
-    this.logTime(startTime)
-})
-
-When('Go to panel page', async function () {
-    let startTime = new Date() / 1000
-    await this.click('button:has-text("View")')
-    await this.wait(1500)
-    this.logTime(startTime)
-})
-
-Then('We should see a button on the right of {string}', async function (attribute) {
-    let startTime = new Date() / 1000
-    const { page } = this;
-
-    await expect(await page.waitForSelector(`#field-${attribute} button`)).not.toBeNull()
-    this.logTime(startTime)
-})
-
-Then('No button on the right of {string}', async function (attribute) {
-    let startTime = new Date() / 1000
-    const count = await this.count(`#field-${attribute} button`)
-    expect(count).toBe(0)
-    this.logTime(startTime)
-})
-
-/**
- * set configure item
- */
-Then('Select {string} and {string} on {string}', async function (item1, item2, attribute) {
-    let startTime = new Date() / 1000
-    await this.configItem(item1, item2, attribute)
-    this.logTime(startTime)
-})
+assets.forEach(
+  ({
+    name,
+    asset,
+    attr_1,
+    attr_2,
+    attr_3,
+    a1_type,
+    a2_type,
+    a3_type,
+    v1,
+    v2,
+    v3,
+    config_item_1,
+    config_item_2,
+    location_x,
+    location_y,
+  }) => {
+    test(`Add new asset: ${name}`, async ({ page, navigateToTab, switchMode, unselect, save }) => {
+      // Then Navigate to "asset" tab
+      await navigateToTab("asset");
+      // Then Create a "<asset>" with name of "<name>"
+      // select conosle first to get into the modify mode
+      // await page.click(`#list-container >> text="Consoles"`);
+      // await switchMode("modify");
+      // await unselect();
+      // start adding assets
+      await page.click(".mdi-plus");
+      await page.click(`text=${asset}`);
+      await page.fill('#name-input input[type="text"]', name);
+      await page.click("#add-btn");
+      await page.waitForTimeout(400);
+      // check if at modify mode
+      // if yes we should see the save button then save
+      const isSaveBtnVisible = await page.isVisible('button:has-text("Save")');
+      console.log("save btn is " + isSaveBtnVisible);
+      if (isSaveBtnVisible) {
+        console.log("ready to save");
+        await page.click('button:has-text("Save")');
+      }
+      await unselect();
+      // When Go to asset "<name>" info page
+      await page.click(`#list-container >> text=${name}`);
+      // Then Go to modify mode
+      await page.waitForTimeout(1000);
+      await switchMode("modify");
+      // Then Give "<value_1>" to the "<attribute_1>" with type of "<A1_type>"
+      await page.fill(`text=${attr_1} ${a1_type} >> input[type="number"]`, v1);
+      // Then Give "<value_2>" to the "<attribute_2>" with type of "<A2_type>"
+      await page.fill(`text=${attr_2} ${a2_type} >> input[type="number"]`, v2);
+      // Then Save
+      await save();
+      // When Unselect
+      // Then We see the asset with name of "<name>"
+      await page.waitForTimeout(500);
+      const count = await page.locator(`text=${name}`).count();
+      // reason why it's 1 is because that this scnario runs in a outline
+      // each time only one set of data will be used in one run of outlines
+      // thus, only one asset will be added and removed in one run and next time will start with the empty envrioment
+      await expect(count).toBe(1);
+    });
+    test(`Search and select asset: ${name}`, async ({ page, navigateToTab }) => {
+      // Given Setup "lv3"
+      // When Login to OpenRemote "smartcity" realm as "smartcity"
+      // Then Navigate to "asset" tab
+      await navigateToTab("asset");
+      // When Search for the "<name>"
+      await page.fill('#filterInput input[type="text"]', name);
+      // When Select the "<name>"
+      await page.click(`text=${name}`);
+      // Then We see the "<name>" page
+      await expect(await page.waitForSelector(`#asset-header >> text=${name}`)).not.toBeNull();
+    });
+    test(`Update asset: ${name}`, async ({ page, switchMode, navigateToTab }) => {
+      // Given Setup "lv3"
+      // When Login to OpenRemote "smartcity" realm as "smartcity"
+      // Then Navigate to "asset" tab
+      await navigateToTab("asset");
+      // When Select the "<name>"
+      await page.click(`text=${name}`);
+      // Then Update "<value>" to the "<attribute>" with type of "<type>"
+      const item = page.locator(`#field-${attr_3} input[type="${a3_type}"]`);
+      if (await item.isEditable()) {
+        await item.fill(v3);
+        await page.click(`#field-${attr_3} #send-btn span`);
+      }
+      // When Go to modify mode
+      await switchMode("modify");
+      // Then Update location of <location_x> and <location_y>
+      await page.click("text=location GEO JSON point >> button span");
+      await page.waitForTimeout(2000);
+      await page.mouse.click(location_x, location_y, { delay: 1000 });
+      await page.click('button:has-text("OK")');
+      // Then Save
+      const isSaveBtnVisible = await page.isVisible('button:has-text("Save")');
+      if (isSaveBtnVisible) {
+        await page.click('button:has-text("Save")');
+      }
+    });
+    test(`Set and cancel read-only for asset: ${name}`, async ({ page, navigateToTab, switchMode }) => {
+      // Given Setup "lv3"
+      // When Login to OpenRemote "smartcity" realm as "smartcity"
+      // Then Navigate to "asset" tab
+      await navigateToTab("asset");
+      // When Go to asset "<name>" info page
+      await page.click(`text=${name}`);
+      // Then Go to modify mode
+      await switchMode("modify");
+      // Then Uncheck on readonly of "<attribute_1>"
+      await page.click(`td:has-text("${attr_1}") >> nth=0`);
+      // bad solution
+      // nth number is decided by the default state
+      // if default stete changes, please change the nth number
+      if (attr_1 == "energyLevel") await page.click("text=Read only >> nth=2");
+      else await page.click("text=Read only >> nth=1");
+      // Then Check on readonly of "<attribute_2>"
+      await page.click(`td:has-text("${attr_2}")`);
+      // bad solution
+      // in this case, i assume that the config items are as the beginning state, namely default state
+      // if the default state changes, the following nth-chlid should change as well
+      if (attr_2 == "efficiencyExport") await page.click(".item-add or-mwc-input #component >> nth=0");
+      else await page.click("tr:nth-child(14) td .meta-item-container div .item-add or-mwc-input #component");
+      await page.click('li[role="checkbox"]:has-text("Read only")');
+      await page.click('div[role="alertdialog"] button:has-text("Add")');
+      // Then Save
+      // When Go to panel page
+      await page.click('button:has-text("View")');
+      await page.waitForTimeout(1500);
+      // Then We should see a button on the right of "<attribute_1>"
+      await expect(await page.waitForSelector(`#field-${attr_1} button`)).not.toBeNull();
+      // And No button on the right of "<attribute_2>"
+      expect(page.locator(`#field-${attr_2} button`)).toHaveCount(0);
+    });
+    test(`Set assets' configuration item for Insights and Rules: ${name}`, async ({
+      page,
+      configItem,
+      navigateToTab,
+      switchMode,
+    }) => {
+      // Given Setup "lv3"
+      // When Login to OpenRemote "smartcity" realm as "smartcity"
+      // Then Navigate to "asset" tab
+      await navigateToTab("asset");
+      // When Go to asset "<name>" info page
+      await page.click(`text=${name}`);
+      // Then Go to modify mode
+      await switchMode("modify");
+      // Then Select "<item_1>" and "<item_2>" on "<attribute_1>"
+      await configItem(config_item_1, config_item_2, attr_1);
+      // Then Select "<item_1>" and "<item_2>" on "<attribute_2>"
+      await configItem(config_item_1, config_item_2, attr_2);
+      // Then Save
+      const isSaveBtnVisible = await page.isVisible('button:has-text("Save")');
+      if (isSaveBtnVisible) {
+        await page.click('button:has-text("Save")');
+      }
+    });
+  }
+);

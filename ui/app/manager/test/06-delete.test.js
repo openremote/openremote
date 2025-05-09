@@ -1,107 +1,69 @@
-const { Then } = require("@cucumber/cucumber");
-const { expect } = require("@playwright/test");
+import { expect } from "@playwright/test";
+import { test } from "./fixtures/test.js";
 
-/**
- * delete realm
- */
+test.beforeEach(async ({ setup, login, goToRealmStartPage }) => {
+  await goToRealmStartPage("master");
+  // When Login to OpenRemote "master" realm as "admin"
+  await login("admin");
+});
 
-Then('Delete realm', { timeout: 60000 }, async function () {
-  let startTime = new Date() / 1000
-  await this.switchToRealmByRealmPicker("master")
-  await this.deleteRealm("smartcity")
-  this.logTime(startTime)
-})
-
-Then('We should not see the Realm picker', async function () {
-  let startTime = new Date() / 1000
-
-  await this.goToRealmStartPage("master")
-
-  // must wait for the realm picker to be rendered
-  await this.wait(500)
-  const isVisible = await this.isVisible('#realm-picker')
-  await expect(isVisible).toBeFalsy()
-  this.logTime(startTime)
-})
-
-/**
- * delete role
- */
-Then('Delete role', { timeout: 30000 }, async function () {
-
-  let startTime = new Date() / 1000
-
-  // reproduce the preparation steps to start from the beginning
-  // navigation is not needed anymore, it was for the previous implementation
-  // await this.navigateToMenuItem("Data export")
-  // await this.navigateToMenuItem("Roles")
-
-  // delete roles
-  await this.click('text=Custom')
-  await this.wait(100)
-  await this.click('tr[class="attribute-meta-row expanded"] >> button:has-text("delete")')
-  await this.click('div[role="alertdialog"] button:has-text("Delete")')
-  await this.wait(100)
-  this.logTime(startTime)
-})
-
-Then('We should not see the Custom role', async function () {
-  let startTime = new Date() / 1000
-  const count = await this.count('text=Custom')
-  await expect(count).toEqual(0)
-  this.logTime(startTime)
-})
-
-
-/**
- * delete user
- * only admin user has the rights to delete user
- */
-Then('Delete user', async function () {
-  let startTime = new Date() / 1000
-
-  await this.click('td:has-text("smartcity")')
-  await this.click('button:has-text("delete")')
-  await this.click('div[role="alertdialog"] button:has-text("Delete")')
-
-  await this.wait(500)
-  this.logTime(startTime)
-})
-
-Then('We should not see the {string} user', async function (user) {
-  let startTime = new Date() / 1000
-  const count = await this.count(`td:has-text("${user}")`)
-  await expect(count).toEqual(0)
-  this.logTime(startTime)
-})
-
-/**
- * delete assets
- */
-Then('Delete assets', { timeout: 50000 }, async function () {
-  let startTime = new Date() / 1000
-  await this.deleteSelectedAsset("Battery")
-  await this.wait(500)
-  await this.deleteSelectedAsset("Solar Panel")
+test("Delete assets", async ({ page, deleteSelectedAsset }) => {
+  // Given Setup "lv3"
+  // When Login to OpenRemote "smartcity" realm as "smartcity"
+  // When Delete assets
+  await deleteSelectedAsset("Battery");
+  await page.waitForTimeout(500);
+  await deleteSelectedAsset("Solar Panel");
 
   // must wait to confirm that assets have been deleted
-  await this.wait(500)
-  this.logTime(startTime)
-})
+  await page.waitForTimeout(500);
+  // Then We should see an empty asset column
+  await expect(page.locator("text=Console")).toHaveCount(1);
+  await expect(page.locator("text=Solar Panel")).toHaveCount(0);
+  await expect(page.locator("text=Battery")).toHaveCount(0);
+});
 
-Then('We should see an empty asset column', async function () {
+test("Delete user", async ({ page, switchToRealmByRealmPicker, navigateToMenuItem }) => {
+  // Given Setup "lv2"
+  // When Login to OpenRemote "master" realm as "admin"
+  // Then Switch to "smartcity" realm
+  await switchToRealmByRealmPicker("smartcity")
+  // When Navigate to "Users" page
+  await navigateToMenuItem("Users");
+  // Then Delete user
+  await page.click('td:has-text("smartcity")');
+  await page.click('button:has-text("delete")');
+  await page.click('div[role="alertdialog"] button:has-text("Delete")');
 
-  let startTime = new Date() / 1000
+  await page.waitForTimeout(500);
+  // Then We should not see the "smartcity" user
+  await expect(page.locator(`td:has-text("smartcity")`)).toHaveCount(0);
+});
 
-  const count_console = await this.count('text=Console')
-  const count_solar = await this.count('text=Solar Panel')
-  const count_battery = await this.count('text=Battery')
+test("Delete role", async ({ page, switchToRealmByRealmPicker, navigateToMenuItem }) => {
+  // Then Switch to "smartcity" realm
+  await switchToRealmByRealmPicker("smartcity")
+  // Then Navigate to "Roles" page
+  await navigateToMenuItem("Roles");
+  // Then Create a new role
+  // Then Delete role
+  await page.click("text=Custom");
+  await page.waitForTimeout(100);
+  await page.click('tr[class="attribute-meta-row expanded"] >> button:has-text("delete")');
+  await page.click('div[role="alertdialog"] button:has-text("Delete")');
+  await page.waitForTimeout(100);
+  // Then We should not see the Custom role
+  await expect(page.locator("text=Custom")).toHaveCount(0);
+});
 
-  await expect(count_console).toEqual(1)
-  await expect(count_solar).toEqual(0)
-  await expect(count_battery).toEqual(0)
-
-  this.logTime(startTime)
-})
-
-
+test("Delete realm", async ({ page, deleteRealm, goToRealmStartPage, navigateToMenuItem }) => {
+  // When Navigate to "Realms" page
+  await navigateToMenuItem("Realms");
+  // Then Delete realm
+  await deleteRealm("smartcity");
+  // Then We should not see the Realm picker
+  await goToRealmStartPage("master");
+  // must wait for the realm picker to be rendered
+  await page.waitForTimeout(500);
+  await expect(page.locator("#desktop-right #realm-picker")).not.toBeVisible();
+});
