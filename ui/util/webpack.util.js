@@ -267,7 +267,7 @@ function generateExternals(bundle) {
     return externals;
 }
 
-function generateExports(dirname, customElement) {
+function generateExports(dirname, isCustomElement) {
 
     let libName = getLibName(dirname.split(path.sep).pop());
 
@@ -289,14 +289,8 @@ function generateExports(dirname, customElement) {
                 fallback: { "vm": false }
             },
             module: {...getStandardModuleRules()},
-            externals: generateExternals(bundle),
+            externals: generateExternals(bundle)
         };
-
-        // TODO: Remove this after integrated in Gradle scripts
-        /*if(customElement) {
-            if(!config.plugins) config.plugins = [];
-            config.plugins.push(new OrCustomElementsManifestPlugin());
-        }*/
 
         return config;
     });
