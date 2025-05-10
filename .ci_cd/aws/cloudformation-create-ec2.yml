@@ -889,6 +889,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${Host}-data
+        - Key: Type
+          Value: !Sub ${Host}-or-data-not-in-use
     DeletionPolicy: Snapshot
 
   # DLM Policy for automatic snapshot creation
@@ -898,14 +900,14 @@ Resources:
     DependsOn: EBSDataVolume
     Properties:
       ExecutionRoleArn: !Ref DLMExecutionRoleArn
-      Description: 'OpenRemote-Data'
+      Description: 'or-data'
       State: ENABLED
       PolicyDetails:
         PolicyLanguage: STANDARD
         PolicyType: EBS_SNAPSHOT_MANAGEMENT
         TargetTags:
-          - Key: Name
-            Value: !Sub ${Host}-data
+          - Key: Type
+            Value: !Sub ${Host}-or-data-in-use
         ResourceTypes: 
           - VOLUME
         Schedules:

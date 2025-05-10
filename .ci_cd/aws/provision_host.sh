@@ -300,19 +300,19 @@ VOLUME_ID=$(aws ec2 describe-volumes --filters "Name=tag:Name,Values='$HOST-data
 
 PARAMS="InstanceId=$INSTANCE_ID,VolumeId=$VOLUME_ID,DeviceName=$EBS_DEVICE_NAME"
 
-COMMAND_ID=$(aws ssm send-command --document-name attach_volume --instance-ids $INSTANCE_ID --parameters $PARAMS --query "Command.CommandId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+COMMAND_ID=$(aws ssm start-automation-execution --document-name attach_volume --parameters $PARAMS --output text $ACCOUNT_PROFILE)
 
 if [ $? -ne 0 ]; then
   echo "Volume attaching/mounting failed"
   exit 1
 fi
 
-STATUS=$(aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id $INSTANCE_ID --query "StatusDetails" --output text $ACCOUNT_PROFILE 2>/dev/null)
+STATUS=$(aws ssm get-automation-execution --automation-execution-id $COMMAND_ID --query "AutomationExecution.AutomationExecutionStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
 while [[ "$STATUS" == 'InProgress' ]]; do
     echo "Volume attaching/mounting is still in progress .. Sleeping 30 seconds"
     sleep 30
-    STATUS=$(aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id $INSTANCE_ID --query "StatusDetails" --output text $ACCOUNT_PROFILE 2>/dev/null)
+    STATUS=$(aws ssm get-automation-execution --automation-execution-id $COMMAND_ID --query "AutomationExecution.AutomationExecutionStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
 done
 
 if [ "$STATUS" != 'Success' ]; then

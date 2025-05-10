@@ -1,11 +1,11 @@
 # ---------------------------------------------------------------------------------------------------------------------
 #
-# CloudFormation Template for creating SSM Documents for attaching/detaching the EBS data volume.
+# CloudFormation Template for creating SSM Documents for attaching, detaching and replacing an EBS data volume
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'SSM documents for attaching/detaching the EBS data volume'
+Description: 'SSM documents for attaching, detaching and replacing an EBS data volume'
 Resources:
   SSMUmountVolumeDocument:
     Type: AWS::SSM::Document
@@ -16,18 +16,20 @@ Resources:
       Name: umount_volume
       Content:
         schemaVersion: '2.2'
-        description: 'Script for umounting the EBS data volume'
+        description: 'Script for umounting an EBS data volume'
         parameters:
           DeviceName:
             type: String
-            description: '(Required) Device name where this volume is mounted on'
-            default: ''
+            description: '(Required) Specify the Device name where the volume is mounted on'
+            allowedPattern: '^/dev/sd[b-z]$'
         mainSteps:
+          # Stop the Docker service and socket
           - name: StopDocker
             action: aws:runShellScript
             inputs:
               runCommand:
                 - systemctl stop docker.socket docker.service
+          # Remove the specified EBS data volume from the file systems table
           - name: RemoveFileSystemEntry
             action: aws:runShellScript
             inputs:
@@ -38,9 +40,10 @@ Resources:
                     cp /etc/fstab /etc/fstab.orig
                     sed -i '/UUID='$UUID'/d' /etc/fstab
                   else
-                    echo "Failed to remove /etc/fstab entry. UUID is not found"
+                    echo "Failed to remove /etc/fstab entry .. UUID is not found"
                     exit 1
                   fi
+          # Umount the specified EBS data volume
           - name: UmountVolume
             action: aws:runShellScript
             inputs:
@@ -50,7 +53,7 @@ Resources:
                   if [ -n "$MOUNT" ]; then
                     umount {{ DeviceName }}
                   else
-                    echo "Device not mounted. Skipping step."
+                    echo "Device not mounted .. Skipping step"
                   fi
 
   SSMDetachVolumeDocument:
@@ -62,16 +65,17 @@ Resources:
       Name: detach_volume
       Content:
         schemaVersion: '0.3'
-        description: 'Script for detaching the EBS data volume'
+        description: 'Script for detaching an EBS data volume'
         parameters:
           VolumeId:
             type: String
-            description: '(Required) VolumeId that needs to be detached'
-            default: ''
+            description: '(Required) Specify the VolumeId of the volume that should be detached'
+            allowedPattern: '^vol-[a-z0-9]{8,17}$'
         mainSteps:
+          # Retrieve EBS data volume details to get the InstanceId and Devicename
           - name: GetVolumeDetails
             action: aws:executeAwsApi
-            timeoutSeconds: 60
+            timeoutSeconds: 120
             onFailure: Abort
             inputs:
               Service: ec2
@@ -85,28 +89,39 @@ Resources:
               - Name: DeviceName
                 Selector: '$.Volumes[0].Attachments[0].Device'
                 Type: String
-            nextStep: UmountVolume
-          - name: UmountVolume
+            nextStep: GetInstanceDetails
+          # Retrieve instance details to get the Hostname
+          - name: GetInstanceDetails
             action: aws:executeAwsApi
-            timeoutSeconds: 60
+            timeoutSeconds: 120
             onFailure: Abort
             inputs:
-              Service: ssm
-              Api: SendCommand
+              Service: ec2
+              Api: DescribeInstances
+              InstanceIds:
+                - '{{ GetVolumeDetails.InstanceId }}'
+            outputs:
+              - Name: Host
+                Selector: $.Reservations[0].Instances[0].Tags[?(@.Key == 'Name')].Value
+                Type: String
+            nextStep: UmountVolume
+          # Execute the SSM command that umounts the specified EBS data volume
+          - name: UmountVolume
+            action: aws:runCommand
+            timeoutSeconds: 120
+            onFailure: Abort
+            inputs:
               DocumentName: umount_volume
               Parameters: 
                 DeviceName: 
                   - '{{ GetVolumeDetails.DeviceName }}'
               InstanceIds:
                 - '{{ GetVolumeDetails.InstanceId }}'
-            outputs:
-              - Name: CommandId
-                Selector: '$.Command.CommandId'
-                Type: String
             nextStep: WaitForUmount
+          # Wait until the SSM document for umounting the EBS data volume is successfully executed
           - name: WaitForUmount
             action: aws:waitForAwsResourceProperty
-            timeoutSeconds: 60
+            timeoutSeconds: 120
             onFailure: Abort
             inputs:
               Service: ssm
@@ -117,18 +132,21 @@ Resources:
               DesiredValues:
                 - Success
             nextStep: DetachVolume
+          # Detach the EBS data volume
           - name: DetachVolume
             action: aws:executeAwsApi
-            timeoutSeconds: 60
+            timeoutSeconds: 120
             onFailure: Abort
+            isCritical: true
             inputs:
               Service: ec2
               Api: DetachVolume
               VolumeId: '{{ VolumeId }}'
             nextStep: WaitForVolumeDetachment
+          # Wait until the EBS data volume is succesfully detached
           - name: WaitForVolumeDetachment
             action: aws:waitForAwsResourceProperty
-            timeoutSeconds: 60
+            timeoutSeconds: 120
             onFailure: Abort
             inputs:
               Service: ec2
@@ -138,6 +156,19 @@ Resources:
               PropertySelector: '$.Volumes[0].State'
               DesiredValues:
                 - available
+            nextStep: UpdateTag
+          # Change tag to ensure the volume is no longer targeted by the DLM policy
+          - name: UpdateTag
+            action: aws:createTags
+            timeoutSeconds: 120
+            onFailure: Abort
+            inputs:
+              ResourceType: EC2
+              ResourceIds: 
+                - '{{ VolumeId }}'
+              Tags:
+                - Key: Type
+                  Value: '{{ GetInstanceDetails.Host }}-or-data-not-in-use'
   
   SSMMountVolumeDocument:
     Type: AWS::SSM::Document
@@ -148,13 +179,14 @@ Resources:
       Name: mount_volume
       Content:
         schemaVersion: '2.2'
-        description: 'Script for mounting the EBS data volume'
+        description: 'Script for mounting an EBS data volume'
         parameters:
           DeviceName:
             type: String
-            description: '(Required) EBS Device name where this volume needs to be mounted'
-            default: ''
+            description: '(Required) Specify the Device name where the volume should be mounted on'
+            allowedPattern: '^/dev/sd[b-z]$'
         mainSteps:
+          # Mount the specified EBS data volume to the instance
           - name: MountVolume
             action: aws:runShellScript
             inputs:
@@ -167,6 +199,7 @@ Resources:
                   else
                     mount {{ DeviceName }} /var/lib/docker/volumes
                   fi
+          # Add the specified EBS data volume to the file system table
           - name: AddFileSystemEntry
             action: aws:runShellScript
             inputs:
@@ -177,9 +210,10 @@ Resources:
                     cp /etc/fstab /etc/fstab.orig
                     echo "UUID=$UUID /var/lib/docker/volumes xfs defaults,nofail 0 2" >> /etc/fstab
                   else
-                    echo "Failed to add /etc/fstab entry. UUID is not found"
+                    echo "Failed to add /etc/fstab entry .. UUID is not found"
                     exit 1
                   fi
+          # Start the Docker service and socket
           - name: StartDocker
             action: aws:runShellScript
             inputs:
@@ -195,25 +229,42 @@ Resources:
       Name: attach_volume
       Content:
         schemaVersion: '0.3'
-        description: 'Script for attaching the EBS data volume'
+        description: 'Script for attaching an EBS data volume'
         parameters:
           VolumeId:
             type: String
-            description: '(Required) VolumeId that needs to be attached'
-            default: ''
+            description: '(Required) Specify the VolumeId of the volume that should be attached'
+            allowedPattern: '^vol-[a-z0-9]{8,17}$'
           InstanceId:
             type: String
-            description: '(Required) InstanceId where the volume needs to be attached'
-            default: ''
+            description: '(Required) Specify the InstanceId of the instance where the volume should be attached'
+            allowedPattern: '^i-[a-z0-9]{8,17}$'
           DeviceName:
             type: String
-            description: '(Required) Device name where this volume needs to be mounted on'
-            default: ''
+            description: '(Required) Specify the Device name where the volume should be mounted on'
+            allowedPattern: '^/dev/sd[b-z]$'
         mainSteps:
+          # Retrieve instance details to get the Host name.
+          - name: GetInstanceDetails
+            action: aws:executeAwsApi
+            timeoutSeconds: 120
+            onFailure: Abort
+            inputs:
+              Service: ec2
+              Api: DescribeInstances
+              InstanceIds:
+                - '{{ InstanceId }}'
+            outputs:
+              - Name: Host
+                Selector: $.Reservations[0].Instances[0].Tags[?(@.Key == 'Name')].Value
+                Type: String
+            nextStep: AttachVolume
+          # Attach EBS data volume to specified instance
           - name: AttachVolume
             action: aws:executeAwsApi
-            timeoutSeconds: 60
+            timeoutSeconds: 120
             onFailure: Abort
+            isCritical: true
             inputs:
               Service: ec2
               Api: AttachVolume
@@ -221,9 +272,10 @@ Resources:
               InstanceId: '{{ InstanceId }}'
               Device: '{{ DeviceName }}'
             nextStep: WaitForVolumeAttachment
+          # Wait until the EBS data volume is successfully attached
           - name: WaitForVolumeAttachment
             action: aws:waitForAwsResourceProperty
-            timeoutSeconds: 60
+            timeoutSeconds: 120
             onFailure: Abort
             inputs:
               Service: ec2
@@ -234,27 +286,24 @@ Resources:
               DesiredValues:
                 - attached
             nextStep: MountVolume
+          # Mount EBS data volume to specified instance
           - name: MountVolume
-            action: aws:executeAwsApi
-            timeoutSeconds: 60
+            action: aws:runCommand
+            timeoutSeconds: 120
             onFailure: Abort
+            isCritical: true
             inputs:
-              Service: ssm
-              Api: SendCommand
               DocumentName: mount_volume
               Parameters:
                 DeviceName:
                   - '{{ DeviceName }}'
               InstanceIds:
                 - '{{ InstanceId }}'
-            outputs:
-              - Name: CommandId
-                Selector: '$.Command.CommandId'
-                Type: String
             nextStep: WaitForVolumeMounting
+          # Wait until the EBS data volume is successfully mounted
           - name: WaitForVolumeMounting
             action: aws:waitForAwsResourceProperty
-            timeoutSeconds: 60
+            timeoutSeconds: 120
             onFailure: Abort
             inputs:
               Service: ssm
@@ -264,6 +313,19 @@ Resources:
               PropertySelector: '$.StatusDetails'
               DesiredValues:
                 - Success
+            nextStep: UpdateTag
+          # Change tag to ensure the EBS data volume is targeted by the DLM policy
+          - name: UpdateTag
+            action: aws:createTags
+            timeoutSeconds: 120
+            onFailure: Abort
+            inputs:
+              ResourceType: EC2
+              ResourceIds: 
+                - '{{ VolumeId }}'
+              Tags:
+                - Key: Type
+                  Value: '{{ GetInstanceDetails.Host }}-or-data-in-use'
 
   SSMReplaceSnapshotDocument:
     Type: AWS::SSM::Document
@@ -274,20 +336,25 @@ Resources:
       Name: replace_snapshot
       Content:
         schemaVersion: '0.3'
-        description: 'Script for replacing EBS data volume with a new snapshot'
+        description: 'Script for replacing an EBS data volume with a specified snapshot'
         parameters:
           VolumeId:
             type: String
-            description: '(Required) VolumeId that needs to be replaced'
-            default: ''
+            description: '(Required) Specify the VolumeId of the volume that needs to be replaced'
+            allowedPattern: '^vol-[a-z0-9]{8,17}$'
           SnapshotId:
             type: String
-            description: '(Required) SnapshotId to specify the snapshot for the new volume'
-            default: ''
+            description: '(Required) Specify the SnapshotId of the snapshot to be used for the new volume'
+            allowedPattern: '^snap-[a-z0-9]{8,17}$'
+          DeleteVolume:
+            type: Boolean
+            description: '(Optional) Choose whether you want to delete the current volume'
+            default: false
         mainSteps:
+          # Retrieve EBS data volume details to get the DeviceName and InstanceId
           - name: GetVolumeDetails
             action: aws:executeAwsApi
-            timeoutSeconds: 60
+            timeoutSeconds: 120
             onFailure: Abort
             inputs:
               Service: ec2
@@ -300,9 +367,10 @@ Resources:
               - Name: InstanceId
                 Selector: '$.Volumes[0].Attachments[0].InstanceId'
             nextStep: GetInstanceDetails
+          # Retrieve instance details to get the AvailabilityZone and Hostname
           - name: GetInstanceDetails
             action: aws:executeAwsApi
-            timeoutSeconds: 60
+            timeoutSeconds: 120
             onFailure: Abort
             inputs:
               Service: ec2
@@ -314,29 +382,36 @@ Resources:
                 Selector: '$.Reservations[0].Instances[0].Placement.AvailabilityZone'
                 Type: String
               - Name: Host
-                Selector: '$.Reservations[0].Instances[0].Tags[1].Value'
+                Selector: $.Reservations[0].Instances[0].Tags[?(@.Key == 'Name')].Value
+                Type: String
             nextStep: CreateVolume
+          # Create new EBS data volume using the retrieved details and specified snapshot
           - name: CreateVolume
             action: aws:executeAwsApi
+            timeoutSeconds: 120
             onFailure: Abort
             inputs:
               Service: ec2
               Api: CreateVolume
               AvailabilityZone: '{{ GetInstanceDetails.AvailabilityZone }}'
               SnapshotId: '{{ SnapshotId }}'
+              VolumeType: gp3
               TagSpecifications:
                 - ResourceType: volume
                   Tags:
                     - Key: Name
                       Value: '{{ GetInstanceDetails.Host }}-data'
+                    - Key: Type
+                      Value: '{{ GetInstanceDetails.Host }}-or-data-not-in-use'
             outputs:
               - Name: VolumeId
                 Selector: '$.VolumeId'
                 Type: String
             nextStep: WaitForVolumeCreation
+          # Wait until the EBS data volume is succesfully created
           - name: WaitForVolumeCreation
             action: aws:waitForAwsResourceProperty
-            timeoutSeconds: 60
+            timeoutSeconds: 120
             onFailure: Abort
             inputs:
               Service: ec2
@@ -347,62 +422,75 @@ Resources:
               DesiredValues:
                 - available
             nextStep: DetachVolume
+          # Detach the current EBS data volume
           - name: DetachVolume
-            action: aws:executeAwsApi
-            timeoutSeconds: 60
+            action: aws:executeAutomation
+            timeoutSeconds: 120
             onFailure: Abort
+            isCritical: true
             inputs:
-              Service: ssm
-              Api: StartAutomationExecution
               DocumentName: detach_volume
-              Parameters:
+              RuntimeParameters:
                 VolumeId: 
                   - '{{ VolumeId }}'
-            outputs:
-              - Name: AutomationId
-                Selector: "$.AutomationExecutionId"
-                Type: String
             nextStep: WaitForVolumeDetachment
+          # Wait until the current EBS data volume is succesfully detached
           - name: WaitForVolumeDetachment
             action: aws:waitForAwsResourceProperty
-            timeoutSeconds: 60
+            timeoutSeconds: 120
             onFailure: Abort
             inputs:
               Service: ssm
               Api: GetAutomationExecution
-              AutomationExecutionId: '{{ DetachVolume.AutomationId }}'
+              AutomationExecutionId: '{{ DetachVolume.ExecutionId }}'
               PropertySelector: '$.AutomationExecution.AutomationExecutionStatus'
               DesiredValues:
                 - Success
             nextStep: AttachVolume
+          # Attach the newly created EBS data volume
           - name: AttachVolume
-            action: aws:executeAwsApi
-            timeoutSeconds: 60
+            action: aws:executeAutomation
+            timeoutSeconds: 120
             onFailure: Abort
+            isCritical: true
             inputs:
-              Service: ssm
-              Api: StartAutomationExecution
               DocumentName: attach_volume
-              Parameters:
+              RuntimeParameters:
                 DeviceName:
                   - '{{ GetVolumeDetails.DeviceName }}'
                 VolumeId: 
                   - '{{ CreateVolume.VolumeId }}'
                 InstanceId: 
                   - '{{ GetVolumeDetails.InstanceId }}'
-            outputs:
-              - Name: AutomationId
-                Selector: '$.AutomationExecutionId'
-                Type: String
             nextStep: WaitForVolumeAttachment
+          # Wait until the newly created EBS data volume is succesfully attached
           - name: WaitForVolumeAttachment
             action: aws:waitForAwsResourceProperty
-            timeoutSeconds: 60
+            timeoutSeconds: 120
             onFailure: Abort
             inputs:
               Service: ssm
               Api: GetAutomationExecution
-              AutomationExecutionId: '{{ AttachVolume.AutomationId }}'
+              AutomationExecutionId: '{{ AttachVolume.ExecutionId }}'
               PropertySelector: '$.AutomationExecution.AutomationExecutionStatus'
               DesiredValues:
                 - Success
+            nextStep: ChooseVolumeDeletion
+          # Checks whether the old EBS data volume should be kept
+          - name: ChooseVolumeDeletion
+            action: aws:branch
+            inputs:
+              Choices:
+                - NextStep: DeleteVolume
+                  Variable: '{{ DeleteVolume }}'
+                  BooleanEquals: true
+            isEnd: true
+          # Delete old EBS data volume if DeleteVolume variable is equal to true
+          - name: DeleteVolume
+            action: aws:executeAwsApi
+            timeoutSeconds: 120
+            onFailure: Abort
+            inputs:
+              Service: ec2
+              Api: DeleteVolume
+              VolumeId: '{{ VolumeId }}'
