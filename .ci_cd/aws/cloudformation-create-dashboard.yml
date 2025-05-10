@@ -239,7 +239,8 @@ Resources:
               "properties": {
                 "metrics": [
                   [ "CWAgent", "mem_used_percent", "InstanceId", "a", { "label": "Memory Usage %" } ],
-                  [ "CWAgent", "disk_used_percent", ".", ".", "path", "/", "fstype", "xfs", { "label": "Disk Usage %" } ]
+                  [ "CWAgent", "disk_used_percent", ".", ".", "path", "/", "fstype", "xfs", { "label": "Root Disk Usage %" } ],
+                  [ "CWAgent", "disk_used_percent", ".", ".", "path", "/var/lib/docker/volumes", "fstype", "xfs", { "label": "Data Disk Usage %" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
