@@ -260,6 +260,7 @@ EOF
     ROLE_ARN=$(aws iam get-role --role-name AWSDataLifecycleManagerDefaultRole --query "Role.Arn" --output text $ACCOUNT_PROFILE 2>/dev/null)
   fi
 
+  echo "DLM IAM Role found"
   PARAMS="$PARAMS ParameterKey=DLMExecutionRoleArn,ParameterValue=$ROLE_ARN"
 
   # Create standard stack resources in specified account
@@ -300,19 +301,19 @@ VOLUME_ID=$(aws ec2 describe-volumes --filters "Name=tag:Name,Values='$HOST-data
 
 PARAMS="InstanceId=$INSTANCE_ID,VolumeId=$VOLUME_ID,DeviceName=$EBS_DEVICE_NAME"
 
-COMMAND_ID=$(aws ssm start-automation-execution --document-name attach_volume --parameters $PARAMS --output text $ACCOUNT_PROFILE)
+EXECUTION_ID=$(aws ssm start-automation-execution --document-name attach_volume --parameters $PARAMS --output text $ACCOUNT_PROFILE)
 
 if [ $? -ne 0 ]; then
   echo "EBS data volume attaching/mounting failed"
   exit 1
 fi
 
-STATUS=$(aws ssm get-automation-execution --automation-execution-id $COMMAND_ID --query "AutomationExecution.AutomationExecutionStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+STATUS=$(aws ssm get-automation-execution --automation-execution-id $EXECUTION_ID --query "AutomationExecution.AutomationExecutionStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
 while [[ "$STATUS" == 'InProgress' ]]; do
     echo "EBS data volume attaching/mounting is still in progress .. Sleeping 30 seconds"
     sleep 30
-    STATUS=$(aws ssm get-automation-execution --automation-execution-id $COMMAND_ID --query "AutomationExecution.AutomationExecutionStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+    STATUS=$(aws ssm get-automation-execution --automation-execution-id $EXECUTION_ID --query "AutomationExecution.AutomationExecutionStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
 done
 
 if [ "$STATUS" != 'Success' ]; then
