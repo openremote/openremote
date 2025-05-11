@@ -248,7 +248,7 @@ EOF
   ROLE_ARN=$(aws iam get-role --role-name AWSDataLifecycleManagerDefaultRole --query "Role.Arn" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
   if [ -z "$ROLE_ARN" ]; then
-    ROLE=$(aws dlm create-default-role --resource-type snapshot)
+    ROLE=$(aws dlm create-default-role --resource-type snapshot --output text $ACCOUNT_PROFILE)
       
     if [ $? -ne 0 ]; then
       echo "IAM Role creation has failed"
@@ -291,10 +291,10 @@ if [ "$WAIT_FOR_STACK" != 'false' ]; then
   fi
 fi
 
-# Attach/mount EBS data volume
+# Attaching/mounting EBS data volume
 echo "Attaching/Mounting EBS data volume"
 
-EBS_DEVICE_NAME="/dev/sdf" # Only change if you know what you are doing.
+EBS_DEVICE_NAME="/dev/sdf" # Only change if you know what you are doing
 INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values='$HOST'" --query "Reservations[].Instances[?Tags[?Value=='$STACK_ID']].InstanceId" --output text $ACCOUNT_PROFILE 2>/dev/null)
 VOLUME_ID=$(aws ec2 describe-volumes --filters "Name=tag:Name,Values='$HOST-data'" --query "Volumes[?Tags[?Value=='$STACK_ID']].VolumeId" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
@@ -303,23 +303,23 @@ PARAMS="InstanceId=$INSTANCE_ID,VolumeId=$VOLUME_ID,DeviceName=$EBS_DEVICE_NAME"
 COMMAND_ID=$(aws ssm start-automation-execution --document-name attach_volume --parameters $PARAMS --output text $ACCOUNT_PROFILE)
 
 if [ $? -ne 0 ]; then
-  echo "Volume attaching/mounting failed"
+  echo "EBS data volume attaching/mounting failed"
   exit 1
 fi
 
 STATUS=$(aws ssm get-automation-execution --automation-execution-id $COMMAND_ID --query "AutomationExecution.AutomationExecutionStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
 while [[ "$STATUS" == 'InProgress' ]]; do
-    echo "Volume attaching/mounting is still in progress .. Sleeping 30 seconds"
+    echo "EBS data volume attaching/mounting is still in progress .. Sleeping 30 seconds"
     sleep 30
     STATUS=$(aws ssm get-automation-execution --automation-execution-id $COMMAND_ID --query "AutomationExecution.AutomationExecutionStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
 done
 
 if [ "$STATUS" != 'Success' ]; then
-  echo "Volume attaching/mounting has failed status is '$STATUS'"
+  echo "EBS data volume attaching/mounting has failed status is '$STATUS'"
   exit 1
 else
-  echo "Volume attaching/mounting is complete"
+  echo "EBS data volume attaching/mounting is complete"
 fi
 
 # Provision S3 bucket

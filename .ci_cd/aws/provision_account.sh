@@ -289,9 +289,9 @@ else
   exit 1
 fi
 
-STACK_NAME=or-ebs-volume-ssm-documents
+STACK_NAME=or-ssm
 
-# Create SSM Documents for attaching/detaching EBS data volume in specified account
+# Create SSM Documents for attaching, detaching and replacing an EBS data volume in specified account
 STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --output text $ACCOUNT_PROFILE)
 
 # Wait for CloudFormation stack status to be CREATE_*
@@ -305,7 +305,7 @@ while [[ "$STATUS" == 'CREATE_IN_PROGRESS' ]]; do
 done
 
 if [ "$STATUS" != 'CREATE_COMPLETE' ] && [ "$STATUS" != 'UPDATE_COMPLETE' ]; then
-  echo "Stack creation has failed status is '$STATUS'" >&2
+  echo "Stack creation has failed status is '$STATUS'"
   exit 1
 else
   echo "Stack creation is complete"
@@ -339,7 +339,7 @@ while [[ "$STATUS" == 'CREATE_IN_PROGRESS' ]]; do
 done
 
 if [ "$STATUS" != 'CREATE_COMPLETE' ] && [ "$STATUS" != 'UPDATE_COMPLETE' ]; then
-  echo "Stack creation has failed status is '$STATUS'" >&2
+  echo "Stack creation has failed status is '$STATUS'"
   exit 1
 else
   echo "Stack creation is complete"
