@@ -177,7 +177,7 @@ if [ "$VPCID" == 'None' ]; then
   # Create standard stack resources in specified account
   STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --output text $ACCOUNT_PROFILE)
 
-  # Wait for cloud formation stack status to be CREATE_*
+  # Wait for CloudFormation stack status to be CREATE_*
   echo "Waiting for stack to be created"
   STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
 

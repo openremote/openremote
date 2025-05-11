@@ -78,10 +78,10 @@ Parameters:
     Type: String
     Default: ""
   DLMExecutionRoleArn:
-    Description: Role ARN for executing the DLM operations.
+    Description: Role ARN for executing the DLM operations
     Type: String
   SnapshotId:
-    Description: Snapshot ID to create the EBS data volume based of an existing snapshot.
+    Description: Snapshot ID to create the EBS data volume based of an existing snapshot
     Type: String
     Default: ""
   ElasticIP:
@@ -103,7 +103,7 @@ Parameters:
     Type: Number
     Default: 30
   DataDiskSize:
-    Description: Amount of storage you want to provision for this EBS data volume.
+    Description: Amount of storage you want to provision for this EBS data volume
     Type: Number
     Default: 16
   HealthChecks:

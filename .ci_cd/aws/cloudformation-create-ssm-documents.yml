@@ -327,13 +327,13 @@ Resources:
                 - Key: Type
                   Value: '{{ GetInstanceDetails.Host }}-or-data-in-use'
 
-  SSMReplaceSnapshotDocument:
+  SSMReplaceVolumeDocument:
     Type: AWS::SSM::Document
     Properties:
       DocumentType: Automation
       DocumentFormat: YAML
       TargetType: /AWS::EC2::Instance
-      Name: replace_snapshot
+      Name: replace_volume
       Content:
         schemaVersion: '0.3'
         description: 'Script for replacing an EBS data volume with a specified snapshot'
