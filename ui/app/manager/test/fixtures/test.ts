@@ -149,7 +149,6 @@ export const test = base.extend<Fixtures>({
   async login({ page }, use) {
     await use(async (user) => {
       await page.waitForTimeout(500);
-      // const isLogin = (await page.isVisible('input[id="username"]')) || false;
       const username = page.getByRole("textbox", { name: "Username or email" });
       const password = page.getByRole("textbox", { name: "Password" });
       await username.waitFor();
@@ -157,7 +156,6 @@ export const test = base.extend<Fixtures>({
         await username.fill(user);
         await password.fill(passwords[user as keyof typeof passwords]);
         await page.keyboard.press("Enter");
-        // console.log(`User: "${user}" logged in,   ` + timeCost(false) + "s");
       }
     });
   },
@@ -179,24 +177,17 @@ export const test = base.extend<Fixtures>({
    */
   async navigateToMenuItem({ page }, use) {
     await use(async (setting) => {
-      // setStepStartTime();
       await page.waitForTimeout(500);
       await page.click('button[id="menu-btn-desktop"]');
       await page.waitForTimeout(500);
       const menu = page.locator("#menu > #list > li").filter({ hasText: setting });
-      await menu.waitFor();
-      if (await menu.isVisible()) {
-        await menu.click();
-      } else {
-        console.log("not rendered yet");
-      }
-      // console.log(`Navigated to "${setting}" meun item,   ` + timeCost(false) + "s");
+      await menu.waitFor({ state: "visible" });
+      await menu.click();
     });
   },
   async navigateToTab({ page }, use) {
     await use(async (tab) => {
       await page.click(`#desktop-left a:has-text("${tab}")`);
-      // await page.wait(1500);
     });
   },
   async addRealm({ page }, use) {
@@ -212,7 +203,6 @@ export const test = base.extend<Fixtures>({
         // await page.wait(first == true ? 15000 : 10000);
         // const count = await page.count(`[aria-label="attribute list"] span:has-text("${name}")`)
         // await expect(count).toEqual(1)
-        // await console.log("Realm: " + `"${name}"` + " added,   " + timeCost(false) + "s");
       }
     });
   },
@@ -250,11 +240,9 @@ export const test = base.extend<Fixtures>({
 
       if (atModifyMode && targetMode == "view") {
         await page.click('button:has-text("View")');
-        console.log(":::::: at view mode");
       }
       if (atViewMode && targetMode == "modify") {
         await page.click('button:has-text("Modify")');
-        console.log(":::::: at modify mode");
       }
     });
   },
@@ -263,8 +251,6 @@ export const test = base.extend<Fixtures>({
     use
   ) {
     await use(async (update, configOrLoction) => {
-      // const addAssetTime = new Date() / 1000;
-
       await page.waitForTimeout(500);
 
       // Goes to asset page
@@ -289,12 +275,9 @@ export const test = base.extend<Fixtures>({
             // check if at modify mode
             // if yes we should see the save button then save
             const isSaveBtnVisible = await page.isVisible('button:has-text("Save")');
-            console.log("save btn is " + isSaveBtnVisible);
             if (isSaveBtnVisible) {
-              console.log("ready to save");
               await page.click('button:has-text("Save")');
             }
-            console.log(":::::: emtpy asset has been added");
             await switchMode("modify");
             // await page.unselect()
             // await page.click(`#list-container >> text=${asset.name}`)
@@ -304,14 +287,11 @@ export const test = base.extend<Fixtures>({
               // update in modify mode
               if (configOrLoction == "location") {
                 await updateLocation(asset.location_x, asset.location_y);
-                console.log(":::::: location updated");
               } else if (configOrLoction == "config") {
                 await setConfigItem(asset.config_item_1, asset.config_item_2, asset.config_attr_1, asset.config_attr_2);
-                console.log(":::::: config items have been added");
               } else {
                 await updateLocation(asset.location_x, asset.location_y);
                 await setConfigItem(asset.config_item_1, asset.config_item_2, asset.config_attr_1, asset.config_attr_2);
-                console.log(":::::: both settings have been added");
               }
 
               await updateInModify(asset.attr_1, asset.a1_type, asset.v1);
@@ -329,21 +309,11 @@ export const test = base.extend<Fixtures>({
               await switchMode("modify");
             }
             await unselect();
-            // console.log(
-            //   "Asset: " +
-            //     `"${asset.name}"` +
-            //     " with " +
-            //     configOrLoction +
-            //     " updated has been added,  " +
-            //     timeCost(false) +
-            //     "s"
-            // );
           }
         } catch (error) {
-          console.log("error" + error);
+          console.error("error" + error);
         }
       }
-      // console.log("Adding assets takes " + (new Date() / 1000 - addAssetTime).toFixed(3) + "s");
     });
   },
   async unselect({ page }, use) {
@@ -379,7 +349,6 @@ export const test = base.extend<Fixtures>({
   async updateInModify({ page }, use) {
     await use(async (attr, type, value) => {
       await page.fill(`text=${attr} ${type} >> input[type="number"]`, value);
-      console.log("::::::  " + attr + " has been updated");
     });
   },
   async updateLocation({ page }, use) {
@@ -429,15 +398,13 @@ export const test = base.extend<Fixtures>({
         await goToRealmStartPage("master");
         await page.waitForTimeout(500);
         await expect(page.locator("#desktop-right #realm-picker")).not.toBeVisible();
-        // await console.log(`Realm: "${realm}" deleted,    ` + timeCost(false) + "s");
       } catch (e) {
-        console.log(e);
+        console.error(e);
       }
     });
   },
   async deleteSelectedAsset({ page, navigateToTab }, use) {
     await use(async (asset) => {
-      // setStepStartTime();
       await navigateToTab("Assets");
       let assetSelected = await page.locator(`text=${asset}`).count();
       if (assetSelected > 0) {
@@ -445,17 +412,13 @@ export const test = base.extend<Fixtures>({
         await page.click(".mdi-delete");
         await page.click('button:has-text("Delete")');
         await page.waitForTimeout(1500);
-        let visibile = await page.locator(`text=${asset}`).count();
-        await expect(visibile).toBeFalsy();
+        expect(await page.locator(`text=${asset}`).count()).toBeFalsy();
       } else {
-        console.log(`Asset: "${asset}" does not exsit`);
       }
-      // console.log(`Asset: "${asset}" has been deleted,    ` + timeCost(false) + "s");
     });
   },
   async save({ page }, use) {
     await use(async () => {
-      console.log(":::::: in saving");
       await page.waitForTimeout(200);
       await page.click("#edit-container");
       await page.waitForTimeout(200); // wait for button to enabled
@@ -469,7 +432,6 @@ export const test = base.extend<Fixtures>({
       const ifModifyMode = await page.isVisible('button:has-text("OK")');
       if (ifModifyMode) {
         await page.click('button:has-text("OK")');
-        console.log("panel closed");
       }
       if (!isDisabled) {
         await page.click('button:has-text("Save")');
@@ -493,8 +455,6 @@ export const test = base.extend<Fixtures>({
     use
   ) {
     await use(async (realm, level, configOrLocation = "no") => {
-      // global.startTime = new Date() / 1000;
-
       if (level !== "lv0") {
         await goToRealmStartPage("master");
         await login("admin");
@@ -521,14 +481,11 @@ export const test = base.extend<Fixtures>({
           }
         }
         await logout();
-        // console.log(level + " setup takes " + timeCost(true) + "s");
       }
     });
   },
   async cleanUp({ page, goToRealmStartPage, login, switchToRealmByRealmPicker, navigateToMenuItem, deleteRealm }, use) {
     await use(async () => {
-      // const cleanTime = new Date() / 1000;
-
       // ensure login as admin into master
       await page.waitForTimeout(500);
       await goToRealmStartPage("master");
@@ -544,7 +501,6 @@ export const test = base.extend<Fixtures>({
         await navigateToMenuItem("Realms");
         await deleteRealm("smartcity");
       }
-      // console.log("Clean up takes " + (new Date() / 1000 - cleanTime).toFixed(3) + "s");
     });
   },
   async drag({ page }, use) {
