@@ -9,7 +9,8 @@ test.beforeEach(async ({ setup, login, goToRealmStartPage }) => {
   await login("smartcity");
 });
 
-test("Check markers on map", async ({ page }) => {
+test("Check markers on map", async ({ page, browserName }) => {
+  test.skip(browserName === 'firefox', "firefox headless mode does not support webgl required by maplibre")
   const asset = assets[0].name
   // Then Navigate to "map" tab
   // When Check "Battery" on map
