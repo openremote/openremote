@@ -432,7 +432,8 @@ jobs:
       - name: Define UI test command
         id: test-ui-command
         if: ${{ steps.skip-ui-tests.outputs.value != 'true' }}
-        run: echo "::set-output name=value::./gradlew uiTest"
+        # TODO: update when using the playwright-report across multiple projects
+        run: echo "value=./gradlew ui:app:manager:npmTest" >> $GITHUB_OUTPUT
 
       - name: Define manager docker build command
         id: manager-docker-command
@@ -743,7 +744,7 @@ jobs:
         with:
           name: frontend-test-results
           # TODO: update when using the playwright-report across multiple projects
-          path: playwright-report
+          path: ui/app/manager/playwright-report
 
       - name: Scan manager docker image
         if: steps.manager-docker-command.outputs.pushRequired == 'true'
