@@ -1,10 +1,7 @@
 const fs = require("fs");
 const path = require("path");
-const webpack = require("webpack");
+const { rspack } = require('@rspack/core');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
-const ForkTsCheckerNotifierWebpackPlugin = require("fork-ts-checker-notifier-webpack-plugin");
-const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
-const rspack = require('@rspack/core');
 
 function getStandardModuleRules() {
     return {
@@ -31,6 +28,7 @@ function getStandardModuleRules() {
                 test: /\.tsx?$/,
                 exclude: /node_modules/,
                 use: {
+                    // TODO: Switch to builtin:swc-loader, and remove ts-loader / webpack dependency
                     loader: "ts-loader",
                     options: {
                         projectReferences: true
@@ -106,15 +104,6 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
     ];
 
     if (production) {
-        config.plugins = [
-            // new ForkTsCheckerWebpackPlugin({
-            //     async: false,
-            //     typescript: {
-            //         memoryLimit: 4096
-            //     }
-            // }),
-            ...config.plugins
-        ];
 
         // Only use babel for production otherwise source maps don't work
         config.module.rules.push(
@@ -126,16 +115,6 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
                 loader: 'builtin:swc-loader',
             },
         );
-    } else {
-        config.plugins = [
-            // new ForkTsCheckerWebpackPlugin({
-            //     typescript: {
-            //         memoryLimit: 4096
-            //     }
-            // }),
-            // new ForkTsCheckerNotifierWebpackPlugin({ title: 'TypeScript', excludeWarnings: false }),
-            ...config.plugins
-        ];
     }
 
     if (isDevServer) {

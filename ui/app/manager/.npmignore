@@ -2,6 +2,7 @@ build/
 build.gradle
 test/
 src/
-webpack.config.jstsconfig.json
+webpack.config.js
+tsconfig.json
 dist/*.map
 *.tsbuildinfo

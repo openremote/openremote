@@ -1,5 +1,5 @@
 const util = require("@openremote/util");
-const rspack = require('@rspack/core');
+const { rspack } = require('@rspack/core');
 const packageJson = require('./package.json');
 
 module.exports = (env, argv) => {

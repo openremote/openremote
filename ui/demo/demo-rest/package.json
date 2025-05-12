@@ -21,9 +21,6 @@
     "@openremote/util": "workspace:*",
     "@rspack/cli": "^1.1.3",
     "@rspack/core": "^1.1.3",
-    "typescript": "^5.3.3",
-    "webpack": "^5.90.1",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^4.15.1"
+    "typescript": "^5.3.3"
   }
 }

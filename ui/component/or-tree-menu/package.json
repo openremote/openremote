@@ -11,7 +11,7 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "test": "echo \"No tests\" && exit 0",
-    "prepack": "npx webpack"
+    "prepack": "npx rspack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",

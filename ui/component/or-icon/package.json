@@ -23,9 +23,7 @@
   },
   "devDependencies": {
     "terser-webpack-plugin": "^5.2.5",
-    "typescript": "^5.3.3",
-    "webpack": "^5.90.1",
-    "webpack-cli": "^5.1.4"
+    "typescript": "^5.3.3"
   },
   "publishConfig": {
     "access": "public"
