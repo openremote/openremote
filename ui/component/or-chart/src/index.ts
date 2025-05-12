@@ -792,7 +792,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             this.timePresetOptions = this._getDefaultTimestampOptions();
         }
         if (!this.timePresetKey) {
-            this.timePresetKey = this.timePresetOptions.keys().next().value.toString();
+            this.timePresetKey = this.timePresetOptions.keys().next().value?.toString();
         }
 
         if (!this.panelName) {

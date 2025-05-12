@@ -24,7 +24,7 @@ import {RulesetLang, RulesetUnion} from "@openremote/model";
 import "ace-builds/src-noconflict/mode-javascript";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/mode-groovy";
-import "ace-builds/webpack-resolver";
+/*import "ace-builds/webpack-resolver";*/
 import "@openremote/or-components/or-ace-editor";
 import {OrAceEditor, OrAceEditorChangedEvent} from "@openremote/or-components/or-ace-editor";
 import {createRef, ref, Ref} from "lit/directives/ref.js";
