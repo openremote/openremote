@@ -21,6 +21,9 @@ dependencies {
 
     api "net.sf.saxon:Saxon-HE:$saxonHEVersion"
 
+    implementation "org.apache.plc4x:plc4j-api:$plc4xVersion"
+    runtimeOnly "org.apache.plc4x:plc4j-driver-modbus:$plc4xVersion"
+
     //IKEA Tradfri agent dependencies
     api "org.eclipse.californium:californium-core:$californiumCoreVersion"
     api "org.eclipse.californium:scandium:$californiumScandiumVersion"
