@@ -11,13 +11,6 @@ function getStandardModuleRules() {
                 type: "asset/source"
             },
             {
-                test: /\.css$/, //
-                exclude: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/,
-                use: [
-                    { loader: "css-loader" }
-                ]
-            },
-            {
                 test: /\.(png|jpg|ico|gif|svg|eot|ttf|woff|woff2|mp4)$/,
                 type: "asset",
                 generator: {
@@ -76,6 +69,9 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
         //         new CssMinimizerPlugin(),
         //     ],
         // },
+        experiments: {
+            css: true
+        },
         resolve: {
             extensions: [".ts", ".tsx", "..."],
             fallback: {
@@ -104,8 +100,6 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
     ];
 
     if (production) {
-
-        // Only use babel for production otherwise source maps don't work
         config.module.rules.push(
             {
                 test: /\.js$/,
