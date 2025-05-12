@@ -19,16 +19,11 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
+    baseURL: "http://localhost:9000/",
     // baseURL: process.env.managerUrl || "localhost:9000/",
-    launchOptions: {
-      // force GPU hardware acceleration (even in headless mode)
-      // without hardware acceleration, tests will be much slower
-      args: ["--use-gl=desktop"],
-    },
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "retain-on-failure",
     video: "on",
-    baseURL: "http://localhost:9000/",
   },
   webServer: {
     // Wait for the dev server to be ready
@@ -46,9 +41,9 @@ export default defineConfig({
       name: "firefox",
       use: { ...devices["Desktop Firefox"] },
     },
-    // {
-    //   name: "webkit",
-    //   use: { ...devices["Desktop Safari"] },
-    // },
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
+    },
   ],
 });
