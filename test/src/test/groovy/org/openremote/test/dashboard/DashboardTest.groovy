@@ -160,13 +160,13 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
 
         when: "dashboard1 is shared, and updated from a different realm"
         privateUser1Dashboard.setDisplayName("New displayname")
-        smartcityDashboardResource.update(null, privateUser1Dashboard)
+        privateUser1Dashboard = smartcityDashboardResource.update(null, privateUser1Dashboard)
 
         then: "an forbidden exception is thrown for not having cross-realm access"
         thrown ForbiddenException
 
         when: "dashboard1 is shared, and updated by a different user"
-        alternativeUserDashboardResource.update(null, privateUser1Dashboard)
+        privateUser1Dashboard = alternativeUserDashboardResource.update(null, privateUser1Dashboard)
 
         then: "updating the dashboard succeeds as it is shared across the realm"
         def alternativeUpdatedDashboard = alternativeUserDashboardResource.get(null, MASTER_REALM, privateUser1Dashboard.id)
