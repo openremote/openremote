@@ -27,7 +27,7 @@ import org.openremote.model.IdentifiableEntity;
 
 import java.io.Serializable;
 
-public class HibernateUniqueIdentifierGenerator implements IdentifierGenerator {
+public class HibernateUniqueIdentifierGeneratorAssignable implements IdentifierGenerator {
 
     @Override
     public Serializable generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
@@ -37,5 +37,10 @@ public class HibernateUniqueIdentifierGenerator implements IdentifierGenerator {
                 return identifiableEntity.getId();
         }
         return UniqueIdentifierGenerator.generateId();
+    }
+
+    @Override
+    public boolean allowAssignedIdentifiers() {
+        return true;
     }
 }

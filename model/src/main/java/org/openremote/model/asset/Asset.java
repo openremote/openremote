@@ -47,7 +47,7 @@ import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.jackson.AssetTypeIdResolver;
 import org.openremote.model.persistence.LTreeType;
-import org.openremote.model.util.HibernateUniqueIdentifierType;
+import org.openremote.model.util.HibernateUniqueIdentifierTypeAssignable;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.validation.AssetValid;
@@ -277,7 +277,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     public static final AttributeDescriptor<String> MANUFACTURER = new AttributeDescriptor<>("manufacturer", ValueType.TEXT).withOptional(true);
     public static final AttributeDescriptor<String> MODEL = new AttributeDescriptor<>("model", ValueType.TEXT).withOptional(true);
 
-    @Id @HibernateUniqueIdentifierType
+    @Id @HibernateUniqueIdentifierTypeAssignable
     @Column(name = "ID", length = 22, columnDefinition = "char(22)")
     @Pattern(regexp = Constants.ASSET_ID_REGEXP, message = "{Asset.id.Pattern}")
     protected String id;
