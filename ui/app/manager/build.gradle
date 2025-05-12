@@ -94,6 +94,10 @@ tasks.register('installDist', Copy) {
     into project(':manager').layout.buildDirectory.dir("install/manager/web/${project.name}")
 }
 
+task codegen(type: Exec) {
+    commandLine npmCommand("yarn"), "run", "codegen"
+}
+
 clean.dependsOn(cleanDist)
 jar.dependsOn(generateSources)
 processResources.dependsOn(generateSources)
