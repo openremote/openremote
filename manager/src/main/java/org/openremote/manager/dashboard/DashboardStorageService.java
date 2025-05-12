@@ -288,21 +288,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         if(userId == null) {
             throw new IllegalArgumentException("No userId is specified.");
         }
-        // Query the dashboards with the same ID (which is only 1)
-        var query = new DashboardQuery()
-                .ids(dashboard.getId())
-                .realm(new RealmPredicate(realm))
-                .limit(1);
-        Dashboard[] dashboards = this.query(query, userId);
-        if(dashboards != null && dashboards.length > 0) {
-            Dashboard d = dashboards[0];
-            return persistenceService.doReturningTransaction(em -> {
-                dashboard.setVersion(d.getVersion()); // TODO: Investigate why versioning is not correct for Dashboard model
-                return em.merge(dashboard);
-            });
-        } else {
-            throw new IllegalArgumentException("This dashboard does not exist!");
-        }
+        return persistenceService.doReturningTransaction(em -> em.merge(dashboard));
     }
 
     public boolean delete(String dashboardId, String realm, String userId) throws IllegalArgumentException {
