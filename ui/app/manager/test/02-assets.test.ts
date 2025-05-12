@@ -44,9 +44,7 @@ assets.forEach(
       // check if at modify mode
       // if yes we should see the save button then save
       const isSaveBtnVisible = await page.isVisible('button:has-text("Save")');
-      console.log("save btn is " + isSaveBtnVisible);
       if (isSaveBtnVisible) {
-        console.log("ready to save");
         await page.click('button:has-text("Save")');
       }
       await unselect();
@@ -64,11 +62,10 @@ assets.forEach(
       // When Unselect
       // Then We see the asset with name of "<name>"
       await page.waitForTimeout(500);
-      const count = await page.locator(`text=${name}`).count();
       // reason why it's 1 is because that this scnario runs in a outline
       // each time only one set of data will be used in one run of outlines
       // thus, only one asset will be added and removed in one run and next time will start with the empty envrioment
-      await expect(count).toBe(1);
+      await expect(page.locator(`text=${name}`)).toHaveCount(1);
     });
     test(`Search and select asset: ${name}`, async ({ page, navigateToTab }) => {
       // Given Setup "lv3"
