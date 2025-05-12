@@ -51,7 +51,7 @@ declare global {
     }
 }
 
-export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (ListItem | ListItem[] | null)[], selectedValues: string[] | string | undefined, valueChangedCallback: (values: string[] | string) => void, closedCallback?: () => void, multiSelect = false, translateValues = true, midHeight = false, fullWidth = false, fixedPosition = false): TemplateResult {
+export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (ListItem | ListItem[] | null)[], selectedValues: string[] | string | undefined, valueChangedCallback: (values: string[] | string) => void, closedCallback?: () => void, multiSelect = false, translateValues = true, midHeight = false, fullWidth = false): TemplateResult {
 
     const openMenu = (evt: Event) => {
         if (!menuItems) {
@@ -64,7 +64,7 @@ export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (
     return html`
         <span>
             <span @click="${openMenu}">${content}</span>
-            ${menuItems ? html`<or-mwc-menu class=${classMap({ 'fixed-menu': fixedPosition })} ?multiselect="${multiSelect}" @or-mwc-menu-closed="${() => {if (closedCallback) { closedCallback(); }} }" @or-mwc-menu-changed="${(evt: OrMwcMenuChangedEvent) => {if (valueChangedCallback) { valueChangedCallback(evt.detail); }} }" .translateValues="${translateValues}" .values="${selectedValues}" .menuItems="${menuItems}" .midHeight="${midHeight}" .fullWidth="${fullWidth}" id="menu"></or-mwc-menu>` : ``}
+            ${menuItems ? html`<or-mwc-menu ?multiselect="${multiSelect}" @or-mwc-menu-closed="${() => {if (closedCallback) { closedCallback(); }} }" @or-mwc-menu-changed="${(evt: OrMwcMenuChangedEvent) => {if (valueChangedCallback) { valueChangedCallback(evt.detail); }} }" .translateValues="${translateValues}" .values="${selectedValues}" .menuItems="${menuItems}" .midHeight="${midHeight}" .fullWidth="${fullWidth}" id="menu"></or-mwc-menu>` : ``}
         </span>
     `;
 }
@@ -79,13 +79,6 @@ const style = css`
         --mdc-theme-primary: var(--internal-or-mwc-input-color);
         --mdc-theme-on-primary: var(--internal-or-mwc-input-text-color);
         --mdc-theme-secondary: var(--internal-or-mwc-input-color);
-    }
-
-    /* Styles applied when fixedPosition=true is used in getContentWithMenuTemplate.
-       Takes the menu out of the attribute card view so it can overlay content. */
-    :host(.fixed-menu) {
-        position: fixed;
-        z-index: 999;
     }
     
     .mdc-list-item__graphic {
