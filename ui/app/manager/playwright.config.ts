@@ -5,7 +5,7 @@ const { CI } = process.env;
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  testMatch: ["ui/app/*/test/**/*.test.ts"],
+  testMatch: ["test/**/*.test.ts"],
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -30,10 +30,12 @@ export default defineConfig({
     video: "on",
     baseURL: "http://localhost:9000/",
   },
-  // webServer: {
-  //   command: "npm run serveNoModelBuild",
-  //   reuseExistingServer: true,
-  // },
+  webServer: {
+    // Wait for the dev server to be ready
+    url: "http://localhost:9000/manager/",
+    command: "npm run serveNoModelBuild",
+    reuseExistingServer: true,
+  },
   /* Configure projects for major browsers */
   projects: [
     {
