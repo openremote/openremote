@@ -735,7 +735,7 @@ jobs:
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
-        timeout-minutes: 20
+        timeout-minutes: 25
         # continue-on-error: true
 
       - name: Archive frontend test results
