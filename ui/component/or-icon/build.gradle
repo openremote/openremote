@@ -13,7 +13,7 @@ task clean() {
 }
 
 task prepareUi() {
-    dependsOn clean, npmPrepare
+    dependsOn clean, npmAnalyze, npmPrepare
 }
 
 task publishUi() {
@@ -21,7 +21,7 @@ task publishUi() {
 }
 
 task installDist(type: Copy) {
-    dependsOn getYarnInstallTask(), copyMdiFont
+    dependsOn getYarnInstallTask(), copyMdiFont, npmAnalyze
     resolveTask(":ui:app:shared:generateSources").dependsOn it
     from "${buildDir}/Material Design Icons"
     into "${project(':ui:app:shared').projectDir}/fonts/Material Design Icons"
