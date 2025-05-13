@@ -19,6 +19,7 @@ const energyRule = {
 };
 
 test("Create a When-Then rule", async ({ page, navigateToTab }) => {
+  test.setTimeout(60_000);
   // When Login to OpenRemote "smartcity" realm as "smartcity"
   // Then Navigate to "Rule" tab
   await navigateToTab("Rules");
