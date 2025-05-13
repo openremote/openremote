@@ -1,14 +1,16 @@
+import { ResourceType } from "maplibre-gl";
+
 export function isMapboxURL(url: string) {
   return url.indexOf("mapbox:") === 0;
 }
 
-export function transformMapboxUrl(url: string, resourceType: string, accessToken: string) {
+export function transformMapboxUrl(url: string, accessToken: string, resourceType?: ResourceType) {
   if (url.indexOf("/styles/") > -1 && url.indexOf("/sprite") === -1)
     return { url: normalizeStyleURL(url, accessToken) };
   if (url.indexOf("/sprites/") > -1) return { url: normalizeSpriteURL(url, accessToken) };
   if (url.indexOf("/fonts/") > -1) return { url: normalizeGlyphsURL(url, accessToken) };
   if (url.indexOf("/v4/") > -1) return { url: normalizeSourceURL(url, accessToken) };
-  if (resourceType === "Source") return { url: normalizeSourceURL(url, accessToken) };
+  if (resourceType === ResourceType.Source) return { url: normalizeSourceURL(url, accessToken) };
 }
 
 function parseUrl(url: string) {
@@ -55,7 +57,7 @@ function normalizeSourceURL(url: string, accessToken: string) {
 
 function normalizeSpriteURL(url: string, accessToken: string) {
   const urlObject = parseUrl(url);
-  let path = urlObject.path.split(".");
+  const path = urlObject.path.split(".");
   let properPath = path[0];
   const extension = path[1];
   let format = "";
