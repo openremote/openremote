@@ -141,9 +141,7 @@ export const test = base.extend<Fixtures>({
   },
   async goToRealmStartPage({ baseURL, page }, use) {
     await use(async (realm) => {
-      const url = getAppUrl(baseURL!, realm);
-      await page.goto(url);
-      await page.waitForTimeout(1500);
+      await page.goto(getAppUrl(baseURL!, realm));
     });
   },
   async login({ page }, use) {
@@ -170,6 +168,8 @@ export const test = base.extend<Fixtures>({
         await page.click("#menu-btn-desktop");
         await page.locator("#menu > #list > li").filter({ hasText: "Log out" }).click();
       }
+      // Wait for navigation to login page to prevent simultaneous navigation
+      await page.waitForURL('**/auth/realms/**');
     });
   },
   /**
