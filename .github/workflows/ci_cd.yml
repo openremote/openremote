@@ -449,7 +449,9 @@ jobs:
               echo "pushRequired=true" >> $GITHUB_OUTPUT
               echo "managerDockerImage=openremote/manager:$FIRST_MANAGER_TAG" >> $GITHUB_OUTPUT
             else
-              command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
+              # TODO: Temporary revert when done
+              command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64 -t openremote/manager:$commitShaShort $buildPath"
+              # command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
               echo "managerDockerImage=openremote/manager:$commitShaShort" >> $GITHUB_OUTPUT
             fi
             echo "value=$command" >> $GITHUB_OUTPUT
@@ -669,33 +671,6 @@ jobs:
         if: ${{ steps.test-backend-command.outputs.value != '' && steps.test-ui-command.outputs.value != '' }}
         run: ${{ steps.run-backend-tests.outputs.cleanup }}
 
-      - name: Run frontend tests
-        if: steps.test-ui-command.outputs.value != ''
-        run: |
-          composeProfile='profile/dev-ui.yml'
-
-          if [ $IS_MAIN_REPO == 'false' ]; then
-            composeProfile="openremote/$composeProfile"
-          fi
-
-          # Start the stack
-          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
-
-          # Run the tests
-          ${{ steps.test-ui-command.outputs.value }}
-        env:
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
-        timeout-minutes: 20
-        continue-on-error: true
-
-      - name: Archive frontend test results
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: frontend-test-results
-          path: ui/app/manager/test/screenshots
-
       - name: Run install dist
         if: steps.install-command.outputs.value != ''
         shell: python
@@ -738,6 +713,33 @@ jobs:
         if: steps.manager-docker-command.outputs.value != ''
         run: |
           ${{ steps.manager-docker-command.outputs.value }}
+
+      - name: Run frontend tests
+        if: steps.test-ui-command.outputs.value != ''
+        run: |
+          composeProfile='profile/dev-ui.yml'
+
+          if [ $IS_MAIN_REPO == 'false' ]; then
+            composeProfile="openremote/$composeProfile"
+          fi
+
+          # Start the stack
+          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
+
+          # Run the tests
+          ${{ steps.test-ui-command.outputs.value }}
+        env:
+          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
+          MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
+        timeout-minutes: 20
+        continue-on-error: true
+
+      - name: Archive frontend test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-test-results
+          path: ui/app/manager/test/screenshots
 
       - name: Scan manager docker image
         if: steps.manager-docker-command.outputs.pushRequired == 'true'
