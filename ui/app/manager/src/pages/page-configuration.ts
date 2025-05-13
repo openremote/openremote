@@ -297,8 +297,12 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                             ${when(this.mapConfig, () => html`
                                 <or-conf-map-global .config="${this.mapConfig}" .filename="${this.customMapFilename}" .limit="${this.customMapLimit}"
                                     @change="${() => { this.mapConfigChanged = true; }}"
-                                    @upload="${this.setTilesForUpload}"
-                                    @delete="${this.setTilesForDeletion}"
+                                    @map-file-changed="${(e: CustomEvent) => {
+                                        // If a map file is provided prepare for upload
+                                        this.tilesForUpload = e.detail || undefined;
+                                        // Otherwise assume it is meant for deletion
+                                        this.tilesForDeletion = !e.detail;
+                                    }}"
                                 ></or-conf-map-global>
                                 <div class="subheader"><or-translate value="configuration.realmMapSettingsTitle"></or-translate></div>
                                 <or-conf-panel id="mapConfig-panel" .config="${this.mapConfig}" .realmOptions="${realmOptions}"
@@ -326,16 +330,6 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
 
     /* ---------------- */
-
-    protected async setTilesForUpload(e: CustomEvent) {
-        this.tilesForUpload = e.detail;
-        this.tilesForDeletion = false;
-    }
-
-    protected async setTilesForDeletion() {
-        this.customMapFilename = undefined;
-        this.tilesForDeletion = true;
-    }
 
     // FETCH METHODS
 
