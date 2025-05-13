@@ -726,20 +726,24 @@ jobs:
           # Start the stack
           MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
 
+          # Install playwright browsers
+          npx playwright@$(npm test -- --version | xargs | awk '{ print $NF }') install --with-deps
+
           # Run the tests
           ${{ steps.test-ui-command.outputs.value }}
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
         timeout-minutes: 20
-        continue-on-error: true
+        # continue-on-error: true
 
       - name: Archive frontend test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
         with:
           name: frontend-test-results
-          path: ui/app/manager/test/screenshots
+          # TODO: update when using the playwright-report across multiple projects
+          path: playwright-report
 
       - name: Scan manager docker image
         if: steps.manager-docker-command.outputs.pushRequired == 'true'
