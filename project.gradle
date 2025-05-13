@@ -340,6 +340,10 @@ task npmClean(type: Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "run", "clean"
 }
+task npmAnalyze(type: Exec) {
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "run", "analyze"
+}
 task npmBuild(type: Exec) {
     mustRunAfter npmClean
     dependsOn getYarnInstallTask()
