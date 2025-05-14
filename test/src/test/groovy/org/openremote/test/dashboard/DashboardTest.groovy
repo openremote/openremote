@@ -192,7 +192,7 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         privateUser1Dashboard.setOwnerId(noAccessUser.id)
         privateUser1Dashboard = adminUserDashboardResource.update(null, privateUser1Dashboard)
 
-        when: "the user without READ_INSIGHTS and WRITE_INSIGHTS tries to retrieve their personal dashboard"
+        and: "the user without READ_INSIGHTS and WRITE_INSIGHTS tries to retrieve their personal dashboard"
         noAccessDashboardResource.get(null, MASTER_REALM, privateUser1Dashboard.id)
 
         then: "a FORBIDDEN exception is thrown as no READ_INSIGHTS role is assigned"
