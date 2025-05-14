@@ -1,12 +1,14 @@
 import { expect } from "@playwright/test";
-import { test } from "./fixtures/test.js";
-import assets from "./fixtures/data/assets.js";
+import { test } from "./fixtures/manager.js";
+import { preparedAssetsForRules as assets } from "./fixtures/data/assets.js";
+import { users } from "./fixtures/data/users.js";
 
-test.beforeEach(async ({ setup, login, goToRealmStartPage }) => {
-  await setup("smartcity", "lv4");
+test.beforeEach(async ({ manager }) => {
+  // Given the Realm "smartcity" with the user "smartcity" and assets is setup
+  await manager.setup("smartcity", { user: users.smartcity, assets });
   // When Login to OpenRemote "smartcity" realm as "smartcity"
-  await goToRealmStartPage("smartcity");
-  await login("smartcity");
+  await manager.goToRealmStartPage("smartcity");
+  await manager.login("smartcity");
 });
 
 const energyRule = {
@@ -15,24 +17,22 @@ const energyRule = {
   asset: "Battery",
   attribute_when: "Energy level",
   attribute_then: "Energy capacity",
-  value: 50
+  value: 50,
 };
 
-test("Create a When-Then rule", async ({ page, navigateToTab }) => {
-  test.setTimeout(60_000);
-  // When Login to OpenRemote "smartcity" realm as "smartcity"
+test("Create a When-Then rule", async ({ page, manager }) => {
   // Then Navigate to "Rule" tab
-  await navigateToTab("Rules");
+  await manager.navigateToTab("Rules");
   // When Create a new "When-Then" rule
   await page.click(".mdi-plus >> nth=0");
-  await page.locator('li').filter({ hasText: 'When-Then' }).click();
+  await page.locator("li").filter({ hasText: "When-Then" }).click();
   // Then Name new rule "<name>"
   await page.fill("text=Rule name", energyRule.name);
   // Then Create When condition on "<attribute_when>" of "<asset>" of "<attribute_type>" with threshold "<value>"
   // create a new condtion
   await page.click("or-rule-when #component span");
   // await page.click(`or-rule-when >> text=${energyRule.attribute_type}`);
-  await page.locator('or-rule-when li').filter({ hasText: energyRule.attribute_type }).click();
+  await page.locator("or-rule-when li").filter({ hasText: energyRule.attribute_type }).click();
 
   // select asset
   await page.click("text=Asset Any of this type"); // It's the default text when nothing selected
@@ -76,19 +76,18 @@ test("Create a When-Then rule", async ({ page, navigateToTab }) => {
   await expect(page.locator(`text=${energyRule.name}`)).toHaveCount(1);
 });
 
-test.skip("Create a Flow rule", async ({ page, drag, navigateToTab }) => {
-  // When Login to OpenRemote "smartcity" realm as "smartcity"
+test.skip("Create a Flow rule", async ({ page, manager }) => {
   // Then Navigate to "Rule" tab
-  await navigateToTab("Rules");
+  await manager.navigateToTab("Rules");
   // When Create a new "Flow" rule
   await page.click(".mdi-plus >> nth=0");
-  await page.locator('li', { hasText: 'Flow' }).click();
+  await page.locator("li", { hasText: "Flow" }).click();
   // Then Name new rule "Solar panel"
   await page.fill("text=Rule name", "Solar panel");
   // Then Drag in the elements
   // page.dragAndDrop(source, target[, options]) is an alternative
   // move all the elements
-  await page.locator(".node-item.input-node", { hasText: "Attribute value"}).hover();
+  await page.locator(".node-item.input-node", { hasText: "Attribute value" }).hover();
   await drag(450, 250);
 
   await page.hover("text=Number >> nth=0");
@@ -106,7 +105,7 @@ test.skip("Create a Flow rule", async ({ page, drag, navigateToTab }) => {
   await page.hover("text=Number switch");
   await drag(800, 425);
 
-  await page.locator(".node-item.output-node", { hasText: "Attribute value"}).hover();
+  await page.locator(".node-item.output-node", { hasText: "Attribute value" }).hover();
   await drag(1000, 425);
   // Then Set value
   // set read and write
@@ -154,4 +153,8 @@ test.skip("Create a Flow rule", async ({ page, drag, navigateToTab }) => {
   await expect(page.locator(`text=${name}FLOW`)).toHaveCount(1);
   // We should see {int} rules in total
   // await expect(page.locator(".node-container")).toHaveCount(int);
+});
+
+test.afterEach(async ({ manager }) => {
+  await manager.cleanUp();
 });

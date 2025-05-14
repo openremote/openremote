@@ -34,7 +34,7 @@ export function pageUsersProvider(store: Store<AppStateKeyed>): PageProvider<App
     };
 }
 
-interface UserModel extends User {
+export interface UserModel extends User {
     password?: string;
     loaded?: boolean;
     loading?: boolean;
