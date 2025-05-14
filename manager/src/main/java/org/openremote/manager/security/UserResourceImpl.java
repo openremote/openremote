@@ -245,34 +245,6 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public UserRoles[] getUsersRoles(RequestParams params, String realm, String clientId, String[] userIds) {
-        boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
-        String me = getUserId();
-
-        for (String uId : userIds) {
-            if (!hasAdminReadRole && !Objects.equals(me, uId)) {
-                throw new ForbiddenException("Can only retrieve own user roles unless you have role '" + ClientRole.READ_ADMIN + "'");
-            }
-        }
-
-        List<UserRoles> result = new ArrayList<>();
-        for (String uId : userIds) {
-            try {
-                String[] clientRoles = identityService.getIdentityProvider().getUserClientRoles(realm, uId, clientId);
-                String[] realmRoles = identityService.getIdentityProvider().getUserRealmRoles(realm, uId);
-                boolean isRestricted = Arrays.asList(realmRoles).contains(Constants.RESTRICTED_USER_REALM_ROLE);
-
-                result.add(new UserRoles(uId, clientRoles, realmRoles, isRestricted));
-            } catch (ClientErrorException ex) {
-                throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
-            } catch (Exception ex) {
-                throw new WebApplicationException(ex);
-            }
-        }
-        return result.toArray(new UserRoles[0]);
-    }
-
-    @Override
     public void updateUserClientRoles(@BeanParam RequestParams requestParams, String realm, String userId, String[] roles, String clientId) {
         try {
             identityService.getIdentityProvider().updateUserClientRoles(

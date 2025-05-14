@@ -128,13 +128,6 @@ public interface UserResource {
     @Operation(operationId = "getUserRealmRoles", summary = "Retrieve realm roles for a user in a realm")
     String[] getUserRealmRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
 
-    @POST
-    @Path("{realm}/userRoles/batch")
-    @Consumes(APPLICATION_JSON)
-    @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getUsersRoles", summary = "Retrieve client and realm roles for multiple users in a realm")
-    UserRoles[] getUsersRoles(@BeanParam RequestParams params, @PathParam("realm") String realm, @QueryParam("clientId") String clientId, String[] userIds);
-
     @GET
     @Path("userRoles/{clientId}")
     @Produces(APPLICATION_JSON)

@@ -127,7 +127,6 @@ export interface ViewerConfig {
 interface UserAssetLinkInfo {
     userId: string;
     usernameAndId: string;
-    roles: string[];
     restrictedUser: boolean;
 }
 
@@ -791,11 +790,10 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             return;
         }
 
-        const cols = [i18next.t("username"), i18next.t("roles"), i18next.t("restrictedUser")];
+        const cols = [i18next.t("username"), i18next.t("restrictedUser")];
         const rows = assetLinkInfos.sort(Util.sortByString(u => u.usernameAndId)).map(assetLinkInfo => {
             return [
                 assetLinkInfo.usernameAndId,
-                assetLinkInfo.roles.join(", "),
                 assetLinkInfo.restrictedUser ? i18next.t("yes") : i18next.t("no")
             ];
         });
@@ -968,36 +966,36 @@ async function getAssetChildren(parentId: string, childAssetType: string): Promi
     return response.data.filter((asset) => asset.type === childAssetType);
 }
 
-async function getLinkedUsers(asset: Asset): Promise<UserAssetLinkInfo[]> {
-    try {
-        const links = (
-            await manager.rest.api.AssetResource.getUserAssetLinks({
-                realm: manager.displayRealm,
-                assetId: asset.id
-            })
-        ).data;
-        const userIds = links.map(link => link.id!.userId!);
-        const userRolesList = (
-            await manager.rest.api.UserResource.getUsersRoles(
-                manager.displayRealm,
-                userIds,
-                { clientId: manager.clientId }
-            )
-        ).data;
+async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAssetLinkInfo> {
+    const userId = userAssetLink.id!.userId!;
+    const username = userAssetLink.userFullName!;
 
-        const rolesMap = new Map(userRolesList.map(ur => [ur.userId, ur]));
-
-        return links.map(link => {
-            const userId = link.id!.userId!;
-            const userRoles = rolesMap.get(userId);
-
-            return {
-                userId: userId,
-                usernameAndId: link.userFullName!,
-                roles: userRoles?.clientRoles ?? [],
-                restrictedUser: userRoles?.restrictedUser ?? false
-            };
+    const isRestrictedUser = await manager.rest.api.UserResource.getUserRealmRoles(manager.displayRealm, userId)
+        .then((rolesRes) => {
+            return rolesRes.data ? !!rolesRes.data.find(r => r === RESTRICTED_USER_REALM_ROLE) : false;
         });
+
+    return {
+        userId: userId,
+        usernameAndId: username,
+        restrictedUser: isRestrictedUser
+    };
+}
+
+async function getLinkedUsers(asset: Asset): Promise<UserAssetLinkInfo[]> {
+
+    try {
+        return await manager.rest.api.AssetResource.getUserAssetLinks(
+            {realm: manager.displayRealm, assetId: asset.id}
+        ).then((response) => {
+            const userAssetLinks = response.data;
+            const infoPromises = userAssetLinks.map(userAssetLink => {
+                return getLinkedUserInfo(userAssetLink)
+            });
+
+            return Promise.all(infoPromises);
+        });
+
     } catch (e) {
         console.log("Failed to get child assets: " + e);
         return [];
