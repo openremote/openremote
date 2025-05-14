@@ -108,7 +108,6 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             dashboard.setAccess(DashboardAccess.SHARED);
             return this.dashboardStorageService.createNew(ValueUtil.clone(dashboard));
         } catch (IllegalStateException ex) {
-            ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
         }
     }
@@ -144,7 +143,6 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
         } catch (IllegalArgumentException ex) {
             throw new WebApplicationException(ex, NOT_FOUND);
         } catch (IllegalStateException ex) {
-            ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
         }
     }
