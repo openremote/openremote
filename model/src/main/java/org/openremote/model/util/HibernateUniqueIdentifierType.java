@@ -12,4 +12,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @IdGeneratorType(HibernateUniqueIdentifierGenerator.class)
 @Retention(RUNTIME) @Target({METHOD,FIELD})
 public @interface HibernateUniqueIdentifierType {
+
+
 }

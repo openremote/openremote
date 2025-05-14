@@ -70,46 +70,23 @@ public class DashboardQuery implements Serializable {
      *
      */
     public static class DashboardConditions {
-        protected DashboardAccess[] viewAccess;
-        protected DashboardAccess[] editAccess;
-        protected Integer minWidgets;
+        protected DashboardAccess[] access;
 
         public DashboardConditions() {
-            this.viewAccess = new DashboardAccess[]{DashboardAccess.PUBLIC, DashboardAccess.SHARED, DashboardAccess.PRIVATE};
-            this.editAccess = new DashboardAccess[]{DashboardAccess.PUBLIC, DashboardAccess.SHARED, DashboardAccess.PRIVATE};
+            this.access = new DashboardAccess[]{DashboardAccess.PUBLIC, DashboardAccess.SHARED, DashboardAccess.PRIVATE};
         }
 
-        public DashboardConditions(DashboardAccess[] viewAccess, DashboardAccess[] editAccess, Integer minWidgets) {
-            this.viewAccess = viewAccess;
-            this.editAccess = editAccess;
-            this.minWidgets = minWidgets;
+        public DashboardConditions(DashboardAccess[] access) {
+            this.access = access;
         }
 
-        public DashboardConditions viewAccess(DashboardAccess[] access) {
-            this.viewAccess = access;
+        public DashboardConditions access(DashboardAccess[] access) {
+            this.access = access;
             return this;
         }
 
-        public DashboardConditions editAccess(DashboardAccess[] editAccess) {
-            this.editAccess = editAccess;
-            return this;
-        }
-
-        public DashboardConditions minWidgets(Integer minWidgets) {
-            this.minWidgets = minWidgets;
-            return this;
-        }
-
-        public DashboardAccess[] getViewAccess() {
-            return viewAccess;
-        }
-
-        public DashboardAccess[] getEditAccess() {
-            return editAccess;
-        }
-
-        public Integer getMinWidgets() {
-            return minWidgets;
+        public DashboardAccess[] getAccess() {
+            return access;
         }
     }
 
@@ -230,7 +207,6 @@ public class DashboardQuery implements Serializable {
         this.select = new Select();
         this.conditions = new Conditions();
         this.start = 0;
-        this.limit = 50;
     }
 
     public DashboardQuery select(Select select) {
@@ -280,5 +256,37 @@ public class DashboardQuery implements Serializable {
     public DashboardQuery limit(Integer limit) {
         this.limit = limit;
         return this;
+    }
+
+    public Select getSelect() {
+        return select;
+    }
+
+    public Conditions getConditions() {
+        return conditions;
+    }
+
+    public String[] getIds() {
+        return ids;
+    }
+
+    public StringPredicate[] getNames() {
+        return names;
+    }
+
+    public String[] getUserIds() {
+        return userIds;
+    }
+
+    public RealmPredicate getRealm() {
+        return realm;
+    }
+
+    public Integer getStart() {
+        return start;
+    }
+
+    public Integer getLimit() {
+        return limit;
     }
 }

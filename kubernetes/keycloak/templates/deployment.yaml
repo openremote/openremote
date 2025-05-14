@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "keycloak.fullname" . }}
+  labels:
+    {{- include "keycloak.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "keycloak.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "keycloak.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "keycloak.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: TZ
+              value: "{{ .Values.or.timeZone }}"
+            - name: KC_LOG_LEVEL
+              value: "{{ .Values.or.keycloak.logLevel }}"
+            - name: KC_DB_URL_HOST
+              value: "{{ .Values.or.postgresql.host }}"
+            - name: KC_DB_URL_PORT
+              value: "{{ .Values.or.postgresql.port }}"
+            - name: KC_DB_URL_DATABASE
+              value: "{{ .Values.or.postgresql.database }}"
+            - name: KC_DB_SCHEMA
+              value: "{{ .Values.or.postgresql.schema }}"
+            - name: KC_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: openremote-secret
+                  key: postgresql-username
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: openremote-secret
+                  key: postgresql-password
+            - name: KC_DB_POOL_MAX_SIZE
+              value: "{{ .Values.or.postgresql.poolMaxSize }}"
+            - name: KC_HOSTNAME
+              value: "{{ .Values.or.hostname }}"
+            - name: KC_HOSTNAME_PORT
+              value: "{{ .Values.or.port }}"
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: openremote-secret
+                  key: admin-password
+            - name: KEYCLOAK_DEFAULT_THEME
+              value: "{{ .Values.or.keycloak.defaultTheme }}"
+            - name: KEYCLOAK_ACCOUNT_THEME
+              value: "{{ .Values.or.keycloak.accountTheme }}"
+            - name: KEYCLOAK_WELCOME_THEME
+              value: "{{ .Values.or.keycloak.welcomeTheme }}"
+            - name: KEYCLOAK_SELF_REGISTERED_USER_ROLES
+              value: "{{ .Values.or.keycloak.selfRegisteredUserRoles }}"
+          {{- with .Values.or.env }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
