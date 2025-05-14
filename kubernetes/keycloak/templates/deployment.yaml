@@ -80,6 +80,8 @@ spec:
               value: "{{ .Values.or.keycloak.accountTheme }}"
             - name: KEYCLOAK_WELCOME_THEME
               value: "{{ .Values.or.keycloak.welcomeTheme }}"
+            - name: KEYCLOAK_SELF_REGISTERED_USER_ROLES
+              value: "{{ .Values.or.keycloak.selfRegisteredUserRoles }}"
           {{- with .Values.or.env }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
