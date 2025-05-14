@@ -78,6 +78,11 @@ import static jakarta.persistence.DiscriminatorType.STRING;
  * {@link AssetDescriptor} registered within the running instance. If the corresponding {@link AssetDescriptor} cannot
  * be found then the fallback generic {@link ThingAsset#DESCRIPTOR} will be assumed.
  * <p>
+ * The {@link #id} is BASE-62 encoded UUID (22 characters long) and can be supplied or auto generated; by allowing it
+ * to be supplied services have a predictable way to find a given asset and can use the
+ * {@link org.openremote.model.util.UniqueIdentifierGenerator#generateId( String)} to generate a constant ID from a
+ * given input string.
+ * <p>
  * The {@link #path} is a list of parent asset identifiers, starting with the identifier of this asset, followed by
  * parent asset identifiers, and ending with the identifier of the root asset in the tree. This is a transient property
  * and only resolved and usable when the asset is loaded from storage and as calculating it is costly, might be empty
