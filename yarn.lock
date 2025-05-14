@@ -2412,6 +2412,7 @@ __metadata:
   resolution: "@openremote/manager@workspace:ui/app/manager"
   dependencies:
     "@openremote/or-app": "workspace:*"
+    "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     "@playwright/test": "npm:1.52.0"
     iso-639-1: "npm:^3.1.3"
