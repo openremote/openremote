@@ -122,6 +122,7 @@ assets.forEach(
       await page.click(`text=${name}`);
       // Then Go to modify mode
       await assetsPage.switchMode("modify");
+      await page.getByRole("button", { name: "Expand all" }).click();
       // Then Uncheck on readonly of "<attribute_1>"
       await assetsPage.getAttributeLocator(attr_1).click();
       await assetsPage.getConfigurationItemLocator(attr_1, "Read only").click();
@@ -165,6 +166,25 @@ assets.forEach(
     });
   }
 );
+
+test("Delete assets", async ({ page, manager, assetsPage }) => {
+  // Given the Realm "smartcity" with the user "smartcity" and assets is setup
+  await manager.setup("smartcity", { assets: preparedAssets });
+  // When Login to OpenRemote "master" realm as "admin"
+  await manager.goToRealmStartPage("master");
+  await manager.login("admin");
+  // When Delete assets
+  await assetsPage.deleteSelectedAsset("Battery");
+  await page.waitForTimeout(500);
+  await assetsPage.deleteSelectedAsset("Solar Panel");
+
+  // must wait to confirm that assets have been deleted
+  await page.waitForTimeout(500);
+  // Then We should see an empty asset column
+  await expect(page.locator("text=Console")).toHaveCount(1);
+  await expect(page.locator("text=Solar Panel")).toHaveCount(0);
+  await expect(page.locator("text=Battery")).toHaveCount(0);
+});
 
 test.afterEach(async ({ manager }) => {
   await manager.cleanUp();
