@@ -35,9 +35,7 @@ class Manager {
    * @param setting Name of the setting menu item
    */
   async navigateToMenuItem(setting: string) {
-    await this.page.waitForTimeout(500);
     await this.page.click('button[id="menu-btn-desktop"]');
-    await this.page.waitForTimeout(500);
     const menu = this.page.locator("#menu > #list > li").filter({ hasText: setting });
     await menu.waitFor({ state: "visible" });
     await menu.click();
@@ -48,9 +46,7 @@ class Manager {
    * @param name Name of custom realm
    */
   async switchToRealmByRealmPicker(name: string) {
-    await this.page.waitForTimeout(500);
     await this.page.click("#realm-picker");
-    await this.page.waitForTimeout(500);
     await this.page.click(`li[role="menuitem"]:has-text("${name}")`);
   }
 
@@ -274,15 +270,13 @@ class Manager {
    *  Click the save button
    */
   async save() {
-    await this.page.waitForTimeout(200);
     await this.page.click("#edit-container");
-    await this.page.waitForTimeout(200); // wait for button to enabled
-    const isSaveBtnVisible = await this.page.isVisible('button:has-text("Save")');
-    if (isSaveBtnVisible) {
+    const saveBtn = this.page.locator('button:has-text("Save")');
+    await saveBtn.waitFor();
+    if (await saveBtn.isVisible()) {
       await this.page.click('button:has-text("Save")');
     }
-    await this.page.waitForTimeout(200);
-    const isDisabled = await this.page.locator('button:has-text("Save")').isDisabled();
+    const isDisabled = await saveBtn.isDisabled();
     //asset modify
     const ifModifyMode = await this.page.isVisible('button:has-text("OK")');
     if (ifModifyMode) {
@@ -290,7 +284,6 @@ class Manager {
     }
     if (!isDisabled) {
       await this.page.click('button:has-text("Save")');
-      await this.page.waitForTimeout(200);
     }
     await expect(this.page.locator('button:has-text("Save")')).toBeDisabled();
   }
@@ -331,7 +324,6 @@ class AssetsPage extends BasePage {
    * @param targetMode view or modify
    */
   async switchMode(targetMode: string) {
-    await this.page.waitForTimeout(400);
     const atModifyMode = await this.page.isVisible('button:has-text("View")');
     const atViewMode = await this.page.isVisible('button:has-text("Modify")');
 
@@ -348,8 +340,6 @@ class AssetsPage extends BasePage {
    * @param update for checking if updating values is needed
    */
   async addAssets(update: boolean, configOrLoction) {
-    await this.page.waitForTimeout(500);
-
     // Goes to assets page
     await this.page.click("#desktop-left a:nth-child(2)");
 
@@ -368,7 +358,6 @@ class AssetsPage extends BasePage {
           await this.page.click(`text=${asset.asset}`);
           await this.page.fill('#name-input input[type="text"]', asset.name);
           await this.page.click("#add-btn");
-          await this.page.waitForTimeout(500);
           // check if at modify mode
           // if yes we should see the save button then save
           const isSaveBtnVisible = await this.page.isVisible('button:has-text("Save")');
@@ -410,7 +399,6 @@ class AssetsPage extends BasePage {
             await this.switchMode("view");
             // update value in view mode
             await this.updateAssets(asset.attr_3, asset.a3_type, asset.v3);
-            await this.page.waitForTimeout(500);
 
             //switch to modify mode
             await this.switchMode("modify");
@@ -427,26 +415,13 @@ class AssetsPage extends BasePage {
    * unselect the asset
    */
   async unselect() {
-    await this.page.waitForTimeout(500);
     const isCloseVisible = await this.page.isVisible(".mdi-close >> nth=0");
-
-    // leave modify mode
-    // if (isViewVisible) {
-    //     await page.click('button:has-text("View")')
-    //     let btnDisgard = await page.isVisible('button:has-text("Disgard")')
-    //     if (btnDisgard) {
-    //         await page.click('button:has-text("Disgard")')
-    //         console.log("didn't save successfully")
-    //     }
-    // }
 
     // unselect the asset
     if (isCloseVisible) {
       //await page.page?.locator('.mdi-close').first().click()
       await this.page.click(".mdi-close >> nth=0");
     }
-
-    await this.page.waitForTimeout(500);
   }
 
   /**
@@ -488,14 +463,11 @@ class AssetsPage extends BasePage {
    * @param attr attribute's name
    */
   async configItem(item_1: string, item_2: string, attr: string) {
-    await this.page.waitForTimeout(500);
     await this.page.click(`td:has-text("${attr} ") >> nth=0`);
-    await this.page.waitForTimeout(500);
     await this.page.click(".attribute-meta-row.expanded td .meta-item-container div .item-add or-mwc-input #component");
     await this.page.click(`li[role="checkbox"]:has-text("${item_1}")`);
     await this.page.click(`li[role="checkbox"]:has-text("${item_2}")`);
     await this.page.click('div[role="alertdialog"] button:has-text("Add")');
-    await this.page.waitForTimeout(500);
 
     // close attribute menu
     await this.page.click(`td:has-text("${attr}") >> nth=0`);
@@ -510,9 +482,7 @@ class AssetsPage extends BasePage {
    */
   async setConfigItem(item_1: string, item_2: string, attr_1: string, attr_2: string) {
     await this.configItem(item_1, item_2, attr_1);
-    await this.page.waitForTimeout(500);
     await this.configItem(item_1, item_2, attr_2);
-    await this.page.waitForTimeout(500);
   }
 
   /**
@@ -526,7 +496,6 @@ class AssetsPage extends BasePage {
       await this.page.click(`text=${asset}`);
       await this.page.click(".mdi-delete");
       await this.page.click('button:has-text("Delete")');
-      await this.page.waitForTimeout(1500);
       expect(await this.page.locator(`text=${asset}`).count()).toBeFalsy();
     }
   }
