@@ -459,7 +459,6 @@ export class OrRuleTree extends OrTreeMenu {
         const type = global ? "global" : "realm";
         const realm = manager.isSuperUser() ? manager.displayRealm : manager.config.realm;
         const ruleset: RulesetUnion = {
-            id: 0,
             type: type,
             name: OrRules.DEFAULT_RULESET_NAME,
             lang: lang,
