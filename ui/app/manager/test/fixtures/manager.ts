@@ -221,15 +221,14 @@ class Manager {
     const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
     const config = { headers: { Authorization: `Bearer ${access_token}` } };
 
-    let realm;
-    if (this.realm) {
-      realm = this.realm;
+    if (this.assets) {
+      const assetIds = this.assets.map(({ id }) => id!);
       try {
-        const response = await rest.api.RealmResource.delete(this.realm, config);
+        const response = await rest.api.AssetResource.delete({ assetId: assetIds }, config);
         expect(response.status).toBe(204);
-        delete this.realm;
+        delete this.assets;
       } catch (e) {
-        console.warn("Could not delete realm: ", this.realm);
+        console.warn("Could not delete asset(s): ", assetIds);
       }
     }
 
@@ -243,13 +242,13 @@ class Manager {
       }
     }
 
-    if (this.role && realm) {
+    if (this.role && this.realm) {
       let roles;
       try {
-        const response = await rest.api.UserResource.getClientRoles(realm, this.clientId, config);
+        const response = await rest.api.UserResource.getClientRoles(this.realm, this.clientId, config);
         roles = response.data.filter((r) => r.id === this.role!.id);
         try {
-          const response = await rest.api.UserResource.updateRoles(realm, roles, config);
+          const response = await rest.api.UserResource.updateRoles(this.realm, roles, config);
           expect(response.status).toBe(204);
           delete this.role;
         } catch (e) {
@@ -260,14 +259,13 @@ class Manager {
       }
     }
 
-    if (this.assets) {
-      const assetIds = this.assets.map(({ id }) => id!);
+    if (this.realm) {
       try {
-        const response = await rest.api.AssetResource.delete({ assetId: assetIds }, config);
+        const response = await rest.api.RealmResource.delete(this.realm, config);
         expect(response.status).toBe(204);
-        delete this.assets;
+        delete this.realm;
       } catch (e) {
-        console.warn("Could not delete asset(s): ", assetIds);
+        console.warn("Could not delete realm: ", this.realm);
       }
     }
   }
