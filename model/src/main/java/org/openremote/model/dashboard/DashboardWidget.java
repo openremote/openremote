@@ -4,6 +4,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
+import java.util.Objects;
+
 public class DashboardWidget {
 
     // Fields
@@ -67,5 +69,17 @@ public class DashboardWidget {
 
     public Object getWidgetConfig() {
         return widgetConfig;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof DashboardWidget that)) return false;
+        return Objects.equals(id, that.id) && Objects.equals(displayName, that.displayName) && Objects.equals(gridItem, that.gridItem) && Objects.equals(widgetTypeId, that.widgetTypeId) && Objects.equals(widgetConfig, that.widgetConfig);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, displayName, gridItem, widgetTypeId, widgetConfig);
     }
 }
