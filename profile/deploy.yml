@@ -425,6 +425,10 @@ services:
       # exposed then the proxy should be configured to validate the host header to prevent abuse
       #KEYCLOAK_ISSUER_BASE_URI: 'https://192.168.1.2/auth'
 
+      # Configuration for roles to be assigned to self-registered users (when the listener is enabled)
+      # Example is "{\"realmRoles\":[\"restricted_user\"],\"clientRoles\":[{\"client\":\"openremote\",\"roles\":[\"read:assets\",\"write:attributes\"]}]}"
+      KEYCLOAK_SELF_REGISTERED_USER_ROLES: "{ }"
+
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: ${KEYCLOAK_JAVA_OPTS:-}
 
