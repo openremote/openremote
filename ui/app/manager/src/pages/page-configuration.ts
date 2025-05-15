@@ -299,7 +299,11 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                     @change="${() => { this.mapConfigChanged = true; }}"
                                     @map-file-changed="${(e: CustomEvent) => {
                                         // If a map file is provided prepare for upload
-                                        this.tilesForUpload = e.detail || undefined;
+                                        if (e.detail) {
+                                            this.tilesForUpload = e.detail;
+                                        } else {
+                                            this.customMapFilename = undefined;
+                                        }
                                         // Otherwise assume it is meant for deletion
                                         this.tilesForDeletion = !e.detail;
                                     }}"

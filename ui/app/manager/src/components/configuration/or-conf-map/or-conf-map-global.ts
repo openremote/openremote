@@ -211,13 +211,15 @@ export class OrConfMapGlobal extends LitElement {
 
     protected notifyMapFileChange(e: OrInputChangedEvent) {
         const file = (e.target as HTMLInputElement)?.files?.[0];
-        if (file.size > this.limit) {
-            showSnackbar(undefined, "configuration.global.uploadMapTilesError")
-            return;
-        }
-        const filenameEl = this.shadowRoot.getElementById('filename-elem') as HTMLInputElement
-        if (filenameEl) {
-            filenameEl.value = file.name;
+        if (file) {
+            if (file.size > this.limit) {
+                showSnackbar(undefined, "configuration.global.uploadMapTilesError")
+                return;
+            }
+            const filenameEl = this.shadowRoot.getElementById('filename-elem') as HTMLInputElement
+            if (filenameEl) {
+                filenameEl.value = file.name;
+            }
         }
         this.dispatchEvent(new CustomEvent("map-file-changed", { detail: file }));
     }
