@@ -26,7 +26,6 @@ test("Delete realm", async ({ page, manager, realmsPage }) => {
   await manager.navigateToMenuItem("Realms");
   // Then Delete realm
   await realmsPage.deleteRealm("smartcity");
-  await page.waitForTimeout(500);
   // Then We should not see the Realm picker
   await manager.goToRealmStartPage("master");
   // must wait for the realm picker to be rendered

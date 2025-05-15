@@ -71,7 +71,6 @@ test("Create a When-Then rule", async ({ page, manager }) => {
   );
   // Then Save rule
   await page.click('or-mwc-input:has-text("Save")');
-  await page.waitForTimeout(1000);
   // Then We see the rule with name of "<name>"
   await expect(page.locator(`text=${energyRule.name}`)).toHaveCount(1);
 });

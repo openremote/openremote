@@ -12,13 +12,10 @@ test("Add new user", async ({ page, manager, usersPage }) => {
   // Then Switch to "smartcity" realm
   await manager.switchToRealmByRealmPicker("smartcity");
   // When Navigate to "Users" page
-  await page.waitForTimeout(200);
   await manager.navigateToMenuItem("Users");
-  await page.waitForTimeout(200);
   // Then Add a new user
   await usersPage.addUser(users.smartcity.username, users.smartcity.password);
   // Then We see a new user
-  await page.waitForTimeout(500);
   await expect(page.locator('td:has-text("smartcity")')).toHaveCount(1);
   // When Navigate to "Roles" page
   await manager.navigateToMenuItem("Roles");
@@ -41,9 +38,7 @@ test("Add new user", async ({ page, manager, usersPage }) => {
     .click();
 
   await page.click('button:has-text("create")');
-  await page.waitForTimeout(1500);
   // Then We see a new role
-  await page.waitForTimeout(500);
   await expect(page.locator("text=Custom")).toHaveCount(1);
   // When Navigate to "asset" tab
   await manager.navigateToTab("asset");
@@ -56,7 +51,6 @@ test("Add new user", async ({ page, manager, usersPage }) => {
   await page.click('li[role="menuitem"]:has-text("Write")');
   await page.click('li[role="menuitem"]:has-text("Custom")');
   await page.click('div[role="button"]:has-text("Manager Roles")');
-  await page.waitForTimeout(500);
   await page.keyboard.press("Enter");
   // Then We see that assets permission are selected
   await expect(page.locator('or-mwc-input[title="Read asset data"] input[type="checkbox"]')).toBeChecked();
@@ -69,7 +63,6 @@ test("Add new user", async ({ page, manager, usersPage }) => {
   await page.click('li[role="menuitem"]:has-text("Write")');
   await page.click('li[role="menuitem"]:has-text("Custom")');
   await page.click('div[role="button"]:has-text("Manager Roles")');
-  await page.waitForTimeout(200);
   await page.keyboard.press("Enter");
 });
 
@@ -88,7 +81,6 @@ test("Delete user", async ({ page, manager }) => {
   await page.click('button:has-text("delete")');
   await page.click('div[role="alertdialog"] button:has-text("Delete")');
 
-  await page.waitForTimeout(500);
   // Then We should not see the "smartcity" user
   await expect(page.locator(`td:has-text("smartcity")`)).toHaveCount(0);
 });
