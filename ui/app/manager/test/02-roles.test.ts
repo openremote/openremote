@@ -17,10 +17,8 @@ test("Delete role", async ({ page, manager }) => {
   await manager.navigateToMenuItem("Roles");
   // Then Delete role
   await page.click("text=Custom");
-  await page.waitForTimeout(100);
   await page.click('tr[class="attribute-meta-row expanded"] >> button:has-text("delete")');
   await page.click('div[role="alertdialog"] button:has-text("Delete")');
-  await page.waitForTimeout(100);
   // Then We should not see the Custom role
   await expect(page.locator("text=Custom")).toHaveCount(0);
 });
