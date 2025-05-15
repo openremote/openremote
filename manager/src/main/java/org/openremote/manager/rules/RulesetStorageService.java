@@ -152,9 +152,13 @@ public class RulesetStorageService implements ContainerService {
     }
 
     public <T extends Ruleset> T merge(T ruleset) {
-        return persistenceService.doReturningTransaction(entityManager ->
-                entityManager.merge(ruleset)
-        );
+        return persistenceService.doReturningTransaction(entityManager -> {
+            // If the entity has ID 0, set it to null to ensure it's treated as a new entity
+            if (ruleset.getId() != null && ruleset.getId() == 0) {
+                ruleset.setId(null);
+            }
+            return entityManager.merge(ruleset);
+        });
     }
 
     public <T extends Ruleset> void delete(Class<T> rulesetType, Long id) {
