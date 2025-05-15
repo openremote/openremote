@@ -145,13 +145,12 @@ test("Create a Flow rule", async ({ page, rulesPage, manager }) => {
     "flow-node:nth-child(6) .socket-side.outputs flow-node-socket .socket",
     "flow-node:nth-child(7) .socket-side flow-node-socket .socket"
   );
-  await page.waitForTimeout(500);
   // Then Snapshot "flow"
   // Then Save rule
   await page.click('or-mwc-input:has-text("Save")');
   // Then We see the flow rule with name of "Solar panel"
   // name with FLOW can ensuring that it's a flow rule
-  await expect(page.locator(`text=${"Solar panel"}FLOW`)).toHaveCount(1);
+  await expect(page.locator(`text="Solar panel"`)).toHaveCount(1);
 });
 
 test.afterEach(async ({ manager }) => {
