@@ -23,6 +23,7 @@ public final class LoRaWANConstants {
     public static final String AGENT_LINK_CONFIG_UPLINK_PORT = "uplinkPort";
     public static final String AGENT_LINK_CONFIG_DOWNLINK_PORT = "downlinkPort";
     public static final String AGENT_LINK_CONFIG_VALUE_FILTER_JSON_PATH = "valueFilterJsonPath";
+    public static final String AGENT_LINK_CONFIG_VALUE_FILTER_REGEX = "valueFilterRegex";
     public static final String AGENT_LINK_CONFIG_VALUE_CONVERTER = "valueConverter";
     public static final String AGENT_LINK_CONFIG_WRITE_VALUE_CONVERTER = "writeValueConverter";
     public static final String AGENT_LINK_CONFIG_WRITE_OBJECT_VALUE_TEMPLATE = "writeObjectValueTemplate";

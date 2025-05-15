@@ -56,9 +56,8 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
 
         Optional<String> applicationId = getAgent().getApplicationId().map(id -> id.trim());
         Optional<String> devEUI = Optional.ofNullable(csvRecord.getDevEUI()).map(eui -> eui.trim());
-        Optional<Integer> uplinkPort = getAgentConfigUplinkPort(attribute);
 
-        if (uplinkPort.isPresent() && applicationId.isPresent() && devEUI.isPresent()) {
+        if (applicationId.isPresent() && devEUI.isPresent()) {
             agentLink.setSubscriptionTopic("application/" + applicationId.get() + "/device/" + devEUI.get().toLowerCase() + "/event/up");
         }
         return true;
@@ -72,9 +71,8 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
 
         Optional<String> applicationId = getAgent().getApplicationId().map(id -> id.trim());
         Optional<String> devEUI = Optional.ofNullable(csvRecord.getDevEUI()).map(eui -> eui.trim());
-        Optional<Integer> downlinkPort = getAgentConfigDownlinkPort(attribute);
 
-        if (downlinkPort.isPresent() && applicationId.isPresent() && devEUI.isPresent()) {
+        if (applicationId.isPresent() && devEUI.isPresent()) {
             agentLink.setPublishTopic("application/" + applicationId.get() + "/device/" + devEUI.get().toLowerCase() + "/command/down");
         }
         return true;

@@ -38,6 +38,7 @@ import org.openremote.model.protocol.ProtocolAssetService;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.JsonPathFilter;
+import org.openremote.model.value.RegexValueFilter;
 import org.openremote.model.value.ValueFilter;
 import org.openremote.model.value.ValueType;
 
@@ -219,6 +220,9 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         getAgentConfigJsonPath(attribute).ifPresent(
             jsonPath -> agentLink.setValueFilters(new ValueFilter[] {new JsonPathFilter(jsonPath, true, false)})
         );
+        getAgentConfigRegex(attribute).ifPresent(
+            pattern -> agentLink.setValueFilters(new ValueFilter[] {new RegexValueFilter(pattern, false, false, 1, 0)})
+        );
         return true;
     }
 
@@ -265,6 +269,14 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
             .filter(jsonPath -> jsonPath instanceof String)
             .map(jsonPath -> ((String) jsonPath).trim())
             .filter(jsonPath -> !jsonPath.isEmpty());
+    }
+
+    protected Optional<String> getAgentConfigRegex(Attribute<?> attribute) {
+        return getAgentConfig(attribute)
+            .map(map -> map.get(AGENT_LINK_CONFIG_VALUE_FILTER_REGEX))
+            .filter(regex -> regex instanceof String)
+            .map(regex -> ((String) regex).trim())
+            .filter(regex -> !regex.isEmpty());
     }
 
     protected Optional<ValueType.ObjectMap> getAgentConfigValueConverter(Attribute<?> attribute) {
@@ -385,13 +397,20 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
             Attribute<?> attribute = entry.getValue();
             MQTTAgentLink agentLink = new MQTTAgentLink(agent.getId());
 
-            isOk = configureMQTTSubscriptionTopic(attribute, agentLink, csvRecord);
-            isOk = isOk && configureMQTTPublishTopic(attribute, agentLink, csvRecord);
+            Optional<String> jsonPath = getAgentConfigJsonPath(attribute);
+            Optional<String> regex = getAgentConfigRegex(attribute);
+            if (jsonPath.isPresent() || regex.isPresent()) {
+                isOk = configureMQTTSubscriptionTopic(attribute, agentLink, csvRecord);
+            }
             isOk = isOk && configureMQTTValueFilter(attribute, agentLink, csvRecord);
             isOk = isOk && configureMQTTMessageMatchFilterAndPredicate(attribute, agentLink, csvRecord);
             isOk = isOk && configureMQTTValueConverter(attribute, agentLink, csvRecord);
-            isOk = isOk && configureMQTTWriteValueConverter(attribute, agentLink, csvRecord);
-            isOk = isOk && configureMQTTWriteValueTemplate(attribute, agentLink, csvRecord);
+            Optional<Integer> downlinkPort = getAgentConfigDownlinkPort(attribute);
+            if (downlinkPort.isPresent()) {
+                isOk = isOk && configureMQTTPublishTopic(attribute, agentLink, csvRecord);
+                isOk = isOk && configureMQTTWriteValueConverter(attribute, agentLink, csvRecord);
+                isOk = isOk && configureMQTTWriteValueTemplate(attribute, agentLink, csvRecord);
+            }
 
             attribute.addOrReplaceMeta(
                 new MetaItem<>(AGENT_LINK, agentLink)

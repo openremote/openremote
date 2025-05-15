@@ -112,9 +112,8 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
         Optional<String> apiKey = getAgent().getApiKey().map(key -> key.trim());
         Optional<String> tenantId = getAgent().getTenantId().map(id -> id.trim());
         Optional<String> devEUI = Optional.ofNullable(csvRecord.getDevEUI()).map(eui -> eui.trim());
-        Optional<Integer> uplinkPort = getAgentConfigUplinkPort(attribute);
 
-        if (uplinkPort.isPresent() && applicationId.isPresent() && devEUI.isPresent() && apiKey.isPresent()) {
+        if (applicationId.isPresent() && devEUI.isPresent() && apiKey.isPresent()) {
             if (devEuiToDeviceIdMap.isEmpty()) {
                 return false;
             }
@@ -143,9 +142,8 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
         Optional<String> apiKey = getAgent().getApiKey().map(key -> key.trim());
         Optional<String> tenantId = getAgent().getTenantId().map(id -> id.trim());
         Optional<String> devEUI = Optional.ofNullable(csvRecord.getDevEUI()).map(eui -> eui.trim());
-        Optional<Integer> downlinkPort = getAgentConfigDownlinkPort(attribute);
 
-        if (downlinkPort.isPresent() && applicationId.isPresent() && devEUI.isPresent() && apiKey.isPresent()) {
+        if (applicationId.isPresent() && devEUI.isPresent() && apiKey.isPresent()) {
             if (devEuiToDeviceIdMap.isEmpty()) {
                 return false;
             }
