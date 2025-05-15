@@ -211,7 +211,7 @@ class Manager {
     }
 
     // TODO: consider login retry with timeout instead
-    this.page.waitForTimeout(400);
+    this.page.waitForTimeout(1000);
   }
 
   /**
