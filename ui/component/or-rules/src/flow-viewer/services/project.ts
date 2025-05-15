@@ -221,7 +221,7 @@ export class Project extends EventEmitter {
     }
 
     public removeInvalidConnections() {
-        for (const c of this.connections.map(c => this.enrichConnection(c)).filter(async (j) => !(this.isValidConnection(j)))) {
+        for (const c of this.connections.map(c => this.enrichConnection(c)).filter(j => !this.isValidConnection(j))) {
             this.removeConnection(c);
         }
     }

@@ -29,9 +29,9 @@ import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-@IdGeneratorType(HibernateUniqueIdentifierGenerator.class)
+@IdGeneratorType(HibernateUniqueIdentifierGeneratorAssignable.class)
 @Retention(RUNTIME) @Target({METHOD,FIELD})
-public @interface HibernateUniqueIdentifierType {
+public @interface HibernateUniqueIdentifierTypeAssignable {
 
 
 }
