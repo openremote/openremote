@@ -2,6 +2,7 @@
   "name": "@openremote/or-attribute-card",
   "version": "1.3.3",
   "description": "OpenRemote attribute card",
+  "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
@@ -10,6 +11,7 @@
   },
   "types": "lib/index.d.ts",
   "scripts": {
+    "analyze": "npx cem analyze --config ../custom-elements-manifest.config.js",
     "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
     "prepack": "npx webpack"
