@@ -39,7 +39,6 @@ assets.forEach(
       await page.click(`text=${asset}`);
       await page.fill('#name-input input[type="text"]', name);
       await page.click("#add-btn");
-      await page.waitForTimeout(400);
       // check if at modify mode
       // if yes we should see the save button then save
       const isSaveBtnVisible = await page.isVisible('button:has-text("Save")');
@@ -50,7 +49,6 @@ assets.forEach(
       // When Go to asset "<name>" info page
       await page.click(`#list-container >> text=${name}`);
       // Then Go to modify mode
-      await page.waitForTimeout(1000);
       await assetsPage.switchMode("modify");
       // Then Give "<value_1>" to the "<attribute_1>" with type of "<A1_type>"
       await page.fill(`text=${attr_1} ${a1_type} >> input[type="number"]`, v1);
@@ -60,7 +58,6 @@ assets.forEach(
       await manager.save();
       // When Unselect
       // Then We see the asset with name of "<name>"
-      await page.waitForTimeout(500);
       // reason why it's 1 is because that this scnario runs in a outline
       // each time only one set of data will be used in one run of outlines
       // thus, only one asset will be added and removed in one run and next time will start with the empty envrioment
@@ -101,7 +98,6 @@ assets.forEach(
       await assetsPage.switchMode("modify");
       // Then Update location of <location_x> and <location_y>
       await page.click("text=location GEO JSON point >> button span");
-      await page.waitForTimeout(2000);
       await page.mouse.click(location_x, location_y, { delay: 1000 });
       await page.click('button:has-text("OK")');
       // Then Save
@@ -136,7 +132,6 @@ assets.forEach(
       }
       // When Go to panel page
       await page.click('button:has-text("View")');
-      await page.waitForTimeout(1500);
       // Then We should see a button on the right of "<attribute_1>"
       await expect(await page.waitForSelector(`#field-${attr_1} button`)).not.toBeNull();
       // And No button on the right of "<attribute_2>"
@@ -175,11 +170,9 @@ test("Delete assets", async ({ page, manager, assetsPage }) => {
   await manager.login("admin");
   // When Delete assets
   await assetsPage.deleteSelectedAsset("Battery");
-  await page.waitForTimeout(500);
   await assetsPage.deleteSelectedAsset("Solar Panel");
 
   // must wait to confirm that assets have been deleted
-  await page.waitForTimeout(500);
   // Then We should see an empty asset column
   await expect(page.locator("text=Console")).toHaveCount(1);
   await expect(page.locator("text=Solar Panel")).toHaveCount(0);
