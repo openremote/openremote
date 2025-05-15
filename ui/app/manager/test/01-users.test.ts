@@ -1,16 +1,14 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures/manager.js";
 import { users } from "./fixtures/data/users.js";
+import { custom } from "./fixtures/data/roles.js";
 
-test.beforeEach(async ({ manager }) => {
+test("Add new user", async ({ page, manager, usersPage }) => {
   // Given the Realm "smartcity" is setup
   await manager.setup("smartcity");
   // When Login to OpenRemote "master" realm as "admin"
   await manager.goToRealmStartPage("master");
   await manager.login("admin");
-});
-
-test("Add new user", async ({ page, manager, usersPage }) => {
   // Then Switch to "smartcity" realm
   await manager.switchToRealmByRealmPicker("smartcity");
   // When Navigate to "Users" page
@@ -73,6 +71,26 @@ test("Add new user", async ({ page, manager, usersPage }) => {
   await page.click('div[role="button"]:has-text("Manager Roles")');
   await page.waitForTimeout(200);
   await page.keyboard.press("Enter");
+});
+
+test("Delete user", async ({ page, manager }) => {
+  // Given the Realm "smartcity" with the user "smartcity" and assets is setup
+  await manager.setup("smartcity", { user: users.smartcity, role: custom });
+  // When Login to OpenRemote "master" realm as "admin"
+  await manager.goToRealmStartPage("master");
+  await manager.login("admin");
+  // Then Switch to "smartcity" realm
+  await manager.switchToRealmByRealmPicker("smartcity");
+  // When Navigate to "Users" page
+  await manager.navigateToMenuItem("Users");
+  // Then Delete user
+  await page.click('td:has-text("smartcity")');
+  await page.click('button:has-text("delete")');
+  await page.click('div[role="alertdialog"] button:has-text("Delete")');
+
+  await page.waitForTimeout(500);
+  // Then We should not see the "smartcity" user
+  await expect(page.locator(`td:has-text("smartcity")`)).toHaveCount(0);
 });
 
 test.afterEach(async ({ manager }) => {
