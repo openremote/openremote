@@ -431,7 +431,7 @@ jobs:
 
       - name: Define UI test command
         id: test-ui-command
-        if: ${{ steps.skip-ui-tests.outputs.value != 'true' }}
+        # if: ${{ steps.skip-ui-tests.outputs.value != 'true' }}
         # TODO: update when using the playwright-report across multiple projects
         run: echo "value=./gradlew ui:app:manager:npmTest" >> $GITHUB_OUTPUT
 
