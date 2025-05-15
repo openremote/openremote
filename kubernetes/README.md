@@ -13,6 +13,8 @@ There are two options on how the OR components can be accessed:
 In the later case, an Ingress controller must be installed in the cluster ([Nginx Controller](https://kubernetes.github.io/ingress-nginx/deploy/#quick-start) was used during testing).
 In the former case, an Ingress controller should NOT be installed as this causes conflicts.
 
+This README file covers deployment on a local machine, for information on deploying into an EKS cluster on AWS, see README-AWS.md
+
 ## TL;DR
 
 The following steps use the first option, managing connections through HAProxy.
