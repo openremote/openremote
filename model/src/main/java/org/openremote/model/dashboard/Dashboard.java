@@ -10,6 +10,7 @@ import org.hibernate.type.SqlTypes;
 import org.openremote.model.util.HibernateUniqueIdentifierType;
 
 import java.util.Date;
+import java.util.Objects;
 
 @Entity
 @Table(name = "DASHBOARD")
@@ -31,7 +32,7 @@ public class Dashboard {
 
     @Version
     @Column(name = "VERSION", nullable = false)
-    protected long version;
+    protected Long version;
 
     @Column(name = "OWNER_ID", nullable = false)
     protected String ownerId;
@@ -103,7 +104,6 @@ public class Dashboard {
         return this;
     }
 
-
     public String getId() {
         return this.id;
     }
@@ -116,7 +116,7 @@ public class Dashboard {
         return this.realm;
     }
 
-    public long getVersion() {
+    public Long getVersion() {
         return this.version;
     }
 
@@ -134,5 +134,17 @@ public class Dashboard {
 
     public DashboardTemplate getTemplate() {
         return this.template;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Dashboard dashboard)) return false;
+        return Objects.equals(id, dashboard.id) && Objects.equals(createdOn, dashboard.createdOn) && Objects.equals(realm, dashboard.realm) && Objects.equals(version, dashboard.version) && Objects.equals(ownerId, dashboard.ownerId) && access == dashboard.access && Objects.equals(displayName, dashboard.displayName) && Objects.equals(template, dashboard.template);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, createdOn, realm, version, ownerId, access, displayName, template);
     }
 }
