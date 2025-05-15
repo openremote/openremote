@@ -110,7 +110,7 @@ assets.forEach(
         await page.click('button:has-text("Save")');
       }
     });
-    test.skip(`Set and cancel read-only for asset: ${name}`, async ({ page, manager, assetsPage }) => {
+    test(`Set and cancel read-only for asset: ${name}`, async ({ page, manager, assetsPage }) => {
       // Given the Realm "smartcity" with the user "smartcity" and assets is setup
       await manager.setup("smartcity", { user: users.smartcity, assets: preparedAssetsWithReadonly });
       // When Login to OpenRemote "smartcity" realm as "smartcity"
@@ -129,6 +129,10 @@ assets.forEach(
       await assetsPage.getAttributeLocator(attr_2).click();
       await assetsPage.getConfigurationItemLocator(attr_2, "Read only").click();
       // Then Save
+      const isSaveBtnVisible = await page.isVisible('button:has-text("Save")');
+      if (isSaveBtnVisible) {
+        await page.click('button:has-text("Save")');
+      }
       // When Go to panel page
       await page.click('button:has-text("View")');
       await page.waitForTimeout(1500);

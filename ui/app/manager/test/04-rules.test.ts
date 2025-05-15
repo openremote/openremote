@@ -76,7 +76,7 @@ test("Create a When-Then rule", async ({ page, manager }) => {
   await expect(page.locator(`text=${energyRule.name}`)).toHaveCount(1);
 });
 
-test.skip("Create a Flow rule", async ({ page, manager }) => {
+test("Create a Flow rule", async ({ page, rulesPage, manager }) => {
   // Then Navigate to "Rule" tab
   await manager.navigateToTab("Rules");
   // When Create a new "Flow" rule
@@ -88,25 +88,25 @@ test.skip("Create a Flow rule", async ({ page, manager }) => {
   // page.dragAndDrop(source, target[, options]) is an alternative
   // move all the elements
   await page.locator(".node-item.input-node", { hasText: "Attribute value" }).hover();
-  await drag(450, 250);
+  await rulesPage.drag(450, 250);
 
   await page.hover("text=Number >> nth=0");
-  await drag(450, 350);
+  await rulesPage.drag(450, 350);
 
   await page.hover("text=Number >> nth=0");
-  await drag(450, 500);
+  await rulesPage.drag(450, 500);
 
   await page.hover("text=Number >> nth=0");
-  await drag(450, 600);
+  await rulesPage.drag(450, 600);
 
   await page.hover("text=>");
-  await drag(650, 300);
+  await rulesPage.drag(650, 300);
 
   await page.hover("text=Number switch");
-  await drag(800, 425);
+  await rulesPage.drag(800, 425);
 
   await page.locator(".node-item.output-node", { hasText: "Attribute value" }).hover();
-  await drag(1000, 425);
+  await rulesPage.drag(1000, 425);
   // Then Set value
   // set read and write
   await page.click('button:has-text("Attribute") >> nth=0'); // read
@@ -148,11 +148,10 @@ test.skip("Create a Flow rule", async ({ page, manager }) => {
   await page.waitForTimeout(500);
   // Then Snapshot "flow"
   // Then Save rule
+  await page.click('or-mwc-input:has-text("Save")');
   // Then We see the flow rule with name of "Solar panel"
   // name with FLOW can ensuring that it's a flow rule
-  await expect(page.locator(`text=${name}FLOW`)).toHaveCount(1);
-  // We should see {int} rules in total
-  // await expect(page.locator(".node-container")).toHaveCount(int);
+  await expect(page.locator(`text=${"Solar panel"}FLOW`)).toHaveCount(1);
 });
 
 test.afterEach(async ({ manager }) => {
