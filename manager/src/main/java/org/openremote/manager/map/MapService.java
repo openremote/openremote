@@ -182,6 +182,9 @@ public class MapService implements ContainerService {
 
             if (!TextUtil.isNullOrEmpty(attribution) && vectorLayer != null && !vectorLayer.isEmpty() && maxZoom > 0) {
                 metadata = new Metadata(attribution, vectorLayer, bounds, center, maxZoom, minZoom);
+            } else {
+                metadata = new Metadata();
+                LOG.log(Level.SEVERE, "Required metadata missing in mbtiles DB");
             }
         } catch (Exception ex) {
             metadata = new Metadata();
