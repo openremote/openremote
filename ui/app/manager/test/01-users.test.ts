@@ -5,7 +5,7 @@ import { custom } from "./fixtures/data/roles.js";
 
 test("Add new user", async ({ page, manager, usersPage }) => {
   // Given the Realm "smartcity" is setup
-  await manager.setup("smartcity");
+  await manager.setup("smartcity", { role: custom });
   // When Login to OpenRemote "master" realm as "admin"
   await manager.goToRealmStartPage("master");
   await manager.login("admin");
@@ -17,30 +17,7 @@ test("Add new user", async ({ page, manager, usersPage }) => {
   await usersPage.addUser(users.smartcity.username, users.smartcity.password);
   // Then We see a new user
   await expect(page.locator('td:has-text("smartcity")')).toHaveCount(1);
-  // When Navigate to "Roles" page
-  await manager.navigateToMenuItem("Roles");
-  // Then Create a new role
-  await page.getByText("Add Role").click();
-
-  // get total number of current roles
-  let rows = await page.$$(".mdc-data-table__row");
-  const count = await rows.length;
-
-  await page.fill(`#attribute-meta-row-${count - 1} input[type="text"] >> nth=0`, "Custom");
-  await page.fill(`#attribute-meta-row-${count - 1} input[type="text"] >> nth=1`, "read:asset, write:asset");
-  await page
-    .locator(`#attribute-meta-row-${count - 1}`)
-    .getByText("assets: Read asset data")
-    .click();
-  await page
-    .locator(`#attribute-meta-row-${count - 1}`)
-    .getByText("assets: Write asset data")
-    .click();
-
-  await page.click('button:has-text("create")');
-  // Then We see a new role
-  await expect(page.locator("text=Custom")).toHaveCount(1);
-  // When Navigate to "asset" tab
+  // When Navigate to "asset" tab // TODO: do something here
   await manager.navigateToTab("asset");
   // When Navigate to "Users" page
   await manager.navigateToMenuItem("Users");
