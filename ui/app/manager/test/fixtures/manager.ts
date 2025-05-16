@@ -123,17 +123,17 @@ class Manager {
     // 2. Rapidly creating and deleting a realm over and over seems to cause issues with user authentication,
     // causing the following error on login:
     // WWW-Authenticate: Bearer realm="smartcity", error="invalid_token", error_description="Didn't find publicKey for specified kid"
-    try {
-      const response = await rest.api.RealmResource.create(
-        // TODO: use a normalize function
-        { name: realm.toLowerCase(), displayName: realm, enabled: true },
-        config
-      );
-      expect(response.status).toBe(204);
-      this.realm = realm;
-    } catch (e) {
-      console.error("Failed to create realm", e.response.status);
-    }
+    // try {
+    //   const response = await rest.api.RealmResource.create(
+    //     // TODO: use a normalize function
+    //     { name: realm.toLowerCase(), displayName: realm, enabled: true },
+    //     config
+    //   );
+    //   expect(response.status).toBe(204);
+    //   this.realm = realm;
+    // } catch (e) {
+    //   console.error("Failed to create realm", e.response.status);
+    // }
 
     // Add role
     if (role) {
@@ -260,15 +260,15 @@ class Manager {
       }
     }
 
-    if (this.realm) {
-      try {
-        const response = await rest.api.RealmResource.delete(this.realm, config);
-        expect(response.status).toBe(204);
-        delete this.realm;
-      } catch (e) {
-        console.warn("Could not delete realm: ", this.realm);
-      }
-    }
+    // if (this.realm) {
+    //   try {
+    //     const response = await rest.api.RealmResource.delete(this.realm, config);
+    //     expect(response.status).toBe(204);
+    //     delete this.realm;
+    //   } catch (e) {
+    //     console.warn("Could not delete realm: ", this.realm);
+    //   }
+    // }
   }
 
   /**
