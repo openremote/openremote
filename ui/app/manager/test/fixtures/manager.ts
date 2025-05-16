@@ -118,6 +118,11 @@ class Manager {
     const config = { headers: { Authorization: `Bearer ${access_token}` } };
 
     // Add realm
+    // Creating realms in setup code like this is a bad idea for 2 reasons:
+    // 1. It slows down the test performance adding a couple seconds per test
+    // 2. Rapidly creating and deleting a realm over and over seems to cause issues with user authentication,
+    // causing the following error on login:
+    // WWW-Authenticate: Bearer realm="smartcity", error="invalid_token", error_description="Didn't find publicKey for specified kid"
     try {
       const response = await rest.api.RealmResource.create(
         // TODO: use a normalize function
