@@ -161,7 +161,7 @@ repositories {
         url = "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"
     }
     maven {
-        url = "https://s01.oss.sonatype.org/content/repositories/snapshots"
+        url = "https://central.sonatype.com/repository/maven-snapshots"
     }
     maven {
         url = "https://repo.jenkins-ci.org/releases/"
