@@ -324,15 +324,9 @@ class AssetsPage extends BasePage {
    * @param targetMode view or modify
    */
   async switchMode(targetMode: string) {
-    const atModifyMode = await this.page.isVisible('button:has-text("View")');
-    const atViewMode = await this.page.isVisible('button:has-text("Modify")');
-
-    if (atModifyMode && targetMode == "view") {
-      await this.page.click('button:has-text("View")');
-    }
-    if (atViewMode && targetMode == "modify") {
-      await this.page.click('button:has-text("Modify")');
-    }
+    const selector = this.page.getByRole("button", { name: targetMode });
+    await selector.waitFor({ state: "visible" });
+    await selector.click();
   }
 
   /**
@@ -592,6 +586,16 @@ class RulesPage extends BasePage {
 class UsersPage extends BasePage {
   constructor(readonly page: Page, private readonly manager: Manager) {
     super(page);
+  }
+
+  async toggleUserRoles(...roles: string[]) {
+    const roleSelector = this.page.getByRole("button", { name: "Manager roles" });
+    const itemSelector = this.page.locator("li");
+    await roleSelector.click({ delay: 500 });
+    for (const role of roles) {
+      await itemSelector.filter({ hasText: role }).click();
+    }
+    await roleSelector.click();
   }
 
   /**

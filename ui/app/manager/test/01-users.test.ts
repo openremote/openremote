@@ -46,23 +46,16 @@ test("Add new user", async ({ page, manager, usersPage }) => {
   await manager.navigateToMenuItem("Users");
   // Then Select the new role and unselect others
   await page.click('td:has-text("smartcity")');
-  await page.click('div[role="button"]:has-text("Manager Roles")');
-  await page.click('li[role="menuitem"]:has-text("Read")');
-  await page.click('li[role="menuitem"]:has-text("Write")');
-  await page.click('li[role="menuitem"]:has-text("Custom")');
-  await page.click('div[role="button"]:has-text("Manager Roles")');
+  await usersPage.toggleUserRoles("Read", "Write", "Custom");
   await page.keyboard.press("Enter");
   // Then We see that assets permission are selected
+  // TODO: fix these assertions
   await expect(page.locator('or-mwc-input[title="Read asset data"] input[type="checkbox"]')).toBeChecked();
   await expect(page.locator('or-mwc-input[title="Read asset data"] input[type="checkbox"]')).toBeDisabled();
   await expect(page.locator('or-mwc-input[title="Write asset data"] input[type="checkbox"]')).toBeChecked();
   await expect(page.locator('or-mwc-input[title="Write asset data"] input[type="checkbox"]')).toBeDisabled();
   // Then Switch back to origin
-  await page.click('div[role="button"]:has-text("Manager Roles")');
-  await page.click('li[role="menuitem"]:has-text("Read")');
-  await page.click('li[role="menuitem"]:has-text("Write")');
-  await page.click('li[role="menuitem"]:has-text("Custom")');
-  await page.click('div[role="button"]:has-text("Manager Roles")');
+  await usersPage.toggleUserRoles("Read", "Write", "Custom");
   await page.keyboard.press("Enter");
 });
 
