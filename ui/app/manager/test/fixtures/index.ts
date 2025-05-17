@@ -13,4 +13,20 @@ export class BasePage {
     await this.page.mouse.move(x, y);
     await this.page.mouse.up();
   }
+
+  /**
+   * Intercept the response of a request and handle it
+   * @param url
+   */
+  async interceptResponse<T>(url: string, cb: (response?: T) => void) {
+    await this.page.route(
+      url,
+      async (route, request) => {
+        await route.continue();
+        const response = await request.response();
+        cb(await response?.json());
+      },
+      { times: 1 }
+    );
+  }
 }
