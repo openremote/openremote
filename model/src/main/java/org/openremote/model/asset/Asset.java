@@ -622,4 +622,17 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
                 }));
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Asset<?> asset = (Asset<?>) o;
+        return version == asset.version && accessPublicRead == asset.accessPublicRead && Objects.equals(id, asset.id) && Objects.equals(createdOn, asset.createdOn) && Objects.equals(name, asset.name) && Objects.equals(parentId, asset.parentId) && Objects.equals(realm, asset.realm) && Objects.equals(type, asset.type) && Objects.deepEquals(path, asset.path) && Objects.equals(attributes, asset.attributes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, version, createdOn, name, accessPublicRead, parentId, realm, type, Arrays.hashCode(path), attributes);
+    }
 }
