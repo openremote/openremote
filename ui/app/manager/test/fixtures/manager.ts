@@ -6,7 +6,6 @@ const { admin, smartcity } = users;
 import { UserModel } from "../../src/pages/page-users";
 import { Asset, Role } from "@openremote/model";
 import { BasePage } from "./index";
-import assets from "./data/assets";
 
 class Manager {
   private readonly clientId = "openremote";
@@ -16,7 +15,7 @@ class Manager {
   public realm?: string;
   public user?: UserModel;
   public role?: Role;
-  public assets?: Asset[];
+  public assets: Asset[] = [];
 
   constructor(readonly page: Page, readonly baseURL: string) {
     // TODO: parameterize
@@ -222,12 +221,11 @@ class Manager {
     const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
     const config = { headers: { Authorization: `Bearer ${access_token}` } };
 
-    if (this.assets) {
+    if (this.assets.length > 0) {
       const assetIds = this.assets.map(({ id }) => id!);
       try {
         const response = await rest.api.AssetResource.delete({ assetId: assetIds }, config);
         expect(response.status).toBe(204);
-        delete this.assets;
       } catch (e) {
         console.warn("Could not delete asset(s): ", assetIds);
       }
@@ -308,7 +306,7 @@ class AssetsPage extends BasePage {
   }
 
   async goto() {
-    this.manager.navigateToMenuItem("Assets");
+    this.manager.navigateToTab("Assets");
   }
 
   // TODO: move to shared app & component fixture
@@ -334,80 +332,16 @@ class AssetsPage extends BasePage {
     await selector.click();
   }
 
-  /**
-   * create new empty assets
-   * @param update for checking if updating values is needed
-   */
-  async addAssets(update: boolean, configOrLoction) {
-    // Goes to assets page
-    await this.page.click("#desktop-left a:nth-child(2)");
-
-    // select conosle first to enter into the modify mode
-    await this.page.click(`#list-container >> text="Consoles"`);
-    await this.switchMode("modify");
-    await this.unselect();
-
-    // create assets accroding to assets array
-    for (let asset of assets) {
-      // setStepStartTime();
-      let isAssetVisible = await this.page.isVisible(`#list-container >> text=${asset.name}`);
-      try {
-        if (!isAssetVisible) {
-          await this.page.click(".mdi-plus");
-          await this.page.click(`text=${asset.asset}`);
-          await this.page.fill('#name-input input[type="text"]', asset.name);
-          await this.page.click("#add-btn");
-          // check if at modify mode
-          // if yes we should see the save button then save
-          const isSaveBtnVisible = await this.page.isVisible('button:has-text("Save")');
-          if (isSaveBtnVisible) {
-            await this.page.click('button:has-text("Save")');
-          }
-          await this.switchMode("modify");
-          // await this.page.unselect()
-          // await this.page.click(`#list-container >> text=${asset.name}`)
-          if (update) {
-            // switch to modify mode if at view mode
-
-            // update in modify mode
-            if (configOrLoction == "location") {
-              await this.updateLocation(asset.location_x, asset.location_y);
-            } else if (configOrLoction == "config") {
-              await this.setConfigItem(
-                asset.config_item_1,
-                asset.config_item_2,
-                asset.config_attr_1,
-                asset.config_attr_2
-              );
-            } else {
-              await this.updateLocation(asset.location_x, asset.location_y);
-              await this.setConfigItem(
-                asset.config_item_1,
-                asset.config_item_2,
-                asset.config_attr_1,
-                asset.config_attr_2
-              );
-            }
-
-            await this.updateInModify(asset.attr_1, asset.a1_type, asset.v1);
-            await this.updateInModify(asset.attr_2, asset.a2_type, asset.v2);
-
-            await this.manager.save();
-
-            //switch to view mode
-            await this.switchMode("view");
-            // update value in view mode
-            await this.updateAssets(asset.attr_3, asset.a3_type, asset.v3);
-
-            //switch to modify mode
-            await this.switchMode("modify");
-          }
-          await this.unselect();
-        }
-      } catch (error) {
-        console.error("error" + error);
-      }
-    }
+  async addAsset(type: string, name: string) {
+    // start adding assets
+    await this.page.click(".mdi-plus");
+    await this.page.click(`text=${type}`);
+    await this.page.fill('#name-input input[type="text"]', name);
+    // create
+    await this.interceptResponse<Asset>("**/asset", (asset) => {
+      if (asset) this.manager.assets.push(asset);
+    });
+    await this.page.click("#add-btn");
   }
 
   /**
