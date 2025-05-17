@@ -1,0 +1,90 @@
+// build.gradle (Groovy DSL, at your project root)
+plugins {
+    id 'base'
+    id 'application'   // brings in clean & installDist
+}
+
+// ------------- CONFIGURATION -------------
+ext {
+    balenaSlug        = 'openremote_future_proof_shipping/openremote'
+    dockerAssetsDir   = 'balena'
+    balenaCliVersion  = '21.1.11'  // set to desired balena-cli release
+}
+
+// ------------- TASK: DOWNLOAD & EXTRACT STANDALONE CLI -------------
+tasks.register('downloadBalenaCli') {
+    group = 'deployment'
+    description = 'Download and extract standalone balena-cli to build/tools'
+    outputs.dir file("$buildDir/tools/balena-cli")
+
+    doLast {
+        def os = org.gradle.internal.os.OperatingSystem.current()
+        println System.getProperty("os.arch")
+        println os.isWindows()
+        println os.isLinux()
+        println os.isMacOsX()
+        def arch = System.getProperty("os.arch").contains("aarch") ? "arm64" : "x64"
+        def classifier = os.isWindows() ? "windows-${arch}" :
+                os.isMacOsX() ? "macOS-${arch}" :
+                        "linux-${arch}"
+        def version = balenaCliVersion
+        def zipName = "balena-cli-v${version}-${classifier}-standalone.zip"
+        def downloadUrl = "https://github.com/balena-io/balena-cli/releases/download/v${version}/${zipName}"
+        def downloadFile = file("$buildDir/tools/${zipName}")
+
+        println "Downloading balena-cli from: $downloadUrl"
+        ant.get(src: downloadUrl, dest: downloadFile)
+
+        println "Extracting balena-cli to: $buildDir/tools/balena-cli"
+        copy {
+            from zipTree(downloadFile)
+            into "$buildDir/tools/balena-cli"
+        }
+        downloadFile.delete()
+    }
+}
+
+// Helper to get the extracted balena executable path
+ext.balenaExecutable = { ->
+    def binDir = file("$buildDir/tools/balena-cli/balena-cli")
+    def exeName = org.gradle.internal.os.OperatingSystem.current().isWindows() ? 'balena.exe' : 'balena'
+    return new File(binDir, exeName).absolutePath
+}
+
+// ------------- TASK: COPY DOCKER ASSETS -------------
+task copyOpenRemoteDocker(type: Copy) {
+    group       = 'deployment'
+    description = 'Copy Dockerfile + scripts into build/docker'
+
+    from dockerAssetsDir
+    include 'Dockerfile', '**/*.sh'
+    into "$buildDir/docker"
+}
+
+// ------------- TASK: RUN BALENA BUILD SCRIPT -------------
+task runOpenRemoteBalenaBuild(type: Exec) {
+    group       = 'deployment'
+    description = 'Run Balena build on the copied assets'
+    dependsOn   downloadBalenaCli, copyOpenRemoteDocker
+
+    workingDir file("$buildDir/docker")
+    // ensure our standalone CLI is used
+    commandLine balenaExecutable(), 'build', '.'
+}
+
+// ------------- TASK: PUSH TO BALENA -------------
+task pushOpenRemoteToBalena(type: Exec) {
+    group       = 'deployment'
+    description = 'Package and push the app to Balena'
+    dependsOn   clean, installDist, runOpenRemoteBalenaBuild
+
+    doFirst {
+        if (!balenaSlug) {
+            throw new GradleException("Please set ext.balenaSlug in build.gradle")
+        }
+        println "👉 Pushing to Balena with slug: $balenaSlug"
+    }
+
+    // use standalone CLI for push
+    commandLine balenaExecutable(), 'push', balenaSlug
+}
