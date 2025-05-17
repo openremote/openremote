@@ -1,12 +1,10 @@
 # ---------------------------------------------------------------------------------------------------------------------
-# Provisions a cloudwatch dashboard with variables to select which instance to show metrics for, should be one per
+# Provisions a CloudWatch dashboard with variables to select which instance to show metrics for, should be one per
 # region.
 # ---------------------------------------------------------------------------------------------------------------------
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'AWS Linux 2, docker compose, nfs support, cron support, cloud watch logging, route53 updating'
-
 Resources:
-
   CloudWatchDashboard:
     Type: AWS::CloudWatch::Dashboard
     Properties:
@@ -241,7 +239,8 @@ Resources:
               "properties": {
                 "metrics": [
                   [ "CWAgent", "mem_used_percent", "InstanceId", "a", { "label": "Memory Usage %" } ],
-                  [ "CWAgent", "disk_used_percent", ".", ".", "path", "/", "fstype", "xfs", { "label": "Disk Usage %" } ]
+                  [ "CWAgent", "disk_used_percent", ".", ".", "path", "/", "fstype", "xfs", { "label": "Root Disk Usage %" } ],
+                  [ "CWAgent", "disk_used_percent", ".", ".", "path", "/var/lib/docker/volumes", "fstype", "xfs", { "label": "Data Disk Usage %" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,

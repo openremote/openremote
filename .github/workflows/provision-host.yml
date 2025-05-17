@@ -27,10 +27,19 @@ on:
           - m6g.large
           - m6g.xlarge
         required: true
-      DISK_SIZE:
+      ROOT_DISK_SIZE:
         description: 'Override EC2 root EBS volume size (GB)'
         type: string
         default: '16'
+        required: false
+      DATA_DISK_SIZE:
+        description: 'Override EC2 data EBS volume size (GB)'
+        type: string
+        default: '16'
+        required: false
+      SNAPSHOT_ID:
+        description: 'Snapshot ID to create volume based off an existing snapshot'
+        type: string
         required: false
       ENABLE_METRICS:
         description: 'Enable metrics'
@@ -72,12 +81,14 @@ jobs:
         if: ${{ steps.checkUserMember.outputs.isTeamMember == 'true' }}
         run: |
           chmod +x .ci_cd/aws/*
-          .ci_cd/aws/provision_host.sh "$ACCOUNT_NAME" "$HOST" "$INSTANCE_TYPE" "$DISK_SIZE" "$ELASTIC_IP" "$PROVISION_S3_BUCKET" "$ENABLE_METRICS"
+          .ci_cd/aws/provision_host.sh "$ACCOUNT_NAME" "$HOST" "$INSTANCE_TYPE" "$ROOT_DISK_SIZE" "$DATA_DISK_SIZE" "$SNAPSHOT_ID" "$ELASTIC_IP" "$PROVISION_S3_BUCKET" "$ENABLE_METRICS"
         env:
           ACCOUNT_NAME: ${{ github.event.inputs.ACCOUNT_NAME }}
           HOST: ${{ github.event.inputs.HOST }}
           INSTANCE_TYPE: ${{ github.event.inputs.INSTANCE_TYPE }}
-          DISK_SIZE: ${{ github.event.inputs.DISK_SIZE }}
+          ROOT_DISK_SIZE: ${{ github.event.inputs.ROOT_DISK_SIZE }}
+          DATA_DISK_SIZE: ${{ github.event.inputs.DATA_DISK_SIZE }}
+          SNAPSHOT_ID: ${{ github.event.inputs.SNAPSHOT_ID }}
           ELASTIC_IP: ${{ github.event.inputs.ELASTIC_IP }}
           PROVISION_S3_BUCKET: ${{ github.event.inputs.PROVISION_S3_BUCKET }}
           AWS_ACCESS_KEY_ID: ${{ secrets._TEMP_AWS_ACCESS_KEY_ID }}
