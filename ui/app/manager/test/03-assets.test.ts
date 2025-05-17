@@ -28,24 +28,9 @@ assets.forEach(
       await manager.goToRealmStartPage("smartcity");
       await manager.login("smartcity");
       // Then Navigate to "asset" tab
-      await manager.navigateToTab("asset");
+      await assetsPage.goto();
       // Then Create a "<asset>" with name of "<name>"
-      // select conosle first to get into the modify mode
-      // await page.click(`#list-container >> text="Consoles"`);
-      // await switchMode("modify");
-      // await unselect();
-      // start adding assets
-      await page.click(".mdi-plus");
-      await page.click(`text=${asset}`);
-      await page.fill('#name-input input[type="text"]', name);
-      await page.click("#add-btn");
-      // check if at modify mode
-      // if yes we should see the save button then save
-      const isSaveBtnVisible = await page.isVisible('button:has-text("Save")');
-      if (isSaveBtnVisible) {
-        await page.click('button:has-text("Save")');
-      }
-      await assetsPage.unselect();
+      await assetsPage.addAsset(asset, name);
       // When Go to asset "<name>" info page
       await page.click(`#list-container >> text=${name}`);
       // Then Go to modify mode
