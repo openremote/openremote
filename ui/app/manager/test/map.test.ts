@@ -1,8 +1,8 @@
-import { expect } from "@playwright/test";
-import { test } from "./fixtures/manager.js";
+import { expect } from "@openremote/test";
+import { test, userStatePath } from "./fixtures/manager.js";
 import { preparedAssetsWithLocation as assets } from "./fixtures/data/assets.js";
 
-test.use({ storageState: "test/fixtures/data/user.json" });
+test.use({ storageState: userStatePath });
 
 test("Check markers on map", async ({ page, manager, browserName }) => {
   test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");

@@ -432,8 +432,7 @@ jobs:
       - name: Define UI test command
         id: test-ui-command
         # if: ${{ steps.skip-ui-tests.outputs.value != 'true' }}
-        # TODO: update when using the playwright-report across multiple projects
-        run: echo "value=./gradlew ui:app:manager:npmTest" >> $GITHUB_OUTPUT
+        run: echo "value=npm test" >> $GITHUB_OUTPUT
 
       - name: Define manager docker build command
         id: manager-docker-command
@@ -450,9 +449,7 @@ jobs:
               echo "pushRequired=true" >> $GITHUB_OUTPUT
               echo "managerDockerImage=openremote/manager:$FIRST_MANAGER_TAG" >> $GITHUB_OUTPUT
             else
-              # TODO: Temporary revert when done
-              command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64 -t openremote/manager:$commitShaShort $buildPath"
-              # command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
+              command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64 -t openremote/manager:$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
               echo "managerDockerImage=openremote/manager:$commitShaShort" >> $GITHUB_OUTPUT
             fi
             echo "value=$command" >> $GITHUB_OUTPUT
@@ -743,8 +740,7 @@ jobs:
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
         with:
           name: frontend-test-results
-          # TODO: update when using the playwright-report across multiple projects
-          path: ui/app/manager/playwright-report
+          path: playwright-report
 
       - name: Scan manager docker image
         if: steps.manager-docker-command.outputs.pushRequired == 'true'

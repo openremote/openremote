@@ -1,7 +1,6 @@
-import { expect } from "@playwright/test";
-import { test } from "./fixtures/manager.js";
+import { expect } from "@openremote/test";
+import { test, userStatePath } from "./fixtures/manager.js";
 import { preparedAssetsForRules as assets } from "./fixtures/data/assets.js";
-import { Ruleset } from "@openremote/model";
 
 test.beforeEach(async ({ manager }) => {
   // Given the Realm "smartcity" with the user "smartcity" and assets is setup
@@ -19,7 +18,7 @@ const energyRule = {
   value: 50,
 };
 
-test.use({ storageState: "test/fixtures/data/user.json" });
+test.use({ storageState: userStatePath });
 
 test("Create a When-Then rule", async ({ page, manager, rulesPage }) => {
   // Then Navigate to "Rule" tab

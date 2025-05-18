@@ -1,4 +1,5 @@
-import { test as base, type Page, type Locator, expect, type TestFixture } from "@playwright/test";
+import path from "node:path";
+
 import rest, { RestApi } from "@openremote/rest";
 import { users, Usernames } from "./data/users";
 import type { DefaultAssets } from "./data/assets";
@@ -6,8 +7,11 @@ const { admin, smartcity } = users;
 
 import { UserModel } from "../../src/pages/page-users";
 import { Asset, Role } from "@openremote/model";
-import { BasePage } from "@openremote/test";
+import { test as base, type Page, type Locator, expect, type TestFixture, BasePage } from "@openremote/test";
 import permissions from "./data/permissions";
+
+export const adminStatePath = path.join(__dirname, "data/.auth/admin.json");
+export const userStatePath = path.join(__dirname, "data/.auth/user.json");
 
 class Manager {
   private readonly clientId = "openremote";
@@ -21,8 +25,7 @@ class Manager {
   public rules: number[] = [];
 
   constructor(readonly page: Page, readonly baseURL: string) {
-    // TODO: parameterize
-    this.managerHost = "http://localhost:8080";
+    this.managerHost = process.env.managerUrl || "http://localhost:8080";
     rest.initialise(`${this.managerHost}/api/master/`);
     this.axios = rest.axiosInstance;
   }
@@ -250,15 +253,11 @@ class Manager {
   }
 
   protected getAppUrl(realm: string) {
-    const appUrl = this.baseURL + "manager/?realm=";
-    return appUrl + realm;
+    return `${new URL(this.baseURL).origin}/manager/?realm=${realm}`;
   }
 }
 
 class AssetsPage extends BasePage {
-  // private readonly inputBox: Locator;
-  // private readonly todoItems: Locator;
-
   constructor(readonly page: Page, private readonly manager: Manager) {
     super(page);
   }
@@ -267,12 +266,12 @@ class AssetsPage extends BasePage {
     this.manager.navigateToTab("Assets");
   }
 
-  // TODO: move to shared app & component fixture
+  // TODO: move to shared app & component fixture, when writing or-attribute-input tests.
   getAttributeLocator(attribute: string): Locator {
     return this.page.getByRole("row", { name: new RegExp(`\\b${attribute}\\b`) });
   }
 
-  // TODO: move to shared app & component fixture
+  // TODO: move to shared app & component fixture, when writing or-attribute-input tests.
   getConfigurationItemLocator(attribute: string, item: string): Locator {
     // match the sibling row i.e. the configuration item row of the attribute
     return this.getAttributeLocator(attribute)
@@ -528,10 +527,8 @@ class UsersPage extends BasePage {
 
 function withManager<R>(managerPage: Function): TestFixture<R, { page: Page; manager: Manager }> {
   return async ({ page: basePage, manager }, use) => {
-    // TODO: TEST THIS
-    // Check that the manager has been initialized
     expect(manager).toBeInstanceOf(Manager);
-    await use(new (managerPage.bind(null, basePage, manager) as VoidFunction)());
+    await use(new (managerPage.bind(null, basePage, manager))());
   };
 }
 
@@ -545,7 +542,6 @@ interface Fixtures {
 }
 
 export const test = base.extend<Fixtures>({
-  // TODO: handle baseURL
   manager: async ({ page, baseURL }, use) => await use(new Manager(page, baseURL!)),
   assetsPage: withManager(AssetsPage),
   realmsPage: withManager(RealmsPage),
