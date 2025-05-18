@@ -12,3 +12,7 @@ openremote/**/*.js.map
 screenshots/
 .env
 reports/**
+
+# Credentials for E2E tests
+test/fixtures/data/admin.json
+test/fixtures/data/user.json

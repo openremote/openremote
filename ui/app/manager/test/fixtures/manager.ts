@@ -1,11 +1,13 @@
 import { test as base, type Page, type Locator, expect, type TestFixture } from "@playwright/test";
 import rest, { RestApi } from "@openremote/rest";
 import { users, Usernames } from "./data/users";
+import type { DefaultAssets } from "./data/assets";
 const { admin, smartcity } = users;
 
 import { UserModel } from "../../src/pages/page-users";
-import { Asset, Role } from "@openremote/model";
-import { BasePage } from "./index";
+import { Asset, Role, Ruleset } from "@openremote/model";
+import { BasePage } from "@openremote/test";
+import permissions from "./data/permissions";
 
 class Manager {
   private readonly clientId = "openremote";
@@ -16,6 +18,7 @@ class Manager {
   public user?: UserModel;
   public role?: Role;
   public assets: Asset[] = [];
+  public rules: number[] = [];
 
   constructor(readonly page: Page, readonly baseURL: string) {
     // TODO: parameterize
@@ -112,27 +115,14 @@ class Manager {
    * @param user Role to create
    * @param user Assets to create
    */
-  async setup(realm: string, { user, role, assets }: { user?: UserModel; role?: Role; assets?: Asset[] } = {}) {
+  async setup(
+    realm: string,
+    { user, role, assets }: { user?: UserModel; role?: Role; assets?: Asset[] | DefaultAssets } = {}
+  ) {
     const access_token = await this.getAccessToken("master", admin.username, admin.password);
     const config = { headers: { Authorization: `Bearer ${access_token}` } };
 
-    // Add realm
-    // Creating realms in setup code like this is a bad idea for 2 reasons:
-    // 1. It slows down the test performance adding a couple seconds per test
-    // 2. Rapidly creating and deleting a realm over and over seems to cause issues with user authentication,
-    // causing the following error on login:
-    // WWW-Authenticate: Bearer realm="smartcity", error="invalid_token", error_description="Didn't find publicKey for specified kid"
-    // try {
-    //   const response = await rest.api.RealmResource.create(
-    //     // TODO: use a normalize function
-    //     { name: realm.toLowerCase(), displayName: realm, enabled: true },
-    //     config
-    //   );
-    //   expect(response.status).toBe(204);
-    //   this.realm = realm;
-    // } catch (e) {
-    //   console.error("Failed to create realm", e.response.status);
-    // }
+    this.realm = realm;
 
     // Add role
     if (role) {
@@ -209,9 +199,6 @@ class Manager {
           });
       }
     }
-
-    // TODO: consider login retry with timeout instead
-    this.page.waitForTimeout(1000);
   }
 
   /**
@@ -221,23 +208,26 @@ class Manager {
     const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
     const config = { headers: { Authorization: `Bearer ${access_token}` } };
 
+    if (this.rules.length > 0) {
+      for (const [i, id] of this.rules.entries()) {
+        try {
+          const response = await rest.api.RulesResource.deleteRealmRuleset(id!, config);
+          expect(response.status).toBe(204);
+          this.rules.splice(i);
+        } catch (e) {
+          console.warn("Could not delete realm rule: ", id);
+        }
+      }
+    }
+
     if (this.assets.length > 0) {
       const assetIds = this.assets.map(({ id }) => id!);
       try {
         const response = await rest.api.AssetResource.delete({ assetId: assetIds }, config);
         expect(response.status).toBe(204);
+        this.assets = [];
       } catch (e) {
         console.warn("Could not delete asset(s): ", assetIds);
-      }
-    }
-
-    if (this.user) {
-      try {
-        const response = await rest.api.UserResource.delete(this.user.realm!, this.user.id!, config);
-        expect(response.status).toBe(204);
-        delete this.user;
-      } catch (e) {
-        console.warn("Could not delete user: ", this.user);
       }
     }
 
@@ -245,7 +235,7 @@ class Manager {
       let roles;
       try {
         const response = await rest.api.UserResource.getClientRoles(this.realm, this.clientId, config);
-        roles = response.data.filter((r) => r.id === this.role!.id);
+        roles = response.data.filter((r) => r.id !== this.role!.id);
         try {
           const response = await rest.api.UserResource.updateRoles(this.realm, roles, config);
           expect(response.status).toBe(204);
@@ -257,38 +247,6 @@ class Manager {
         console.warn("Could not get roles: ", this.user);
       }
     }
-
-    // if (this.realm) {
-    //   try {
-    //     const response = await rest.api.RealmResource.delete(this.realm, config);
-    //     expect(response.status).toBe(204);
-    //     delete this.realm;
-    //   } catch (e) {
-    //     console.warn("Could not delete realm: ", this.realm);
-    //   }
-    // }
-  }
-
-  /**
-   *  Click the save button
-   */
-  async save() {
-    await this.page.click("#edit-container");
-    const saveBtn = this.page.locator('button:has-text("Save")');
-    await saveBtn.waitFor();
-    if (await saveBtn.isVisible()) {
-      await this.page.click('button:has-text("Save")');
-    }
-    const isDisabled = await saveBtn.isDisabled();
-    //asset modify
-    const ifModifyMode = await this.page.isVisible('button:has-text("OK")');
-    if (ifModifyMode) {
-      await this.page.click('button:has-text("OK")');
-    }
-    if (!isDisabled) {
-      await this.page.click('button:has-text("Save")');
-    }
-    await expect(this.page.locator('button:has-text("Save")')).toBeDisabled();
   }
 
   protected getAppUrl(realm: string) {
@@ -335,13 +293,20 @@ class AssetsPage extends BasePage {
   async addAsset(type: string, name: string) {
     // start adding assets
     await this.page.click(".mdi-plus");
-    await this.page.click(`text=${type}`);
+    await this.page.click(`li[data-value="${type}"]`);
     await this.page.fill('#name-input input[type="text"]', name);
     // create
     await this.interceptResponse<Asset>("**/asset", (asset) => {
       if (asset) this.manager.assets.push(asset);
     });
     await this.page.click("#add-btn");
+  }
+
+  async setAttributeValue(attribute: string, value: string) {
+    await this.page
+      .getByRole("row", { name: new RegExp(`\\b${attribute}\\b`) })
+      .locator("input")
+      .fill(value);
   }
 
   /**
@@ -419,37 +384,17 @@ class AssetsPage extends BasePage {
   }
 
   /**
-   * Delete a certain asset by its name
-   * @param asset asset's name
+   * Delete an asset by its name
+   * @param asset The asset name
    */
   async deleteSelectedAsset(asset: string) {
-    await this.manager.navigateToTab("Assets");
-    let assetSelected = await this.page.locator(`text=${asset}`).count();
-    if (assetSelected > 0) {
-      await this.page.click(`text=${asset}`);
-      await this.page.click(".mdi-delete");
-      await this.page.click('button:has-text("Delete")');
-      expect(await this.page.locator(`text=${asset}`).count()).toBeFalsy();
-    }
+    const assetLocator = this.page.locator(`text=${asset}`);
+    await expect(assetLocator).toHaveCount(1);
+    await assetLocator.click();
+    await this.page.click(".mdi-delete");
+    await this.page.getByRole("button", { name: "Delete" }).click();
+    await expect(assetLocator).toHaveCount(0);
   }
-
-  // async addToDo(text: string) {
-  //   await this.inputBox.fill(text);
-  //   await this.inputBox.press("Enter");
-  // }
-
-  // async remove(text: string) {
-  //   const todo = this.todoItems.filter({ hasText: text });
-  //   await todo.hover();
-  //   await todo.getByLabel("Delete").click();
-  // }
-
-  // async removeAll() {
-  //   while ((await this.todoItems.count()) > 0) {
-  //     await this.todoItems.first().hover();
-  //     await this.todoItems.getByLabel("Delete").first().click();
-  //   }
-  // }
 }
 
 // class InsightsPage extends BasePage { }
@@ -470,19 +415,25 @@ class RealmsPage extends BasePage {
    * @param name realm name
    */
   async addRealm(name: string) {
-    const isVisible = await this.page.isVisible(`[aria-label="attribute list"] span:has-text("${name}")`);
-    if (!isVisible) {
+    const locator = this.page.getByRole("cell", { name, exact: true });
+    await this.page.getByRole("cell", { name: "Master", exact: true }).waitFor();
+    if (await locator.isVisible()) {
+      console.warn(`Realm "${name}" already present`);
+    } else {
       await this.page.click("text=Add Realm");
       await this.page.locator("#realm-row-1 label").filter({ hasText: "Realm" }).fill(name);
       await this.page.locator("#realm-row-1 label").filter({ hasText: "Friendly name" }).fill(name);
       await this.page.click('button:has-text("create")');
-
-      // Set realm so it will be cleaned up
-      this.manager.realm = name;
-      // await page.wait(first == true ? 15000 : 10000);
-      // const count = await page.count(`[aria-label="attribute list"] span:has-text("${name}")`)
-      // await expect(count).toEqual(1)
     }
+  }
+
+  /**
+   * Select realm by its name
+   * @param name Realm's name
+   */
+  async selectRealm(realm: string) {
+    await this.page.click("#realm-picker");
+    await this.page.locator("#desktop-right li").filter({ hasText: realm }).click();
   }
 
   /**
@@ -494,11 +445,6 @@ class RealmsPage extends BasePage {
     await this.page.click('button:has-text("Delete")');
     await this.page.fill('div[role="alertdialog"] input[type="text"]', realm);
     await this.page.click('button:has-text("OK")');
-
-    const realmList = this.page.locator('[aria-label="attribute list"] span:has-text("smartcity")');
-    await expect(realmList).toHaveCount(0);
-    await this.manager.goToRealmStartPage("master");
-    await expect(this.page.locator("#desktop-right #realm-picker")).not.toBeVisible();
   }
 }
 
@@ -527,6 +473,10 @@ class UsersPage extends BasePage {
     super(page);
   }
 
+  getPermission(permission: string): Locator {
+    return this.page.getByRole("checkbox", { name: permission });
+  }
+
   async toggleUserRoles(...roles: string[]) {
     const roleSelector = this.page.getByRole("button", { name: "Manager roles" });
     const itemSelector = this.page.locator("li");
@@ -535,6 +485,17 @@ class UsersPage extends BasePage {
       await itemSelector.filter({ hasText: role }).click();
     }
     await roleSelector.click();
+  }
+
+  async toHavePermissions(...roles: string[]) {
+    for (const permisison of roles) {
+      await expect(this.getPermission(permisison)).toBeChecked();
+      await expect(this.getPermission(permisison)).toBeDisabled();
+    }
+    for (const permisison of permissions.filter((p) => !roles.includes(p))) {
+      await expect(this.getPermission(permisison)).not.toBeChecked();
+      await expect(this.getPermission(permisison)).not.toBeDisabled();
+    }
   }
 
   /**
@@ -555,19 +516,13 @@ class UsersPage extends BasePage {
       .fill(password);
     await this.page.locator("label").filter({ hasText: "Repeat password" }).fill(password);
     // select permissions
-    await this.page.getByRole("button", { name: "Realm roles" }).click();
-    await this.page.click('div[role="button"]:has-text("Manager Roles")');
-    await this.page.click('li[role="menuitem"]:has-text("Read")');
-    await this.page.click('li[role="menuitem"]:has-text("Write")');
-    await this.page.click('div[role="button"]:has-text("Manager Roles")');
-    // await this.page.route(`user/${this.manager.realm}/users`, async (route, request) => {
-    //   const response = await request.response()
-    //   console.log(response)
-    //   // Set realm so it will be cleaned up
-    //   this.manager.user = await response?.json();
-    // }, { times: 1 });
-    // create user
-    await this.page.click('button:has-text("create")');
+    // await this.page.getByRole("button", { name: "Realm roles" }).click();
+    await this.toggleUserRoles("Read", "Write");
+    await this.toHavePermissions(...permissions);
+    await this.interceptResponse<UserModel>(`user/${this.manager.realm}/users`, (user) => {
+      if (user) this.manager.user = user;
+    });
+    await this.page.getByRole("button", { name: "Create" }).click();
   }
 }
 
