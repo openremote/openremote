@@ -1,7 +1,6 @@
-import { expect } from "@playwright/test";
-import { test as setup } from "./fixtures/manager";
+import { expect } from "@openremote/test";
+import { adminStatePath, test as setup, userStatePath } from "./fixtures/manager";
 import { users } from "./fixtures/data/users";
-import { custom } from "./fixtures/data/roles";
 import permissions from "./fixtures/data/permissions";
 
 setup("Login as admin", async ({ page, manager, context }) => {
@@ -9,11 +8,11 @@ setup("Login as admin", async ({ page, manager, context }) => {
   await manager.login("admin");
   await page.waitForURL("**/manager/**");
   await page.waitForTimeout(2000);
-  await context.storageState({ path: "test/fixtures/data/admin.json" });
+  await context.storageState({ path: adminStatePath });
 });
 
 setup.describe(async () => {
-  setup.use({ storageState: "test/fixtures/data/admin.json" });
+  setup.use({ storageState: adminStatePath });
   setup("Add realm", async ({ page, manager, realmsPage }) => {
     // Given Login to OpenRemote "master" realm as "admin"
     await manager.goToRealmStartPage("master");
@@ -51,5 +50,5 @@ setup("Login as user", async ({ page, manager, context }) => {
   await manager.goToRealmStartPage("smartcity");
   await manager.login("smartcity");
   await page.waitForURL("**/manager/**");
-  await context.storageState({ path: "test/fixtures/data/user.json" });
+  await context.storageState({ path: userStatePath });
 });
