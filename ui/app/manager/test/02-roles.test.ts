@@ -1,13 +1,17 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures/manager.js";
 import { custom } from "./fixtures/data/roles.js";
+import { Role } from "@openremote/model";
 
-test("Create role", async ({ page, manager }) => {
+test.use({ storageState: "test/fixtures/data/admin.json" });
+
+test("Create role", async ({ page, manager, rolesPage }) => {
   // Given the Realm "smartcity" is setup
-  await manager.setup("smartcity", { role: custom });
+  await manager.setup("smartcity");
   // When Login to OpenRemote "master" realm as "admin"
   await manager.goToRealmStartPage("master");
-  await manager.login("admin");
+  // Then Switch to "smartcity" realm
+  await manager.switchToRealmByRealmPicker("smartcity");
   // When Navigate to "Roles" page
   await manager.navigateToMenuItem("Roles");
   // Then Create a new role
@@ -28,17 +32,20 @@ test("Create role", async ({ page, manager }) => {
     .getByText("assets: Write asset data")
     .click();
 
+  await rolesPage.interceptRequest<Role[]>("**/user/master/roles", (roles) => {
+    const role = roles?.find(({ name }) => name === "Custom");
+    if (role) manager.role = role;
+  });
   await page.click('button:has-text("create")');
   // Then We see a new role
   await expect(page.locator("text=Custom")).toHaveCount(1);
 });
 
 test("Delete role", async ({ page, manager }) => {
-  // Given the Realm "smartcity" with the user "smartcity" and assets is setup
+  // Given the Realm "smartcity" with a role is setup
   await manager.setup("smartcity", { role: custom });
   // When Login to OpenRemote "master" realm as "admin"
   await manager.goToRealmStartPage("master");
-  await manager.login("admin");
   // Then Switch to "smartcity" realm
   await manager.switchToRealmByRealmPicker("smartcity");
   // Then Navigate to "Roles" page

@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@openremote/rest": "workspace:*",
+    "@openremote/test": "workspace:*",
     "@openremote/util": "workspace:*",
     "@playwright/test": "1.52.0"
   },

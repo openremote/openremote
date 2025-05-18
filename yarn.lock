@@ -2413,6 +2413,7 @@ __metadata:
   dependencies:
     "@openremote/or-app": "workspace:*"
     "@openremote/rest": "workspace:*"
+    "@openremote/test": "workspace:*"
     "@openremote/util": "workspace:*"
     "@playwright/test": "npm:1.52.0"
     iso-639-1: "npm:^3.1.3"
@@ -2865,6 +2866,16 @@ __metadata:
     "@types/qs": "npm:^6.9.7"
     axios: "npm:0.24.0"
     qs: "npm:^6.8.0"
+  languageName: unknown
+  linkType: soft
+
+"@openremote/test@workspace:*, @openremote/test@workspace:ui/test":
+  version: 0.0.0-use.local
+  resolution: "@openremote/test@workspace:ui/test"
+  dependencies:
+    "@openremote/rest": "workspace:*"
+    "@openremote/util": "workspace:*"
+    "@playwright/test": "npm:1.52.0"
   languageName: unknown
   linkType: soft
 

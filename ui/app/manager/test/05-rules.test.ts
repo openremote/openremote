@@ -1,14 +1,13 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures/manager.js";
 import { preparedAssetsForRules as assets } from "./fixtures/data/assets.js";
-import { users } from "./fixtures/data/users.js";
+import { Ruleset } from "@openremote/model";
 
 test.beforeEach(async ({ manager }) => {
   // Given the Realm "smartcity" with the user "smartcity" and assets is setup
-  await manager.setup("smartcity", { user: users.smartcity, assets });
+  await manager.setup("smartcity", { assets });
   // When Login to OpenRemote "smartcity" realm as "smartcity"
   await manager.goToRealmStartPage("smartcity");
-  await manager.login("smartcity");
 });
 
 const energyRule = {
@@ -20,7 +19,9 @@ const energyRule = {
   value: 50,
 };
 
-test("Create a When-Then rule", async ({ page, manager }) => {
+test.use({ storageState: "test/fixtures/data/user.json" });
+
+test("Create a When-Then rule", async ({ page, manager, rulesPage }) => {
   // Then Navigate to "Rule" tab
   await manager.navigateToTab("Rules");
   // When Create a new "When-Then" rule
@@ -70,6 +71,9 @@ test("Create a When-Then rule", async ({ page, manager }) => {
     energyRule.value.toString()
   );
   // Then Save rule
+  await rulesPage.interceptResponse<number>("**/rules/realm", (rule) => {
+    if (rule) manager.rules.push(rule);
+  });
   await page.click('or-mwc-input:has-text("Save")');
   // Then We see the rule with name of "<name>"
   await expect(page.locator(`text=${energyRule.name}`)).toHaveCount(1);
@@ -144,11 +148,12 @@ test("Create a Flow rule", async ({ page, rulesPage, manager }) => {
     "flow-node:nth-child(6) .socket-side.outputs flow-node-socket .socket",
     "flow-node:nth-child(7) .socket-side flow-node-socket .socket"
   );
-  // Then Snapshot "flow"
   // Then Save rule
+  await rulesPage.interceptResponse<number>("**/rules/realm", (rule) => {
+    if (rule) manager.rules.push(rule);
+  });
   await page.click('or-mwc-input:has-text("Save")');
   // Then We see the flow rule with name of "Solar panel"
-  // name with FLOW can ensuring that it's a flow rule
   await expect(page.locator(`text="Solar panel"`)).toHaveCount(1);
 });
 
