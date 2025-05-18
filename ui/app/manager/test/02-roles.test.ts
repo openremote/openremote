@@ -2,10 +2,11 @@ import { expect } from "@playwright/test";
 import { test } from "./fixtures/manager.js";
 import { custom } from "./fixtures/data/roles.js";
 import { Role } from "@openremote/model";
+import permissions from "./fixtures/data/permissions.js";
 
 test.use({ storageState: "test/fixtures/data/admin.json" });
 
-test("Create role", async ({ page, manager, rolesPage }) => {
+test("Create role", async ({ page, manager, rolesPage, usersPage }) => {
   // Given the Realm "smartcity" is setup
   await manager.setup("smartcity");
   // When Login to OpenRemote "master" realm as "admin"
@@ -39,6 +40,18 @@ test("Create role", async ({ page, manager, rolesPage }) => {
   await page.click('button:has-text("create")');
   // Then We see a new role
   await expect(page.locator("text=Custom")).toHaveCount(1);
+  // When Navigate to "Users" page
+  await manager.navigateToMenuItem("Users");
+  // When Navigate to user
+  await page.getByRole("cell", { name: "smartcity" }).click();
+  // And Select the new role and unselect others
+  await usersPage.toggleUserRoles("Read", "Write", "Custom");
+  // Then We see that only the assets permission are selected
+  await usersPage.toHavePermissions("read:assets", "write:assets");
+  // When Switch back to original permissions
+  await usersPage.toggleUserRoles("Read", "Write", "Custom");
+  // Then We see that all permissions are selected
+  await usersPage.toHavePermissions(...permissions);
 });
 
 test("Delete role", async ({ page, manager }) => {

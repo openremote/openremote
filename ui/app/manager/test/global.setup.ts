@@ -29,7 +29,7 @@ setup.describe(async () => {
 
   setup("Add user", async ({ page, manager, usersPage }) => {
     // Given the Realm "smartcity" is setup
-    await manager.setup("smartcity", { role: custom });
+    await manager.setup("smartcity");
     // When Login to OpenRemote "master" realm as "admin"
     await manager.goToRealmStartPage("master");
     // And switch to the smartcity realm
@@ -42,12 +42,6 @@ setup.describe(async () => {
     await expect(page.getByRole("cell", { name: "smartcity" })).toHaveCount(1);
     // When Navigate to user
     await page.getByRole("cell", { name: "smartcity" }).click();
-    // And Select the new role and unselect others
-    await usersPage.toggleUserRoles("Read", "Write", "Custom");
-    // Then We see that only the assets permission are selected
-    await usersPage.toHavePermissions("read:assets", "write:assets");
-    // When Switch back to original permissions
-    await usersPage.toggleUserRoles("Read", "Write", "Custom");
     // Then We see that all permissions are selected
     await usersPage.toHavePermissions(...permissions);
   });
