@@ -5,7 +5,7 @@ import type { DefaultAssets } from "./data/assets";
 const { admin, smartcity } = users;
 
 import { UserModel } from "../../src/pages/page-users";
-import { Asset, Role, Ruleset } from "@openremote/model";
+import { Asset, Role } from "@openremote/model";
 import { BasePage } from "@openremote/test";
 import permissions from "./data/permissions";
 
