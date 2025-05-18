@@ -15,6 +15,21 @@ export class BasePage {
   }
 
   /**
+   * Intercept a request and handle it
+   * @param url
+   */
+  async interceptRequest<T>(url: string, cb: (response?: T) => void) {
+    await this.page.route(
+      url,
+      async (route, request) => {
+        await route.continue();
+        cb(await request.postDataJSON());
+      },
+      { times: 1 }
+    );
+  }
+
+  /**
    * Intercept the response of a request and handle it
    * @param url
    */

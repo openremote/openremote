@@ -1,8 +1,7 @@
-import { Asset } from "@openremote/model";
 // TODO: use Util.mergeObjects from @openremote/core instead when DOM related utilities and or-icon are moved out
 import { merge } from "lodash-es";
 
-export const preparedAssets: Asset[] = [
+const assets = [
   {
     name: "Battery",
     type: "ElectricityBatteryAsset",
@@ -35,7 +34,7 @@ export const preparedAssets: Asset[] = [
     attributes: {
       notes: { name: "notes", type: "text" },
       panelAzimuth: { name: "panelAzimuth", type: "integer" },
-      panelPitch: { name: "panelPitch", type: "positiveInteger" },
+      panelPitch: { name: "panelPitch", type: "positiveInteger", meta: { readOnly: true } },
       includeForecastSolarService: { name: "includeForecastSolarService", type: "boolean" },
       power: { name: "power", type: "number", meta: { readOnly: true } },
       setActualSolarValueWithForecast: { name: "setActualSolarValueWithForecast", type: "boolean" },
@@ -46,70 +45,64 @@ export const preparedAssets: Asset[] = [
       location: { name: "location", type: "GEO_JSONPoint" },
     },
   },
-];
+] as const;
 
-export const preparedAssetsWithLocation = merge(structuredClone(preparedAssets), [
+export const preparedAssetsWithLocation = merge(structuredClone(assets), [
   { attributes: { location: { value: { type: "Point", coordinates: [4.482259693115793, 51.91756799273] } } } },
   { attributes: { location: { value: { type: "Point", coordinates: [4.4845127486877345, 51.917435642781214] } } } },
-]) as Asset[];
+]);
 
-export const preparedAssetsWithReadonly = merge(structuredClone(preparedAssets), [
-  {},
-  { attributes: { panelPitch: { meta: { readOnly: true } } } },
-]) as Asset[];
-
-export const preparedAssetsForRules = merge(structuredClone(preparedAssets), [
+export const preparedAssetsForRules = merge(structuredClone(assets), [
   {
     attributes: {
-      energyLevel: { meta: { readOnly: true, ruleState: true, storeDataPoints: true } },
-      power: { meta: { readOnly: true, ruleState: true, storeDataPoints: true } },
+      energyLevel: { meta: { ruleState: true, storeDataPoints: true } },
+      power: { meta: { ruleState: true, storeDataPoints: true } },
     },
   },
   {
     attributes: {
-      power: { meta: { readOnly: true, ruleState: true, storeDataPoints: true } },
-      powerForecast: { meta: { readOnly: true, ruleState: true, storeDataPoints: true } },
+      power: { meta: { ruleState: true, storeDataPoints: true } },
+      powerForecast: { meta: { ruleState: true, storeDataPoints: true } },
     },
   },
-]) as Asset[];
+]);
 
-export default [
+type AssetNames = (typeof assets)[number]["name"];
+
+export const assetPatches: Record<
+  AssetNames,
   {
-    asset: "Electricity battery asset",
-    name: "Battery",
-    attr_1: "energyLevel",
-    attr_2: "power",
-    attr_3: "powerSetpoint",
-    a1_type: "Positive number",
-    a2_type: "Number",
-    a3_type: "number",
-    v1: "30",
-    v2: "50",
-    v3: "70",
-    location_x: 705,
-    location_y: 210,
-    config_item_1: "Rule state",
-    config_item_2: "Store data points",
-    config_attr_1: "energyLevel",
-    config_attr_2: "power",
+    attribute1: string;
+    attribute2: string;
+    attribute3: string;
+    value1: string;
+    value2: string;
+    value3: string;
+    x: number;
+    y: number;
+  }
+> = {
+  Battery: {
+    attribute1: "energyLevel",
+    attribute2: "power",
+    attribute3: "powerSetpoint",
+    value1: "30",
+    value2: "50",
+    value3: "70",
+    x: 705,
+    y: 210,
   },
-  {
-    asset: "PV solar asset",
-    name: "Solar Panel",
-    attr_1: "panelPitch",
-    attr_2: "power",
-    attr_3: "powerForecast",
-    a1_type: "Positive integer",
-    a2_type: "Number",
-    a3_type: "number",
-    v1: "30",
-    v2: "70",
-    v3: "100",
-    location_x: 600,
-    location_y: 200,
-    config_item_1: "Rule state",
-    config_item_2: "Store data points",
-    config_attr_1: "power",
-    config_attr_2: "powerForecast",
+  "Solar Panel": {
+    attribute1: "panelPitch",
+    attribute2: "power",
+    attribute3: "powerForecast",
+    value1: "30",
+    value2: "70",
+    value3: "100",
+    x: 600,
+    y: 200,
   },
-];
+};
+
+export type DefaultAssets = typeof assets;
+export default assets;
