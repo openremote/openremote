@@ -1,10 +1,10 @@
-import { expect } from "@playwright/test";
-import { test as cleanup } from "./fixtures/manager";
+import { expect } from "@openremote/test";
+import { adminStatePath, test as cleanup } from "./fixtures/manager";
 import { custom } from "./fixtures/data/roles";
 
-cleanup.use({ storageState: "test/fixtures/data/admin.json" });
+cleanup.use({ storageState: adminStatePath });
 
-cleanup("Delete user", async ({ page, manager, usersPage }) => {
+cleanup("Delete user", async ({ page, manager }) => {
   // Given the Realm "smartcity" with the user "smartcity" and assets is setup
   await manager.setup("smartcity", { role: custom });
   // When Login to OpenRemote "master" realm as "admin"

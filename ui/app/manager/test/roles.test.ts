@@ -1,10 +1,10 @@
-import { expect } from "@playwright/test";
-import { test } from "./fixtures/manager.js";
+import { expect } from "@openremote/test";
+import { adminStatePath, test } from "./fixtures/manager.js";
 import { custom } from "./fixtures/data/roles.js";
 import { Role } from "@openremote/model";
 import permissions from "./fixtures/data/permissions.js";
 
-test.use({ storageState: "test/fixtures/data/admin.json" });
+test.use({ storageState: adminStatePath });
 
 test("Create role", async ({ page, manager, rolesPage, usersPage }) => {
   // Given the Realm "smartcity" is setup

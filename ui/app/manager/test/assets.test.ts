@@ -1,8 +1,8 @@
-import { expect } from "@playwright/test";
-import { test } from "./fixtures/manager.js";
+import { expect } from "@openremote/test";
+import { test, userStatePath } from "./fixtures/manager.js";
 import assets, { assetPatches } from "./fixtures/data/assets.js";
 
-test.use({ storageState: "test/fixtures/data/user.json" });
+test.use({ storageState: userStatePath });
 
 assets.forEach(({ type, name, attributes }) => {
   const { attribute1, attribute2, attribute3, value1, value2, value3, x, y } =

@@ -64,4 +64,5 @@ local.properties
 # Playwright
 test-results
 playwright-report
-playwright/.cache
+ui/playwright/.cache/
+.auth
