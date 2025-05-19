@@ -95,10 +95,11 @@ assets.forEach(({ type, name, attributes }) => {
     await expect(saveBtn).toBeDisabled();
     // When Go to panel page
     await page.getByRole("button", { name: "View" }).click();
-    // Then We should see a button on the right of "<attribute_1>"
     await expect(page.getByRole("button", { name: "Modify" })).toBeVisible();
+    // Then We should see a button on the right of "<attribute_1>"
+    await expect(page.locator(`#field-${attribute1} #send-btn`)).toBeVisible();
     // And No button on the right of "<attribute_2>"
-    expect(page.locator(`#field-${attribute2} button`)).toHaveCount(0);
+    await expect(page.locator(`#field-${attribute2} #send-btn`)).not.toBeVisible();
   });
   test(`Set assets' configuration item for Insights and Rules: ${name}`, async ({ page, manager, assetsPage }) => {
     // Given assets are setup
