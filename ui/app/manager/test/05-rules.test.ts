@@ -64,8 +64,8 @@ test("Create a When-Then rule", async ({ page, manager, rulesPage }) => {
   );
   await page.click(`li[role="option"]:has-text("${energyRule.attribute_then}")`);
 
-  // set value
-  await page.click('label:has-text("Value")');
+  // set value. force: true is required for webkit as or-app somehow intercepts the pointer event
+  await page.click('label:has-text("Value")', { force: true });
   await page.fill(
     'text=Always Always Once Once per hour Once per day Once per week Building asset City  >> input[type="number"]',
     energyRule.value.toString()
