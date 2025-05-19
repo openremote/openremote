@@ -2,6 +2,7 @@
   "name": "@openremote/or-mwc-components",
   "version": "1.3.3",
   "description": "Material Design Components packaged as web components (The official components are hardcoded to use Material Design font which has limited icons)",
+  "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
@@ -16,6 +17,7 @@
     }
   },
   "scripts": {
+    "analyze": "npx cem analyze --config ../custom-elements-manifest.config.js",
     "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
     "prepack": "npx tsc -b"
