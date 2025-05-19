@@ -64,7 +64,7 @@ public abstract class LoRaWANAgent<T extends LoRaWANAgent<T, U>, U extends Abstr
 
     public LoRaWANAgent<T, U> setMqttPort(Integer port) {
         getAttributes().getOrCreate(MQTT_PORT).setValue(port);
-        return (T) this;
+        return this;
     }
 
     public Optional<String> getClientId() {
