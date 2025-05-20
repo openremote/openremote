@@ -22,6 +22,7 @@ package org.openremote.model.attribute;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
+import javax.annotation.CheckForNull;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -68,5 +69,15 @@ public class AttributeMap extends NamedMap<Attribute<?>> {
 
     public <T> void setValue(AttributeDescriptor<T> descriptor, T value) {
         getOrCreate(descriptor).setValue(value);
+    }
+
+    @Override
+    public boolean equals(@CheckForNull Object object) {
+        return super.equals(object);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
     }
 }
