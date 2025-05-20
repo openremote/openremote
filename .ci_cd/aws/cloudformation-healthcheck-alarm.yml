@@ -30,7 +30,7 @@ Resources:
   EmailSubscription:
     Type: AWS::SNS::Subscription
     Properties:
-      Endpoint: support@openremote.io
+      Endpoint: dennis@denniskuijs.nl
       Protocol: email
       TopicArn: !Ref SnsTopic
 
