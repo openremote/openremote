@@ -2,7 +2,11 @@
   "name": "@openremote/or-components",
   "version": "1.3.3",
   "description": "OpenRemote basic UI components",
+  "customElements": "custom-elements.json",
+  "main": "dist/umd/index.bundle.js",
+  "module": "lib/index.js",
   "exports": {
+    ".": "./lib/index.js",
     "./*": "./lib/*.js"
   },
   "typesVersions": {
@@ -13,6 +17,8 @@
     }
   },
   "scripts": {
+    "analyze": "npx cem analyze --config ../custom-elements-manifest.config.js",
+    "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
     "prepack": "npx tsc -b"
   },
@@ -21,6 +27,7 @@
   "dependencies": {
     "@material/elevation": "^9.0.0",
     "@openremote/core": "workspace:*",
+    "@openremote/or-mwc-components": "workspace:*",
     "lit": "^2.0.2",
     "simplebar": "^5.3.6"
   },

@@ -47,7 +47,7 @@ import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.jackson.AssetTypeIdResolver;
 import org.openremote.model.persistence.LTreeType;
-import org.openremote.model.util.HibernateUniqueIdentifierType;
+import org.openremote.model.util.HibernateUniqueIdentifierTypeAssignable;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.validation.AssetValid;
@@ -77,6 +77,11 @@ import static jakarta.persistence.DiscriminatorType.STRING;
  * The {@link #getType()}} of the asset is the same value as {@link Class#getSimpleName()} and should correspond with an
  * {@link AssetDescriptor} registered within the running instance. If the corresponding {@link AssetDescriptor} cannot
  * be found then the fallback generic {@link ThingAsset#DESCRIPTOR} will be assumed.
+ * <p>
+ * The {@link #id} is BASE-62 encoded UUID (22 characters long) and can be supplied or auto generated; by allowing it
+ * to be supplied services have a predictable way to find a given asset and can use the
+ * {@link org.openremote.model.util.UniqueIdentifierGenerator#generateId( String)} to generate a constant ID from a
+ * given input string.
  * <p>
  * The {@link #path} is a list of parent asset identifiers, starting with the identifier of this asset, followed by
  * parent asset identifiers, and ending with the identifier of the root asset in the tree. This is a transient property
@@ -277,7 +282,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     public static final AttributeDescriptor<String> MANUFACTURER = new AttributeDescriptor<>("manufacturer", ValueType.TEXT).withOptional(true);
     public static final AttributeDescriptor<String> MODEL = new AttributeDescriptor<>("model", ValueType.TEXT).withOptional(true);
 
-    @Id @HibernateUniqueIdentifierType
+    @Id @HibernateUniqueIdentifierTypeAssignable
     @Column(name = "ID", length = 22, columnDefinition = "char(22)")
     @Pattern(regexp = Constants.ASSET_ID_REGEXP, message = "{Asset.id.Pattern}")
     protected String id;

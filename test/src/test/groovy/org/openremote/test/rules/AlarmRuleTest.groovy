@@ -101,7 +101,7 @@ class AlarmRuleTest extends Specification implements ManagerContainerTrait {
         // Remove all alarms
         def alarms = alarmService.getAlarms(managerTestSetup.realmBuildingName, null, null, null)
         if (alarms.size() > 0) {
-            alarmService.removeAlarms((List<Long>) alarms.collect { it.id }, null)
+            alarmService.removeAlarms(alarms, (List<Long>) alarms.collect { it.id })
         }
 
         // Remove all rulesets
@@ -178,7 +178,7 @@ Value: 6000
         alarm.assigneeId == assigneeId
 
         and: "the asset is linked to the alarm"
-        def assetLinks = alarmService.getAssetLinks(alarm.id, null, managerTestSetup.realmBuildingName)
+        def assetLinks = alarmService.getAssetLinks(alarm.id, managerTestSetup.realmBuildingName)
         assetLinks.size() == 1
         def assetLink = assetLinks.get(0)
         assetLink.id.alarmId == alarm.id
