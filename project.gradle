@@ -161,7 +161,7 @@ repositories {
         url = "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"
     }
     maven {
-        url = "https://s01.oss.sonatype.org/content/repositories/snapshots"
+        url = "https://central.sonatype.com/repository/maven-snapshots"
     }
     maven {
         url = "https://repo.jenkins-ci.org/releases/"
@@ -339,6 +339,10 @@ task yarnInstallForce(type: Exec) {
 task npmClean(type: Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "run", "clean"
+}
+task npmAnalyze(type: Exec) {
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "run", "analyze"
 }
 task npmBuild(type: Exec) {
     mustRunAfter npmClean
