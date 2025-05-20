@@ -251,10 +251,10 @@ EOF
     ROLE=$(aws dlm create-default-role --resource-type snapshot --output text $ACCOUNT_PROFILE)
       
     if [ $? -ne 0 ]; then
-      echo "IAM Role creation has failed"
+      echo "DLM IAM Role creation has failed"
       exit 1
     else
-      echo "IAM Role creation is complete"
+      echo "DLM IAM Role creation is complete"
     fi
       
     ROLE_ARN=$(aws iam get-role --role-name AWSDataLifecycleManagerDefaultRole --query "Role.Arn" --output text $ACCOUNT_PROFILE 2>/dev/null)
@@ -292,35 +292,41 @@ if [ "$WAIT_FOR_STACK" != 'false' ]; then
   fi
 fi
 
-# Attaching/mounting EBS data volume
+# Attaching/Mounting EBS data volume (if volume is not already attached)
 echo "Attaching/Mounting EBS data volume"
+STATUS=$(aws ec2 describe-volumes --filters "Name=tag:Name,Values='$HOST-data'" --query "Volumes[?Tags[?Value=='$STACK_ID']].State" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
-EBS_DEVICE_NAME="/dev/sdf" # Only change if you know what you are doing
-INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values='$HOST'" --query "Reservations[].Instances[?Tags[?Value=='$STACK_ID']].InstanceId" --output text $ACCOUNT_PROFILE 2>/dev/null)
-VOLUME_ID=$(aws ec2 describe-volumes --filters "Name=tag:Name,Values='$HOST-data'" --query "Volumes[?Tags[?Value=='$STACK_ID']].VolumeId" --output text $ACCOUNT_PROFILE 2>/dev/null)
-
-PARAMS="InstanceId=$INSTANCE_ID,VolumeId=$VOLUME_ID,DeviceName=$EBS_DEVICE_NAME"
-
-EXECUTION_ID=$(aws ssm start-automation-execution --document-name attach_volume --parameters $PARAMS --output text $ACCOUNT_PROFILE)
-
-if [ $? -ne 0 ]; then
-  echo "EBS data volume attaching/mounting failed"
-  exit 1
-fi
-
-STATUS=$(aws ssm get-automation-execution --automation-execution-id $EXECUTION_ID --query "AutomationExecution.AutomationExecutionStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
-
-while [[ "$STATUS" == 'InProgress' ]]; do
-    echo "EBS data volume attaching/mounting is still in progress .. Sleeping 30 seconds"
-    sleep 30
-    STATUS=$(aws ssm get-automation-execution --automation-execution-id $EXECUTION_ID --query "AutomationExecution.AutomationExecutionStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
-done
-
-if [ "$STATUS" != 'Success' ]; then
-  echo "EBS data volume attaching/mounting has failed status is '$STATUS'"
-  exit 1
+if [ -n "$STATUS" ] && [ "$STATUS" != 'available' ]; then
+  echo "EBS data volume is already attached or not available for this host '$HOST' current status is '$STATUS'"
 else
-  echo "EBS data volume attaching/mounting is complete"
+
+  EBS_DEVICE_NAME="/dev/sdf" # Only change if you know what you are doing
+  INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values='$HOST'" --query "Reservations[].Instances[?Tags[?Value=='$STACK_ID']].InstanceId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+  VOLUME_ID=$(aws ec2 describe-volumes --filters "Name=tag:Name,Values='$HOST-data'" --query "Volumes[?Tags[?Value=='$STACK_ID']].VolumeId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+  PARAMS="InstanceId=$INSTANCE_ID,VolumeId=$VOLUME_ID,DeviceName=$EBS_DEVICE_NAME"
+
+  EXECUTION_ID=$(aws ssm start-automation-execution --document-name attach_volume --parameters $PARAMS --output text $ACCOUNT_PROFILE)
+
+  if [ $? -ne 0 ]; then
+    echo "Attaching/Mounting EBS data volume failed"
+    exit 1
+  fi
+
+  STATUS=$(aws ssm get-automation-execution --automation-execution-id $EXECUTION_ID --query "AutomationExecution.AutomationExecutionStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+  while [[ "$STATUS" == 'InProgress' ]]; do
+      echo "Attaching/Mounting EBS data volume is still in progress .. Sleeping 30 seconds"
+      sleep 30
+      STATUS=$(aws ssm get-automation-execution --automation-execution-id $EXECUTION_ID --query "AutomationExecution.AutomationExecutionStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+  done
+
+  if [ "$STATUS" != 'Success' ]; then
+    echo "Attaching/Mounting the EBS data volume has failed status is '$STATUS'"
+    exit 1
+  else
+    echo "Attaching/Mounting the EBS data volume is complete"
+  fi
 fi
 
 # Provision S3 bucket
