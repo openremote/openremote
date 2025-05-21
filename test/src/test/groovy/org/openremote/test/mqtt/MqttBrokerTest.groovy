@@ -3,7 +3,7 @@ package org.openremote.test.mqtt
 import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3AsyncClientView
 import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
 import com.hivemq.client.mqtt.MqttClientConfig
-import com.hivemq.client.mqtt.MqttClientConnectionConfig
+import com.hivemq.client.internal.mqtt.MqttClientConnectionConfig
 import io.netty.channel.socket.SocketChannel
 import org.openremote.agent.protocol.mqtt.MQTTLastWill
 import org.openremote.agent.protocol.mqtt.MQTTMessage
