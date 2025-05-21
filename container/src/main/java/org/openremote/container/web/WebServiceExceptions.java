@@ -24,9 +24,11 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.servlet.api.ExceptionHandler;
 import io.undertow.util.HttpString;
 
+import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.*;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -150,6 +152,13 @@ public class WebServiceExceptions {
         logException(throwable, origin, request.getMethod() + " " + uriInfo.getRequestUri());
 
         int statusCode = 500;
+
+        if (throwable instanceof OptimisticLockException) {
+            // We get here if JPA entity id is set on merge but it doesn't already exist (unless ID generator is configured to allow ID to be assigned)
+            // Or we get here is JPA entity version doesn't match what's in the DB
+            throwable = new NotAllowedException(throwable);
+        }
+
         if (throwable instanceof WebApplicationException) {
             Response response = ((WebApplicationException) throwable).getResponse();
             switch (response.getStatusInfo().getFamily()) {

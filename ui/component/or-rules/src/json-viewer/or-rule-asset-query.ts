@@ -339,7 +339,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         } else {
             return html`
                 <or-mwc-input type="${InputType.BUTTON}" .readonly="${this.readonly || false}" icon="clock-plus-outline"
-                              @or-mwc-input-changed="${() => onAdd(index)}"
+                              title="${i18next.t("rulesEditorAddDuration")}" @or-mwc-input-changed="${() => onAdd(index)}"
                 ></or-mwc-input>
             `;
         }
