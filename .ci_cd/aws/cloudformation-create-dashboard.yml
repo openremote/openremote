@@ -13,24 +13,24 @@ Resources:
         {
           "variables": [
             {
-                "type": "property",
-                "property": "InstanceName",
-                "inputType": "select",
-                "id": "InstanceName",
-                "label": "Instance",
-                "visible": true,
-                "search": "CWAgent-Prometheus MetricName=or_attributes_total",
-                "populateFrom": "InstanceName"
+              "type": "property",
+              "property": "InstanceName",
+              "inputType": "select",
+              "id": "InstanceName",
+              "label": "Instance",
+              "visible": true,
+              "search": "CWAgent-Prometheus MetricName=or_attributes_total",
+              "populateFrom": "InstanceName"
             },
             {
-                "type": "property",
-                "property": "InstanceId",
-                "inputType": "select",
-                "id": "InstanceId",
-                "label": "EC2 Instance ID",
-                "visible": true,
-                "search": "CWAgent MetricName=disk_used_percent",
-                "populateFrom": "InstanceId"
+              "type": "property",
+              "property": "InstanceId",
+              "inputType": "select",
+              "id": "InstanceId",
+              "label": "EC2 Instance ID",
+              "visible": true,
+              "search": "CWAgent MetricName=disk_used_percent",
+              "populateFrom": "InstanceId"
             }
           ],
           "widgets": [
@@ -42,12 +42,15 @@ Resources:
               "type": "metric",
               "properties": {
                 "metrics": [
+                  [ { "expression": "m8-m6-m5-m4-m3-m2-m1", "label": "Other", "id": "e1", "region": "eu-west-1" } ],
                   [ "CWAgent-Prometheus", "or_attributes_total", "InstanceName", "a", "source", "RulesEngine", { "id": "m1", "yAxis": "left", "label": "Rules" } ],
                   [ "...", "AgentService", { "id": "m3", "yAxis": "left", "label": "Agents" } ],
                   [ "...", "DefaultMQTTHandler", { "id": "m2", "yAxis": "left", "label": "MQTT" } ],
                   [ "...", "AssetResource", { "id": "m4", "yAxis": "left", "label": "HTTP API" } ],
                   [ "...", "WebsocketClient", { "id": "m5", "yAxis": "left", "label": "Websocket" } ],
-                  [ ".", "artemis_message_count", ".", ".", "queue", "*.*.writeattributevalue.#", { "id": "m6", "yAxis": "left", "label": "MQTT Backlog" } ]
+                  [ "...", "GatewayService", { "id": "m6", "yAxis": "left", "label": "Gateways" } ],
+                  [ ".", "artemis_message_count", ".", ".", "queue", "*.*.writeattributevalue.#", { "id": "m7", "yAxis": "left", "label": "MQTT Backlog" } ],
+                  [ ".", "or_attributes_seconds_count", ".", ".", { "visible": false, "label": "total", "id": "m8" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -81,7 +84,7 @@ Resources:
                 ],
                 "view": "timeSeries",
                 "stacked": false,
-                "region": "${AWS::Region}",
+                "region": "eu-west-1",
                 "stat": "Sum",
                 "period": 300,
                 "title": "Execution Time",
@@ -92,9 +95,9 @@ Resources:
                     "min": 0
                   },
                   "right": {
-                      "showUnits": false,
-                      "label": "ms",
-                      "min": 0
+                    "showUnits": false,
+                    "label": "ms",
+                    "min": 0
                   }
                 }
               }
@@ -115,7 +118,7 @@ Resources:
                 ],
                 "view": "timeSeries",
                 "stacked": false,
-                "region": "${AWS::Region}",
+                "region": "eu-west-1",
                 "title": "Proxy Sessions & Errors",
                 "stat": "Maximum",
                 "period": 300,
@@ -150,7 +153,7 @@ Resources:
                 ],
                 "view": "timeSeries",
                 "stacked": false,
-                "region": "${AWS::Region}",
+                "region": "eu-west-1",
                 "title": "Proxy I/O",
                 "stat": "Sum",
                 "period": 300,
@@ -178,7 +181,7 @@ Resources:
                 ],
                 "view": "timeSeries",
                 "stacked": false,
-                "region": "${AWS::Region}",
+                "region": "eu-west-1",
                 "title": "Container Threads",
                 "stat": "Sum",
                 "period": 300,
@@ -215,7 +218,7 @@ Resources:
                 ],
                 "view": "timeSeries",
                 "stacked": false,
-                "region": "${AWS::Region}",
+                "region": "eu-west-1",
                 "title": "EC2",
                 "stat": "Maximum",
                 "period": 300,
@@ -244,7 +247,7 @@ Resources:
                 ],
                 "view": "timeSeries",
                 "stacked": false,
-                "region": "${AWS::Region}",
+                "region": "eu-west-1",
                 "stat": "Average",
                 "period": 900,
                 "title": "Disk & Memory",
@@ -271,7 +274,7 @@ Resources:
                 ],
                 "view": "timeSeries",
                 "stacked": false,
-                "region": "${AWS::Region}",
+                "region": "eu-west-1",
                 "stat": "Sum",
                 "period": 300,
                 "title": "Provisioning Requests",
