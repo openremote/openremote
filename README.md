@@ -1,6 +1,6 @@
 # OpenRemote
 
-![CI/CD](https://github.com/openremote/openremote/workflows/CI/CD/badge.svg)
+[![CI/CD](https://github.com/openremote/openremote/actions/workflows/ci_cd.yml/badge.svg?branch=master&event=push)](https://github.com/openremote/openremote/actions/workflows/ci_cd.yml?query=event%3Apush+branch%3Amaster)
 [![Open Source? Yes!](https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github)](https://github.com/Naereen/badges/)
 <!-- ![tests](https://github.com/openremote/openremote/workflows/tests/badge.svg) -->
 

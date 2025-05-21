@@ -74,13 +74,10 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
                 this.createDashboardQuery(realm).ids(dashboardId).limit(1),
                 getUserId()
         );
-        // If no dashboards were returned, check whether it existed, and return a different response.
+
+        // Don't return a different response if dashboard exists, expensive and of limited use it only gives attackers more info than we should
         if(dashboards.length == 0) {
-            if(this.dashboardStorageService.exists(dashboardId, realm)) {
-                throw new WebApplicationException(FORBIDDEN);
-            } else {
-                throw new WebApplicationException(NOT_FOUND);
-            }
+            throw new WebApplicationException(NOT_FOUND);
         }
 
         return dashboards[0];
@@ -111,7 +108,6 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             dashboard.setAccess(DashboardAccess.SHARED);
             return this.dashboardStorageService.createNew(ValueUtil.clone(dashboard));
         } catch (IllegalStateException ex) {
-            ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
         }
     }
@@ -130,7 +126,6 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
         } catch (IllegalArgumentException ex) {
             throw new WebApplicationException(ex, NOT_FOUND);
         } catch (IllegalStateException ex) {
-            ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
         }
     }
@@ -148,7 +143,6 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
         } catch (IllegalArgumentException ex) {
             throw new WebApplicationException(ex, NOT_FOUND);
         } catch (IllegalStateException ex) {
-            ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
         }
     }
