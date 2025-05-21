@@ -186,9 +186,15 @@ const style = css`
     }
     .period-controls {
         display: flex;
+        flex-direction: row;
         min-width: 180px;
         align-items: center;
     }
+
+    .navigate {
+        flex-direction: column;
+    }
+    
 
     #controls {
         display: flex;
@@ -196,8 +202,7 @@ const style = css`
         margin: var(--internal-or-chart-controls-margin);
         width: 100%;
         flex-direction: column;
-        margin: 0;
-        border-top: 3px solid var(--or-app-color2);
+        justify-content: center;
     }
 
     #attribute-list {
@@ -295,7 +300,6 @@ const style = css`
     #chart-controls {
         display: flex;
         flex-direction: column;
-        align-items: center;
     }
     #chart {
         width: 100% !important;
@@ -539,7 +543,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                     borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
                     left: 50,//'5%', // 5% padding
-                    right: 50,//'5%',
+                    right: this.attributeSettings.rightAxisAttributes.length > 0 ? 50 : 10,
                     top: this.showToolBox ? 28 : 10,
                     bottom: this.showZoomBar ? 68 : 20
                 },
@@ -677,16 +681,20 @@ export class OrChart extends translate(i18next)(LitElement) {
     // Not the best implementation, but it changes the legend & controls to wrap under the chart.
     // Also sorts the attribute lists horizontally when it is below the chart
     applyChartResponsiveness(): void {
-        console.log("applyChartResponsiveness");
         if(this.shadowRoot) {
             const container = this.shadowRoot.getElementById('container');
             if(container) {
                 const bottomLegend: boolean = (container.clientWidth < 600);
                 container.style.flexDirection = bottomLegend ? 'column' : 'row';
+                const controls = this.shadowRoot.getElementById('controls');
+                if(controls) {
+                    controls.style.flexDirection = bottomLegend ? 'row' : 'column';
+                }
                 const periodControls = this.shadowRoot.querySelector('.period-controls') as HTMLElement;
                 if(periodControls) {
-                    periodControls.style.justifyContent = bottomLegend ? 'center' : 'space-between';
-                    periodControls.style.paddingLeft = bottomLegend ? '' : '18px';
+                    //periodControls.style.flexDirection = bottomLegend ? 'row' : 'column';
+                    //periodControls.style.justifyContent = bottomLegend ? 'center' : 'space-between';
+                    //periodControls.style.paddingLeft = bottomLegend ? '' : '18px';
                 }
                 const attributeList = this.shadowRoot.getElementById('attribute-list');
                 if(attributeList) {
@@ -694,8 +702,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                     attributeList.style.maxHeight = bottomLegend ? '90px' : '';
                     attributeList.style.flexFlow = bottomLegend ? 'row wrap' : 'column nowrap';
                     attributeList.style.padding = bottomLegend ? '0' : '12px 0';
-                    attributeList.style.display = bottomLegend ? 'grid' : 'flex';
-                    attributeList.style.gridTemplateColumns = bottomLegend ? 'repeat(2, 1fr)' : '';
                 }
                 this.shadowRoot.querySelectorAll('.attribute-list-item').forEach((item: Element) => {
                     (item as HTMLElement).style.minHeight = bottomLegend ? '0px' : '44px';
@@ -729,9 +735,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                 ${(this.timestampControls || this.attributeControls || this.showLegend) ? html`
                     <div id="chart-controls">
                         <div id="controls">
-                            <div class="period-controls">
                                 ${this.timePrefixKey && this.timePrefixOptions && this.timeWindowKey && this.timeWindowOptions ? html`
                                     ${this.timestampControls ? html`
+                                        <div class="period-controls">
                                         <!-- Time prefix selection -->
                                         ${getContentWithMenuTemplate(
                                                 html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}" ?disabled="${!!this.timeframe}"></or-mwc-input>`,
@@ -760,31 +766,33 @@ export class OrChart extends translate(i18next)(LitElement) {
                                                 undefined,
                                                 true
                                         )}
-                                        <!-- Scroll left button -->
-                                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!),this.timeframe? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "previous")}"></or-icon>
-                                        <!-- Scroll right button -->
-                                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!),this.timeframe? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "next")}"></or-icon>
-                                        <!-- Button that opens custom time selection or restores to widget setting-->
-                                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="${this.timeframe ? 'restore' : 'calendar-clock'}" @click="${() => this.timeframe ? (this.isCustomWindow = false, this.timeframe = undefined)  : this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-icon>
-
+                                        </div>
+                                        <div class="navigate">
+                                            <!-- Scroll left button -->
+                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!),this.timeframe? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "previous")}"></or-icon>
+                                            <!-- Scroll right button -->
+                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!),this.timeframe? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "next")}"></or-icon>
+                                            <!-- Button that opens custom time selection or restores to widget setting-->
+                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="${this.timeframe ? 'restore' : 'calendar-clock'}" @click="${() => this.timeframe ? (this.isCustomWindow = false, this.timeframe = undefined)  : this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-icon>
+                                        </div>
                                     ` : html`
                                         <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePrefixKey} ${this.timeWindowKey}" disabled="true"></or-mwc-input>
                                     `}
                                 ` : undefined}
-                            </div>
+                            
                             ${this.timeframe ? html`
                                 <div style="margin-left: 18px; font-size: 12px;">
                                     <table style="width: 100%;">
                                         <thead>
                                         <tr>
                                             <th style="font-weight: normal; text-align: left;">${i18next.t('from')}:</th>
-                                            <th style="font-weight: normal; text-align: left;">${moment(this.timeframe[0]).format("L HH:mm")}</th>
+                                            <th style="font-weight: normal; text-align: left;">${moment(this.timeframe[0]).format("lll")}</th>
                                         </tr>
                                         </thead>
                                         <tbody>
                                         <tr>
                                             <td>${i18next.t('to')}:</td>
-                                            <td>${moment(this.timeframe[1]).format("L HH:mm")}</td>
+                                            <td>${moment(this.timeframe[1]).format("lll")}</td>
                                         </tr>
                                         </tbody>
                                     </table>
@@ -1521,18 +1529,18 @@ export class OrChart extends translate(i18next)(LitElement) {
         if (connect) {
             //Connect event listeners
             // Make chart size responsive
-            //window.addEventListener("resize", () => this._chart!.resize());
-            this._containerResizeObserver = new ResizeObserver(() => { this._chart!.resize(); this.applyChartResponsiveness(); console.log("ResizeObserver triggered: Chart is resizing") } );
-            this._containerResizeObserver.observe(this._chartElem);
+            window.addEventListener("resize", () => this._chart!.resize());
+            this._containerResizeObserver = new ResizeObserver(() => { this._chart!.resize(); this.applyChartResponsiveness();});
+            if (this.shadowRoot) {
+                this._containerResizeObserver.observe(this.shadowRoot!.getElementById('container') as HTMLElement);
+            }
             // Add event listener for zooming
             this._zoomHandler = this._chart!.on('datazoom', debounce((params: any) => { this._onZoomChange(params); }, 1500));
-            // Add event listener for chart resize
-            this._resizeHandler = this._chart!.on('resize', throttle(() => { this.applyChartResponsiveness(); console.log("applychartresp"); }, 200));
+
         }
         else if (!connect) {
             //Disconnect event listeners
             this._chart!.off('datazoom', this._zoomHandler);
-            this._chart!.off('resize', this._resizeHandler);
             this._containerResizeObserver?.disconnect();
             this._containerResizeObserver = undefined;
         }
