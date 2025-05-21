@@ -102,6 +102,14 @@ public interface UserResource {
     void delete(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
 
     @PUT
+    @Path("{realm}/request-password-reset/{userId}")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
+    @Operation(operationId = "requestPasswordReset", summary = "Request a password reset for a user in a realm")
+    void requestPasswordReset(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
+
+    @PUT
     @Path("{realm}/reset-password/{userId}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)

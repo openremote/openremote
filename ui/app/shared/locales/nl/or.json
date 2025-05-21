@@ -323,6 +323,8 @@
   "loginTheme": "Login thema",
   "emailTheme": "Email thema",
   "resetPasswordAllowed": "Wachtwoord kan hersteld worden",
+  "resetPassword": "Wachtwoord herstellen",
+  "resetPasswordConfirmation": "Er is een e-mail verzonden om je wachtwoord te herstellen.",
   "rememberMe": "Ingelogd blijven",
   "deleteRealmConfirm":"Weet je zeker dat je deze realm wil verwijderen?",
   "serviceUser": "Service gebruiker",

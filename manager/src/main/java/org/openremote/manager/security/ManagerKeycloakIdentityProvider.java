@@ -31,6 +31,7 @@ import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.common.enums.SslRequired;
+import org.keycloak.models.UserModel;
 import org.keycloak.representations.idm.*;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -452,6 +453,16 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             User.class,
             Collections.singletonList("attributes"),
             null);
+    }
+
+    @Override
+    public void requestPasswordReset(String realm, String userId) {
+        getRealms(realmsResource -> {
+            realmsResource.realm(realm).users().get(userId).executeActionsEmail(
+                    Collections.singletonList(UserModel.RequiredAction.UPDATE_PASSWORD.toString())
+            );
+            return null;
+        });
     }
 
     @Override

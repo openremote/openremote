@@ -167,6 +167,17 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
+    public void requestPasswordReset(RequestParams requestParams, String realm, String userId) {
+        try {
+            identityService.getIdentityProvider().requestPasswordReset(realm, userId);
+        } catch (ClientErrorException ex) {
+            throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex);
+        }
+    }
+
+    @Override
     public void resetPassword(@BeanParam RequestParams requestParams, String realm, String userId, Credential credential) {
         try {
             identityService.getIdentityProvider().resetPassword(realm, userId, credential);
