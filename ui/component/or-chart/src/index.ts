@@ -542,10 +542,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                     show: true,
                     backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                     borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
-                    left: 50,//'5%', // 5% padding
+                    left: 10,
                     right: this.attributeSettings.rightAxisAttributes.length > 0 ? 50 : 10,
                     top: this.showToolBox ? 28 : 10,
-                    bottom: this.showZoomBar ? 68 : 20
+                    bottom: this.showZoomBar ? 68 : 20,
+                    containLabel: true
                 },
                 backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                 tooltip: {
@@ -565,8 +566,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                     min: this._startOfPeriod,
                     max: this._endOfPeriod,
                     axisLabel: {
-                        showMinLabel: true,
-                        showMaxLabel: true,
                         hideOverlap: true,
                         fontSize: 10,
                         formatter: {
