@@ -19,6 +19,7 @@
  */
 package org.openremote.test.protocol.mqtt
 
+import com.hivemq.client.internal.mqtt.handler.disconnect.MqttDisconnectUtil
 import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3AsyncClientView
 import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
 import com.hivemq.client.mqtt.MqttClientConfig
@@ -241,7 +242,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         }
 
         when: "the client is disconnected"
-        clientSpy.disconnect()
+        MqttDisconnectUtil.close(((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)clientSpy.client).clientConfig).delegate).connectionConfig.get()).channel, "Connection Error")
         //((SocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)clientSpy.client).clientConfig).delegate).connectionConfig.get()).channel).close()
 
         then: "it should reconnect"
