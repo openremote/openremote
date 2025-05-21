@@ -929,7 +929,7 @@ Resources:
     Condition: CreateHealthChecks
     Type: AWS::SNS::Subscription
     Properties:
-      Endpoint: Dennis@denniskuijs.nl
+      Endpoint: support@openremote.io
       Protocol: email
       TopicArn: !Ref SnsTopic
 
