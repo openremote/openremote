@@ -300,6 +300,7 @@ const style = css`
     #chart-controls {
         display: flex;
         flex-direction: column;
+        margin-top: 10px;
     }
     #chart {
         width: 100% !important;
@@ -545,12 +546,13 @@ export class OrChart extends translate(i18next)(LitElement) {
                     left: 10,
                     right: this.attributeSettings.rightAxisAttributes.length > 0 ? 50 : 10,
                     top: this.showToolBox ? 28 : 10,
-                    bottom: this.showZoomBar ? 68 : 20,
+                    bottom: this.showZoomBar ? 68 : 10,
                     containLabel: true
                 },
                 backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                 tooltip: {
                     trigger: 'axis',
+                    confine: true,
                     axisPointer: {
                         type: 'cross'
                     },
@@ -647,14 +649,14 @@ export class OrChart extends translate(i18next)(LitElement) {
             // Add toolbox if enabled
             if(this.showToolBox) {
                 this._chartOptions!.toolbox! = {
-                    right: 45,
+                    right: 8,
                     top: 0,
                     feature: {
                         dataView: {readOnly: true},
                         //magicType: {
                         //    type: ['line', 'bar']
                         //},
-                        saveAsImage: {}
+                        saveAsImage: {name: ['Chart Export ', this.panelName, `${moment(this._startOfPeriod).format("DD-MM-YYYY HH:mm")} - ${moment(this._endOfPeriod).format("DD-MM-YYYY HH:mm")}`].filter(Boolean).join('')}
                     }
                 }
             }
@@ -688,12 +690,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                 const controls = this.shadowRoot.getElementById('controls');
                 if(controls) {
                     controls.style.flexDirection = bottomLegend ? 'row' : 'column';
-                }
-                const periodControls = this.shadowRoot.querySelector('.period-controls') as HTMLElement;
-                if(periodControls) {
-                    //periodControls.style.flexDirection = bottomLegend ? 'row' : 'column';
-                    //periodControls.style.justifyContent = bottomLegend ? 'center' : 'space-between';
-                    //periodControls.style.paddingLeft = bottomLegend ? '' : '18px';
                 }
                 const attributeList = this.shadowRoot.getElementById('attribute-list');
                 if(attributeList) {
