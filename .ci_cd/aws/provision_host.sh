@@ -293,7 +293,7 @@ if [ "$WAIT_FOR_STACK" != 'false' ]; then
 fi
 
 # Attaching/Mounting EBS data volume (if volume is not already attached)
-echo "Attaching/Mounting the EBS data volume"
+echo "Attaching/Mounting EBS data volume"
 STATUS=$(aws ec2 describe-volumes --filters "Name=tag:Name,Values='$HOST-data'" --query "Volumes[?Tags[?Value=='$STACK_ID']].State" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
 if [ -n "$STATUS" ] && [ "$STATUS" != 'available' ]; then
@@ -309,7 +309,7 @@ else
   EXECUTION_ID=$(aws ssm start-automation-execution --document-name attach_volume --parameters $PARAMS --output text $ACCOUNT_PROFILE)
 
   if [ $? -ne 0 ]; then
-    echo "Attaching/Mounting the EBS data volume failed"
+    echo "Attaching/Mounting EBS data volume failed"
     exit 1
   fi
 
@@ -322,10 +322,10 @@ else
   done
 
   if [ "$STATUS" != 'Success' ]; then
-    echo "Attaching/Mounting the EBS data volume has failed status is '$STATUS'"
+    echo "Attaching/Mounting EBS data volume has failed status is '$STATUS'"
     exit 1
   else
-    echo "Attaching/Mounting the EBS data volume is complete"
+    echo "Attaching/Mounting EBS data volume is complete"
   fi
 fi
 
