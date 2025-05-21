@@ -19,6 +19,7 @@
  */
 package org.openremote.model.datapoint;
 
+import io.leangen.graphql.annotations.types.GraphQLType;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
@@ -28,6 +29,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "ASSET_DATAPOINT")
+@GraphQLType
 @org.hibernate.annotations.Immutable
 public class AssetDatapoint extends Datapoint {
     public static final String TABLE_NAME = "asset_datapoint";

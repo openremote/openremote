@@ -3,6 +3,10 @@ apply plugin: "maven-publish"
 apply plugin: "signing"
 
 dependencies {
+
+
+    implementation("com.graphql-java:graphql-java:23.1")
+    implementation("io.leangen.graphql:spqr:0.12.4")
     api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     api "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
     api "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"

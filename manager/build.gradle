@@ -16,6 +16,13 @@ dependencies {
     api project(":agent")
     api project(":model")
 
+    // GraphQL Java engine and servlet integration
+    implementation 'com.graphql-java:graphql-java:23.1'
+    implementation 'com.graphql-java-kickstart:graphql-java-servlet:16.0.0'
+    implementation("io.leangen.graphql:spqr:0.12.4")
+    implementation 'javax.validation:validation-api:2.0.1.Final'
+
+
     implementation "org.xerial:sqlite-jdbc:$sqliteVersion"
 
     api "org.mnode.ical4j:ical4j:$ical4jVersion"
