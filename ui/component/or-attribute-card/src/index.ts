@@ -454,7 +454,14 @@ export class OrAttributeCard extends LitElement {
                                                     return option;
                                                 }),
                                                 this.period,
-                                                (value) => this._setPeriodOption(value)
+                                                (value) => this._setPeriodOption(value),
+                                                undefined,      // closedCallback
+                                                false,          // multiSelect
+                                                true,           // translateValues
+                                                false,          // midHeight
+                                                false,          // fullWidth
+                                                "kpi-menu-id",  // Menu Id
+                                                true            // fixToHost
                                         )}
                                     </div>
                                 ` : html`
