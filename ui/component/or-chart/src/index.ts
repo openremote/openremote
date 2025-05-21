@@ -588,7 +588,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ['10%', '10%'],
                         scale: true,
-                        min: this.chartOptions.options.scales.y.min ? this.chartOptions.options.scales.y.min : undefined, //NOG FIXEN MET MERGEN VAN CHARTOPTIONS
+                        min: this.chartOptions.options.scales.y.min ? this.chartOptions.options.scales.y.min : undefined,
                         max: this.chartOptions.options.scales.y.max ? this.chartOptions.options.scales.y.max : undefined
                     },
                     {
@@ -1390,7 +1390,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             sampling: 'lttb',
             lineStyle: {
                 color: color,
-                type: predicted ? [2, 4] : extended ? [0.8, 10] : undefined,
+                type: predicted ? [2, 4] : extended ? [10, 2] : undefined,
                 opacity: faint ? 0.31 : 1,
             },
             itemStyle: {
