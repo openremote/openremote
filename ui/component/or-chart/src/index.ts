@@ -197,6 +197,7 @@ const style = css`
         width: 100%;
         flex-direction: column;
         margin: 0;
+        border-top: 3px solid var(--or-app-color2);
     }
 
     #attribute-list {
@@ -418,8 +419,8 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property()
     public timeWindowKey?: string;
 
-
-
+    @property()
+    public isCustomWindow?: boolean = false;
 
     @property()
     public showLegend: boolean = true;
@@ -676,6 +677,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     // Not the best implementation, but it changes the legend & controls to wrap under the chart.
     // Also sorts the attribute lists horizontally when it is below the chart
     applyChartResponsiveness(): void {
+        console.log("applyChartResponsiveness");
         if(this.shadowRoot) {
             const container = this.shadowRoot.getElementById('container');
             if(container) {
@@ -692,6 +694,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                     attributeList.style.maxHeight = bottomLegend ? '90px' : '';
                     attributeList.style.flexFlow = bottomLegend ? 'row wrap' : 'column nowrap';
                     attributeList.style.padding = bottomLegend ? '0' : '12px 0';
+                    attributeList.style.display = bottomLegend ? 'grid' : 'flex';
+                    attributeList.style.gridTemplateColumns = bottomLegend ? 'repeat(2, 1fr)' : '';
                 }
                 this.shadowRoot.querySelectorAll('.attribute-list-item').forEach((item: Element) => {
                     (item as HTMLElement).style.minHeight = bottomLegend ? '0px' : '44px';
@@ -728,11 +732,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                             <div class="period-controls">
                                 ${this.timePrefixKey && this.timePrefixOptions && this.timeWindowKey && this.timeWindowOptions ? html`
                                     ${this.timestampControls ? html`
-                                        <!-- Scroll left button -->
-                                        <or-mwc-input .type="${InputType.BUTTON}" icon="chevron-left" @or-mwc-input-changed="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeWindowKey!, "previous")}"></or-mwc-input>
                                         <!-- Time prefix selection -->
                                         ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}"></or-mwc-input>`,
+                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}" ?disabled="${!!this.timeframe}"></or-mwc-input>`,
                                                 this.timePrefixOptions.map((option) => ({ value: option } as ListItem)),
                                                 this.timePrefixKey,
                                                 (value: string | string[]) => {
@@ -746,7 +748,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                         )}
                                         <!-- Time window selection -->
                                         ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeWindowKey}"></or-mwc-input>`,
+                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.isCustomWindow ? "timeframe" : this.timeWindowKey}" ?disabled="${!!this.timeframe}"></or-mwc-input>`,
                                                 Array.from(this.timeWindowOptions!.keys()).map((key) => ({ value: key } as ListItem)),
                                                 this.timeWindowKey,
                                                 (value: string | string[]) => {
@@ -758,8 +760,13 @@ export class OrChart extends translate(i18next)(LitElement) {
                                                 undefined,
                                                 true
                                         )}
+                                        <!-- Scroll left button -->
+                                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!),this.timeframe? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "previous")}"></or-icon>
                                         <!-- Scroll right button -->
-                                        <or-mwc-input .type="${InputType.BUTTON}" icon="chevron-right" @or-mwc-input-changed="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeWindowKey!, "next")}"></or-mwc-input>
+                                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!),this.timeframe? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "next")}"></or-icon>
+                                        <!-- Button that opens custom time selection or restores to widget setting-->
+                                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="${this.timeframe ? 'restore' : 'calendar-clock'}" @click="${() => this.timeframe ? (this.isCustomWindow = false, this.timeframe = undefined)  : this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-icon>
+
                                     ` : html`
                                         <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePrefixKey} ${this.timeWindowKey}" disabled="true"></or-mwc-input>
                                     `}
@@ -1020,6 +1027,33 @@ export class OrChart extends translate(i18next)(LitElement) {
         dialog.addEventListener(OrAttributePickerPickedEvent.NAME, (ev: any) => this._addAttribute(ev.detail));
     }
 
+    protected _openTimeDialog(startTimestamp?: number, endTimestamp?: number) {
+        this.isCustomWindow = true;
+        const startRef: Ref<OrMwcInput> = createRef();
+        const endRef: Ref<OrMwcInput> = createRef();
+        const dialog = showDialog(new OrMwcDialog()
+            .setHeading(i18next.t('timeframe'))
+            .setContent(() => html`
+                <div>
+                    <or-mwc-input ${ref(startRef)} type="${InputType.DATETIME}" required label="${i18next.t('start')}" .value="${startTimestamp}"></or-mwc-input>
+                    <or-mwc-input ${ref(endRef)} type="${InputType.DATETIME}" required label="${i18next.t('ending')}" .value="${endTimestamp}"></or-mwc-input>
+                </div>
+            `)
+            .setActions([{
+                actionName: "cancel",
+                content: "cancel"
+            }, {
+                actionName: "ok",
+                content: "ok",
+                action: () => {
+                    if(startRef.value?.value && endRef.value?.value) {
+                        this.timeframe = [new Date(startRef.value.value), new Date(endRef.value.value)];
+                    }
+                }
+            }])
+        )
+    }
+
 
     protected async _addAttribute(selectedAttrs?: AttributeRef[]) {
         if (!selectedAttrs) return;
@@ -1182,7 +1216,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         return [startDate.toDate(), endDate.toDate()];
     }
 
-    protected _shiftTimeframe(currentStart: Date, timeWindowSelected: string, direction: string) {
+    protected _shiftTimeframe(currentStart: Date, currentEnd: Date, timeWindowSelected: string, direction: string) {
         const timeWindow = this.timeWindowOptions!.get(timeWindowSelected);
 
         if (!timeWindow) {
@@ -1191,11 +1225,9 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         const [unit, value] = timeWindow;
         let newStart = moment(currentStart);
-
         direction === "previous" ? newStart.subtract(value, unit as moment.unitOfTime.DurationConstructor) : newStart.add(value, unit as moment.unitOfTime.DurationConstructor);
-
-        let newEnd = moment(newStart).add(value, unit as moment.unitOfTime.DurationConstructor);
-
+        let newEnd = moment(currentEnd)
+        direction === "previous" ? newEnd.subtract(value, unit as moment.unitOfTime.DurationConstructor) : newEnd.add(value, unit as moment.unitOfTime.DurationConstructor);
         this.timeframe = [newStart.toDate(), newEnd.toDate()];
     }
 
@@ -1490,12 +1522,12 @@ export class OrChart extends translate(i18next)(LitElement) {
             //Connect event listeners
             // Make chart size responsive
             //window.addEventListener("resize", () => this._chart!.resize());
-            this._containerResizeObserver = new ResizeObserver(() => this._chart!.resize());
+            this._containerResizeObserver = new ResizeObserver(() => { this._chart!.resize(); this.applyChartResponsiveness(); console.log("ResizeObserver triggered: Chart is resizing") } );
             this._containerResizeObserver.observe(this._chartElem);
             // Add event listener for zooming
             this._zoomHandler = this._chart!.on('datazoom', debounce((params: any) => { this._onZoomChange(params); }, 1500));
             // Add event listener for chart resize
-            this._resizeHandler = this._chart!.on('resize', throttle(() => { this.applyChartResponsiveness(); }, 200));
+            this._resizeHandler = this._chart!.on('resize', throttle(() => { this.applyChartResponsiveness(); console.log("applychartresp"); }, 200));
         }
         else if (!connect) {
             //Disconnect event listeners
