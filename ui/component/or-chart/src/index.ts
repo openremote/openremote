@@ -473,6 +473,8 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _zoomHandler?: any;
     protected _resizeHandler?: any;
     protected _containerResizeObserver?: ResizeObserver;
+    protected _tooltipCache: [xTime: number, content: string] = [0,''];
+
 
     constructor() {
         super();
@@ -555,12 +557,15 @@ export class OrChart extends translate(i18next)(LitElement) {
                     confine: true,
                     axisPointer: {
                         type: 'cross',
-                        snap: true
                     },
                     formatter: (params: any) => {
-                        const xTime = params[0].asixValue as number;
-                        const tooltipData:any = this._getTooltipData(xTime);
-                        return `Custom Info: ${tooltipData}`;
+                        const xTime = params[0].axisValue as number;
+                        if (xTime != this._tooltipCache[0]) {
+                            // use global var to store current time selection, to avoid unnecessary calculation loops
+                            this._tooltipCache[0] = xTime;
+                            this._tooltipCache[1] = this._getTooltipData(xTime);
+                        }
+                        return this._tooltipCache[1];
                     }
                 },
                 toolbox: {},
@@ -1403,6 +1408,8 @@ export class OrChart extends translate(i18next)(LitElement) {
             },
             smooth: smooth,
             step: stepped ? 'end' : undefined,
+            extended: extended,
+            predicted: predicted,
             areaStyle: area ? {color: new graphic.LinearGradient(0, 0, 0, 1, [
                     {
                         offset: 0,
@@ -1548,62 +1555,69 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _getTooltipData(xTime:number) {
-        type tooltip = {name: string, value: number | null};
-        let tooltipData : tooltip[] = [];
-
-        this._data!.forEach((dataset) => {
+        let tooltip =''; //`${xTime.toLocaleString()} `;
+        this._data!.forEach((dataset, index) => {
+            const xTimeIsFuture: boolean = xTime > moment().toDate().getTime();
+            // Load datasets to be shown
             // @ts-ignore
-            const name = dataset.name
-            //Find nearest value of datapoint and do linear interpolation towards current time
-            //const pastpoint = dataset.data.reduce((prev, curr) => new Date(curr.value[0]).valueOf() <= xTime.valueOf() ? curr : prev)
-            type DataPoint = { timestamp: number; value: number };
-            let left =0;
-            // @ts-ignore
-            let right = dataset.data.length - 1
-            let pastDatapoint: DataPoint | null = null;
-            let futureDatapoint: DataPoint | null = null;
-            let displayValue: number | null = null;
-            let exactMatch : boolean = false;
-
-            // Find closest past and future timestamps to given time
-            while (left <= right) {
-                const mid = Math.floor((left + right) / 2);
+            if (dataset.data.length > 0 && !dataset.extended && (dataset.predicted === xTimeIsFuture)) {
+                console.log('Addingdataset..');
                 // @ts-ignore
-                const [timestamp, value] = dataset.data[mid];
+                const name = dataset.name
+                type DataPoint = { timestamp: number; value: number };
+                let left = 0;
 
-                if (timestamp === xTime) {
-                    displayValue = value;
-                    exactMatch = true;
-                    break;
-                } else if (timestamp < xTime) {
-                    pastDatapoint = {timestamp, value};
-                    right = mid + 1;
-                } else {
-                    futureDatapoint = {timestamp, value};
-                    right = mid - 1;
+                // @ts-ignore
+                let right = dataset.data.length - 1
+                let pastDatapoint: DataPoint | null = null;
+                let futureDatapoint: DataPoint | null = null;
+                let displayValue: number | null = null;
+                let exactMatch: boolean = false;
+
+
+                // Find closest past and future timestamps to given time
+                while (left <= right) {
+                    const mid = Math.floor((left + right) / 2);
+                    // @ts-ignore
+                    const [timestamp, value] = dataset.data[mid];
+                    if (timestamp === xTime) {
+                        displayValue = value;
+                        exactMatch = true;
+                        break;
+
+                    } else if (timestamp < xTime) {
+                        pastDatapoint = {timestamp, value};
+                        left = mid + 1;
+
+                    } else {
+                        futureDatapoint = {timestamp, value};
+                        right = mid - 1;
+                    }
                 }
-            }
-            // Clear past/future if they are at dataset boundaries (ensuring they remain null if no valid data exists)
-            if (pastDatapoint && pastDatapoint.timestamp > xTime) pastDatapoint = null;
-            if (futureDatapoint && futureDatapoint.timestamp < xTime) futureDatapoint = null;
+
+                // Clear past/future if they are at dataset boundaries (ensuring they remain null if no valid data exists)
+                if (pastDatapoint && pastDatapoint.timestamp > xTime) pastDatapoint = null;
+                if (futureDatapoint && futureDatapoint.timestamp < xTime) futureDatapoint = null;
 
 
-            if (!exactMatch) {
-                if (pastDatapoint && futureDatapoint) {
-                    // Interpolate between past and future datapoint if they exist
-                    displayValue = pastDatapoint.value + ((xTime - pastDatapoint.timestamp) / (futureDatapoint.timestamp - pastDatapoint.timestamp)) * (futureDatapoint.value - pastDatapoint.value);
-                } else if (!pastDatapoint && futureDatapoint) {
-                    //Show nearest future value if at start of dataset
-                    displayValue = futureDatapoint.value
-                } else if (pastDatapoint && !futureDatapoint) {
-                    //Show nearest past value if at end of dataset
-                    displayValue = pastDatapoint.value
+                if (!exactMatch) {
+                    // @ts-ignore
+                    if (pastDatapoint && futureDatapoint && !dataset.step) {
+                        // Interpolate between past and future datapoint if they exist, keep up to 2 decimals
+                        displayValue = parseFloat((pastDatapoint.value + ((xTime - pastDatapoint.timestamp) / (futureDatapoint.timestamp - pastDatapoint.timestamp)) * (futureDatapoint.value - pastDatapoint.value)).toFixed(2));
+                    } else if (!pastDatapoint && futureDatapoint) {
+                        //Show nearest future value if at start of dataset
+                        displayValue = futureDatapoint.value
+                        // @ts-ignore
+                    } else if (pastDatapoint && (!futureDatapoint || dataset.step == "end")) {
+                        //Show nearest past value if: at end of dataset or the stepped setting is active
+                        displayValue = pastDatapoint.value
+                    }
                 }
+                tooltip += `<div><span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color: ${this._chart!.getVisual({seriesIndex: index}, 'color')}"></span> ${name}: <b>${displayValue}</b></div>`;
             }
-        const newEntry: tooltip = { name: name, value: displayValue };
-        tooltipData.push(newEntry);
         })
-    return tooltipData;
+        return tooltip;
     }
 
 }
