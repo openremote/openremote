@@ -113,8 +113,6 @@ window.playwrightUnmount = async (rootElement) => {
   rootElement.replaceChildren();
 };
 
-// REMOVE
-
 export function isImportRef(value) {
   return typeof value === "object" && value && value.__pw_type === "importRef";
 }
