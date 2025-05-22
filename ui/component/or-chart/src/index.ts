@@ -186,8 +186,7 @@ const style = css`
     }
     .period-controls {
         display: flex;
-        flex-direction: row;
-        min-width: 180px;
+        flex-direction: column;
         align-items: center;
     }
 
@@ -199,7 +198,6 @@ const style = css`
     #controls {
         display: flex;
         flex-wrap: wrap;
-        margin: var(--internal-or-chart-controls-margin);
         width: 100%;
         flex-direction: column;
         justify-content: center;
@@ -707,7 +705,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     attributeList.style.gap = bottomLegend ? '4px 12px' : '';
                     attributeList.style.maxHeight = bottomLegend ? '90px' : '';
                     attributeList.style.flexFlow = bottomLegend ? 'row wrap' : 'column nowrap';
-                    attributeList.style.padding = bottomLegend ? '0' : '12px 0';
+                    attributeList.style.padding = bottomLegend ? '0' : '5px 0';
                 }
                 this.shadowRoot.querySelectorAll('.attribute-list-item').forEach((item: Element) => {
                     (item as HTMLElement).style.minHeight = bottomLegend ? '0px' : '44px';
@@ -773,7 +771,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                                                 true
                                         )}
                                         </div>
-                                        <div class="navigate">
+                                        <div class="navigate" style = "text-align: right">
+                                            
                                             <!-- Scroll left button -->
                                             <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!),this.timeframe? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "previous")}"></or-icon>
                                             <!-- Scroll right button -->
@@ -787,18 +786,18 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 ` : undefined}
                             
                             ${this.timeframe ? html`
-                                <div style="margin-left: 18px; font-size: 12px;">
-                                    <table style="width: 100%;">
+                                <div style="margin-left: 18px; font-size: 12px; display: flex; justify-content: flex-end;">
+                                    <table style="text-align: right;">
                                         <thead>
                                         <tr>
-                                            <th style="font-weight: normal; text-align: left;">${i18next.t('from')}:</th>
-                                            <th style="font-weight: normal; text-align: left;">${moment(this.timeframe[0]).format("lll")}</th>
+                                            <th style="font-weight: normal; text-align: right;">${i18next.t('from')}:</th>
+                                            <th style="font-weight: normal; text-align: right;">${moment(this.timeframe[0]).format("lll")}</th>
                                         </tr>
                                         </thead>
                                         <tbody>
                                         <tr>
-                                            <td>${i18next.t('to')}:</td>
-                                            <td>${moment(this.timeframe[1]).format("lll")}</td>
+                                            <td style="text-align: right;">${i18next.t('to')}:</td>
+                                            <td style="text-align: right;">${moment(this.timeframe[1]).format("lll")}</td>
                                         </tr>
                                         </tbody>
                                     </table>
@@ -1334,7 +1333,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                     (dataset as any).attrName = attribute.name;
                     (dataset as any).unit = unit;
                     (dataset as any).yAxisIndex = shownOnRightAxis ? '1' : '0';
-                    (dataset as any).color = color ?? this.colors[colourIndex];
                     data.push(dataset);
                     //Load Predicted Data
                     dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], predictedFromTimestamp, this._endOfPeriod!, true, smooth, stepped, area, faint, false , asset.name + " " + label + " " + i18next.t("predicted"), options, unit);
@@ -1555,18 +1553,21 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _getTooltipData(xTime:number) {
-        let tooltip =''; //`${xTime.toLocaleString()} `;
+        type DataPoint = { timestamp: number; value: number };
+        type tooltipRow = {value: number; text: string};
+        let tooltipArray: tooltipRow[] = [];
         this._data!.forEach((dataset, index) => {
             const xTimeIsFuture: boolean = xTime > moment().toDate().getTime();
             // Load datasets to be shown
             // @ts-ignore
             if (dataset.data.length > 0 && !dataset.extended && (dataset.predicted === xTimeIsFuture)) {
                 console.log('Addingdataset..');
+
+
+
                 // @ts-ignore
                 const name = dataset.name
-                type DataPoint = { timestamp: number; value: number };
                 let left = 0;
-
                 // @ts-ignore
                 let right = dataset.data.length - 1
                 let pastDatapoint: DataPoint | null = null;
@@ -1614,10 +1615,19 @@ export class OrChart extends translate(i18next)(LitElement) {
                         displayValue = pastDatapoint.value
                     }
                 }
-                tooltip += `<div><span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color: ${this._chart!.getVisual({seriesIndex: index}, 'color')}"></span> ${name}: <b>${displayValue}</b></div>`;
+                if (displayValue) {
+                    // @ts-ignore
+                    tooltipArray.push({
+                        value: displayValue,
+                        // @ts-ignore
+                        text: `<div><span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color: ${dataset.lineStyle.color}"></span> ${name}: <b>${displayValue}</b></div>`
+                    })
+                }
             }
         })
-        return tooltip;
+        // Sort by value for better readability
+        tooltipArray.sort((a, b) => b.value - a.value);
+        return tooltipArray.map(t => t.text).join('');
     }
 
 }
