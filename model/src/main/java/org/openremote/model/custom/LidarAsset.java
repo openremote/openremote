@@ -21,14 +21,20 @@ package org.openremote.model.custom;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueDescriptor;
 
 import jakarta.persistence.Entity;
 import org.openremote.model.value.ValueType;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.Optional;
+
+import static org.openremote.model.Constants.*;
+import static org.openremote.model.Constants.UNITS_HOUR;
 
 /**
  * This is an example of a custom {@link Asset} type; this must be registered via an
@@ -53,32 +59,36 @@ public class LidarAsset extends Asset<LidarAsset> {
     public static final AssetDescriptor<LidarAsset> lidarAssetAssetDescriptor = new AssetDescriptor<>("Preview", "00aaaa", LidarAsset.class);
 
     public static final AttributeDescriptor<String> vendor      = new AttributeDescriptor<>("Vendor",           ValueType.TEXT);
-    public static final AttributeDescriptor<String> type        = new AttributeDescriptor<>("Type",             ValueType.TEXT);
-    public static final AttributeDescriptor<String> sensor      = new AttributeDescriptor<>("Sensor",           ValueType.TEXT);
-    public static final AttributeDescriptor<Date>   dateTime    = new AttributeDescriptor<>("Dato",             ValueType.DATE_AND_TIME);
-    public static final AttributeDescriptor<Double> objectID    = new AttributeDescriptor<>("Objekt-ID",        ValueType.NUMBER);
-    public static final AttributeDescriptor<String> ObjectClass = new AttributeDescriptor<>("Object Klasse",    ValueType.TEXT);
-    public static final AttributeDescriptor<Double> latitude    = new AttributeDescriptor<>("Breddegrad",       ValueType.NUMBER);
-    public static final AttributeDescriptor<Double> longitude   = new AttributeDescriptor<>("Lengdegrad",       ValueType.NUMBER);
-    public static final AttributeDescriptor<Double> velocity    = new AttributeDescriptor<>("Hastighet",        ValueType.NUMBER);
-    public static final AttributeDescriptor<String> unit        = new AttributeDescriptor<>("Måleenhet",        ValueType.TEXT);
-    public static final AttributeDescriptor<Double> heading     = new AttributeDescriptor<>("Retning",          ValueType.NUMBER);
-    public static final AttributeDescriptor<Double> DENM        = new AttributeDescriptor<>("DENM Kode",        ValueType.NUMBER);
-    public static final AttributeDescriptor<String> message     = new AttributeDescriptor<>("Melding",          ValueType.TEXT);
+    //public static final AttributeDescriptor<String> type        = new AttributeDescriptor<>("Type",             ValueType.TEXT);
+    //public static final AttributeDescriptor<String> sensor      = new AttributeDescriptor<>("Sensor",           ValueType.TEXT);
+    //public static final AttributeDescriptor<Date>   dateTime    = new AttributeDescriptor<>("Dato",             ValueType.DATE_AND_TIME);
+    //public static final AttributeDescriptor<String> vehicleType = new AttributeDescriptor<>("Object Klasse",    ValueType.TEXT);
+    //public static final AttributeDescriptor<String> latitude    = new AttributeDescriptor<>("Breddegrad",       ValueType.TEXT, new MetaItem<>(MetaItemType.READ_ONLY));
+    //public static final AttributeDescriptor<String> longitude   = new AttributeDescriptor<>("Lengdegrad",       ValueType.TEXT, new MetaItem<>(MetaItemType.READ_ONLY));
+    //public static final AttributeDescriptor<String> velocity    = new AttributeDescriptor<>("Hastighet",        ValueType.TEXT, new MetaItem<>(MetaItemType.READ_ONLY));
+    //public static final AttributeDescriptor<String> heading     = new AttributeDescriptor<>("Retning",          ValueType.TEXT, new MetaItem<>(MetaItemType.READ_ONLY));
+    //public static final AttributeDescriptor<String> DENM        = new AttributeDescriptor<>("DENM Kode",        ValueType.TEXT, new MetaItem<>(MetaItemType.READ_ONLY));
+    //public static final AttributeDescriptor<Integer> vehicleID  = new AttributeDescriptor<>("Objekt-ID",        ValueType.POSITIVE_INTEGER, new MetaItem<>(MetaItemType.READ_ONLY));
+    //public static final AttributeDescriptor<String> unit        = new AttributeDescriptor<>("Måleenhet",        ValueType.TEXT);
+    //public static final AttributeDescriptor<String> extra       = new AttributeDescriptor<>("Melding",          ValueType.TEXT);
+
+    // TODO:
+    //
+
 
     public Optional<String> getvendor() {return this.getAttributes().getValue(vendor);}
-    public Optional<String> gettype() {return this.getAttributes().getValue(type);}
-    public Optional<String> getsensor() {return this.getAttributes().getValue(sensor);}
-    public Optional<Date>   getdateTime() {return this.getAttributes().getValue(dateTime);}
-    public Optional<Double> getobjectID() {return this.getAttributes().getValue(objectID);}
-    public Optional<String> getObjectClass() {return this.getAttributes().getValue(ObjectClass);}
-    public Optional<Double> getlatitude() {return this.getAttributes().getValue(latitude);}
-    public Optional<Double> getlongitude() {return this.getAttributes().getValue(longitude);}
-    public Optional<Double> getvelocity() {return this.getAttributes().getValue(velocity);}
-    public Optional<String> getunit() {return this.getAttributes().getValue(unit);}
-    public Optional<Double> getheading() {return this.getAttributes().getValue(heading);}
-    public Optional<Double> getDENM() {return this.getAttributes().getValue(DENM);}
-    public Optional<String> getmessage() {return this.getAttributes().getValue(message);}
+    //public Optional<String> gettype() {return this.getAttributes().getValue(type);}
+    //public Optional<String> getsensor() {return this.getAttributes().getValue(sensor);}
+    //public Optional<Date>   getdateTime() {return this.getAttributes().getValue(dateTime);}
+    //public Optional<Integer> getobjectID() {return this.getAttributes().getValue(vehicleID);}
+    //public Optional<String> getObjectClass() {return this.getAttributes().getValue(vehicleType);}
+    //public Optional<String> getlatitude() {return this.getAttributes().getValue(latitude);}
+    //public Optional<String> getlongitude() {return this.getAttributes().getValue(longitude);}
+    //public Optional<String> getvelocity() {return this.getAttributes().getValue(velocity);}
+    //public Optional<String> getheading() {return this.getAttributes().getValue(heading);}
+    //public Optional<String> getDENM() {return this.getAttributes().getValue(DENM);}
+    //public Optional<String> getunit() {return this.getAttributes().getValue(unit);}
+    //public Optional<String> getmessage() {return this.getAttributes().getValue(extra);}
 
     protected LidarAsset() {
     }
