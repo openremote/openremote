@@ -12,19 +12,24 @@ variable "hcloud_token" {
   type        = string
 }
 
+variable "instance_name" {
+  description = "Name of the instance"
+  type        = string
+}
+
 provider "hcloud" {
   token = var.hcloud_token
 }
 
 resource "hcloud_volume" "openremote_data" {
-  name     = "openremote-data"
+  name     = "${var.instance_name}-vol"
   size     = 10
   location = "nbg1"
   format   = "ext4"
 }
 
 resource "hcloud_server" "openremote" {
-  name        = "openremote-hetzner"
+  name        = var.instance_name
   server_type = "cx22"   # Change to your desired instance type
   image       = "ubuntu-22.04" # OS image
   location    = "nbg1"   # Data center (e.g., nbg1, fsn1, hel1)
