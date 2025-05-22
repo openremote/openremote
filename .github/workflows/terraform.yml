@@ -29,8 +29,9 @@ jobs:
 
       - name: Wait for server to be ready
         run: |
-          while ! nc -z -v -w30 ${{ steps.terraform.outputs.server_ip }} 22; do
-            echo "Waiting for server to be ready..."
-            sleep 5
+          echo "Waiting for OpenRemote service to be ready..."
+          until curl --output /dev/null --silent --head --fail --max-time 10 https://${{ steps.terraform.outputs.server_ip }}; do
+            echo "Waiting for HTTPS service to be available..."
+            sleep 10
           done
-          echo "Server is ready. IP: ${{ steps.terraform.outputs.server_ip }}"
+          echo "Server is ready with enabled. IP: ${{ steps.terraform.outputs.server_ip }}"
