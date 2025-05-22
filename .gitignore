@@ -73,3 +73,5 @@ local.properties
 
 override.tf
 override.tf.json
+
+.secrets

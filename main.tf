@@ -24,11 +24,11 @@ resource "hcloud_volume" "openremote_data" {
 }
 
 resource "hcloud_server" "openremote" {
-  name        = "OpenRemote at Hetzner"
+  name        = "openremote-hetzner"
   server_type = "cx22"   # Change to your desired instance type
   image       = "ubuntu-22.04" # OS image
   location    = "nbg1"   # Data center (e.g., nbg1, fsn1, hel1)
-  ssh_keys    = ["28293042", "28293038"]
+  ssh_keys    = []
   user_data   = file("${path.module}/.github/setup.sh")
 
   lifecycle {
