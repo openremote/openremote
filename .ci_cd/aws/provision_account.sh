@@ -177,7 +177,7 @@ if [ "$VPCID" == 'None' ]; then
   # Create standard stack resources in specified account
   STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --output text $ACCOUNT_PROFILE)
 
-  # Wait for cloud formation stack status to be CREATE_*
+  # Wait for CloudFormation stack status to be CREATE_*
   echo "Waiting for stack to be created"
   STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
@@ -277,38 +277,100 @@ else
   echo "PARENT_DNS_ZONE not set so no DNS configuration will be attempted"
 fi
 
-# Provision default dashboard
-if [ -f "${awsDir}cloudformation-create-dashboard.yml" ]; then
-  TEMPLATE_PATH="${awsDir}cloudformation-create-dashboard.yml"
-elif [ -f ".ci_cd/aws/cloudformation-create-dashboard.yml" ]; then
-  TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-dashboard.yml"
-elif [ -f "openremote/.ci_cd/aws/cloudformation-create-dashboard.yml" ]; then
-  TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-create-dashboard.yml"
+STACK_NAME=or-ssm
+
+# Provision SSM documents using CloudFormation (if stack doesn't already exist)
+echo "Provisioning SSM Documents"
+STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null)
+
+if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
+  echo "Stack already exists for this host .. Current status is '$STATUS'"
+  STACK_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackId" --output text 2>/dev/null)
 else
-  echo "Cannot determine location of cloudformation-create-dashboard.yml"
-  exit 1
+
+  if [ -f "${awsDir}cloudformation-create-ssm-documents.yml" ]; then
+    TEMPLATE_PATH="${awsDir}cloudformation-create-ssm-documents.yml"
+  elif [ -f ".ci_cd/aws/cloudformation-create-ssm-documents.yml" ]; then
+    TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-ssm-documents.yml"
+  elif [ -f "openremote/.ci_cd/aws/cloudformation-create-ssm-documents.yml" ]; then
+    TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-create-ssm-documents.yml"
+  else
+    echo "Cannot determine location of cloudformation-create-ssm-documents.yml"
+    exit 1
+  fi
+
+  # Create SSM Documents for attaching, detaching and replacing an EBS data volume in specified account
+  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --output text $ACCOUNT_PROFILE)
+
+  if [ $? -ne 0 ]; then
+    echo "Create stack failed"
+    exit 1
+  fi
+
+  # Wait for CloudFormation stack status to be CREATE_*
+  echo "Waiting for stack to be created"
+  STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+  while [[ "$STATUS" == 'CREATE_IN_PROGRESS' ]]; do
+      echo "Stack creation is still in progress .. Sleeping 30 seconds"
+      sleep 30
+      STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+  done
+
+  if [ "$STATUS" != 'CREATE_COMPLETE' ] && [ "$STATUS" != 'UPDATE_COMPLETE' ]; then
+    echo "Stack creation has failed status is '$STATUS'"
+    exit 1
+  else
+    echo "Stack creation is complete"
+  fi
 fi
 
 STACK_NAME=or-dashboard-default
 
-# Create dashboard in specified account
-STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --output text $ACCOUNT_PROFILE)
+# Provision CloudWatch Dashboard using CloudFormation (if stack doesn't already exist)
+echo "Provisioning CloudWatch Dashboard"
+STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null)
 
-# Wait for cloud formation stack status to be CREATE_*
-echo "Waiting for stack to be created"
-STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
-
-while [[ "$STATUS" == 'CREATE_IN_PROGRESS' ]]; do
-  echo "Stack creation is still in progress .. Sleeping 30 seconds"
-  sleep 30
-  STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
-done
-
-if [ "$STATUS" != 'CREATE_COMPLETE' ] && [ "$STATUS" != 'UPDATE_COMPLETE' ]; then
-  echo "Stack creation has failed status is '$STATUS'" >&2
-  exit 1
+if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
+  echo "Stack already exists for this host .. Current status is '$STATUS'"
+  STACK_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackId" --output text 2>/dev/null)
 else
-  echo "Stack creation is complete"
+
+  if [ -f "${awsDir}cloudformation-create-dashboard.yml" ]; then
+    TEMPLATE_PATH="${awsDir}cloudformation-create-dashboard.yml"
+  elif [ -f ".ci_cd/aws/cloudformation-create-dashboard.yml" ]; then
+    TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-dashboard.yml"
+  elif [ -f "openremote/.ci_cd/aws/cloudformation-create-dashboard.yml" ]; then
+    TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-create-dashboard.yml"
+  else
+    echo "Cannot determine location of cloudformation-create-dashboard.yml"
+    exit 1
+  fi
+
+  # Create dashboard in specified account
+  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --output text $ACCOUNT_PROFILE)
+
+  if [ $? -ne 0 ]; then
+    echo "Create stack failed"
+    exit 1
+  fi
+
+  # Wait for CloudFormation stack status to be CREATE_*
+  echo "Waiting for stack to be created"
+  STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+  while [[ "$STATUS" == 'CREATE_IN_PROGRESS' ]]; do
+    echo "Stack creation is still in progress .. Sleeping 30 seconds"
+    sleep 30
+    STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+  done
+
+  if [ "$STATUS" != 'CREATE_COMPLETE' ] && [ "$STATUS" != 'UPDATE_COMPLETE' ]; then
+    echo "Stack creation has failed status is '$STATUS'"
+    exit 1
+  else
+    echo "Stack creation is complete"
+  fi
 fi
 
 # Update SSH Whitelist for this account
