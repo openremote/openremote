@@ -305,12 +305,6 @@ const style = css`
         height: 100%; !important;
     }
 
-    @media screen and (max-width: 1280px) {
-        #chart-container {
-            max-height: 330px;
-        }
-    }
-
     @media screen and (max-width: 769px) {
         .mdc-dialog .mdc-dialog__surface {
             min-width: auto;
@@ -450,7 +444,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _zoomChanged: boolean = false;
 
     @property()
-    protected _data?: ValueDatapoint<any>[];
+    protected _data?: any[];
 
     @property()
     protected _tableTemplate?: TemplateResult;
@@ -559,7 +553,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     formatter: (params: any) => {
                         const xTime = params[0].axisValue as number;
                         if (xTime != this._tooltipCache[0]) {
-                            // use global var to store current time selection, to avoid unnecessary calculation loops
+                            // use global var to store current time selection, avoiding replicate calculation loops
                             this._tooltipCache[0] = xTime;
                             this._tooltipCache[1] = this._getTooltipData(xTime);
                         }
@@ -781,7 +775,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                                             <or-icon class="button button-icon" ?disabled="${disabled}" icon="${this.timeframe ? 'restore' : 'calendar-clock'}" @click="${() => this.timeframe ? (this.isCustomWindow = false, this.timeframe = undefined)  : this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-icon>
                                         </div>
                                     ` : html`
-                                        <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePrefixKey} ${this.timeWindowKey}" disabled="true"></or-mwc-input>
+                                        <div style = "display: flex; flex-direction: column; align-items: center">
+                                        <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePrefixKey}" disabled="true"></or-mwc-input>
+                                        <or-mwc-input .type="${InputType.BUTTON}" label="${this.timeWindowKey}" disabled="true"></or-mwc-input>
+                                        </div>
                                     `}
                                 ` : undefined}
                             
@@ -1558,38 +1555,27 @@ export class OrChart extends translate(i18next)(LitElement) {
         let tooltipArray: tooltipRow[] = [];
         this._data!.forEach((dataset, index) => {
             const xTimeIsFuture: boolean = xTime > moment().toDate().getTime();
-            // Load datasets to be shown
-            // @ts-ignore
+            // Load datasets to be shown. Show historic or predicted based on cursor location, dont show extended datasets.
             if (dataset.data.length > 0 && !dataset.extended && (dataset.predicted === xTimeIsFuture)) {
-                console.log('Addingdataset..');
-
-
-
-                // @ts-ignore
                 const name = dataset.name
                 let left = 0;
-                // @ts-ignore
                 let right = dataset.data.length - 1
                 let pastDatapoint: DataPoint | null = null;
                 let futureDatapoint: DataPoint | null = null;
                 let displayValue: number | null = null;
                 let exactMatch: boolean = false;
 
-
                 // Find closest past and future timestamps to given time
                 while (left <= right) {
                     const mid = Math.floor((left + right) / 2);
-                    // @ts-ignore
                     const [timestamp, value] = dataset.data[mid];
                     if (timestamp === xTime) {
                         displayValue = value;
                         exactMatch = true;
                         break;
-
                     } else if (timestamp < xTime) {
                         pastDatapoint = {timestamp, value};
                         left = mid + 1;
-
                     } else {
                         futureDatapoint = {timestamp, value};
                         right = mid - 1;
@@ -1600,26 +1586,22 @@ export class OrChart extends translate(i18next)(LitElement) {
                 if (pastDatapoint && pastDatapoint.timestamp > xTime) pastDatapoint = null;
                 if (futureDatapoint && futureDatapoint.timestamp < xTime) futureDatapoint = null;
 
-
+                // Interpolate or show one of the closest datapoints.
                 if (!exactMatch) {
-                    // @ts-ignore
                     if (pastDatapoint && futureDatapoint && !dataset.step) {
                         // Interpolate between past and future datapoint if they exist, keep up to 2 decimals
                         displayValue = parseFloat((pastDatapoint.value + ((xTime - pastDatapoint.timestamp) / (futureDatapoint.timestamp - pastDatapoint.timestamp)) * (futureDatapoint.value - pastDatapoint.value)).toFixed(2));
                     } else if (!pastDatapoint && futureDatapoint) {
                         //Show nearest future value if at start of dataset
                         displayValue = futureDatapoint.value
-                        // @ts-ignore
                     } else if (pastDatapoint && (!futureDatapoint || dataset.step == "end")) {
                         //Show nearest past value if: at end of dataset or the stepped setting is active
                         displayValue = pastDatapoint.value
                     }
                 }
                 if (displayValue) {
-                    // @ts-ignore
                     tooltipArray.push({
                         value: displayValue,
-                        // @ts-ignore
                         text: `<div><span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color: ${dataset.lineStyle.color}"></span> ${name}: <b>${displayValue}</b></div>`
                     })
                 }
