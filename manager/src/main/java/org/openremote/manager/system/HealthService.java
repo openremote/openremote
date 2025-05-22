@@ -19,8 +19,8 @@
  */
 package org.openremote.manager.system;
 
-import io.prometheus.client.exporter.HTTPServer;
-import org.openremote.container.message.MessageBrokerService;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
+import io.prometheus.metrics.exporter.httpserver.HTTPServer;
 import org.openremote.container.util.MapAccess;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
@@ -82,16 +82,20 @@ public class HealthService implements ContainerService {
 
 
         if (metricsEnabled) {
-            MessageBrokerService brokerService = container.getService(MessageBrokerService.class);
             int metricsPort = MapAccess.getInteger(container.getConfig(), OR_METRICS_PORT, OR_METRICS_PORT_DEFAULT);
             LOG.log(System.Logger.Level.INFO, "Metrics collection enabled");
 
-            // Add additional web server for metrics (this keeps CI/CD prometheus scraper config simple with no oauth
-            // this port can be exposed to the host but not to the public
-            metricsServer = new HTTPServer.Builder()
-                .withPort(metricsPort)
-                .withExecutorService(container.getExecutor())
-                .build();
+            if (container.getMeterRegistry() instanceof PrometheusMeterRegistry prometheusMeterRegistry) {
+                // Add additional web server for metrics (this keeps CI/CD prometheus scraper config simple with no oauth
+                // this port can be exposed to the host but not to the public
+                metricsServer = HTTPServer.builder()
+                        .port(metricsPort)
+                        .registry(prometheusMeterRegistry.getPrometheusRegistry())
+                        .executorService(container.getExecutor())
+                        .buildAndStart();
+            } else {
+                throw new IllegalStateException("Unknown metrics meter registry implementation: " + container.getMeterRegistry().getClass());
+            }
 
             // Alternative servlet option to run on existing undertow but would require oauth on prometheus scraper
 //            DeploymentInfo prometheusServlet = Servlets.deployment()

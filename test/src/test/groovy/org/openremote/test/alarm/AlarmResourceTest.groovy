@@ -31,6 +31,7 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.model.notification.AbstractNotificationMessage
 import org.openremote.model.notification.Notification
 import org.openremote.model.notification.NotificationSendResult
+import org.openremote.model.security.ClientRole
 import org.openremote.model.security.User
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
@@ -48,9 +49,14 @@ import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 import jakarta.ws.rs.WebApplicationException
 
+import static org.openremote.model.Constants.SUPER_USER_REALM_ROLE
+
 class AlarmResourceTest extends Specification implements ManagerContainerTrait {
     @Shared
     static AlarmResource adminResource
+
+    @Shared
+    static AlarmResource superAdminResource
 
     @Shared
     static AlarmResource regularUserResource
@@ -63,6 +69,9 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
     @Shared
     static String alarmsReadWriteUserId
+
+    @Shared
+    static String testuser4Id
 
     @Shared
     static NotificationService notificationService
@@ -88,7 +97,22 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         adminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(AlarmResource.class)
 
         User alarmsReadWriteUser = keycloakTestSetup.createUser(MASTER_REALM, "alarmsrwuser1", "alarmsrwuser1", "Alarms R/W", "User", "alarmsrwuser@openremote.local", true, KeycloakTestSetup.REGULAR_USER_ROLES)
-        alarmsReadWriteUserId = alarmsReadWriteUser.getId()
+        alarmsReadWriteUserId = alarmsReadWriteUser.getId();
+
+        User superUser = keycloakTestSetup.createUser(MASTER_REALM, "testuser4", "testuser4", "Demo4", "Demo4", null, true, new ClientRole[] {ClientRole.WRITE, ClientRole.READ});
+        testuser4Id = superUser.getId();
+        keycloakTestSetup.keycloakProvider.updateUserClientRoles(MASTER_REALM, testuser4Id, "account");
+        keycloakTestSetup.keycloakProvider.updateUserRealmRoles(MASTER_REALM, testuser4Id, keycloakTestSetup.keycloakProvider.addUserRealmRoles(MASTER_REALM, testuser4Id, SUPER_USER_REALM_ROLE));
+
+        def superAdminAccessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                "testuser4",
+                "testuser4",
+        ).token
+
+        superAdminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, superAdminAccessToken).proxy(AlarmResource.class)
 
         def emailNotificationHandler = container.getService(EmailNotificationHandler.class)
         def throwPushHandlerException = false
@@ -118,6 +142,40 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
         // Clear notifications
         notificationMessages.clear()
+    }
+
+    // Create alarm as new super user in other realm
+    @Unroll
+    def "should create an alarm with title '#title', content '#content', severity '#severity', assigneeId '#assigneeId' and '#emailNotifications' emailNotifications as new super user in other realm"() {
+        when: "an alarm is created"
+        def input = new Alarm(title, content, severity, assigneeId, keycloakTestSetup.realmBuilding.name)
+        def alarm = superAdminResource.createAlarm(null, input, null)
+
+        then:
+        alarm != null
+        alarm.title == title
+        alarm.content == content
+        alarm.severity == severity
+        alarm.assigneeId == assigneeId
+        alarm.status == Alarm.Status.OPEN
+
+        and:
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 1, delay: 0.2)
+        conditions.eventually {
+            assert notificationMessages.size() == emailNotifications
+        }
+
+        where:
+        title                     | content                | severity        | assigneeId                    | emailNotifications
+        "Low Alarm"               | "Test Description"     | Severity.LOW    | null                          | 0
+        "Low Assigned 1 Alarm"    | "Test Description"     | Severity.LOW    | keycloakTestSetup.testuser1Id | 0
+        "Low Assigned 2 Alarm"    | "Test Description"     | Severity.LOW    | alarmsReadWriteUserId         | 0
+        "Medium Unassigned Alarm" | "Another Description"  | Severity.MEDIUM | null                          | 0
+        "Medium Assigned 1 Alarm" | "Assigned Description" | Severity.MEDIUM | keycloakTestSetup.testuser1Id | 0
+        "Medium Assigned 2 Alarm" | "Assigned Description" | Severity.MEDIUM | alarmsReadWriteUserId         | 0
+        "High Unassigned Alarm"   | "Critical Description" | Severity.HIGH   | null                          | 1
+        "High Assigned 1 Alarm"   | "Critical Description" | Severity.HIGH   | keycloakTestSetup.testuser1Id | 0
+        "High Assigned 2 Alarm"   | "Critical Description" | Severity.HIGH   | alarmsReadWriteUserId         | 1
     }
 
     // Create alarm as admin
@@ -259,6 +317,28 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         "Another Alarm" | "Updated Description" | Severity.MEDIUM | Alarm.Status.CLOSED | keycloakTestSetup.testuser1Id
     }
 
+    // Update alarm as an new super user in other realm
+    @Unroll
+    def "should update an alarm with title '#title', content '#content', severity '#severity', status '#status' and assigneeId '#assigneeId' as an new super user in other realm"() {
+        when:
+        def alarm = superAdminResource.createAlarm(null, new Alarm().setTitle('Updatable alarm').setContent('Updatable content').setStatus(Alarm.Status.CLOSED).setSeverity(Severity.LOW).setRealm(keycloakTestSetup.realmBuilding.name), null)
+        superAdminResource.updateAlarm(null, alarm.id, new SentAlarm().setTitle(title).setContent(content).setRealm(keycloakTestSetup.realmBuilding.name).setSeverity(severity).setStatus(status).setAssigneeId(assigneeId))
+        def updated = superAdminResource.getAlarms(null, keycloakTestSetup.realmBuilding.name, null, null, null)[0]
+
+        then:
+        updated != null
+        updated.title == title
+        updated.content == content
+        updated.severity == severity
+        updated.status == status
+        updated.assigneeId == assigneeId
+
+        where:
+        title           | content               | severity        | status              | assigneeId
+        "Updated Alarm" | "Test Description"    | Severity.HIGH   | Alarm.Status.OPEN   | null
+        "Another Alarm" | "Updated Description" | Severity.MEDIUM | Alarm.Status.CLOSED | keycloakTestSetup.testuser1Id
+    }
+
     @Unroll
     def "should not update an alarm with id 'null'"() {
         when:
@@ -382,6 +462,21 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         alarms.length > 0
     }
 
+    // Delete one alarm as an super user in other realm
+    def "should delete one alarm as new super user in other realm"() {
+        when:
+        for (int i = 0; i < 2; i++) {
+            superAdminResource.createAlarm(null, new Alarm("Alarm " + i, "Content " + i, Severity.MEDIUM, null, keycloakTestSetup.realmBuilding.name), null)
+        }
+        def delete = superAdminResource.getAlarms(null, keycloakTestSetup.realmBuilding.name, null, null, null)[0]
+        superAdminResource.removeAlarm(null, delete.id)
+
+        then: "returns some alarms but not the deleted alarm"
+        def alarms = superAdminResource.getAlarms(null, keycloakTestSetup.realmBuilding.name, null, null, null)
+        alarms.find { it.id == delete.id } == null
+        alarms.length > 0
+    }
+
     // Delete multiple alarms as admin
     def "should delete multiple alarms as admin"() {
         when:
@@ -393,6 +488,19 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
         then: "returns no alarms"
         adminResource.getAlarms(null, MASTER_REALM, null, null, null).length == 0
+    }
+
+    // Delete multiple alarms as super user in other realm
+    def "should delete multiple alarms as super user in other realm"() {
+        when:
+        for (int i = 0; i < 2; i++) {
+            superAdminResource.createAlarm(null, new Alarm("Alarm " + i, "Content " + i, Severity.MEDIUM, null, keycloakTestSetup.realmBuilding.name), null)
+        }
+        def alarms = superAdminResource.getAlarms(null, keycloakTestSetup.realmBuilding.name, null, null, null)
+        superAdminResource.removeAlarms(null, (List<Long>) alarms.collect { it.id })
+
+        then: "returns no alarms"
+        superAdminResource.getAlarms(null, keycloakTestSetup.realmBuilding.name, null, null, null).length == 0
     }
 
     // Get open alarms
