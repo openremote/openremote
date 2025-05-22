@@ -431,7 +431,7 @@ jobs:
 
       - name: Define UI test command
         id: test-ui-command
-        # if: ${{ steps.skip-ui-tests.outputs.value != 'true' }}
+        if: ${{ steps.skip-ui-tests.outputs.value != 'true' }}
         run: echo "value=npm test" >> $GITHUB_OUTPUT
 
       - name: Define manager docker build command
@@ -732,7 +732,7 @@ jobs:
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
-        timeout-minutes: 25
+        timeout-minutes: 20
         # continue-on-error: true
 
       - name: Archive frontend test results
