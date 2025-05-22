@@ -28,9 +28,16 @@ allprojects {
 }
 
 // Uncomment the following to configure files to be encrypted/decrypted
+// Each file must be explicitly added to .gitignore otherwise git commit will fail
+// When using encryption the the GFE_PASSWORD environment variable must be set or the build will fail
+// use ./gradlew encryptFiles to encrypt files
 apply plugin: 'com.cherryperry.gradle-file-encrypt'
 gradleFileEncrypt {
+    // files to encrypt
     plainFiles.from('deployment/manager/fcm.json')
+    // (optional) setup file mapping to store all encrypted files in one place for example
+    //mapping = [ 'deployment/mySensitiveFile' : 'secrets/mySensitiveFile' ]
+    // Use custom password provider as standard env mechanism doesn't seem to work
     passwordProvider = {
         def password = System.env.GFE_PASSWORD
         return password != null ? password.toCharArray() : ''.toCharArray()
@@ -51,6 +58,7 @@ nexusPublishing {
 group = 'io.openremote'
 
 tasks.register('checkFilesGitIgnoredNew', Exec) {
+    // The provided checkFilesGitIgnored task doesn't work on Windows so here's one that does
     def args = []
     if (isFamily(FAMILY_WINDOWS)) {
         args.add('cmd')
