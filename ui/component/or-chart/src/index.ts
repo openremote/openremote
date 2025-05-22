@@ -20,7 +20,7 @@ import "@openremote/or-asset-tree";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {ECharts, EChartsOption, init, graphic} from "echarts";
+import {ECharts, EChartsOption, init, graphic, LabelFormatterCallback} from "echarts";
 import {
 
     TimeUnit,
@@ -554,8 +554,14 @@ export class OrChart extends translate(i18next)(LitElement) {
                     trigger: 'axis',
                     confine: true,
                     axisPointer: {
-                        type: 'cross'
+                        type: 'cross',
+                        snap: true
                     },
+                    formatter: (params: any) => {
+                        const xTime = params[0].asixValue as number;
+                        const tooltipData:any = this._getTooltipData(xTime);
+                        return `Custom Info: ${tooltipData}`;
+                    }
                 },
                 toolbox: {},
                 xAxis: {
@@ -570,7 +576,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     axisLabel: {
                         hideOverlap: true,
                         fontSize: 10,
-                        formatter: {
+                         formatter: {
                              year: '{yyyy}-{MMM}',
                              month: '{yy}-{MMM}',
                              day: '{d}-{MMM}',
@@ -1498,6 +1504,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _updateChartData(){
+        console.log("Data: ", this._data)
         this._chart!.setOption({
             xAxis: {
                 min: this._startOfPeriod,
@@ -1517,13 +1524,12 @@ export class OrChart extends translate(i18next)(LitElement) {
                     }
                 }
             }))
-        });;
+        });
     }
 
     protected _toggleChartEventListeners(connect: boolean){
         if (connect) {
-            //Connect event listeners
-            // Make chart size responsive
+            // Add resize eventlisteners to make chart size responsive
             window.addEventListener("resize", () => this._chart!.resize());
             this._containerResizeObserver = new ResizeObserver(() => { this._chart!.resize(); this.applyChartResponsiveness();});
             if (this.shadowRoot) {
@@ -1539,10 +1545,65 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._containerResizeObserver?.disconnect();
             this._containerResizeObserver = undefined;
         }
-
-
-
-
-
     }
+
+    protected _getTooltipData(xTime:number) {
+        type tooltip = {name: string, value: number | null};
+        let tooltipData : tooltip[] = [];
+
+        this._data!.forEach((dataset) => {
+            // @ts-ignore
+            const name = dataset.name
+            //Find nearest value of datapoint and do linear interpolation towards current time
+            //const pastpoint = dataset.data.reduce((prev, curr) => new Date(curr.value[0]).valueOf() <= xTime.valueOf() ? curr : prev)
+            type DataPoint = { timestamp: number; value: number };
+            let left =0;
+            // @ts-ignore
+            let right = dataset.data.length - 1
+            let pastDatapoint: DataPoint | null = null;
+            let futureDatapoint: DataPoint | null = null;
+            let displayValue: number | null = null;
+            let exactMatch : boolean = false;
+
+            // Find closest past and future timestamps to given time
+            while (left <= right) {
+                const mid = Math.floor((left + right) / 2);
+                // @ts-ignore
+                const [timestamp, value] = dataset.data[mid];
+
+                if (timestamp === xTime) {
+                    displayValue = value;
+                    exactMatch = true;
+                    break;
+                } else if (timestamp < xTime) {
+                    pastDatapoint = {timestamp, value};
+                    right = mid + 1;
+                } else {
+                    futureDatapoint = {timestamp, value};
+                    right = mid - 1;
+                }
+            }
+            // Clear past/future if they are at dataset boundaries (ensuring they remain null if no valid data exists)
+            if (pastDatapoint && pastDatapoint.timestamp > xTime) pastDatapoint = null;
+            if (futureDatapoint && futureDatapoint.timestamp < xTime) futureDatapoint = null;
+
+
+            if (!exactMatch) {
+                if (pastDatapoint && futureDatapoint) {
+                    // Interpolate between past and future datapoint if they exist
+                    displayValue = pastDatapoint.value + ((xTime - pastDatapoint.timestamp) / (futureDatapoint.timestamp - pastDatapoint.timestamp)) * (futureDatapoint.value - pastDatapoint.value);
+                } else if (!pastDatapoint && futureDatapoint) {
+                    //Show nearest future value if at start of dataset
+                    displayValue = futureDatapoint.value
+                } else if (pastDatapoint && !futureDatapoint) {
+                    //Show nearest past value if at end of dataset
+                    displayValue = pastDatapoint.value
+                }
+            }
+        const newEntry: tooltip = { name: name, value: displayValue };
+        tooltipData.push(newEntry);
+        })
+    return tooltipData;
+    }
+
 }
