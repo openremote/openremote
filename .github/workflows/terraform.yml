@@ -25,7 +25,7 @@ jobs:
 
       - name: Terraform apply
         id: terraform
-        run: terraform apply -auto-approve
+        run: terraform apply -auto-approve -var="hcloud_token=${{ secrets.HETZNER_API_TOKEN }}" -var="instance_name=${{ github.event.inputs.instance_name }}"
         env:
           HETZNER_API_TOKEN: ${{ secrets.HETZNER_API_TOKEN }}
 
