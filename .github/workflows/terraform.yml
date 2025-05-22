@@ -1,9 +1,11 @@
 name: Deploy to Hetzner Cloud
 
 on:
-  push:
-    branches:
-      - master
+  workflow_dispatch:
+    inputs:
+      instance_name:
+        description: "Name of the instance"
+        required: true
 
 jobs:
   deploy:
