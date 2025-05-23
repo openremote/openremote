@@ -1021,11 +1021,43 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 return null;
             }
 
-            ClientRepresentation newClient = clientsResource.findByClientId(client.getClientId()).get(0);
+            ClientRepresentation newClient = clientsResource.findByClientId(client.getClientId()).getFirst();
             ClientResource clientResource = clientsResource.get(newClient.getId());
             addDefaultRoles(clientResource.roles());
             return newClient;
         }));
+    }
+
+    public Map<String, String> getIdentityProviderImportConfig(String realm, Map<String, Object> importData) {
+        if (importData == null || importData.isEmpty()) {
+            throw new IllegalArgumentException("Import data is null or empty");
+        }
+
+        return getRealms(realmsResource -> realmsResource.realm(realm).identityProviders().importFrom(importData));
+    }
+
+    public void createUpdateIdentityProvider(String realm, String providerId, String alias, Map<String, String> config) {
+        IdentityProviderRepresentation representation = new IdentityProviderRepresentation();
+        representation.setProviderId(providerId);
+        representation.setAlias(alias);
+        representation.setConfig(config);
+
+        getRealms(realmsResource -> {
+            IdentityProvidersResource identityProvidersResource = realmsResource.realm(realm).identityProviders();
+
+            if (identityProvidersResource.findAll().stream().anyMatch(ipr -> alias.equals(ipr.getAlias()))) {
+                identityProvidersResource.get(alias).update(representation);
+            } else {
+                try (Response response = identityProvidersResource.create(representation)) {
+                    if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+                        LOG.warning("Failed to create identity provider response=" + response.getStatusInfo().getStatusCode() + ": " + representation);
+                        return null;
+                    }
+                }
+            }
+
+            return identityProvidersResource.get(alias).toRepresentation();
+        });
     }
 
     public void deleteClient(String realm, String clientId) {
@@ -1225,7 +1257,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 ComponentRepresentation newComponentRepresentation = realmResource.components()
                     .query(componentRepresentation.getParentId(),
                         componentRepresentation.getProviderType(),
-                        componentRepresentation.getName()).get(0);
+                        componentRepresentation.getName()).getFirst();
                 syncUsers(newComponentRepresentation.getId(), realm, "triggerFullSync");
                 return newComponentRepresentation.getId();
             }
@@ -1244,7 +1276,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 ComponentRepresentation newComponentRepresentation = realmResource.components()
                     .query(componentRepresentation.getParentId(),
                         componentRepresentation.getProviderType(),
-                        componentRepresentation.getName()).get(0);
+                        componentRepresentation.getName()).getFirst();
                 realmResource.userStorage().syncMapperData(newComponentRepresentation.getParentId(), newComponentRepresentation.getId(), "fedToKeycloak");
                 return newComponentRepresentation.getId();
             }
