@@ -1,5 +1,5 @@
-import { defineConfig, devices, createAppSetupAndTeardown, Project } from "@openremote/test";
-const { CI, DEV, managerUrl } = process.env;
+import { defineCtConfig, devices, Project } from "@openremote/test";
+const { CI } = process.env;
 
 const browsers: Project[] = [
   {
@@ -18,16 +18,14 @@ const browsers: Project[] = [
 
 const orProjects: Project[] = [
   {
-    name: "manager",
-    dependencies: ["setup manager"],
-    testDir: "app/manager/test",
-    fullyParallel: false,
-    workers: 1,
+    name: "component",
+    testDir: "component",
+    fullyParallel: true,
+    use: { ct: true, baseURL: "http://localhost:3100" },
   },
 ];
 
 const projects: Project[] = [
-  ...createAppSetupAndTeardown("manager"),
   ...browsers.flatMap((browser) =>
     orProjects.map((project) => ({
       ...project,
@@ -40,18 +38,16 @@ const projects: Project[] = [
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
-export default defineConfig({
+export default defineCtConfig({
   testMatch: "*.test.ts",
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: Boolean(CI),
   /* Retry on CI only */
   retries: CI ? 2 : 0,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [["html", { outputFolder: "../playwright-e2e-report" }]],
+  reporter: [["html", { outputFolder: "../playwright-ct-report" }]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    // Defaults to the default Manager Docker container port as that significantly speeds up the tests compared to serving the frontend with Webpack
-    baseURL: managerUrl || DEV ? "http://localhost:9000" : "http://localhost:8080",
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "retain-on-failure",
     video: "on",

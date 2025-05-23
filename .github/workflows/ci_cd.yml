@@ -205,8 +205,8 @@ jobs:
         if: steps.backend-files-changed.outputs.any_modified != 'true'
         run: echo "value=true" >> $GITHUB_OUTPUT
 
-      - name: Set skip UI tests
-        id: skip-ui-tests
+      - name: Set skip UI component tests
+        id: skip-ui-component-tests
         if: steps.ui-files-changed.outputs.any_modified != 'true'
         run: echo "value=true" >> $GITHUB_OUTPUT
 
@@ -429,10 +429,14 @@ jobs:
         if: ${{ steps.skip-backend-tests.outputs.value != 'true' }}
         run: echo "value=./gradlew -p test test" >> $GITHUB_OUTPUT
 
-      - name: Define UI test command
-        id: test-ui-command
-        if: ${{ steps.skip-ui-tests.outputs.value != 'true' }}
+      - name: Define UI component test command
+        id: test-ui-components-command
+        if: ${{ steps.skip-ui-component-tests.outputs.value != 'true' }}
         run: echo "value=npm test" >> $GITHUB_OUTPUT
+
+      - name: Define UI end-to-end test command
+        id: e2e-test-command
+        run: echo "value=npm run e2e" >> $GITHUB_OUTPUT
 
       - name: Define manager docker build command
         id: manager-docker-command
@@ -460,7 +464,7 @@ jobs:
           FIRST_MANAGER_TAG: ${{ steps.ci-cd-output.outputs.firstDockerTag }}
           MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.dockerTags }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
-          TEST_UI_CMD: ${{ steps.test-ui-command.outputs.value }}
+          TEST_UI_CMD: ${{ steps.e2e-test-command.outputs.value }}
 
       - name: Define maven publish command
         id: maven-publish-command
@@ -573,7 +577,8 @@ jobs:
           echo 'Deployment commit SHA: ${{ steps.deployment-docker-command.outputs.refTag }}'
           echo 'Deployments: ${{ steps.deployments.outputs.value }}'
           echo 'Test backend command: ${{ steps.test-backend-command.outputs.value }}'
-          echo 'Test UI command: ${{ steps.test-ui-command.outputs.value }}'
+          echo 'Test UI components command: ${{ steps.test-ui-components-command.outputs.value }}'
+          echo 'End-To-End test command: ${{ steps.e2e-test-command.outputs.value }}'
           echo 'Manager docker build command: ${{ steps.manager-docker-command.outputs.value }}'
           echo 'Manager docker image: ${{ steps.manager-docker-command.outputs.managerDockerImage }}'
           echo 'Maven publish command: ${{ steps.maven-publish-command.outputs.value }}'
@@ -586,19 +591,10 @@ jobs:
           echo "************************************************************"
 
       - name: Pull docker images
-        if: ${{ steps.test-backend-command.outputs.value != '' || steps.test-ui-command.outputs.value != '' }}
+        if: ${{ steps.test-backend-command.outputs.value != '' || steps.e2e-test-command.outputs.value != '' }}
         run: |
-          # Only need keycloak and postgres services for backend testing
-          if [ -z $TEST_UI_COMMAND ]; then
-            composeProfile='profile/dev-testing.yml'
-          else
-            composeProfile='profile/dev-ui.yml'
-          fi
-
-          # Pull the images
-          docker compose -f $composeProfile pull
-        env:
-          TEST_UI_COMMAND: ${{ steps.test-ui-command.outputs.value }}
+          # Only need keycloak and postgres services for backend and end-to-end testing
+          docker compose -f profile/dev-testing.yml pull
 
       # Use docker layer caching to speed up image building
       - uses: jpribyl/action-docker-layer-caching@c632825d12ec837065f49726ea27ddd40bcc7894 # v0.1.1
@@ -666,7 +662,7 @@ jobs:
           path: test/build/reports/tests
 
       - name: Cleanup backend tests
-        if: ${{ steps.test-backend-command.outputs.value != '' && steps.test-ui-command.outputs.value != '' }}
+        if: ${{ steps.test-backend-command.outputs.value != '' && steps.e2e-test-command.outputs.value != '' }}
         run: ${{ steps.run-backend-tests.outputs.cleanup }}
 
       - name: Run install dist
@@ -707,13 +703,31 @@ jobs:
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
         timeout-minutes: 20
 
+      - name: Run install playwright browser(s)
+        if: ${{ steps.test-ui-components-command.value != '' || steps.e2e-test-command.outputs.value != '' }}
+        run: npx playwright@$(npm test -- --version | xargs | awk '{ print $NF }') install --with-deps
+        timeout-minutes: 20
+
+      - name: Run frontend component tests
+        if: steps.test-ui-components-command.outputs.value != ''
+        run: ${{ steps.test-ui-components-command.outputs.value }}
+        timeout-minutes: 20
+        # continue-on-error: true
+
+      - name: Archive frontend component test results
+        if: always()
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
+        with:
+          name: frontend-component-test-results
+          path: playwright-ct-report
+
       - name: Run manager docker build command
         if: steps.manager-docker-command.outputs.value != ''
         run: |
           ${{ steps.manager-docker-command.outputs.value }}
 
-      - name: Run frontend tests
-        if: steps.test-ui-command.outputs.value != ''
+      - name: Run e2e tests
+        if: steps.e2e-test-command.outputs.value != ''
         run: |
           composeProfile='profile/dev-ui.yml'
 
@@ -724,23 +738,53 @@ jobs:
           # Start the stack
           MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
 
-          # Install playwright browsers
-          npx playwright@$(npm test -- --version | xargs | awk '{ print $NF }') install --with-deps
+          echo "Waiting for up to 5mins for all services to be healthy"
+          COUNT=1
+          STATUSES_OK=false
+          IFS=$'\n'
+          while [ "$STATUSES_OK" != 'true' ] && [ $COUNT -le 60 ]; do
+
+            echo "Checking service health...attempt $COUNT"
+            STATUSES=$(docker ps --format "{{.Names}} {{.Status}}" | grep profile)
+            STATUSES_OK=true
+
+            for STATUS in $STATUSES; do
+              if [[ "$STATUS" != *"healthy"* ]]; then
+                STATUSES_OK=false
+                break
+              fi
+            done
+
+            if [ "$STATUSES_OK" == 'true' ]; then
+                break
+            fi
+
+            sleep 5
+            COUNT=$((COUNT+1))
+          done
+
+          if [ "$STATUSES_OK" == 'true' ]; then
+            echo "All services are healthy"
+          else
+            echo "One or more services are unhealthy"
+            docker ps -a
+            exit 1
+          fi
 
           # Run the tests
-          ${{ steps.test-ui-command.outputs.value }}
+          ${{ steps.e2e-test-command.outputs.value }}
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
         timeout-minutes: 20
         # continue-on-error: true
 
-      - name: Archive frontend test results
+      - name: Archive e2e test results
         if: always()
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
         with:
-          name: frontend-test-results
-          path: playwright-report
+          name: e2e-test-results
+          path: playwright-e2e-report
 
       - name: Scan manager docker image
         if: steps.manager-docker-command.outputs.pushRequired == 'true'
