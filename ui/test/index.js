@@ -1,6 +1,6 @@
-import { defineConfig as originalDefineConfig } from "@playwright/test";
+import { defineConfig, test } from "@playwright/test";
 
-import { test, expect, devices } from "@playwright/experimental-ct-core";
+import { test as ct, expect, devices } from "@playwright/experimental-ct-core";
 import { createPlugin } from "./plugin";
 
 export function createAppSetupAndTeardown(app) {
@@ -21,8 +21,8 @@ export function createAppSetupAndTeardown(app) {
 
 export * from "./fixtures/page";
 
-function defineConfig(...configs) {
-  const original = originalDefineConfig(...configs);
+function defineCtConfig(...configs) {
+  const original = defineConfig(...configs);
   return {
     ...original,
     "@playwright/test": {
@@ -39,4 +39,4 @@ function defineConfig(...configs) {
   };
 }
 
-export { test, expect, devices, defineConfig };
+export { test, ct, expect, devices, defineConfig, defineCtConfig };

@@ -429,6 +429,10 @@ jobs:
         if: ${{ steps.skip-backend-tests.outputs.value != 'true' }}
         run: echo "value=./gradlew -p test test" >> $GITHUB_OUTPUT
 
+      - name: Define UI component test command
+        id: test-ui-components-command
+        run: echo "value=npm run ct" >> $GITHUB_OUTPUT
+
       - name: Define UI test command
         id: test-ui-command
         if: ${{ steps.skip-ui-tests.outputs.value != 'true' }}
@@ -636,6 +640,29 @@ jobs:
         env:
           VERSION: ${{ steps.get-version-details.outputs.version_with_qualifier }}
 
+      - name: Run frontend component tests
+        if: steps.test-ui-components-command.outputs.value != ''
+        run: |
+          # Install dependencies
+          yarn
+
+          # Install playwright browsers
+          npx playwright@$(npm test -- --version | xargs | awk '{ print $NF }') install --with-deps
+
+          # Run component tests
+          ${{ steps.test-ui-components-command.outputs.value }}
+        env:
+          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
+        timeout-minutes: 20
+        # continue-on-error: true
+
+      - name: Archive frontend component test results
+        if: always()
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
+        with:
+          name: frontend-test-results
+          path: playwright-report
+
       - name: Run backend tests
         id: run-backend-tests
         if: ${{ steps.test-backend-command.outputs.value != '' }}
@@ -712,7 +739,7 @@ jobs:
         run: |
           ${{ steps.manager-docker-command.outputs.value }}
 
-      - name: Run frontend tests
+      - name: Run e2e tests
         if: steps.test-ui-command.outputs.value != ''
         run: |
           composeProfile='profile/dev-ui.yml'
@@ -723,9 +750,6 @@ jobs:
 
           # Start the stack
           MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
-
-          # Install playwright browsers
-          npx playwright@$(npm test -- --version | xargs | awk '{ print $NF }') install --with-deps
 
           # Run the tests
           ${{ steps.test-ui-command.outputs.value }}

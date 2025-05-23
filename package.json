@@ -11,6 +11,7 @@
   ],
   "scripts": {
     "test": "playwright test --config ui/playwright.config.ts",
+    "ct": "playwright test --config ui/playwright-ct.config.ts",
     "codegen": "playwright codegen http://localhost:9000/manager/"
   },
   "devDependencies": {

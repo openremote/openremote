@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "path";
 import webpack from "webpack";
-import WebpackDevServer from "webpack-dev-server";
+import WebpackDevServer, { WebpackConfiguration } from "webpack-dev-server";
 import HtmlWebpackPlugin from "html-webpack-plugin";
 
 // @ts-expect-error No declaration file available
@@ -35,10 +35,9 @@ export function createPlugin() {
     },
 
     begin: async () => {
-      const result = await buildBundle(config, configDir);
-      if (!result) return;
+      const webpackConfig = await buildBundle(config, configDir);
+      if (!webpackConfig) return;
 
-      const { webpackConfig } = result;
       devServer = new WebpackDevServer(webpackConfig.devServer, webpack(webpackConfig));
       await devServer.start();
 
@@ -46,7 +45,7 @@ export function createPlugin() {
 
       const address = devServer.server.address();
       if (address && typeof address === "object") {
-        const protocol = webpackConfig.devServer.https ? "https:" : "http:";
+        const protocol = webpackConfig.devServer!.https ? "https:" : "http:";
         process.env.PLAYWRIGHT_TEST_BASE_URL = `${protocol}//${address.address}:${address.port}`;
       }
     },
@@ -74,7 +73,7 @@ export function createPlugin() {
   };
 }
 
-async function buildBundle(config: FullConfig, configDir: string): Promise<{ webpackConfig: any } | null> {
+async function buildBundle(config: FullConfig, configDir: string): Promise<WebpackConfiguration | null> {
   const { registerSourceFile } = frameworkConfig(config);
   const endpoint = resolveEndpoint(config);
   if (!endpoint) return null;
@@ -110,7 +109,7 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<{ web
   fs.mkdirSync(dirs.outDir, { recursive: true });
   fs.writeFileSync(outputIndexPath, transformedIndex);
 
-  const webpackConfig = {
+  const webpackConfig: WebpackConfiguration = {
     mode: "development",
     entry: outputIndexPath,
     output: {
@@ -122,7 +121,8 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<{ web
       static: {
         directory: dirs.templateDir,
       },
-      host: endpoint.host,
+      // Force ipv4
+      host: "127.0.0.1",
       port: endpoint.port,
       https: !!endpoint.https,
     },
@@ -138,5 +138,5 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<{ web
     },
   };
 
-  return { webpackConfig };
+  return webpackConfig;
 }

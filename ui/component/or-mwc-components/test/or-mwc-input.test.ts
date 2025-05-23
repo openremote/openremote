@@ -1,8 +1,8 @@
-import { test, expect } from "@openremote/test";
+import { ct, expect } from "@openremote/test";
 
 import { OrMwcInput, InputType } from "../src/or-mwc-input";
 
-test("Should button", async ({ mount }) => {
+ct("Button should trigger or-mwc-input-changed event", async ({ mount }) => {
   let clicked = false;
   const component = await mount(OrMwcInput, {
     props: {
@@ -19,7 +19,7 @@ test("Should button", async ({ mount }) => {
   expect(clicked).toBeTruthy();
 });
 
-test("Switch switch", async ({ mount }) => {
+ct("Switch should switch", async ({ mount }) => {
   const component = await mount(OrMwcInput, {
     props: {
       type: InputType.SWITCH,
@@ -32,7 +32,7 @@ test("Switch switch", async ({ mount }) => {
   await expect(locator).toBeChecked();
 });
 
-test("Display text input", async ({ mount }) => {
+ct("Input should have text value", async ({ mount }) => {
   const component = await mount(OrMwcInput, {
     props: {
       type: InputType.TEXT,

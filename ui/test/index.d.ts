@@ -24,14 +24,20 @@ export interface MountResult<Component extends HTMLElement> extends Locator {
   }): Promise<void>;
 }
 
-export const test: TestType<{
+export const ct: TestType<{
   mount<HooksConfig, Component extends HTMLElement = HTMLElement>(
     component: new (...args: any[]) => Component,
     options?: MountOptions<HooksConfig, Component>
   ): Promise<MountResult<Component>>;
 }>;
 
-export { defineConfig, PlaywrightTestConfig, expect, devices } from "@playwright/experimental-ct-core";
+export { defineConfig, test } from "@playwright/test";
+export {
+  defineConfig as defineCtConfig,
+  PlaywrightTestConfig,
+  expect,
+  devices,
+} from "@playwright/experimental-ct-core";
 
 export const createAppSetupAndTeardown: (app: string) => Project[];
 export * from "./fixtures/page";
