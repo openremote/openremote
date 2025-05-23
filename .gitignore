@@ -63,6 +63,7 @@ local.properties
 
 # Playwright
 test-results
-playwright-report
+playwright-ct-report
+playwright-e2e-report
 ui/playwright/.cache/
 .auth
