@@ -101,7 +101,7 @@ Parameters:
   RootDiskSize:
     Description: Root EBS volume size GB
     Type: Number
-    Default: 30
+    Default: 16
   DataDiskSize:
     Description: Amount of storage you want to provision for this EBS data volume
     Type: Number
