@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, OpenRemote Inc.
+ * Copyright 2025, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -20,22 +20,18 @@
 
 package org.openremote.model.util;
 
-import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.id.IdentifierGenerator;
-import org.openremote.model.IdentifiableEntity;
+import org.hibernate.annotations.IdGeneratorType;
 
-import java.io.Serializable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-public class HibernateUniqueIdentifierGenerator implements IdentifierGenerator {
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-    @Override
-    public Serializable generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
-        if (object instanceof IdentifiableEntity) {
-            IdentifiableEntity<?> identifiableEntity = (IdentifiableEntity<?>) object;
-            if (identifiableEntity.getId() != null)
-                return identifiableEntity.getId();
-        }
-        return UniqueIdentifierGenerator.generateId();
-    }
+@IdGeneratorType(HibernateUniqueIdentifierGeneratorAssignable.class)
+@Retention(RUNTIME) @Target({METHOD,FIELD})
+public @interface HibernateUniqueIdentifierTypeAssignable {
+
+
 }

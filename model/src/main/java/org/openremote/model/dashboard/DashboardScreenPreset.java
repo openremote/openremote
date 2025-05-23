@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.WebApplicationException;
 
+import java.util.Objects;
+
 import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 
 public class DashboardScreenPreset {
@@ -29,6 +31,7 @@ public class DashboardScreenPreset {
 
     public DashboardScreenPreset() {
     }
+
     public DashboardScreenPreset(String displayName, DashboardScalingPreset scalingPreset) {
         this.displayName = displayName;
         this.breakpoint = 1;
@@ -51,4 +54,16 @@ public class DashboardScreenPreset {
     public int getBreakpoint() { return breakpoint; }
     public DashboardScalingPreset getScalingPreset() { return scalingPreset; }
     public String getRedirectDashboardId() { return redirectDashboardId; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof DashboardScreenPreset that)) return false;
+        return breakpoint == that.breakpoint && Objects.equals(id, that.id) && Objects.equals(displayName, that.displayName) && scalingPreset == that.scalingPreset && Objects.equals(redirectDashboardId, that.redirectDashboardId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, displayName, breakpoint, scalingPreset, redirectDashboardId);
+    }
 }
