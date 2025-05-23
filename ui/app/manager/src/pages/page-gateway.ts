@@ -11,7 +11,7 @@ import manager, {DefaultColor1, DefaultColor3} from "@openremote/core";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
 import {Store} from "@reduxjs/toolkit";
-import {OrAssetTypeAttributePicker, OrAssetTypeAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
+import {OrAssetTypeAttributePicker, AssetTypeAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import "@openremote/or-components/or-ace-editor";
 import moment from "moment";
 import {OrAceEditor} from "@openremote/or-components/or-ace-editor";
@@ -431,7 +431,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
     protected _onLimitAttributesButtonClick(_ev: OrInputChangedEvent) {
         const selectedAttrs = this._getAttrDescriptorMapFromFilters(this._connection.attributeFilters);
         const dialog = showDialog(new OrAssetTypeAttributePicker().setSelectedAttributes(selectedAttrs).setMultiSelect(true));
-        dialog.addEventListener(OrAssetTypeAttributePickerPickedEvent.NAME, (ev) => {
+        dialog.addEventListener(AssetTypeAttributePickerPickedEvent.NAME, (ev) => {
 
             const duration = this._intervalMin ? moment.duration(this._intervalMin, "minutes") : undefined;
             const assetTypeMap = ev.detail as Map<string, AttributeDescriptor[]>;

@@ -1,4 +1,4 @@
-import {property, state} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import {AttributePicker, AttributePickerPickedEvent} from "./attribute-picker";
 import {PropertyValues, html, unsafeCSS} from "lit";
 import {DefaultColor5, Util} from "@openremote/core";
@@ -37,10 +37,9 @@ declare global {
  *
  * @attribute {object} assetTypeFilter -Callback method for consumers to filter the asset type list shown. Returning true will make the asset type visible, returning false hides it.
  * @attribute {object} attributeFilter - Callback method for consumers to filter the attribute list shown. Returning true will make the attribute visible, returning false hides it.
- *
- * @remarks TODO: In the future this should be a separate component named "or-assettype-attribute-picker"
  */
-export class AssetTypeAttributePicker extends AttributePicker {
+@customElement("or-assettype-attribute-picker")
+export class OrAssetTypeAttributePicker extends AttributePicker {
 
     @property()
     public assetTypeFilter?: (descriptor: AssetDescriptor) => boolean;
