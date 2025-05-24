@@ -43,6 +43,7 @@ base {
 
 jar {
     from sourceSets.main.allJava
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 javadoc {

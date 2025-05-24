@@ -1,20 +1,29 @@
 {
   "name": "OpenRemote DevContainer",
-  "build": {
-    "dockerfile": "Dockerfile"
-  },
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
   "workspaceFolder": "/workspaces/openremote",
+  "remoteUser": "root",
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "moby": true,
+      "dockerDashComposeVersion": "v2"
+    },
+    "ghcr.io/devcontainers-extra/features/gradle-sdkman:2": {
       "version": "latest"
-    }
+    },
+    "ghcr.io/devcontainers/features/node:1": {}
   },
   "runArgs": [
-    "--privileged",
-    "--network=host"
+    "-v", "${localEnv:HOME}/.gradle:/root/.gradle",
+    "--dns", "8.8.8.8",
+    "--dns", "8.8.4.4",
+    "--network", "bridge",
+    "--add-host", "host.docker.internal:host-gateway",
+    "--ulimit", "nofile=65536:65536"
   ],
-  "onCreateCommand": "OR_HOSTNAME=localhost docker compose -p openremote -f /workspaces/openremote/profile/dev-testing.yml up --build -d",
-  "postCreateCommand": "echo '✅ Devcontainer ready!'",
+  "onCreateCommand": "echo 'devcontainer ready'",
+  "postCreateCommand": "OR_HOSTNAME=localhost docker compose -p openremote -f /workspaces/openremote/profile/dev-testing.yml up --build -d",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -24,9 +33,15 @@
         "vscjava.vscode-gradle"
       ],
       "settings": {
-        "telemetry.enableTelemetry": false,
-        "telemetry.enableCrashReporter": false
+        "telemetry.enableTelemetry": false
       }
     }
+  },
+  "remoteEnv": {
+    "GRADLE_USER_HOME": "/root/.gradle",
+    "DOCKER_BUILDKIT": "1",
+    "COMPOSE_DOCKER_CLI_BUILD": "1",
+    "DOCKER_CLIENT_TIMEOUT": "120",
+    "COMPOSE_HTTP_TIMEOUT": "120"
   }
 }
