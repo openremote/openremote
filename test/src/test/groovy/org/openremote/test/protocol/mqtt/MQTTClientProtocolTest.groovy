@@ -228,8 +228,13 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         }
 
         then: "the subscriptions should be in place"
-        assert clientSpy.topicConsumerMap.size() == 1 + subscriptionCount
-        assert subscriptions.size() == subscriptionCount
+        conditions.eventually {
+            assert clientSpy.topicConsumerMap.size() == 1 + subscriptionCount
+            assert subscriptions.size() == subscriptionCount
+            def connection = brokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1 + subscriptionCount
+        }
 
         when: "events are published for each attribute"
         for (i in 1..subscriptionCount) {
@@ -242,8 +247,8 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         }
 
         when: "the client is disconnected"
+        def oldConnection = brokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
         MqttDisconnectUtil.close(((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)clientSpy.client).clientConfig).delegate).connectionConfig.get()).channel, "Connection Error")
-        //((SocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)clientSpy.client).clientConfig).delegate).connectionConfig.get()).channel).close()
 
         then: "it should reconnect"
         !((SocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)clientSpy.client).clientConfig).delegate).connectionConfig.get()).channel).isOpen()
@@ -251,14 +256,23 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert ((SocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)clientSpy.client).clientConfig).delegate).connectionConfig.get()).channel).isOpen()
         }
 
-        and: "subscriptions should be recreated"
+        and: "subscriptions should be recreated on the broker"
         conditions.eventually {
-            assert subscriptions.size() == 2 * subscriptionCount
+            def connection = brokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
+            assert connection != oldConnection
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1 + subscriptionCount
         }
 
         when: "events are published for each attribute"
+        for (i in 1..subscriptionCount) {
+            assetProcessingService.sendAttributeEvent(new AttributeEvent(testAsset.id, "attribute$i", i))
+        }
 
         then: "they should all be received"
+        conditions.eventually {
+            messagesReceived.size() == 2 * subscriptionCount
+        }
     }
 
 
