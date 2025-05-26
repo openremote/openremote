@@ -75,6 +75,24 @@ public class ValueUtilTest {
     }
 
     @Test
+    public void validatePositiveIntegerEmptyValue() {
+        AttributeDescriptor<Integer> attributeDescriptor = new AttributeDescriptor<>("positiveNumber", ValueType.POSITIVE_INTEGER);
+
+        Attribute<Integer> attribute = new Attribute<>(attributeDescriptor);
+
+        ValueUtil.ConstraintViolationPathProvider pathProvider = (constraintViolationBuilder) ->
+                constraintViolationBuilder
+                        .addPropertyNode("attributes")
+                        .addPropertyNode("value")
+                        .inContainer(Map.class, 1)
+                        .inIterable().atKey(attribute.getName());
+
+        Boolean valid = ValueUtil.validateValue(attributeDescriptor, attributeDescriptor.getType(), attribute, Instant.now(), context, pathProvider, attribute.getValue().orElse(null));
+
+        assertTrue(valid);
+    }
+
+    @Test
     public void validatePositiveIntegerFalse() {
         AttributeDescriptor<Integer> attributeDescriptor = new AttributeDescriptor<>("positiveNumber", ValueType.POSITIVE_INTEGER);
 
@@ -99,6 +117,24 @@ public class ValueUtilTest {
 
         Attribute<Integer[]> attribute = new Attribute<>(attributeDescriptor);
         attribute.setValue(new Integer[]{1, 2});
+
+        ValueUtil.ConstraintViolationPathProvider pathProvider = (constraintViolationBuilder) ->
+                constraintViolationBuilder
+                        .addPropertyNode("attributes")
+                        .addPropertyNode("value")
+                        .inContainer(Map.class, 1)
+                        .inIterable().atKey(attribute.getName());
+
+        Boolean valid = ValueUtil.validateValue(attributeDescriptor, attributeDescriptor.getType(), attribute, Instant.now(), context, pathProvider, attribute.getValue().orElse(null));
+
+        assertTrue(valid);
+    }
+
+    @Test
+    public void validateArrayOfPositiveIntegersEmptyValue() {
+        AttributeDescriptor<Integer[]> attributeDescriptor = new AttributeDescriptor<>("arrayOfPositiveNumbers", ValueType.POSITIVE_INTEGER.asArray());
+
+        Attribute<Integer[]> attribute = new Attribute<>(attributeDescriptor);
 
         ValueUtil.ConstraintViolationPathProvider pathProvider = (constraintViolationBuilder) ->
                 constraintViolationBuilder

@@ -999,7 +999,7 @@ public class ValueUtil {
 
     // TODO: as we recurse, we don't change the path, the error will always be reported on the attribute, not on a specific array index, can we live with that ?
     private static boolean validateConstraints(Integer dimensions, ValueConstraint[] constraints, ConstraintValidatorContext context, ConstraintViolationPathProvider constraintBuilderProvider, Instant now, Object value) {
-        if (dimensions == null || dimensions == 0) {
+        if (dimensions == null || dimensions == 0 || value == null) {
             return Arrays.stream(constraints).map(constraint -> validateValueConstraint(context, constraintBuilderProvider, now, constraint, value)).anyMatch(constraintValid -> !constraintValid);
         } else {
             return Arrays.stream((Object[])value).anyMatch(v -> validateConstraints(dimensions - 1, constraints, context, constraintBuilderProvider, now, v));
