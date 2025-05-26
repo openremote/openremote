@@ -47,6 +47,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_PROCESSOR;
 import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
@@ -280,6 +281,8 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public void onSubscribe(RemotingConnection connection, Topic topic) {
+        AuthContext authContext = getAuthContextFromConnection(connection).orElse(null);
+        boolean isRestricted = identityProvider.isRestrictedUser(authContext);
 
         boolean isAssetTopic = isAssetTopic(topic);
         String subscriptionId = topic.getString(); // Use topic as unique subscription ID
@@ -290,6 +293,15 @@ public class DefaultMQTTHandler extends MQTTHandler {
         if (filter == null) {
             LOG.info("Invalid event filter generated for topic '" + topic + "': " + connectionToString(connection));
             return;
+        }
+   
+        // If service user is restricted, then restrict subscription to only linked assets
+        if (isRestricted) {
+            List<String> userAssetIds = assetStorageService.findUserAssetLinks(authContext.getAuthenticatedRealmName(), authContext.getUserId(), null)
+                .stream()
+                .map(userAssetLink -> userAssetLink.getId().getAssetId())
+                .toList();
+            filter.setUserAssetIds(userAssetIds);
         }
 
         Consumer<Event> consumer = getSubscriptionEventConsumer(connection, topic);

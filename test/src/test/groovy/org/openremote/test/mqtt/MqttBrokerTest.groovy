@@ -659,8 +659,31 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
         }
 
-        // TODO: Further MQTT tests
-//        when: "an attribute event occurs on an attribute that the restricted user can access"
+
+
+        // disconnect the other client
+        client.disconnect()
+
+        // /attribute/+/# (all attribute events in the realm)
+        when: "a restricted mqtt client subscribes to the attribute wildcard topic"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$MQTTHandler.TOKEN_MULTI_LEVEL_WILDCARD".toString()
+        newClient.addMessageConsumer(topic, eventConsumer)
+
+        then: "a subscription should exist"
+        conditions.eventually {
+            assert newClient.topicConsumerMap.get(topic) != null
+        }
+
+        when: "an unlinked asset attribute event occurs"
+        attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", 40)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+
+        then: "the restricted client should not receive the event"
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
+            assert receivedEvents.size() == 0
+        }
+
 //
 //        then: "they should receive the event"
 //
