@@ -2,9 +2,8 @@
 # Provisions an EFS using the specified VPC and subnets; creates a security group called
 # `or-map`; but doesn't pre-configure ingress rules on this security group.
 # ---------------------------------------------------------------------------------------------
-AWSTemplateFormatVersion: 2010-09-09
-Description: Hosts EFS
-
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Hosts EFS'
 Parameters:
   VpcId:
     Type: String
@@ -12,15 +11,15 @@ Parameters:
 
   SubnetID1:
     Type: AWS::EC2::Subnet::Id
-    Description: Mount target 1 subnet ID
+    Description: Mount target 1 Subnet ID
 
   SubnetID2:
     Type: AWS::EC2::Subnet::Id
-    Description: Mount target 2 subnet ID
+    Description: Mount target 2 Subnet ID
 
   SubnetID3:
     Type: AWS::EC2::Subnet::Id
-    Description: Mount target 3 subnet ID
+    Description: Mount target 3 Subnet ID
 
 Conditions:
   CreateTarget1: !Not [!Equals [!Ref SubnetID1, ""]]
@@ -60,8 +59,6 @@ Resources:
 #            Condition:
 #              StringEquals:
 #                'aws:PrincipalOrgID': o-dhb7rpaban
-
-
 
   MountTargetResource1:
     Type: AWS::EFS::MountTarget
