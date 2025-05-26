@@ -5,7 +5,7 @@ import "../panels/attributes-panel";
 import "../util/settings-panel";
 import {i18next} from "@openremote/or-translate";
 import {AttributeAction, AttributeActionEvent, AttributesSelectEvent} from "../panels/attributes-panel";
-import {Asset, AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, Attribute, AttributeRef} from "@openremote/model";
+import {Asset, Attribute, AttributeRef} from "@openremote/model";
 import {ChartWidgetConfig} from "../widgets/chart-widget";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {when} from "lit/directives/when.js";
@@ -24,9 +24,6 @@ const styling = css`
 export class ChartSettings extends WidgetSettings {
 
     protected readonly widgetConfig!: ChartWidgetConfig;
-
-
-
     protected timeWindowOptions: Map<string, [moment.unitOfTime.DurationConstructor, number]> = new Map<string, [moment.unitOfTime.DurationConstructor, number]>;
     protected timePrefixOptions: string[] = [];
     protected samplingOptions: Map<string, string> = new Map<string, string>();
@@ -159,19 +156,18 @@ export class ChartSettings extends WidgetSettings {
                             ></or-mwc-input>
                         </div>
                         <!-- Time range selection -->
-                        <div>
+
+                    </div>  
+               </settings-panel>
+               <!-- Display options --> 
+               <settings-panel displayName="display" expanded="${false}">
+                   <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
                             <div class="switch-container">
                                 <span><or-translate value="dashboard.allowTimerangeSelect"></or-translate></span>
                                 <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${!this.widgetConfig.showTimestampControls}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimestampControlsToggle(ev)}"
                                 ></or-mwc-input>
                             </div>
-                        </div> 
-                    </div>  
-               </settings-panel>
-               <!-- Display options --> 
-               <settings-panel displayName="display" expanded="${false}">
-                   <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 16px;">
                             <div class="switch-container">
                                 <span><or-translate value="dashboard.showLegend"></or-translate></span>
                                 <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showLegend}"
@@ -283,7 +279,7 @@ export class ChartSettings extends WidgetSettings {
                 <settings-panel displayName="dataSampling" expanded="${false}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 12px;">
                         <div>
-                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%" .options="${Array.from(this.samplingOptions.keys())}" .value="${samplingValue}"
+                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%" .options="${Array.from(this.samplingOptions.keys())}" .value="${samplingValue}" disabled=${true}
                                           label="${i18next.t('algorithm')}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onSamplingQueryChange(ev)}"
                             ></or-mwc-input>
                         </div>
@@ -298,18 +294,6 @@ export class ChartSettings extends WidgetSettings {
 
     protected getSamplingOptionsTemplate(type: any): TemplateResult {
         switch (type) {
-            case 'interval': {
-                const intervalQuery = this.widgetConfig.datapointQuery as AssetDatapointIntervalQuery;
-                const formulaOptions = [AssetDatapointIntervalQueryFormula.AVG, AssetDatapointIntervalQueryFormula.MIN, AssetDatapointIntervalQueryFormula.MAX];
-                return html`
-                    <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${formulaOptions}"
-                                  .value="${intervalQuery.formula}" label="${i18next.t('algorithmMethod')}" @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                        intervalQuery.formula = event.detail.value;
-                        this.notifyConfigUpdate();
-                    }}"
-                    ></or-mwc-input>
-                `;
-            }
             case 'lttb': {
                 return html `
                     <or-mwc-input .type="${InputType.NUMBER}" .min="10" .max="1000" .step="1" label="${i18next.t('dashboard.maxConcurrentDatapoints')}" .value="${this.widgetConfig.maxConcurrentDatapoints}" style="width: 100%;"
@@ -324,36 +308,11 @@ export class ChartSettings extends WidgetSettings {
 
     // Check which icon was pressed and act accordingly.
     protected onAttributeAction(ev: AttributeActionEvent) {
-        const { asset ,attributeRef, action } = ev.detail;
-
-        const findAttributeIndex = (array: AttributeRef[], ref: AttributeRef) => {
-            return array.findIndex(item => item.id === ref.id && item.name === ref.name);
-        };
+        const {attributeRef, action } = ev.detail;
 
         switch (action.icon) {
             case "palette":    // Change color
-                const colorInput = document.createElement('input');
-                colorInput.type = 'color';
-                colorInput.style.border = 'none';
-                colorInput.style.height = '31px';
-                colorInput.style.width = '31px';
-                colorInput.style.padding = '1px 3px';
-                colorInput.style.minHeight = '22px';
-                colorInput.style.minWidth = '30px';
-                colorInput.style.cursor = 'pointer';
-                colorInput.addEventListener('change', (e: any) => {
-                    const color = e.target.value;
-                    const existingIndex = this.widgetConfig.colorPickedAttributes.findIndex(item =>
-                        item.attributeRef.id === attributeRef.id && item.attributeRef.name === attributeRef.name
-                    );
-                    if (existingIndex >= 0) {
-                        this.widgetConfig.colorPickedAttributes[existingIndex].color = color;
-                    } else {
-                        this.widgetConfig.colorPickedAttributes.push({ attributeRef, color });
-                    }
-                    this.notifyConfigUpdate();
-                });
-                colorInput.click();
+                this.openColorPickDialog(attributeRef);
                 break;
             case "arrow-right-bold":
             case "arrow-left-bold":
@@ -422,6 +381,31 @@ export class ChartSettings extends WidgetSettings {
         this.widgetConfig.colorPickedAttributes = this.widgetConfig.colorPickedAttributes.filter(
             item => item.attributeRef.id !== attributeRef.id || item.attributeRef.name !== attributeRef.name
         );
+    }
+
+    protected openColorPickDialog(attributeRef: AttributeRef) {
+        const colorInput = document.createElement('input');
+        colorInput.type = 'color';
+        colorInput.style.border = 'none';
+        colorInput.style.height = '31px';
+        colorInput.style.width = '31px';
+        colorInput.style.padding = '1px 3px';
+        colorInput.style.minHeight = '22px';
+        colorInput.style.minWidth = '30px';
+        colorInput.style.cursor = 'pointer';
+        colorInput.addEventListener('change', (e: any) => {
+            const color = e.target.value;
+            const existingIndex = this.widgetConfig.colorPickedAttributes.findIndex(item =>
+                item.attributeRef.id === attributeRef.id && item.attributeRef.name === attributeRef.name
+            );
+            if (existingIndex >= 0) {
+                this.widgetConfig.colorPickedAttributes[existingIndex].color = color;
+            } else {
+                this.widgetConfig.colorPickedAttributes.push({ attributeRef, color });
+            }
+            this.notifyConfigUpdate();
+        });
+        colorInput.click();
     }
 
     protected onTimePreFixSelect(ev: OrInputChangedEvent) {

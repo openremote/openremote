@@ -56,7 +56,7 @@ function getDefaultTimePreFixOptions(): string[] {
 }
 
 function getDefaultSamplingOptions(): Map<string, string> {
-    return new Map<string, string>([["lttb", 'lttb'], ["withInterval", 'interval']]);
+    return new Map<string, string>([["lttb", 'lttb']]); //, ["withInterval", 'interval'] interval removed because bar-chart feature instead of line-chart
 }
 
 function getDefaultWidgetConfig(): ChartWidgetConfig {

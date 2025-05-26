@@ -10,7 +10,6 @@ import {
     AssetQuery,
     Attribute,
     AttributeRef,
-    DatapointInterval,
     ReadAssetEvent,
     ValueDatapoint,
     WellknownMetaItems
@@ -20,12 +19,7 @@ import "@openremote/or-asset-tree";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {ECharts, EChartsOption, init, graphic, LabelFormatterCallback} from "echarts";
-import {
-
-    TimeUnit,
-
-} from "chart.js";
+import {ECharts, EChartsOption, init, graphic} from "echarts";
 import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
@@ -36,7 +30,7 @@ import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {cache} from "lit/directives/cache.js";
-import {debounce, throttle} from "lodash";
+import {debounce} from "lodash";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import { when } from "lit/directives/when.js";
@@ -321,7 +315,6 @@ const style = css`
             min-width: 100%;
             padding-left: 0;
         }
-        .interval-controls,
         .period-controls {
             flex-direction: row;
             justify-content: left;
@@ -333,8 +326,6 @@ const style = css`
 
 @customElement("or-chart")
 export class OrChart extends translate(i18next)(LitElement) {
-
-    public static DEFAULT_TIMESTAMP_FORMAT = "L HH:mm:ss";
 
     static get styles() {
         return [
@@ -375,7 +366,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
 
     @property()
-    public dataProvider?: (startOfPeriod: number, endOfPeriod: number, timeUnits: TimeUnit, stepSize: number) => Promise<[]>
+    public dataProvider?: (startOfPeriod: number, endOfPeriod: number) => Promise<[]>
 
     @property({type: Array})
     public colors: string[] = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
@@ -458,12 +449,9 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _endOfPeriod?: number;
     protected _zoomStartOfPeriod?: number;
     protected _zoomEndOfPeriod?: number;
-    protected _timeUnits?: TimeUnit;
-    protected _stepSize?: number;
     protected _latestError?: string;
     protected _dataAbortController?: AbortController;
     protected _zoomHandler?: any;
-    protected _resizeHandler?: any;
     protected _containerResizeObserver?: ResizeObserver;
     protected _tooltipCache: [xTime: number, content: string] = [0,''];
 
@@ -529,8 +517,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                 }
             }
 
-
-
             this._chartOptions = {
                 animation: false,
                 grid: {
@@ -538,7 +524,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                     borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
                     left: 10,
-                    right: this.attributeSettings.rightAxisAttributes.length > 0 ? 50 : 10,
+                    right: this.attributeSettings.rightAxisAttributes.length > 0 ? 50 : 20,
                     top: this.showToolBox ? 28 : 10,
                     bottom: this.showZoomBar ? 68 : 10,
                     containLabel: true
@@ -656,9 +642,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                     top: 0,
                     feature: {
                         dataView: {readOnly: true},
-                        //magicType: {
-                        //    type: ['line', 'bar']
-                        //},
                         saveAsImage: {name: ['Chart Export ', this.panelName, `${moment(this._startOfPeriod).format("DD-MM-YYYY HH:mm")} - ${moment(this._endOfPeriod).format("DD-MM-YYYY HH:mm")}`].filter(Boolean).join('')}
                     }
                 }
@@ -712,8 +695,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     render() {
-
-        const disabled = false; // TEMP EDIT this._loading || this._latestError;
+        const disabled = this._loading || this._latestError;
         return html`
             <div id="container">
                 <div id="chart-container">
@@ -895,9 +877,6 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._chart.setOption(options)
         }
     };
-
-
-
 
     async loadSettings(reset: boolean) {
 
@@ -1105,76 +1084,50 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    protected _deleteAttribute (index: number) {
-        const removed = this.assetAttributes.splice(index, 1)[0];
-        const assetIndex = removed[0];
-        this.assetAttributes = [...this.assetAttributes];
-        if (!this.assetAttributes.some(([index, attrRef]) => index === assetIndex)) {
-            // Asset no longer referenced
-            this.assets.splice(index, 1);
-            this.assetAttributes.forEach((indexRef) => {
-                if (indexRef[0] >= assetIndex) {
-                    indexRef[0] -= 1;
-                }
-            });
-        }
-        this.saveSettings();
-    }
+    // Currently not in use
+    //protected _deleteAttribute (index: number) {
+    //    const removed = this.assetAttributes.splice(index, 1)[0];
+    //    const assetIndex = removed[0];
+    //    this.assetAttributes = [...this.assetAttributes];
+    //    if (!this.assetAttributes.some(([index, attrRef]) => index === assetIndex)) {
+    //        // Asset no longer referenced
+    //        this.assets.splice(index, 1);
+    //        this.assetAttributes.forEach((indexRef) => {
+    //            if (indexRef[0] >= assetIndex) {
+    //                indexRef[0] -= 1;
+    //            }
+    //        });
+    //    }
+    //    this.saveSettings();
+    //}
 
-    protected _getAttributeOptionsOld(): [string, string][] | undefined {
-        //('getAttributeOptionsOld triggered');
-        if(!this.activeAsset || !this.activeAsset.attributes) {
-            return;
-        }
-
-        if(this.shadowRoot && this.shadowRoot.getElementById('chart-attribute-picker')) {
-            const elm = this.shadowRoot.getElementById('chart-attribute-picker') as HTMLInputElement;
-            elm.value = '';
-        }
-
-        const attributes = Object.values(this.activeAsset.attributes);
-        if (attributes && attributes.length > 0) {
-            return attributes
-                .filter((attribute) => attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) ? attribute.meta[WellknownMetaItems.STOREDATAPOINTS] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
-                .filter((attr) => (this.assetAttributes && !this.assetAttributes.some(([index, assetAttr]) => (assetAttr.name === attr.name) && this.assets[index].id === this.activeAsset!.id)))
-                .map((attr) => {
-                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.activeAsset!.type, attr.name, attr);
-                    const label = Util.getAttributeLabel(attr, descriptors[0], this.activeAsset!.type, false);
-                    return [attr.name!, label];
-                });
-        }
-    }
-
-    protected _getAttributeOptions(): [string, string][] | undefined {
-        if(!this.activeAsset || !this.activeAsset.attributes) {
-            return;
-        }
-
-        if(this.shadowRoot && this.shadowRoot.getElementById('chart-attribute-picker')) {
-            const elm = this.shadowRoot.getElementById('chart-attribute-picker') as HTMLInputElement;
-            elm.value = '';
-        }
-
-        const attributes = Object.values(this.activeAsset.attributes);
-        if (attributes && attributes.length > 0) {
-            return attributes
-                .filter((attribute) => attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) ? attribute.meta[WellknownMetaItems.STOREDATAPOINTS] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
-                .filter((attr) => (this.assetAttributes && !this.assetAttributes.some(([index, assetAttr]) => (assetAttr.name === attr.name) && this.assets[index].id === this.activeAsset!.id)))
-                .map((attr) => {
-                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.activeAsset!.type, attr.name, attr);
-                    const label = Util.getAttributeLabel(attr, descriptors[0], this.activeAsset!.type, false);
-                    return [attr.name!, label];
-                });
-        }
-    }
-
-
-
+    // Currently not in use
+    //protected _getAttributeOptions(): [string, string][] | undefined {
+    //    if(!this.activeAsset || !this.activeAsset.attributes) {
+    //        return;
+    //    }
+    //
+    //    if(this.shadowRoot && this.shadowRoot.getElementById('chart-attribute-picker')) {
+    //        const elm = this.shadowRoot.getElementById('chart-attribute-picker') as HTMLInputElement;
+    //        elm.value = '';
+    //    }
+    //
+    //    const attributes = Object.values(this.activeAsset.attributes);
+    //    if (attributes && attributes.length > 0) {
+    //        return attributes
+    //            .filter((attribute) => attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) ? attribute.meta[WellknownMetaItems.STOREDATAPOINTS] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
+    //            .filter((attr) => (this.assetAttributes && !this.assetAttributes.some(([index, assetAttr]) => (assetAttr.name === attr.name) && this.assets[index].id === this.activeAsset!.id)))
+    //            .map((attr) => {
+    //                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.activeAsset!.type, attr.name, attr);
+    //                const label = Util.getAttributeLabel(attr, descriptors[0], this.activeAsset!.type, false);
+    //                return [attr.name!, label];
+    //            });
+    //    }
+    //}
 
     protected _getDefaultTimePrefixOptions(): string[] {
         return ["this", "last"];
     }
-
 
     protected _getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
         return new Map<string, [moment.unitOfTime.DurationConstructor, number]>([
@@ -1191,8 +1144,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         ]);
     };
 
-
-    protected _getTimeWindowSelected(timePrefixSelected: string, timeWindowSelected: string): [Date, Date] {
+    protected _getTimeSelectionDates(timePrefixSelected: string, timeWindowSelected: string): [Date, Date] {
         let startDate = moment();
         let endDate = moment();
 
@@ -1241,28 +1193,6 @@ export class OrChart extends translate(i18next)(LitElement) {
         this.timeframe = [newStart.toDate(), newEnd.toDate()];
     }
 
-
-    protected _getInterval(diffInHours: number): [number, DatapointInterval] {
-
-        if(diffInHours <= 1) {
-            return [5, DatapointInterval.MINUTE];
-        } else if(diffInHours <= 3) {
-            return [10, DatapointInterval.MINUTE];
-        } else if(diffInHours <= 6) {
-            return [30, DatapointInterval.MINUTE];
-        } else if(diffInHours <= 24) { // one day
-            return [1, DatapointInterval.HOUR];
-        } else if(diffInHours <= 48) { // two days
-            return [3, DatapointInterval.HOUR];
-        } else if(diffInHours <= 96) {
-            return [12, DatapointInterval.HOUR];
-        } else if(diffInHours <= 744) { // one month
-            return [1, DatapointInterval.DAY];
-        } else {
-            return [1, DatapointInterval.MONTH];
-        }
-    }
-
     protected async _loadData() {
         if ((this._data && !this._zoomChanged) || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
             return;
@@ -1278,8 +1208,9 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         this._loading = true;
-
-        const dates: [Date, Date] = this._getTimeWindowSelected(this.timePrefixKey!, this.timeWindowKey!);
+        const dates: [Date, Date] = this._getTimeSelectionDates(this.timePrefixKey!, this.timeWindowKey!);
+        const data: any = [];
+        let promises;
 
         if(!this._zoomChanged || !this._startOfPeriod || !this._endOfPeriod) {
             // If zoom has changed, we want to keep the previous start and end of period
@@ -1287,24 +1218,9 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._endOfPeriod = this.timeframe ? this.timeframe[1].getTime() : dates[1].getTime();
         }
 
-        const diffInHours = (this._endOfPeriod - this._startOfPeriod) / 1000 / 60 / 60;
-        const intervalArr = this._getInterval(diffInHours);
-
-        const stepSize: number = intervalArr[0];
-        const interval: DatapointInterval = intervalArr[1];
-
-        const lowerCaseInterval = interval.toLowerCase();
-        this._timeUnits =  lowerCaseInterval as TimeUnit;
-        this._stepSize = stepSize;
-        const now = moment().toDate().getTime();
-        let predictedFromTimestamp = now < this._startOfPeriod ? this._startOfPeriod : now;
-
-        const data: any = [];
-        let promises;
-
         try {
             if(this.dataProvider && !this._zoomChanged) {
-                await this.dataProvider(this._startOfPeriod, this._endOfPeriod, (interval.toString() as TimeUnit), stepSize).then((dataset) => {
+                await this.dataProvider(this._startOfPeriod, this._endOfPeriod).then((dataset) => {
                     dataset.forEach((set) => { data.push(set); });
                 });
             } else {
@@ -1324,25 +1240,24 @@ export class OrChart extends translate(i18next)(LitElement) {
                     const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
                     const colourIndex = index % this.colors.length;
                     const options = { signal: this._dataAbortController?.signal };
+
                     //Load Historic Data
-                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, false, smooth, stepped, area, faint, false, asset.name + " " + label, options, unit);
+                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], false, smooth, stepped, area, faint, false, asset.name + " " + label, options, unit);
                     (dataset as any).assetId = asset.id;
                     (dataset as any).attrName = attribute.name;
                     (dataset as any).unit = unit;
                     (dataset as any).yAxisIndex = shownOnRightAxis ? '1' : '0';
                     data.push(dataset);
+
                     //Load Predicted Data
-                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], predictedFromTimestamp, this._endOfPeriod!, true, smooth, stepped, area, faint, false , asset.name + " " + label + " " + i18next.t("predicted"), options, unit);
+                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stepped, area, faint, false , asset.name + " " + label + " " + i18next.t("predicted"), options, unit);
                     data.push(dataset);
+
                     //Load Extended Data
-                    let bsNumber = 1; //inserted in from and to, however these are not used in _loadAttributeData anyway, the function references variables outside of it (bad practice)
                     if (extended) {
-                        dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], bsNumber, bsNumber, false, false, false, area, faint, extended, asset.name + " " + label + " " + i18next.t("dashboard.lastKnown"), options, unit);
+                        dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, false, area, faint, extended, asset.name + " " + label + " " + "lastKnown", options, unit);
                         data.push(dataset);
                     }
-
-                    //Is it actually efficient to query three times ? think this can be way more efficient.
-
 
                 });
             }
@@ -1376,8 +1291,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-
-    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string, from: number, to: number, predicted: boolean, smooth: boolean, stepped: boolean, area: boolean, faint: boolean, extended: boolean, label?: string, options?: any, unit?: any) {
+    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string, predicted: boolean, smooth: boolean, stepped: boolean, area: boolean, faint: boolean, extended: boolean, label?: string, options?: any, unit?: any) {
 
         function rgba (color: string, alpha: number) {
             return `rgba(${parseInt(color.slice(-6,-4), 16)}, ${parseInt(color.slice(-4,-2), 16)}, ${parseInt(color.slice(-2), 16)}, ${alpha})`;
@@ -1397,10 +1311,6 @@ export class OrChart extends translate(i18next)(LitElement) {
             itemStyle: {
                 color: color
             },
-            tooltip: {
-                // @ts-ignore
-                valueFormatter: value => value + unit
-            },
             smooth: smooth,
             step: stepped ? 'end' : undefined,
             extended: extended,
@@ -1417,11 +1327,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                 ])} as any : undefined,
         }
 
-
         if (asset.id && attribute.name && this.datapointQuery) {
             let response: GenericAxiosResponse<ValueDatapoint<any>[]>;
             const query = JSON.parse(JSON.stringify(this.datapointQuery)); // recreating object, since the changes shouldn't apply to parent components; only or-chart itself.
-
+            query.amountOfPoints = this.maxConcurrentDatapoints;
             if (!this._zoomChanged) {
                 query.fromTimestamp = this._startOfPeriod;
                 query.toTimestamp = this._endOfPeriod;
@@ -1429,17 +1338,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                 query.fromTimestamp = this._zoomStartOfPeriod;
                 query.toTimestamp = this._zoomEndOfPeriod;
             }
-
-            if(query.type == 'lttb') {
-                // If the query type is lttb, we need to limit the amount of points to the maxConcurrentDatapoints
-               query.amountOfPoints = this.maxConcurrentDatapoints;
-
-            } else if(query.type === 'interval' && !query.interval) {
-                const diffInHours = (this.datapointQuery.toTimestamp! - this.datapointQuery.fromTimestamp!) / 1000 / 60 / 60;
-                const intervalArr = this._getInterval(diffInHours);
-                query.interval = (intervalArr[0].toString() + " " + intervalArr[1].toString()); // for example: "5 minute"
-            }
-
 
             if (predicted) {
                 response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(asset.id, attribute.name, query, options);
@@ -1463,7 +1361,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                 dataset.data = data.map(point => [point.x, point.y]);
                 dataset.showSymbol = data.length <= this.showSymbolMaxDatapoints;
             }
-
 
             if (extended) {
                 if (dataset.data.length > 0) {
@@ -1539,7 +1436,6 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
             // Add event listener for zooming
             this._zoomHandler = this._chart!.on('datazoom', debounce((params: any) => { this._onZoomChange(params); }, 1500));
-
         }
         else if (!connect) {
             //Disconnect event listeners
@@ -1602,7 +1498,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 if (displayValue) {
                     tooltipArray.push({
                         value: displayValue,
-                        text: `<div><span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color: ${dataset.lineStyle.color}"></span> ${name}: <b>${displayValue}</b></div>`
+                        text: `<div><span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color: ${dataset.lineStyle.color}"></span> ${name}: <b>${displayValue} ${dataset.unit}</b></div>`
                     })
                 }
             }

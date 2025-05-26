@@ -176,7 +176,7 @@
   "period": "Period",
   "ending": "Ending",
   "prefix": "Prefix",
-  "prefixDefault": "Default Prefix",
+  "prefixDefault": "Default prefix",
   "timeframe": "Timeframe",
   "timeframeDefault": "Default timeframe",
   "dataSampling": "Data sampling",
@@ -793,10 +793,9 @@
     "stepped": "Stepped",
     "fill": "Fill",
     "extendData": "Extend latest datapoint",
-    "lastKnown": "(last known)",
     "lineColor": "Line color",
     "maxConcurrentDatapoints": "Max concurrent datapoints",
-    "showSymbolMaxDatapoints": "Upper limit to show datapoint symbols"
+    "showSymbolMaxDatapoints": "Max datapoints to show datapoint circles"
 
   },
   "south": "South",
