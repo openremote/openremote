@@ -1515,13 +1515,13 @@ export class OrChart extends translate(i18next)(LitElement) {
             series: this._data!.map(series => ({
                 ...series,
                 markLine: {
-                    symbol: 'circle',
+                    symbol: 'none',
                     silent: true,
                     data: [{ name: '', xAxis: new Date().toISOString(), label: { formatter: '{b}' } }],
                     lineStyle: {
                         color: this._style.getPropertyValue("--internal-or-chart-text-color"),
                         type: 'solid',
-                        width: 2,
+                        width: 1,
                         opacity: 1
                     }
                 }
