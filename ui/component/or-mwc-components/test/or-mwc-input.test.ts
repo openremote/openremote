@@ -1,6 +1,6 @@
 import { ct, expect } from "@openremote/test";
 
-import { OrMwcInput, InputType } from "../src/or-mwc-input";
+import { OrMwcInput, InputType } from "@openremote/or-mwc-components/or-mwc-input";
 
 ct("Button should trigger or-mwc-input-changed event", async ({ mount }) => {
   let clicked = false;
