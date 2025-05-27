@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-survey-results",
-  "version": "1.3.3",
+  "version": "1.7.0-snapshot",
   "description": "Displays survey results",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
