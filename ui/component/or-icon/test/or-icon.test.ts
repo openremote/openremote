@@ -2,6 +2,10 @@ import { ct, expect } from "@openremote/test";
 
 import { OrIcon } from "@openremote/or-icon";
 
+ct.beforeEach(async ({ shared }) => {
+  await shared.fonts();
+});
+
 for (const icon of ["map", "rhombus-split", "state-machine", "chart-areaspline"]) {
   ct(`Should render "mdi" icon: ${icon}`, async ({ mount }) => {
     const component = await mount(OrIcon, { props: { icon } });
