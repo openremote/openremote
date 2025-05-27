@@ -47,6 +47,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
     def "Mqtt broker event test"() {
         given: "the container environment is started"
         List<SharedEvent> receivedEvents = new CopyOnWriteArrayList<>()
+        List<SharedEvent> restrictedReceivedEvents = new CopyOnWriteArrayList<>()
         List<Object> receivedValues = new CopyOnWriteArrayList<>()
         MQTT_IOClient client = null
         MQTT_IOClient newClient = null
@@ -661,13 +662,16 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
 
 
-        // disconnect the other client
-        client.disconnect()
+        Consumer<MQTTMessage<String>> restrictedEventConsumer = { msg ->
+            def event = ValueUtil.parse(msg.payload, SharedEvent.class)
+            restrictedReceivedEvents.add(event.get())
+        }
+
 
         // /attribute/+/# (all attribute events in the realm)
         when: "a restricted mqtt client subscribes to the attribute wildcard topic"
         topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$MQTTHandler.TOKEN_MULTI_LEVEL_WILDCARD".toString()
-        newClient.addMessageConsumer(topic, eventConsumer)
+        newClient.addMessageConsumer(topic, restrictedEventConsumer)
 
         then: "a subscription should exist"
         conditions.eventually {
@@ -681,9 +685,22 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "the restricted client should not receive the event"
         new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
-            assert receivedEvents.size() == 0
+            assert restrictedReceivedEvents.size() == 0
         }
 
+        when: "a linked asset attribute event occurs"
+        attributeEvent = new AttributeEvent(managerTestSetup.apartment1BathroomId, "notes", "This is a test note")
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        then: "the restricted client should receive the event"
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
+            assert restrictedReceivedEvents.size() == 1
+            assert restrictedReceivedEvents.get(0) instanceof AttributeEvent
+            assert (restrictedReceivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1BathroomId
+            assert (restrictedReceivedEvents.get(0) as AttributeEvent).name == "notes"
+            assert (restrictedReceivedEvents.get(0) as AttributeEvent).value.orElse(null) == "This is a test note"
+        }
+        restrictedReceivedEvents.clear()
 //
 //        then: "they should receive the event"
 //

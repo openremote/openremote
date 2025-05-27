@@ -295,10 +295,9 @@ public class DefaultMQTTHandler extends MQTTHandler {
             return;
         }
    
-        // Add an additional filter for restricted service users so that events are additionally filtered to only include events for linked assets
+        // Specify userAssetIds for restricted service users so that events are additionally filtered to only include events for these assets
         if (isRestricted) {
-            filter.setRestrictedEvents(true);
-
+            // filter.setRestrictedEvents(true); -- This restricts the events to only attributes with the restricted meta configuration
             List<String> userAssetIds = assetStorageService.findUserAssetLinks(authContext.getAuthenticatedRealmName(), authContext.getUserId(), null)
                 .stream()
                 .map(userAssetLink -> userAssetLink.getId().getAssetId())
