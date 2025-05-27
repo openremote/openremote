@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-thermostat",
-  "version": "1.3.3",
+  "version": "1.7.0-snapshot",
   "description": "A thermostat component for viewing current temperature and setting target temperature",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
