@@ -128,10 +128,6 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<Webpa
     },
     module: getStandardModuleRules(),
     plugins: [
-      new webpack.DefinePlugin({
-        __REGISTER_SOURCE__: JSON.stringify(registerSource),
-        __COMPONENTS__: JSON.stringify([...componentRegistry.values()]),
-      }),
       new HtmlWebpackPlugin({
         inject: "body",
         scriptLoading: "module",
