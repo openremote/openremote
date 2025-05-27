@@ -1,6 +1,6 @@
 {
   "name": "@openremote/manager",
-  "version": "1.3.3",
+  "version": "1.7.0-snapshot",
   "description": "OpenRemote Manager",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
