@@ -406,7 +406,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
                 synchronized (connected) {
                     connected.set(true);
 
-                    if (!this.cleanSession && !connAck.isSessionPresent()) {
+                    if (!connAck.isSessionPresent()) {
                         // Need to re-instate the subscriptions as HiveMQ client doesn't do it
                         // Re-add all subscriptions
                         topicConsumerMap.keySet().forEach(this::doClientSubscription);
