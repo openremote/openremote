@@ -13,12 +13,12 @@ import "./assettype-list";
  * Custom Event that is dispatched upon closing the dialog.
  * Contains a map that is keyed by {@link AssetDescriptor.name}, with an array of {@link AttributeDescriptor}s of the selected attributes.
  */
-export class AssetTypeAttributePickerPickedEvent extends AttributePickerPickedEvent {
+export class OrAssetTypeAttributePickerPickedEvent extends AttributePickerPickedEvent {
 
     public static readonly NAME = "or-asset-type-attribute-picker-picked";
 
     constructor(attrDescriptors: Map<string, AttributeDescriptor[]>) {
-        super(AssetTypeAttributePickerPickedEvent.NAME, {
+        super(OrAssetTypeAttributePickerPickedEvent.NAME, {
             bubbles: true,
             composed: true,
             detail: attrDescriptors
@@ -28,7 +28,7 @@ export class AssetTypeAttributePickerPickedEvent extends AttributePickerPickedEv
 
 declare global {
     export interface HTMLElementEventMap {
-        [AssetTypeAttributePickerPickedEvent.NAME]: AssetTypeAttributePickerPickedEvent;
+        [OrAssetTypeAttributePickerPickedEvent.NAME]: OrAssetTypeAttributePickerPickedEvent;
     }
 }
 
@@ -184,7 +184,7 @@ export class OrAssetTypeAttributePicker extends AttributePicker {
                     <or-mwc-input id="add-btn" class="button" label="add" .type="${InputType.BUTTON}"></or-mwc-input>`,
                 action: () => {
                     if (!this.addBtn.disabled) {
-                        this.dispatchEvent(new AssetTypeAttributePickerPickedEvent(this.selectedAttributes));
+                        this.dispatchEvent(new OrAssetTypeAttributePickerPickedEvent(this.selectedAttributes));
                     }
                 }
             }
