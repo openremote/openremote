@@ -511,7 +511,7 @@ jobs:
         shell: bash
         run: |
           if [ -n "$MANAGER_DOCKER_CMD" ]; then
-            echo "value=./gradlew installDist" >> $GITHUB_OUTPUT
+            echo "value=./gradlew installDist --stacktrace" >> $GITHUB_OUTPUT
           elif [ -n "$DEPLOYMENT_DOCKER_CMD" ]; then
             echo "value=./gradlew -p deployment installDist" >> $GITHUB_OUTPUT
           fi
