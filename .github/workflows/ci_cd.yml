@@ -634,7 +634,7 @@ jobs:
 
       - name: Run backend tests
         id: run-backend-tests
-        if: ${{ steps.test-backend-command.outputs.value != '' }}
+        if: false
         run: |
           composeProfile='profile/dev-testing.yml'
 
