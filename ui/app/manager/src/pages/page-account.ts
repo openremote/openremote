@@ -292,7 +292,7 @@ export class PageAccount extends Page<AppStateKeyed> {
                     <or-mwc-input id="reset-password" raised
                                   .label="${i18next.t("resetPassword")}"
                                   .type="${InputType.BUTTON}"
-                                  .disabled="${!user}"
+                                  .disabled="${!user.email}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onResetPasswordBtnClick(e)}"
                     ></or-mwc-input>
                 </div>
