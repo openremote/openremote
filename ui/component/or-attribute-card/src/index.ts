@@ -26,7 +26,7 @@ import "@openremote/or-attribute-picker";
 import moment from "moment";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
+import {OrAssetAttributePicker, OrAssetAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {when} from "lit/directives/when.js";
 import {debounce} from "lodash";
@@ -543,10 +543,10 @@ export class OrAttributeCard extends LitElement {
                 });
                 break;
             default:
-                dialog = new OrAttributePicker()
+                dialog = new OrAssetAttributePicker()
                     .setHeading(i18next.t("selectAttribute"));
 
-                dialog.addEventListener(OrAttributePickerPickedEvent.NAME, async (ev: OrAttributePickerPickedEvent) => {
+                dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, async (ev: OrAssetAttributePickerPickedEvent) => {
                     // handle selected attrs
                     const attrRef = ev.detail[0];
                     try {

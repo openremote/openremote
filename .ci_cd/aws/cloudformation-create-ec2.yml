@@ -77,6 +77,13 @@ Parameters:
     Description: Role ARN that can be assumed for updating DNS A record (if Hosted Zone in another account)
     Type: String
     Default: ""
+  DLMExecutionRoleArn:
+    Description: Role ARN for executing the DLM operations
+    Type: String
+  SnapshotId:
+    Description: Snapshot ID to create the EBS data volume based of an existing snapshot
+    Type: String
+    Default: ""
   ElasticIP:
     Description: Assign elastic IP address
     Type: String
@@ -91,10 +98,14 @@ Parameters:
       - true
       - false
     Default: false
-  DiskSize:
+  RootDiskSize:
     Description: Root EBS volume size GB
     Type: Number
-    Default: 30
+    Default: 16
+  DataDiskSize:
+    Description: Amount of storage you want to provision for this EBS data volume
+    Type: Number
+    Default: 16
   HealthChecks:
     Description: Create health checks
     Type: String
@@ -128,6 +139,7 @@ Conditions:
   AssignElasticIP: !Equals [!Ref ElasticIP, "true"]
   MetricsEnabled: !Equals [!Ref Metrics, "true"]
   CreateHealthChecks: !Equals [!Ref HealthChecks, "true"]
+  SnapshotProvided: !Not [!Equals [!Ref SnapshotId, ""]]
   UseAMIID: !Equals [!Ref ImageId, ""]
 
 Resources:
@@ -216,9 +228,9 @@ Resources:
           default:
             - setupCfnHup
             - create_swapfile
+            - docker_setup
             - cloudwatch_config
             - restart_amazon-cloudwatch-agent
-            - docker_setup
             - cron_setup
             - env_vars
             - dns_updater
@@ -269,7 +281,8 @@ Resources:
                             "used_percent"
                           ],
                           "resources": [
-                            "/"
+                            "/",
+                            "/var/lib/docker/volumes"
                           ],
                           "metrics_collection_interval": 900
                         }
@@ -447,7 +460,7 @@ Resources:
         daily_cleanup:
           files:
             "/usr/local/bin/daily-cleanup":
-              content: !Sub |
+              content: |
                 #!/bin/bash
                 journalctl --vacuum-time=7d
             "/etc/cron.d/cleanup":
@@ -766,7 +779,7 @@ Resources:
               docker:
                 enabled: "true"
                 ensureRunning: "true"
-
+  
         cron_setup:
           packages:
             yum:
@@ -828,7 +841,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: !Ref DiskSize
+            VolumeSize: !Ref RootDiskSize
             VolumeType: gp3
             DeleteOnTermination: true
       Ipv6AddressCount: 1
@@ -866,7 +879,51 @@ Resources:
       InstanceId: !Ref EC2Instance
       EIP: !Ref IPAddress
 
-  # Telemetry and Alarms
+  EBSDataVolume:
+    Type: AWS::EC2::Volume
+    Properties:
+      AvailabilityZone: !GetAtt EC2Instance.AvailabilityZone
+      Size: !Ref DataDiskSize
+      VolumeType: gp3
+      SnapshotId: !If [SnapshotProvided, !Ref SnapshotId, !Ref 'AWS::NoValue']
+      Tags:
+        - Key: Name
+          Value: !Sub ${Host}-data
+        - Key: Type
+          Value: !Sub ${Host}-or-data-not-in-use
+    DeletionPolicy: Snapshot
+
+  # DLM Policy for automatic snapshot creation
+
+  DLMPolicy:
+    Type: AWS::DLM::LifecyclePolicy
+    DependsOn: EBSDataVolume
+    Properties:
+      ExecutionRoleArn: !Ref DLMExecutionRoleArn
+      Description: 'or-data'
+      State: ENABLED
+      PolicyDetails:
+        PolicyLanguage: STANDARD
+        PolicyType: EBS_SNAPSHOT_MANAGEMENT
+        TargetTags:
+          - Key: Type
+            Value: !Sub ${Host}-or-data-in-use
+        ResourceTypes: 
+          - VOLUME
+        Schedules:
+          - Name: Daily Backup
+            CreateRule:
+              Interval: 24
+              IntervalUnit: HOURS
+              Times:
+              - '05:00'
+            RetainRule:
+              Count: 5
+      Tags:
+        - Key: Name
+          Value: !Ref Host
+
+  # Telemetry and Alarms.
 
   EmailSubscription:
     Condition: CreateHealthChecks
@@ -941,7 +998,7 @@ Resources:
         - Name: InstanceId
           Value: !Ref EC2Instance
 
-  DiskUtilizationAlarm:
+  RootDiskUtilizationAlarm:
     Type: AWS::CloudWatch::Alarm
     Condition: MetricsEnabled
     Properties:
@@ -961,6 +1018,29 @@ Resources:
           Value: !Ref EC2Instance
         - Name: path
           Value: /
+        - Name: fstype
+          Value: xfs
+
+  DataDiskUtilizationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
+    Properties:
+      Namespace: CWAgent
+      MetricName: disk_used_percent
+      Statistic: Average
+      Period: 3600
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 90
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref EC2Instance
+        - Name: path
+          Value: /var/lib/docker/volumes
         - Name: fstype
           Value: xfs
 
