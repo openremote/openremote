@@ -80,3 +80,59 @@ tasks.register('clean') {
         delete 'tmp'
     }
 }
+
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.ow2.asm:asm:9.5'
+        classpath 'org.ow2.asm:asm-tree:9.5'
+    }
+}
+
+subprojects {
+    afterEvaluate { proj ->
+        if (proj.plugins.hasPlugin('java')) {
+            def entityAnnotation = 'Ljakarta/persistence/Entity;'
+
+            proj.tasks.register('checkJpaEntitiesEquality') {
+                group = 'verification'
+                description = 'Ensure all JPA entities implement equals() and hashCode()'
+                dependsOn proj.tasks.named('classes')
+
+                doLast {
+                    proj.sourceSets.main.output.classesDirs.each { dir ->
+                        if (!dir.exists()) return
+
+                        dir.eachFileRecurse { file ->
+                            if (file.name.endsWith('.class')) {
+                                def reader = new org.objectweb.asm.ClassReader(file.bytes)
+                                def classNode = new org.objectweb.asm.tree.ClassNode()
+                                reader.accept(classNode, 0)
+
+                                def isEntity = classNode.visibleAnnotations?.any {
+                                    it.desc == entityAnnotation
+                                }
+
+                                if (isEntity) {
+                                    def methodNames = classNode.methods*.name
+                                    def className = classNode.name.replace('/', '.')
+
+                                    def missing = []
+                                    if (!methodNames.contains('equals')) missing << 'equals()'
+                                    if (!methodNames.contains('hashCode')) missing << 'hashCode()'
+
+                                    if (!missing.isEmpty()) {
+                                        println "❌ Entity $className is missing: ${missing.join(', ')}"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
