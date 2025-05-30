@@ -192,13 +192,8 @@ export class PageView extends Page<AppStateKeyed> {
             const response = await promise;
             return response.data;
         } catch (ex) {
-            if(isAxiosError(ex)) {
-                if(ex.response.status === 404 && manager.isSuperUser()) {
-                    return undefined;
-                }
-                if(!manager.authenticated && ex.response.status === 403 && loginRedirect) {
-                    manager.login();
-                }
+            if(isAxiosError(ex) && !manager.authenticated && loginRedirect) {
+                manager.login();
             }
             return undefined;
         }

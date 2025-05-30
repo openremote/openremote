@@ -523,14 +523,16 @@ export class OrDashboardBuilder extends LitElement {
             this.isLoading = true;
 
             // Saving object into the database
-            manager.rest.api.DashboardResource.update(this.selectedDashboard).then(() => {
-                if(this.dashboards != null && this.selectedDashboard != null) {
-                    this.initialDashboardJSON = JSON.stringify(this.selectedDashboard);
-                    this.initialTemplateJSON = JSON.stringify(this.selectedDashboard.template);
-                    this.dashboards[this.dashboards?.indexOf(this.selectedDashboard)] = this.selectedDashboard;
-                    this.currentTemplate = Object.assign({}, this.selectedDashboard.template);
-                    showSnackbar(undefined, "dashboard.saveSuccessful");
-                }
+            manager.rest.api.DashboardResource.update(this.selectedDashboard).then((response) => {
+                // Need to update the selected dashboard with what was persisted but due to code structure we also need to update
+                // the dashboards array otherwise the old version gets loaded
+                this.selectedDashboard = response.data;
+                this.dashboards = [this.selectedDashboard,...this.dashboards?.filter(d => d.id !== this.selectedDashboard!.id)!];
+                this.initialDashboardJSON = JSON.stringify(this.selectedDashboard);
+                this.initialTemplateJSON = JSON.stringify(this.selectedDashboard.template);
+                this.dashboards[this.dashboards?.indexOf(this.selectedDashboard)] = this.selectedDashboard;
+                this.currentTemplate = Object.assign({}, this.selectedDashboard.template);
+                showSnackbar(undefined, "dashboard.saveSuccessful");
             }).catch((reason) => {
                 console.error(reason);
                 showSnackbar(undefined, "errorOccurred");

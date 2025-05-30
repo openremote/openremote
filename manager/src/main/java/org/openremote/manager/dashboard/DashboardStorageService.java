@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.dashboard;
 
+import jakarta.persistence.NoResultException;
 import jakarta.persistence.Query;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
@@ -35,6 +36,7 @@ import org.openremote.model.dashboard.DashboardAccess;
 import org.openremote.model.query.DashboardQuery;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.StringPredicate;
+import org.openremote.model.util.TextUtil;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -244,23 +246,6 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         return sqlBuilder;
     }
 
-    // Method to check if a dashboardId actually exists in the database
-    // Useful for when query() does not return any accessible dashboard for that user, and check if it does however exist.
-    public boolean exists(String dashboardId, String realm) {
-        if(dashboardId == null) {
-            throw new IllegalArgumentException("No dashboardId is specified.");
-        }
-        if(realm == null) {
-            throw new IllegalArgumentException("No realm is specified.");
-        }
-        return this.query(new DashboardQuery()
-                .realm(new RealmPredicate(realm))
-                .ids(dashboardId),
-                null
-        ).length > 0;
-    }
-
-
     // Creation of initial dashboard (so no updating!)
     public Dashboard createNew(Dashboard dashboard) {
         if(dashboard == null) {
@@ -279,7 +264,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
 
     // Update of an existing dashboard
     public Dashboard update(Dashboard dashboard, String realm, String userId) throws IllegalArgumentException {
-        if(dashboard == null) {
+        if(dashboard == null || TextUtil.isNullOrEmpty(dashboard.getId())) {
             throw new IllegalArgumentException("No dashboard is specified.");
         }
         if(realm == null) {
@@ -288,21 +273,25 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         if(userId == null) {
             throw new IllegalArgumentException("No userId is specified.");
         }
-        // Query the dashboards with the same ID (which is only 1)
-        var query = new DashboardQuery()
-                .ids(dashboard.getId())
-                .realm(new RealmPredicate(realm))
-                .limit(1);
-        Dashboard[] dashboards = this.query(query, userId);
-        if(dashboards != null && dashboards.length > 0) {
-            Dashboard d = dashboards[0];
-            return persistenceService.doReturningTransaction(em -> {
-                dashboard.setVersion(d.getVersion()); // TODO: Investigate why versioning is not correct for Dashboard model
+        return persistenceService.doReturningTransaction(em -> {
+            // Check it exists and is associated with the specified user if private
+            StringBuilder sb = new StringBuilder("SELECT d.id FROM Dashboard d where id = :id AND (access <> ")
+                    .append(DashboardAccess.PRIVATE.ordinal())
+                    .append(" OR ownerId = :userId)")
+                    .append(" AND realm = :realm");
+
+            try {
+                em.createQuery(sb.toString(), String.class)
+                    .setParameter("id", dashboard.getId())
+                    .setParameter("userId", userId)
+                    .setParameter("realm", realm)
+                    .getSingleResult();
+
                 return em.merge(dashboard);
-            });
-        } else {
-            throw new IllegalArgumentException("This dashboard does not exist!");
-        }
+            } catch (NoResultException e) {
+                throw new IllegalArgumentException("Dashboard does not exist or is inaccessible.");
+            }
+        });
     }
 
     public boolean delete(String dashboardId, String realm, String userId) throws IllegalArgumentException {
