@@ -127,7 +127,6 @@ export interface ViewerConfig {
 interface UserAssetLinkInfo {
     userId: string;
     usernameAndId: string;
-    roles: string[];
     restrictedUser: boolean;
 }
 
@@ -791,11 +790,10 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             return;
         }
 
-        const cols = [i18next.t("username"), i18next.t("roles"), i18next.t("restrictedUser")];
+        const cols = [i18next.t("username"), i18next.t("restrictedUser")];
         const rows = assetLinkInfos.sort(Util.sortByString(u => u.usernameAndId)).map(assetLinkInfo => {
             return [
                 assetLinkInfo.usernameAndId,
-                assetLinkInfo.roles.join(", "),
                 assetLinkInfo.restrictedUser ? i18next.t("yes") : i18next.t("no")
             ];
         });
@@ -972,15 +970,6 @@ async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAsse
     const userId = userAssetLink.id!.userId!;
     const username = userAssetLink.userFullName!;
 
-    const roleNames = await manager.rest.api.UserResource.getUserClientRoles(manager.displayRealm, userId, manager.clientId)
-        .then((response) => {
-            return response.data;
-        })
-        .catch((err) => {
-            console.info('User not allowed to get roles', err);
-            return [];
-        });
-
     const isRestrictedUser = await manager.rest.api.UserResource.getUserRealmRoles(manager.displayRealm, userId)
         .then((rolesRes) => {
             return rolesRes.data ? !!rolesRes.data.find(r => r === RESTRICTED_USER_REALM_ROLE) : false;
@@ -989,7 +978,6 @@ async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAsse
     return {
         userId: userId,
         usernameAndId: username,
-        roles: roleNames,
         restrictedUser: isRestrictedUser
     };
 }
