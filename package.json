@@ -4,11 +4,18 @@
   "private": true,
   "workspaces": [
     "ui/util",
+    "ui/test",
     "ui/app/*",
     "ui/component/*",
     "ui/demo/*"
   ],
+  "scripts": {
+    "test": "playwright test --config ui/playwright-ct.config.ts",
+    "e2e": "playwright test --config ui/playwright.config.ts",
+    "codegen": "playwright codegen http://localhost:9000/manager/"
+  },
   "devDependencies": {
+    "@openremote/test": "workspace:*",
     "@openremote/util": "workspace:*"
   }
 }
