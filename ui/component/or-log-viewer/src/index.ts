@@ -422,7 +422,8 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                             <th style="width: 80px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("level")}</th>
                             <th style="width: 130px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("category")}</th>
                             <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("subCategory")}</th>
-                            <th style="width: 100%; min-width: 300px;" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("message")}</th>                            
+                            <th style="width: 100%; min-width: 300px;" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("message")}</th>
+                            <th style="width: 100%; min-width: 300px;" class="mdc-data-table__header-cell" role="columnheader" scope="col"></th>
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
@@ -433,7 +434,16 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                                     <td class="mdc-data-table__cell">${i18next.t(ev.level!)}</td>
                                     <td class="mdc-data-table__cell">${i18next.t(ev.category!)}</td>                                    
                                     <td class="mdc-data-table__cell">${i18next.t(ev.subCategory!)}</td>                                    
-                                    <td class="mdc-data-table__cell">${ev.message}</td>                                    
+                                    <td class="mdc-data-table__cell">${ev.message}</td>     
+                                    <td class="mdc-data-table__cell">
+                                        <button style="all:unset; cursor:pointer; display: flex; height: 1.5rem; width: 1.5rem;"
+                                              @click=${() => this._copyRow(ev)}
+                                              title="Copy this log to clipboard"
+                                        >
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="size-2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
+                                    </svg></button>
+                                    </td>
                                 </tr>
                             `;            
                         })}
@@ -441,6 +451,18 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                 </table>
             </div>
             `;
+    }
+    
+    /** Copy a single log event to the clipboard as JSON */
+    protected async _copyRow(row: Model.SyslogEvent) {
+        try {
+            const text = JSON.stringify(row, null, 2);
+            await navigator.clipboard.writeText(text);
+            // Optional: show some UI feedback
+            console.log("Copied to clipboard:", row);
+        } catch (err) {
+            console.error("Failed to copy log row:", err);
+        }
     }
 
     protected _getIntervalOptions(): [string, string][] {
