@@ -11,7 +11,7 @@
   },
   "types": "lib/index.d.ts",
   "scripts": {
-    "analyze": "npx cem analyze --config ../custom-elements-manifest.config.js",
+    "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
     "prepack": "npx webpack"
