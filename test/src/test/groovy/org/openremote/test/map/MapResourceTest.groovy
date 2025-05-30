@@ -65,6 +65,50 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
         json.options.default.bounds.size() == 4
         json.sources != null
         json.layers.size() > 0
+
+        when: "custom sprite and glyphs are saved"
+        mapSettings = ValueUtil.parse("""{
+            "options" : { "default": {} },
+            "sources" : {
+                "vector_tiles" : {
+                    "type" : "vector" ,
+                    "tiles" : [ "https://example.com/tileset/{z}/{x}/{y}.mvt" ],
+                    "custom" : true
+                }
+            },
+            "sprite": "https://api.example.com/maps/streets/sprite",
+            "glyphs": "https://api.example.com/fonts/{fontstack}/{range}.pbf"
+        }""", MapConfig.class)
+        (ObjectNode)mapResource.saveSettings(null, mapSettings.get())
+
+        and: "retrieve map settings"
+        mapSettings = mapResource.getSettings(null)
+
+        then: "JSON content should contain custom sprite and glyphs URLs"
+        def json1 = new JsonSlurper().parseText(ValueUtil.asJSON(mapSettings).orElse("null"))
+        json1.sprite == "https://api.example.com/maps/streets/sprite"
+        json1.glyphs == "https://api.example.com/fonts/{fontstack}/{range}.pbf"
+
+        when: "saving without sprite and glyphs"
+        mapSettings = ValueUtil.parse("""{
+            "options" : { "default": {} },
+            "sources" : {
+                "vector_tiles" : {
+                    "type" : "vector" ,
+                    "tiles" : [ "https://example.com/tileset/{z}/{x}/{y}.mvt" ],
+                    "custom" : true
+                }
+            }
+        }""", MapConfig.class)
+        (ObjectNode)mapResource.saveSettings(null, mapSettings.get())
+
+        and: "retrieve map settings"
+        mapSettings = mapResource.getSettings(null)
+
+        then: "JSON content should contain default sprite and glyphs URLs"
+        def json2 = new JsonSlurper().parseText(ValueUtil.asJSON(mapSettings).orElse("null"))
+        json2.sprite == "http://127.0.0.1:" + serverPort + MapService.MAP_SHARED_DATA_BASE_URI + "/" + MapService.DEFAULT_SPRITE_PATH
+        json2.glyphs == "http://127.0.0.1:" + serverPort + MapService.MAP_SHARED_DATA_BASE_URI + "/fonts/" + MapService.DEFAULT_GLYPHS_PATH
     }
 
     def "Upload custom map tiles"() {
@@ -133,15 +177,22 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
             "sources" : {
                 "vector_tiles" : {
                     "type" : "vector" ,
+                    "url" : "https://example.com/tileset/tile.json",
                     "tiles" : [ "https://example.com/tileset/{z}/{x}/{y}.mvt" ],
                     "custom" : true
                 }
-            }
+            },
+            "sprite": "https://api.example.com/maps/streets/sprite",
+            "glyphs": "https://api.example.com/fonts/{fontstack}/{range}.pbf"
         }""", MapConfig.class)
         def savedSettings = (ObjectNode)mapResource.saveSettings(null, mapSettings.get())
 
         then: "the custom tile server URL should be returned"
-        savedSettings.get("sources").get("vector_tiles").get("url").textValue() == "https://example.com/tileset/{z}/{x}/{y}.mvt"
+        savedSettings.get("sources").get("vector_tiles").get("url").textValue() == "https://example.com/tileset/tile.json"
+        savedSettings.get("sources").get("vector_tiles").get("tiles").get(0).textValue() == "https://example.com/tileset/{z}/{x}/{y}.mvt"
+        savedSettings.get("sprite").textValue() == "https://api.example.com/maps/streets/sprite"
+        savedSettings.get("glyphs").textValue() == "https://api.example.com/fonts/{fontstack}/{range}.pbf"
+        savedSettings.get("layers").isArray() && savedSettings.get("layers").size() > 0
 
         when: "an invalid tile server URL is configured"
         mapSettings = ValueUtil.parse("""{
@@ -150,13 +201,17 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
                 "vector_tiles" : {
                     "type" : "vector" ,
                     "tiles" : [ "https://example.com/tileset.mvt" ],
-                    "custom" : true
+                    "custom" : false
                 }
             }
         }""", MapConfig.class)
         savedSettings = (ObjectNode)mapResource.saveSettings(null, mapSettings.get())
 
         then: "the URL should be reset back to normal"
+        !savedSettings.get("sources").get("vector_tiles").has("tiles")
         savedSettings.get("sources").get("vector_tiles").get("url").textValue() == MapService.DEFAULT_VECTOR_TILES_URL
+        savedSettings.get("sprite").textValue() == MapService.DEFAULT_SPRITE_PATH
+        savedSettings.get("glyphs").textValue() == MapService.DEFAULT_GLYPHS_PATH
+        savedSettings.get("layers").isArray() && savedSettings.get("layers").size() > 0
     }
 }
