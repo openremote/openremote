@@ -253,8 +253,8 @@ public class ManagerWebService extends WebService {
         oas.info(info);
         SwaggerConfiguration oasConfig = new SwaggerConfiguration()
                 .resourcePackages(Set.of("org.openremote.model.*"))
-                .openAPI(oas);
-
+                .openAPI(oas)
+                .defaultResponseCode("200");
         OpenApiResource openApiResource = new OpenApiResource();
         openApiResource.openApiConfiguration(oasConfig);
         addApiSingleton(openApiResource);
