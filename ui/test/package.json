@@ -26,6 +26,7 @@
     "@playwright/test": "1.52.0",
     "css-loader": "^6.5.1",
     "html-webpack-plugin": "^5.5.0",
+    "i18next": "^21.5.3",
     "playwright": "1.52.0",
     "playwright-core": "1.52.0",
     "typescript": "^5.3.3",

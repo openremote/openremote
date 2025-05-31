@@ -1,5 +1,7 @@
 import path from "node:path";
 
+import type { i18n, Resource } from "i18next";
+
 import { Fixtures, PlaywrightTestArgs, type Page, PlaywrightTestOptions } from "@playwright/test";
 import { test, type TestType as ComponentTestType, type Locator } from "@playwright/experimental-ct-core";
 
@@ -25,21 +27,43 @@ export interface MountResult<Component extends HTMLElement> extends Locator {
   }): Promise<void>;
 }
 
+declare global {
+  interface Window {
+    _i18next: i18n;
+  }
+}
+
 class Shared {
   constructor(readonly page: Page) {}
 
   async fonts() {
     await this.page.route("**/shared/fonts/**", (route, request) => {
-      route.fulfill({ path: path.resolve(__dirname, global.decodeURI(`../../app${new URL(request.url()).pathname}`)) });
+      route.fulfill({ path: this.urlPathToFsPath(request.url()) });
     });
   }
 
-  // async translations() {
-  //   await this.page.route("**/shared/**", (route, request) => {
-  //     console.trace(request.url());
-  //     route.continue();
-  //   });
-  // }
+  async locales(resources?: Resource) {
+    await this.page.route("**/shared/locales/**", (route, request) => {
+      route.fulfill({ path: this.urlPathToFsPath(request.url()) });
+    });
+    this.page.evaluate((resources) => {
+      window._i18next.init({
+        lng: "en",
+        fallbackLng: "en",
+        defaultNS: "test",
+        fallbackNS: "or",
+        ns: ["or"],
+        backend: {
+          loadPath: "/shared/locales/{{lng}}/{{ns}}.json",
+        },
+        resources,
+      });
+    }, resources);
+  }
+
+  private urlPathToFsPath(url: string) {
+    return path.resolve(__dirname, global.decodeURI(`../../app${new URL(url).pathname}`));
+  }
 }
 
 export interface ComponentFixtures {

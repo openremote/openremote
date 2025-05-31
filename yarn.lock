@@ -3095,6 +3095,7 @@ __metadata:
     "@playwright/test": "npm:1.52.0"
     css-loader: "npm:^6.5.1"
     html-webpack-plugin: "npm:^5.5.0"
+    i18next: "npm:^21.5.3"
     playwright: "npm:1.52.0"
     playwright-core: "npm:1.52.0"
     typescript: "npm:^5.3.3"
