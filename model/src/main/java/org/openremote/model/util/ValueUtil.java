@@ -971,12 +971,12 @@ public class ValueUtil {
         boolean valid = true;
 
         if (valueDescriptor != null && valueDescriptor.getConstraints() != null) {
-            if (Arrays.stream(valueDescriptor.getConstraints()).map(constraint -> validateValueConstraint(context, constraintBuilderProvider, now, constraint, value)).anyMatch(constraintValid -> !constraintValid)) {
+            if (validateConstraints(valueDescriptor.getArrayDimensions(), valueDescriptor.getConstraints(), context, constraintBuilderProvider, now, value)) {
                 valid = false;
             }
         }
         if (attributeDescriptor != null && attributeDescriptor.getConstraints() != null) {
-            if (Arrays.stream(attributeDescriptor.getConstraints()).map(constraint -> validateValueConstraint(context, constraintBuilderProvider, now, constraint, value)).anyMatch(constraintValid -> !constraintValid)) {
+            if (validateConstraints(valueDescriptor.getArrayDimensions(), attributeDescriptor.getConstraints(), context, constraintBuilderProvider, now, value)) {
                 valid = false;
             }
         }
@@ -995,6 +995,15 @@ public class ValueUtil {
             }
         }
         return valid;
+    }
+
+    // TODO: as we recurse, we don't change the path, the error will always be reported on the attribute, not on a specific array index, can we live with that ?
+    private static boolean validateConstraints(Integer dimensions, ValueConstraint[] constraints, ConstraintValidatorContext context, ConstraintViolationPathProvider constraintBuilderProvider, Instant now, Object value) {
+        if (dimensions == null || dimensions == 0 || value == null) {
+            return Arrays.stream(constraints).map(constraint -> validateValueConstraint(context, constraintBuilderProvider, now, constraint, value)).anyMatch(constraintValid -> !constraintValid);
+        } else {
+            return Arrays.stream((Object[])value).anyMatch(v -> validateConstraints(dimensions - 1, constraints, context, constraintBuilderProvider, now, v));
+        }
     }
 
     public static boolean validateValueConstraint(ConstraintValidatorContext context, ConstraintViolationPathProvider constraintViolationPathProvider, Instant now, ValueConstraint valueConstraint, Object value) {
