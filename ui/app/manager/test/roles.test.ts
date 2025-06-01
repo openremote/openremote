@@ -6,7 +6,7 @@ import permissions from "./fixtures/data/permissions.js";
 
 test.use({ storageState: adminStatePath });
 
-test("Create role", async ({ page, manager, rolesPage, usersPage }) => {
+test("Create role", async ({ page, manager, shared, usersPage }) => {
   // Given the Realm "smartcity" is setup
   await manager.setup("smartcity");
   // When Login to OpenRemote "master" realm as "admin"
@@ -33,7 +33,7 @@ test("Create role", async ({ page, manager, rolesPage, usersPage }) => {
     .getByText("assets: Write asset data")
     .click();
 
-  await rolesPage.interceptRequest<Role[]>("**/user/master/roles", (roles) => {
+  await shared.interceptRequest<Role[]>("**/user/master/roles", (roles) => {
     const role = roles?.find(({ name }) => name === "Custom");
     if (role) manager.role = role;
   });

@@ -11,5 +11,4 @@ export {
 
 export const createAppSetupAndTeardown: (app: string) => Project[];
 
-export * from "./fixtures/component";
-export * from "./fixtures/page";
+export * from "./fixtures";

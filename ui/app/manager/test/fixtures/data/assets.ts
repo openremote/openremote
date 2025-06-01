@@ -1,4 +1,5 @@
 // TODO: use Util.mergeObjects from @openremote/core instead when DOM related utilities and or-icon are moved out
+import { Asset } from "@openremote/model";
 import { merge } from "lodash-es";
 
 const assets = [
@@ -106,3 +107,31 @@ export const assetPatches: Record<
 
 export type DefaultAssets = typeof assets;
 export default assets;
+
+export const thing: Asset = {
+  name: "Thing",
+  realm: "smartcity",
+  type: "ThingAsset",
+  attributes: {
+    notes: { name: "notes", type: "text", meta: {}, value: null, timestamp: 1748772049557 },
+    location: { name: "location", type: "GEO_JSONPoint", meta: {}, value: null, timestamp: 1748771034882 },
+  },
+};
+
+export const agent: Asset = {
+  name: "Simulator",
+  realm: "smartcity",
+  type: "SimulatorAgent",
+  attributes: {
+    notes: { name: "notes", type: "text", meta: {}, value: null, timestamp: 1748772065494 },
+    agentDisabled: { name: "agentDisabled", type: "boolean", meta: {}, value: null, timestamp: 1748772065494 },
+    location: { name: "location", type: "GEO_JSONPoint", meta: {}, value: null, timestamp: 1748772065494 },
+    agentStatus: {
+      name: "agentStatus",
+      type: "connectionStatus",
+      meta: { readOnly: true },
+      value: null,
+      timestamp: 1748772065494,
+    },
+  },
+};

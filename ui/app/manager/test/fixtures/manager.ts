@@ -7,7 +7,15 @@ const { admin, smartcity } = users;
 
 import { UserModel } from "../../src/pages/page-users";
 import { Asset, Role } from "@openremote/model";
-import { test as base, type Page, type Locator, expect, type TestFixture, BasePage } from "@openremote/test";
+import {
+  test as base,
+  expect,
+  type Page,
+  type Locator,
+  type TestFixture,
+  type ComponentFixtures,
+  type Shared,
+} from "@openremote/test";
 import permissions from "./data/permissions";
 
 export const adminStatePath = path.join(__dirname, "data/.auth/admin.json");
@@ -257,36 +265,11 @@ class Manager {
   }
 }
 
-class AssetsPage extends BasePage {
-  constructor(readonly page: Page, private readonly manager: Manager) {
-    super(page);
-  }
+class AssetsPage {
+  constructor(private readonly page: Page, private readonly shared: Shared, private readonly manager: Manager) {}
 
   async goto() {
     this.manager.navigateToTab("Assets");
-  }
-
-  // TODO: move to shared app & component fixture, when writing or-attribute-input tests.
-  getAttributeLocator(attribute: string): Locator {
-    return this.page.getByRole("row", { name: new RegExp(`\\b${attribute}\\b`) });
-  }
-
-  // TODO: move to shared app & component fixture, when writing or-attribute-input tests.
-  getConfigurationItemLocator(attribute: string, item: string): Locator {
-    // match the sibling row i.e. the configuration item row of the attribute
-    return this.getAttributeLocator(attribute)
-      .locator("+ tr", { hasText: new RegExp(`\\b${item}\\b`) })
-      .locator("label");
-  }
-
-  /**
-   * Switch between modify mode and view mode
-   * @param targetMode view or modify
-   */
-  async switchMode(targetMode: string) {
-    const selector = this.page.getByRole("button", { name: targetMode });
-    await selector.waitFor({ state: "visible" });
-    await selector.click();
   }
 
   async addAsset(type: string, name: string) {
@@ -295,21 +278,14 @@ class AssetsPage extends BasePage {
     await this.page.click(`li[data-value="${type}"]`);
     await this.page.fill('#name-input input[type="text"]', name);
     // create
-    await this.interceptResponse<Asset>("**/asset", (asset) => {
+    await this.shared.interceptResponse<Asset>("**/asset", (asset) => {
       if (asset) this.manager.assets.push(asset);
     });
     await this.page.click("#add-btn");
   }
 
-  async setAttributeValue(attribute: string, value: string) {
-    await this.page
-      .getByRole("row", { name: new RegExp(`\\b${attribute}\\b`) })
-      .locator("input")
-      .fill(value);
-  }
-
   /**
-   * unselect the asset
+   * Unselect the asset
    */
   async unselect() {
     const isCloseVisible = await this.page.isVisible(".mdi-close >> nth=0");
@@ -322,7 +298,7 @@ class AssetsPage extends BasePage {
   }
 
   /**
-   * update asset in the general panel
+   * Update asset in the general panel
    * @param attr attribute's name
    * @param type attribute's input type
    * @param value input value
@@ -333,7 +309,7 @@ class AssetsPage extends BasePage {
   }
 
   /**
-   * update the data in the modify mode
+   * Update the data in the modify mode
    * @param attr attribute's name
    * @param type attribute's input type
    * @param value input value
@@ -343,7 +319,7 @@ class AssetsPage extends BasePage {
   }
 
   /**
-   * update location so we can see in the map
+   * Update location so we can see in the map
    * @param location_x horizental coordinator (start from left edge)
    * @param location_y vertail coordinator (start from top edge)
    */
@@ -351,35 +327,6 @@ class AssetsPage extends BasePage {
     await this.page.click("text=location GEO JSON point >> button span");
     await this.page.mouse.click(x, y, { delay: 1000 });
     await this.page.click('button:has-text("OK")');
-  }
-
-  /**
-   * select two config items for an attribute
-   * @param item_1 the first config item
-   * @param item_2 the second config item
-   * @param attr attribute's name
-   */
-  async configItem(item_1: string, item_2: string, attr: string) {
-    await this.page.click(`td:has-text("${attr} ") >> nth=0`);
-    await this.page.click(".attribute-meta-row.expanded td .meta-item-container div .item-add or-mwc-input #component");
-    await this.page.click(`li[role="checkbox"]:has-text("${item_1}")`);
-    await this.page.click(`li[role="checkbox"]:has-text("${item_2}")`);
-    await this.page.click('div[role="alertdialog"] button:has-text("Add")');
-
-    // close attribute menu
-    await this.page.click(`td:has-text("${attr}") >> nth=0`);
-  }
-
-  /**
-   * set config item for rule and insight to use
-   * @param item1 the first config item
-   * @param item2 the second config item
-   * @param attr1 attribute's name
-   * @param attr2 attribute's name
-   */
-  async setConfigItem(item_1: string, item_2: string, attr_1: string, attr_2: string) {
-    await this.configItem(item_1, item_2, attr_1);
-    await this.configItem(item_1, item_2, attr_2);
   }
 
   /**
@@ -396,14 +343,11 @@ class AssetsPage extends BasePage {
   }
 }
 
-// class InsightsPage extends BasePage { }
+// class InsightsPage { }
+// class MapPage { }
 
-// class MapPage extends BasePage { }
-
-class RealmsPage extends BasePage {
-  constructor(readonly page: Page, private readonly manager: Manager) {
-    super(page);
-  }
+class RealmsPage {
+  constructor(private readonly page: Page, private readonly shared: Shared, private readonly manager: Manager) {}
 
   async goto() {
     this.manager.navigateToMenuItem("Realms");
@@ -447,30 +391,24 @@ class RealmsPage extends BasePage {
   }
 }
 
-class RolesPage extends BasePage {
-  constructor(readonly page: Page, private readonly manager: Manager) {
-    super(page);
-  }
+class RolesPage {
+  constructor(private readonly page: Page, private readonly shared: Shared, private readonly manager: Manager) {}
 
   async goto() {
     this.manager.navigateToMenuItem("Roles");
   }
 }
 
-class RulesPage extends BasePage {
-  constructor(readonly page: Page, private readonly manager: Manager) {
-    super(page);
-  }
+class RulesPage {
+  constructor(private readonly page: Page, private readonly shared: Shared, private readonly manager: Manager) {}
 
   async goto() {
     this.manager.navigateToTab("Rules");
   }
 }
 
-class UsersPage extends BasePage {
-  constructor(readonly page: Page, private readonly manager: Manager) {
-    super(page);
-  }
+class UsersPage {
+  constructor(private readonly page: Page, private readonly shared: Shared, private readonly manager: Manager) {}
 
   getPermission(permission: string): Locator {
     return this.page.getByRole("checkbox", { name: permission });
@@ -518,21 +456,21 @@ class UsersPage extends BasePage {
     // await this.page.getByRole("button", { name: "Realm roles" }).click();
     await this.toggleUserRoles("Read", "Write");
     await this.toHavePermissions(...permissions);
-    await this.interceptResponse<UserModel>(`user/${this.manager.realm}/users`, (user) => {
+    await this.shared.interceptResponse<UserModel>(`user/${this.manager.realm}/users`, (user) => {
       if (user) this.manager.user = user;
     });
     await this.page.getByRole("button", { name: "Create" }).click();
   }
 }
 
-function withManager<R>(managerPage: Function): TestFixture<R, { page: Page; manager: Manager }> {
-  return async ({ page: basePage, manager }, use) => {
+function withManager<R>(managerPage: Function): TestFixture<R, { page: Page; shared: Shared; manager: Manager }> {
+  return async ({ page: basePage, shared, manager }, use) => {
     expect(manager).toBeInstanceOf(Manager);
-    await use(new (managerPage.bind(null, basePage, manager))());
+    await use(new (managerPage.bind(null, basePage, shared, manager))());
   };
 }
 
-interface Fixtures {
+interface Fixtures extends ComponentFixtures {
   manager: Manager;
   assetsPage: AssetsPage;
   realmsPage: RealmsPage;

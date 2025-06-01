@@ -20,7 +20,7 @@ const energyRule = {
 
 test.use({ storageState: userStatePath });
 
-test("Create a When-Then rule", async ({ page, manager, rulesPage }) => {
+test("Create a When-Then rule", async ({ page, manager, shared }) => {
   // Then Navigate to "Rule" tab
   await manager.navigateToTab("Rules");
   // When Create a new "When-Then" rule
@@ -70,7 +70,7 @@ test("Create a When-Then rule", async ({ page, manager, rulesPage }) => {
     energyRule.value.toString()
   );
   // Then Save rule
-  await rulesPage.interceptResponse<number>("**/rules/realm", (rule) => {
+  await shared.interceptResponse<number>("**/rules/realm", (rule) => {
     if (rule) manager.rules.push(rule);
   });
   await page.click('or-mwc-input:has-text("Save")');
@@ -78,7 +78,7 @@ test("Create a When-Then rule", async ({ page, manager, rulesPage }) => {
   await expect(page.locator(`text=${energyRule.name}`)).toHaveCount(1);
 });
 
-test("Create a Flow rule", async ({ page, rulesPage, manager }) => {
+test("Create a Flow rule", async ({ page, shared, manager }) => {
   // Then Navigate to "Rule" tab
   await manager.navigateToTab("Rules");
   // When Create a new "Flow" rule
@@ -90,25 +90,25 @@ test("Create a Flow rule", async ({ page, rulesPage, manager }) => {
   // page.dragAndDrop(source, target[, options]) is an alternative
   // move all the elements
   await page.locator(".node-item.input-node", { hasText: "Attribute value" }).hover();
-  await rulesPage.drag(450, 250);
+  await shared.drag(450, 250);
 
   await page.hover("text=Number >> nth=0");
-  await rulesPage.drag(450, 350);
+  await shared.drag(450, 350);
 
   await page.hover("text=Number >> nth=0");
-  await rulesPage.drag(450, 500);
+  await shared.drag(450, 500);
 
   await page.hover("text=Number >> nth=0");
-  await rulesPage.drag(450, 600);
+  await shared.drag(450, 600);
 
   await page.hover("text=>");
-  await rulesPage.drag(650, 300);
+  await shared.drag(650, 300);
 
   await page.hover("text=Number switch");
-  await rulesPage.drag(800, 425);
+  await shared.drag(800, 425);
 
   await page.locator(".node-item.output-node", { hasText: "Attribute value" }).hover();
-  await rulesPage.drag(1000, 425);
+  await shared.drag(1000, 425);
   // Then Set value
   // set read and write
   await page.click('button:has-text("Attribute") >> nth=0'); // read
@@ -148,7 +148,7 @@ test("Create a Flow rule", async ({ page, rulesPage, manager }) => {
     "flow-node:nth-child(7) .socket-side flow-node-socket .socket"
   );
   // Then Save rule
-  await rulesPage.interceptResponse<number>("**/rules/realm", (rule) => {
+  await shared.interceptResponse<number>("**/rules/realm", (rule) => {
     if (rule) manager.rules.push(rule);
   });
   await page.click('or-mwc-input:has-text("Save")');

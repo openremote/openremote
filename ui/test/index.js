@@ -1,8 +1,8 @@
-import { defineConfig, test } from "@playwright/test";
+import { defineConfig, test as base } from "@playwright/test";
 import { expect, devices } from "@playwright/experimental-ct-core";
 
 import { createPlugin } from "./plugin";
-import { ct as base, componentFixtures } from "./fixtures/component";
+import { ct as ctBase, fixtures, camelCaseToSentenceCase } from "./fixtures";
 
 function createAppSetupAndTeardown(app) {
   return [
@@ -39,8 +39,7 @@ function defineCtConfig(...configs) {
 }
 
 // Must extend in the root of the package
-const ct = base.extend(componentFixtures);
+const test = base.extend(fixtures);
+const ct = ctBase.extend(fixtures);
 
-export * from "./fixtures/component";
-export * from "./fixtures/page";
-export { test, ct, expect, devices, defineConfig, defineCtConfig, createAppSetupAndTeardown };
+export { test, ct, expect, devices, defineConfig, defineCtConfig, createAppSetupAndTeardown, camelCaseToSentenceCase };

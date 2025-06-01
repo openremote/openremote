@@ -2,14 +2,6 @@ import { ct } from "@openremote/test";
 
 import { OrJSONForms, StandardRenderers } from "@openremote/or-json-forms";
 
-// <or-json-forms .renderers="${jsonFormsAttributeRenderers}" ${ref(jsonForms)}
-//                .disabled="${disabled}" .readonly="${readonly}" .label="${label}"
-//                .schema="${schema}" label="Agent link" .uischema="${uiSchema}" .onChange="${onAgentLinkChanged}"></or-json-forms>
-
-// cells: ,
-// config: ,
-// uischemas: ,
-
 const schemas = [
   {
     $schema: "http://json-schema.org/draft-07/schema#",
@@ -97,7 +89,6 @@ const schemas = [
         boolean: {
           title: "Boolean",
           type: "boolean",
-          // TODO: add support for array count?
           "or:test:value": true,
         },
         array: {
@@ -143,6 +134,6 @@ for (const schema of schemas) {
       },
       on: {},
     });
-    await components.walkForm(component, schema);
+    await components.jsonForms.walkForm(component, schema);
   });
 }
