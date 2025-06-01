@@ -53,6 +53,9 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     @JsonPropertyDescription("Zero-based address to which the value sent is written to")
     private int writeAddress;
 
+    @JsonPropertyDescription("Set amount of registers to read. If left empty or less than 1, will use the default size for the corresponding data-type.")
+    private int readRegistersAmount;
+
     public long getPollingMillis() {
         return pollingMillis;
     }
@@ -101,37 +104,51 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         this.writeAddress = writeAddress;
     }
 
+    public Optional<Integer> getReadRegistersAmount() {
+        return Optional.of(readRegistersAmount);
+    }
+
+    public void setReadRegistersAmount(int readRegistersAmount) {
+        this.readRegistersAmount = writeAddress;
+    }
+
     public enum ReadMemoryArea {
         COIL, DISCRETE, HOLDING, INPUT
     }
 
     public enum ModbusDataType {
-        BOOL(boolean.class),
-        SINT(byte.class),
-        USINT(short.class),
-        BYTE(short.class),
-        INT(short.class),
-        UINT(int.class),
-        WORD(int.class),
-        DINT(int.class),
-        UDINT(long.class),
-        DWORD(long.class),
-        LINT(long.class),
-        ULINT(BigInteger.class),
-        LWORD(BigInteger.class),
-        REAL(float.class),
-        LREAL(double.class),
-        CHAR(char.class),
-        WCHAR(String.class);
+        BOOL(boolean.class, 1),
+        SINT(byte.class, 1),
+        USINT(short.class, 1),
+        BYTE(short.class, 1),
+        INT(short.class, 1),
+        UINT(int.class, 1),
+        WORD(int.class, 1),
+        DINT(int.class, 2),
+        UDINT(long.class, 2),
+        DWORD(long.class, 2),
+        LINT(long.class, 4),
+        ULINT(BigInteger.class, 4),
+        LWORD(BigInteger.class, 4),
+        REAL(float.class, 2),
+        LREAL(double.class, 4),
+        CHAR(char.class, 1),
+        WCHAR(String.class, 1);  // Assumes single wchar per entry
 
         private final Class<?> javaType;
+        private final int registerCount;
 
-        ModbusDataType(Class<?> javaType) {
+        ModbusDataType(Class<?> javaType, int registerCount) {
             this.javaType = javaType;
+            this.registerCount = registerCount;
         }
 
         public Class<?> getJavaType() {
             return javaType;
+        }
+
+        public int getRegisterCount() {
+            return registerCount;
         }
     }
 
