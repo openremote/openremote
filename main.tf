@@ -33,8 +33,8 @@ resource "hcloud_server" "openremote" {
   server_type = "cx22"   # Change to your desired instance type
   image       = "ubuntu-22.04" # OS image
   location    = "nbg1"   # Data center (e.g., nbg1, fsn1, hel1)
-  ssh_keys    = []
-  user_data   = file("setup.sh")
+  ssh_keys    = [28907178, 28907172]
+  user_data   = file("cloud-init.yml")
 
   lifecycle {
     create_before_destroy = true
