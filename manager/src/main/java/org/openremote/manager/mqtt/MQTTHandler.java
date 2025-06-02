@@ -38,7 +38,6 @@ import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
-import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
@@ -71,7 +70,6 @@ public abstract class MQTTHandler {
     protected MQTTBrokerService mqttBrokerService;
     protected MessageBrokerService messageBrokerService;
     protected ManagerKeycloakIdentityProvider identityProvider;
-    protected AssetStorageService assetStorageService;
     protected ExecutorService executorService;
     protected TimerService timerService;
     protected boolean isKeycloak;
@@ -100,7 +98,6 @@ public abstract class MQTTHandler {
         mqttBrokerService = container.getService(MQTTBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
-        assetStorageService = container.getService(AssetStorageService.class);
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         executorService = container.getExecutor();
         timerService = container.getService(TimerService.class);
