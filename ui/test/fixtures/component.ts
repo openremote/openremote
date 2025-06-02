@@ -29,11 +29,11 @@ class CollapsiblePanel {
   constructor(private readonly page: Page) {}
 
   getHeader(panel: Locator) {
-    return panel.locator("#header");
+    return panel.locator("[slot=header]");
   }
 
   getContent(panel: Locator) {
-    return panel.locator("#content");
+    return panel.locator("[slot=content]");
   }
 }
 

@@ -6,7 +6,7 @@ ct.beforeEach(async ({ shared }) => {
   await shared.fonts();
 });
 
-ct("Should append header and content to collapsible panel", async ({ mount, page }) => {
+ct("Should append header and content to collapsible panel", async ({ mount, components }) => {
   const component = await mount(OrCollapsiblePanel, {
     props: {},
     slots: {
@@ -15,10 +15,10 @@ ct("Should append header and content to collapsible panel", async ({ mount, page
     },
   });
 
-  const header = page.locator("or-collapsible-panel").locator("[slot=header]");
+  const header = components.collapsiblePanel.getHeader(component);
   await header.click();
   await expect(header).toContainText("Header");
 
-  const content = page.locator("or-collapsible-panel").locator("[slot=content]");
+  const content = components.collapsiblePanel.getContent(component);
   await expect(content).toContainText("Content");
 });
