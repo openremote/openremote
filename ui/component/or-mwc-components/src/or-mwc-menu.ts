@@ -16,6 +16,7 @@ import listStyle from "@material/list/dist/mdc.list.css";
 // @ts-ignore
 import menuSurfaceStyle from "@material/menu-surface/dist/mdc.menu-surface.css";
 import {getItemTemplate, getListTemplate, ListItem, ListType, MDCListActionEvent} from "./or-mwc-list";
+import { ref } from 'lit/directives/ref.js';
 // @ts-ignore
 const menuStyle = require("@material/menu/dist/mdc.menu.css");
 
@@ -51,20 +52,52 @@ declare global {
     }
 }
 
-export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (ListItem | ListItem[] | null)[], selectedValues: string[] | string | undefined, valueChangedCallback: (values: string[] | string) => void, closedCallback?: () => void, multiSelect = false, translateValues = true, midHeight = false, fullWidth = false): TemplateResult {
+export function positionMenuAtElement<T extends OrMwcMenu>(
+    menu: T,
+    hostElement?: HTMLElement
+): T {
+    if (!hostElement) {
+        hostElement = document.body;
+    }
+    const rect = hostElement.getBoundingClientRect();
+
+    // Applying a style that is calculated from the runtime coordinates of
+    // the host element.
+    Object.assign(menu.style, {
+        position: 'fixed',
+        top: `${rect.bottom}px`,
+        left: `${rect.left}px`,
+        zIndex: '1000',
+        display: 'block'
+    });
+
+    return menu;
+}
+
+export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (ListItem | ListItem[] | null)[], selectedValues: string[] | string | undefined, valueChangedCallback: (values: string[] | string) => void, closedCallback?: () => void, multiSelect = false, translateValues = true, midHeight = false, fullWidth = false, menuId = "menu", fixedToHost = false): TemplateResult {
+    let menuRef: OrMwcMenu | null = null;   // Reference to the menu
 
     const openMenu = (evt: Event) => {
         if (!menuItems) {
             return;
         }
 
+        if (fixedToHost && menuRef) {
+            const hostElement = evt.currentTarget as HTMLElement;
+
+            // Using run time coordinates to assign a fixed position to the menu
+            positionMenuAtElement(
+                menuRef,
+                hostElement
+            );
+        }
         ((evt.currentTarget as Element).parentElement!.lastElementChild as OrMwcMenu).open();
     };
 
     return html`
         <span>
             <span @click="${openMenu}">${content}</span>
-            ${menuItems ? html`<or-mwc-menu ?multiselect="${multiSelect}" @or-mwc-menu-closed="${() => {if (closedCallback) { closedCallback(); }} }" @or-mwc-menu-changed="${(evt: OrMwcMenuChangedEvent) => {if (valueChangedCallback) { valueChangedCallback(evt.detail); }} }" .translateValues="${translateValues}" .values="${selectedValues}" .menuItems="${menuItems}" .midHeight="${midHeight}" .fullWidth="${fullWidth}" id="menu"></or-mwc-menu>` : ``}
+            ${menuItems ? html`<or-mwc-menu ?multiselect="${multiSelect}" @or-mwc-menu-closed="${() => {if (closedCallback) { closedCallback(); }} }" @or-mwc-menu-changed="${(evt: OrMwcMenuChangedEvent) => {if (valueChangedCallback) { valueChangedCallback(evt.detail); }} }" .translateValues="${translateValues}" .values="${selectedValues}" .menuItems="${menuItems}" .midHeight="${midHeight}" .fullWidth="${fullWidth}" id="${menuId}" ${ref(el => (menuRef = el as OrMwcMenu))}></or-mwc-menu>` : ``}
         </span>
     `;
 }
