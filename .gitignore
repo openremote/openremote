@@ -49,6 +49,7 @@ local.properties
 # File extensions
 *.mbtiles
 *.air
+*.sh
 *.ipa
 *.apk
 *.dab
