@@ -1,6 +1,6 @@
 import { expect, camelCaseToSentenceCase } from "@openremote/test";
 import { test, userStatePath } from "./fixtures/manager.js";
-import assets, { assetPatches, thing } from "./fixtures/data/assets.js";
+import assets, { agent, assetPatches, thing } from "./fixtures/data/assets.js";
 import { WellknownMetaItems } from "@openremote/model";
 
 test.use({ storageState: userStatePath });
@@ -175,7 +175,48 @@ test("Add all primitive configuration items", async ({ page, manager, components
   }
 });
 
-test.fixme("Add all complex configuration items", async ({ page, manager, components, shared }) => {});
+test("Add all complex configuration items", async ({ page, manager, components, shared }) => {
+  test.setTimeout(60_000);
+  // Given assets are setup
+  await manager.setup("smartcity", { assets: [thing, agent] });
+  // When Login to OpenRemote "smartcity" realm as "smartcity"
+  await manager.goToRealmStartPage("smartcity");
+  await manager.navigateToTab("Assets");
+  // When modifying thing
+  await page.getByText("Thing").click();
+  await components.assetViewer.switchMode("modify");
+  // And adding an agent link
+  await page.getByRole("button", { name: "Expand all" }).click();
+  // let resolvedSchema;
+  // await shared.interceptResponse<any>("**/model/getItemSchemas", (schema) => {
+  //   resolvedSchema = shared.resolveSubSchemasRecursive(schema["definitions"]["SimulatorAgentLink"], schema);
+  // });
+  // await components.assetViewer.addConfigurationItems("notes", "agentLink");
+  // const agentLink = components.assetViewer.getConfigurationItemLocator("notes", "Agent link");
+  // await agentLink.locator("or-collapsible-panel").waitFor();
+  // await agentLink.locator("or-collapsible-panel").click();
+  // await agentLink.locator("or-collapsible-panel").getByRole("button", { name: "Agent ID*" }).click();
+  // const id = manager.assets.find(({ name }) => name === agent.name)?.id;
+  // // Then
+  // await agentLink.locator("li", { hasText: id }).click();
+  // await components.jsonForms.walkForm(agentLink, resolvedSchema, { selectAllProps: true });
+
+  const items: `${WellknownMetaItems}`[] = ["format", "constraints", "attributeLinks", "forecast", "units"];
+  for (const item of items) {
+    let schema;
+    await shared.interceptResponse<any>("**/model/getItemSchemas", (v) => {
+      schema = shared.resolveSubSchemasRecursive(v, v);
+      console.log(schema);
+      // schema = v;
+    });
+    await components.assetViewer.addConfigurationItems("notes", item);
+    const itemLocator = components.assetViewer.getConfigurationItemLocator("notes", camelCaseToSentenceCase(item));
+    await page.waitForTimeout(3000);
+    // Then
+    console.log(schema);
+    await components.jsonForms.walkForm(itemLocator, schema, { selectAllProps: true });
+  }
+});
 
 test("Delete assets", async ({ page, manager, assetsPage }) => {
   // Given assets are setup
