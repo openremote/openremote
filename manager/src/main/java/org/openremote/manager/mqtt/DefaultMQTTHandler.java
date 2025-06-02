@@ -76,6 +76,13 @@ public class DefaultMQTTHandler extends MQTTHandler {
         .expireAfterWrite(300000, TimeUnit.MILLISECONDS)
         .build();
 
+
+    // Intermediary cache for authorized event subscriptions created during the canSubscribe method to be used later in the onSubscribe method
+    // Uses a short TTL to avoid holding stale subscriptions in the cache
+    protected final Cache<String, EventSubscription<?>> eventSubscriptionCache = CacheBuilder.newBuilder()
+        .expireAfterWrite(5000, TimeUnit.MILLISECONDS)
+        .build();
+
     @Override
     public int getPriority() {
         // This handler is intended to be the final handler but this can obviously be overridden by another handler
@@ -219,6 +226,11 @@ public class DefaultMQTTHandler extends MQTTHandler {
             return false;
         }
 
+        String subscriptionId = topic.getString();
+
+        // Add the event subscription to the intermediary cache, override any existing entry
+        eventSubscriptionCache.put(subscriptionId, subscription);
+
         return true;
     }
 
@@ -281,39 +293,18 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public void onSubscribe(RemotingConnection connection, Topic topic) {
-        AuthContext authContext = getAuthContextFromConnection(connection).orElse(null);
-        boolean isRestricted = identityProvider.isRestrictedUser(authContext);
-
-        boolean isAssetTopic = isAssetTopic(topic);
+        
         String subscriptionId = topic.getString(); // Use topic as unique subscription ID
-        AssetFilter filter = buildAssetFilter(topic);
-        Class subscriptionClass = isAssetTopic ? AssetEvent.class : AttributeEvent.class;
-        String sessionKey = getSessionKey(connection);
 
-        if (filter == null) {
-            LOG.info("Invalid event filter generated for topic '" + topic + "': " + connectionToString(connection));
+        // Get the authorized event subscription from the intermediary cache
+        EventSubscription<?> subscription = eventSubscriptionCache.getIfPresent(subscriptionId);
+        if (subscription == null) {
+            LOG.info("Subscription not found in intermediary cache: " + subscriptionId);
             return;
         }
-   
-        // Specify userAssetIds for restricted service users so that events are additionally filtered to only include events for these assets
-        if (isRestricted) {
-            filter.setRestrictedEvents(true);
-            
-            List<String> userAssetIds = assetStorageService.findUserAssetLinks(authContext.getAuthenticatedRealmName(), authContext.getUserId(), null)
-                .stream()
-                .map(userAssetLink -> userAssetLink.getId().getAssetId())
-                .toList();
-
-            filter.setUserAssetIds(userAssetIds);
-        }
+        String sessionKey = getSessionKey(connection); 
 
         Consumer<Event> consumer = getSubscriptionEventConsumer(connection, topic);
-
-        EventSubscription<Event> subscription = new EventSubscription(
-            subscriptionClass,
-            filter,
-            subscriptionId
-        );
 
         synchronized (sessionSubscriptionConsumers) {
             // Create subscription consumer and track it for future removal requests
