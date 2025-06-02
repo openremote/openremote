@@ -52,7 +52,7 @@ local.properties
 *.ipa
 *.apk
 *.dab
-*.sh
+# *.sh
 *.iml
 *.ipr
 *.iws
