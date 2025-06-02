@@ -25,15 +25,19 @@ jobs:
 
       - name: Terraform apply
         id: terraform
-        run: terraform apply -auto-approve -var="hcloud_token=${{ secrets.HETZNER_API_TOKEN }}" -var="instance_name=${{ github.event.inputs.instance_name || 'act-instance-06' }}"
+        run: terraform apply -auto-approve -var="hcloud_token=${{ secrets.HETZNER_API_TOKEN }}" -var="instance_name=${{ github.event.inputs.instance_name || 'act-instance-14' }}"
         env:
           HETZNER_API_TOKEN: ${{ secrets.HETZNER_API_TOKEN }}
+
+      - name: Get Terraform outputs
+        uses: dflook/terraform-output@v2
+        id: terraform-output
 
       - name: Wait for server to be ready
         run: |
           echo "Waiting for OpenRemote service to be ready..."
-          until curl --output /dev/null --silent --head --fail --max-time 10 "https://${{ steps.terraform.outputs.server_ip }}"; do
+          until curl -Ikf "https://${{ steps.terraform-output.outputs.server_ip }}"; do
             echo "Waiting for HTTPS service to be available..."
             sleep 10
           done
-          echo "Server is ready with enabled. IP: ${{ steps.terraform.outputs.server_ip }}"
+          echo "Server is ready with enabled. IP: ${{ steps.terraform-output.outputs.server_ip }}"
