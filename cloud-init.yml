@@ -18,6 +18,8 @@ runcmd:
   - systemctl start docker
   - usermod -aG docker root
   - mkdir -p /opt/openremote
-  - cd /opt/openremote && curl -o docker-compose.yml https://raw.githubusercontent.com/openremote/openremote/master/docker-compose.yml
+  - cd /opt/openremote && curl -o docker-compose.yml https://raw.githubusercontent.com/Iskrata/openremote/refs/heads/master/docker-compose.yml
+  - cd /opt/openremote && curl -o prometheus.yml https://raw.githubusercontent.com/Iskrata/openremote/refs/heads/master/prometheus.yml
+  - mkdir -p /opt/openremote/grafana/provisioning/datasources
   - cd /opt/openremote && docker compose pull
   - cd /opt/openremote && OR_HOSTNAME=$(hostname -I | awk '{print $1}') docker compose -p openremote up -d
