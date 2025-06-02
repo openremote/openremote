@@ -25,14 +25,14 @@ jobs:
 
       - name: Terraform apply
         id: terraform
-        run: terraform apply -auto-approve -var="hcloud_token=${{ secrets.HETZNER_API_TOKEN }}" -var="instance_name=${{ github.event.inputs.instance_name || 'act-instance-02' }}"
+        run: terraform apply -auto-approve -var="hcloud_token=${{ secrets.HETZNER_API_TOKEN }}" -var="instance_name=${{ github.event.inputs.instance_name || 'act-instance-04' }}"
         env:
           HETZNER_API_TOKEN: ${{ secrets.HETZNER_API_TOKEN }}
 
       - name: Wait for server to be ready
         run: |
           echo "Waiting for OpenRemote service to be ready..."
-          until curl --output /dev/null --silent --head --fail --max-time 10 https://${{ steps.terraform.outputs.server_ip }}; do
+          until timeout 5 bash -c "</dev/tcp/${{ steps.terraform.outputs.server_ip }}/443"; do
             echo "Waiting for HTTPS service to be available..."
             sleep 10
           done
