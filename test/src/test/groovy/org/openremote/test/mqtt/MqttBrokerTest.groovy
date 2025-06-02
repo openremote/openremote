@@ -764,7 +764,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             def event = restrictedReceivedEvents.get(0)
             assert event instanceof AssetEvent
             def assetEvent = event as AssetEvent
-            assert assetEvent.getAsset().getAttribute("notes").isEmpty()
+            assert !assetEvent.getAsset().hasAttribute("notes")
         }
         restrictedReceivedEvents.clear()
 

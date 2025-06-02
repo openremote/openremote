@@ -78,9 +78,8 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
 
     // Intermediary cache for authorized event subscriptions created during the canSubscribe method to be used later in the onSubscribe method
-    // Uses a short TTL to avoid holding stale subscriptions in the cache
     protected final Cache<String, EventSubscription<?>> eventSubscriptionCache = CacheBuilder.newBuilder()
-        .expireAfterWrite(5000, TimeUnit.MILLISECONDS)
+        .expireAfterWrite(30000, TimeUnit.MILLISECONDS)
         .build();
 
     @Override
@@ -226,7 +225,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
             return false;
         }
 
-        String subscriptionId = topic.getString();
+        String subscriptionId = topic.getString() + authContext.getUserId();
 
         // Add the event subscription to the intermediary cache, override any existing entry
         eventSubscriptionCache.put(subscriptionId, subscription);
@@ -294,7 +293,8 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @Override
     public void onSubscribe(RemotingConnection connection, Topic topic) {
         
-        String subscriptionId = topic.getString(); // Use topic as unique subscription ID
+        AuthContext authContext = getAuthContextFromConnection(connection).get();
+        String subscriptionId = topic.getString() + authContext.getUserId(); // Use topic as unique subscription ID
 
         // Get the authorized event subscription from the intermediary cache
         EventSubscription<?> subscription = eventSubscriptionCache.getIfPresent(subscriptionId);
@@ -302,14 +302,15 @@ public class DefaultMQTTHandler extends MQTTHandler {
             LOG.info("Subscription not found in intermediary cache: " + subscriptionId);
             return;
         }
-        String sessionKey = getSessionKey(connection); 
+        // Evict the subscription from the cache
+        eventSubscriptionCache.invalidate(subscriptionId);
 
         Consumer<Event> consumer = getSubscriptionEventConsumer(connection, topic);
 
         synchronized (sessionSubscriptionConsumers) {
             // Create subscription consumer and track it for future removal requests
-            Map<String, Consumer<? extends Event>> subscriptionConsumers = sessionSubscriptionConsumers.computeIfAbsent(sessionKey, (s) -> new HashMap<>());
-            subscriptionConsumers.put(subscriptionId, consumer);
+            Map<String, Consumer<? extends Event>> subscriptionConsumers = sessionSubscriptionConsumers.computeIfAbsent(getSessionKey(connection), (s) -> new HashMap<>());
+            subscriptionConsumers.put(topic.getString(), consumer);
             clientEventService.addSubscription(subscription, consumer);
             LOG.finest(() -> "Client event subscription created for topic '" + topic + "': " + connectionToString(connection));
         }
