@@ -294,7 +294,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public void onSubscribe(RemotingConnection connection, Topic topic) {
         
         AuthContext authContext = getAuthContextFromConnection(connection).get();
-        String subscriptionId = topic.getString() + authContext.getUserId(); // Use topic as unique subscription ID
+        String subscriptionId = topic.getString() + authContext.getUserId();
 
         // Get the authorized event subscription from the intermediary cache
         EventSubscription<?> subscription = eventSubscriptionCache.getIfPresent(subscriptionId);
