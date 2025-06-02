@@ -305,11 +305,13 @@ public class DefaultMQTTHandler extends MQTTHandler {
         // Evict the subscription from the cache
         eventSubscriptionCache.invalidate(subscriptionId);
 
+        String sessionKey = getSessionKey(connection);
+
         Consumer<Event> consumer = getSubscriptionEventConsumer(connection, topic);
 
         synchronized (sessionSubscriptionConsumers) {
             // Create subscription consumer and track it for future removal requests
-            Map<String, Consumer<? extends Event>> subscriptionConsumers = sessionSubscriptionConsumers.computeIfAbsent(getSessionKey(connection), (s) -> new HashMap<>());
+            Map<String, Consumer<? extends Event>> subscriptionConsumers = sessionSubscriptionConsumers.computeIfAbsent(sessionKey, (s) -> new HashMap<>());
             subscriptionConsumers.put(topic.getString(), consumer);
             clientEventService.addSubscription(subscription, consumer);
             LOG.finest(() -> "Client event subscription created for topic '" + topic + "': " + connectionToString(connection));
