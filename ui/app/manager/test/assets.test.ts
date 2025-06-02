@@ -113,6 +113,7 @@ assets.forEach(({ type, name, attributes }) => {
     await page.click(`text=${name}`);
     // Then Go to modify mode
     await components.assetViewer.switchMode("modify");
+    await page.getByRole("button", { name: "Expand all" }).click();
     // Then Select "<item_1>" and "<item_2>" on "<attribute_1>"
     await components.assetViewer.addConfigurationItems(attribute1, "ruleState", "storeDataPoints");
     // Then Select "<item_1>" and "<item_2>" on "<attribute_2>"

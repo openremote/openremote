@@ -221,8 +221,10 @@ class AssetViewer {
    */
   async addConfigurationItems(attribute: string, ...items: `${WellknownMetaItems}`[]) {
     const locator = this.getAttributeLocator(attribute);
-    // Assuming items are not collapsed
-    await locator.click();
+    // TODO: handle expanded and non expand configuration items programmatically
+    // if (await this.page.getByRole("button", { name: "Expand all" }).isVisible()) {
+    //   await locator.getByRole("cell", { name: new RegExp(`\\b${attribute}\\b`, "i") }).click();
+    // }
     await locator.locator("+ tr").getByRole("button", { name: "Add configuration items" }).click();
     for (const item of items) {
       await this.page
