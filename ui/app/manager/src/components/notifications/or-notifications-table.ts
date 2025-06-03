@@ -1,7 +1,7 @@
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {OrMwcTable, OrMwcTableRowClickDetail, OrMwcTableRowClickEvent, TableColumn, TableConfig, TableContent, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
-import manager, {DefaultColor3} from "@openremote/core";
+import manager, {DefaultColor3, DefaultColor4} from "@openremote/core";
 import {Notification, SentNotification, PushNotificationMessage, NotificationTargetType} from "@openremote/model";
 import i18next from "i18next";
 import {classMap} from "lit/directives/class-map.js";
@@ -37,34 +37,34 @@ export class OrNotificationsTable extends OrMwcTable {
                     overflow: auto;
                 }
     
-                table {
-                    width: 100%;
-                    border-collapse: separate;
-                    border-spacing: 0;
-                    background-color: white;
-                    border-radius: 4px;
-                    box-shadow: var(--or-table-shadow, 0 1px 3px rgba(0,0,0,0.12));
-                }
-    
-                th {
-                    position: sticky;
-                    top: 0;
-                    background-color: white;
-                    color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-                    text-align: left;
-                    padding: 12px 16px;
-                    font-weight: 500;
-                    border-bottom: 2px solid #e0e0e0;
-                    white-space: nowrap;
-                    width: auto;
-                }
-    
-                td {
-                    padding: 4px 6px;
-                    border-bottom: 1px solid #e0e0e0;
-                    vertical-align: middle;
-                    width: auto;
-                }
+                // table {
+                //     width: 100%;
+                //     border-collapse: separate;
+                //     border-spacing: 0;
+                //     background-color: white;
+                //     border-radius: 4px;
+                //     box-shadow: var(--or-table-shadow, 0 1px 3px rgba(0,0,0,0.12));
+                // }
+                //
+                // th {
+                //     position: sticky;
+                //     top: 0;
+                //     background-color: white;
+                //     color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+                //     text-align: left;
+                //     padding: 12px 16px;
+                //     font-weight: 500;
+                //     border-bottom: 2px solid #e0e0e0;
+                //     white-space: nowrap;
+                //     width: auto;
+                // }
+                //
+                // td {
+                //     padding: 4px 6px;
+                //     border-bottom: 1px solid #e0e0e0;
+                //     vertical-align: middle;
+                //     width: auto;
+                // } TODO: Check if all of this can be removed.
     
                 tbody tr:hover {
                     background-color: var(--or-table-row-hover-color, rgba(0,0,0,0.04));
@@ -101,18 +101,18 @@ export class OrNotificationsTable extends OrMwcTable {
                     background: var(--or-notification-status-pending-bg, rgba(143, 126, 231, 0.1));
                 }
 
-                .target-link {
-                    color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-                    text-decoration: none;
+                .target-wrapper {
                     display: flex;
                     align-items: center;
                     gap: 8px;
                 }
 
-                .target-link:hover {
-                    text-decoration: none;
+                .target-link {
+                    color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
+                    overflow: hidden;
+                    text-overflow: ellipsis;
                 }
-
+                    
                 .target-icon {
                     --or-icon-width: 16px;
                     --or-icon-height: 16px;
@@ -149,12 +149,12 @@ export class OrNotificationsTable extends OrMwcTable {
 
 
     public columns: TableColumn[] = [
-        {title: i18next.t("Title"), isSortable: true},
-        {title: i18next.t("Content")},
-        {title: i18next.t("Status"), isSortable: true},
-        {title: i18next.t("Target")},
-        {title: i18next.t("Sent on"), isSortable: true},
-        {title: i18next.t("Delivered on"), isSortable: true}
+        {title: i18next.t("title"), isSortable: true},
+        {title: i18next.t("content")},
+        {title: i18next.t("status"), isSortable: true},
+        {title: i18next.t("notifications.target")},
+        {title: i18next.t("sentOn"), isSortable: true},
+        {title: i18next.t("deliveredOn"), isSortable: true}
     ];
 
     protected config: TableConfig = {
@@ -235,13 +235,13 @@ export class OrNotificationsTable extends OrMwcTable {
         };
 
         return html`
-            <a href="${details.link}" class="target-link ${details.type}-link">
+            <div class="target-wrapper">
                 <or-icon 
                     class="target-icon"
                     icon="${iconMap[details.type] || 'help-circle-outline'}">
                 </or-icon>
-                ${details.name}
-            </a>
+                <a href="${details.link}" class="target-link ${details.type}-link">${details.name}</a>
+            </div>
         `;
     }
 
@@ -367,10 +367,6 @@ export class OrNotificationsTable extends OrMwcTable {
         if (item?.data?.notification) {
             const event = new NotificationTableClickEvent(item.data.notification.id)
             this.dispatchEvent(event);
-
-            console.log('DISPATCHING NOTIFICATION CLICK:', {
-                id: item.data.notification.id,
-            })
         }
     }
 }

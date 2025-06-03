@@ -1450,6 +1450,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     <style>
                         .mdc-dialog__content {
                             padding: 0 !important;
+                            border-bottom: solid var(--or-app-color5, #CCCCCC) 1px;
+                            border-top: solid var(--or-app-color5, #CCCCCC) 1px;
                         }
                     </style>
                 `)
@@ -2004,7 +2006,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     <div class="node-name">
                         <div class="expander" ?data-expandable="${treeNode.expandable}"></div>
                         ${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, (filterColorForNonMatchingAsset ? 'd3d3d3' : undefined))}
-                        <span style="color: ${filterColorForNonMatchingAsset ? '#d3d3d3;' : ''}">${treeNode.asset!.name}</span>
+                        <span class="${this.checkboxes ? 'node-name-withCheck' : 'node-name-noCheck'}" title="${treeNode.asset!.name}" style="color: ${filterColorForNonMatchingAsset ? '#d3d3d3;' : ''}">${treeNode.asset!.name}</span>
                         ${this.checkboxes ? html`
                             <span class="mdc-list-item__graphic">
                                 ${treeNode.expandable 

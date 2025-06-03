@@ -1,37 +1,33 @@
-import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query, state} from "lit/decorators.js";
-import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
+import {css, html, PropertyValues, unsafeCSS} from "lit";
+import {customElement, property, state} from "lit/decorators.js";
+import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
 import {Store} from "@reduxjs/toolkit";
 import {
-    Notification,
-    SentNotification,
-    PushNotificationMessage,
     Asset,
-    User,
-    PushNotificationMessageMessagePriority,
-    PushNotificationMessageTargetType,
+    Notification,
     NotificationTargetType,
-    RepeatFrequency
+    PushNotificationMessage,
+    SentNotification,
+    User
 } from "@openremote/model";
 import manager, {DefaultColor3} from "@openremote/core";
 import i18next from "i18next";
-import {when} from "lit/directives/when.js";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {isAxiosError, AxiosError} from "@openremote/rest";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import { NotificationForm, NotificationFormData } from "../components/notifications/notification-form";
+import {AxiosError, isAxiosError} from "@openremote/rest";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {NotificationForm, NotificationFormData} from "../components/notifications/notification-form";
 import "../components/notifications/notification-form";
-import { OrNotificationsTable, NotificationTableClickEvent } from "../components/notifications/or-notifications-table";
+import {NotificationTableClickEvent} from "../components/notifications/or-notifications-table";
 import "../components/notifications/or-notifications-table";
 
 export class NotificationService {
-    
+
     async getNotifications(realm: string, fromDate?: number, toDate?: number): Promise<SentNotification[]> {
         try {
-            const timeRange = fromDate && toDate ? 
-            {fromDate, toDate} :
-            this.getDefaultTimeRange();
+            const timeRange = fromDate && toDate ?
+                {fromDate, toDate} :
+                this.getDefaultTimeRange();
 
             const response = await manager.rest.api.NotificationResource.getNotificationsByRealm(
                 realm,
@@ -40,7 +36,7 @@ export class NotificationService {
                     to: timeRange.toDate,
                     realmId: realm
                 });
-            
+
             if (!response.data) {
                 console.warn("No data in response:", response);
                 return [];
@@ -55,7 +51,7 @@ export class NotificationService {
     }
 
     async sendNotification(notification: Notification, realm: string): Promise<boolean> {
-        try {    
+        try {
             const response = await manager.rest.api.NotificationResource.sendNotificationWithRealmData(
                 notification,
                 {realmId: realm}
@@ -106,7 +102,7 @@ export class NotificationService {
         return manager.hasRole("read:users") || manager.hasRole("read:admin");
     }
 
-    public getDefaultTimeRange(): {fromDate: number, toDate: number} {
+    public getDefaultTimeRange(): { fromDate: number, toDate: number } {
         const now = new Date();
         const toDate = new Date(now);
         toDate.setHours(23, 59, 59, 999);
@@ -154,114 +150,115 @@ export class PageNotifications extends Page<AppStateKeyed> {
     static get styles() {
         return [
             css`
-            :host {
-                flex: 1;
-                width: 100%;
-            }
+                :host {
+                    flex: 1;
+                    width: 100%;
+                }
 
-            #wrapper {
-                height: 100%;
-                width: 100%;
-                display: flex;
-                flex-direction: column;
-                overflow: auto;
-            }
+                #wrapper {
+                    height: 100%;
+                    width: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: auto;
+                }
 
-            #title {
-                padding: 0 20px;
-                font-size: 18px;
-                font-weight: bold;
-                margin: 10px 0;
-                display: flex;
-                align-items: center;
-                color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-                justify-content: space-between;
-            }
+                #title {
+                    padding: 0 20px;
+                    font-size: 18px;
+                    font-weight: bold;
+                    margin: 10px 0;
+                    display: flex;
+                    align-items: center;
+                    color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+                    justify-content: space-between;
+                }
 
-            or-icon {
-                vertical-align: middle;
-                --or-icon-width: 20px;
-                --or-icon-height: 20px;
-            }
+                or-icon {
+                    vertical-align: middle;
+                    --or-icon-width: 20px;
+                    --or-icon-height: 20px;
+                }
 
-            #table-container {
-                margin-left: 20px;
-                margin-right: 20px;
-            }
-            
-            // Dialog and form specific styles
-            .dialog-content {
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-                padding: 0 24px;
-            }
+                #table-container {
+                    margin-left: 20px;
+                    margin-right: 20px;
+                }
 
-            .dialog-content or-mwc-input {
-                margin-bottom: 16px;
-            }
+                // Dialog and form specific styles
 
-            .section {
-                border-radius: 4px;
-                padding: 20px;
-                margin-bottom: 24px;
-            }
+                .dialog-content {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                    padding: 0 24px;
+                }
 
-            .section:last-child {
-                margin-bottom: 0;
-            }
+                .dialog-content or-mwc-input {
+                    margin-bottom: 16px;
+                }
 
-            .section-title {
-                color: var(--or-app-color3);
-                font-size: 14px;
-                font-weight: 500;
-                margin-bottom: 16px;
-            }
+                .section {
+                    border-radius: 4px;
+                    padding: 20px;
+                    margin-bottom: 24px;
+                }
 
-            .form-preview {
-                display: grid;
-                grid-template-columns: 2fr 1fr;
-                gap: 24px;
-                padding: 20px;
-                width: 100%;
-            }
+                .section:last-child {
+                    margin-bottom: 0;
+                }
 
-            .right-column {
-                display: flex;
-                flex-direction: column;
-                gap: 24px;
-            }
+                .section-title {
+                    color: var(--or-app-color3);
+                    font-size: 14px;
+                    font-weight: 500;
+                    margin-bottom: 16px;
+                }
 
-            .section {
-                background: white;
-                border-radius: 4px;
-                padding: 20px;
-            }
+                .form-preview {
+                    display: grid;
+                    grid-template-columns: 2fr 1fr;
+                    gap: 24px;
+                    padding: 20px;
+                    width: 100%;
+                }
 
-            .field-group {
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-                width: 100%;  // Add this to ensure full width
-            }
+                .right-column {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 24px;
+                }
 
-            or-mwc-input[readonly] {
-                --mdc-text-field-fill-color: #f5f5f5;
-                --mdc-text-field-disabled-line-color: #e0e0e0;
-            }
+                .section {
+                    background: white;
+                    border-radius: 4px;
+                    padding: 20px;
+                }
 
-            .filter-section {
-                padding: 0 10px 0 4px;
-                border-radius: 4px;
-                margin-left: auto;
-                order: 2;
-            }
-            
-            .create-btn {
-                order: 3;
-            }
-                
-        `];
+                .field-group {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                    width: 100%; // Add this to ensure full width
+                }
+
+                or-mwc-input[readonly] {
+                    --mdc-text-field-fill-color: #f5f5f5;
+                    --mdc-text-field-disabled-line-color: #e0e0e0;
+                }
+
+                .filter-section {
+                    padding: 0 10px 0 4px;
+                    border-radius: 4px;
+                    margin-left: auto;
+                    order: 2;
+                }
+
+                .create-btn {
+                    order: 3;
+                }
+
+            `];
     }
 
     @property()
@@ -292,16 +289,16 @@ export class PageNotifications extends Page<AppStateKeyed> {
     protected _isFilteredSource: boolean = false;
 
     protected _loading: boolean = false;
-    
+
     protected notificationService: NotificationService;
-    
+
     protected _sourceOptions = [
-        { value: " ", text: i18next.t("All sources") },
-        { value: "CLIENT", text: i18next.t("Client") },
-        { value: "INTERNAL", text: i18next.t("Internal") },
-        { value: "GLOBAL_RULESET", text: i18next.t("Global ruleset") },
-        { value: "REALM_RULESET", text: i18next.t("Realm ruleset") },
-        { value: "ASSET_RULESET", text: i18next.t("Asset ruleset") },
+        {value: " ", text: i18next.t("notifications.allSources")},
+        {value: "CLIENT", text: i18next.t("notifications.client")},
+        {value: "INTERNAL", text: i18next.t("notifications.internal")},
+        {value: "GLOBAL_RULESET", text: i18next.t("notifications.globalRuleset")},
+        {value: "REALM_RULESET", text: i18next.t("notifications.realmRuleset")},
+        {value: "ASSET_RULESET", text: i18next.t("notifications.assetRuleset")},
     ]
 
     constructor(store: Store<AppStateKeyed>) {
@@ -315,13 +312,13 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     public stateChanged(state: AppStateKeyed): void {
-        if (state.app.page == "Notifications") {
-            if (this.realm === undefined || this.realm == state.app.realm) {
+        if (state.app.page === "Notifications") {
+            if (this.realm === undefined || this.realm === state.app.realm) {
                 this._loadData();
-            } 
+            }
             this.realm = state.app.realm;
             this.requestUpdate('realm');
-            
+
             this._loadData();
         }
     }
@@ -346,7 +343,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
     public connectedCallback(): void {
         super.connectedCallback();
-        
+
         this.realm = manager.displayRealm;
         if (!this._data) {
             this._loadData();
@@ -368,14 +365,14 @@ export class PageNotifications extends Page<AppStateKeyed> {
             const fromDate = this._isFilteredDate ? this._fromDate : undefined;
             const toDate = this._isFilteredDate ? this._toDate : undefined;
 
-            //if filtering is enabled, use selected dates
+            // if filtering is enabled, use selected dates
             // otherwise default to range (last 30 days)
             const timeRange = this._isFilteredDate && this._fromDate && this._toDate ?
-            {
-                fromDate: this._fromDate,
-                toDate: this._toDate
-            } :
-            this.notificationService.getDefaultTimeRange();
+                {
+                    fromDate: this._fromDate,
+                    toDate: this._toDate
+                } :
+                this.notificationService.getDefaultTimeRange();
 
             if (!this._isFilteredDate) {
                 this._fromDate = timeRange.fromDate;
@@ -387,8 +384,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
             }
 
             this._data = await this.notificationService.getNotifications(
-                this.realm, 
-                fromDate, 
+                this.realm,
+                fromDate,
                 toDate
             );
 
@@ -396,15 +393,15 @@ export class PageNotifications extends Page<AppStateKeyed> {
         } catch (err: unknown) {
             const error = err as AxiosError;
             console.error("Notification load failed with error:", error);
-        if (error.response) {
-            console.error("Error response:", {
-                status: error.response.status,
-                statusText: error.response.statusText,
-                data: error.response.data,
-                headers: error.response.headers
-            });
+            if (error.response) {
+                console.error("Error response:", {
+                    status: error.response.status,
+                    statusText: error.response.statusText,
+                    data: error.response.data,
+                    headers: error.response.headers
+                });
             }
-            showSnackbar(undefined, i18next.t("Notification loading failed."));
+            showSnackbar(undefined, i18next.t("loadingNotificationFailed"));
         } finally {
             this._loading = false;
         }
@@ -416,17 +413,17 @@ export class PageNotifications extends Page<AppStateKeyed> {
             console.error("Form not found in dialog");
             return null;
         }
-    
+
         const formData = form.getFormData();
-        
+
         // validate required fields per schema
-        if (!formData?.name || !formData?.targetType || !formData?.target) {
+        if (!formData?.name || !formData?.targetType || !formData?.targets) {
             console.error("Missing required fields:", {
                 hasName: !!formData?.name,
                 hasTargetType: !!formData?.targetType,
-                hasTarget: !!formData?.target
+                hasTarget: !!formData?.targets
             });
-            showSnackbar(undefined, i18next.t("Failed to create notification, missing required fields."));
+            showSnackbar(undefined, i18next.t("notifications.missingFields"));
             return null;
         }
         return formData;
@@ -468,19 +465,19 @@ export class PageNotifications extends Page<AppStateKeyed> {
             const notification: Notification = {
                 name: formData.title,
                 message: message,
-                targets: [{
+                targets: formData.targets.map(id => ({
                     type: formData.targetType as NotificationTargetType,
-                    id: formData.target
-                }]
+                    id: id
+                }))
             };
 
             const response = await this.notificationService.sendNotification(notification, this.realm);
 
-            showSnackbar(undefined, i18next.t("Successfully created notification."));
+            showSnackbar(undefined, i18next.t("notifications.successfullySentNotification"));
             dialog.close();
         } catch (error) {
             console.error("Error creating notification:", error);
-            showSnackbar(undefined, i18next.t("Failed to create notification: ", error));
+            showSnackbar(undefined, i18next.t("notifications.failedToCreateNotification", error));
         } finally {
             await this._loadData();
         }
@@ -488,7 +485,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
     protected _getFilteredNotifications(): SentNotification[] {
         if (!this._data) return [];
-        if (this._selectedSource == " ") {
+        if (this._selectedSource === " ") {
             return this._data;
         }
 
@@ -513,81 +510,85 @@ export class PageNotifications extends Page<AppStateKeyed> {
         return html`
             <div id="wrapper">
                 ${!manager.authenticated
-                    ? html`<or-translate value="notAuthenticated"/>`
-                    : html`
-                    ${this._renderHeader(writeNotifications)}
-                    <div id="table-container">
-                        ${this._renderNotificationsTable()}
-                    </div>
-                    `
+                        ? html`
+                            <or-translate value="notAuthenticated"/>`
+                        : html`
+                            ${this._renderHeader(writeNotifications)}
+                            <div id="table-container">
+                                ${this._renderNotificationsTable()}
+                            </div>
+                        `
                 }
             </div>
         `;
     }
-    
+
     protected _renderHeader(writeNotifications) {
         return html`
             <div id="title">
-                    <div style="display: flex; align-items: center;">
-                        <or-icon icon="message-outline" style="padding: 0 10px 0 4px;"></or-icon>
-                        <span><or-translate value="${i18next.t("Notifications")}"/></span>
-                    </div>
+                <div style="display: flex; align-items: center;">
+                    <or-icon icon="message-outline" style="padding: 0 10px 0 4px;"></or-icon>
+                    <span><or-translate value="${i18next.t("notifications.notifications")}"/></span>
+                </div>
 
-                     <div class="filter-section">
-                        <or-mwc-input
+                <div class="filter-section">
+                    <or-mwc-input
                             type="${InputType.SELECT}"
-                            label="${i18next.t('Source')}"
+                            label="${i18next.t('source')}"
                             .options="${this._sourceOptions.map(o => [o.value, o.text])}"
                             .value="${this._selectedSource}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                 this._selectedSource = e.detail.value;
-                                this._isFilteredSource = true; //set filter changes
+                                this._isFilteredSource = true; // set filter changes
                                 this.requestUpdate();
                             }}"
-                        ></or-mwc-input>
+                            comfortable
+                    ></or-mwc-input>
 
-                            <or-mwc-input
-                                type="${InputType.DATETIME}"
-                                label="${i18next.t('From')}"
-                                .value="${this._fromDate}"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                    this._fromDate = e.detail.value;
-                                    this._isFilteredDate = true; //set flag when date changes
-                                    this._loadData();
-                                }}"
-                            ></or-mwc-input>
-    
-                            <or-mwc-input
-                                type="${InputType.DATETIME}"
-                                label="${i18next.t('To')}"
-                                .value="${this._toDate}"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                    this._toDate = e.detail.value;
-                                    this._isFilteredDate = true; //set flag when date changes
-                                    this._loadData();
-                                }}"
-                            ></or-mwc-input>
-                    </div>
-                    <div class="create-btn">
+                    <or-mwc-input
+                            type="${InputType.DATETIME}"
+                            label="${i18next.t('from')}"
+                            .value="${this._fromDate}"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                this._fromDate = e.detail.value;
+                                this._isFilteredDate = true; // set flag when date changes
+                                this._loadData();
+                            }}"
+                            comfortable
+                    ></or-mwc-input>
+
+                    <or-mwc-input
+                            type="${InputType.DATETIME}"
+                            label="${i18next.t('to')}"
+                            .value="${this._toDate}"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                this._toDate = e.detail.value;
+                                this._isFilteredDate = true; // set flag when date changes
+                                this._loadData();
+                            }}"
+                            comfortable
+                    ></or-mwc-input>
+                </div>
+                <div class="create-btn">
                     ${writeNotifications ? html`
-                        <or-mwc-input 
-                            type="${InputType.BUTTON}"
-                            icon="plus"
-                            label="${i18next.t("send new")}"
-                            @or-mwc-input-changed="${() => this._showCreateDialog()}"
+                        <or-mwc-input
+                                type="${InputType.BUTTON}"
+                                icon="plus"
+                                label="${i18next.t("notifications.sendNew")}"
+                                @or-mwc-input-changed="${() => this._showCreateDialog()}"
                         ></or-mwc-input>
                     ` : ``}
-                    </div>
                 </div>
+            </div>
         `;
     }
 
     protected _renderNotificationsTable() {
         return html`
-            <or-notifications-table 
-                .notifications=${this._getFilteredNotifications() || []}
-                .notificationService=${this.notificationService}
-                @or-notification-selected="${(e: NotificationTableClickEvent) => this._onRowClick(e)}"
+            <or-notifications-table
+                    .notifications=${this._getFilteredNotifications() || []}
+                    .notificationService=${this.notificationService}
+                    @or-notification-selected="${(e: NotificationTableClickEvent) => this._onRowClick(e)}"
             ></or-notifications-table>
         `;
     }
@@ -596,21 +597,22 @@ export class PageNotifications extends Page<AppStateKeyed> {
     protected _renderForm(notification?: SentNotification) {
         if (!notification) {
             return html`
-            <div class="dialog-content">
-                <notification-form
-                    id="notificationForm"
-                    ?disabled="${false}">
-                </notification-form>
-            </div>
-        `}
+                <div class="dialog-content">
+                    <notification-form
+                            id="notificationForm"
+                            ?disabled="${false}">
+                    </notification-form>
+                </div>
+            `
+        }
 
         return html`
-        <div class="form-preview">
-            <notification-form
-                    .notification=${notification}
-                    ?readonly=${true}
+            <div class="form-preview">
+                <notification-form
+                        .notification=${notification}
+                        ?readonly=${true}
                 ></notification-form>
-        </div>
+            </div>
         `;
     }
 
@@ -619,9 +621,9 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
         const dialog = showDialog(
             new OrMwcDialog()
-            .setHeading(i18next.t("Create notification"))
-            .setContent(this._renderForm())
-            // .setDismissAction(null)
+                .setHeading(i18next.t("notifications.createNotification"))
+                .setContent(this._renderForm())
+                // .setDismissAction(null)
                 .setActions([
                     {
                         actionName: "cancel",
@@ -638,6 +640,15 @@ export class PageNotifications extends Page<AppStateKeyed> {
                         // note: _loadData is already called in _handleCreateNotification
                     }
                 ])
+                .setStyles(html`
+                    <style>
+                        .mdc-dialog__content {
+                            padding: 0 !important;
+                            border-bottom: solid var(--or-app-color5, #CCCCCC) 1px;
+                            border-top: solid var(--or-app-color5, #CCCCCC) 1px;
+                        }
+                    </style>
+                `)
         )
     }
 
@@ -648,28 +659,43 @@ export class PageNotifications extends Page<AppStateKeyed> {
         }
         const notificationId = e.detail.notificationId;
 
-        const notification = this._data.find(n=> n.id === notificationId);
+        const notification = this._data.find(n => n.id === notificationId);
 
         if (!notification) {
             console.warn(`No notification found with id ${notificationId}`);
             return;
         }
-        
+
         const dialog = showDialog(
             new OrMwcDialog()
-            .setHeading(i18next.t("Notification details"))
-            .setContent(this._renderForm(notification))
-            .setDismissAction({
-                actionName: "cancel",
-                action: () => {dialog.close(); this._loadData();},
-            })   
-            .setActions([
-            {
-                actionName: "close",
-                content: i18next.t("close"),
-                action: () => {dialog.close(); this._loadData();}
-            }
-        ])
+                .setHeading(i18next.t("notifications.details"))
+                .setContent(this._renderForm(notification))
+                .setDismissAction({
+                    actionName: "cancel",
+                    action: () => {
+                        dialog.close();
+                        this._loadData();
+                    },
+                })
+                .setActions([
+                    {
+                        actionName: "close",
+                        content: i18next.t("close"),
+                        action: () => {
+                            dialog.close();
+                            this._loadData();
+                        }
+                    }
+                ])
+                .setStyles(html`
+                    <style>
+                        .mdc-dialog__content {
+                            padding: 0 !important;
+                            border-bottom: solid var(--or-app-color5, #CCCCCC) 1px;
+                            border-top: solid var(--or-app-color5, #CCCCCC) 1px;
+                        }
+                    </style>
+                `)
         );
     }
 }

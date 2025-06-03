@@ -181,7 +181,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
                 LOG.fine("DENIED: Anonymous request to update a notification sent to an asset that doesn't exist or isn't public");
                 throw new WebApplicationException("Anonymous request can only update public assets not linked to a user", FORBIDDEN);
             }
-
+            // TODO : What is meant by the message below?
             // Disabled until console permissions finalised
 //            if (assetStorageService.isUserAsset(asset.getId())) {
 //                LOG.fine("DENIED: Anonymous request to update a notification sent to an asset that is linked to one or more users");
