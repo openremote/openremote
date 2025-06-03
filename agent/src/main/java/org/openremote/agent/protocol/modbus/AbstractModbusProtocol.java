@@ -35,6 +35,7 @@ import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -89,6 +90,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                     agentLink.getPollingMillis(),
                     agentLink.getReadMemoryArea(),
                     agentLink.getReadValueType(),
+                    agentLink.getReadRegistersAmount(),
                     agentLink.getReadAddress()
                 )
         );
@@ -133,14 +135,22 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                                                                   long pollingMillis,
                                                                   ModbusAgentLink.ReadMemoryArea readType,
                                                                   ModbusAgentLink.ModbusDataType dataType,
-                                                                  int readAddress) {
+                                                                  Optional<Integer> amountOfRegisters,
+                                                                  Optional<Integer> readAddress) {
 
         PlcReadRequest.Builder builder = client.readRequestBuilder();
+
+        int readAmountOfRegisters = (amountOfRegisters.isEmpty() || amountOfRegisters.get() < 1)
+                ? dataType.getRegisterCount() : amountOfRegisters.get();
+        String amountOfRegistersString = readAmountOfRegisters <= 1 ? "" : "["+readAmountOfRegisters+"]";
+
+        int address = readAddress.orElseThrow(() -> new RuntimeException("Read Address is empty! Unable to schedule read request."));
+
         switch (readType) {
-            case COIL -> builder.addTagAddress("coils", "coil:" + readAddress + ":" + dataType);
-            case DISCRETE -> builder.addTagAddress("discreteInputs", "discrete-input:" + readAddress + ":" + dataType);
-            case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + readAddress + ":" + dataType);
-            case INPUT -> builder.addTagAddress("inputRegisters", "input-register:" + readAddress + ":" + dataType);
+            case COIL -> builder.addTagAddress("coils", "coil:" + address + ":" + dataType + amountOfRegistersString);
+            case DISCRETE -> builder.addTagAddress("discreteInputs", "discrete-input:" + address + ":" + dataType + amountOfRegistersString);
+            case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + address + ":" + dataType + amountOfRegistersString);
+            case INPUT -> builder.addTagAddress("inputRegisters", "input-register:" + address + ":" + dataType + amountOfRegistersString);
             default -> throw new IllegalArgumentException("Unsupported read type: " + readType);
         }
         PlcReadRequest readRequest = builder.build();
@@ -155,7 +165,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 String responseTag = response.getTagNames().stream().findFirst()
                         .orElseThrow(() -> new RuntimeException("Could not retrieve the requested value from the response"));
 
-                Object responseValue = response.getObject(responseTag);
+                Object responseValue = response.getObject(responseTag, readAmountOfRegisters-1);
                 updateLinkedAttribute(ref, responseValue);
             } catch (Exception e) {
                 LOG.log(Level.FINE,"Exception thrown during Modbus Read Value polling request '" + readRequest.toString());
