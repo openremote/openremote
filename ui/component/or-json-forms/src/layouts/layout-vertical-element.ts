@@ -34,6 +34,7 @@ import "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-components/or-collapsible-panel";
 import {addItemOrParameterDialogStyle, baseStyle, panelStyle} from "../styles";
 import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
+import {TableColumn, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
 import {DefaultColor5} from "@openremote/core";
 import {AdditionalProps} from "../base-element";
 
@@ -110,7 +111,6 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
     }
 
     render() {
-
         const optionalProps: StatePropsOfControl[] = [];
         const jsonFormsState = {jsonforms: {...this.state}};
         const rootSchema = getSchema(jsonFormsState);
@@ -170,7 +170,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
 
         const expandable = (!!contentTemplate && (!Array.isArray(contentTemplate) || contentTemplate.length > 0)) || (!this.errors && optionalProps.length > 0);
 
-        const content = html`
+        const content = "layout:table" in this.schema ? this.tableControlRenderer() : html`
             ${header}
             <div id="content-wrapper" slot="content">
                 <div id="content">
@@ -391,5 +391,38 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                 }
             ])
             .setDismissAction(null));
+    }
+    
+    protected tableControlRenderer() {
+      const rows: TableRow[] = [];
+
+      const filteredEntries = Object.entries(this.data).filter(
+        ([key]) => "layout:table" in this.schema && (this.schema["layout:table"] as string[]).includes(key)
+      );
+      console.log("filteredEntries", filteredEntries)
+      for (const [key, value] of filteredEntries) {
+        let i = 0;
+        for (const item of value as []) {
+          if (!rows[i]) rows[i] = { content: [] };
+          rows[i].content!.push(
+            html`<or-mwc-input
+              .type="${InputType.TEXT}"
+              .value="${item}"
+              style="width: 100%"
+              @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                  console.log("PATH", this.path)
+                  // Currently always considered a new value
+                  this.handleChange([this.path, key, i].join("."), e.detail.value || null);
+              }}"
+            ></or-mwc-input>`
+          );
+          i++;
+        }
+      }
+      // TODO: compute the column label names to translate them (hopefully)
+      const columns = filteredEntries.map(([key]) => ({ title: key }));
+      console.log("rows", rows, "columns", columns)
+      
+      return html`<div id="content" slot="content"><or-mwc-table .rows="${rows}" .columns="${columns}"></or-mwc-table></div>`;
     }
 }
