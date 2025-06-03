@@ -19,6 +19,7 @@
  */
 package org.openremote.agent.protocol.modbus;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.openremote.model.asset.agent.AgentLink;
 
@@ -29,32 +30,30 @@ import java.util.Optional;
 //TODO: Make non-primitive parameters required
 public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
 
-    @NotNull
+    @JsonProperty(required=true)
     @JsonPropertyDescription("Poll interval in milliseconds")
-    private long pollingMillis;
+    private Long pollingMillis;
 
-    @NotNull
+    @JsonProperty(required=true)
     @JsonPropertyDescription("Memory area to read from during read request")
     private ReadMemoryArea readMemoryArea;
 
-    @NotNull
+    @JsonProperty(required=true)
     @JsonPropertyDescription("Type to convert the returned data to. As specified by the PLC4X Modbus data types.")
     private ModbusDataType readValueType;
 
-    @NotNull
+    @JsonProperty(required=true)
     @JsonPropertyDescription("Zero based address from which the value is read from")
-    private int readAddress;
+    private Integer readAddress;
 
-    @NotNull
     @JsonPropertyDescription("Memory area to write to. \"HOLDING\" or \"COIL\" allowed.")
     private WriteMemoryArea writeMemoryArea;
 
-    @NotNull
     @JsonPropertyDescription("Zero-based address to which the value sent is written to")
-    private int writeAddress;
+    private Integer writeAddress;
 
     @JsonPropertyDescription("Set amount of registers to read. If left empty or less than 1, will use the default size for the corresponding data-type.")
-    private int readRegistersAmount;
+    private Integer readRegistersAmount;
 
     public long getPollingMillis() {
         return pollingMillis;
@@ -80,7 +79,7 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         this.readValueType = readValueType;
     }
 
-    public int getReadAddress() {
+    public Integer getReadAddress() {
         return readAddress;
     }
 
@@ -136,9 +135,9 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         WCHAR(String.class, 1);  // Assumes single wchar per entry
 
         private final Class<?> javaType;
-        private final int registerCount;
+        private final Integer registerCount;
 
-        ModbusDataType(Class<?> javaType, int registerCount) {
+        ModbusDataType(Class<?> javaType, Integer registerCount) {
             this.javaType = javaType;
             this.registerCount = registerCount;
         }
@@ -147,7 +146,7 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
             return javaType;
         }
 
-        public int getRegisterCount() {
+        public Integer getRegisterCount() {
             return registerCount;
         }
     }
