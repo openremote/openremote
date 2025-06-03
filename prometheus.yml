@@ -1,12 +1,36 @@
 global:
-  scrape_interval: 1m
+  scrape_interval: 15s
+  evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'prometheus'
-    scrape_interval: 1m
+  - job_name: "prometheus"
+    scrape_interval: 30s
     static_configs:
-      - targets: ['localhost:9090']
+      - targets: ["localhost:9090"]
 
-  - job_name: 'node'
+  - job_name: "node"
+    scrape_interval: 15s
     static_configs:
-      - targets: ['node-exporter:9100']
+      - targets: ["node-exporter:9100"]
+
+  - job_name: "openremote-manager"
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["manager:8405"]
+    metrics_path: /metrics
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "openremote-manager"
+
+  - job_name: "openremote-proxy"
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["proxy:8404"]
+    metrics_path: /metrics
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "openremote-proxy"

@@ -23,11 +23,14 @@ services:
     depends_on:
       - prometheus
     volumes:
-        - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
-        - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/provisioning/dashboards/dashboards:/etc/grafana/provisioning/dashboards/dashboards
+      - grafana-data:/var/lib/grafana
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
     ports:
       - 3000:3000
     networks:
@@ -41,10 +44,10 @@ services:
       - /sys:/host/sys:ro
       - /:/host:ro,rslave
     command:
-      - '--path.procfs=/host/proc'
-      - '--path.rootfs=/host'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - "--path.procfs=/host/proc"
+      - "--path.rootfs=/host"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
     expose:
       - 9100
     ports:
@@ -106,9 +109,8 @@ services:
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
 
-
   manager:
-#    privileged: true
+    #    privileged: true
     restart: always
     image: openremote/manager:${MANAGER_VERSION:-latest}
     depends_on:
