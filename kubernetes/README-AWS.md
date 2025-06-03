@@ -130,6 +130,42 @@ for more information.
 In addition to the default values, values-eks.yaml files are used for the chart deployments.   
 These contain EKS specific configuration that can be adapted or complemented if required.
 
+## Running demo under EKS
+
+### Building the OR demo image
+
+Use ```./gradlew -PSETUP_JAR=demo clean installDist``` to build the controller with the demo setup code.
+
+You can then push the image to the private ECR repository in our developer account with (credentials are for developer account): 
+```bash
+export AWS_ACCESS_KEY_ID="…"
+export AWS_SECRET_ACCESS_KEY="…"
+export AWS_SESSION_TOKEN="…"
+
+aws ecr get-login-password --region eu-west-1| docker login --username AWS --password-stdin 134517981306.dkr.ecr.eu-west-1.amazonaws.com
+
+docker buildx build --no-cache --push --platform linux/amd64,linux/arm64 -t 134517981306.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:demo manager/build/install/manager/
+```
+
+### Starting a cluster with the OR demo image
+
+Modify the eks-setup-haproxy.sh script to start the manager with the appropriate configuration by replacing lines
+```bash
+helm install manager manager -f manager/values-haproxy-eks.yaml \
+  --set-string or.hostname=$FQDN
+```
+with
+```bash
+helm install manager manager -f manager/values-haproxy-eks.yaml -f manager/values-demo.yaml \
+  --set-string or.hostname=$FQDN
+```
+
+This values file does three things:
+- get the demo image from the private ECR
+- enable the demo setup
+- add an initial delay for the probes, given the setup code time to run (otherwise k8s kills the pod before setup code finishes)
+
+
 ## Current limitations / explorations to do
 
 Although the eksctl command reports a successful delete of the cluster, the delete operation is still in progress.    
