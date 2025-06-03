@@ -125,6 +125,7 @@ while ! dig +short $FQDN | grep -qE '^[0-9]'; do
     sleep 5
 done
 
-kubectl delete pod -l app.kubernetes.io/name=proxy
+# Now that DNS is in place, HAProxy can properly create the certificate
+kubectl exec $(kubectl get pod -l "app.kubernetes.io/name=proxy" -o name) -- sh -c "/entrypoint.sh add $FQDN"
 
 echo "Access the manager at https://$FQDN"
