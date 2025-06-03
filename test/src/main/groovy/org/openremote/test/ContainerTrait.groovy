@@ -281,9 +281,21 @@ trait ContainerTrait {
             }
 
             // Track rules (very basic)
-            TestFixture.globalRulesets = getRulesets(GlobalRuleset.class)
-            TestFixture.realmRulesets = getRulesets(RealmRuleset.class)
-            TestFixture.assetRulesets = getRulesets(AssetRuleset.class)
+            TestFixture.globalRulesets = getRulesets(GlobalRuleset.class).forEach {
+                // Clear IDs and versions
+                it.id = null
+                it.version = 0
+            }
+            TestFixture.realmRulesets = getRulesets(RealmRuleset.class).forEach {
+                // Clear IDs and versions
+                it.id = null
+                it.version = 0
+            }
+            TestFixture.assetRulesets = getRulesets(AssetRuleset.class).forEach {
+                // Clear IDs and versions
+                it.id = null
+                it.version = 0
+            }
 
             // Track assets
             TestFixture.assets = getAssets()
