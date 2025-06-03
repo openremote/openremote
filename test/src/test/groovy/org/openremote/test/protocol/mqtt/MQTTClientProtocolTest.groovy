@@ -19,7 +19,12 @@
  */
 package org.openremote.test.protocol.mqtt
 
+import com.hivemq.client.mqtt.MqttClient
 import com.hivemq.client.mqtt.datatypes.MqttQos
+import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient
+import groovy.json.JsonOutput
+import io.moquette.broker.Server
+import io.moquette.broker.config.MemoryConfig
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
@@ -51,12 +56,16 @@ import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.UsernamePassword
+import org.openremote.model.query.filter.NumberPredicate
 import org.openremote.model.util.UniqueIdentifierGenerator
+import org.openremote.model.value.JsonPathFilter
+import org.openremote.model.value.ValueFilter
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import org.opentest4j.TestAbortedException
 import spock.lang.Ignore
+import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -70,12 +79,46 @@ import java.security.PrivateKey
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
+import java.util.concurrent.TimeUnit
 
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString
+import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
+import static org.openremote.model.value.ValueType.BOOLEAN
 import static org.openremote.model.value.ValueType.NUMBER
 
 class MQTTClientProtocolTest extends Specification implements ManagerContainerTrait {
+
+    @Shared
+    int mqttBrokerPort
+
+    @Shared
+    Server mqttBroker
+
+    @Shared
+    Mqtt3AsyncClient mqttClient
+
+    def setupSpec() {
+        mqttBrokerPort = findEphemeralPort()
+        def props = new Properties()
+        props.setProperty('port', mqttBrokerPort.toString())
+        def config = new MemoryConfig(props)
+        mqttBroker = new Server()
+        mqttBroker.startServer(config)
+
+        mqttClient = MqttClient.builder()
+            .useMqttVersion3()
+            .identifier("mqttTestClientId")
+            .serverHost("localhost")
+            .serverPort(mqttBrokerPort)
+            .buildAsync()
+        mqttClient.connect().get(2, TimeUnit.SECONDS)
+    }
+
+    def cleanupSpec() {
+        mqttClient?.disconnect()
+        mqttBroker?.stopServer()
+    }
 
     @SuppressWarnings("GroovyAccessibility")
     def "Check MQTT client protocol and linked attribute deployment"() {
@@ -191,6 +234,122 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             def connection = brokerService.getConnectionFromClientID(clientId)
             assert connection != null
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+        }
+    }
+
+    def "Check MQTT client protocol message match filter support"() {
+
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        when: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+
+        and: "a MQTT agent is created"
+        def agent = new MQTTAgent("MQTTAgent")
+        agent.setRealm(MASTER_REALM)
+        agent.setHost("localhost")
+        agent.setPort(mqttBrokerPort)
+        agent.setClientId("mqttAgentClientId")
+        agent = assetStorageService.merge(agent)
+
+        then: "the protocol instance for the agent should be created"
+        conditions.eventually {
+            assert agentService.getProtocolInstance(agent.id) != null
+            assert ((MQTTProtocol)agentService.getProtocolInstance(agent.id)) != null
+        }
+
+        and: "the connection status should be CONNECTED"
+        conditions.eventually {
+            agent = assetStorageService.find(agent.id)
+            agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+        }
+
+        when: "an asset is created with attributes linked to the agent"
+        def asset = new ThingAsset("Test Asset")
+            .setRealm(MASTER_REALM)
+            .setParent(agent)
+            .addOrReplaceAttributes(
+                new Attribute<>("temperature", NUMBER)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
+                            .setSubscriptionTopic("testTopic")
+                            .setValueFilters([new JsonPathFilter('$.temperature', true, false)] as ValueFilter[])
+                            .setMessageMatchFilters([new JsonPathFilter('$.port', true, false)] as ValueFilter[])
+                            .setMessageMatchPredicate(new NumberPredicate(85))
+                        )),
+                new Attribute<>("switchStatus", BOOLEAN)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
+                            .setSubscriptionTopic("testTopic")
+                            .setValueFilters([new JsonPathFilter('$.switch_status', true, false)] as ValueFilter[])
+                            .setMessageMatchFilters([new JsonPathFilter('$.port', true, false)] as ValueFilter[])
+                            .setMessageMatchPredicate(new NumberPredicate(85))
+                            .setValueConverter([
+                                SWITCH_ON : true,
+                                SWITCH_OFF: false
+                            ])
+                        ))
+            )
+
+        and: "the asset is merged into the asset service"
+        asset = assetStorageService.merge(asset)
+
+        and: "a message which should pass the message match filter is published"
+        def json = [
+            port: 85,
+            temperature: 19.5,
+            switch_status: "switch_on"
+        ]
+        mqttClient.publishWith()
+            .topic("testTopic")
+            .payload(JsonOutput.toJson(json).bytes)
+            .send()
+
+        then: "asset attribute values should be updated"
+        conditions.eventually {
+            asset = assetStorageService.find(asset.getId(), true)
+            assert asset.getAttribute("temperature").flatMap { it.value }.map { it == 19.5 }.orElse(false)
+            assert asset.getAttribute("switchStatus").flatMap { it.value }.map { it == true }.orElse(false)
+        }
+
+        when: "a message which should not pass the message match filter is published"
+        json = [
+            port         : 1,
+            temperature  : 20.5,
+            switch_status: "switch_off"
+        ]
+        mqttClient.publishWith()
+            .topic("testTopic")
+            .payload(JsonOutput.toJson(json).bytes)
+            .send()
+
+        then: "asset attribute values should not be updated"
+        def start = System.currentTimeMillis()
+        while (System.currentTimeMillis() - start < 2000) {
+            asset = assetStorageService.find(asset.getId(), true)
+            assert asset.getAttribute("temperature").flatMap { it.value }.map { it == 19.5 }.orElse(false)
+            assert asset.getAttribute("switchStatus").flatMap { it.value }.map { it == true }.orElse(false)
+            Thread.sleep((100))
+        }
+        when: "a message which should pass the message match filter is published"
+        json = [
+            port         : 85,
+            temperature  : 21.5,
+            switch_status: "switch_off"
+        ]
+        mqttClient.publishWith()
+            .topic("testTopic")
+            .payload(JsonOutput.toJson(json).bytes)
+            .send()
+
+        then: "asset attribute values should be updated"
+        conditions.eventually {
+            asset = assetStorageService.find(asset.getId(), true)
+            assert asset.getAttribute("temperature").flatMap { it.value }.map { it == 21.5 }.orElse(false)
+            assert asset.getAttribute("switchStatus").flatMap { it.value }.map { it == false }.orElse(false)
         }
     }
 
