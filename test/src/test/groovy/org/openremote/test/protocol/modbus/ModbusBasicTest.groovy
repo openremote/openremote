@@ -198,7 +198,7 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
 
             assert (latestReadMessage.get() as ModbusMessage).getUnitId() === 1
             assert (latestReadMessage.get() as ModbusMessage).getFunction() === ModbusFunctionCode.ReadHoldingRegisters
-            assert (latestReadMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage.class).getAddress() == agentLink.getReadAddress()-1
+            assert (latestReadMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage.class).getAddress() == agentLink.getReadAddress().get()-1
             assert (latestReadMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage.class).getCount() == 1
         }
 
@@ -250,7 +250,7 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
             def msg = (latestReadMessage.get() as ModbusMessage).unwrap(BitsModbusMessage)
             assert msg != null
             assert msg.getCount() == 1
-            assert msg.getAddress() == agentLink.getReadAddress()-1
+            assert msg.getAddress() == agentLink.getReadAddress().get()-1
 
             ship = assetStorageService.find(ship.getId(), true)
             assert ship.getAttribute("coil1").flatMap { it.getValue() }.orElse(null) == true
