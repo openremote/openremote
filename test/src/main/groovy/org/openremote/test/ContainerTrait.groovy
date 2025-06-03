@@ -238,15 +238,27 @@ trait ContainerTrait {
 
                         if (!TestFixture.assetRulesets.isEmpty()) {
                             LOG.info("Re-inserting ${TestFixture.assetRulesets.size()} asset ruleset(s)")
-                            TestFixture.assetRulesets.forEach { rulesetStorageService.merge(it) }
+                            TestFixture.assetRulesets = TestFixture.assetRulesets.forEach {
+                                it.id = null
+                                it.version = 0
+                                rulesetStorageService.merge(it)
+                            }
                         }
                         if (!TestFixture.realmRulesets.isEmpty()) {
                             LOG.info("Re-inserting ${TestFixture.realmRulesets.size()} realm ruleset(s)")
-                            TestFixture.realmRulesets.forEach { rulesetStorageService.merge(it) }
+                            TestFixture.realmRulesets = TestFixture.realmRulesets.forEach {
+                                it.id = null
+                                it.version = 0
+                                rulesetStorageService.merge(it)
+                            }
                         }
                         if (!TestFixture.globalRulesets.isEmpty()) {
                             LOG.info("Re-inserting ${TestFixture.globalRulesets.size()} global ruleset(s)")
-                            TestFixture.globalRulesets.forEach { rulesetStorageService.merge(it) }
+                            TestFixture.globalRulesets = TestFixture.globalRulesets.forEach {
+                                it.id = null
+                                it.version = 0
+                                rulesetStorageService.merge(it)
+                            }
                         }
                     }
 
@@ -282,23 +294,8 @@ trait ContainerTrait {
 
             // Track rules (very basic)
             TestFixture.globalRulesets = getRulesets(GlobalRuleset.class)
-            TestFixture.globalRulesets.forEach {
-                // Clear IDs and versions
-                it.id = null
-                it.version = 0
-            }
             TestFixture.realmRulesets = getRulesets(RealmRuleset.class)
-            TestFixture.realmRulesets.forEach {
-                // Clear IDs and versions
-                it.id = null
-                it.version = 0
-            }
             TestFixture.assetRulesets = getRulesets(AssetRuleset.class)
-            TestFixture.assetRulesets.forEach {
-                // Clear IDs and versions
-                it.id = null
-                it.version = 0
-            }
 
             // Track assets
             TestFixture.assets = getAssets()
