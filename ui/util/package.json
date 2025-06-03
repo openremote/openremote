@@ -1,6 +1,6 @@
 {
   "name": "@openremote/util",
-  "version": "1.3.3",
+  "version": "1.7.0-snapshot",
   "description": "Build Util",
   "author": "OpenRemote",
   "main": "webpack.util.js",

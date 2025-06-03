@@ -17,7 +17,8 @@ import {
     WellknownMetaItems,
     WellknownValueTypes,
     AssetModelUtil,
-    ClientRole
+    ClientRole,
+    ValueConstraintAllowedValues
 } from "@openremote/model";
 import manager, {subscribe, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -547,6 +548,18 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 const attributeAndValueDescriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assetType, attributeOrDescriptorOrName, this.attribute);
                 this._attributeDescriptor = attributeAndValueDescriptors[0];
                 this._valueDescriptor = this.valueDescriptor ? this._valueDescriptor : attributeAndValueDescriptors[1];
+            }
+        }
+
+        // Sort asset type options in alphabetical order
+        if(this._valueDescriptor && this._valueDescriptor.name == WellknownValueTypes.ASSETTYPE) {
+            const allowedValuesConstraint = this._valueDescriptor.constraints?.find(
+                (constraint): constraint is ValueConstraintAllowedValues =>
+                    (constraint as ValueConstraintAllowedValues).type === "allowedValues"
+            );
+
+            if (allowedValuesConstraint && allowedValuesConstraint.allowedValues) {
+                allowedValuesConstraint.allowedValues.sort((a, b) => a.localeCompare(b));
             }
         }
 
