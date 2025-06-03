@@ -238,26 +238,26 @@ trait ContainerTrait {
 
                         if (!TestFixture.assetRulesets.isEmpty()) {
                             LOG.info("Re-inserting ${TestFixture.assetRulesets.size()} asset ruleset(s)")
-                            TestFixture.assetRulesets = TestFixture.assetRulesets.forEach {
+                            TestFixture.assetRulesets = TestFixture.assetRulesets.stream().map {
                                 it.id = null
                                 it.version = 0
-                                rulesetStorageService.merge(it)
-                            }
+                                return rulesetStorageService.merge(it)
+                            }.toList()
                         }
                         if (!TestFixture.realmRulesets.isEmpty()) {
                             LOG.info("Re-inserting ${TestFixture.realmRulesets.size()} realm ruleset(s)")
-                            TestFixture.realmRulesets = TestFixture.realmRulesets.forEach {
+                            TestFixture.realmRulesets = TestFixture.realmRulesets.stream().map {
                                 it.id = null
                                 it.version = 0
-                                rulesetStorageService.merge(it)
-                            }
+                                return rulesetStorageService.merge(it)
+                            }.toList()
                         }
                         if (!TestFixture.globalRulesets.isEmpty()) {
                             LOG.info("Re-inserting ${TestFixture.globalRulesets.size()} global ruleset(s)")
-                            TestFixture.globalRulesets = TestFixture.globalRulesets.forEach {
+                            TestFixture.globalRulesets = TestFixture.globalRulesets.stream().map {
                                 it.id = null
                                 it.version = 0
-                                rulesetStorageService.merge(it)
+                                return rulesetStorageService.merge(it)
                             }
                         }
                     }
