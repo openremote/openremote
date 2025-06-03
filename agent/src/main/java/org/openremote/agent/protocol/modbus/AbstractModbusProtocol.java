@@ -136,7 +136,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                                                                   ModbusAgentLink.ReadMemoryArea readType,
                                                                   ModbusAgentLink.ModbusDataType dataType,
                                                                   Optional<Integer> amountOfRegisters,
-                                                                  int readAddress) {
+                                                                  Optional<Integer> readAddress) {
 
         PlcReadRequest.Builder builder = client.readRequestBuilder();
 
@@ -144,11 +144,13 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 ? dataType.getRegisterCount() : amountOfRegisters.get();
         String amountOfRegistersString = readAmountOfRegisters <= 1 ? "" : "["+readAmountOfRegisters+"]";
 
+        int address = readAddress.orElseThrow(() -> new RuntimeException("Read Address is empty! Unable to schedule read request."));
+
         switch (readType) {
-            case COIL -> builder.addTagAddress("coils", "coil:" + readAddress + ":" + dataType + amountOfRegistersString);
-            case DISCRETE -> builder.addTagAddress("discreteInputs", "discrete-input:" + readAddress + ":" + dataType + amountOfRegistersString);
-            case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + readAddress + ":" + dataType + amountOfRegistersString);
-            case INPUT -> builder.addTagAddress("inputRegisters", "input-register:" + readAddress + ":" + dataType + amountOfRegistersString);
+            case COIL -> builder.addTagAddress("coils", "coil:" + address + ":" + dataType + amountOfRegistersString);
+            case DISCRETE -> builder.addTagAddress("discreteInputs", "discrete-input:" + address + ":" + dataType + amountOfRegistersString);
+            case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + address + ":" + dataType + amountOfRegistersString);
+            case INPUT -> builder.addTagAddress("inputRegisters", "input-register:" + address + ":" + dataType + amountOfRegistersString);
             default -> throw new IllegalArgumentException("Unsupported read type: " + readType);
         }
         PlcReadRequest readRequest = builder.build();

@@ -79,8 +79,8 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         this.readValueType = readValueType;
     }
 
-    public Integer getReadAddress() {
-        return readAddress;
+    public Optional<Integer> getReadAddress() {
+        return Optional.ofNullable(readAddress);
     }
 
     public void setReadAddress(Integer readAddress) {
