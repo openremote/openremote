@@ -541,10 +541,10 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     show: true,
                     backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                     borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
-                    left: 25,//'5%', // 5% padding
-                    right: 25,//'5%',
+                    left: 25,
+                    right: 25,
                     top: this.chartSettings.showToolBox ? 28 : 10,
-                    bottom:  25, //55
+                    bottom:  25,
                     containLabel: true
                 },
                 backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
@@ -1198,9 +1198,9 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             } else if(diffInHours <= 6) {
                 return [30, DatapointInterval.MINUTE,'minutes',"h:mmA"];
             } else if(diffInHours <= 24) { // hour if up to one day
-                return [1, DatapointInterval.HOUR,'hours',"h:mmA"];
+                return [1, DatapointInterval.HOUR,'hours',"MMM Do | h:mmA"];
             } else if(diffInHours <= 48) { // hour if up to two days
-                return [6, DatapointInterval.HOUR,'hours',"h:mmA"];
+                return [6, DatapointInterval.HOUR,'hours',"MMM Do | h:mmA"];
             } else if(diffInHours <= 744) { // one day if up to one month
                 return [1, DatapointInterval.DAY,'days',"ddd | MMM Do"];
             } else if(diffInHours <= 8760) { // one week if up to 1 year
@@ -1210,9 +1210,9 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             }
         } else if (selectedInterval == "total") {
             // Set interval to 100 years, resulting in 1 datapoint aggregate.
-            return [100, DatapointInterval.YEAR,'years', "[Total]"]
+            return [100, DatapointInterval.YEAR,'years', "[Total]"];
         }
-        // Otherwise, check if select interval is valid
+        // Otherwise, check if select interval is a valid combination with set time window
         const intervalProp: [number, DatapointInterval, moment.unitOfTime.DurationConstructor, string] = this.intervalOptions!.get(selectedInterval)!
         const selectedIntervalHours = moment.duration(intervalProp![0], intervalProp![2]).asHours();
 
