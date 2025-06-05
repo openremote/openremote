@@ -131,13 +131,13 @@
     "TEXT_SWITCH": "تبديل النص ",
     "ROUND_NODE": " تقريب القيمة إلى",
     "LOG_OUTPUT": "Write to Logs",
-    "DERIVATIVE":  "Attribute derivative",
+    "DERIVATIVE": "Attribute derivative",
     "INTEGRAL": "Attribute integral",
     "HISTORIC_VALUE": "Attribute history",
     "MAX_PROCESSOR": "Maximum",
-    "MIN_PROCESSOR":  "Minimum",
-    "AVERAGE_PROCESSOR":  "Average",
-    "MEDIAN_PROCESSOR":  "Median",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Average",
+    "MEDIAN_PROCESSOR": "Median",
     "SUM_OPERATOR": "Sum",
     "max": "Max",
     "min": "Min",
@@ -214,19 +214,19 @@
   "custom": "إدخال يدوي",
   "realm": "نطاق",
   "realm_plural": "النطاقات",
-  "displayName":" إسم الظهور ",
-  "realm management":"إدخال النطاق",
-  "deleteRealmConfirm":"هل أنت متأكد بأنك تريد حذف هذا النطاق؟",
+  "displayName": " إسم الظهور ",
+  "realm management": "إدخال النطاق",
+  "deleteRealmConfirm": "هل أنت متأكد بأنك تريد حذف هذا النطاق؟",
   "user_plural": "المستخدمين",
   "user_role": "دور المستخدم",
   "role_plural": "الأدوار",
   "description": "شرح",
-  "passwordMismatch":"كلمة المرور غير متطابقة",
-  "username":"أسم المستخدم",
-  "firstName":"الإسم الأول",
-  "surname":"الكنية",
-  "deleteUserConfirm":" هل أنت متأكد من حذف إسم المستخدم؟",
-  "deleteRoleConfirm":"هل أنت متأكد من حذف هذا الدور",
+  "passwordMismatch": "كلمة المرور غير متطابقة",
+  "username": "أسم المستخدم",
+  "firstName": "الإسم الأول",
+  "surname": "الكنية",
+  "deleteUserConfirm": " هل أنت متأكد من حذف إسم المستخدم؟",
+  "deleteRoleConfirm": "هل أنت متأكد من حذف هذا الدور",
   "realmRules": "إضافة شرط داخل هذا النطاق",
   "globalRules": "الإجرائات العامة",
   "recipients": "المستلمين",
@@ -263,7 +263,7 @@
   "submit": "رفع",
   "password": "كلمة السر",
   "repeatPassword": "إعادة كتابة كلمة السر",
-  "permissions":"الصلاحيات",
+  "permissions": "الصلاحيات",
   "noChildAssets": "لايوجد مكون فرعي",
   "account": "حساب",
   "editAttribute": "تعديل الخصائص",
@@ -337,42 +337,31 @@
     "hertz": "Hz",
     "rpm": "rpm",
     "carbon": "CO2",
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "format": {
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "constraints": {
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "label": {
     "asset": {
       "ElectricityProducerSolarAsset": "PV solar asset",
       "ElectricityProducerWindAsset": "Wind turbine asset"
     },
-    "meta": {
-    },
-    "attribute": {
-    },
-    "value": {
-    }
+    "meta": {},
+    "attribute": {},
+    "value": {}
   },
   "metaOverrides": {
-    "label": {
-    }
+    "label": {}
   },
   "attributeOverrides": {
-    "label": {
-    }
+    "label": {}
   },
   "addMetaItems": "إضافة عنصر الإعدادات",
   "loseChanges": "تجاهل التغييرات؟",
@@ -387,14 +376,14 @@
       "description": "Protocol for connecting to a KNX"
     }
   },
-  "validityType":"نوع الجدولة الزمنية",
-  "validityAlways":"فعال بشكل دائم",
-  "validityPeriod":"تخطيط للحادث",
-  "validityRecurrence":"تخطيط لحدث متكرر",
+  "validityType": "نوع الجدولة الزمنية",
+  "validityAlways": "فعال بشكل دائم",
+  "validityPeriod": "تخطيط للحادث",
+  "validityRecurrence": "تخطيط لحدث متكرر",
   "activeFromTo": "فعال من  {{start}} إلى {{end}}",
-  "fromTo":"من {{start}} إلى {{end}}",
-  "fromToDays":"من {{start}} إلى {{days}} يوم لاحق {{end}}",
-  "forDays":"من أجل {{days}} days",
+  "fromTo": "من {{start}} إلى {{end}}",
+  "fromToDays": "من {{start}} إلى {{days}} يوم لاحق {{end}}",
+  "forDays": "من أجل {{days}} days",
   "scheduleRuleActivity": "جدولة نشاط الإجراء",
   "allDay": "كل اليوم",
   "apply": "تطبيق",
@@ -407,8 +396,7 @@
   "dismiss": "رفض",
   "createAssetFailed": "  فشل في إنشاء المكون  ",
   "moveAssetFailed": "Failed to move asset",
-  "logCategory": {
-  },
+  "logCategory": {},
   "readPermissions": "صلاحيات القراءة",
   "writePermissions": "صلاحيات الكتابة",
   "valueType": "نوع القيمة",
