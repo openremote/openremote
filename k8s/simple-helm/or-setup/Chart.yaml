@@ -1,0 +1,8 @@
+apiVersion: v2
+name: or-setup
+description: A Helm chart for setting up additional elements required for an OR stack deployment in k8s
+
+type: application
+
+version: 0.1.0
+

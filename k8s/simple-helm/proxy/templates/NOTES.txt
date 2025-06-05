@@ -1,0 +1,1 @@
+OpenRemote HAProxy {{ .Chart.AppVersion }}
