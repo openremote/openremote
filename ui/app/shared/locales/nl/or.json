@@ -646,10 +646,9 @@
       "indexedItem": "Item {{index}}"
     },
     "item": {
-      "valueConstraint": {
-        "root": {
-          "label": "DUTCH"
-        }
+      "valueConstraints": {
+        "root": { "label": "DUTCH" },
+        "max": { "label": "Maximum" }
       }
     }
   },

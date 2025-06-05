@@ -401,7 +401,6 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
       const filteredEntries = Object.entries(this.data).filter(
         ([key]) => "layout:table" in this.schema && (this.schema["layout:table"] as string[]).includes(key)
       );
-      console.log("filteredEntries", filteredEntries)
       for (const [key, value] of filteredEntries) {
         let i = 0;
         for (const item of value as []) {
@@ -412,7 +411,6 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
               .value="${item}"
               style="width: 100%"
               @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                  console.log("PATH", this.path)
                   // Currently always considered a new value
                   this.handleChange([this.path, key, i].join("."), e.detail.value || null);
               }}"
@@ -423,7 +421,6 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
       }
       // TODO: compute the column label names to translate them (hopefully)
       const columns = filteredEntries.map(([key]) => ({ title: key }));
-      console.log("rows", rows, "columns", columns)
       
       return html`<div id="content" slot="content"><or-mwc-table .rows="${rows}" .columns="${columns}"></or-mwc-table></div>`;
     }

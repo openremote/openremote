@@ -647,7 +647,7 @@
       "indexedItem": "Item {{index}}"
     },
     "item": {
-      "valueConstraint": {
+      "valueConstraints": {
         "root": {
           "label": "ENGLISH"
         }

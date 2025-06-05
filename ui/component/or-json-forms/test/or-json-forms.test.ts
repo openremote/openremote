@@ -199,7 +199,7 @@ const schemasWithTranslations = [
 
 for (const schema of schemasWithTranslations) {
   ct(`Should render dutch translations for: ${schema.title}`, async ({ mount, components, shared }) => {
-    // await shared.changeLanguage("nl");
+    await shared.changeLanguage("nl");
     const component = await mount(OrJSONForms, {
       props: {
         uischema: { type: "Control", scope: "#" } as any,

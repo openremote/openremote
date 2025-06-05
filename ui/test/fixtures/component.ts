@@ -70,32 +70,32 @@ class JsonForms {
     expected?: any
   ) {
     const dialog = this.page.locator("or-mwc-dialog");
+    const getTranslation = async (key: string) => this.page.evaluate((key) => window._i18next.t(key), key);
 
     switch (schema.type) {
       case "array": {
         locator = locator.locator("or-json-forms-array-control").nth(item);
-        path.push("or-json-forms-array-control", item);
+        path.push(item);
         await locator.locator("or-collapsible-panel").click();
         if (schema.items.oneOf) {
           for (const prop of Object.values<any>(schema.items.oneOf)) {
-            await locator.getByRole("button", { name: "Add Item" }).click();
+            await locator.getByRole("button", { name: await getTranslation("addItem") }).click();
             await dialog.locator("li").getByText(prop.title, { exact: true }).click();
             await dialog.getByRole("button", { name: "Add", exact: true }).click();
           }
         } else {
           for (let i = 0; i < schema["or:test:item:count"]; i++) {
-            // await locator.getByRole("button", { name: "Voeg item toe" }).click();
-            await locator.getByRole("button", { name: "Add Item" }).click();
+            await locator.getByRole("button", { name: await getTranslation("addItem") }).click();
           }
         }
         break;
       }
       case "object": {
         locator = locator.locator("or-json-forms-vertical-layout").nth(item);
-        path.push("or-json-forms-vertical-layout", item);
+        path.push(item);
         await locator.locator("or-collapsible-panel").click();
         if (schema.patternProperties) {
-          await locator.getByRole("button", { name: "Add Parameter" }).click();
+          await locator.getByRole("button", { name: await getTranslation("addParameter") }).click();
           await this.page.waitForTimeout(1000);
           await this.page
             .getByRole("alertdialog", { name: " - Add" })
@@ -106,8 +106,12 @@ class JsonForms {
         } else {
           for (const key of options?.selectAllProps ? Object.keys(schema.properties) : schema["or:test:props"]) {
             if (key === "type" || key === "id" || schema.required?.includes(key)) continue;
-            await locator.getByRole("button", { name: "Add Parameter" }).click();
-            await dialog.locator("or-mwc-list li").getByText(camelCaseToSentenceCase(key), { exact: true }).click();
+            await locator.getByRole("button", { name: await getTranslation("addParameter") }).click();
+            console.log(path);
+            await dialog
+              .locator("or-mwc-list li")
+              .getByText(await getTranslation(key), { exact: true })
+              .click();
             const anyOfPicker = dialog.locator("#schema-picker or-mwc-input");
             if (await anyOfPicker.isVisible()) {
               await anyOfPicker.click();
@@ -175,14 +179,15 @@ class JsonForms {
       for (const [key, prop] of Object.entries<any>(schema.properties)) {
         if (schema["or:test:props"] && !schema["or:test:props"].includes(key)) continue;
         if (["type", "id"].includes(key)) continue;
+        console.log(key);
         if (prop.type === "array") {
-          await this.walkForm(locator, prop, options, [...path], arrayControls);
+          await this.walkForm(locator, prop, options, [...path, key], arrayControls);
           arrayControls++;
         } else if (prop.type === "object") {
-          await this.walkForm(locator, prop, options, [...path], verticalLayouts);
+          await this.walkForm(locator, prop, options, [...path, key], verticalLayouts);
           verticalLayouts++;
         } else {
-          await this.walkForm(locator, prop, options, [...path]);
+          await this.walkForm(locator, prop, options, [...path, key]);
         }
       }
       // await locator.getByRole("button", { name: "json" }).first().click();

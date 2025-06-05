@@ -29,8 +29,7 @@ import {getLabel, getTemplateFromProps} from "./util";
 import {baseStyle} from "./styles";
 import manager, {Util} from "@openremote/core";
 import {AdditionalProps} from "./base-element";
-import i18next from "i18next";
-import { translate } from "@openremote/or-translate";
+import { translate, i18next } from "@openremote/or-translate";
 
 declare global {
     interface SymbolConstructor {
@@ -143,7 +142,14 @@ export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPr
             );
         }
 
-        if (!this.contextValue || _changedProperties.has("core") || _changedProperties.has("renderers") || _changedProperties.has("cells") || _changedProperties.has("config") || _changedProperties.has("readonly")) {
+        if (!this.contextValue
+          || _changedProperties.has("core")
+          || _changedProperties.has("renderers")
+          || _changedProperties.has("cells")
+          || _changedProperties.has("config")
+          || _changedProperties.has("readonly")
+          || _changedProperties.has("_language")
+        ) {
             this.contextValue = {
                 core: this.core,
                 renderers: this.renderers,
@@ -153,12 +159,10 @@ export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPr
                 readonly: this.readonly,
                 dispatch: (action: CoreActions) => this.updateCore(action),
                 i18n: {
-                    locale: i18next.language,
+                    locale: this._language,
                     translate: (id, defaultMessage, values) => {
-                        // console.log(`Locale: ${this.contextValue?.i18n?.locale}, Key: ${id}, Default Message: ${defaultMessage}`, values);
-                        // return i18next.t("schema.item." + id) || defaultMessage!;
-                        return i18next.t(["schema.item", camelCase(this.schema?.title) , id].join("."));
-                        
+                        const path = ["schema.item", camelCase(this.schema?.title) , id].join(".")
+                        return i18next.t(path) || defaultMessage!;
                     },
                     translateError: (error, translate, uischema) => {
                         console.log(`Locale: ${this.contextValue?.i18n?.locale}, Error: ${error}, UI Schema: ${uischema}`);
