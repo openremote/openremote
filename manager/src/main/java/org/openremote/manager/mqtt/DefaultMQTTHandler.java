@@ -47,6 +47,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_PROCESSOR;
 import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
@@ -73,6 +74,12 @@ public class DefaultMQTTHandler extends MQTTHandler {
     protected final Cache<String, ConcurrentHashSet<String>> authorizationCache = CacheBuilder.newBuilder()
         .maximumSize(100000)
         .expireAfterWrite(300000, TimeUnit.MILLISECONDS)
+        .build();
+
+
+    // Intermediary cache for authorized event subscriptions created during the canSubscribe method to be used later in the onSubscribe method
+    protected final Cache<String, EventSubscription<?>> eventSubscriptionCache = CacheBuilder.newBuilder()
+        .expireAfterWrite(30000, TimeUnit.MILLISECONDS)
         .build();
 
     @Override
@@ -218,6 +225,11 @@ public class DefaultMQTTHandler extends MQTTHandler {
             return false;
         }
 
+        String subscriptionId = topic.getString() + authContext.getUserId();
+
+        // Add the event subscription to the intermediary cache, override any existing entry
+        eventSubscriptionCache.put(subscriptionId, subscription);
+
         return true;
     }
 
@@ -280,30 +292,27 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public void onSubscribe(RemotingConnection connection, Topic topic) {
+        
+        AuthContext authContext = getAuthContextFromConnection(connection).get();
+        String subscriptionId = topic.getString() + authContext.getUserId();
 
-        boolean isAssetTopic = isAssetTopic(topic);
-        String subscriptionId = topic.getString(); // Use topic as unique subscription ID
-        AssetFilter filter = buildAssetFilter(topic);
-        Class subscriptionClass = isAssetTopic ? AssetEvent.class : AttributeEvent.class;
-        String sessionKey = getSessionKey(connection);
-
-        if (filter == null) {
-            LOG.info("Invalid event filter generated for topic '" + topic + "': " + connectionToString(connection));
+        // Get the authorized event subscription from the intermediary cache
+        EventSubscription<?> subscription = eventSubscriptionCache.getIfPresent(subscriptionId);
+        if (subscription == null) {
+            LOG.info("Subscription not found in intermediary cache: " + subscriptionId);
             return;
         }
+        // Evict the subscription from the cache
+        eventSubscriptionCache.invalidate(subscriptionId);
+
+        String sessionKey = getSessionKey(connection);
 
         Consumer<Event> consumer = getSubscriptionEventConsumer(connection, topic);
-
-        EventSubscription<Event> subscription = new EventSubscription(
-            subscriptionClass,
-            filter,
-            subscriptionId
-        );
 
         synchronized (sessionSubscriptionConsumers) {
             // Create subscription consumer and track it for future removal requests
             Map<String, Consumer<? extends Event>> subscriptionConsumers = sessionSubscriptionConsumers.computeIfAbsent(sessionKey, (s) -> new HashMap<>());
-            subscriptionConsumers.put(subscriptionId, consumer);
+            subscriptionConsumers.put(topic.getString(), consumer);
             clientEventService.addSubscription(subscription, consumer);
             LOG.finest(() -> "Client event subscription created for topic '" + topic + "': " + connectionToString(connection));
         }
