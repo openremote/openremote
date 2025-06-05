@@ -19,7 +19,13 @@
  */
 package org.openremote.test.protocol.mqtt
 
+import com.hivemq.client.internal.mqtt.handler.disconnect.MqttDisconnectUtil
+import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3AsyncClientView
+import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
+import com.hivemq.client.mqtt.MqttClientConfig
+import com.hivemq.client.internal.mqtt.MqttClientConnectionConfig
 import com.hivemq.client.mqtt.datatypes.MqttQos
+import io.netty.channel.socket.SocketChannel
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
@@ -52,6 +58,7 @@ import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.UsernamePassword
 import org.openremote.model.util.UniqueIdentifierGenerator
+import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
@@ -191,6 +198,80 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             def connection = brokerService.getConnectionFromClientID(clientId)
             assert connection != null
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+        }
+
+        // The following verifies issues identified in #1864 around MQTT client subscription threading
+        when: "an asset is created to assist with testing"
+        def subscriptionCount = Runtime.getRuntime().availableProcessors()*2
+        def testAsset = new ThingAsset("MQTTTest").setRealm(keycloakTestSetup.realmBuilding.name)
+        for (i in 1..subscriptionCount) {
+            testAsset.addAttributes(new Attribute<?>("attribute$i", ValueType.INTEGER))
+        }
+        testAsset = assetStorageService.merge(testAsset)
+
+        then: "the asset should exist"
+        testAsset.id != null
+
+        when: "more subscriptions are added to the client than available CPU cores"
+        List<Integer> messagesReceived = []
+        List<String> subscriptions = []
+        def clientSpy = Spy((agentService.getProtocolInstance(agent.id) as MQTTProtocol).client as MQTT_IOClient)
+        clientSpy.doClientSubscription(_ as String) >> { topic ->
+            subscriptions << topic
+            callRealMethod()
+        }
+        (agentService.getProtocolInstance(agent.id) as MQTTProtocol).client = clientSpy
+
+        for (i in 1..subscriptionCount) {
+            def topic = "${keycloakTestSetup.realmBuilding.name}/$clientId/${DefaultMQTTHandler.ATTRIBUTE_VALUE_TOPIC}/attribute$i/${testAsset.id}"
+            clientSpy.addMessageConsumer(topic, msg -> messagesReceived.add(Integer.parseInt(msg.payload)))
+        }
+
+        then: "the subscriptions should be in place"
+        conditions.eventually {
+            assert clientSpy.topicConsumerMap.size() == 1 + subscriptionCount
+            assert subscriptions.size() == subscriptionCount
+            def connection = brokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1 + subscriptionCount
+        }
+
+        when: "events are published for each attribute"
+        for (i in 1..subscriptionCount) {
+            assetProcessingService.sendAttributeEvent(new AttributeEvent(testAsset.id, "attribute$i", i))
+        }
+
+        then: "they should all be received"
+        conditions.eventually {
+            messagesReceived.size() == subscriptionCount
+        }
+
+        when: "the client is disconnected"
+        def oldConnection = brokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
+        MqttDisconnectUtil.close(((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)clientSpy.client).clientConfig).delegate).connectionConfig.get()).channel, "Connection Error")
+
+        then: "it should reconnect"
+        !((SocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)clientSpy.client).clientConfig).delegate).connectionConfig.get()).channel).isOpen()
+        conditions.eventually {
+            assert ((SocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)clientSpy.client).clientConfig).delegate).connectionConfig.get()).channel).isOpen()
+        }
+
+        and: "subscriptions should be recreated on the broker"
+        conditions.eventually {
+            def connection = brokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
+            assert connection != oldConnection
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1 + subscriptionCount
+        }
+
+        when: "events are published for each attribute"
+        for (i in 1..subscriptionCount) {
+            assetProcessingService.sendAttributeEvent(new AttributeEvent(testAsset.id, "attribute$i", i))
+        }
+
+        then: "they should all be received"
+        conditions.eventually {
+            messagesReceived.size() == 2 * subscriptionCount
         }
     }
 
