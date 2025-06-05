@@ -364,6 +364,8 @@ export class PageUsers extends Page<AppStateKeyed> {
                     showSnackbar(undefined, (isUpdate ? "saveUserFailed" : "createUserFailed"), "dismiss");
                 } else if (e.response.status === 403) {
                     showSnackbar(undefined, "userAlreadyExists")
+                } else if (e.response.status === 409) {
+                    showSnackbar(undefined, i18next.t('emailAlreadyExists'));
                 }
             }
             result = false;
@@ -1055,6 +1057,10 @@ export class PageUsers extends Page<AppStateKeyed> {
                                                   error = {
                                                       status: ex.response.status,
                                                       text: (ex.response.status == 403 ? i18next.t('userAlreadyExists') : i18next.t('errorOccurred'))
+
+                                                      // text: (ex.response.status === 403 ? i18next.t('userAlreadyExists')  
+                                                      //         : ex.response.status === 409 ? i18next.t('emailAlreadyExists')  : i18next.t('errorOccurred'))
+                                                      //
                                                   }
                                               }
                                           }).finally(() => {

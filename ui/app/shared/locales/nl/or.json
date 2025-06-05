@@ -655,6 +655,7 @@
   "saveUserSucceeded": "Gebruiker succesvol opgeslagen!",
   "savePasswordFailed": "Kon wachtwoord niet bijwerken.",
   "userAlreadyExists": "Fout opgetreden! Deze gebruiker bestaat al!",
+  "emailAlreadyExists": "Dubbel e-mailadres, gebruiker kan niet worden aangemaakt.",
   "invalidUsername": "De gebruikersnaam mag 3-255 numerieke tekens bevatten",
   "invalidEmail": "Ongeldig emailadres",
   "yes": "Ja",

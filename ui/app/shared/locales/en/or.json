@@ -656,6 +656,7 @@
   "saveUserSucceeded": "Saved user successfully!",
   "savePasswordFailed": "Failed to set the password.",
   "userAlreadyExists": "Error occurred! This user already exists.",
+  "emailAlreadyExists": "Duplicate email address, can't create user.",
   "invalidUsername": "Username must be 3-255 alpha numerical characters",
   "invalidEmail": "Invalid email address",
   "yes": "Yes",

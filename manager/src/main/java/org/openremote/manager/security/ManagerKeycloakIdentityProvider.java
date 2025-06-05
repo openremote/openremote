@@ -376,7 +376,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     String location = response.getHeaderString(Headers.LOCATION_STRING);
                     response.close();
                     if (!response.getStatusInfo().equals(Response.Status.CREATED) || TextUtil.isNullOrEmpty(location)) {
-                        throw new BadRequestException("Failed to create user: User=" + user);
+                        throw new WebApplicationException(
+                                "Email already exists",
+                                Response.Status.CONFLICT
+                        );
                     }
                     String[] locationArr = location.split("/");
                     String userId = locationArr.length > 0 ? locationArr[locationArr.length-1] : null;
