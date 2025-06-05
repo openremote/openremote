@@ -22,6 +22,7 @@ package org.openremote.agent.protocol.mqtt;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import org.apache.http.client.utils.URIBuilder;
 import org.openremote.model.Container;
+import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.security.KeyStoreService;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.attribute.Attribute;
@@ -53,9 +54,16 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
     @Override
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, MQTTAgentLink agentLink) throws RuntimeException {
         agentLink.getSubscriptionTopic().ifPresent(topic -> {
-            Consumer<MQTTMessage<String>> messageConsumer = msg -> updateLinkedAttribute(
-                new AttributeRef(assetId, attribute.getName()), msg.payload
+            Consumer<String> genericConsumer = ProtocolUtil.createGenericAttributeMessageConsumer(
+                assetId, attribute, agentLink, timerService::getCurrentTimeMillis, this::updateLinkedAttribute
             );
+            Consumer<MQTTMessage<String>> messageConsumer = msg -> {
+                if (genericConsumer != null) {
+                    genericConsumer.accept(msg.payload);
+                } else {
+                    updateLinkedAttribute(new AttributeRef(assetId, attribute.getName()), msg.payload);
+                }
+            };
             client.addMessageConsumer(topic, agentLink.getQos().map(qos -> qos > 2 || qos < 0 ? null : qos).map(MqttQos::fromCode).orElse(null), messageConsumer);
             protocolMessageConsumers.put(new AttributeRef(assetId, attribute.getName()), messageConsumer);
         });
