@@ -136,13 +136,13 @@
     "TEXT_SWITCH": "Interruptor de texto",
     "ROUND_NODE": "Redondo",
     "LOG_OUTPUT": "Write to Logs",
-    "DERIVATIVE":  "Attribute derivative",
+    "DERIVATIVE": "Attribute derivative",
     "INTEGRAL": "Attribute integral",
     "HISTORIC_VALUE": "Attribute history",
     "MAX_PROCESSOR": "Maximum",
-    "MIN_PROCESSOR":  "Minimum",
-    "AVERAGE_PROCESSOR":  "Average",
-    "MEDIAN_PROCESSOR":  "Median",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Average",
+    "MEDIAN_PROCESSOR": "Median",
     "SUM_OPERATOR": "Sum",
     "max": "Max",
     "min": "Min",
@@ -230,8 +230,8 @@
   "custom": "Entrada manual",
   "realm": "Realm",
   "realm_plural": "Realms",
-  "displayName":"Nome amigable",
-  "deleteRealmConfirm":"¿Estás seguro de que deseas eliminar este realms?",
+  "displayName": "Nome amigable",
+  "deleteRealmConfirm": "¿Estás seguro de que deseas eliminar este realms?",
   "user_plural": "Usuarios",
   "regularUser_plural": "Usuarios",
   "serviceUser_plural": "Usuários do serviço",
@@ -241,10 +241,10 @@
   "description": "Descripción",
   "passwordMismatch": "Las contraseñas no coinciden",
   "username": "Nombre de usuario",
-  "firstName":"Primer nombre",
-  "surname":"Apellido",
-  "deleteUserConfirm":"¿Está seguro de que desea eliminar este usuario?",
-  "deleteRoleConfirm":"¿Está seguro de que desea eliminar este función?",
+  "firstName": "Primer nombre",
+  "surname": "Apellido",
+  "deleteUserConfirm": "¿Está seguro de que desea eliminar este usuario?",
+  "deleteRoleConfirm": "¿Está seguro de que desea eliminar este función?",
   "realmRules": "Realm",
   "globalRules": "Global",
   "recipients": "Destinatarios",
@@ -360,42 +360,31 @@
     "hertz": "Hz",
     "rpm": "rpm",
     "carbon": "CO2",
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "format": {
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "constraints": {
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "label": {
     "asset": {
       "ElectricityProducerSolarAsset": "Activo solar fotovoltaico",
       "ElectricityProducerWindAsset": "Activo de turbina eólica"
     },
-    "meta": {
-    },
-    "attribute": {
-    },
-    "value": {
-    }
+    "meta": {},
+    "attribute": {},
+    "value": {}
   },
   "metaOverrides": {
-    "label": {
-    }
+    "label": {}
   },
   "attributeOverrides": {
-    "label": {
-    }
+    "label": {}
   },
   "addMetaItems": "Agregar elementos de configuración",
   "loseChanges": "¿Descartar los cambios?",
@@ -417,7 +406,7 @@
   "activeFromTo": "Activo desde {{start}} a {{end}}",
   "fromTo": "Desde {{start}} a {{end}}",
   "fromToDays": "De {{start}} a {{days}} días después {{end}}",
-  "forDays":"por {{days}} dias",
+  "forDays": "por {{days}} dias",
   "scheduleRuleActivity": "Programar Actividad de la regla",
   "allDay": "Todo el dia",
   "apply": "aplicar",
@@ -430,8 +419,7 @@
   "dismiss": "despedir",
   "createAssetFailed": "No se pudo crear el activo",
   "moveAssetFailed": "Failed to move asset",
-  "logCategory": {
-  },
+  "logCategory": {},
   "readPermissions": "Leer permisos",
   "writePermissions": "Permisos de escritura",
   "valueType": "Tipo de valor",
