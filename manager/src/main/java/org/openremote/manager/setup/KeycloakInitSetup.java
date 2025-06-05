@@ -55,6 +55,7 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         User adminUser = keycloakProvider.getUserByUsername(MASTER_REALM, MASTER_REALM_ADMIN_USER);
         adminUser.setFirstName("System");
         adminUser.setLastName("Administrator");
+        adminUser.setEmail("noreply@localhost");
         keycloakProvider.createUpdateUser(MASTER_REALM, adminUser, null, true);
 
         // Give admin all roles on application client level
