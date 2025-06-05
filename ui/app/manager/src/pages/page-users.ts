@@ -364,6 +364,8 @@ export class PageUsers extends Page<AppStateKeyed> {
                     showSnackbar(undefined, (isUpdate ? "saveUserFailed" : "createUserFailed"), "dismiss");
                 } else if (e.response.status === 403) {
                     showSnackbar(undefined, "userAlreadyExists")
+                } else if (e.response.status === 409) { // Show specific error message if the email is already in use (HTTP 409 Conflict)
+                    showSnackbar(undefined, i18next.t('emailAlreadyExists'));
                 }
             }
             result = false;

@@ -561,6 +561,7 @@
   "saveUserFailed": "Salvarea utilizatorului a eșuat",
   "saveUserSucceeded": "Utilizator salvat cu succes!",
   "userAlreadyExists": "Eroare! Acest utilizator există deja.",
+  "emailAlreadyExists": "Adresă de e-mail duplicată, nu se poate crea utilizatorul.",
   "invalidUsername": "Numele de utilizator trebuie să fie între 3-255 caractere alfanumerice",
   "invalidEmail": "Adresa e-mail invalidă",
   "yes": "Da",
