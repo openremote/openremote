@@ -478,11 +478,15 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     protected _endOfPeriod?: number;
     protected _latestError?: string;
     protected _dataAbortController?: AbortController;
-
+    protected _zoomHandler? :any;
     protected _resizeHandler?: any;
     protected _containerResizeObserver?: ResizeObserver;
 
     protected _displayedInterval: string = ''; //TEMP HERE
+    protected _intervalMillis: number = 0;  //TEMP HERE
+    protected _markAreaData: { xAxis: number }[][] = [];
+
+    protected _intervalTest: {selected: string, active: string, millis: number} = {selected: 'auto', active: 'auto', millis: 0};
 
     constructor() {
         super();
@@ -534,6 +538,16 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             return;
         }
 
+
+        //---------BEUN AREA---------
+
+        const diffInHours = (this._endOfPeriod! - this._startOfPeriod!) / 1000 / 60 / 60;
+        const intervalArr = this._getInterval(diffInHours, this.interval!);
+        const IntervalMillis = intervalArr?.[0] && intervalArr?.[1] ? moment.duration(intervalArr[0], intervalArr[2]).asMilliseconds() : 0;
+
+        //-------------------
+
+
         if (!this._chart && this.isChart) {
             this._chartOptions = {
                 //animation: false,
@@ -551,23 +565,47 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                 tooltip: {
                     trigger: 'axis',
                     confine: true, //make tooltip not go outside frame bounds
+                    //transitionDuration: 0.2,
                     axisPointer: {
-                        type: 'shadow'
+                        type: 'none',
+                        label: {
+                            formatter: (params: any) => {
+                                const startTime = new Date(params.value - 0.5 * IntervalMillis).toLocaleString();
+                                const endTime = new Date(params.value + 0.5 * IntervalMillis).toLocaleString();
+                                return `Interval: ${startTime} to ${endTime}`
+                            }
+                        }
                     },
                 },
                 toolbox: this.chartSettings.showToolBox ? {show:true, feature: {magicType: {type: ['bar', 'stack']}}} : undefined,
                 xAxis: {
-                    type: 'category',
+                    type: 'time',
                     axisLine: {
                         lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}
                     },
-                    splitLine: {show: true},
-                    axisTick: {alignWithLabel: true},
+                    //splitLine: {show: true},
+                    //minorSplitLine: {show: true},
+                    splitNumer: (this._endOfPeriod! - this._startOfPeriod!)/IntervalMillis - 1,
+                    //minorTick: {show: true},
+                    min: this._startOfPeriod,
+                    max: this._endOfPeriod,
+                    boundaryGap: false,
                     axisLabel: {
                         hideOverlap: true,
-                        rotate: 25,
-                        interval: 0,
+                        //rotate: 25,
+                        interval: IntervalMillis,
                         fontSize: 10,
+                        formatter: {
+                            year: '{yyyy}',
+                            month: "{MMMM} '{yy}",
+                            day: '{MMM} {d}th',
+                            hour: '{HH}:{mm}',
+                            minute: '{HH}:{mm}',
+                            second: '{HH}:{mm}:{ss}',
+                            millisecond: '{d}-{MMM} {HH}:{mm}',
+                            // @ts-ignore
+                            none: '{MMM}-{dd} {HH}:{mm}'
+                        }
                     }
                 },
                 yAxis: [
@@ -577,7 +615,13 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                         boundaryGap: ['10%', '10%'],
                         scale: true,
                         min: this.chartOptions.options.scales.y.min ? this.chartOptions.options.scales.y.min : undefined,
-                        max: this.chartOptions.options.scales.y.max ? this.chartOptions.options.scales.y.max : undefined
+                        max: this.chartOptions.options.scales.y.max ? this.chartOptions.options.scales.y.max : undefined,
+                        axisPointer: {
+                            show: true, // Ensure it's visible
+                            type: 'line', // Only a line
+                            label: { show: false }, // Hide label
+                            triggerTooltip: false
+                        },
                     },
                     {
                         type: 'value',
@@ -593,7 +637,8 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     {
                         type: 'inside',
                         start: 0,
-                        end: 100
+                        end: 100,
+                        minValueSpan: IntervalMillis
                     }
                 ],
                 series: [],
@@ -1187,7 +1232,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         this.timeframe = [newStart.toDate(), newEnd.toDate()];
     }
 
-    protected _getCustomInterval(diffInHours: number, selectedInterval: string): [number, DatapointInterval, moment.unitOfTime.DurationConstructor, string] {
+    protected _getInterval(diffInHours: number, selectedInterval: string): [number, DatapointInterval, moment.unitOfTime.DurationConstructor, string] {
         this._displayedInterval = selectedInterval
         if (selectedInterval == "auto") {
             //Returns amount of steps, interval size and moment.js time format
@@ -1217,10 +1262,11 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         const selectedIntervalHours = moment.duration(intervalProp![0], intervalProp![2]).asHours();
 
         if (selectedIntervalHours <= diffInHours) {
-
-            return intervalProp; // Already valid
+            return intervalProp; // Already valid so quit
         }
 
+
+        //If no selected interval is larger than timeframe, switch to the first next valid timeframe.
         const intervalOptions = Array.from(this.intervalOptions!.entries());
 
         for (let i = intervalOptions.length - 1; i >= 0; i--) {
@@ -1232,6 +1278,8 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                 return value; // Found a valid option
             }
         }
+
+
         // If no valid option is found, return the smallest available option
         this._displayedInterval = intervalOptions[0][0]
         return intervalOptions[0][1];
@@ -1255,7 +1303,6 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         const dates: [Date, Date] = this._getTimeSelectionDates(this.timePrefixKey!, this.timeWindowKey!);
         this._startOfPeriod = this.timeframe ? this.timeframe[0].getTime() : dates[0].getTime();
         this._endOfPeriod = this.timeframe ? this.timeframe[1].getTime() : dates[1].getTime();
-        //}
         const data: any = [];
         let promises;
 
@@ -1352,12 +1399,22 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             type: 'bar',
             data: [] as [any, any][],
             stack: this.chartSettings.defaultStacked ? `${formula}` : undefined,
+            barWidth: undefined,
             lineStyle: {
                 color: color,
             },
             tooltip: {
                 // @ts-ignore
                 valueFormatter: value => value + ' ' + unit
+            },
+            emphasis: {
+            itemStyle: {
+                borderColor: this._style.getPropertyValue("--internal-or-chart-graph-point-hover-border-color"), // Highlighted border color
+                borderWidth: 2, // Makes the emphasis stand out
+                opacity: 1, // Ensures full visibility
+                shadowBlur: 10, // Adds a glow effect
+                shadowColor: this._style.getPropertyValue("--internal-or-chart-graph-point-hover-border-color") // Glow color when highlighted
+                },
             },
             label: {
                 show: true,
@@ -1384,7 +1441,8 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             query.toTimestamp = this._endOfPeriod;
             query.formula = formula;
             const diffInHours = (this._endOfPeriod! - this._startOfPeriod!) / 1000 / 60 / 60;
-            const intervalArr = this._getCustomInterval(diffInHours, this.interval!);
+            const intervalArr = this._getInterval(diffInHours, this.interval!);
+            const intervalMillis = intervalArr?.[0] && intervalArr?.[1] ? moment.duration(intervalArr[0], intervalArr[2]).asMilliseconds() : 0;
             query.interval = (intervalArr[0].toString() + " " + intervalArr[1].toString()); // for example: "5 minute"
             console.log("query", query);
 
@@ -1394,11 +1452,18 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             let data: ValueDatapoint<any>[] = [];
 
             if (response.status === 200) {
-                data = response.data
-                    .filter(value => value.y !== null && value.y !== undefined)
-                    .map(point => ({x: point.x, y: point.y} as ValueDatapoint<any>))
-                console.log("Data:", data);
-                dataset.data = data.map(point => [moment(point.x).format(intervalArr[3]), +point.y.toFixed(this.decimals)]);
+                console.log("response: ",response.data)
+                if (response.data.length > 0 && ((response.data[1].x! - response.data[0].x!) == intervalMillis)) { //only push through if returned data interval is equal to requested interval
+                    data = response.data
+                        .filter(value => value.y !== null && value.y !== undefined)
+                        .map(point => ({x: point.x, y: point.y} as ValueDatapoint<any>))
+                    console.log("Query Data:", data);
+                    // map to dataset and position to middle of interval instead of start time
+                    dataset.data = data.map(point => [(point.x ?? 0) + 0.5 * intervalMillis, +point.y.toFixed(this.decimals)]);
+                } else {
+                    console.log("Returned data interval is larger than requested interval, data will not be shown.")
+                    dataset.data = [];
+                }
             }
 
 
@@ -1408,12 +1473,49 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     }
 
 
-    protected _updateChartData(){
+    protected _updateChartData() {
+        //---------BEUN AREA---------
+        this._markAreaData = [];
+
+        const diffInHours = (this._endOfPeriod! - this._startOfPeriod!) / 1000 / 60 / 60;
+        const intervalArr = this._getInterval(diffInHours, this.interval!);
+        const IntervalMillis = intervalArr?.[0] && intervalArr?.[1] ? moment.duration(intervalArr[0], intervalArr[2]).asMilliseconds() : 0;
+        let current = Math.floor(new Date(this._startOfPeriod!).getTime()/IntervalMillis) * IntervalMillis; //round down to interval to maintain background-bar alignment
+        console.log("Current:", current)
+        console.log("Millis sec: ", IntervalMillis/1000, "hours:", IntervalMillis/1000/60/60);
+        console.log("start:", new Date(this._startOfPeriod!).toLocaleString(), "end:", new Date(this._endOfPeriod!).toLocaleString());
+
+        //Show highlights when reasonable amount of intervals are shown
+        if ((this._endOfPeriod!-this._startOfPeriod!)/IntervalMillis < 300) {
+            while (current <= this._endOfPeriod!) {
+                this._markAreaData.push([{ xAxis: current }, { xAxis: current + IntervalMillis }]);
+                current += IntervalMillis * 2;
+            }
+        }
+
+
         this._chart!.setOption({
-            series: this._data!.map(series => ({
-                ...series,
-            }))
+            series: [
+                ...this._data!.map(series => ({
+                    ...series
+                })),
+                {
+                    name: "Background",
+                    type: "line",
+                    data: [],
+                    markArea: {
+                        silent: true,
+                        z: 0,
+                        itemStyle: { color: "rgba(0, 0, 0, 0.05)" ,borderColor: this._style.getPropertyValue("--internal-or-chart-graph-point-hover-border-color"), borderWidth: 0.1},
+                        data: this._markAreaData
+                    },
+                    lineStyle: { opacity: 0 },
+                    emphasis: { disabled: true },
+                    tooltip: { show: false }
+                }
+            ]
         });
+        console.log("_data:", this._data);
     }
 
 
@@ -1422,13 +1524,15 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             //Connect event listeners
             // Make chart size responsive
             window.addEventListener("resize", () => this._chart!.resize());
-            this._containerResizeObserver = new ResizeObserver(() => { this._chart!.resize(); this.applyChartResponsiveness();});
+            this._zoomHandler = this._chart!.on('datazoom', () => {this.updateBars();});
+            this._containerResizeObserver = new ResizeObserver(() => { this._chart!.resize(); this.applyChartResponsiveness(); this.updateBars();});
             if (this.shadowRoot) {
                 this._containerResizeObserver.observe(this.shadowRoot!.getElementById('container') as HTMLElement);
             }
         }
         else if (!connect) {
             //Disconnect event listeners
+            this._chart!.off('datazoom', this._zoomHandler);
             this._containerResizeObserver?.disconnect();
             this._containerResizeObserver = undefined;
         }
@@ -1436,6 +1540,31 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
 
 
+
+    }
+
+    protected updateBars() {
+        //Function to update dynamic bar positions and widths
+        if (this._data) {
+            if (this._data[0].data.length < 2) return;
+
+            const barAmount = this._data.length
+
+            this._data.forEach((value, index) => {
+                const startTime = value.data[0][0];
+                const endTime = value.data[1][0];
+                const pixelStart = this._chart!.convertToPixel({ xAxisIndex: 0}, startTime);
+                const pixelEnd = this._chart!.convertToPixel({ xAxisIndex: 0}, endTime);
+                const magicRatio = 0.8;
+                const availableWidth = (pixelEnd - pixelStart) * magicRatio;
+                value.barWidth = availableWidth / barAmount;
+
+                console.log(`Index ${index}:`, value);
+            });
+
+            this._updateChartData()
+
+        }
 
     }
 
