@@ -376,7 +376,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     String location = response.getHeaderString(Headers.LOCATION_STRING);
                     response.close();
                     if (!response.getStatusInfo().equals(Response.Status.CREATED) || TextUtil.isNullOrEmpty(location)) {
-                        throw new WebApplicationException(
+                        throw new WebApplicationException( // Throw a 409 Conflict error when a duplicate email is detected
                                 "Email already exists",
                                 Response.Status.CONFLICT
                         );
