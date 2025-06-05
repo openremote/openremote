@@ -12,7 +12,7 @@
   },
   "types": "lib/index.d.ts",
   "scripts": {
-    "analyze": "npx cem analyze --config ../custom-elements-manifest.config.js",
+    "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",

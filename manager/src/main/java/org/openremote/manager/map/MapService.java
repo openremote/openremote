@@ -21,6 +21,7 @@ package org.openremote.manager.map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
@@ -74,6 +75,8 @@ public class MapService implements ContainerService {
     public static final String OR_PATH_PREFIX_DEFAULT = "";
     private static final Logger LOG = Logger.getLogger(MapService.class.getName());
     private static final String DEFAULT_VECTOR_TILES_URL = "mbtiles://mapdata.mbtiles";
+    private static final String DEFAULT_SPRITE_PATH = "map/sprites/bright-v9";
+    private static final String DEFAULT_GLYPHS_PATH = "{fontstack}/{range}.pbf";
     private static ConfigurationService configurationService;
 
     // Shared SQL connection is fine concurrently in SQLite
@@ -90,25 +93,58 @@ public class MapService implements ContainerService {
             mapConfig = ValueUtil.JSON.createObjectNode();
         }
 
-        ObjectNode vectorTiles = ValueUtil.JSON.valueToTree(mapConfiguration.sources.get("vector_tiles"));
-        String tileUrl = Optional.ofNullable(vectorTiles.get("tiles"))
-            .map(tiles -> tiles.get(0))
+        ObjectNode sources = ValueUtil.JSON.valueToTree(mapConfiguration.sources);
+        ObjectNode vectorTiles = (ObjectNode)sources.get("vector_tiles");
+        String tileJsonUrl = Optional.ofNullable(vectorTiles.get("url"))
             .filter(JsonNode::isTextual)
             .map(JsonNode::textValue)
             .orElse(null);
-        // Saves custom tile server url if custom is true in the vector_tiles source and the url follows the required xyz scheme.
+        ArrayNode tileServerUrls = Optional.ofNullable(vectorTiles.get("tiles"))
+                .map(node -> {
+                    ArrayNode result = JsonNodeFactory.instance.arrayNode();
+                    StreamSupport.stream(node.spliterator(), false)
+                            .filter(JsonNode::isTextual)
+                            .map(JsonNode::textValue)
+                            .filter(v -> v.contains("/{z}/{x}/{y}"))
+                            .forEach(result::add);
+                    return result;
+                })
+                .orElseGet(JsonNodeFactory.instance::arrayNode);
+
+        // Saves custom tile server url if custom is true in the vector_tiles source and the url follows the required template parameters.
         // Otherwise, replace it with the default configuration.
-        if (vectorTiles.get("custom").booleanValue() && tileUrl != null && tileUrl.contains("/{z}/{x}/{y}")) {
-            vectorTiles.put("url", tileUrl);
+        if (vectorTiles.has("custom") && vectorTiles.get("custom").booleanValue()) {
+            vectorTiles.put("url", tileJsonUrl);
+            vectorTiles.set("tiles", tileServerUrls);
         } else {
             vectorTiles = ValueUtil.JSON.createObjectNode()
                 .put("type", "vector")
                 .put("url", DEFAULT_VECTOR_TILES_URL);
+            mapConfig.put("sprite", DEFAULT_SPRITE_PATH);
+            mapConfig.put("glyphs", DEFAULT_GLYPHS_PATH);
         }
+        mapConfiguration.sources.clear();
         mapConfiguration.sources.put("vector_tiles", ValueUtil.JSON.convertValue(vectorTiles, MapSourceConfig.class));
 
+        Iterator<Map.Entry<String, JsonNode>> fields = sources.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> field = fields.next();
+            if (!Objects.equals(field.getKey(), "vector_tiles")) {
+                mapConfiguration.sources.put(field.getKey(), ValueUtil.JSON.convertValue(field.getValue(), MapSourceConfig.class));
+            }
+        }
+
+        mapConfig.remove("override");
+        if (mapConfiguration.override != null) {
+            mapConfig.put("override", mapConfiguration.override);
+        }
         mapConfig.putPOJO("options", mapConfiguration.options);
         mapConfig.putPOJO("sources", mapConfiguration.sources);
+        mapConfig.put("sprite", Optional.ofNullable(mapConfiguration.sprite).orElse(DEFAULT_SPRITE_PATH));
+        mapConfig.put("glyphs", Optional.ofNullable(mapConfiguration.glyphs).orElse(DEFAULT_GLYPHS_PATH));
+        mapConfig.putPOJO("layers", Optional.ofNullable(mapConfiguration.layers).filter(v -> v.length > 0).orElse(
+            StreamSupport.stream(configurationService.getMapConfig().get("layers").spliterator(), false).toArray())
+        );
 
         configurationService.saveMapConfig(mapConfig);
         mapConfig = configurationService.getMapConfig();
@@ -374,6 +410,9 @@ public class MapService implements ContainerService {
                 .filter(JsonNode::isObject)
                 .ifPresent(vectorTilesNode -> {
                     ObjectNode vectorTilesObj = (ObjectNode)vectorTilesNode;
+                    if (vectorTilesObj.has("custom") && vectorTilesObj.get("custom").booleanValue() && vectorTilesObj.hasNonNull("url")) {
+                        return;
+                    }
                     vectorTilesObj.remove("url");
 
                     vectorTilesObj.put("attribution", metadata.attribution);
@@ -413,20 +452,20 @@ public class MapService implements ContainerService {
 
         // Set sprite URL to shared folder
         Optional.ofNullable(mapConfig.has("sprite") && mapConfig.get("sprite").isTextual() ? mapConfig.get("sprite").asText() : null).ifPresent(sprite -> {
-            String spriteUri =
+            String spriteUri = sprite.equals(DEFAULT_SPRITE_PATH) ?
                     UriBuilder.fromUri(host)
                             .replacePath(pathPrefix + MAP_SHARED_DATA_BASE_URI)
                             .path(sprite)
-                            .build().toString();
+                            .build().toString() : sprite;
             settings.put("sprite", spriteUri);
         });
 
         // Set glyphs URL to shared folder (tileserver-gl glyphs url cannot contain a path segment so add /fonts here
         Optional.ofNullable(mapConfig.has("glyphs") && mapConfig.get("glyphs").isTextual() ? mapConfig.get("glyphs").asText() : null).ifPresent(glyphs -> {
-            String glyphsUri =
+            String glyphsUri = glyphs.equals(DEFAULT_GLYPHS_PATH) ?
                     UriBuilder.fromUri(host)
                             .replacePath(pathPrefix + MAP_SHARED_DATA_BASE_URI)
-                            .build().toString() + "/fonts/" + glyphs;
+                            .build().toString() + "/fonts/" + glyphs : glyphs;
             settings.put("glyphs", glyphsUri);
         });
 
@@ -530,7 +569,6 @@ public class MapService implements ContainerService {
 
         // Ensure we can access this new file and that it is a valid mbtiles file
         Path loadedFile = setData(false);
-        // TODO: Investigate whether this can be combined into setData (see https://github.com/openremote/openremote/issues/1833).
         // The metadata is set to ensure the bounding box is not outside the visible tile area.
         saveMapMetadata(metadata);
 
@@ -562,7 +600,6 @@ public class MapService implements ContainerService {
         if (previousCustomTilesPath.toFile().isFile()) {
 
             setData(true);
-            // TODO: Investigate whether this can be combined into setData (see https://github.com/openremote/openremote/issues/1833).
             // The metadata is set to ensure the bounding box is not outside the visible tile area.
             saveMapMetadata(metadata);
 
