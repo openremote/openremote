@@ -136,13 +136,13 @@
     "TEXT_SWITCH": "Commutateur de texte",
     "ROUND_NODE": "Arrondir",
     "LOG_OUTPUT": "Write to Logs",
-    "DERIVATIVE":  "Attribute derivative",
+    "DERIVATIVE": "Attribute derivative",
     "INTEGRAL": "Attribute integral",
     "HISTORIC_VALUE": "Attribute history",
     "MAX_PROCESSOR": "Maximum",
-    "MIN_PROCESSOR":  "Minimum",
-    "AVERAGE_PROCESSOR":  "Average",
-    "MEDIAN_PROCESSOR":  "Median",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Average",
+    "MEDIAN_PROCESSOR": "Median",
     "SUM_OPERATOR": "Sum",
     "max": "Max",
     "min": "Min",
@@ -230,8 +230,8 @@
   "custom": "Saisie manuelle",
   "realm": "Locataire",
   "realm_plural": "Locataires",
-  "displayName":"Nom familier",
-  "deleteRealmConfirm":"Êtes-vous sûr de vouloir supprimer ce realm?",
+  "displayName": "Nom familier",
+  "deleteRealmConfirm": "Êtes-vous sûr de vouloir supprimer ce realm?",
   "user_plural": "Utilisateurs",
   "regularUser_plural": "Utilisateurs",
   "serviceUser_plural": "Utilisateurs de services",
@@ -239,12 +239,12 @@
   "role": "Rôle",
   "role_plural": "Les rôles",
   "description": "La description",
-  "passwordMismatch":"Les mots de passe ne correspondent pas",
-  "username":"Nom d'utilisateur",
-  "firstName":"Prénom",
-  "surname":"Nom de famille",
-  "deleteUserConfirm":"Êtes-vous sûr de vouloir supprimer cet utilisateur?",
-  "deleteRoleConfirm":"Voulez-vous vraiment supprimer ce rôle?",
+  "passwordMismatch": "Les mots de passe ne correspondent pas",
+  "username": "Nom d'utilisateur",
+  "firstName": "Prénom",
+  "surname": "Nom de famille",
+  "deleteUserConfirm": "Êtes-vous sûr de vouloir supprimer cet utilisateur?",
+  "deleteRoleConfirm": "Voulez-vous vraiment supprimer ce rôle?",
   "realmRules": "Realm",
   "globalRules": "Global",
   "recipients": "Destinataires",
@@ -287,8 +287,8 @@
   "resetPasswordConfirmation": "Un e-mail a été envoyé pour réinitialiser votre mot de passe.",
   "repeatPassword": "Répéter le mot de passe",
   "details": "Des détails",
-  "permissions":"Autorisations",
-  "fullAccessLabel":"Admin: accès complet ; gérer les utilisateurs et les rôles",
+  "permissions": "Autorisations",
+  "fullAccessLabel": "Admin: accès complet ; gérer les utilisateurs et les rôles",
   "noChildAssets": "Aucune ressource enfant",
   "account": "Compte",
   "editAttribute": "Modifier l'attribut",
@@ -362,42 +362,31 @@
     "hertz": "Hz",
     "rpm": "tr/min",
     "carbon": "CO2",
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "format": {
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "constraints": {
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "label": {
     "asset": {
       "ElectricityProducerSolarAsset": "Ressource solaire PV",
       "ElectricityProducerWindAsset": "Ressource éolienne"
     },
-    "meta": {
-    },
-    "attribute": {
-    },
-    "value": {
-    }
+    "meta": {},
+    "attribute": {},
+    "value": {}
   },
   "metaOverrides": {
-    "label": {
-    }
+    "label": {}
   },
   "attributeOverrides": {
-    "label": {
-    }
+    "label": {}
   },
   "addMetaItems": "Ajouter des éléments de configuration",
   "loseChanges": "Annuler les modifications?",
@@ -419,7 +408,7 @@
   "activeFromTo": "Actif du {{start}} au {{end}}",
   "fromTo": "Du {{start}} au {{end}}",
   "fromToDays": "de {{start}} à {{days}} jours plus tard {{end}}",
-  "forDays":"pour {{days}} jours",
+  "forDays": "pour {{days}} jours",
   "scheduleRuleActivity": "Planifier l'activité de la règle",
   "allDay": "Toute la journée",
   "apply": "appliquer",
@@ -432,8 +421,7 @@
   "dismiss": "rejeter",
   "createAssetFailed": "Impossible de créer la ressource",
   "moveAssetFailed": "Impossible de déplacer la ressource",
-  "logCategory": {
-  },
+  "logCategory": {},
   "readPermissions": "Autorisations de lire",
   "writePermissions": "Autorisations d'écrire",
   "valueType": "Type de valeur",
