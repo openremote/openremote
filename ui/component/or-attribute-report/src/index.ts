@@ -668,7 +668,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
         if (changedProperties.has("_data")) {
             //Update chart to data from set period
-            if (this._chart) {
+            if (this._chart && this._data[0].data.length > 0) {
                 this._updateChartData();
             }
         }
@@ -1480,14 +1480,20 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         const diffInHours = (this._endOfPeriod! - this._startOfPeriod!) / 1000 / 60 / 60;
         const intervalArr = this._getInterval(diffInHours, this.interval!);
         const IntervalMillis = intervalArr?.[0] && intervalArr?.[1] ? moment.duration(intervalArr[0], intervalArr[2]).asMilliseconds() : 0;
-        let current = Math.floor(new Date(this._startOfPeriod!).getTime()/IntervalMillis) * IntervalMillis; //round down to interval to maintain background-bar alignment
-        console.log("Current:", current)
+
+        //Start at the first interval for which data is available
+        let current = Math.min(...this._data!.map(dataset => dataset.data[0][0])) - 0.5 * IntervalMillis
+        // End at the last available interval
+        let latestIntervalData = Math.max(...this._data!.map(dataset => dataset.data[dataset.data.length-1][0])) - 0.5 * IntervalMillis
+
+
+        console.log("Current:", current);
         console.log("Millis sec: ", IntervalMillis/1000, "hours:", IntervalMillis/1000/60/60);
         console.log("start:", new Date(this._startOfPeriod!).toLocaleString(), "end:", new Date(this._endOfPeriod!).toLocaleString());
 
         //Show highlights when reasonable amount of intervals are shown
         if ((this._endOfPeriod!-this._startOfPeriod!)/IntervalMillis < 300) {
-            while (current <= this._endOfPeriod!) {
+            while (current <= latestIntervalData) {
                 this._markAreaData.push([{ xAxis: current }, { xAxis: current + IntervalMillis }]);
                 current += IntervalMillis * 2;
             }
@@ -1500,19 +1506,34 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     ...series
                 })),
                 {
-                    name: "Background",
+                    name: "Background1",
                     type: "line",
                     data: [],
                     markArea: {
                         silent: true,
                         z: 0,
-                        itemStyle: { color: "rgba(0, 0, 0, 0.05)" ,borderColor: this._style.getPropertyValue("--internal-or-chart-graph-point-hover-border-color"), borderWidth: 0.1},
+                        itemStyle: { color: "rgba(0, 0, 0, 0.05)"},
                         data: this._markAreaData
                     },
-                    lineStyle: { opacity: 0 },
-                    emphasis: { disabled: true },
-                    tooltip: { show: false }
+                    //lineStyle: { opacity: 0 },
+                    //emphasis: { disabled: true },
+                    //tooltip: { show: false }
+                },
+                {
+                    name: "Background2",
+                    type: "line",
+                    data: [],
+                    markArea: {
+                        silent: true,
+                        z: 0,
+                        itemStyle: { color: "rgba(0, 0, 0, 0)" ,borderColor: this._style.getPropertyValue("--internal-or-chart-graph-point-hover-border-color"), borderWidth: 0.1},
+                        data: this._markAreaData.map(group => group.map(entry => ({ ...entry, xAxis: entry.xAxis + IntervalMillis })))
+                    },
+                    //lineStyle: { opacity: 0 },
+                    //emphasis: { disabled: true },
+                    //tooltip: { show: false }
                 }
+
             ]
         });
         console.log("_data:", this._data);
@@ -1555,7 +1576,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                 const endTime = value.data[1][0];
                 const pixelStart = this._chart!.convertToPixel({ xAxisIndex: 0}, startTime);
                 const pixelEnd = this._chart!.convertToPixel({ xAxisIndex: 0}, endTime);
-                const magicRatio = 0.8;
+                const magicRatio = 0.8; //fill ratio
                 const availableWidth = (pixelEnd - pixelStart) * magicRatio;
                 value.barWidth = availableWidth / barAmount;
 
