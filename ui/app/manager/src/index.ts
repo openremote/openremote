@@ -241,27 +241,6 @@ fetch(configURL).then<ManagerAppConfig>(async (result) => {
                 .concat(pages.filter(pageProvider => !headerPaths.includes(pageProvider.name)));
         }
 
-        // If the user does not have a preferred language configured (in Keycloak),
-        // we need to update it with their preferred language from other sources. (consoles, realm configuration etc.)
-        // Check local storage for set language, otherwise use language set in config
-        manager.getUserPreferredLanguage().then((userLang: string | undefined) => {
-            if(!userLang) {
-                manager.getConsolePreferredLanguage().then((consoleLang: string | undefined) => {
-                    if (consoleLang) {
-                        manager.language = consoleLang;
-                    } else if (orAppConfig.realms[manager.displayRealm]) {
-                        manager.language = orAppConfig.realms[manager.displayRealm].language
-                    } else if (orAppConfig.realms['default']) {
-                        manager.language = orAppConfig.realms['default'].language
-                    } else {
-                        manager.language = 'en'
-                    }
-                }).catch(reason => {
-                    console.error("Failed to initialise app: " + reason);
-                })
-            }
-        })
-
         return orAppConfig;
     };
 
