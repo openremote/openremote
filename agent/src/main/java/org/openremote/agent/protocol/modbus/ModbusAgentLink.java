@@ -19,6 +19,7 @@
  */
 package org.openremote.agent.protocol.modbus;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.openremote.model.asset.agent.AgentLink;
 
@@ -29,29 +30,30 @@ import java.util.Optional;
 //TODO: Make non-primitive parameters required
 public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
 
-    @NotNull
+    @JsonProperty(required=true)
     @JsonPropertyDescription("Poll interval in milliseconds")
-    private long pollingMillis;
+    private Long pollingMillis;
 
-    @NotNull
+    @JsonProperty(required=true)
     @JsonPropertyDescription("Memory area to read from during read request")
     private ReadMemoryArea readMemoryArea;
 
-    @NotNull
+    @JsonProperty(required=true)
     @JsonPropertyDescription("Type to convert the returned data to. As specified by the PLC4X Modbus data types.")
     private ModbusDataType readValueType;
 
-    @NotNull
+    @JsonProperty(required=true)
     @JsonPropertyDescription("Zero based address from which the value is read from")
-    private int readAddress;
+    private Integer readAddress;
 
-    @NotNull
     @JsonPropertyDescription("Memory area to write to. \"HOLDING\" or \"COIL\" allowed.")
     private WriteMemoryArea writeMemoryArea;
 
-    @NotNull
     @JsonPropertyDescription("Zero-based address to which the value sent is written to")
-    private int writeAddress;
+    private Integer writeAddress;
+
+    @JsonPropertyDescription("Set amount of registers to read. If left empty or less than 1, will use the default size for the corresponding data-type.")
+    private Integer readRegistersAmount;
 
     public long getPollingMillis() {
         return pollingMillis;
@@ -77,11 +79,11 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         this.readValueType = readValueType;
     }
 
-    public int getReadAddress() {
-        return readAddress;
+    public Optional<Integer> getReadAddress() {
+        return Optional.ofNullable(readAddress);
     }
 
-    public void setReadAddress(int readAddress) {
+    public void setReadAddress(Integer readAddress) {
         this.readAddress = readAddress;
     }
 
@@ -94,11 +96,19 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     }
 
     public Optional<Integer> getWriteAddress() {
-        return Optional.of(writeAddress);
+        return Optional.ofNullable(writeAddress);
     }
 
-    public void setWriteAddress(int writeAddress) {
+    public void setWriteAddress(Integer writeAddress) {
         this.writeAddress = writeAddress;
+    }
+
+    public Optional<Integer> getReadRegistersAmount() {
+        return Optional.ofNullable(readRegistersAmount);
+    }
+
+    public void setReadRegistersAmount(Integer readRegistersAmount) {
+        this.readRegistersAmount = writeAddress;
     }
 
     public enum ReadMemoryArea {
@@ -106,32 +116,38 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     }
 
     public enum ModbusDataType {
-        BOOL(boolean.class),
-        SINT(byte.class),
-        USINT(short.class),
-        BYTE(short.class),
-        INT(short.class),
-        UINT(int.class),
-        WORD(int.class),
-        DINT(int.class),
-        UDINT(long.class),
-        DWORD(long.class),
-        LINT(long.class),
-        ULINT(BigInteger.class),
-        LWORD(BigInteger.class),
-        REAL(float.class),
-        LREAL(double.class),
-        CHAR(char.class),
-        WCHAR(String.class);
+        BOOL(boolean.class, 1),
+        SINT(byte.class, 1),
+        USINT(short.class, 1),
+        BYTE(short.class, 1),
+        INT(short.class, 1),
+        UINT(int.class, 1),
+        WORD(int.class, 1),
+        DINT(int.class, 2),
+        UDINT(long.class, 2),
+        DWORD(long.class, 2),
+        LINT(long.class, 4),
+        ULINT(BigInteger.class, 4),
+        LWORD(BigInteger.class, 4),
+        REAL(float.class, 2),
+        LREAL(double.class, 4),
+        CHAR(char.class, 1),
+        WCHAR(String.class, 1);  // Assumes single wchar per entry
 
         private final Class<?> javaType;
+        private final Integer registerCount;
 
-        ModbusDataType(Class<?> javaType) {
+        ModbusDataType(Class<?> javaType, Integer registerCount) {
             this.javaType = javaType;
+            this.registerCount = registerCount;
         }
 
         public Class<?> getJavaType() {
             return javaType;
+        }
+
+        public Integer getRegisterCount() {
+            return registerCount;
         }
     }
 
