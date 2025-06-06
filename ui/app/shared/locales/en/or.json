@@ -786,7 +786,7 @@
     "imageUrl": "Image URL",
     "noImageSelected": "No image selected",
     "noData": "No data",
-    "noDataOrMethod": "No data or no method per interval selected for selected attributes"
+    "selectMethod": "Select aggregation method"
   },
   "south": "South",
   "east": "East",

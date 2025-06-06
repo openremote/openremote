@@ -668,7 +668,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
         if (changedProperties.has("_data")) {
             //Update chart to data from set period
-            if (this._chart && this._data[0].data.length > 0) {
+            if (this._chart && this._data[0] && this._data[0].data.length > 0) {
                 this._updateChartData();
             }
         }
@@ -732,7 +732,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     `)}
                     ${when(this._data?.every(entry => entry.data.length === 0), () => html`
                         <div style="position: inherit; height: 100%; width: 100%; display: flex; justify-content: center; align-items: center; z-index: 1; pointer-events: none;">
-                            <or-translate .value="${'dashboard.noDataOrMethod'}"></or-translate>
+                            <or-translate .value="${'dashboard.noData'}"></or-translate>
                         </div>
                     `)}
                 ${when(this.isChart, () => html`
@@ -1453,7 +1453,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
             if (response.status === 200) {
                 console.log("response: ",response.data)
-                if (response.data.length > 0 && ((response.data[1].x! - response.data[0].x!) == intervalMillis)) { //only push through if returned data interval is equal to requested interval
+                if (response.data.length > 0 && (response.data.length === 1 || (response.data[1].x! - response.data[0].x!) == intervalMillis) ) { //only push through if returned data interval is equal to requested interval or if if only one datapoint is returned
                     data = response.data
                         .filter(value => value.y !== null && value.y !== undefined)
                         .map(point => ({x: point.x, y: point.y} as ValueDatapoint<any>))
@@ -1482,16 +1482,16 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         const IntervalMillis = intervalArr?.[0] && intervalArr?.[1] ? moment.duration(intervalArr[0], intervalArr[2]).asMilliseconds() : 0;
 
         //Start at the first interval for which data is available
-        let current = Math.min(...this._data!.map(dataset => dataset.data[0][0])) - 0.5 * IntervalMillis
+        let current = Math.min(this._data?.find(entry => entry.data.length > 0)?.data?.[0][0]) - 0.5 * IntervalMillis
         // End at the last available interval
         let latestIntervalData = Math.max(...this._data!.map(dataset => dataset.data[dataset.data.length-1][0])) - 0.5 * IntervalMillis
 
 
         console.log("Current:", current);
         console.log("Millis sec: ", IntervalMillis/1000, "hours:", IntervalMillis/1000/60/60);
-        console.log("start:", new Date(this._startOfPeriod!).toLocaleString(), "end:", new Date(this._endOfPeriod!).toLocaleString());
+        console.log("startOfPeriod:", new Date(this._startOfPeriod!).toLocaleString(), "endOfPeriod:", new Date(this._endOfPeriod!).toLocaleString());
 
-        //Show highlights when reasonable amount of intervals are shown
+        //Show highlights when reasonable amount of intervals are shown or
         if ((this._endOfPeriod!-this._startOfPeriod!)/IntervalMillis < 300) {
             while (current <= latestIntervalData) {
                 this._markAreaData.push([{ xAxis: current }, { xAxis: current + IntervalMillis }]);
@@ -1567,20 +1567,28 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     protected updateBars() {
         //Function to update dynamic bar positions and widths
         if (this._data) {
-            if (this._data[0].data.length < 2) return;
+            if (this._data.every(entry => entry.data.length < 1)) {
+                console.log("HELLOOO")
+                return;
+            }
 
             const barAmount = this._data.length
 
+            const diffInHours = (this._endOfPeriod! - this._startOfPeriod!) / 1000 / 60 / 60;
+            const intervalArr = this._getInterval(diffInHours, this.interval!);
+            const IntervalMillis = intervalArr?.[0] && intervalArr?.[1] ? moment.duration(intervalArr[0], intervalArr[2]).asMilliseconds() : 0;
+
+
             this._data.forEach((value, index) => {
-                const startTime = value.data[0][0];
-                const endTime = value.data[1][0];
+                const startTime = this._data?.find(entry => entry.data.length > 0)?.data?.[0][0]; //find some dataset that has a timestamp
+                const endTime = startTime + IntervalMillis;
+                console.log("starttime:", new Date(startTime).toLocaleString(), "endtime:", new Date(endTime).toLocaleTimeString());
                 const pixelStart = this._chart!.convertToPixel({ xAxisIndex: 0}, startTime);
                 const pixelEnd = this._chart!.convertToPixel({ xAxisIndex: 0}, endTime);
+                console.log("amount of pixels: ", (pixelEnd-pixelStart))
                 const magicRatio = 0.8; //fill ratio
                 const availableWidth = (pixelEnd - pixelStart) * magicRatio;
                 value.barWidth = availableWidth / barAmount;
-
-                console.log(`Index ${index}:`, value);
             });
 
             this._updateChartData()

@@ -79,7 +79,7 @@ export class ReportSettings extends WidgetSettings {
                 ${when(isOnRightAxis, () => html`
                     <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="right"></or-translate></span>   
                 `)}
-                <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value=${methodList}></or-translate></span>
+                <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value=${methodList.length > 0 ? methodList : "selectMethod".toUpperCase()}></or-translate></span>
             `
         }
 
@@ -87,14 +87,14 @@ export class ReportSettings extends WidgetSettings {
         const attributeActionCallback = (attributeRef: AttributeRef): AttributeAction[] => {
             return [
                 {
-                  icon: 'palette',
-                  tooltip: i18next.t('dashboard.lineColor'),
-                  disabled: false
-                },
-                {
                     icon: 'calculator-variant-outline',
                     tooltip: i18next.t('algorithmMethod'),
                     disabled: false
+                },
+                {
+                  icon: 'palette',
+                  tooltip: i18next.t('dashboard.lineColor'),
+                  disabled: false
                 },
                 {
                     icon: this.widgetConfig.attributeSettings.rightAxisAttributes.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
