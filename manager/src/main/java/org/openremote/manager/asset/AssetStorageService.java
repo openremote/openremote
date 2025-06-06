@@ -47,6 +47,7 @@ import org.openremote.model.asset.*;
 import org.openremote.model.asset.impl.GatewayAsset;
 import org.openremote.model.asset.impl.GroupAsset;
 import org.openremote.model.asset.impl.ThingAsset;
+import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
@@ -743,14 +744,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             // Validate group child asset type attribute
-            if (asset instanceof GroupAsset) {
-                String childAssetType = ((GroupAsset)asset).getChildAssetType()
-                    .map(childAssetTypeString -> TextUtil.isNullOrEmpty(childAssetTypeString) ? null : childAssetTypeString)
-                    .orElseThrow(() -> {
-                        String msg = "Asset of type GROUP childAssetType attribute must be a valid string: asset=" + asset;
-                        LOG.warning(msg);
-                        return new IllegalStateException(msg);
-                    });
+            if (asset instanceof GroupAsset groupAsset) {
+
+                // Ensure the asset has a childAssetType (set to empty if missing)
+                String childAssetType = groupAsset.getChildAssetType()
+                        .orElseGet(() -> {
+                            groupAsset.setChildAssetType(""); // Set empty on the asset
+                            return "";
+                        });
 
                 String existingChildAssetType = existingAsset != null ? ((GroupAsset)existingAsset)
                     .getChildAssetType()
@@ -760,7 +761,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         return new IllegalStateException(msg);
                     }) : childAssetType;
 
-                if (!childAssetType.equals(existingChildAssetType)) {
+                if (!childAssetType.isEmpty() && !existingChildAssetType.isEmpty() && !childAssetType.equals(existingChildAssetType)) {
                     String msg = "Asset of type GROUP so childAssetType attribute cannot be changed: asset=" + asset;
                     LOG.warning(msg);
                     throw new IllegalStateException(msg);
@@ -787,7 +788,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             }
 
-            T updatedAsset = em.merge(asset);
+            T updatedAsset;
+
+            if (existingAsset instanceof UnknownAsset && !(asset instanceof UnknownAsset)) {
+                // This occurs when an existing asset is merged but the type is unknown
+                // We'll copy updates into existing asset
+                existingAsset.setAttributes(asset.getAttributes());
+                existingAsset.setName(asset.getName());
+                existingAsset.setVersion(asset.getVersion());
+                existingAsset.setParentId(asset.getParentId());
+                existingAsset.setAccessPublicRead(asset.isAccessPublicRead());
+                updatedAsset = em.merge(existingAsset);
+            } else {
+                updatedAsset = em.merge(asset);
+            }
 
             if (LOG.isLoggable(FINE)) {
                 LOG.fine("Asset merge took: " + (System.currentTimeMillis() - startTime) + "ms");
@@ -1155,10 +1169,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         } finally {
             assetLocks.unlock(assetId);
         }
-    }
-
-    public void withAssetLock(String assetId, Runnable action) {
-        withAssetLock(assetId, action);
     }
 
     protected void createUserAssetLinks(EntityManager em, List<UserAssetLink> userAssets) {

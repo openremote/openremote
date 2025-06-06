@@ -816,7 +816,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                         gateway.getRealm(),
                         gatewayUser.getId(),
                         identityProvider
-                            .addRealmRoles(gateway.getRealm(), gatewayUser.getId(), RESTRICTED_USER_REALM_ROLE));
+                            .addUserRealmRoles(gateway.getRealm(), gatewayUser.getId(), RESTRICTED_USER_REALM_ROLE));
             }
 
             if (!clientId.equals(gateway.getClientId().orElse(null)) || !secret.equals(gateway.getClientSecret().orElse(null))) {

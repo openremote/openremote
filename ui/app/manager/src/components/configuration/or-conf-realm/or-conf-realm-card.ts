@@ -30,6 +30,7 @@ import {
     DefaultColor5,
     DefaultColor6,
     DefaultColor8,
+    manager,
     Util,
 } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
@@ -38,8 +39,6 @@ import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-compon
 import {when} from 'lit/directives/when.js';
 import ISO6391 from 'iso-639-1';
 import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu} from "../../../index";
-
-declare const MANAGER_URL: string
 
 @customElement("or-conf-realm-card")
 export class OrConfRealmCard extends LitElement {
@@ -269,7 +268,7 @@ export class OrConfRealmCard extends LitElement {
     render() {
         const colors = this._getColors();
         const app = this;
-        const managerUrl = (MANAGER_URL || "");
+        const managerUrl = (manager.managerUrl ?? "");
 
         // On an empty search; return the common language as set in DEFAULT_LANGUAGES
         // If searching, compare strings using lowercase. (with no maximum)
