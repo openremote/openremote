@@ -488,8 +488,8 @@ export class Manager implements EventProviderFactory {
 
         // Look for language preference in local storage
         const initOptions: InitOptions = {
-            lng: await this.getConsolePreferredLanguage() || await this.getUserPreferredLanguage() || this.config.defaultLanguage || "en",
-            fallbackLng: "en",
+            lng: await this.getConsolePreferredLanguage() || await this.getUserPreferredLanguage() || this.config?.defaultLanguage || "en",
+            fallbackLng: this.config?.defaultLanguage || "en",
             defaultNS: "app",
             fallbackNS: "or",
             ns: this.config.loadTranslations,
