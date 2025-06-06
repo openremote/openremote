@@ -810,7 +810,7 @@ export class OrMwcInput extends LitElement {
     public censure: boolean = false;
 
     /**
-     * Password visibility state (true = shown, false = hidden)
+     * Toggles visibility state of the password InputType (true = shown, false = hidden)
      */
     @property({type: Boolean})
     public advertised: boolean = false;
