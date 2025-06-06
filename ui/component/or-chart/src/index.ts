@@ -27,7 +27,7 @@ import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import "chartjs-adapter-moment";
 import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
-import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
+import {OrAssetAttributePicker, OrAssetAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {cache} from "lit/directives/cache.js";
 import {debounce} from "lodash";
@@ -1008,12 +1008,12 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _openDialog() {
-        const dialog = showDialog(new OrAttributePicker()
+        const dialog = showDialog(new OrAssetAttributePicker()
             .setShowOnlyDatapointAttrs(true)
             .setMultiSelect(true)
             .setSelectedAttributes(this._getSelectedAttributes()));
 
-        dialog.addEventListener(OrAttributePickerPickedEvent.NAME, (ev: any) => this._addAttribute(ev.detail));
+        dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, (ev: any) => this._addAttribute(ev.detail));
     }
 
     protected _openTimeDialog(startTimestamp?: number, endTimestamp?: number) {

@@ -21,7 +21,23 @@ package org.openremote.model.manager;
 
 import java.util.Map;
 
+/**
+ * Implements MapLibre style spec
+ *
+ * @see https://maplibre.org/maplibre-style-spec/root/
+ */
 public class MapConfig {
+    /**
+     * Custom OpenRemote property to override mapconfig with external mapconfig
+     * Expects a style.json URL
+     */
+    public String override;
+    /**
+     * Custom OpenRemote property to configure mapsettings per realm
+     */
     public Map<String, MapRealmConfig> options;
     public Map<String, MapSourceConfig> sources;
+    public String glyphs;
+    public String sprite;
+    public Object[] layers;
 }
