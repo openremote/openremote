@@ -591,8 +591,8 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     //minorSplitLine: {show: true},
                     splitNumer: (this._endOfPeriod! - this._startOfPeriod!)/this._intervalConfig!.millis - 1,
                     //minorTick: {show: true},
-                    min: this._startOfPeriod,
-                    max: this._endOfPeriod,
+                    min: this._startOfPeriod, //'dataMin',
+                    max: this._endOfPeriod, //'dataMax'
                     boundaryGap: false,
                     axisLabel: {
                         hideOverlap: true,
@@ -1184,9 +1184,9 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             ["7Days", {intervalName:"7Days", steps:7, orFormat:DatapointInterval.DAY,momentFormat:"days", millis: 604800000}],
             ["week", {intervalName:"week", steps:1, orFormat:DatapointInterval.WEEK,momentFormat:"weeks", millis: 604800000}],
             ["30Days", {intervalName:"30Days", steps:30, orFormat:DatapointInterval.DAY,momentFormat:"days", millis: 2592000000}],
-            ["month", {intervalName:"month", steps:1, orFormat:DatapointInterval.MONTH,momentFormat:"months", millis: 1}],
+            ["month", {intervalName:"month", steps:1, orFormat:DatapointInterval.MONTH,momentFormat:"months", millis: 2592000000}],
             ["365Days", {intervalName:"365Days", steps:365, orFormat:DatapointInterval.DAY,momentFormat:"days", millis: 31536000000}],
-            ["year", {intervalName:"year", steps:1, orFormat:DatapointInterval.MINUTE,momentFormat:"years", millis: 1}]
+            ["year", {intervalName:"year", steps:1, orFormat:DatapointInterval.MINUTE,momentFormat:"years", millis: 31536000000}]
         ]);
     };
 
@@ -1260,7 +1260,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             } else if(diffInHours <= 8760) { // one week if up to 1 year
                 return {intervalName: "auto(week)", steps: 1, orFormat: DatapointInterval.WEEK, momentFormat:'weeks', millis: 604800000};
             } else { // one month if more than a year
-                return {intervalName: "auto(month)", steps: 1, orFormat: DatapointInterval.MONTH, momentFormat:'months', millis: 10000};
+                return {intervalName: "auto(month)", steps: 1, orFormat: DatapointInterval.MONTH, momentFormat:'months', millis: 2592000000};
             }
         } else if (selectedInterval == "one") {
             //Set interval to total time span
@@ -1489,18 +1489,32 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         // End at the last available interval
         const latestIntervalData = Math.max(...this._data!.map(dataset => dataset.data.at(-1)?.[0] || 0));
 
-        console.log("Current:", markStartPoint);
-        console.log("Millis sec: ", this._intervalConfig!.millis/1000, "hours:", this._intervalConfig!.millis/1000/60/60);
-        console.log("startOfPeriod:", new Date(this._startOfPeriod!).toLocaleString(), "endOfPeriod:", new Date(this._endOfPeriod!).toLocaleString());
 
-        //Show highlights when reasonable amount of intervals are shown or
-        let current = markStartPoint;
-        if ((this._endOfPeriod!-this._startOfPeriod!)/this._intervalConfig!.millis < 300) {
+        // For months, use moment to get the right non constant interval sizes
+        if (this._intervalConfig!.orFormat == DatapointInterval.MONTH) {
+            let current = moment(markStartPoint).startOf('month').valueOf()
+            while (current <= latestIntervalData) {
+                this._markAreaData.push([{ xAxis: current }, { xAxis: current + this._intervalConfig!.millis }]);
+                current = moment(current).add(1, 'month').valueOf()
+            } // For years, use moment to get the right non constant interval sizes
+        } else if (this._intervalConfig!.orFormat == DatapointInterval.YEAR) {
+            let current = moment(markStartPoint).startOf('year').valueOf()
+            while (current <= latestIntervalData) {
+                this._markAreaData.push([{ xAxis: current }, { xAxis: current + this._intervalConfig!.millis }]);
+                current = moment(current).add(1, 'year').valueOf()
+            }  //Otherwise arithmetic calculate highlights when reasonable amount of intervals are to be shown (avoiding clutter and performance issues)
+        } else if ((this._endOfPeriod!-this._startOfPeriod!)/this._intervalConfig!.millis < 300) {
+            let current = markStartPoint;
             while (current <= latestIntervalData) {
                 this._markAreaData.push([{ xAxis: current }, { xAxis: current + this._intervalConfig!.millis }]);
                 current += this._intervalConfig!.millis * 2;
             }
         }
+
+        //console.log("Current:", markStartPoint);
+        //console.log("Millis sec: ", this._intervalConfig!.millis/1000, "hours:", this._intervalConfig!.millis/1000/60/60);
+        //console.log("startOfPeriod:", new Date(this._startOfPeriod!).toLocaleString(), "endOfPeriod:", new Date(this._endOfPeriod!).toLocaleString());
+
 
 
         this._chart!.setOption({
