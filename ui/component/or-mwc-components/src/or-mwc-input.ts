@@ -850,7 +850,6 @@ export class OrMwcInput extends LitElement {
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues) {
-        console.log(_changedProperties);
         if(_changedProperties.has("indeterminate")) {
             if(this._mdcComponent && this.type === InputType.CHECKBOX){
                 (this._mdcComponent as any).indeterminate = this.indeterminate;
