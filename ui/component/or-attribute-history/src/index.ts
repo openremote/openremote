@@ -502,7 +502,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         {
                             name: 'label',
                             type: 'line',
-                            showSymbol: false,
+                            showSymbol: data.length <= 30,
                             data: data,
                             sampling: 'lttb',
                             itemStyle: {
