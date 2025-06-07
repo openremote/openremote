@@ -167,6 +167,11 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         ];
     }
 
+    @property({ type: Boolean })
+    private secureContext = window.isSecureContext;
+
+
+
     @property({type: String})
     public interval?: Model.DatapointInterval;
 
@@ -414,7 +419,6 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
     }
 
     protected _getTable(): TemplateResult {
-
         return html`
             <div id="table" class="mdc-data-table">
                 <table class="mdc-data-table__table" aria-label="logs list">
@@ -438,9 +442,9 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                                     <td class="mdc-data-table__cell">${i18next.t(ev.subCategory!)}</td>                                    
                                     <td class="mdc-data-table__cell">${ev.message}</td>     
                                     <td class="mdc-data-table__cell" style="display: flex; align-items: center; justify-content: center;">
-                                        <or-mwc-input  type="${InputType.BUTTON}" icon="content-copy"
-                                                      @or-mwc-input-changed="${() => this._copyRow(ev)}"
-                                        ></or-mwc-input>
+                                        ${this.secureContext
+                                                ? html`<or-mwc-input type="${InputType.BUTTON}" icon="content-copy" @or-mwc-input-changed="${() => this._copyRow(ev)}"></or-mwc-input>`
+                                                : html``}
                                     </td>
                                 </tr>
                             `;            
@@ -455,30 +459,9 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
     protected async _copyRow(row: Model.SyslogEvent) {
         try {
             const text = JSON.stringify(row.message, null, 2);
-
-            // Try using the modern clipboard API
-            if (navigator.clipboard && window.isSecureContext) {
                 await navigator.clipboard.writeText(text);
-            } else {
-                // Fallback for insecure contexts or unsupported browsers
-                const textarea = document.createElement("textarea");
-                textarea.value = text;
-                textarea.style.position = "fixed"; // Avoid scrolling to bottom
-                textarea.style.opacity = "0";      // Hide it from view
-                document.body.appendChild(textarea);
-                textarea.focus();
-                textarea.select();
-
-                const successful = document.execCommand("copy");
-                document.body.removeChild(textarea);
-
-                if (!successful) {
-                    throw new Error("Fallback: Copy command was unsuccessful");
-                }
-            }
-            showSnackbar(undefined, "Copied to clipboard successfully.");
+                showSnackbar(undefined, "Copied to clipboard successfully.");
         } catch (err){
-            showSnackbar(undefined, "Failed to copy");
             console.error("Failed to copy:", err);
         }
     }
