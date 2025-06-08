@@ -8,7 +8,7 @@ apply from: "${layout.getProjectDirectory().asFile}/properties.gradle"
 
 
 // ------------- TASK: CHECK DOCKER SOCKET -------------
-task checkDockerSocket {
+tasks.register("checkDockerSocket") {
     group = 'deployment'
     description = 'Checks that Docker is installed and determines Docker socket path and host architecture'
 
@@ -105,42 +105,52 @@ ext.balenaExecutable = { ->
 }
 
 // ------------- TASK: COPY DOCKER ASSETS -------------
-task copyOpenRemoteDocker(type: Copy) {
-    group       = 'deployment'
+tasks.register('copyOpenRemoteDocker', Copy) {
+    group = 'deployment'
     description = 'Copy Dockerfile + scripts into build/docker'
+    dependsOn project(":manager").tasks.named("installDist")
 
-    from project(":manager").layout.buildDirectory.dir("install/manager")
-            .get().asFile
-    include 'Dockerfile', '**/*'
-    into new File(layout.buildDirectory.get().asFile, "docker")
+    // Copy all files except Dockerfile from manager install
+    from(project(":manager").layout.buildDirectory.dir("install/manager")) {
+        include '**/*'
+        exclude "**/*.Dockerfile"
+    }
+
+    // Copy Dockerfile and docker-compose.yml from THIS project dir (balena)
+    from(layout.projectDirectory) {
+        include 'docker-compose.yml'
+    }
+
+    // Only one into!
+    into layout.buildDirectory.dir("docker").get().asFile
 }
 
 // ------------- TASK: RUN BALENA BUILD SCRIPT -------------
-task runOpenRemoteBalenaBuild(type: Exec) {
-    group       = 'deployment'
+tasks.register('runOpenRemoteBalenaBuild', Exec) {
+    group = 'deployment'
     description = 'Run Balena build on the copied assets'
-    dependsOn   downloadBalenaCli, copyOpenRemoteDocker, checkDockerSocket
-    environment "BALENA_API_TOKEN", project.ext.balenaApiToken
+    dependsOn downloadBalenaCli, copyOpenRemoteDocker, checkDockerSocket
+
     doFirst {
-        def workDir = new File(layout.buildDirectory.get().asFile, "docker")
-        workingDir workDir
-        commandLine balenaExecutable(), 'build', ".",
+        commandLine balenaExecutable(), 'build', layout.buildDirectory.dir("docker").get().asFile.toString(),
                 "-A", project.ext.hostArch,
                 "--deviceType", project.ext.deviceType,
                 "--docker", project.ext.dockerSocketPath
     }
 }
 // ------------- TASK: PUSH TO BALENA -------------
-task pushOpenRemoteToBalena(type: Exec) {
-    group       = 'deployment'
+tasks.register('pushOpenRemoteToBalena', Exec) {
+    group = 'deployment'
     description = 'Package and push the app to Balena'
-    dependsOn   clean, installDist, runOpenRemoteBalenaBuild
+    dependsOn clean, installDist, runOpenRemoteBalenaBuild
 
     doFirst {
+        workingDir layout.buildDirectory.dir("docker").get()
         if (!balenaSlug) {
-            throw new GradleException("Please set ext.balenaSlug in build.gradle")
+            throw new GradleException("Please set ext.balenaSlug in properties.gradle")
         }
         println "👉 Pushing to Balena with slug: $balenaSlug"
+        commandLine balenaExecutable(), 'login --token', project.ext.balenaApiToken
         commandLine balenaExecutable(), 'push', balenaSlug
     }
 }
