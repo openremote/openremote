@@ -1,0 +1,7 @@
+ext {
+    balenaSlug = 'org/fleet'
+    dockerAssetsDir = 'balena'
+    balenaCliVersion = '21.1.11'  // set to desired balena-cli release
+    deviceType = "raspberrypi5"
+    balenaApiToken = ""
+}
