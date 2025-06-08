@@ -1,7 +1,7 @@
 ext {
-    balenaSlug = 'openremote_internal/openremote'
+    balenaSlug = ''
     dockerAssetsDir = 'balena'
     balenaCliVersion = '21.1.11'  // set to desired balena-cli release
     deviceType = "raspberrypi5"
-    balenaApiToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzEzMTkyLCJleHAiOjE3NDk1MzYyMTAsImp3dF9zZWNyZXQiOiJENUVYNURXRzNLSE1DUFZYRjM3NEpXQkI0RTVVQk9URyIsImF1dGhUaW1lIjoxNzQ5NDA2NjEwNzcyLCJpYXQiOjE3NDk0MDY2MTF9.AVp8jrJgTmkx7HTSuqmGzGXYIEm3bzekrktTu8y4gpo"
+    balenaApiToken = ""
 }
