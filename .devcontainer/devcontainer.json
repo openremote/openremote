@@ -1,6 +1,6 @@
 {
   "name": "OpenRemote DevContainer",
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "image": "mcr.microsoft.com/devcontainers/java:21",
   "workspaceFolder": "/workspaces/openremote",
   "remoteUser": "root",
   "features": {
@@ -9,8 +9,11 @@
       "moby": true,
       "dockerDashComposeVersion": "v2"
     },
-    "ghcr.io/devcontainers-extra/features/gradle-sdkman:2": {
-      "version": "latest"
+    "ghcr.io/devcontainers/features/java:1": {
+        "version": "21",
+        "jdkDistro": "open",
+        "installGradle": "true",
+        "installGroovy": "true"
     },
     "ghcr.io/devcontainers/features/node:1": {}
   },
