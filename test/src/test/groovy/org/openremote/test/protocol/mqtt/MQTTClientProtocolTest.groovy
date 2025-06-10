@@ -114,34 +114,34 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         def conditions = new PollingConditions(timeout: 180, delay: 1)
 
         when: "a hiveMQ client is created"
+        def clientId = "ortest1"
         Mqtt3AsyncClient client
         String username = "smartcity:rich"
         String password = "mGCtUhlocBFOKEroauH1hcRbyF5yXy9q"
-        boolean cleanSession = false
+        boolean cleanSession = true
         def subs = []
         def connect = false
         def subscriptions = [
-                "smartcity/ortest/attribute/notes/2wzKB2j39144oTzAJnHpfs", // De Rotterdam
-                "smartcity/ortest/attribute/notes/3b2U0Am8HrOqsp9Zozu9H9", // Erasmianum
-                "smartcity/ortest/attribute/notes/4exKxPtZHl68sbAxHrBJwF", // Markthal
-                "smartcity/ortest/attribute/notes/6A1jPBmMgatmIpCso9qhID", // Oostelijk
-                "smartcity/ortest/attribute/notes/4vOTip49rph3bcFAOyl7yZ" // Stadhuis
+                "smartcity/${clientId}/attribute/notes/2wzKB2j39144oTzAJnHpfs", // De Rotterdam
+                "smartcity/${clientId}/attribute/notes/3b2U0Am8HrOqsp9Zozu9H9", // Erasmianum
+                "smartcity/${clientId}/attribute/notes/4exKxPtZHl68sbAxHrBJwF", // Markthal
+                "smartcity/${clientId}/attribute/notes/6A1jPBmMgatmIpCso9qhID", // Oostelijk
+                "smartcity/${clientId}/attribute/notes/4vOTip49rph3bcFAOyl7yZ" // Stadhuis
         ]
         def errorCounter = 0
 
         client = MqttClient.builder()
                 .useMqttVersion3()
-                .identifier("ortest")
+                .identifier(clientId)
                 .sslConfig().applySslConfig()
                 .serverHost("demo.openremote.app")
                 .serverPort(8883)
                 .addConnectedListener{
                     LOG.info("CONNECTION CONNECTED")
-                    LOG.info("REDO SUBSCRIPTIONS")
                 }
                 .addDisconnectedListener{
                     ((Mqtt3ClientDisconnectedContext) it).reconnector
-                        .resubscribeIfSessionExpired(!cleanSession)
+                        .resubscribeIfSessionExpired(true)
                         .connectWith()
                         .simpleAuth()
                         .username(username)
@@ -167,16 +167,33 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                     errorCounter++
                 }
                 .automaticReconnect()
-                .initialDelay(500, TimeUnit.MILLISECONDS)
+                .initialDelay(1000, TimeUnit.MILLISECONDS)
                 .maxDelay(120000, TimeUnit.MILLISECONDS)
                 .applyAutomaticReconnect()
                 .buildAsync()
 
+        and: "a message is published"
+        client.publishWith()
+                .topic("test")
+                .payload("test".getBytes())
+                .qos(MqttQos.AT_LEAST_ONCE)
+                .send()
+                .orTimeout(5000, TimeUnit.MILLISECONDS)
+                .whenComplete((publish, throwable) -> {
+                    if (throwable != null) {
+                        // Failure
+                        LOG.info("Failed to publish", throwable)
+                    } else {
+                        // Success
+                        LOG.info("Published message")
+                    }
+                })
+
         and: "subscriptions are added"
         // Doing subscription
 //        doUnsubscribe(client, subscriptions[1])
-//        subs.add(doSubscription(client, subscriptions[1], MqttQos.AT_LEAST_ONCE))
-//        subs.add(doSubscription(client, subscriptions[1], MqttQos.AT_LEAST_ONCE))
+        subs.add(doSubscription(client, subscriptions[0], MqttQos.AT_LEAST_ONCE))
+        subs.add(doSubscription(client, subscriptions[1], MqttQos.AT_LEAST_ONCE))
 //        subscriptions.forEach {
 //            LOG.info("ADDING SUBSCRIPTION: ${it}")
 //            subs.add(doSubscription(client, it, MqttQos.AT_LEAST_ONCE))
@@ -194,17 +211,17 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             .applySimpleAuth()
             .send()
 
-            connectFuture.whenComplete(connAck, throwable) -> {
-                if (connAck != null) {
-                    LOG.info("Connected code=" + connAck.returnCode + ", sessionPresent=" + connAck.sessionPresent)
-                } else if (throwable != null) {
-                    if (throwable instanceof CancellationException) {
-                        LOG.info("Connection cancelled")
-                    } else {
-                        LOG.info("Connection failed: " + throwable.getMessage())
-                    }
+        connectFuture.whenComplete(connAck, throwable) -> {
+            if (connAck != null) {
+                LOG.info("Connected code=" + connAck.returnCode + ", sessionPresent=" + connAck.sessionPresent)
+            } else if (throwable != null) {
+                if (throwable instanceof CancellationException) {
+                    LOG.info("Connection cancelled")
+                } else {
+                    LOG.info("Connection failed: " + throwable.getMessage())
                 }
             }
+        }
 
         then: "the client should be connected"
         conditions.eventually {
@@ -216,7 +233,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
 
         then: "subscriptions should exist"
         conditions.eventually {
-            assert subs.size() == 5
+            assert subs.size() == 2
         }
 
         when: "the client is disconnected"
