@@ -545,12 +545,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             return;
         }
 
-
-        //---------BEUN AREA---------
         this._intervalConfig = this._validateInterval(this._startOfPeriod!,this._endOfPeriod!,  this.interval!);
-
-        //-------------------
-
 
         if (!this._chart && this.isChart) {
             this._chartOptions = {
@@ -591,8 +586,8 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     //minorSplitLine: {show: true},
                     splitNumer: (this._endOfPeriod! - this._startOfPeriod!)/this._intervalConfig!.millis - 1,
                     //minorTick: {show: true},
-                    min: this._startOfPeriod, //'dataMin',
-                    max: this._endOfPeriod, //'dataMax'
+                    min: this._startOfPeriod,
+                    max: this._endOfPeriod,
                     boundaryGap: false,
                     axisLabel: {
                         hideOverlap: true,
@@ -665,6 +660,8 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
             // Initialize echarts instance
             this._chart = init(this._chartElem);
+            console.log ("Width: " , this._chartElem.offsetWidth)
+            console.log ("Heigth: " , this._chartElem.offsetHeight)
             // Set chart options to default
             this._chart.setOption(this._chartOptions);
             this._toggleChartEventListeners(true);
@@ -708,6 +705,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                     (item.children[1] as HTMLElement).style.flexDirection = bottomLegend ? 'row' : 'column';
                     (item.children[1] as HTMLElement).style.gap = bottomLegend ? '4px' : '';
                 });
+                this._chart!.resize()
             }
         }
     }
@@ -794,7 +792,6 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                                                     this.interval,
                                                     (value: string | string[]) => {
                                                         this.interval = value.toString();
-                                                        console.log("you selected: ", value.toString() )
                                                     },
                                                     undefined,
                                                     undefined,
@@ -1502,11 +1499,6 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             }
         }
 
-        //console.log("Current:", markStartPoint);
-        //console.log("Millis sec: ", this._intervalConfig!.millis/1000, "hours:", this._intervalConfig!.millis/1000/60/60);
-        //console.log("startOfPeriod:", new Date(this._startOfPeriod!).toLocaleString(), "endOfPeriod:", new Date(this._endOfPeriod!).toLocaleString());
-
-
 
         this._chart!.setOption({
             series: [
@@ -1523,9 +1515,6 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                         itemStyle: { color: "rgba(0, 0, 0, 0.05)"},
                         data: this._markAreaData
                     },
-                    //lineStyle: { opacity: 0 },
-                    //emphasis: { disabled: true },
-                    //tooltip: { show: false }
                 },
                 {
                     name: "Background2",
@@ -1537,9 +1526,6 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                         itemStyle: { color: "rgba(0, 0, 0, 0)" ,borderColor: this._style.getPropertyValue("--internal-or-chart-graph-point-hover-border-color"), borderWidth: 0.1},
                         data: this._markAreaData.map(group => group.map(entry => ({ ...entry, xAxis: entry.xAxis + this._intervalConfig!.millis })))
                     },
-                    //lineStyle: { opacity: 0 },
-                    //emphasis: { disabled: true },
-                    //tooltip: { show: false }
                 }
 
             ]
@@ -1554,7 +1540,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             // Make chart size responsive
             window.addEventListener("resize", () => this._chart!.resize());
             this._zoomHandler = this._chart!.on('datazoom', () => {this.updateBars();});
-            this._containerResizeObserver = new ResizeObserver(() => { this._chart!.resize(); this.applyChartResponsiveness(); this.updateBars();});
+            this._containerResizeObserver = new ResizeObserver(() => {this.applyChartResponsiveness(); this.updateBars();});
             if (this.shadowRoot) {
                 this._containerResizeObserver.observe(this.shadowRoot!.getElementById('container') as HTMLElement);
             }
@@ -1577,10 +1563,9 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         if (this._data) {
             const barAmount = this._data.length
             if (this._data.every(entry => entry.data.length < 1)) {
-                console.log("no Data")
                 return;
             } else if (this._data.every(entry => entry.data.length == 1)) {
-                console.log("only one datapoint and",barAmount,"datasets")
+
                 this._data.forEach((value, index) => {
                     let width = 50 / (barAmount * 1.2)
                     value.barWidth = `${width}%`;
@@ -1590,10 +1575,8 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                 this._data.forEach((value, index) => {
                     const startTime = this._data?.find(entry => entry.data.length > 0)?.data?.[0][0]; //find some dataset that has a timestamp
                     const endTime = startTime + this._intervalConfig!.millis;
-                    console.log("starttime:", new Date(startTime).toLocaleString(), "endtime:", new Date(endTime).toLocaleString());
                     const pixelStart = this._chart!.convertToPixel({xAxisIndex: 0}, startTime);
                     const pixelEnd = this._chart!.convertToPixel({xAxisIndex: 0}, endTime);
-                    console.log("amount of pixels: ", (pixelEnd - pixelStart))
                     const magicRatio = 0.8; //fill ratio
                     const availableWidth = (pixelEnd - pixelStart) * magicRatio;
                     value.barWidth = availableWidth / barAmount;
