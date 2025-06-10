@@ -935,7 +935,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         if (!this.intervalOptions) {
             this.intervalOptions = this._getDefaultIntervalOptions();
         }
-        //TEMP HERE DELETE LATER OR NOT? interval is public
+
         if (!this.interval) {
             this.interval = this.intervalOptions.keys().next().value.toString();
         }
@@ -1179,13 +1179,9 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             ["5Minutes", {intervalName:"5Minutes", steps:5, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 300000}],
             ["30Minutes", {intervalName:"30Minutes", steps:30, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 1800000}],
             ["hour", {intervalName:"hour", steps:1, orFormat:DatapointInterval.HOUR,momentFormat:"hours", millis: 3600000}],
-            ["6Hours", {intervalName:"6Hours", steps:6, orFormat:DatapointInterval.HOUR,momentFormat:"hours", millis: 21600000}],
             ["day", {intervalName:"day", steps:1, orFormat:DatapointInterval.DAY,momentFormat:"days", millis: 86400000}],
-            ["7Days", {intervalName:"7Days", steps:7, orFormat:DatapointInterval.DAY,momentFormat:"days", millis: 604800000}],
             ["week", {intervalName:"week", steps:1, orFormat:DatapointInterval.WEEK,momentFormat:"weeks", millis: 604800000}],
-            ["30Days", {intervalName:"30Days", steps:30, orFormat:DatapointInterval.DAY,momentFormat:"days", millis: 2592000000}],
             ["month", {intervalName:"month", steps:1, orFormat:DatapointInterval.MONTH,momentFormat:"months", millis: 2592000000}],
-            ["365Days", {intervalName:"365Days", steps:365, orFormat:DatapointInterval.DAY,momentFormat:"days", millis: 31536000000}],
             ["year", {intervalName:"year", steps:1, orFormat:DatapointInterval.MINUTE,momentFormat:"years", millis: 31536000000}]
         ]);
     };
@@ -1247,14 +1243,10 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             //Returns amount of steps, interval size and moment.js time format
             if(diffInHours <= 1) {
                 return { intervalName: "auto(5m)", steps: 5, orFormat: DatapointInterval.MINUTE, momentFormat: 'minutes', millis: 300000 };
-            } else if(diffInHours <= 3) {
-                return {intervalName: "auto(20m)", steps: 20, orFormat: DatapointInterval.MINUTE, momentFormat:'minutes', millis: 1200000};
             } else if(diffInHours <= 6) {
                 return {intervalName: "auto(30m)", steps: 30, orFormat: DatapointInterval.MINUTE, momentFormat:'minutes', millis: 1800000};
             } else if(diffInHours <= 24) { // hour if up to one day
                 return {intervalName: "auto(1hr)", steps: 1, orFormat: DatapointInterval.HOUR, momentFormat:'hours', millis: 3600000};
-            } else if(diffInHours <= 48) { // hour if up to two days
-                return {intervalName: "auto(6hr)", steps: 6, orFormat: DatapointInterval.HOUR, momentFormat:'hours', millis: 21600000};
             } else if(diffInHours <= 744) { // one day if up to one month
                 return {intervalName: "auto(day)", steps: 1, orFormat: DatapointInterval.DAY, momentFormat:'days', millis: 86400000};
             } else if(diffInHours <= 8760) { // one week if up to 1 year
@@ -1288,7 +1280,6 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                 return value; // Found a valid option
             }
         }
-
         // If no valid option is found, return the smallest available option
         return intervalOptions[0][1];
     }
@@ -1490,7 +1481,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         const latestIntervalData = Math.max(...this._data!.map(dataset => dataset.data.at(-1)?.[0] || 0));
 
 
-        // For months, use moment to get the right non constant interval sizes
+        // For months or years, use moment to get the right non-constant interval sizes
         if (this._intervalConfig!.orFormat == DatapointInterval.MONTH) {
             let current = moment(markStartPoint).startOf('month').valueOf()
             while (current <= latestIntervalData) {
@@ -1584,30 +1575,31 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     protected updateBars() {
         //Function to update dynamic bar positions and widths
         if (this._data) {
+            const barAmount = this._data.length
             if (this._data.every(entry => entry.data.length < 1)) {
                 console.log("no Data")
                 return;
+            } else if (this._data.every(entry => entry.data.length == 1)) {
+                console.log("only one datapoint and",barAmount,"datasets")
+                this._data.forEach((value, index) => {
+                    let width = 50 / (barAmount * 1.2)
+                    value.barWidth = `${width}%`;
+                });
+            } else {
+
+                this._data.forEach((value, index) => {
+                    const startTime = this._data?.find(entry => entry.data.length > 0)?.data?.[0][0]; //find some dataset that has a timestamp
+                    const endTime = startTime + this._intervalConfig!.millis;
+                    console.log("starttime:", new Date(startTime).toLocaleString(), "endtime:", new Date(endTime).toLocaleString());
+                    const pixelStart = this._chart!.convertToPixel({xAxisIndex: 0}, startTime);
+                    const pixelEnd = this._chart!.convertToPixel({xAxisIndex: 0}, endTime);
+                    console.log("amount of pixels: ", (pixelEnd - pixelStart))
+                    const magicRatio = 0.8; //fill ratio
+                    const availableWidth = (pixelEnd - pixelStart) * magicRatio;
+                    value.barWidth = availableWidth / barAmount;
+
+                });
             }
-
-            const barAmount = this._data.length
-
-            //const diffInHours = (this._endOfPeriod! - this._startOfPeriod!) / 1000 / 60 / 60;
-            //const intervalArr = this._validateInterval(diffInHours, this.interval!);
-            //const IntervalMillis = moment.duration(intervalArr.steps, intervalArr.momentFormat).asMilliseconds();
-            console.log("intervalConfig: ", this._intervalConfig)
-
-
-            this._data.forEach((value, index) => {
-                const startTime = this._data?.find(entry => entry.data.length > 0)?.data?.[0][0]; //find some dataset that has a timestamp
-                const endTime = startTime + this._intervalConfig!.millis;
-                console.log("starttime:", new Date(startTime).toLocaleString(), "endtime:", new Date(endTime).toLocaleString());
-                const pixelStart = this._chart!.convertToPixel({ xAxisIndex: 0}, startTime);
-                const pixelEnd = this._chart!.convertToPixel({ xAxisIndex: 0}, endTime);
-                console.log("amount of pixels: ", (pixelEnd-pixelStart))
-                const magicRatio = 0.8; //fill ratio
-                const availableWidth = (pixelEnd - pixelStart) * magicRatio;
-                value.barWidth = availableWidth / barAmount;
-            });
 
             this._updateChartData()
 
