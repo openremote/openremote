@@ -72,7 +72,6 @@ fi
 STACK_NAME=$(tr '.' '-' <<< "$HOST")
 SMTP_STACK_NAME="$STACK_NAME-smtp"
 HEALTH_STACK_NAME="$STACK_NAME-healthcheck"
-SSM_STACK_NAME="$STACK_NAME-ssm-attach-detach-documents"
 
 # Provision SMTP user using CloudFormation (if stack doesn't already exist)
 echo "Provisioning SMTP user"
