@@ -449,7 +449,7 @@ jobs:
               echo "pushRequired=true" >> $GITHUB_OUTPUT
               echo "managerDockerImage=openremote/manager:$FIRST_MANAGER_TAG" >> $GITHUB_OUTPUT
             else
-              command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
+              command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath --cache-from=type=gha --cache-to=type=gha,mode=max"
               echo "managerDockerImage=openremote/manager:$commitShaShort" >> $GITHUB_OUTPUT
             fi
             echo "value=$command" >> $GITHUB_OUTPUT
@@ -599,12 +599,6 @@ jobs:
           docker compose -f $composeProfile pull
         env:
           TEST_UI_COMMAND: ${{ steps.test-ui-command.outputs.value }}
-
-      # Use docker layer caching to speed up image building
-      - uses: jpribyl/action-docker-layer-caching@c632825d12ec837065f49726ea27ddd40bcc7894 # v0.1.1
-        if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
-        # Ignore the failure of a step and avoid terminating the job.
-        continue-on-error: true
 
       - name: Update version in package.json files
         id: update-package-json-files
