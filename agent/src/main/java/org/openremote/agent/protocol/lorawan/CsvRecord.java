@@ -40,9 +40,6 @@ public class CsvRecord {
     @JsonProperty("firmwareVersion")
     private String firmwareVersion;
 
-    @JsonProperty("supportsClassC")
-    private Boolean supportsClassC;
-
     public String getDevEUI() { return devEUI; }
     public void setDevEUI(String devEUI) { this.devEUI = devEUI; }
 
@@ -63,9 +60,6 @@ public class CsvRecord {
     public String getFirmwareVersion() { return firmwareVersion; }
     public void setFirmwareVersion(String firmwareVersion) { this.firmwareVersion = firmwareVersion; }
 
-    public Boolean getSupportsClassC() { return supportsClassC; } // Nullable Boolean
-    public void setSupportsClassC(Boolean supportsClassC) { this.supportsClassC = supportsClassC; }
-
     @Override
     public String toString() {
         return "CsvRecord{" +
@@ -74,7 +68,6 @@ public class CsvRecord {
             ", vendorId='" + (vendorId != null ? vendorId : "") + '\'' +
             ", modelId='" + (modelId != null ? modelId : "") + '\'' +
             ", firmwareVersion='" + (firmwareVersion != null ? firmwareVersion : "") + '\'' +
-            ", supportsClassC='" + (supportsClassC != null ? supportsClassC : "") + '\'' +
             '}';
     }
 

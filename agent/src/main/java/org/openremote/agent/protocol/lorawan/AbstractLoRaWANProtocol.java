@@ -176,7 +176,6 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
                 .addColumn("vendor_id")
                 .addColumn("model_id")
                 .addColumn("firmwareVersion")
-                .addColumn("supportsClassC")
                 .setUseHeader(false)
                 .build();
 
@@ -388,7 +387,6 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         Optional.ofNullable(csvRecord.getVendorId()).ifPresent(vendorId -> asset.getAttribute(ATTRIBUTE_NAME_VENDOR_ID).ifPresent(attribute -> attribute.setValue(vendorId)));
         Optional.ofNullable(csvRecord.getModelId()).ifPresent(modelId -> asset.getAttribute(ATTRIBUTE_NAME_MODEL_ID).ifPresent(attribute -> attribute.setValue(modelId)));
         Optional.ofNullable(csvRecord.getFirmwareVersion()).ifPresent(version -> asset.getAttribute(ATTRIBUTE_NAME_FIRMWARE_VERSION).ifPresent(attribute -> attribute.setValue(version)));
-        Optional.ofNullable(csvRecord.getSupportsClassC()).or(() -> Optional.of(false)).ifPresent(supportsClassC -> asset.getAttribute(ATTRIBUTE_NAME_SUPPORTC_CLASS_C).ifPresent(attribute -> attribute.setValue(supportsClassC)));
 
         boolean isOk = true;
 

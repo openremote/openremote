@@ -130,8 +130,8 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait{
 
         and: "CSV import is executed"
         def csvContent = """\
-            ${DEV_EUI_1},${ASSET_NAME_1},${VENDOR_ID},${MODEL_ID},${FIRMWARE_VERSION},false            
-            ${DEV_EUI_2},${ASSET_NAME_2},${VENDOR_ID},${MODEL_ID},${FIRMWARE_VERSION},false            
+            ${DEV_EUI_1},${ASSET_NAME_1},${VENDOR_ID},${MODEL_ID},${FIRMWARE_VERSION}
+            ${DEV_EUI_2},${ASSET_NAME_2},${VENDOR_ID},${MODEL_ID},${FIRMWARE_VERSION}
         """.stripIndent()
         def fileInfo = new FileInfo("devices.csv", csvContent, false)
         AssetTreeNode[] assets = agentResource.doProtocolAssetImport(null, agent.getId(), null, fileInfo)
