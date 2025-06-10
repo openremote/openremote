@@ -58,6 +58,7 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.bouncycastle.asn1.cmc.CMCStatus.success;
 import static org.openremote.agent.protocol.io.AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS;
 import static org.openremote.agent.protocol.io.AbstractNettyIOClient.RECONNECT_DELAY_MAX_MILLIS;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
@@ -215,30 +216,20 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         addMessageConsumer("#", null, messageConsumer);
     }
 
-    public boolean addMessageConsumer(String topic, Consumer<MQTTMessage<S>> messageConsumer) {
+    public CompletableFuture<Boolean> addMessageConsumer(String topic, Consumer<MQTTMessage<S>> messageConsumer) {
         return addMessageConsumer(topic, null, messageConsumer);
     }
 
-    public boolean addMessageConsumer(String topic, MqttQos qos, Consumer<MQTTMessage<S>> messageConsumer) {
+    public CompletableFuture<Boolean> addMessageConsumer(String topic, MqttQos qos, Consumer<MQTTMessage<S>> messageConsumer) {
         if (client == null) {
-            return false;
+            return CompletableFuture.completedFuture(false);
         }
 
         Pair<MqttQos, Set<Consumer<MQTTMessage<S>>>> consumers = topicConsumerMap.computeIfAbsent(topic, t ->
                 new Pair<>(qos != null ? qos : MqttQos.AT_LEAST_ONCE, new HashSet<>()));
 
-        if (consumers.getValue().isEmpty()) {
-            // Create the subscription on the client
-            if (doClientSubscription(topic)) {
-                consumers.getValue().add(messageConsumer);
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            consumers.getValue().add(messageConsumer);
-            return true;
-        }
+        consumers.getValue().add(messageConsumer);
+        return doClientSubscription(topic);
     }
 
     public void setTopicSubscribeFailureConsumer(Consumer<String> topicSubscribeFailureConsumer) {
@@ -251,13 +242,13 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         }
     }
 
-    protected boolean doClientSubscription(String topic) {
-        synchronized (connected) {
-            if (!connected.get()) {
-                // Just return true and let connection logic sort out actual subscription
-                return true;
-            }
-        }
+    protected CompletableFuture<Boolean> doClientSubscription(String topic) {
+//        synchronized (connected) {
+//            if (!connected.get()) {
+//                // Just return true and let connection logic sort out actual subscription
+//                return CompletableFuture.completedFuture(true);
+//            }
+//        }
 
         Consumer<MQTTMessage<S>> messageConsumer = message -> {
             Pair<MqttQos, Set<Consumer<MQTTMessage<S>>>> topicConsumers = topicConsumerMap.get(topic);
@@ -273,33 +264,30 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         };
 
         Pair<MqttQos, Set<Consumer<MQTTMessage<S>>>> topicConsumers = topicConsumerMap.get(topic);
-        try {
-            Mqtt3Subscribe subscribeMessage = Mqtt3Subscribe.builder()
-                    .topicFilter(topic)
-                    .qos(topicConsumers.getKey())
-                    .build();
-
-            Mqtt3SubAck subAck = client.subscribe(subscribeMessage, publish -> {
-                try {
-                    String topicStr = publish.getTopic().toString();
-                    S payload = messageFromBytes(publish.getPayloadAsBytes());
-                    MQTTMessage<S> message = new MQTTMessage<>(topicStr, payload);
-                    messageConsumer.accept(message);
-                } catch (Exception e) {
-                    LOG.log(Level.WARNING, "Failed to process published message on client '" + getClientUri() + "'", e);
+        return client.subscribeWith().topicFilter(topic).qos(topicConsumers.getKey()).callback(
+                publish -> {
+                    try {
+                        String topicStr = publish.getTopic().toString();
+                        S payload = messageFromBytes(publish.getPayloadAsBytes());
+                        MQTTMessage<S> message = new MQTTMessage<>(topicStr, payload);
+                        messageConsumer.accept(message);
+                    } catch (Exception e) {
+                        LOG.log(Level.WARNING, "Failed to process published message on client '" + getClientUri() + "'", e);
+                    }
                 }
-            }).get();
-            if (subAck.getReturnCodes().contains(Mqtt3SubAckReturnCode.FAILURE)) {
-                throw new Exception("Server returned failure code for subscription");
-            }
-            LOG.fine("Subscribed to topic '" + topic + "' on client '" + getClientUri() + "'");
-            return true;
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to subscribe to topic '" + topic + "' on client '" + getClientUri() + "': " + e.getMessage());
-            executorService.execute(() -> onSubscribeFailed(topic));
-        }
-        topicConsumerMap.remove(topic);
-        return false;
+            ).executor(Container.EXECUTOR)
+            .send().handle((subAck, throwable) -> {
+                if (throwable != null) {
+                    LOG.log(Level.SEVERE, "Failed to subscribe due to exception on topic '" + topic + "' client '" + getClientUri() + "': " + throwable.getMessage());
+                    return false;
+                }
+                if (subAck.getReturnCodes().contains(Mqtt3SubAckReturnCode.FAILURE)) {
+                    LOG.log(Level.WARNING, "Failed to subscribe due to server failure on topic '" + topic + "' client: " + getClientUri());
+                    return false;
+                }
+                LOG.log(Level.FINE, "Subscribed to topic '" + topic + "' on client: " + getClientUri() + "'");
+                return true;
+            });
     }
 
     @Override

@@ -20,11 +20,27 @@
 package org.openremote.test.protocol.mqtt
 
 import com.hivemq.client.internal.mqtt.handler.disconnect.MqttDisconnectUtil
+import com.hivemq.client.internal.mqtt.message.connect.connack.MqttConnAck
 import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3AsyncClientView
 import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
+import com.hivemq.client.mqtt.MqttClient
 import com.hivemq.client.mqtt.MqttClientConfig
 import com.hivemq.client.internal.mqtt.MqttClientConnectionConfig
+import com.hivemq.client.mqtt.MqttClientState
 import com.hivemq.client.mqtt.datatypes.MqttQos
+import com.hivemq.client.mqtt.exceptions.ConnectionClosedException
+import com.hivemq.client.mqtt.exceptions.ConnectionFailedException
+import com.hivemq.client.mqtt.lifecycle.MqttDisconnectSource
+import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient
+import com.hivemq.client.mqtt.mqtt3.Mqtt3ClientBuilder
+import com.hivemq.client.mqtt.mqtt3.exceptions.Mqtt3ConnAckException
+import com.hivemq.client.mqtt.mqtt3.exceptions.Mqtt3DisconnectException
+import com.hivemq.client.mqtt.mqtt3.lifecycle.Mqtt3ClientDisconnectedContext
+import com.hivemq.client.mqtt.mqtt3.message.connect.Mqtt3ConnectBuilder
+import com.hivemq.client.mqtt.mqtt3.message.connect.connack.Mqtt3ConnAck
+import com.hivemq.client.mqtt.mqtt3.message.subscribe.Mqtt3Subscribe
+import com.hivemq.client.mqtt.mqtt3.message.subscribe.suback.Mqtt3SubAck
+import com.hivemq.client.mqtt.mqtt3.message.subscribe.suback.Mqtt3SubAckReturnCode
 import io.netty.channel.socket.SocketChannel
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.cert.X509v3CertificateBuilder
@@ -38,9 +54,11 @@ import org.bouncycastle.util.io.pem.PemObject
 import org.bouncycastle.util.io.pem.PemWriter
 import org.openremote.agent.protocol.mqtt.MQTTAgent
 import org.openremote.agent.protocol.mqtt.MQTTAgentLink
+import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTTProtocol
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
+import org.openremote.container.Container
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -77,12 +95,178 @@ import java.security.PrivateKey
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
+import java.util.concurrent.CancellationException
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
+import java.util.logging.Level
 
+import static org.openremote.agent.protocol.io.AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS
+import static org.openremote.agent.protocol.io.AbstractNettyIOClient.RECONNECT_DELAY_MAX_MILLIS
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
 import static org.openremote.model.value.ValueType.NUMBER
 
 class MQTTClientProtocolTest extends Specification implements ManagerContainerTrait {
+
+    def "Check HiveMQ client"() {
+
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 180, delay: 1)
+
+        when: "a hiveMQ client is created"
+        Mqtt3AsyncClient client
+        String username = "smartcity:rich"
+        String password = "mGCtUhlocBFOKEroauH1hcRbyF5yXy9q"
+        boolean cleanSession = false
+        def subs = []
+        def connect = false
+        def subscriptions = [
+                "smartcity/ortest/attribute/notes/2wzKB2j39144oTzAJnHpfs", // De Rotterdam
+                "smartcity/ortest/attribute/notes/3b2U0Am8HrOqsp9Zozu9H9", // Erasmianum
+                "smartcity/ortest/attribute/notes/4exKxPtZHl68sbAxHrBJwF", // Markthal
+                "smartcity/ortest/attribute/notes/6A1jPBmMgatmIpCso9qhID", // Oostelijk
+                "smartcity/ortest/attribute/notes/4vOTip49rph3bcFAOyl7yZ" // Stadhuis
+        ]
+        def errorCounter = 0
+
+        client = MqttClient.builder()
+                .useMqttVersion3()
+                .identifier("ortest")
+                .sslConfig().applySslConfig()
+                .serverHost("demo.openremote.app")
+                .serverPort(8883)
+                .addConnectedListener{
+                    LOG.info("CONNECTION CONNECTED")
+                    LOG.info("REDO SUBSCRIPTIONS")
+                }
+                .addDisconnectedListener{
+                    ((Mqtt3ClientDisconnectedContext) it).reconnector
+                        .resubscribeIfSessionExpired(!cleanSession)
+                        .connectWith()
+                        .simpleAuth()
+                        .username(username)
+                        .password(password.getBytes())
+                        .applySimpleAuth()
+                        .applyConnect()
+                        .reconnect(connect)
+
+                    if (!connect) {
+                        return
+                    }
+
+                    if (it.cause instanceof Mqtt3DisconnectException) {
+                        LOG.info("Connection disconnect error: source=" + it.source);
+                    } else if (it.cause instanceof Mqtt3ConnAckException) {
+                        LOG.info("Connection rejected: reasonCode=" + ((Mqtt3ConnAckException)it.cause).getMqttMessage().getReturnCode());
+                    } else if (it.cause instanceof ConnectionClosedException) {
+                        LOG.info("Connection closed: source=" + it.getSource());
+                    } else if (it.cause instanceof ConnectionFailedException) {
+                        LOG.info("Connection failed: source=" + it.source + ", message=" + it.cause.message);
+                    }
+                    LOG.info("Reconnecting delay=${it.reconnector.getDelay(TimeUnit.MILLISECONDS)}ms, attempt=${it.reconnector.attempts}")
+                    errorCounter++
+                }
+                .automaticReconnect()
+                .initialDelay(500, TimeUnit.MILLISECONDS)
+                .maxDelay(120000, TimeUnit.MILLISECONDS)
+                .applyAutomaticReconnect()
+                .buildAsync()
+
+        and: "subscriptions are added"
+        // Doing subscription
+//        doUnsubscribe(client, subscriptions[1])
+//        subs.add(doSubscription(client, subscriptions[1], MqttQos.AT_LEAST_ONCE))
+//        subs.add(doSubscription(client, subscriptions[1], MqttQos.AT_LEAST_ONCE))
+//        subscriptions.forEach {
+//            LOG.info("ADDING SUBSCRIPTION: ${it}")
+//            subs.add(doSubscription(client, it, MqttQos.AT_LEAST_ONCE))
+//            LOG.info("ADDED SUBSCRIPTION: ${it}")
+//        }
+
+        and: "the client connects"
+        connect = true
+        def connectFuture = client.connectWith()
+            .cleanSession(cleanSession)
+            .keepAlive(5)
+            .simpleAuth()
+            .username(username)
+            .password(password.getBytes())
+            .applySimpleAuth()
+            .send()
+
+            connectFuture.whenComplete(connAck, throwable) -> {
+                if (connAck != null) {
+                    LOG.info("Connected code=" + connAck.returnCode + ", sessionPresent=" + connAck.sessionPresent)
+                } else if (throwable != null) {
+                    if (throwable instanceof CancellationException) {
+                        LOG.info("Connection cancelled")
+                    } else {
+                        LOG.info("Connection failed: " + throwable.getMessage())
+                    }
+                }
+            }
+
+        then: "the client should be connected"
+        conditions.eventually {
+            assert client.state.connected
+        }
+
+        //when: "subscription is removed"
+        //doUnsubscribe(client, subscriptions[0])
+
+        then: "subscriptions should exist"
+        conditions.eventually {
+            assert subs.size() == 5
+        }
+
+        when: "the client is disconnected"
+        MqttDisconnectUtil.close(((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)client).clientConfig).delegate).connectionConfig.get()).channel, "Connection Error")
+
+        then: "it should reconnect automatically"
+        conditions.eventually {
+            assert client.state.connected
+        }
+
+        then: "subscriptions should be recreated"
+        conditions.eventually {
+            assert subs.size() == 10
+        }
+    }
+
+    def doDisconnect(Mqtt3AsyncClient client) {
+        connect = false
+        connectFuture.cancel(true)
+        client.disconnect()
+        LOG.info("WE DISCONNECTED")
+    }
+
+    def doSubscription(Mqtt3AsyncClient client, String topic, MqttQos qos) {
+        def subAck = client.subscribeWith().topicFilter(topic).qos(qos).callback(
+                publish -> {
+                    String payload = new String(publish.getPayloadAsBytes())
+                    LOG.info("PUBLISH: SUBSCRIBED TOPIC=${topic}, PUBLISHED=${publish.topic}, PAYLOAD=${payload}")
+                }
+        ).send().whenComplete(subAck, throwable) -> {
+            if (throwable != null) {
+                LOG.error("Failed to subscribe due to exception on topic '" + topic + "': " + throwable.getMessage())
+                return false;
+            }
+            if (subAck.getReturnCodes().contains(Mqtt3SubAckReturnCode.FAILURE)) {
+                LOG.error("Failed to subscribe due to server failure on topic: " + topic)
+                return false
+            }
+            LOG.info("Subscribed to topic: " + topic)
+            return true
+        }
+//        })
+    }
+
+    def doUnsubscribe(Mqtt3AsyncClient client, String topic) {
+        LOG.info("Unsubscribing from topic: " + topic)
+        client.unsubscribeWith()
+            .topicFilter(topic)
+            .send()
+    }
 
     @SuppressWarnings("GroovyAccessibility")
     def "Check MQTT client protocol and linked attribute deployment"() {
