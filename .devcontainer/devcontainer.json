@@ -29,7 +29,16 @@
   "postCreateCommand": "OR_HOSTNAME=localhost docker compose -p openremote -f /workspaces/openremote/profile/dev-testing.yml up --build -d",
   "customizations": {
     "vscode": {
-
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-gradle",
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-json",
+        "redhat.vscode-yaml",
+        "ms-vscode-remote.remote-containers"
+      ],
       "settings": {
         "telemetry.enableTelemetry": false
       }
