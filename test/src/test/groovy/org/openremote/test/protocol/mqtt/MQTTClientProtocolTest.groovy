@@ -19,12 +19,7 @@
  */
 package org.openremote.test.protocol.mqtt
 
-import com.hivemq.client.mqtt.MqttClient
 import com.hivemq.client.mqtt.datatypes.MqttQos
-import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient
-import groovy.json.JsonOutput
-import io.moquette.broker.Server
-import io.moquette.broker.config.MemoryConfig
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
@@ -65,7 +60,6 @@ import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import org.opentest4j.TestAbortedException
 import spock.lang.Ignore
-import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -79,46 +73,15 @@ import java.security.PrivateKey
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
-import java.util.concurrent.TimeUnit
 
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
 import static org.openremote.model.value.ValueType.BOOLEAN
+import static org.openremote.model.value.ValueType.JSON
 import static org.openremote.model.value.ValueType.NUMBER
 
 class MQTTClientProtocolTest extends Specification implements ManagerContainerTrait {
-
-    @Shared
-    int mqttBrokerPort
-
-    @Shared
-    Server mqttBroker
-
-    @Shared
-    Mqtt3AsyncClient mqttClient
-
-    def setupSpec() {
-        mqttBrokerPort = findEphemeralPort()
-        def props = new Properties()
-        props.setProperty('port', mqttBrokerPort.toString())
-        def config = new MemoryConfig(props)
-        mqttBroker = new Server()
-        mqttBroker.startServer(config)
-
-        mqttClient = MqttClient.builder()
-            .useMqttVersion3()
-            .identifier("mqttTestClientId")
-            .serverHost("localhost")
-            .serverPort(mqttBrokerPort)
-            .buildAsync()
-        mqttClient.connect().get(2, TimeUnit.SECONDS)
-    }
-
-    def cleanupSpec() {
-        mqttClient?.disconnect()
-        mqttBroker?.stopServer()
-    }
 
     @SuppressWarnings("GroovyAccessibility")
     def "Check MQTT client protocol and linked attribute deployment"() {
@@ -245,37 +208,49 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         when: "the container starts"
         def container = startContainer(defaultConfig(), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
-        def agentService = container.getService(AgentService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def brokerService = container.getService(MQTTBrokerService.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def mqttHost = brokerService.host
+        def mqttPort = brokerService.port
+        def mqttAgentClientId = UniqueIdentifierGenerator.generateId()
+
+        and: "a test asset is created"
+        def testThing = new ThingAsset("Test thing")
+            .setRealm(keycloakTestSetup.realmBuilding.name)
+            .addOrReplaceAttributes(
+                new Attribute<Object>("test", JSON)
+            )
+
+        and: "the test asset is added to the asset service"
+        testThing = assetStorageService.merge(testThing)
 
         and: "a MQTT agent is created"
-        def agent = new MQTTAgent("MQTTAgent")
-        agent.setRealm(MASTER_REALM)
-        agent.setHost("localhost")
-        agent.setPort(mqttBrokerPort)
-        agent.setClientId("mqttAgentClientId")
+        def agent = new MQTTAgent("Test agent")
+            .setRealm(MASTER_REALM)
+            .setClientId(mqttAgentClientId)
+            .setHost(mqttHost)
+            .setPort(mqttPort)
+            .setUsernamePassword(new UsernamePassword(keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser.username, keycloakTestSetup.serviceUser.secret))
+
+        and: "the agent is added to the asset service"
         agent = assetStorageService.merge(agent)
 
-        then: "the protocol instance for the agent should be created"
+        then: "the protocol should authenticate and the agent status should become CONNECTED"
         conditions.eventually {
-            assert agentService.getProtocolInstance(agent.id) != null
-            assert ((MQTTProtocol)agentService.getProtocolInstance(agent.id)) != null
-        }
-
-        and: "the connection status should be CONNECTED"
-        conditions.eventually {
-            agent = assetStorageService.find(agent.id)
-            agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+            agent = assetStorageService.find(agent.id, Agent.class)
+            assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
         }
 
         when: "an asset is created with attributes linked to the agent"
+        def subscriptionTopic = "${keycloakTestSetup.realmBuilding.name}/$mqttAgentClientId/${DefaultMQTTHandler.ATTRIBUTE_VALUE_TOPIC}/test/${testThing.id}"
         def asset = new ThingAsset("Test Asset")
-            .setRealm(MASTER_REALM)
             .setParent(agent)
             .addOrReplaceAttributes(
                 new Attribute<>("temperature", NUMBER)
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
-                            .setSubscriptionTopic("testTopic")
+                            .setSubscriptionTopic(subscriptionTopic)
                             .setValueFilters([new JsonPathFilter('$.temperature', true, false)] as ValueFilter[])
                             .setMessageMatchFilters([new JsonPathFilter('$.port', true, false)] as ValueFilter[])
                             .setMessageMatchPredicate(new NumberPredicate(85))
@@ -283,7 +258,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                 new Attribute<>("switchStatus", BOOLEAN)
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
-                            .setSubscriptionTopic("testTopic")
+                            .setSubscriptionTopic(subscriptionTopic)
                             .setValueFilters([new JsonPathFilter('$.switch_status', true, false)] as ValueFilter[])
                             .setMessageMatchFilters([new JsonPathFilter('$.port', true, false)] as ValueFilter[])
                             .setMessageMatchPredicate(new NumberPredicate(85))
@@ -303,56 +278,51 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             temperature: 19.5,
             switch_status: "switch_on"
         ]
-        mqttClient.publishWith()
-            .topic("testTopic")
-            .payload(JsonOutput.toJson(json).bytes)
-            .send()
+        def attributeEvent = new AttributeEvent(testThing.id, "test", json)
+        Thread.sleep(200)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "asset attribute values should be updated"
         conditions.eventually {
-            asset = assetStorageService.find(asset.getId(), true)
+            asset = assetStorageService.find(asset.id, true)
             assert asset.getAttribute("temperature").flatMap { it.value }.map { it == 19.5 }.orElse(false)
             assert asset.getAttribute("switchStatus").flatMap { it.value }.map { it == true }.orElse(false)
         }
 
         when: "a message which should not pass the message match filter is published"
         json = [
-            port         : 1,
-            temperature  : 20.5,
+            port: 1,
+            temperature: 20.5,
             switch_status: "switch_off"
         ]
-        mqttClient.publishWith()
-            .topic("testTopic")
-            .payload(JsonOutput.toJson(json).bytes)
-            .send()
+        attributeEvent = new AttributeEvent(testThing.id, "test", json)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "asset attribute values should not be updated"
         def start = System.currentTimeMillis()
         while (System.currentTimeMillis() - start < 2000) {
-            asset = assetStorageService.find(asset.getId(), true)
+            asset = assetStorageService.find(asset.id, true)
             assert asset.getAttribute("temperature").flatMap { it.value }.map { it == 19.5 }.orElse(false)
             assert asset.getAttribute("switchStatus").flatMap { it.value }.map { it == true }.orElse(false)
             Thread.sleep((100))
         }
+
         when: "a message which should pass the message match filter is published"
         json = [
-            port         : 85,
-            temperature  : 21.5,
+            port: 85,
+            temperature: 21.5,
             switch_status: "switch_off"
         ]
-        mqttClient.publishWith()
-            .topic("testTopic")
-            .payload(JsonOutput.toJson(json).bytes)
-            .send()
+        attributeEvent = new AttributeEvent(testThing.id, "test", json)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "asset attribute values should be updated"
         conditions.eventually {
-            asset = assetStorageService.find(asset.getId(), true)
+            asset = assetStorageService.find(asset.id, true)
             assert asset.getAttribute("temperature").flatMap { it.value }.map { it == 21.5 }.orElse(false)
             assert asset.getAttribute("switchStatus").flatMap { it.value }.map { it == false }.orElse(false)
         }
     }
-
 
     /**
     * This test is not fully done right now, as a non-internet-requiring test would require mTLS functionality within the
