@@ -9,6 +9,7 @@ import org.openremote.agent.protocol.mqtt.MQTTLastWill
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
 import org.openremote.manager.asset.AssetProcessingService
+import org.openremote.model.attribute.MetaItem
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetStorageService
@@ -40,6 +41,7 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_HOST
 import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_PORT
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString
+import static org.openremote.model.value.MetaItemType.ACCESS_RESTRICTED_READ
 import static org.openremote.model.value.ValueType.TEXT
 
 class MqttBrokerTest extends Specification implements ManagerContainerTrait {
@@ -47,6 +49,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
     def "Mqtt broker event test"() {
         given: "the container environment is started"
         List<SharedEvent> receivedEvents = new CopyOnWriteArrayList<>()
+        List<SharedEvent> restrictedReceivedEvents = new CopyOnWriteArrayList<>()
         List<Object> receivedValues = new CopyOnWriteArrayList<>()
         MQTT_IOClient client = null
         MQTT_IOClient newClient = null
@@ -659,18 +662,168 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
         }
 
-        // TODO: Further MQTT tests
-//        when: "an attribute event occurs on an attribute that the restricted user can access"
-//
-//        then: "they should receive the event"
-//
-//        when: "an attribute event occurs on an attribute that the restricted user cannot access"
-//
-//        then: "they should not receive the event"
-//
-//        when: "an asset event occurs on an asset that the restricted user can access"
-//
-//        then: "they should receive the event but it should only contain restricted attributes"
+        Consumer<MQTTMessage<String>> restrictedEventConsumer = { msg ->
+            def event = ValueUtil.parse(msg.payload, SharedEvent.class)
+            restrictedReceivedEvents.add(event.get())
+        }
+
+        when: "a restricted mqtt client subscribes to the attribute wildcard topic"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$MQTTHandler.TOKEN_MULTI_LEVEL_WILDCARD".toString()
+        newClient.addMessageConsumer(topic, restrictedEventConsumer)
+
+        then: "a subscription should exist"
+        conditions.eventually {
+            assert newClient.topicConsumerMap.get(topic) != null
+        }
+
+        when: "an unlinked asset attribute event occurs"
+        attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", 40)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+
+        then: "the restricted client should not receive the event"
+        conditions.eventually {
+            assert restrictedReceivedEvents.size() == 0
+        }
+
+        when: "a linked asset attribute event occurs"
+        attributeEvent = new AttributeEvent(managerTestSetup.apartment1BathroomId, "notes", "This is a test note")
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        then: "the restricted client should not receive the event since the attribute is not restricted"
+        conditions.eventually {
+            assert restrictedReceivedEvents.size() == 0
+        }
+
+
+        when: "a linked asset attribute has its restricted meta configuration set to true"
+        def bathroomAsset = assetStorageService.find(managerTestSetup.apartment1BathroomId)
+        bathroomAsset.getAttributes().get("notes").get().addOrReplaceMeta(new MetaItem<>(ACCESS_RESTRICTED_READ, true))
+        assetStorageService.merge(bathroomAsset)
+
+        then: "the restricted client should still be connected"
+        conditions.eventually {
+            assert newClient.getConnectionStatus() == ConnectionStatus.CONNECTED
+            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id).size() == 1
+        }
+
+        then: "the restricted client should receive the triggered attribute event"
+            conditions.eventually {
+            assert restrictedReceivedEvents.size() == 1
+        }
+        restrictedReceivedEvents.clear()
+
+        when: "another attribute event occurs on the restricted read attribute"
+        attributeEvent = new AttributeEvent(managerTestSetup.apartment1BathroomId, "notes", "This is another test note")
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+
+        then: "the restricted client should receive the triggered attribute event"
+         conditions.eventually {
+            assert restrictedReceivedEvents.size() == 1
+            assert restrictedReceivedEvents.get(0) == attributeEvent
+        }
+        restrictedReceivedEvents.clear()
+
+        when: "the restricted read meta item is removed"
+        bathroomAsset = assetStorageService.find(managerTestSetup.apartment1BathroomId)
+        bathroomAsset.getAttributes().addOrReplace(new Attribute<>("notes", TEXT, "Set via attribute merge"))
+        assetStorageService.merge(bathroomAsset)
+
+        then: "the restricted client should not receive the triggered attribute event"
+            conditions.eventually {
+            assert restrictedReceivedEvents.size() == 0
+        }
+        newClient.removeAllMessageConsumers()
+        restrictedReceivedEvents.clear()
+
+
+        when: "a restricted mqtt client subscribes to the asset wildcard topic"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ASSET_TOPIC/$MQTTHandler.TOKEN_MULTI_LEVEL_WILDCARD".toString()
+        newClient.addMessageConsumer(topic, restrictedEventConsumer)
+
+        then: "a subscription should exist"
+        conditions.eventually {
+            assert newClient.topicConsumerMap.get(topic) != null
+        }
+
+        when: "a linked asset event occurs"
+        bathroomAsset = assetStorageService.find(managerTestSetup.apartment1BathroomId)
+        bathroomAsset.getAttributes().get("notes").get().setValue("Set via asset merge")
+        assetStorageService.merge(bathroomAsset)
+
+        then: "the restricted client should receive the triggered asset event"
+        conditions.eventually {
+            assert restrictedReceivedEvents.size() == 1
+        }
+
+
+        and: "the event should only contain attributes that are read restricted"
+        conditions.eventually {
+            assert restrictedReceivedEvents.size() == 1
+            def event = restrictedReceivedEvents.get(0)
+            assert event instanceof AssetEvent
+            def assetEvent = event as AssetEvent
+            assert !assetEvent.getAsset().hasAttribute("notes")
+        }
+        restrictedReceivedEvents.clear()
+
+        when: "the restricted read meta item is added again"
+        bathroomAsset = assetStorageService.find(managerTestSetup.apartment1BathroomId)
+        bathroomAsset.getAttributes().get("notes").get().addOrReplaceMeta(new MetaItem<>(ACCESS_RESTRICTED_READ, true))
+        assetStorageService.merge(bathroomAsset)
+
+        then: "the restricted client should receive the triggered asset event"
+        conditions.eventually {
+            assert restrictedReceivedEvents.size() == 1
+            def event = restrictedReceivedEvents.get(0)
+            assert event instanceof AssetEvent
+            def assetEvent = event as AssetEvent
+            assert assetEvent.getAsset().getAttribute("notes").isPresent()
+            assert assetEvent.getAsset().getAttribute("notes").get().getValue().orElse(null) == "Set via asset merge"
+        }
+        restrictedReceivedEvents.clear()
+
+        when: "the asset is unlinked"
+        assetStorageService.deleteUserAssetLinks(List.of(
+                new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
+                        keycloakTestSetup.serviceUser2.getId(),
+                        managerTestSetup.apartment1BathroomId)))
+
+
+        then: "the existing connection should be terminated and the client should reconnect"
+        conditions.eventually {
+            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id).size() == 1
+            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0] !== existingConnection
+        }
+
+        when: "the restricted mqtt client removes all subscriptions"
+        newClient.removeAllMessageConsumers() // Clear subscriptions as otherwise it won't hit the server again
+
+        then: "no subscriptions should exist in the client"
+        assert newClient.topicConsumerMap.isEmpty()
+
+
+        when: "the restricted mqtt client subscribes to the asset wildcard topic again"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ASSET_TOPIC/$MQTTHandler.TOKEN_MULTI_LEVEL_WILDCARD".toString()
+        newClient.addMessageConsumer(topic, restrictedEventConsumer)
+
+        then: "a subscription should exist"
+        conditions.eventually {
+            assert newClient.topicConsumerMap.get(topic) != null
+        }
+
+        when: "an asset event occurs on the now unlinked asset"
+        bathroomAsset = assetStorageService.find(managerTestSetup.apartment1BathroomId)
+        bathroomAsset.getAttributes().get("notes").get().setValue("Set via asset merge")
+        assetStorageService.merge(bathroomAsset)
+
+        then: "the restricted client should not receive the triggered asset event"
+        conditions.eventually {
+            assert restrictedReceivedEvents.size() == 0
+        }
+        restrictedReceivedEvents.clear()
+        newClient.removeAllMessageConsumers()
 
         when: "both MQTT clients disconnect"
         client.disconnect()
