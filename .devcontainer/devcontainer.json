@@ -29,28 +29,13 @@
   "postCreateCommand": "OR_HOSTNAME=localhost docker compose -p openremote -f /workspaces/openremote/profile/dev-testing.yml up --build -d",
   "customizations": {
     "vscode": {
-      "extensions": [
-        "ms-azuretools.vscode-docker",
-        "redhat.vscode-yaml",
-        "vscjava.vscode-java-pack",
-        "vscjava.vscode-gradle",
-        "vscjava.vscode-java-debug",
-        "vscjava.vscode-java-test",
-        "vscjava.vscode-java-dependency",
-        "vscjava.vscode-maven",
-        "visualstudioexptteam.vscodeintellicode",
-        "ms-azuretools.vscode-docker"
-      ],
+
       "settings": {
         "telemetry.enableTelemetry": false
       }
     }
   },
   "remoteEnv": {
-    "GRADLE_USER_HOME": "/root/.gradle",
-    "DOCKER_BUILDKIT": "1",
-    "COMPOSE_DOCKER_CLI_BUILD": "1",
-    "DOCKER_CLIENT_TIMEOUT": "120",
-    "COMPOSE_HTTP_TIMEOUT": "120"
+    "GRADLE_USER_HOME": "/root/.gradle"
   }
 }
