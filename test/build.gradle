@@ -38,6 +38,7 @@ dependencies {
     testImplementation "net.solarnetwork.common:nifty-modbus-api:$niftyModbusVersion"
     testImplementation "net.solarnetwork.common:nifty-modbus-core:$niftyModbusVersion"
 
+
 }
 
 tasks.withType(Test) {
