@@ -1108,20 +1108,20 @@
       },
       "forecastConfiguration": {
         "pastPeriod": {
-          "label": "",
-          "description": ""
+          "label": "Verleden Periode",
+          "description": "De specifieke periode in het verleden die wordt gebruikt voor analyse."
         },
         "pastCount": {
-          "label": "",
-          "description": ""
+          "label": "Aantal in het Verleden",
+          "description": "Het aantal gegevenspunten of intervallen uit het verleden om mee te nemen."
         },
         "forecastPeriod": {
-          "label": "",
-          "description": ""
+          "label": "Voorspellingsperiode",
+          "description": "De tijdsperiode waarvoor voorspellingen worden gedaan."
         },
         "forecastCount": {
-          "label": "",
-          "description": ""
+          "label": "Aantal Voorspellingen",
+          "description": "Het aantal toekomstige gegevenspunten of intervallen om te voorspellen."
         }
       },
       "valueFormat": {

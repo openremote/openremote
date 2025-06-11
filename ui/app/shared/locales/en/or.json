@@ -1106,20 +1106,20 @@
       },
       "forecastConfiguration": {
         "pastPeriod": {
-          "label": "",
-          "description": ""
+          "label": "Past Period",
+          "description": "The specific time frame in the past used for analysis."
         },
         "pastCount": {
-          "label": "",
-          "description": ""
+          "label": "Past Count",
+          "description": "The number of past data points or intervals to consider."
         },
         "forecastPeriod": {
-          "label": "",
-          "description": ""
+          "label": "Forecast Period",
+          "description": "The time frame for which predictions will be made."
         },
         "forecastCount": {
-          "label": "",
-          "description": ""
+          "label": "Forecast Count",
+          "description": "The number of future data points or intervals to predict."
         }
       },
       "valueFormat": {
