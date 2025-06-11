@@ -76,6 +76,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     protected Consumer<String> topicSubscribeFailureConsumer;
     protected MqttQos publishQos = MqttQos.AT_LEAST_ONCE;
     protected MqttQos subscribeQos = MqttQos.AT_LEAST_ONCE;
+    protected String clientUri;
 
     protected AbstractMQTT_IOClient(String host, int port, boolean secure, boolean cleanSession, UsernamePassword usernamePassword, URI websocketURI, MQTTLastWill lastWill, KeyManagerFactory keyManagerFactory, TrustManagerFactory trustManagerFactory) {
         this(UniqueIdentifierGenerator.generateId(), host, port, secure, cleanSession, usernamePassword, websocketURI, lastWill, keyManagerFactory, trustManagerFactory);
@@ -90,6 +91,12 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         this.usernamePassword = usernamePassword;
         this.websocketURI = websocketURI;
         this.executorService = Container.SCHEDULED_EXECUTOR;
+
+        if (websocketURI != null) {
+            clientUri = "mqtt_" + websocketURI + "?clientId=" + clientId;
+        } else {
+            clientUri = "mqtt" + (secure ? "s://" : "://") + host + ":" + port + "/?clientId=" + clientId;
+        }
 
         Mqtt3ClientBuilder builder = MqttClient.builder()
             .useMqttVersion3()
@@ -435,10 +442,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
 
     @Override
     public String getClientUri() {
-        if (websocketURI != null) {
-            return "mqtt_" + websocketURI + "?clientId=" + clientId;
-        }
-        return "mqtt" + (secure ? "s://" : "://" ) + host + ":" + port + "/?clientId=" + clientId;
+        return clientUri;
     }
 
     public abstract byte[] messageToBytes(S message);
