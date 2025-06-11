@@ -646,14 +646,6 @@
       "indexedItem": "Item {{index}}"
     },
     "item": {
-      "valueConstraints": {
-        "root": {
-          "label": "DUTCH"
-        },
-        "max": {
-          "label": "Maximum"
-        }
-      },
       "agentLink": {
         "id": {
           "label": "",
@@ -1126,136 +1118,136 @@
       },
       "valueFormat": {
         "useGrouping": {
-          "label": "",
-          "description": ""
+          "label": "Gebruik Groepering",
+          "description": "Of duizendtallen met scheidingstekens worden weergegeven."
         },
         "minimumIntegerDigits": {
-          "label": "",
-          "description": ""
+          "label": "Minimale Cijfers vóór Komma",
+          "description": "Minimaal aantal cijfers vóór de decimale komma."
         },
         "minimumFractionDigits": {
-          "label": "",
-          "description": ""
+          "label": "Minimale Decimalen",
+          "description": "Minimaal aantal cijfers na de decimale komma."
         },
         "maximumFractionDigits": {
-          "label": "",
-          "description": ""
+          "label": "Maximale Decimalen",
+          "description": "Maximaal aantal cijfers na de decimale komma."
         },
         "minimumSignificantDigits": {
-          "label": "",
-          "description": ""
+          "label": "Minimale Significante Cijfers",
+          "description": "Minimaal aantal significante cijfers om weer te geven."
         },
         "maximumSignificantDigits": {
-          "label": "",
-          "description": ""
+          "label": "Maximale Significante Cijfers",
+          "description": "Maximaal aantal significante cijfers om weer te geven."
         },
         "asBoolean": {
-          "label": "",
-          "description": ""
+          "label": "Als Boolean",
+          "description": "Waarde weergeven als waar/onwaar."
         },
         "asDate": {
-          "label": "",
-          "description": ""
+          "label": "Als Datum",
+          "description": "Waarde opmaken als een datum."
         },
         "asSlider": {
-          "label": "",
-          "description": ""
+          "label": "Als Schuifregelaar",
+          "description": "Waarde weergeven met een schuifregelaar."
         },
         "resolution": {
-          "label": "",
-          "description": ""
+          "label": "Resolutie",
+          "description": "De nauwkeurigheid of stapgrootte voor opmaak."
         },
         "dateStyle": {
-          "label": "",
-          "description": ""
+          "label": "Datumnotatie",
+          "description": "Stijl voor het opmaken van datums (bijv. kort, gemiddeld)."
         },
         "timeStyle": {
-          "label": "",
-          "description": ""
+          "label": "Tijdnotatie",
+          "description": "Stijl voor het opmaken van tijden."
         },
         "dayPeriod": {
-          "label": "",
-          "description": ""
+          "label": "Dagperiode",
+          "description": "Of AM/PM of dagperiode wordt weergegeven."
         },
         "hour12": {
-          "label": "",
-          "description": ""
+          "label": "12-Uurs Formaat",
+          "description": "Of het 12-uurs formaat (AM/PM) wordt gebruikt."
         },
         "iso8601": {
-          "label": "",
-          "description": ""
+          "label": "ISO 8601",
+          "description": "Datum/tijd opmaken volgens de ISO 8601-standaard."
         },
         "weekday": {
-          "label": "",
-          "description": ""
+          "label": "Weekdag",
+          "description": "De naam van de weekdag opnemen in de datum."
         },
         "era": {
-          "label": "",
-          "description": ""
+          "label": "Tijdperk",
+          "description": "Het tijdperk (bijv. AD/BC) opnemen in de datum."
         },
         "year": {
-          "label": "",
-          "description": ""
+          "label": "Jaar",
+          "description": "Het jaargedeelte van de datum weergeven."
         },
         "month": {
-          "label": "",
-          "description": ""
+          "label": "Maand",
+          "description": "Het maandgedeelte van de datum weergeven."
         },
         "week": {
-          "label": "",
-          "description": ""
+          "label": "Week",
+          "description": "Het weeknummer van het jaar weergeven."
         },
         "day": {
-          "label": "",
-          "description": ""
+          "label": "Dag",
+          "description": "De dag van de maand weergeven."
         },
         "hour": {
-          "label": "",
-          "description": ""
+          "label": "Uur",
+          "description": "Het uur weergeven."
         },
         "minute": {
-          "label": "",
-          "description": ""
+          "label": "Minuut",
+          "description": "De minuut weergeven."
         },
         "second": {
-          "label": "",
-          "description": ""
+          "label": "Seconde",
+          "description": "De seconde weergeven."
         },
         "fractionalSecondDigits": {
-          "label": "",
-          "description": ""
+          "label": "Decimale Seconden",
+          "description": "Aantal cijfers voor decimale seconden weergeven."
         },
         "timeZoneName": {
-          "label": "",
-          "description": ""
+          "label": "Tijdzone Naam",
+          "description": "De naam van de tijdzone weergeven."
         },
         "momentJsFormat": {
-          "label": "",
-          "description": ""
+          "label": "Moment.js Notatie",
+          "description": "Aangepaste notatie met Moment.js-syntaxis."
         },
         "asNumber": {
-          "label": "",
-          "description": ""
+          "label": "Als Getal",
+          "description": "Waarde opmaken als een getal."
         },
         "asOnOff": {
-          "label": "",
-          "description": ""
+          "label": "Als Aan/Uit",
+          "description": "Waarde weergeven als aan of uit."
         },
         "asPressedReleased": {
-          "label": "",
-          "description": ""
+          "label": "Als Ingedrukt/Vrijgegeven",
+          "description": "Waarde weergeven als ingedrukt of vrijgegeven."
         },
         "asOpenClosed": {
-          "label": "",
-          "description": ""
+          "label": "Als Open/Gesloten",
+          "description": "Waarde weergeven als open of gesloten."
         },
         "asMomentary": {
-          "label": "",
-          "description": ""
+          "label": "Als Momentaan",
+          "description": "Waarde weergeven als een momentane toestand."
         },
         "multiline": {
-          "label": "",
-          "description": ""
+          "label": "Meerdere Regels",
+          "description": "Of meerdere regels worden toegestaan in de weergave."
         }
       },
       "valueConstraint": {

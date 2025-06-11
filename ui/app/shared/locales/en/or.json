@@ -647,11 +647,6 @@
       "indexedItem": "Item {{index}}"
     },
     "item": {
-      "valueConstraints": {
-        "root": {
-          "label": "ENGLISH"
-        }
-      },
       "agentLink": {
         "id": {
           "label": "",
@@ -1124,136 +1119,136 @@
       },
       "valueFormat": {
         "useGrouping": {
-          "label": "",
-          "description": ""
+          "label": "Use Grouping",
+          "description": "Whether to use thousands separators in numbers."
         },
         "minimumIntegerDigits": {
-          "label": "",
-          "description": ""
+          "label": "Minimum Integer Digits",
+          "description": "Minimum number of digits before the decimal point."
         },
         "minimumFractionDigits": {
-          "label": "",
-          "description": ""
+          "label": "Minimum Fraction Digits",
+          "description": "Minimum number of digits after the decimal point."
         },
         "maximumFractionDigits": {
-          "label": "",
-          "description": ""
+          "label": "Maximum Fraction Digits",
+          "description": "Maximum number of digits after the decimal point."
         },
         "minimumSignificantDigits": {
-          "label": "",
-          "description": ""
+          "label": "Minimum Significant Digits",
+          "description": "Minimum number of significant digits to display."
         },
         "maximumSignificantDigits": {
-          "label": "",
-          "description": ""
+          "label": "Maximum Significant Digits",
+          "description": "Maximum number of significant digits to display."
         },
         "asBoolean": {
-          "label": "",
-          "description": ""
+          "label": "As Boolean",
+          "description": "Display value as true/false."
         },
         "asDate": {
-          "label": "",
-          "description": ""
+          "label": "As Date",
+          "description": "Format value as a date."
         },
         "asSlider": {
-          "label": "",
-          "description": ""
+          "label": "As Slider",
+          "description": "Display value using a slider component."
         },
         "resolution": {
-          "label": "",
-          "description": ""
+          "label": "Resolution",
+          "description": "The granularity or step size used for formatting."
         },
         "dateStyle": {
-          "label": "",
-          "description": ""
+          "label": "Date Style",
+          "description": "Style used for formatting date values (e.g. short, medium)."
         },
         "timeStyle": {
-          "label": "",
-          "description": ""
+          "label": "Time Style",
+          "description": "Style used for formatting time values."
         },
         "dayPeriod": {
-          "label": "",
-          "description": ""
+          "label": "Day Period",
+          "description": "Whether to show AM/PM or day period."
         },
         "hour12": {
-          "label": "",
-          "description": ""
+          "label": "12-Hour Format",
+          "description": "Whether to use 12-hour (AM/PM) format."
         },
         "iso8601": {
-          "label": "",
-          "description": ""
+          "label": "ISO 8601",
+          "description": "Format date/time using ISO 8601 standard."
         },
         "weekday": {
-          "label": "",
-          "description": ""
+          "label": "Weekday",
+          "description": "Include the name of the weekday in the date."
         },
         "era": {
-          "label": "",
-          "description": ""
+          "label": "Era",
+          "description": "Include the era (e.g., AD/BC) in the date."
         },
         "year": {
-          "label": "",
-          "description": ""
+          "label": "Year",
+          "description": "Display the year part of the date."
         },
         "month": {
-          "label": "",
-          "description": ""
+          "label": "Month",
+          "description": "Display the month part of the date."
         },
         "week": {
-          "label": "",
-          "description": ""
+          "label": "Week",
+          "description": "Display the week number of the year."
         },
         "day": {
-          "label": "",
-          "description": ""
+          "label": "Day",
+          "description": "Display the day of the month."
         },
         "hour": {
-          "label": "",
-          "description": ""
+          "label": "Hour",
+          "description": "Display the hour."
         },
         "minute": {
-          "label": "",
-          "description": ""
+          "label": "Minute",
+          "description": "Display the minute."
         },
         "second": {
-          "label": "",
-          "description": ""
+          "label": "Second",
+          "description": "Display the second."
         },
         "fractionalSecondDigits": {
-          "label": "",
-          "description": ""
+          "label": "Fractional Second Digits",
+          "description": "Number of digits to show for fractional seconds."
         },
         "timeZoneName": {
-          "label": "",
-          "description": ""
+          "label": "Time Zone Name",
+          "description": "Display the name of the time zone."
         },
         "momentJsFormat": {
-          "label": "",
-          "description": ""
+          "label": "Moment.js Format",
+          "description": "Custom format using Moment.js syntax."
         },
         "asNumber": {
-          "label": "",
-          "description": ""
+          "label": "As Number",
+          "description": "Format value as a number."
         },
         "asOnOff": {
-          "label": "",
-          "description": ""
+          "label": "As On/Off",
+          "description": "Display value as on or off."
         },
         "asPressedReleased": {
-          "label": "",
-          "description": ""
+          "label": "As Pressed/Released",
+          "description": "Display value as pressed or released."
         },
         "asOpenClosed": {
-          "label": "",
-          "description": ""
+          "label": "As Open/Closed",
+          "description": "Display value as open or closed."
         },
         "asMomentary": {
-          "label": "",
-          "description": ""
+          "label": "As Momentary",
+          "description": "Display value as a momentary (transient) state."
         },
         "multiline": {
-          "label": "",
-          "description": ""
+          "label": "Multiline",
+          "description": "Whether to allow multiline display."
         }
       },
       "valueConstraint": {
