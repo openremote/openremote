@@ -74,8 +74,8 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     protected ScheduledExecutorService executorService;
     protected boolean disconnected = true; // Need to use this flag to cancel client reconnect task
     protected Consumer<String> topicSubscribeFailureConsumer;
-    protected MqttQos publishQos = MqttQos.AT_LEAST_ONCE;
-    protected MqttQos subscribeQos = MqttQos.AT_LEAST_ONCE;
+    protected MqttQos publishQos = MqttQos.AT_MOST_ONCE;
+    protected MqttQos subscribeQos = MqttQos.AT_MOST_ONCE;
     protected String clientUri;
 
     protected AbstractMQTT_IOClient(String host, int port, boolean secure, boolean cleanSession, UsernamePassword usernamePassword, URI websocketURI, MQTTLastWill lastWill, KeyManagerFactory keyManagerFactory, TrustManagerFactory trustManagerFactory) {
@@ -223,7 +223,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     }
 
     public void addMessageConsumer(String topic, Consumer<MQTTMessage<S>> messageConsumer) {
-        addMessageConsumer(topic, null, messageConsumer);
+        addMessageConsumer(topic, subscribeQos, messageConsumer);
     }
 
     public void addMessageConsumer(String topic, MqttQos qos, Consumer<MQTTMessage<S>> messageConsumer) {
@@ -246,6 +246,8 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         if (this.topicSubscribeFailureConsumer != null) {
             this.topicSubscribeFailureConsumer.accept(topic);
         }
+        LOG.fine("Removing subscription consumers uri=" + getClientUri() + ", topic=" + topic);
+        this.topicConsumerMap.remove(topic);
     }
 
     protected void doClientSubscription(MqttQos qos, String topic) {
