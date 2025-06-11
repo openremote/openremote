@@ -1253,32 +1253,32 @@
       },
       "valueConstraint": {
         "min": {
-          "label": "",
-          "description": ""
+          "label": "Minimum value",
+          "description": "The attribute value must be greater than or equal to this number. Null values are considered valid."
         },
         "max": {
-          "label": "",
-          "description": ""
+          "label": "Maximum value",
+          "description": "The attribute value must be less than or equal to this number. Null values are considered valid."
         },
         "message": {
-          "label": "",
-          "description": ""
+          "label": "Validation message",
+          "description": "Custom message to display when this constraint is violated."
         },
         "regexp": {
-          "label": "",
-          "description": ""
+          "label": "Regular expression",
+          "description": "The attribute value must match this regular expression. Follows Java regex syntax."
         },
         "flags": {
-          "label": "",
-          "description": ""
+          "label": "Regex flags",
+          "description": "Modifiers that affect regex matching behavior. Options: CASE_INSENSITIVE, MULTILINE, DOTALL, etc."
         },
         "allowedValueNames": {
-          "label": "",
-          "description": ""
+          "label": "Display names",
+          "description": "Names to display instead of the raw allowed values. Must match the number of allowed values to be used."
         },
         "allowedValues": {
-          "label": "",
-          "description": ""
+          "label": "Allowed values",
+          "description": "Accepted values for this attribute. If empty or missing, only null is accepted. Enables select input in the UI."
         }
       }
     }

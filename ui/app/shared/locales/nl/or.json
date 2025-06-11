@@ -1252,32 +1252,32 @@
       },
       "valueConstraint": {
         "min": {
-          "label": "",
-          "description": ""
+          "label": "Minimale waarde",
+          "description": "De attribuutwaarde moet groter dan of gelijk zijn aan dit getal. Null-waarden worden als geldig beschouwd."
         },
         "max": {
-          "label": "",
-          "description": ""
+          "label": "Maximale waarde",
+          "description": "De attribuutwaarde moet kleiner dan of gelijk zijn aan dit getal. Null-waarden worden als geldig beschouwd."
         },
         "message": {
-          "label": "",
-          "description": ""
+          "label": "Validatiebericht",
+          "description": "Aangepast bericht dat wordt weergegeven wanneer aan deze voorwaarde niet wordt voldaan."
         },
         "regexp": {
-          "label": "",
-          "description": ""
+          "label": "Reguliere expressie",
+          "description": "De attribuutwaarde moet overeenkomen met deze reguliere expressie. Volgt de Java-regexnotatie."
         },
         "flags": {
-          "label": "",
-          "description": ""
+          "label": "Regex-vlaggen",
+          "description": "Modificaties die het gedrag van regex-matching beïnvloeden. Opties: CASE_INSENSITIVE, MULTILINE, DOTALL, enz."
         },
         "allowedValueNames": {
-          "label": "",
-          "description": ""
+          "label": "Weergavenamen",
+          "description": "Namen die in plaats van de ruwe toegestane waarden worden weergegeven. Moet evenveel elementen bevatten als `allowedValues` om gebruikt te worden."
         },
         "allowedValues": {
-          "label": "",
-          "description": ""
+          "label": "Toegestane waarden",
+          "description": "Toegestane waarden voor dit attribuut. Indien leeg of afwezig, wordt alleen null geaccepteerd. Activeert een keuzelijst in de gebruikersinterface."
         }
       }
     }
