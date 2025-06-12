@@ -100,10 +100,6 @@ export function normaliseConfig(config: ManagerConfig): ManagerConfig {
         normalisedConfig.managerUrl = normalisedConfig.managerUrl.replace(/\/+$/, "");
     }
 
-    if (!normalisedConfig.keycloakUrl || normalisedConfig.keycloakUrl === "") {
-        normalisedConfig.keycloakUrl =  normalisedConfig.managerUrl + "/auth";
-    }
-
     if (!normalisedConfig.realm || normalisedConfig.realm === "") {
         // Assume master realm
         normalisedConfig.realm = "master";
@@ -249,7 +245,9 @@ export class Manager implements EventProviderFactory {
         if (lang) {
             i18next.changeLanguage(lang);
             this.console.storeData("LANGUAGE", lang);
-            this.updateKeycloakUserLanguage(lang).catch(e => console.error(e));
+            if(this.authenticated) {
+                this.updateKeycloakUserLanguage(lang).catch(e => console.error(e));
+            }
         }
     }
 
@@ -686,7 +684,7 @@ export class Manager implements EventProviderFactory {
      */
     public async getUserPreferredLanguage(keycloak = this._keycloak): Promise<string | undefined> {
 
-        if(keycloak) {
+        if(keycloak && keycloak.authenticated) {
             const profile: Keycloak.KeycloakProfile | undefined = keycloak?.profile || await keycloak?.loadUserProfile();
             if(profile?.attributes) {
                 const attributes = new Map(Object.entries(profile.attributes));
@@ -703,12 +701,13 @@ export class Manager implements EventProviderFactory {
         }
     }
 
-    protected async updateKeycloakUserLanguage(lang: string, keycloak = this._keycloak, rest = this.rest): Promise<void> {
-        if(!keycloak) {
+    protected async updateKeycloakUserLanguage(lang: string, rest = this.rest): Promise<void> {
+        if(!this.authenticated) {
+            console.warn("Tried updating user language, but the user is not authenticated.");
             return;
         }
         if(!rest) {
-            console.warn("Tried updating user language in keycloak, but the REST API is not initialized yet.");
+            console.warn("Tried updating user language, but the REST API is not initialized yet.");
             return;
         }
         await rest.api.UserResource.updateCurrentUserLocale(lang, { headers: { "Content-Type": "application/json" } });

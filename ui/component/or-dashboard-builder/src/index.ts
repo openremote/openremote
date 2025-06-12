@@ -523,14 +523,16 @@ export class OrDashboardBuilder extends LitElement {
             this.isLoading = true;
 
             // Saving object into the database
-            manager.rest.api.DashboardResource.update(this.selectedDashboard).then(() => {
-                if(this.dashboards != null && this.selectedDashboard != null) {
-                    this.initialDashboardJSON = JSON.stringify(this.selectedDashboard);
-                    this.initialTemplateJSON = JSON.stringify(this.selectedDashboard.template);
-                    this.dashboards[this.dashboards?.indexOf(this.selectedDashboard)] = this.selectedDashboard;
-                    this.currentTemplate = Object.assign({}, this.selectedDashboard.template);
-                    showSnackbar(undefined, "dashboard.saveSuccessful");
-                }
+            manager.rest.api.DashboardResource.update(this.selectedDashboard).then((response) => {
+                // Need to update the selected dashboard with what was persisted but due to code structure we also need to update
+                // the dashboards array otherwise the old version gets loaded
+                this.selectedDashboard = response.data;
+                this.dashboards = [this.selectedDashboard,...this.dashboards?.filter(d => d.id !== this.selectedDashboard!.id)!];
+                this.initialDashboardJSON = JSON.stringify(this.selectedDashboard);
+                this.initialTemplateJSON = JSON.stringify(this.selectedDashboard.template);
+                this.dashboards[this.dashboards?.indexOf(this.selectedDashboard)] = this.selectedDashboard;
+                this.currentTemplate = Object.assign({}, this.selectedDashboard.template);
+                showSnackbar(undefined, "dashboard.saveSuccessful");
             }).catch((reason) => {
                 console.error(reason);
                 showSnackbar(undefined, "errorOccurred");
@@ -544,13 +546,13 @@ export class OrDashboardBuilder extends LitElement {
     }
 
     protected _isReadonly(): boolean {
-        return this.readonly || !manager.hasRole(ClientRole.WRITE_INSIGHTS);
+        return this.readonly;
     }
     protected _hasEditAccess(): boolean {
-        return this.userId != null && (this.selectedDashboard?.editAccess == DashboardAccess.PRIVATE ? this.selectedDashboard?.ownerId == this.userId : true)
+        return manager.hasRole(ClientRole.WRITE_INSIGHTS);
     }
     protected _hasViewAccess(): boolean {
-        return this.userId != null && (this.selectedDashboard?.viewAccess == DashboardAccess.PRIVATE ? this.selectedDashboard?.ownerId == this.userId : true)
+        return manager.hasRole(ClientRole.READ_INSIGHTS) && this.userId != null && (this.selectedDashboard?.access == DashboardAccess.PRIVATE ? this.selectedDashboard?.ownerId == this.userId : true)
     }
 
     /* ----------------- */
@@ -597,8 +599,8 @@ export class OrDashboardBuilder extends LitElement {
                                 <div id="header-title">
                                     <or-icon icon="view-dashboard"></or-icon>
                                     ${this.selectedDashboard != null ? html`
-                                        <or-mwc-input .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t('name') + '*\xa0'}" 
-                                                      ?readonly="${this._isReadonly()}" .value="${this.selectedDashboard.displayName}" 
+                                        <or-mwc-input .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t('name')}" 
+                                                      ?readonly="${this._isReadonly() || !this._hasEditAccess()}" .value="${this.selectedDashboard.displayName}" 
                                                       .disabled="${this.isLoading}" style="width: 300px;" 
                                                       @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.changeDashboardName(event.detail.value); }}"
                                         ></or-mwc-input>
@@ -668,7 +670,7 @@ export class OrDashboardBuilder extends LitElement {
                                     <or-dashboard-preview class="editor" style="background: transparent;"
                                                           .realm="${this.realm}" .template="${this.currentTemplate}"
                                                           .selectedWidget="${this.selectedDashboard?.template?.widgets?.find(w => w.id == this.selectedWidgetId)}" .editMode="${this.editMode}"
-                                                          .fullscreen="${this.fullscreen}" .readonly="${this._isReadonly()}"
+                                                          .fullscreen="${this.fullscreen}" .readonly="${this._isReadonly() || !this._hasEditAccess()}"
                                                           @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
                                                           @deselected="${() => { this.deselectWidget(); }}"
                                                           @created="${(event: CustomEvent) => { this.onWidgetCreation(event.detail); }}"
@@ -721,7 +723,7 @@ export class OrDashboardBuilder extends LitElement {
                                                 <div style="position: relative;">
                                                     <or-dashboard-browser id="browser" style="position: absolute; ${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
                                                     <or-dashboard-boardsettings style="position: absolute; ${this.sidebarMenuIndex != 1 ? css`display: none` : null}" 
-                                                                                .dashboard="${this.selectedDashboard}" .showPerms="${this.selectedDashboard?.ownerId == this.userId}" 
+                                                                                .dashboard="${this.selectedDashboard}" showPerms 
                                                                                 @update="${(event: CustomEvent) => {
                                                                                     this.currentTemplate = Object.assign({}, this.selectedDashboard?.template);
                                                                                     if(event.detail.force) { this.deselectWidget(); this.dashboardPreview?.refreshPreview(); }}}"

@@ -10,7 +10,7 @@ import "@openremote/or-translate";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import manager, {DefaultColor5, Util} from "@openremote/core";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
-import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
+import {OrAssetAttributePicker, OrAssetAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
@@ -226,13 +226,13 @@ export class AttributesPanel extends LitElement {
     }
 
     protected openAttributeSelector(attributeRefs: AttributeRef[], multi: boolean, onlyDataAttrs = true, attributeFilter?: (attribute: Attribute<any>) => boolean) {
-        let dialog: OrAttributePicker;
+        let dialog: OrAssetAttributePicker;
         if (attributeRefs != null) {
-            dialog = showDialog(new OrAttributePicker().setMultiSelect(multi).setSelectedAttributes(attributeRefs).setShowOnlyDatapointAttrs(onlyDataAttrs).setAttributeFilter(attributeFilter));
+            dialog = showDialog(new OrAssetAttributePicker().setMultiSelect(multi).setSelectedAttributes(attributeRefs).setShowOnlyDatapointAttrs(onlyDataAttrs).setAttributeFilter(attributeFilter));
         } else {
-            dialog = showDialog(new OrAttributePicker().setMultiSelect(multi).setShowOnlyDatapointAttrs(onlyDataAttrs))
+            dialog = showDialog(new OrAssetAttributePicker().setMultiSelect(multi).setShowOnlyDatapointAttrs(onlyDataAttrs))
         }
-        dialog.addEventListener(OrAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
+        dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
             this.attributeRefs = event.detail;
         })
     }
