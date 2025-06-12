@@ -732,6 +732,11 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                             <or-translate .value="${this._latestError || 'errorOccurred'}"></or-translate>
                         </div>
                     `)}
+                    ${when(Object.keys(this.attributeSettings).filter(key => key.startsWith('method')).every(key => (this.attributeSettings as any)[key].length === 0), () => html`
+                        <div style="position: inherit; height: 100%; width: 100%; display: flex; justify-content: center; align-items: center; z-index: 1; pointer-events: none;">
+                            <or-translate .value="${'dashboard.selectMethod'}"></or-translate>
+                        </div>
+                    `)}
                     ${when(this._data?.every(entry => entry.data.length === 0), () => html`
                         <div style="position: inherit; height: 100%; width: 100%; display: flex; justify-content: center; align-items: center; z-index: 1; pointer-events: none;">
                             <or-translate .value="${'dashboard.noData'}"></or-translate>
