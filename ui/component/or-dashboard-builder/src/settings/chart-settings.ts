@@ -107,7 +107,6 @@ export class ChartSettings extends WidgetSettings {
                 <!-- Axis configuration -->
                 <settings-panel displayName="dashboard.axisConfig" expanded="${true}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 16px;">
-
                         <!-- Left axis configuration -->
                         <div>
                             ${when(isMultiAxis, () => html`
