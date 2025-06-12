@@ -28,6 +28,7 @@ import { OrMapMarker } from "./markers/or-map-marker";
 import { getLatLngBounds, getLngLat } from "./util";
 import {GeoJsonConfig, MapType } from "@openremote/model";
 import { Feature, FeatureCollection } from "geojson";
+import { isMapboxURL, transformMapboxUrl } from "./mapbox-url-utils";
 
 const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
 const maplibreGlStyles = require("maplibre-gl/dist/maplibre-gl.css");
@@ -37,6 +38,7 @@ const maplibreGeoCoderStyles = require("@maplibre/maplibre-gl-geocoder/dist/mapl
 const metersToPixelsAtMaxZoom = (meters: number, latitude: number) =>
   meters / 0.075 / Math.cos(latitude * Math.PI / 180);
 
+let pkey: string | null;
 
 export class MapWidget {
     protected _mapJs?: L.mapbox.Map;
@@ -207,6 +209,10 @@ export class MapWidget {
         }
         const settings = settingsResponse.data as any;
 
+        if (settings.override) {
+          return settings.override
+        }
+
         // Load options for current realm or fallback to default if exist
         const realmName = manager.displayRealm || "default";
         this._viewSettings = settings.options ? settings.options[realmName] ? settings.options[realmName] : settings.options.default : null;
@@ -313,6 +319,12 @@ export class MapWidget {
                 container: this._mapContainer,
                 style: settings as StyleSpecification,
                 transformRequest: (url, resourceType) => {
+                    if (!pkey) {
+                        pkey = new URL(url).searchParams.get("access_token") || ''
+                    }
+                    if (isMapboxURL(url)) {
+                        return transformMapboxUrl(url, pkey, resourceType)
+                    }
                     // Cross-domain tile servers usually have the following headers specified "access-control-allow-methods	GET", "access-control-allow-origin *", "allow GET,HEAD". The "Access-Control-Request-Headers: Authorization" may not be set e.g. with Mapbox tile servers. The CORS preflight request (OPTION) will in this case fail if the "authorization" header is being requested cross-domain. The only headers allowed are so called "simple request" headers, see https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#simple_requests.
                     const headers = new URL(window.origin).hostname === new URL(url).hostname 
                         ? {Authorization: manager.getAuthorizationHeader()} : {}

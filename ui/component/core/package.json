@@ -1,6 +1,6 @@
 {
   "name": "@openremote/core",
-  "version": "1.3.3",
+  "version": "1.7.0-snapshot",
   "description": "OpenRemote 3.x Core",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
