@@ -172,13 +172,6 @@ export class ReportSettings extends WidgetSettings {
                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onDefaultStackedToggle(ev)}"
                            ></or-mwc-input>
                        </div>
-                       <!-- Chart or Table -->
-                       <div class="switch-container">
-                           <span><or-translate value="dashboard.isChart"></or-translate></span>
-                           <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.isChart}"
-                                         @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onIsChartToggle(ev)}"
-                           ></or-mwc-input>
-                       </div>
                        <!-- Decimal places -->
                        <div>
                             <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${this.widgetConfig.decimals}" label="${i18next.t('decimals')}" .min="${0}"
@@ -189,84 +182,82 @@ export class ReportSettings extends WidgetSettings {
                 </settings-panel>
 
                 <!-- Axis configuration -->
-                ${when(this.widgetConfig.isChart, () => html`
-                     <settings-panel displayName="dashboard.axisConfig" expanded="${false}">
-                         <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 16px;">
+                <settings-panel displayName="dashboard.axisConfig" expanded="${false}">
+                    <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 16px;">
         
-                             <!-- Left axis configuration -->
-                             <div>
-                                 ${when(isMultiAxis, () => html`
-                                     <div style="margin-bottom: 8px;">
-                                         <span><or-translate value="dashboard.leftAxis"></or-translate></span>
-                                     </div>
-                                 `)}
-                                 <div style="display: flex;">
-                                     ${max !== undefined ? html`
-                                         <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" .value="${max}" style="width: 100%;"
-                                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('left', 'max', ev)}"
-                                         ></or-mwc-input>
-                                     ` : html`
-                                         <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" disabled="true" value="auto" style="width: 100%;"></or-mwc-input>
-                                     `}
-                                     <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${max !== undefined}"
-                                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('left', 'max', ev)}"
-                                     ></or-mwc-input>
-                                 </div>
-                                 <div style="display: flex; margin-top: 12px;">
-                                     ${min !== undefined ? html`
-                                         <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" .value="${min}" style="width: 100%;"
-                                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('left', 'min', ev)}"
-                                         ></or-mwc-input>
-                                     ` : html`
-                                         <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" disabled="true" value="auto" style="width: 100%;"></or-mwc-input>
-                                     `}
-                                     <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${min !== undefined}"
-                                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('left', 'min', ev)}"
-                                     ></or-mwc-input>
-                                 </div>
-                             </div>
+                        <!-- Left axis configuration -->
+                        <div>
+                            ${when(isMultiAxis, () => html`
+                                <div style="margin-bottom: 8px;">
+                                    <span><or-translate value="dashboard.leftAxis"></or-translate></span>
+                                </div>
+                            `)}
+                            <div style="display: flex;">
+                                ${max !== undefined ? html`
+                                    <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" .value="${max}" style="width: 100%;"
+                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('left', 'max', ev)}"
+                                    ></or-mwc-input>
+                                ` : html`
+                                    <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" disabled="true" value="auto" style="width: 100%;"></or-mwc-input>
+                                `}
+                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${max !== undefined}"
+                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('left', 'max', ev)}"
+                                ></or-mwc-input>
+                            </div>
+                            <div style="display: flex; margin-top: 12px;">
+                                ${min !== undefined ? html`
+                                    <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" .value="${min}" style="width: 100%;"
+                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('left', 'min', ev)}"
+                                    ></or-mwc-input>
+                                ` : html`
+                                    <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" disabled="true" value="auto" style="width: 100%;"></or-mwc-input>
+                                `}
+                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${min !== undefined}"
+                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('left', 'min', ev)}"
+                                ></or-mwc-input>
+                            </div>
+                        </div>
         
-                             <!-- Right axis configuration -->
-                                            ${when(isMultiAxis, () => {
-                            const rightMin = this.widgetConfig.chartOptions.options?.scales?.y1?.min;
-                            const rightMax = this.widgetConfig.chartOptions.options?.scales?.y1?.max;
-                            return html`
-                                     <div>
-                                         <div style="margin-bottom: 8px;">
-                                             <span><or-translate value="dashboard.rightAxis"></or-translate></span>
-                                         </div>
-                                         <div style="display: flex;">
-                                             ${rightMax !== undefined ? html`
-                                                 <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" .value="${rightMax}" style="width: 100%;"
-                                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('right', 'max', ev)}"
-                                                 ></or-mwc-input>
-                                             ` : html`
-                                                 <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" disabled="true" value="auto"
-                                                               style="width: 100%;"></or-mwc-input>
-                                             `}
-                                             <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${rightMax !== undefined}"
-                                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('right', 'max', ev)}"
-                                             ></or-mwc-input>
-                                         </div>
-                                         <div style="display: flex; margin-top: 12px;">
-                                             ${rightMin !== undefined ? html`
-                                                 <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" .value="${rightMin}" style="width: 100%;"
-                                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('right', 'min', ev)}"
-                                                 ></or-mwc-input>
-                                             ` : html`
-                                                 <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" disabled="true" value="auto"
-                                                               style="width: 100%;"></or-mwc-input>
-                                             `}
-                                             <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${rightMin !== undefined}"
-                                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('right', 'min', ev)}"
-                                             ></or-mwc-input>
-                                         </div>
-                                     </div>
-                                 `
-                        })        }
-                         </div>
-                     </settings-panel>
-                `)}
+                        <!-- Right axis configuration -->
+                                       ${when(isMultiAxis, () => {
+                       const rightMin = this.widgetConfig.chartOptions.options?.scales?.y1?.min;
+                       const rightMax = this.widgetConfig.chartOptions.options?.scales?.y1?.max;
+                       return html`
+                                <div>
+                                    <div style="margin-bottom: 8px;">
+                                        <span><or-translate value="dashboard.rightAxis"></or-translate></span>
+                                    </div>
+                                    <div style="display: flex;">
+                                        ${rightMax !== undefined ? html`
+                                            <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" .value="${rightMax}" style="width: 100%;"
+                                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('right', 'max', ev)}"
+                                            ></or-mwc-input>
+                                        ` : html`
+                                            <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" disabled="true" value="auto"
+                                                          style="width: 100%;"></or-mwc-input>
+                                        `}
+                                        <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${rightMax !== undefined}"
+                                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('right', 'max', ev)}"
+                                        ></or-mwc-input>
+                                    </div>
+                                    <div style="display: flex; margin-top: 12px;">
+                                        ${rightMin !== undefined ? html`
+                                            <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" .value="${rightMin}" style="width: 100%;"
+                                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('right', 'min', ev)}"
+                                            ></or-mwc-input>
+                                        ` : html`
+                                            <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" disabled="true" value="auto"
+                                                          style="width: 100%;"></or-mwc-input>
+                                        `}
+                                        <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${rightMin !== undefined}"
+                                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('right', 'min', ev)}"
+                                        ></or-mwc-input>
+                                    </div>
+                                </div>
+                            `
+                   })        }
+                    </div>
+                </settings-panel>
             </div>
         `;
     }
@@ -462,11 +453,6 @@ export class ReportSettings extends WidgetSettings {
 
     protected onDefaultStackedToggle(ev: OrInputChangedEvent) {
         this.widgetConfig.chartSettings.defaultStacked = ev.detail.value;
-        this.notifyConfigUpdate();
-    }
-
-    protected onIsChartToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.isChart = ev.detail.value;
         this.notifyConfigUpdate();
     }
 

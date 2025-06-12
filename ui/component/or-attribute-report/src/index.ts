@@ -21,8 +21,6 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {ECharts, EChartsOption, init} from "echarts";
-import {MDCDataTable} from "@material/data-table";
-import {TableColumn, TableConfig, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
 import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
@@ -307,28 +305,6 @@ const style = css`
         width: 100% !important;
         height: 100%; !important;
     }
-
-    #table-container {
-        height: 100%;
-        max-width: 100%;
-        overflow: hidden;
-        flex: 1 1 0;
-    }
-
-    #table {
-        width: 100%;
-        margin-bottom: 10px;
-    }
-
-    #table > table {
-        width: 100%;
-        table-layout: fixed;
-    }
-
-    #table th, #table td {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
     
     @media screen and (max-width: 1280px) {
         #chart-container {
@@ -458,9 +434,6 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     public denseLegend: boolean = false;
 
     @property()
-    public isChart: boolean = false;
-
-    @property()
     public decimals: number = 2;
 
     @property()
@@ -469,16 +442,8 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     @property()
     protected _data?: any[];
 
-    @property()
-    protected _tableTemplate?: TemplateResult;
-
     @query("#chart")
     protected _chartElem!: HTMLDivElement;
-    @query("#table")
-    protected _tableElem!: HTMLDivElement;
-    protected _table?: MDCDataTable;
-    protected columns: TableColumn[] = [];
-    protected rows: TableRow[] = [];
     protected _chartOptions: EChartsOption = {};
     protected _chart?: ECharts;
     protected _style!: CSSStyleDeclaration;
@@ -547,7 +512,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
         this._intervalConfig = this._validateInterval(this._startOfPeriod!,this._endOfPeriod!,  this.interval!);
 
-        if (!this._chart && this.isChart) {
+        if (!this._chart) {
             this._chartOptions = {
                 //animation: false,
                 grid: {
@@ -711,11 +676,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     }
 
     render() {
-        const disabled =  !this.isChart || this._loading || this._latestError;
-
-        const tableConfig: any = {
-            fullHeight: true
-        } as TableConfig
+        const disabled =  this._loading || this._latestError;
 
         return html`
             
@@ -742,16 +703,10 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                             <or-translate .value="${'dashboard.noData'}"></or-translate>
                         </div>
                     `)}
-                ${when(this.isChart, () => html`
                 <div id="chart-container">
                     <div id="chart" style="visibility: ${disabled ? 'hidden' : 'visible'}"></div>
                 </div>
-                    
-                `, () => html `
-                <div id="table-container">
-                    <or-mwc-table id="table" .columns="${this.columns}" .rows="${this.rows}" .config="${tableConfig}" style="${style}"></or-mwc-table
-                </div>
-                `)}
+
 
 
 
@@ -1358,16 +1313,6 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             }
 
             this._data = data;
-
-            //Load data into table format
-            if (!this.isChart && this._data![0]) {
-                this.columns = ['Time', ...this._data!.map(entry => entry.name)];
-
-                this.rows = this._data![0].data.map((subArray: any[]) => ({
-                    content: [subArray[0], ...this._data!.map(entry => entry.data[subArray[0] === entry.data[0][0] ? 0 : 1][1])]
-                }));
-            }
-
             this._loading = false;
 
 
@@ -1444,7 +1389,6 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
             this._intervalConfig = this._validateInterval(this._startOfPeriod!,this._endOfPeriod!,  this.interval!);
             query.interval = (this._intervalConfig!.steps.toString() + " " + this._intervalConfig!.orFormat.toString()); // for example: "5 minute"
-            //console.log("query", query);
 
             response = await manager.rest.api.AssetDatapointResource.getDatapoints(asset.id, attribute.name, query, options);
 
@@ -1452,12 +1396,10 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             let data: ValueDatapoint<any>[] = [];
 
             if (response.status === 200) {
-                //console.log("response: ",response.data)
                 if (response.data.length > 0 && (response.data.length === 1 || (response.data[1].x! - response.data[0].x!) == this._intervalConfig!.millis) ) { //only push through if returned data interval is equal to requested interval or if if only one datapoint is returned
                     data = response.data
                         .filter(value => value.y !== null && value.y !== undefined)
                         .map(point => ({x: point.x, y: point.y} as ValueDatapoint<any>))
-                    //console.log("Query Data:", data);
                     // map to dataset and position to middle of interval instead of start time
                     dataset.data = data.map(point => [(point.x ?? 0) + 0.5 * this._intervalConfig!.millis, +point.y.toFixed(this.decimals)]);
                 } else {
@@ -1474,9 +1416,9 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
 
 
     protected _updateChartData() {
-        //---------BEUN AREA---------
-        this._markAreaData = [];
 
+        //---Recreate interval highlight background---
+        this._markAreaData = [];
         //Start at the first interval for which data is available
         const markStartPoint = Math.min(this._data?.find(entry => entry.data.length > 0)?.data?.[0][0]) - 0.5 * this._intervalConfig!.millis
         // End at the last available interval
@@ -1504,7 +1446,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             }
         }
 
-
+        // Update chart
         this._chart!.setOption({
             series: [
                 ...this._data!.map(series => ({

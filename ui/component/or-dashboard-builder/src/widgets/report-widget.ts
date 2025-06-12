@@ -42,14 +42,13 @@ export interface ReportWidgetConfig extends WidgetConfig {
         showToolBox: boolean;
         defaultStacked: boolean;
     };
-    isChart: boolean;
     decimals: number;
 }
 
 function getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
     return new Map<string, [moment.unitOfTime.DurationConstructor, number]>([
         ["5Minutes", ['minutes', 5]],
-        ["20Minutes", ['minutes', 20]],
+        ["30Minutes", ['minutes', 30]],
         ["60Minutes", ['minutes', 60]],
         ["hour", ['hours', 1]],
         ["6Hours", ['hours', 6]],
@@ -131,7 +130,6 @@ function getDefaultWidgetConfig(): ReportWidgetConfig {
             showToolBox: false,
             defaultStacked: false,
         },
-        isChart: true,
         decimals: 2
     };
 }
@@ -262,8 +260,7 @@ export class ReportWidget extends OrAssetWidget {
                               .timePrefixKey="${this.widgetConfig?.defaultTimePrefixKey}"
                               .timeWindowKey="${this.widgetConfig?.defaultTimeWindowKey}"
                               .datapointQuery="${this.datapointQuery}" .chartOptions="${this.widgetConfig?.chartOptions}"
-                              .isChart="${this.widgetConfig?.isChart}"  .decimals="${this.widgetConfig?.decimals}"
-                               
+                              .decimals="${this.widgetConfig?.decimals}"
                               style="height: 100%"
                     ></or-attribute-report>
                 `;
