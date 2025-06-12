@@ -625,8 +625,6 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
 
             // Initialize echarts instance
             this._chart = init(this._chartElem);
-            console.log ("Width: " , this._chartElem.offsetWidth)
-            console.log ("Heigth: " , this._chartElem.offsetHeight)
             // Set chart options to default
             this._chart.setOption(this._chartOptions);
             this._toggleChartEventListeners(true);
@@ -1279,13 +1277,13 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
                     // Map calculation methods to their corresponding attribute arrays and formulas
                     const methodMapping: { [key: string]: { active: boolean; formula: AssetDatapointIntervalQueryFormula } } = {
                         AVG: { active: !!this.attributeSettings.methodAvgAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.AVG },
-                        //COUNT: { active: !!this.attributeSettings.methodCountAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.COUNT },
+                        COUNT: { active: !!this.attributeSettings.methodCountAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.COUNT },
                         DELTA: { active: !!this.attributeSettings.methodDeltaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.DELTA },
                         MAX: { active: !!this.attributeSettings.methodMaxAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MAX },
-                        //MEDIAN: { active: !!this.attributeSettings.methodMedianAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MEDIAN },
+                        MEDIAN: { active: !!this.attributeSettings.methodMedianAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MEDIAN },
                         MIN: { active: !!this.attributeSettings.methodMinAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MIN },
-                        //MODE: { active: !!this.attributeSettings.methodModeAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MODE },
-                        //SUM: { active: !!this.attributeSettings.methodSumAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.SUM }
+                        MODE: { active: !!this.attributeSettings.methodModeAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MODE },
+                        SUM: { active: !!this.attributeSettings.methodSumAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.SUM }
                         };
 
                     // Iterate over the mapping, make a dataset for every active method
@@ -1477,7 +1475,6 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
 
             ]
         });
-        console.log("_data:", this._data);
     }
 
 
