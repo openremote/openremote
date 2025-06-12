@@ -80,7 +80,9 @@ public abstract class ValueConstraint implements Serializable {
     @JsonSchemaDescription("The attribute value must be between the specified boundaries based on the `min` and `max` properties. Supported types are JSON compatible strings, arrays and objects. Null values are considered valid.")
     public static class Size extends ValueConstraint {
 
+        @jakarta.validation.constraints.NotNull
         protected Integer min;
+        @jakarta.validation.constraints.NotNull
         protected Integer max;
 
         @JsonCreator
@@ -144,6 +146,7 @@ public abstract class ValueConstraint implements Serializable {
     @JsonTypeName("min")
     @JsonSchemaDescription("The attribute value must be a number higher or equal to the specified value on the `min` property. Null values are considered valid.")
     public static class Min extends ValueConstraint {
+        @jakarta.validation.constraints.NotNull
         protected Number min;
 
         @JsonCreator
@@ -225,6 +228,7 @@ public abstract class ValueConstraint implements Serializable {
     @JsonTypeName("max")
     @JsonSchemaDescription("The attribute value must be a number lower or equal to the specified value on the `max` property. Null values are considered valid.")
     public static class Max extends ValueConstraint {
+        @jakarta.validation.constraints.NotNull
         protected Number max;
 
         @JsonCreator
@@ -309,6 +313,7 @@ public abstract class ValueConstraint implements Serializable {
     @JsonSchemaDescription("The attribute value must match the regular expression pattern described in the `regexp` property. The regular expression follows the Java regular expression conventions. Flags can be specified using the `flags` property with values: CASE_INSENSITIVE, MULTILINE, DOTALL, UNIX_LINES, UNICODE_CASE, CANON_EQ and COMMENTS. Null values are considered valid.")
     public static class Pattern extends ValueConstraint {
         private static final java.util.regex.Pattern ESCAPE_MESSAGE_PARAMETER_PATTERN = java.util.regex.Pattern.compile("([\\\\{}$])");
+        @jakarta.validation.constraints.NotNull
         protected String regexp;
         protected jakarta.validation.constraints.Pattern.Flag[] flags;
 
@@ -383,6 +388,7 @@ public abstract class ValueConstraint implements Serializable {
     @JsonTypeName("allowedValues")
     @JsonSchemaDescription("The attribute value must match any of the specified values in the `allowedValues` property. The associated input in the UI will change to a select input with the options specified in the `allowedValues` property. The `allowedValueNames` property accepts a list of names that replace the labels in the select input, if the `allowedValueNames` list matches the length of the `allowedValues` list otherwise it falls back to the `allowedValues` as labels. Null values are considered valid. If `allowedValues` is not specified or empty the constraint only accepts null values.")
     public static class AllowedValues extends ValueConstraint {
+        @jakarta.validation.constraints.NotNull
         Object[] allowedValues;
         String[] allowedValueNames;
 
