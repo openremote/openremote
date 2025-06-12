@@ -3,7 +3,7 @@ const util = require("@openremote/util");
 bundles = {
     "index": {
         vendor: {
-            "chart.js": "Chart",
+            "eCharts": "Chart",
             "jsonpath-plus": "JSONPath",
             "moment": "moment"
         },

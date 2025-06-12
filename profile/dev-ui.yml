@@ -52,7 +52,8 @@ services:
     volumes:
       - manager-data:/storage
     environment:
-      OR_SETUP_RUN_ON_RESTART: ${OR_SETUP_RUN_ON_RESTART:-true}
+      OR_SETUP_RUN_ON_RESTART: ${OR_SETUP_RUN_ON_RESTART:-false}
+      OR_SETUP_TYPE: demo
       OR_DEV_MODE: ${OR_DEV_MODE:-true}
     ports:
       - "8080:8080"

@@ -12,12 +12,12 @@ import {OrAssetWidget} from "../util/or-asset-widget";
 import { customElement, state } from "lit/decorators.js";
 import {WidgetConfig} from "../util/widget-config";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
-import {ReportSettings} from "../settings/report-settings";
+import {BarChartSettings} from "../settings/barchart-settings";
 import {WidgetSettings} from "../util/widget-settings";
-import "@openremote/or-attribute-report";
-import {IntervalConfig} from "@openremote/or-attribute-report";
+import "@openremote/or-attribute-barchart";
+import {IntervalConfig} from "@openremote/or-attribute-barchart";
 
-export interface ReportWidgetConfig extends WidgetConfig {
+export interface BarChartWidgetConfig extends WidgetConfig {
     attributeRefs: AttributeRef[];
     colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }>;
     attributeSettings: {
@@ -83,7 +83,7 @@ function getDefaultIntervalOptions(): Map<string, IntervalConfig> {
 }
 
 
-function getDefaultWidgetConfig(): ReportWidgetConfig {
+function getDefaultWidgetConfig(): BarChartWidgetConfig {
     const preset = "30Days";  // Default time preset, "last" prefix is hardcoded in startDate and endDate below.
     const dateFunc = getDefaultTimeWindowOptions().get(preset);
     const startDate = moment().subtract(dateFunc![1], dateFunc![0]).startOf(dateFunc![0]);
@@ -136,8 +136,8 @@ function getDefaultWidgetConfig(): ReportWidgetConfig {
 
 /* --------------------------------------------------- */
 
-@customElement('report-widget')
-export class ReportWidget extends OrAssetWidget {
+@customElement('barchart-widget')
+export class BarChartWidget extends OrAssetWidget {
 
     @state()
     protected datapointQuery!: AssetDatapointQueryUnion;
@@ -146,25 +146,25 @@ export class ReportWidget extends OrAssetWidget {
     protected _loading = false;
 
     // Override of widgetConfig with extended type
-    protected widgetConfig!: ReportWidgetConfig;
+    protected widgetConfig!: BarChartWidgetConfig;
 
     static getManifest(): WidgetManifest {
         return {
-            displayName: "Report",
+            displayName: "Interval-Bar-Chart",
             displayIcon: "chart-bar",
             minColumnWidth: 2,
             minColumnHeight: 2,
-            getContentHtml(config: ReportWidgetConfig): OrWidget {
-                return new ReportWidget(config);
+            getContentHtml(config: BarChartWidgetConfig): OrWidget {
+                return new BarChartWidget(config);
             },
-            getSettingsHtml(config: ReportWidgetConfig): WidgetSettings {
-                const settings = new ReportSettings(config);
+            getSettingsHtml(config: BarChartWidgetConfig): WidgetSettings {
+                const settings = new BarChartSettings(config);
                 settings.setTimeWindowOptions(getDefaultTimeWindowOptions());
                 settings.setTimePrefixOptions(getDefaultTimePreFixOptions());
                 settings.setIntervalOptions(getDefaultIntervalOptions());
                 return settings;
             },
-            getDefaultConfig(): ReportWidgetConfig {
+            getDefaultConfig(): BarChartWidgetConfig {
                 return getDefaultWidgetConfig();
             }
         }
@@ -180,7 +180,7 @@ export class ReportWidget extends OrAssetWidget {
             datapointQuery.toTimestamp = undefined;
             this.datapointQuery = datapointQuery;
         } else {
-            this.widgetConfig = JSON.parse(JSON.stringify(this.widgetConfig)) as ReportWidgetConfig;
+            this.widgetConfig = JSON.parse(JSON.stringify(this.widgetConfig)) as BarChartWidgetConfig;
         }
     }
 
@@ -248,7 +248,7 @@ export class ReportWidget extends OrAssetWidget {
                 
             `, () => {
                 return html`
-                    <or-attribute-report .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
+                    <or-attribute-barchart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
                               .colorPickedAttributes="${this.widgetConfig?.colorPickedAttributes != null ? this.widgetConfig?.colorPickedAttributes : []}"
                               .attributeSettings="${this.widgetConfig?.attributeSettings != null ? this.widgetConfig.attributeSettings : {}}"
                               .chartSettings="${this.widgetConfig?.chartSettings}"
@@ -262,7 +262,7 @@ export class ReportWidget extends OrAssetWidget {
                               .datapointQuery="${this.datapointQuery}" .chartOptions="${this.widgetConfig?.chartOptions}"
                               .decimals="${this.widgetConfig?.decimals}"
                               style="height: 100%"
-                    ></or-attribute-report>
+                    ></or-attribute-barchart>
                 `;
             }))}
         `;

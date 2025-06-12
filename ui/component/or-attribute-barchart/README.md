@@ -3,12 +3,12 @@
 [![Linux Build][travis-image]][travis-url]
 [![Test Coverage][coveralls-image]][coveralls-url]
 
-Web Component for showing calculated values at intervals of an attribute.
+Web Component for showing aggregated values at intervals of attribute datapoints.
 
 ## Install
 ```bash
-npm i @openremote/or-attribute-report
-yarn add @openremote/or-attribute-report
+npm i @openremote/or-attribute-barchart
+yarn add @openremote/or-attribute-barchart
 ```
 
 ## Usage

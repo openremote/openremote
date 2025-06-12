@@ -6,13 +6,13 @@ import "../util/settings-panel";
 import {i18next} from "@openremote/or-translate";
 import {AttributeAction, AttributeActionEvent, AttributesSelectEvent} from "../panels/attributes-panel";
 import {Asset, AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, Attribute, AttributeRef} from "@openremote/model";
-import {ReportWidgetConfig} from "../widgets/report-widget";
+import {BarChartWidgetConfig} from "../widgets/barchart-widget";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {when} from "lit/directives/when.js";
 import moment from "moment/moment";
 import {ListItem, ListType, OrMwcList, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
 import {showDialog, OrMwcDialog, DialogAction} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {IntervalConfig} from "@openremote/or-attribute-report";
+import {IntervalConfig} from "@openremote/or-attribute-barchart";
 
 const styling = css`
   .switch-container {
@@ -23,10 +23,10 @@ const styling = css`
 `
 
 
-@customElement("report-settings")
-export class ReportSettings extends WidgetSettings {
+@customElement("barchart-settings")
+export class BarChartSettings extends WidgetSettings {
 
-    protected readonly widgetConfig!: ReportWidgetConfig;
+    protected readonly widgetConfig!: BarChartWidgetConfig;
 
 
 
@@ -308,7 +308,7 @@ export class ReportSettings extends WidgetSettings {
     }
 
     protected toggleAttributeSetting(
-        setting: keyof ReportWidgetConfig["attributeSettings"],
+        setting: keyof BarChartWidgetConfig["attributeSettings"],
         attributeRef: AttributeRef,
     ): void {
         const attributes = this.widgetConfig.attributeSettings[setting];
@@ -409,7 +409,7 @@ export class ReportSettings extends WidgetSettings {
                         changedMethods.forEach((item: ListItem) => {
                             if (item.value) {
                                 this.toggleAttributeSetting(
-                                    item.value as keyof ReportWidgetConfig["attributeSettings"],
+                                    item.value as keyof BarChartWidgetConfig["attributeSettings"],
                                     attributeRef
                                 );
                             }

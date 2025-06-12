@@ -35,12 +35,12 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {when} from "lit/directives/when.js";
 import {createRef, Ref, ref} from "lit/directives/ref.js";
 
-export class OrAttributeReportEvent extends CustomEvent<OrAttributeReportEventDetail> {
+export class OrAttributeBarChartEvent extends CustomEvent<OrAttributeBarChartEventDetail> {
 
-    public static readonly NAME = "or-report-event";
+    public static readonly NAME = "or-barchart-event";
 
     constructor(value?: any, previousValue?: any) {
-        super(OrAttributeReportEvent.NAME, {
+        super(OrAttributeBarChartEvent.NAME, {
             detail: {
                 value: value,
                 previousValue: previousValue
@@ -51,7 +51,7 @@ export class OrAttributeReportEvent extends CustomEvent<OrAttributeReportEventDe
     }
 }
 
-export interface AttributeReportViewConfig {
+export interface AttributeBarChartViewConfig {
     attributeRefs?: AttributeRef[];
     fromTimestamp?: number;
     toTimestamp?: number;
@@ -61,27 +61,27 @@ export interface AttributeReportViewConfig {
     decimals?: number;
 }
 
-export interface OrAttributeReportEventDetail {
+export interface OrAttributeBarChartEventDetail {
     value?: any;
     previousValue?: any;
 }
 
 declare global {
     export interface HTMLElementEventMap {
-        [OrAttributeReportEvent.NAME]: OrAttributeReportEvent;
+        [OrAttributeBarChartEvent.NAME]: OrAttributeBarChartEvent;
     }
 }
 
-export interface AttributeReportConfig {
+export interface AttributeBarChartConfig {
     xLabel?: string;
     yLabel?: string;
 }
 
-export interface OrAttributeReportConfig {
-    report?: AttributeReportConfig;
+export interface OrAttributeBarChartConfig {
+    barchart?: AttributeBarChartConfig;
     realm?: string;
     views: {[name: string]: {
-        [panelName: string]: AttributeReportViewConfig
+        [panelName: string]: AttributeBarChartViewConfig
     }};
 }
 
@@ -337,8 +337,8 @@ const style = css`
     }
 `;
 
-@customElement("or-attribute-report")
-export class OrAttributeReport extends translate(i18next)(LitElement) {
+@customElement("or-attribute-barchart")
+export class OrAttributeBarChart extends translate(i18next)(LitElement) {
 
     static get styles() {
         return [
@@ -380,7 +380,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
     public readonly datapointQuery!: AssetDatapointQueryUnion;
 
     @property({type: Object})
-    public config?: OrAttributeReportConfig;
+    public config?: OrAttributeBarChartConfig;
 
     @property({type: Object})
     public chartOptions?: any
@@ -618,7 +618,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
                         magicType: {
                             type: ['stack']
                         },
-                        saveAsImage: {}
+                        saveAsImage: {name: ['Chart Export ', this.panelName, `${moment(this._startOfPeriod).format("DD-MM-YYYY HH:mm")} - ${moment(this._endOfPeriod).format("DD-MM-YYYY HH:mm")}`].filter(Boolean).join('')}
                     }
                 }
             }
@@ -640,7 +640,7 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         }
 
         this.onCompleted().then(() => {
-            this.dispatchEvent(new OrAttributeReportEvent('rendered'));
+            this.dispatchEvent(new OrAttributeBarChartEvent('rendered'));
         });
 
     }
@@ -914,13 +914,13 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         }
 
         const viewSelector = window.location.hash;
-        const allConfigs: OrAttributeReportConfig[] = await manager.console.retrieveData("OrChartConfig") || [];
+        const allConfigs: OrAttributeBarChartConfig[] = await manager.console.retrieveData("OrChartConfig") || [];
 
         if (!Array.isArray(allConfigs)) {
             manager.console.storeData("OrChartConfig", [allConfigs]);
         }
 
-        let config: OrAttributeReportConfig | undefined = allConfigs.find(e => e.realm === this.realm);
+        let config: OrAttributeBarChartConfig | undefined = allConfigs.find(e => e.realm === this.realm);
 
         if (!config) {
             return;
@@ -982,8 +982,8 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
         }
 
         const viewSelector = window.location.hash;
-        const allConfigs: OrAttributeReportConfig[] = await manager.console.retrieveData("OrChartConfig") || [];
-        let config: OrAttributeReportConfig | undefined = allConfigs.find(e => e.realm === this.realm);
+        const allConfigs: OrAttributeBarChartConfig[] = await manager.console.retrieveData("OrChartConfig") || [];
+        let config: OrAttributeBarChartConfig | undefined = allConfigs.find(e => e.realm === this.realm);
 
         if (!config) {
             config = {

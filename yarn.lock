@@ -2531,6 +2531,30 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@openremote/or-attribute-barchart@workspace:^, @openremote/or-attribute-barchart@workspace:ui/component/or-attribute-barchart":
+  version: 0.0.0-use.local
+  resolution: "@openremote/or-attribute-barchart@workspace:ui/component/or-attribute-barchart"
+  dependencies:
+    "@material/data-table": "npm:^9.0.0"
+    "@material/dialog": "npm:^9.0.0"
+    "@openremote/core": "workspace:*"
+    "@openremote/or-asset-tree": "workspace:*"
+    "@openremote/or-attribute-picker": "workspace:*"
+    "@openremote/or-components": "workspace:*"
+    "@openremote/or-icon": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
+    "@openremote/util": "workspace:*"
+    "@types/chart.js": "npm:^2.9.34"
+    "@types/offscreencanvas": "npm:^2019.6.4"
+    chart.js: "npm:^3.6.0"
+    echarts: "npm:^5.6.0"
+    jsonpath-plus: "npm:^6.0.1"
+    lit: "npm:^2.0.2"
+    moment: "npm:^2.29.4"
+  languageName: unknown
+  linkType: soft
+
 "@openremote/or-attribute-card@workspace:*, @openremote/or-attribute-card@workspace:ui/component/or-attribute-card":
   version: 0.0.0-use.local
   resolution: "@openremote/or-attribute-card@workspace:ui/component/or-attribute-card"
@@ -2587,30 +2611,6 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: "npm:^2.0.2"
-  languageName: unknown
-  linkType: soft
-
-"@openremote/or-attribute-report@workspace:^, @openremote/or-attribute-report@workspace:ui/component/or-attribute-report":
-  version: 0.0.0-use.local
-  resolution: "@openremote/or-attribute-report@workspace:ui/component/or-attribute-report"
-  dependencies:
-    "@material/data-table": "npm:^9.0.0"
-    "@material/dialog": "npm:^9.0.0"
-    "@openremote/core": "workspace:*"
-    "@openremote/or-asset-tree": "workspace:*"
-    "@openremote/or-attribute-picker": "workspace:*"
-    "@openremote/or-components": "workspace:*"
-    "@openremote/or-icon": "workspace:*"
-    "@openremote/or-mwc-components": "workspace:*"
-    "@openremote/or-translate": "workspace:*"
-    "@openremote/util": "workspace:*"
-    "@types/chart.js": "npm:^2.9.34"
-    "@types/offscreencanvas": "npm:^2019.6.4"
-    chart.js: "npm:^3.6.0"
-    echarts: "npm:^5.6.0"
-    jsonpath-plus: "npm:^6.0.1"
-    lit: "npm:^2.0.2"
-    moment: "npm:^2.29.4"
   languageName: unknown
   linkType: soft
 
@@ -8029,7 +8029,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "openremote@workspace:."
   dependencies:
-    "@openremote/or-attribute-report": "workspace:^"
+    "@openremote/or-attribute-barchart": "workspace:^"
     "@openremote/util": "workspace:*"
   languageName: unknown
   linkType: soft
