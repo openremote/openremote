@@ -5,11 +5,11 @@ import "../panels/attributes-panel";
 import "../util/settings-panel";
 import {i18next} from "@openremote/or-translate";
 import {AttributeAction, AttributeActionEvent, AttributesSelectEvent} from "../panels/attributes-panel";
-import {Asset, AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, Attribute, AttributeRef} from "@openremote/model";
+import {Asset, Attribute, AttributeRef} from "@openremote/model";
 import {ChartWidgetConfig} from "../widgets/chart-widget";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {TimePresetCallback} from "@openremote/or-chart";
 import {when} from "lit/directives/when.js";
+import moment from "moment/moment";
 
 const styling = css`
   .switch-container {
@@ -23,13 +23,17 @@ const styling = css`
 @customElement("chart-settings")
 export class ChartSettings extends WidgetSettings {
 
-    protected readonly widgetConfig!: ChartWidgetConfig
-
-    protected timePresetOptions: Map<string, TimePresetCallback> = new Map<string, TimePresetCallback>();
+    protected readonly widgetConfig!: ChartWidgetConfig;
+    protected timeWindowOptions: Map<string, [moment.unitOfTime.DurationConstructor, number]> = new Map<string, [moment.unitOfTime.DurationConstructor, number]>;
+    protected timePrefixOptions: string[] = [];
     protected samplingOptions: Map<string, string> = new Map<string, string>();
 
-    public setTimePresetOptions(options: Map<string, TimePresetCallback>) {
-        this.timePresetOptions = options;
+    public setTimeWindowOptions(options: Map<string, [moment.unitOfTime.DurationConstructor, number]>) {
+        this.timeWindowOptions = options;
+    }
+
+    public setTimePrefixOptions(options: string[]) {
+        this.timePrefixOptions = options;
     }
 
     public setSamplingOptions(options: Map<string, string>) {
@@ -44,26 +48,87 @@ export class ChartSettings extends WidgetSettings {
         const attributeFilter: (attr: Attribute<any>) => boolean = (attr): boolean => {
             return ["boolean", "positiveInteger", "positiveNumber", "number", "long", "integer", "bigInteger", "negativeInteger", "negativeNumber", "bigNumber", "integerByte", "direction"].includes(attr.type!)
         };
+        const attrSettings = this.widgetConfig.attributeSettings;
         const min = this.widgetConfig.chartOptions.options?.scales?.y?.min;
         const max = this.widgetConfig.chartOptions.options?.scales?.y?.max;
-        const isMultiAxis = this.widgetConfig.rightAxisAttributes.length > 0;
+        const isMultiAxis = attrSettings.rightAxisAttributes.length > 0;
         const samplingValue = Array.from(this.samplingOptions.entries()).find((entry => entry[1] === this.widgetConfig.datapointQuery.type))![0]
         const attributeLabelCallback = (asset: Asset, attribute: Attribute<any>, attributeLabel: string) => {
-            const isOnRightAxis = isMultiAxis && this.widgetConfig.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isOnRightAxis = isMultiAxis && attrSettings.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isFaint = attrSettings.faintAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isSmooth = attrSettings.smoothAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isStepped = attrSettings.steppedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isArea = attrSettings.areaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isExtended = attrSettings.extendedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
             return html`
                 <span>${asset.name}</span>
                 <span style="font-size:14px; color:grey;">${attributeLabel}</span>
                 ${when(isOnRightAxis, () => html`
-                    <span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;"><or-translate value="right"></or-translate></span>
+                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="right"></or-translate></span>   
+                `)}
+                ${when(isFaint, () => html`
+                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="dashboard.faint"></or-translate></span>
+                `)}
+                ${when(isSmooth, () => html`
+                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="dashboard.smooth"></or-translate></span>
+                `)}
+                ${when(isStepped, () => html`
+                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="dashboard.stepped"></or-translate></span>
+                `)}
+                ${when(isArea, () => html`
+                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="dashboard.fill"></or-translate></span>
+                `)}
+                ${when(isExtended, () => html`
+                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="dashboard.extendData"></or-translate></span>
                 `)}
             `
         }
+
+
         const attributeActionCallback = (attributeRef: AttributeRef): AttributeAction[] => {
-            return [{
-                icon: this.widgetConfig.rightAxisAttributes.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
-                tooltip: i18next.t('dashboard.toggleAxis'),
-                disabled: false
-            }]
+            return [
+                {
+                  icon: 'palette',
+                  tooltip: i18next.t('dashboard.lineColor'),
+                  disabled: false
+                },
+                {
+                    icon: 'chart-bell-curve-cumulative',
+                    tooltip: i18next.t("dashboard.smooth"),
+                    disabled: false
+                },
+                {
+                    icon: 'square-wave',
+                    tooltip: i18next.t('dashboard.stepped'),
+                    disabled: false
+                },
+                {
+                    icon: 'chart-areaspline-variant',
+                    tooltip: i18next.t('dashboard.fill'),
+                    disabled: false
+                },
+                {
+                    icon: 'arrange-send-backward',
+                    tooltip: i18next.t('dashboard.faint'),
+                    disabled: false
+                },
+                {
+                    icon: 'arrow-expand-right',
+                    tooltip: i18next.t('dashboard.extendData'),
+                    disabled: false
+                },
+
+                {
+                    icon: this.widgetConfig.attributeSettings.rightAxisAttributes.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
+                    tooltip: i18next.t('dashboard.toggleAxis'),
+                    disabled: false
+                },
+                {
+                    icon: 'mdi-blank',
+                    tooltip: '',
+                    disabled: true
+                }
+            ]
         }
         return html`
             <div>
@@ -76,18 +141,27 @@ export class ChartSettings extends WidgetSettings {
                     ></attributes-panel>
                 </settings-panel>
 
-                <!-- Display options -->
-                <settings-panel displayName="display" expanded="${true}">
+                <!-- Time options -->
+                <settings-panel displayName="time" expanded="${true}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
                         <!-- Timeframe -->
                         <div>
+                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('prefixDefault')}" style="width: 100%;"
+                                          .options="${this.timePrefixOptions}" value="${this.widgetConfig.defaultTimePrefixKey}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimePreFixSelect(ev)}"
+                            ></or-mwc-input>
                             <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('timeframeDefault')}" style="width: 100%;"
-                                          .options="${Array.from(this.timePresetOptions.keys())}" value="${this.widgetConfig.defaultTimePresetKey}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimePresetSelect(ev)}"
+                                          .options="${Array.from(this.timeWindowOptions.keys())}" value="${this.widgetConfig.defaultTimeWindowKey}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimeWindowSelect(ev)}"
                             ></or-mwc-input>
                         </div>
-                        <!-- Y Min/max options -->
-                        <div>
+                        <!-- Time range selection -->
+
+                    </div>  
+               </settings-panel>
+               <!-- Display options --> 
+               <settings-panel displayName="display" expanded="${false}">
+                   <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
                             <div class="switch-container">
                                 <span><or-translate value="dashboard.allowTimerangeSelect"></or-translate></span>
                                 <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${!this.widgetConfig.showTimestampControls}"
@@ -100,12 +174,31 @@ export class ChartSettings extends WidgetSettings {
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowLegendToggle(ev)}"
                                 ></or-mwc-input>
                             </div>
-                        </div>
+                        <!-- Datazoombar -->
+                            <div class="switch-container">
+                                <span><or-translate value="dashboard.showZoomBar"></or-translate></span>
+                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showZoomBar}"
+                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowZoomBarToggle(ev)}"
+                                ></or-mwc-input>
+                            </div>
+                        <!-- Toolbox -->
+                            <div class="switch-container">
+                                <span><or-translate value="dashboard.showToolBox"></or-translate></span>
+                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showToolBox}"
+                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowToolBoxToggle(ev)}"
+                                ></or-mwc-input>
+                            </div>
+                        <!-- Show Symbol Treshold -->    
+                            <div class="number-container">
+                                <or-mwc-input .type="${InputType.NUMBER}" .min="1" .max="200" .step="1" label="${i18next.t('dashboard.showSymbolMaxDatapoints')}" style="width: 100%;" .value="${this.widgetConfig.showSymbolMaxDatapoints}"
+                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowSymbolMaxDatapointsValueChange(ev)}"
+                                ></or-mwc-input>
+                            </div>
                     </div>
                 </settings-panel>
 
                 <!-- Axis configuration -->
-                <settings-panel displayName="dashboard.axisConfig" expanded="${true}">
+                <settings-panel displayName="dashboard.axisConfig" expanded="${false}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 16px;">
 
                         <!-- Left axis configuration -->
@@ -183,10 +276,10 @@ export class ChartSettings extends WidgetSettings {
                 </settings-panel>
 
                 <!-- Data sampling options -->
-                <settings-panel displayName="dataSampling" expanded="${true}">
+                <settings-panel displayName="dataSampling" expanded="${false}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 12px;">
                         <div>
-                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%" .options="${Array.from(this.samplingOptions.keys())}" .value="${samplingValue}"
+                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%" .options="${Array.from(this.samplingOptions.keys())}" .value="${samplingValue}" disabled=${true}
                                           label="${i18next.t('algorithm')}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onSamplingQueryChange(ev)}"
                             ></or-mwc-input>
                         </div>
@@ -201,15 +294,10 @@ export class ChartSettings extends WidgetSettings {
 
     protected getSamplingOptionsTemplate(type: any): TemplateResult {
         switch (type) {
-            case 'interval': {
-                const intervalQuery = this.widgetConfig.datapointQuery as AssetDatapointIntervalQuery;
-                const formulaOptions = [AssetDatapointIntervalQueryFormula.AVG, AssetDatapointIntervalQueryFormula.MIN, AssetDatapointIntervalQueryFormula.MAX];
-                return html`
-                    <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${formulaOptions}"
-                                  .value="${intervalQuery.formula}" label="${i18next.t('algorithmMethod')}" @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                        intervalQuery.formula = event.detail.value;
-                        this.notifyConfigUpdate();
-                    }}"
+            case 'lttb': {
+                return html `
+                    <or-mwc-input .type="${InputType.NUMBER}" .min="10" .max="1000" .step="1" label="${i18next.t('dashboard.maxConcurrentDatapoints')}" .value="${this.widgetConfig.maxConcurrentDatapoints}" style="width: 100%;"
+                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMaxConcurrentDatapointsValueChange(ev)}"
                     ></or-mwc-input>
                 `;
             }
@@ -218,49 +306,115 @@ export class ChartSettings extends WidgetSettings {
         }
     }
 
-    // When a user clicks on ANY action in the attribute list, we want to switch between LEFT and RIGHT axis.
-    // Since that is the only action, there is no need to check the ev.action variable.
+    // Check which icon was pressed and act accordingly.
     protected onAttributeAction(ev: AttributeActionEvent) {
-        if(this.widgetConfig.attributeRefs.indexOf(ev.detail.attributeRef) >= 0) {
-            if(this.widgetConfig.rightAxisAttributes.includes(ev.detail.attributeRef)) {
-                this.removeFromRightAxis(ev.detail.attributeRef);
-            } else {
-                this.addToRightAxis(ev.detail.attributeRef);
-            }
-            this.notifyConfigUpdate();
+        const {attributeRef, action } = ev.detail;
+
+        switch (action.icon) {
+            case "palette":    // Change color
+                this.openColorPickDialog(attributeRef);
+                break;
+            case "arrow-right-bold":
+            case "arrow-left-bold":
+                this.toggleAttributeSetting("rightAxisAttributes", attributeRef);
+                break;
+            case "chart-bell-curve-cumulative":
+                this.toggleAttributeSetting("smoothAttributes", attributeRef);
+                break;
+            case "square-wave":
+                this.toggleAttributeSetting("steppedAttributes", attributeRef);
+                break;
+            case "chart-areaspline-variant":
+                this.toggleAttributeSetting("areaAttributes", attributeRef);
+                break;
+            case "arrange-send-backward":
+                this.toggleAttributeSetting("faintAttributes", attributeRef);
+                break;
+            case "arrow-expand-right":
+                this.toggleAttributeSetting("extendedAttributes", attributeRef);
+                break;
+            default:
+                console.warn('Unknown attribute panel action:', action);
         }
+        console.log("end of onAttributeAction" + JSON.stringify(this.widgetConfig.attributeSettings));
     }
 
     // When the list of attributeRefs is changed by the asset selector,
-    // we should remove the "right axis" references for the attributes that got removed.
+    // we should remove the settings references for the attributes that got removed.
     // Also update the WidgetConfig attributeRefs field as usual
     protected onAttributesSelect(ev: AttributesSelectEvent) {
         const removedAttributeRefs = this.widgetConfig.attributeRefs.filter(ar => !ev.detail.attributeRefs.includes(ar));
-        removedAttributeRefs.forEach(raf => this.removeFromRightAxis(raf));
+
+        removedAttributeRefs.forEach(raf => {
+            this.removeFromAttributeSettings(raf);
+            this.removeFromColorPickedAttributes(raf);
+        });
+
         this.widgetConfig.attributeRefs = ev.detail.attributeRefs;
         this.notifyConfigUpdate();
     }
 
-    protected addToRightAxis(attributeRef: AttributeRef, notify = false) {
-        if(!this.widgetConfig.rightAxisAttributes.includes(attributeRef)) {
-            this.widgetConfig.rightAxisAttributes.push(attributeRef);
-            if(notify) {
-                this.notifyConfigUpdate();
-            }
-        }
+    protected removeFromAttributeSettings(attributeRef: AttributeRef) {
+        const settings = this.widgetConfig.attributeSettings;
+        (Object.keys(settings) as (keyof typeof settings)[]).forEach(key => {
+            settings[key] = settings[key].filter((ar: AttributeRef) => ar.id !== attributeRef.id || ar.name !== attributeRef.name);
+        });
     }
 
-    protected removeFromRightAxis(attributeRef: AttributeRef, notify = false) {
-        if(this.widgetConfig.rightAxisAttributes.includes(attributeRef)) {
-            this.widgetConfig.rightAxisAttributes.splice(this.widgetConfig.rightAxisAttributes.indexOf(attributeRef), 1);
-            if(notify) {
-                this.notifyConfigUpdate();
-            }
+    protected toggleAttributeSetting(
+        setting: keyof ChartWidgetConfig["attributeSettings"],
+        attributeRef: AttributeRef,
+    ): void {
+        const attributes = this.widgetConfig.attributeSettings[setting];
+        const index = attributes.findIndex(
+            (item: AttributeRef) => item.id === attributeRef.id && item.name === attributeRef.name
+        );
+        if (index < 0) {
+            attributes.push(attributeRef);
+        } else {
+            attributes.splice(index, 1);
         }
+        this.notifyConfigUpdate();
     }
 
-    protected onTimePresetSelect(ev: OrInputChangedEvent) {
-        this.widgetConfig.defaultTimePresetKey = ev.detail.value.toString();
+    protected removeFromColorPickedAttributes(attributeRef: AttributeRef) {
+        this.widgetConfig.colorPickedAttributes = this.widgetConfig.colorPickedAttributes.filter(
+            item => item.attributeRef.id !== attributeRef.id || item.attributeRef.name !== attributeRef.name
+        );
+    }
+
+    protected openColorPickDialog(attributeRef: AttributeRef) {
+        const colorInput = document.createElement('input');
+        colorInput.type = 'color';
+        colorInput.style.border = 'none';
+        colorInput.style.height = '31px';
+        colorInput.style.width = '31px';
+        colorInput.style.padding = '1px 3px';
+        colorInput.style.minHeight = '22px';
+        colorInput.style.minWidth = '30px';
+        colorInput.style.cursor = 'pointer';
+        colorInput.addEventListener('change', (e: any) => {
+            const color = e.target.value;
+            const existingIndex = this.widgetConfig.colorPickedAttributes.findIndex(item =>
+                item.attributeRef.id === attributeRef.id && item.attributeRef.name === attributeRef.name
+            );
+            if (existingIndex >= 0) {
+                this.widgetConfig.colorPickedAttributes[existingIndex].color = color;
+            } else {
+                this.widgetConfig.colorPickedAttributes.push({ attributeRef, color });
+            }
+            this.notifyConfigUpdate();
+        });
+        colorInput.click();
+    }
+
+    protected onTimePreFixSelect(ev: OrInputChangedEvent) {
+        this.widgetConfig.defaultTimePrefixKey = ev.detail.value.toString();
+        this.notifyConfigUpdate();
+    }
+
+    protected onTimeWindowSelect(ev: OrInputChangedEvent) {
+        this.widgetConfig.defaultTimeWindowKey = ev.detail.value.toString();
         this.notifyConfigUpdate();
     }
 
@@ -271,6 +425,16 @@ export class ChartSettings extends WidgetSettings {
 
     protected onShowLegendToggle(ev: OrInputChangedEvent) {
         this.widgetConfig.showLegend = ev.detail.value;
+        this.notifyConfigUpdate();
+    }
+
+    protected onShowZoomBarToggle(ev: OrInputChangedEvent) {
+        this.widgetConfig.showZoomBar = ev.detail.value;
+        this.notifyConfigUpdate();
+    }
+
+    protected onShowToolBoxToggle(ev: OrInputChangedEvent) {
+        this.widgetConfig.showToolBox = ev.detail.value;
         this.notifyConfigUpdate();
     }
 
@@ -301,6 +465,16 @@ export class ChartSettings extends WidgetSettings {
 
     protected onSamplingQueryChange(ev: OrInputChangedEvent) {
         this.widgetConfig.datapointQuery.type = this.samplingOptions.get(ev.detail.value)! as any;
+        this.notifyConfigUpdate();
+    }
+
+    protected onMaxConcurrentDatapointsValueChange(ev: OrInputChangedEvent) {
+        this.widgetConfig.maxConcurrentDatapoints = ev.detail.value;
+        this.notifyConfigUpdate();
+    }
+
+    protected onShowSymbolMaxDatapointsValueChange(ev: OrInputChangedEvent) {
+        this.widgetConfig.showSymbolMaxDatapoints = ev.detail.value;
         this.notifyConfigUpdate();
     }
 }

@@ -10,7 +10,6 @@ import {
     AssetQuery,
     Attribute,
     AttributeRef,
-    DatapointInterval,
     ReadAssetEvent,
     ValueDatapoint,
     WellknownMetaItems
@@ -20,42 +19,22 @@ import "@openremote/or-asset-tree";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {
-    Chart,
-    ChartConfiguration,
-    ChartDataset,
-    Filler,
-    Legend,
-    LinearScale,
-    LineController,
-    LineElement,
-    PointElement,
-    ScatterController,
-    ScatterDataPoint,
-    TimeScale,
-    TimeScaleOptions,
-    TimeUnit,
-    Title,
-    Tooltip
-} from "chart.js";
+import {ECharts, EChartsOption, init, graphic} from "echarts";
 import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
-import ChartAnnotation, {AnnotationOptions} from "chartjs-plugin-annotation";
 import "chartjs-adapter-moment";
 import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
 import {OrAssetAttributePicker, OrAssetAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {cache} from "lit/directives/cache.js";
-import {throttle} from "lodash";
+import {debounce} from "lodash";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import { when } from "lit/directives/when.js";
 import {createRef, Ref, ref } from "lit/directives/ref.js";
-
-Chart.register(LineController, ScatterController, LineElement, PointElement, LinearScale, TimeScale, Title, Filler, Legend, Tooltip, ChartAnnotation);
 
 export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
 
@@ -72,8 +51,6 @@ export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
         });
     }
 }
-
-export type TimePresetCallback = (date: Date) => [Date, Date];
 
 export interface ChartViewConfig {
     attributeRefs?: AttributeRef[];
@@ -125,7 +102,7 @@ const style = css`
         --internal-or-chart-controls-margin: var(--or-chart-controls-margin, 0 0 20px 0);       
         --internal-or-chart-controls-margin-children: var(--or-chart-controls-margin-children, 0 auto 20px auto);            
         --internal-or-chart-graph-fill-color: var(--or-chart-graph-fill-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
-        --internal-or-chart-graph-fill-opacity: var(--or-chart-graph-fill-opacity, 1);       
+        --internal-or-chart-graph-fill-opacity: var(--or-chart-graph-fill-opacity, 0.25);       
         --internal-or-chart-graph-line-color: var(--or-chart-graph-line-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
         --internal-or-chart-graph-point-color: var(--or-chart-graph-point-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
         --internal-or-chart-graph-point-border-color: var(--or-chart-graph-point-border-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
@@ -203,17 +180,21 @@ const style = css`
     }
     .period-controls {
         display: flex;
-        min-width: 180px;
+        flex-direction: column;
         align-items: center;
     }
+
+    .navigate {
+        flex-direction: column;
+    }
+    
 
     #controls {
         display: flex;
         flex-wrap: wrap;
-        margin: var(--internal-or-chart-controls-margin);
         width: 100%;
         flex-direction: column;
-        margin: 0;
+        justify-content: center;
     }
 
     #attribute-list {
@@ -311,17 +292,11 @@ const style = css`
     #chart-controls {
         display: flex;
         flex-direction: column;
-        align-items: center;
+        margin-top: 10px;
     }
-    canvas {
+    #chart {
         width: 100% !important;
         height: 100%; !important;
-    }
-
-    @media screen and (max-width: 1280px) {
-        #chart-container {
-            max-height: 330px;
-        }
     }
 
     @media screen and (max-width: 769px) {
@@ -340,7 +315,6 @@ const style = css`
             min-width: 100%;
             padding-left: 0;
         }
-        .interval-controls,
         .period-controls {
             flex-direction: row;
             justify-content: left;
@@ -352,8 +326,6 @@ const style = css`
 
 @customElement("or-chart")
 export class OrChart extends translate(i18next)(LitElement) {
-
-    public static DEFAULT_TIMESTAMP_FORMAT = "L HH:mm:ss";
 
     static get styles() {
         return [
@@ -372,11 +344,29 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Object})
     public assetAttributes: [number, Attribute<any>][] = [];
 
-    @property({type: Array}) // List of AttributeRef that are shown on the right axis instead.
-    public rightAxisAttributes: AttributeRef[] = [];
+    @property({type: Array})
+    public colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }> = [];
+
+    @property({type: Object})
+    public attributeSettings: {
+        rightAxisAttributes: AttributeRef[],
+        smoothAttributes: AttributeRef[],
+        steppedAttributes: AttributeRef[],
+        areaAttributes: AttributeRef[],
+        faintAttributes: AttributeRef[],
+        extendedAttributes: AttributeRef[],
+    } = {
+        rightAxisAttributes: [],
+        smoothAttributes: [],
+        steppedAttributes: [],
+        areaAttributes: [],
+        faintAttributes: [],
+        extendedAttributes: [],
+    };
+
 
     @property()
-    public dataProvider?: (startOfPeriod: number, endOfPeriod: number, timeUnits: TimeUnit, stepSize: number) => Promise<ChartDataset<"line", ScatterDataPoint[]>[]>
+    public dataProvider?: (startOfPeriod: number, endOfPeriod: number) => Promise<[]>
 
     @property({type: Array})
     public colors: string[] = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
@@ -387,7 +377,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Object})
     public config?: OrChartConfig;
 
-    @property({type: Object}) // options that will get merged with our default chartjs configuration.
+    @property({type: Object})
     public chartOptions?: any
 
     @property({type: String})
@@ -406,10 +396,19 @@ export class OrChart extends translate(i18next)(LitElement) {
     public timestampControls: boolean = true;
 
     @property()
-    public timePresetOptions?: Map<string, TimePresetCallback>;
+    protected timePrefixOptions?: string[];
 
     @property()
-    public timePresetKey?: string;
+    public timeWindowOptions?: Map<string, [moment.unitOfTime.DurationConstructor, number]>;
+
+    @property()
+    public timePrefixKey?: string;
+
+    @property()
+    public timeWindowKey?: string;
+
+    @property()
+    public isCustomWindow?: boolean = false;
 
     @property()
     public showLegend: boolean = true;
@@ -418,25 +417,44 @@ export class OrChart extends translate(i18next)(LitElement) {
     public denseLegend: boolean = false;
 
     @property()
+    public showZoomBar: boolean = true;
+
+    @property()
+    public showToolBox: boolean = true;
+
+    @property()
+    public showSymbolMaxDatapoints: number = 30;
+
+    @property()
+    public maxConcurrentDatapoints: number = 100;
+
+    @property()
     protected _loading: boolean = false;
 
     @property()
-    protected _data?: ChartDataset<"line", ScatterDataPoint[]>[] = undefined;
+    protected _zoomChanged: boolean = false;
+
+    @property()
+    protected _data?: any[];
 
     @property()
     protected _tableTemplate?: TemplateResult;
 
     @query("#chart")
-    protected _chartElem!: HTMLCanvasElement;
-
-    protected _chart?: Chart;
+    protected _chartElem!: HTMLDivElement;
+    protected _chartOptions: EChartsOption = {};
+    protected _chart?: ECharts;
     protected _style!: CSSStyleDeclaration;
     protected _startOfPeriod?: number;
     protected _endOfPeriod?: number;
-    protected _timeUnits?: TimeUnit;
-    protected _stepSize?: number;
+    protected _zoomStartOfPeriod?: number;
+    protected _zoomEndOfPeriod?: number;
     protected _latestError?: string;
     protected _dataAbortController?: AbortController;
+    protected _zoomHandler?: any;
+    protected _containerResizeObserver?: ResizeObserver;
+    protected _tooltipCache: [xTime: number, content: string] = [0,''];
+
 
     constructor() {
         super();
@@ -451,6 +469,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     disconnectedCallback(): void {
         super.disconnectedCallback();
         this._cleanup();
+
     }
 
     firstUpdated() {
@@ -458,6 +477,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     updated(changedProperties: PropertyValues) {
+
         super.updated(changedProperties);
 
         if (changedProperties.has("realm")) {
@@ -467,13 +487,15 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
         }
 
-        const reloadData = changedProperties.has("datapointQuery") || changedProperties.has("timePresetKey") || changedProperties.has("timeframe") ||
-            changedProperties.has("rightAxisAttributes") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
+        const reloadData = changedProperties.has('colorPickedAttributes') || changedProperties.has("datapointQuery") || changedProperties.has("timeframe") || changedProperties.has("timePrefixKey") || changedProperties.has("timeWindowKey")||
+            changedProperties.has("attributeSettings") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
 
         if (reloadData) {
             this._data = undefined;
             if (this._chart) {
-                this._chart.destroy();
+                // Remove event listeners
+                this._toggleChartEventListeners(false);
+                this._chart.dispose();
                 this._chart = undefined;
             }
             this._loadData();
@@ -483,117 +505,160 @@ export class OrChart extends translate(i18next)(LitElement) {
             return;
         }
 
-        const now = moment().toDate().getTime();
-
         if (!this._chart) {
-            const options = {
-                type: "line",
-                data: {
-                    datasets: this._data
+
+            let bgColor = this._style.getPropertyValue("--internal-or-chart-graph-fill-color").trim();
+            const opacity = Number(this._style.getPropertyValue("--internal-or-chart-graph-fill-opacity").trim());
+            if (!isNaN(opacity)) {
+                if (bgColor.startsWith("#") && (bgColor.length === 4 || bgColor.length === 7)) {
+                    bgColor += (bgColor.length === 4 ? Math.round(opacity * 255).toString(16).substr(0, 1) : Math.round(opacity * 255).toString(16));
+                } else if (bgColor.startsWith("rgb(")) {
+                    bgColor = bgColor.substring(0, bgColor.length - 1) + opacity;
+                }
+            }
+
+            this._chartOptions = {
+                animation: false,
+                grid: {
+                    show: true,
+                    backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
+                    borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
+                    left: 10,
+                    right: this.attributeSettings.rightAxisAttributes.length > 0 ? 50 : 20,
+                    top: this.showToolBox ? 28 : 10,
+                    bottom: this.showZoomBar ? 68 : 10,
+                    containLabel: true
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    onResize: throttle(() => { this.dispatchEvent(new OrChartEvent("resize")); this.applyChartResponsiveness(); }, 200),
-                    showLines: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            mode: "x",
-                            intersect: false,
-                            xPadding: 10,
-                            yPadding: 10,
-                            titleMarginBottom: 10,
-                            callbacks: {
-                                label: (tooltipItem: any) => tooltipItem.dataset.label + ': ' + tooltipItem.formattedValue + tooltipItem.dataset.unit,
-                            }
-                        },
-                        annotation: {
-                            annotations: [
-                                {
-                                    type: "line",
-                                    xMin: now,
-                                    xMax: now,
-                                    borderColor: "#275582",
-                                    borderWidth: 2
-                                }
-                            ]
-                        },
+                backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
+                tooltip: {
+                    trigger: 'axis',
+                    confine: true,
+                    axisPointer: {
+                        type: 'cross',
                     },
-                    hover: {
-                        mode: 'x',
-                        intersect: false
+                    formatter: (params: any) => {
+                        const xTime = params[0].axisValue as number;
+                        if (xTime != this._tooltipCache[0]) {
+                            // use global var to store current time selection, avoiding replicate calculation loops
+                            this._tooltipCache[0] = xTime;
+                            this._tooltipCache[1] = this._getTooltipData(xTime);
+                        }
+                        return this._tooltipCache[1];
+                    }
+                },
+                toolbox: {},
+                xAxis: {
+                    type: 'time',
+                    axisLine: {
+                        onZero: false,
+                        lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}
                     },
-                    scales: {
-                        y: {
-                            ticks: {
-                                beginAtZero: true
-                            },
-                            grid: {
-                                color: "#cccccc"
-                            }
-                        },
-                        y1: {
-                            display: this.rightAxisAttributes.length > 0,
-                            position: 'right',
-                            ticks: {
-                                beginAtZero: true
-                            },
-                            grid: {
-                                drawOnChartArea: false
-                            }
-                        },
-                        x: {
-                            type: "time",
-                            min: this._startOfPeriod,
-                            max: this._endOfPeriod,
-                            time: {
-                                tooltipFormat: 'MMM D, YYYY, HH:mm:ss',
-                                displayFormats: {
-                                    millisecond: 'HH:mm:ss.SSS',
-                                    second: 'HH:mm:ss',
-                                    minute: "HH:mm",
-                                    hour: (this._endOfPeriod && this._startOfPeriod && this._endOfPeriod - this._startOfPeriod > 86400000) ? "MMM DD, HH:mm" : "HH:mm",
-                                    day: "MMM DD",
-                                    week: "w"
-                                },
-                                unit: this._timeUnits,
-                                stepSize: this._stepSize
-                            },
-                            ticks: {
-                                autoSkip: true,
-                                color: "#000",
-                                font: {
-                                    family: "'Open Sans', Helvetica, Arial, Lucida, sans-serif",
-                                    size: 9,
-                                    style: "normal"
-                                }
-                            },
-                            gridLines: {
-                                color: "#cccccc"
-                            }
+                    splitLine: {show: true},
+                    min: this._startOfPeriod,
+                    max: this._endOfPeriod,
+                    axisLabel: {
+                        hideOverlap: true,
+                        fontSize: 10,
+                         formatter: {
+                             year: '{yyyy}-{MMM}',
+                             month: '{yy}-{MMM}',
+                             day: '{d}-{MMM}',
+                             hour: '{HH}:{mm}',
+                             minute: '{HH}:{mm}',
+                             second: '{HH}:{mm}:{ss}',
+                             millisecond: '{d}-{MMM} {HH}:{mm}',
+                            // @ts-ignore
+                             none: '{MMM}-{dd} {HH}:{mm}'
                         }
                     }
-                }
-            } as ChartConfiguration<"line", ScatterDataPoint[]>;
+                },
+                yAxis: [
+                    {
+                        type: 'value',
+                        axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
+                        boundaryGap: ['10%', '10%'],
+                        scale: true,
+                        min: this.chartOptions.options.scales.y.min ? this.chartOptions.options.scales.y.min : undefined,
+                        max: this.chartOptions.options.scales.y.max ? this.chartOptions.options.scales.y.max : undefined
+                    },
+                    {
+                        type: 'value',
+                        show: this.attributeSettings.rightAxisAttributes.length > 0,
+                        axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
+                        boundaryGap: ['10%', '10%'],
+                        scale: true,
+                        min: this.chartOptions.options.scales.y1.min ? this.chartOptions.options.scales.y1.min : undefined,
+                        max: this.chartOptions.options.scales.y1.max ? this.chartOptions.options.scales.y1.max : undefined
+                    }
+                    ],
+                dataZoom: [
+                    {
+                        type: 'inside',
+                        start: 0,
+                        end: 100
+                    }
+                ],
+                series: [],
+            };
 
-            const mergedOptions = Util.mergeObjects(options, this.chartOptions, false);
-
-            this._chart = new Chart<"line", ScatterDataPoint[]>(this._chartElem.getContext("2d")!, mergedOptions as ChartConfiguration<"line", ScatterDataPoint[]>);
-        } else {
-            if (changedProperties.has("_data")) {
-                this._chart.options.scales!.x!.min = this._startOfPeriod;
-                this._chart.options!.scales!.x!.max = this._endOfPeriod;
-                (this._chart.options!.scales!.x! as TimeScaleOptions).time!.unit = this._timeUnits!;
-                (this._chart.options!.scales!.x! as TimeScaleOptions).time!.stepSize = this._stepSize!;
-                (this._chart.options!.plugins!.annotation!.annotations! as AnnotationOptions<"line">[])[0].xMin = now;
-                (this._chart.options!.plugins!.annotation!.annotations! as AnnotationOptions<"line">[])[0].xMax = now;
-                this._chart.data.datasets = this._data;
-                this._chart.update();
+            // Add dataZoom bar if enabled
+            if(this.showZoomBar) {
+                (this._chartOptions!.dataZoom! as any[]).push({
+                    start: 0,
+                    end: 100,
+                    backgroundColor: bgColor,
+                    fillerColor: bgColor,
+                    dataBackground: {
+                        areaStyle: {
+                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
+                        }
+                    },
+                    selectedDataBackground: {
+                        areaStyle: {
+                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color"),
+                        }
+                    },
+                    moveHandleStyle: {
+                        color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
+                    },
+                    emphasis: {
+                        moveHandleStyle: {
+                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
+                        },
+                        handleLabel: {
+                            show: false
+                        }
+                    },
+                    handleLabel: {
+                        show: false
+                    }
+                })
             }
+
+            // Add toolbox if enabled
+            if(this.showToolBox) {
+                this._chartOptions!.toolbox! = {
+                    right: 8,
+                    top: 0,
+                    feature: {
+                        dataView: {readOnly: true},
+                        saveAsImage: {name: ['Chart Export ', this.panelName, `${moment(this._startOfPeriod).format("DD-MM-YYYY HH:mm")} - ${moment(this._endOfPeriod).format("DD-MM-YYYY HH:mm")}`].filter(Boolean).join('')}
+                    }
+                }
+            }
+
+            // Initialize echarts instance
+            this._chart = init(this._chartElem);
+            // Set chart options to default
+            this._chart.setOption(this._chartOptions);
+            this._toggleChartEventListeners(true);
         }
+
+        if (changedProperties.has("_data")) {
+            //Update chart to data from set period
+            this._updateChartData();
+        }
+
         this.onCompleted().then(() => {
             this.dispatchEvent(new OrChartEvent('rendered'));
         });
@@ -608,17 +673,16 @@ export class OrChart extends translate(i18next)(LitElement) {
             if(container) {
                 const bottomLegend: boolean = (container.clientWidth < 600);
                 container.style.flexDirection = bottomLegend ? 'column' : 'row';
-                const periodControls = this.shadowRoot.querySelector('.period-controls') as HTMLElement;
-                if(periodControls) {
-                    periodControls.style.justifyContent = bottomLegend ? 'center' : 'space-between';
-                    periodControls.style.paddingLeft = bottomLegend ? '' : '18px';
+                const controls = this.shadowRoot.getElementById('controls');
+                if(controls) {
+                    controls.style.flexDirection = bottomLegend ? 'row' : 'column';
                 }
                 const attributeList = this.shadowRoot.getElementById('attribute-list');
                 if(attributeList) {
                     attributeList.style.gap = bottomLegend ? '4px 12px' : '';
                     attributeList.style.maxHeight = bottomLegend ? '90px' : '';
                     attributeList.style.flexFlow = bottomLegend ? 'row wrap' : 'column nowrap';
-                    attributeList.style.padding = bottomLegend ? '0' : '12px 0';
+                    attributeList.style.padding = bottomLegend ? '0' : '5px 0';
                 }
                 this.shadowRoot.querySelectorAll('.attribute-list-item').forEach((item: Element) => {
                     (item as HTMLElement).style.minHeight = bottomLegend ? '0px' : '44px';
@@ -645,48 +709,74 @@ export class OrChart extends translate(i18next)(LitElement) {
                             <or-translate .value="${this._latestError || 'errorOccurred'}"></or-translate>
                         </div>
                     `)}
-                    <canvas id="chart" style="visibility: ${disabled ? 'hidden' : 'visible'}"></canvas>
+                    <div id="chart" style="visibility: ${disabled ? 'hidden' : 'visible'}"></div>
                 </div>
                 
                 ${(this.timestampControls || this.attributeControls || this.showLegend) ? html`
                     <div id="chart-controls">
                         <div id="controls">
-                            <div class="period-controls">
-                                ${this.timePresetOptions && this.timePresetKey ? html`
+                                ${this.timePrefixKey && this.timePrefixOptions && this.timeWindowKey && this.timeWindowOptions ? html`
                                     ${this.timestampControls ? html`
+                                        <div class="period-controls">
+                                        <!-- Time prefix selection -->
                                         ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePresetKey}"></or-mwc-input>`,
-                                                Array.from(this.timePresetOptions!.keys()).map((key) => ({ value: key } as ListItem)),
-                                                this.timePresetKey,
+                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}" ?disabled="${!!this.timeframe}"></or-mwc-input>`,
+                                                this.timePrefixOptions.map((option) => ({ value: option } as ListItem)),
+                                                this.timePrefixKey,
                                                 (value: string | string[]) => {
                                                     this.timeframe = undefined; // remove any custom start & end times
-                                                    this.timePresetKey = value.toString();
+                                                    this.timePrefixKey = value.toString();
                                                 },
                                                 undefined,
                                                 undefined,
                                                 undefined,
                                                 true
                                         )}
-                                        <!-- Button that opens custom time selection -->
-                                        <or-mwc-input .type="${InputType.BUTTON}" icon="calendar-clock" @or-mwc-input-changed="${() => this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-mwc-input>
+                                        <!-- Time window selection -->
+                                        ${getContentWithMenuTemplate(
+                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.isCustomWindow ? "timeframe" : this.timeWindowKey}" ?disabled="${!!this.timeframe}"></or-mwc-input>`,
+                                                Array.from(this.timeWindowOptions!.keys()).map((key) => ({ value: key } as ListItem)),
+                                                this.timeWindowKey,
+                                                (value: string | string[]) => {
+                                                    this.timeframe = undefined; // remove any custom start & end times
+                                                    this.timeWindowKey = value.toString();
+                                                },
+                                                undefined,
+                                                undefined,
+                                                undefined,
+                                                true
+                                        )}
+                                        </div>
+                                        <div class="navigate" style = "text-align: right">
+                                            
+                                            <!-- Scroll left button -->
+                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!),this.timeframe? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "previous")}"></or-icon>
+                                            <!-- Scroll right button -->
+                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!),this.timeframe? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "next")}"></or-icon>
+                                            <!-- Button that opens custom time selection or restores to widget setting-->
+                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="${this.timeframe ? 'restore' : 'calendar-clock'}" @click="${() => this.timeframe ? (this.isCustomWindow = false, this.timeframe = undefined)  : this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-icon>
+                                        </div>
                                     ` : html`
-                                        <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePresetKey}" disabled="true"></or-mwc-input>
+                                        <div style = "display: flex; flex-direction: column; align-items: center">
+                                        <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePrefixKey}" disabled="true"></or-mwc-input>
+                                        <or-mwc-input .type="${InputType.BUTTON}" label="${this.timeWindowKey}" disabled="true"></or-mwc-input>
+                                        </div>
                                     `}
                                 ` : undefined}
-                            </div>
+                            
                             ${this.timeframe ? html`
-                                <div style="margin-left: 18px; font-size: 12px;">
-                                    <table style="width: 100%;">
+                                <div style="margin-left: 18px; font-size: 12px; display: flex; justify-content: flex-end;">
+                                    <table style="text-align: right;">
                                         <thead>
                                         <tr>
-                                            <th style="font-weight: normal; text-align: left;">${i18next.t('from')}:</th>
-                                            <th style="font-weight: normal; text-align: left;">${moment(this.timeframe[0]).format("L HH:mm")}</th>
+                                            <th style="font-weight: normal; text-align: right;">${i18next.t('from')}:</th>
+                                            <th style="font-weight: normal; text-align: right;">${moment(this.timeframe[0]).format("lll")}</th>
                                         </tr>
                                         </thead>
                                         <tbody>
                                         <tr>
-                                            <td>${i18next.t('to')}:</td>
-                                            <td>${moment(this.timeframe[1]).format("L HH:mm")}</td>
+                                            <td style="text-align: right;">${i18next.t('to')}:</td>
+                                            <td style="text-align: right;">${moment(this.timeframe[1]).format("lll")}</td>
                                         </tr>
                                         </tbody>
                                     </table>
@@ -706,12 +796,13 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
                                     const asset: Asset | undefined = this.assets[assetIndex];
                                     const colourIndex = index % this.colors.length;
+                                    const color = this.colorPickedAttributes.find(({ attributeRef }) => attributeRef.name === attr.name && attributeRef.id === asset.id)?.color;
                                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset!.type, attr.name, attr);
                                     const label = Util.getAttributeLabel(attr, descriptors[0], asset!.type, true);
-                                    const axisNote = (this.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
-                                    const bgColor = this.colors[colourIndex] || "";
+                                    const axisNote = (this.attributeSettings.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
+                                    const bgColor = ( color ?? this.colors[colourIndex] ) || "";
                                     return html`
-                                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseover="${()=> this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
+                                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseenter="${() => this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseleave="${()=> this.removeDatasetHighlight()}">
                                             <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
                                             <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
                                                 <div style="display: flex; justify-content: space-between;">
@@ -751,32 +842,41 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    removeDatasetHighlight(bgColor:string) {
-        if(this._chart && this._chart.data && this._chart.data.datasets){
-            this._chart.data.datasets.map((dataset, idx) => {
-                if (dataset.borderColor && typeof dataset.borderColor === "string" && dataset.borderColor.length === 9) {
-                    dataset.borderColor = dataset.borderColor.slice(0, -2);
-                    dataset.backgroundColor = dataset.borderColor;
-                }
-            });
-            this._chart.update();
+    removeDatasetHighlight() {
+        if(this._chart){
+            let options = this._chart.getOption();
+            if (options.series && Array.isArray(options.series)) {
+                options.series.forEach(function (series) {
+                    if (series.lineStyle.opacity == 0.2 || series.lineStyle.opacity == 0.99) {
+                        series.lineStyle.opacity = 0.31;
+                    } else {
+                        series.lineStyle.opacity = 1;
+                    }
+                });
+            }
+            this._chart.setOption(options);
         }
     }
 
     addDatasetHighlight(assetId?:string, attrName?:string) {
-        if (!assetId || !attrName) return;
-
-        if(this._chart && this._chart.data && this._chart.data.datasets){
-            this._chart.data.datasets.map((dataset, idx) => {
-                if ((dataset as any).assetId === assetId && (dataset as any).attrName === attrName) {
-                    return
-                }
-                dataset.borderColor = dataset.borderColor + "36";
-                dataset.backgroundColor = dataset.borderColor;
-            });
-            this._chart.update();
+        if (this._chart) {
+            let options = this._chart.getOption();
+            if (options.series && Array.isArray(options.series)) {
+                options.series.forEach(function (series) {
+                    if (series.assetId != assetId || series.attrName != attrName) {
+                        if (series.lineStyle.opacity == 0.31) { // 0.31 is faint setting, 1 is normal
+                            series.lineStyle.opacity = 0.2;
+                        } else {
+                            series.lineStyle.opacity = 0.3;
+                        }
+                    } else if (series.lineStyle.opacity == 0.31) { // extra highlight if selected is faint
+                        series.lineStyle.opacity = 0.99;
+                    }
+                });
+            }
+            this._chart.setOption(options)
         }
-    }
+    };
 
     async loadSettings(reset: boolean) {
 
@@ -788,11 +888,20 @@ export class OrChart extends translate(i18next)(LitElement) {
             this.realm = manager.getRealm();
         }
 
-        if (!this.timePresetOptions) {
-            this.timePresetOptions = this._getDefaultTimestampOptions();
+        if (!this.timePrefixOptions) {
+            this.timePrefixOptions = this._getDefaultTimePrefixOptions();
         }
-        if (!this.timePresetKey) {
-            this.timePresetKey = this.timePresetOptions.keys().next().value?.toString();
+
+        if (!this.timeWindowOptions) {
+            this.timeWindowOptions = this._getDefaultTimeWindowOptions();
+        }
+
+        if (!this.timeWindowKey) {
+            this.timeWindowKey = this.timeWindowOptions.keys().next().value.toString();
+        }
+
+        if (!this.timePrefixKey) {
+            this.timePrefixKey = this.timePrefixOptions[1];
         }
 
         if (!this.panelName) {
@@ -863,7 +972,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     async saveSettings() {
-
         if (!this.panelName) {
             return;
         }
@@ -909,6 +1017,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _openTimeDialog(startTimestamp?: number, endTimestamp?: number) {
+        this.isCustomWindow = true;
         const startRef: Ref<OrMwcInput> = createRef();
         const endRef: Ref<OrMwcInput> = createRef();
         const dialog = showDialog(new OrMwcDialog()
@@ -926,13 +1035,14 @@ export class OrChart extends translate(i18next)(LitElement) {
                 actionName: "ok",
                 content: "ok",
                 action: () => {
-                    if(this.timePresetOptions && startRef.value?.value && endRef.value?.value) {
+                    if(startRef.value?.value && endRef.value?.value) {
                         this.timeframe = [new Date(startRef.value.value), new Date(endRef.value.value)];
                     }
                 }
             }])
         )
     }
+
 
     protected async _addAttribute(selectedAttrs?: AttributeRef[]) {
         if (!selectedAttrs) return;
@@ -966,109 +1076,125 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     protected _cleanup() {
         if (this._chart) {
-            this._chart.destroy();
+            //('cleanup found _chart exists so disposing');
+            this._toggleChartEventListeners(false);
+            this._chart.dispose();
             this._chart = undefined;
             this.requestUpdate();
         }
     }
 
-    protected _deleteAttribute (index: number) {
-        const removed = this.assetAttributes.splice(index, 1)[0];
-        const assetIndex = removed[0];
-        this.assetAttributes = [...this.assetAttributes];
-        if (!this.assetAttributes.some(([index, attrRef]) => index === assetIndex)) {
-            // Asset no longer referenced
-            this.assets.splice(index, 1);
-            this.assetAttributes.forEach((indexRef) => {
-                if (indexRef[0] >= assetIndex) {
-                    indexRef[0] -= 1;
-                }
-            });
-        }
-        this.saveSettings();
+    // Currently not in use
+    //protected _deleteAttribute (index: number) {
+    //    const removed = this.assetAttributes.splice(index, 1)[0];
+    //    const assetIndex = removed[0];
+    //    this.assetAttributes = [...this.assetAttributes];
+    //    if (!this.assetAttributes.some(([index, attrRef]) => index === assetIndex)) {
+    //        // Asset no longer referenced
+    //        this.assets.splice(index, 1);
+    //        this.assetAttributes.forEach((indexRef) => {
+    //            if (indexRef[0] >= assetIndex) {
+    //                indexRef[0] -= 1;
+    //            }
+    //        });
+    //    }
+    //    this.saveSettings();
+    //}
+
+    // Currently not in use
+    //protected _getAttributeOptions(): [string, string][] | undefined {
+    //    if(!this.activeAsset || !this.activeAsset.attributes) {
+    //        return;
+    //    }
+    //
+    //    if(this.shadowRoot && this.shadowRoot.getElementById('chart-attribute-picker')) {
+    //        const elm = this.shadowRoot.getElementById('chart-attribute-picker') as HTMLInputElement;
+    //        elm.value = '';
+    //    }
+    //
+    //    const attributes = Object.values(this.activeAsset.attributes);
+    //    if (attributes && attributes.length > 0) {
+    //        return attributes
+    //            .filter((attribute) => attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) ? attribute.meta[WellknownMetaItems.STOREDATAPOINTS] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
+    //            .filter((attr) => (this.assetAttributes && !this.assetAttributes.some(([index, assetAttr]) => (assetAttr.name === attr.name) && this.assets[index].id === this.activeAsset!.id)))
+    //            .map((attr) => {
+    //                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.activeAsset!.type, attr.name, attr);
+    //                const label = Util.getAttributeLabel(attr, descriptors[0], this.activeAsset!.type, false);
+    //                return [attr.name!, label];
+    //            });
+    //    }
+    //}
+
+    protected _getDefaultTimePrefixOptions(): string[] {
+        return ["this", "last"];
     }
 
-    protected _getAttributeOptionsOld(): [string, string][] | undefined {
-        if(!this.activeAsset || !this.activeAsset.attributes) {
-            return;
-        }
-
-        if(this.shadowRoot && this.shadowRoot.getElementById('chart-attribute-picker')) {
-            const elm = this.shadowRoot.getElementById('chart-attribute-picker') as HTMLInputElement;
-            elm.value = '';
-        }
-
-        const attributes = Object.values(this.activeAsset.attributes);
-        if (attributes && attributes.length > 0) {
-            return attributes
-                .filter((attribute) => attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) ? attribute.meta[WellknownMetaItems.STOREDATAPOINTS] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
-                .filter((attr) => (this.assetAttributes && !this.assetAttributes.some(([index, assetAttr]) => (assetAttr.name === attr.name) && this.assets[index].id === this.activeAsset!.id)))
-                .map((attr) => {
-                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.activeAsset!.type, attr.name, attr);
-                    const label = Util.getAttributeLabel(attr, descriptors[0], this.activeAsset!.type, false);
-                    return [attr.name!, label];
-                });
-        }
-    }
-
-    protected _getAttributeOptions(): [string, string][] | undefined {
-        if(!this.activeAsset || !this.activeAsset.attributes) {
-            return;
-        }
-
-        if(this.shadowRoot && this.shadowRoot.getElementById('chart-attribute-picker')) {
-            const elm = this.shadowRoot.getElementById('chart-attribute-picker') as HTMLInputElement;
-            elm.value = '';
-        }
-
-        const attributes = Object.values(this.activeAsset.attributes);
-        if (attributes && attributes.length > 0) {
-            return attributes
-                .filter((attribute) => attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) ? attribute.meta[WellknownMetaItems.STOREDATAPOINTS] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
-                .filter((attr) => (this.assetAttributes && !this.assetAttributes.some(([index, assetAttr]) => (assetAttr.name === attr.name) && this.assets[index].id === this.activeAsset!.id)))
-                .map((attr) => {
-                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.activeAsset!.type, attr.name, attr);
-                    const label = Util.getAttributeLabel(attr, descriptors[0], this.activeAsset!.type, false);
-                    return [attr.name!, label];
-                });
-        }
-    }
-
-    protected _getDefaultTimestampOptions(): Map<string, TimePresetCallback> {
-        return new Map<string, TimePresetCallback>([
-            ["lastHour", (date) => [moment(date).subtract(1, 'hour').toDate(), date]],
-            ["last24Hours", (date) => [moment(date).subtract(24, 'hours').toDate(), date]],
-            ["last7Days", (date) => [moment(date).subtract(7, 'days').toDate(), date]],
-            ["last30Days", (date) => [moment(date).subtract(30, 'days').toDate(), date]],
-            ["last90Days", (date) => [moment(date).subtract(90, 'days').toDate(), date]],
-            ["last6Months", (date) => [moment(date).subtract(6, 'months').toDate(), date]],
-            ["lastYear", (date) => [moment(date).subtract(1, 'year').toDate(), date]]
+    protected _getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
+        return new Map<string, [moment.unitOfTime.DurationConstructor, number]>([
+            ["hour", ['hours', 1]],
+            ["6Hours", ['hours', 6]],
+            ["24Hours", ['hours', 24]],
+            ["day", ['days', 1]],
+            ["7Days", ['days', 7]],
+            ["week", ['weeks', 1]],
+            ["30Days", ['days', 30]],
+            ["month", ['months', 1]],
+            ["365Days", ['days', 365]],
+            ["year", ['years', 1]]
         ]);
+    };
+
+    protected _getTimeSelectionDates(timePrefixSelected: string, timeWindowSelected: string): [Date, Date] {
+        let startDate = moment();
+        let endDate = moment();
+
+        const timeWindow: [moment.unitOfTime.DurationConstructor, number] | undefined = this.timeWindowOptions!.get(timeWindowSelected);
+
+        if (!timeWindow) {
+            throw new Error(`Unsupported time window selected: ${timeWindowSelected}`);
+        }
+
+        const [unit , value]: [moment.unitOfTime.DurationConstructor, number] = timeWindow;
+
+        switch (timePrefixSelected) {
+            case "this":
+                if (value == 1) { // For singulars like this hour
+                    startDate = moment().startOf(unit);
+                    endDate = moment().endOf(unit);
+                } else { // For multiples like this 5 min, put now in the middle
+                    startDate = moment().subtract(value*0.5, unit);
+                    endDate = moment().add(value*0.5, unit);
+                }
+                break;
+            case "last":
+                startDate = moment().subtract(value, unit).startOf(unit);
+                if (value == 1) { // For singulars like last hour
+                    endDate = moment().startOf(unit);
+                } else { //For multiples like last 5 min
+                    endDate = moment();
+                }
+                break;
+        }
+        return [startDate.toDate(), endDate.toDate()];
     }
 
-    protected _getInterval(diffInHours: number): [number, DatapointInterval] {
+    protected _shiftTimeframe(currentStart: Date, currentEnd: Date, timeWindowSelected: string, direction: string) {
+        const timeWindow = this.timeWindowOptions!.get(timeWindowSelected);
 
-        if(diffInHours <= 1) {
-            return [5, DatapointInterval.MINUTE];
-        } else if(diffInHours <= 3) {
-            return [10, DatapointInterval.MINUTE];
-        } else if(diffInHours <= 6) {
-            return [30, DatapointInterval.MINUTE];
-        } else if(diffInHours <= 24) { // one day
-            return [1, DatapointInterval.HOUR];
-        } else if(diffInHours <= 48) { // two days
-            return [3, DatapointInterval.HOUR];
-        } else if(diffInHours <= 96) {
-            return [12, DatapointInterval.HOUR];
-        } else if(diffInHours <= 744) { // one month
-            return [1, DatapointInterval.DAY];
-        } else {
-            return [1, DatapointInterval.MONTH];
+        if (!timeWindow) {
+            throw new Error(`Unsupported time window selected: ${timeWindowSelected}`);
         }
+
+        const [unit, value] = timeWindow;
+        let newStart = moment(currentStart);
+        direction === "previous" ? newStart.subtract(value, unit as moment.unitOfTime.DurationConstructor) : newStart.add(value, unit as moment.unitOfTime.DurationConstructor);
+        let newEnd = moment(currentEnd)
+        direction === "previous" ? newEnd.subtract(value, unit as moment.unitOfTime.DurationConstructor) : newEnd.add(value, unit as moment.unitOfTime.DurationConstructor);
+        this.timeframe = [newStart.toDate(), newEnd.toDate()];
     }
 
     protected async _loadData() {
-        if (this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
+        if ((this._data && !this._zoomChanged) || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
             return;
         }
 
@@ -1082,29 +1208,19 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         this._loading = true;
-
-        const dates: [Date, Date] = this.timePresetOptions!.get(this.timePresetKey!)!(new Date());
-        this._startOfPeriod = this.timeframe ? this.timeframe[0].getTime() : dates[0].getTime();
-        this._endOfPeriod = this.timeframe ? this.timeframe[1].getTime() : dates[1].getTime();
-
-        const diffInHours = (this._endOfPeriod - this._startOfPeriod) / 1000 / 60 / 60;
-        const intervalArr = this._getInterval(diffInHours);
-
-        const stepSize: number = intervalArr[0];
-        const interval: DatapointInterval = intervalArr[1];
-
-        const lowerCaseInterval = interval.toLowerCase();
-        this._timeUnits =  lowerCaseInterval as TimeUnit;
-        this._stepSize = stepSize;
-        const now = moment().toDate().getTime();
-        let predictedFromTimestamp = now < this._startOfPeriod ? this._startOfPeriod : now;
-
-        const data: ChartDataset<"line", ScatterDataPoint[]>[] = [];
+        const dates: [Date, Date] = this._getTimeSelectionDates(this.timePrefixKey!, this.timeWindowKey!);
+        const data: any = [];
         let promises;
 
+        if(!this._zoomChanged || !this._startOfPeriod || !this._endOfPeriod) {
+            // If zoom has changed, we want to keep the previous start and end of period
+            this._startOfPeriod = this.timeframe ? this.timeframe[0].getTime() : dates[0].getTime();
+            this._endOfPeriod = this.timeframe ? this.timeframe[1].getTime() : dates[1].getTime();
+        }
+
         try {
-            if(this.dataProvider) {
-                await this.dataProvider(this._startOfPeriod, this._endOfPeriod, (interval.toString() as TimeUnit), stepSize).then((dataset) => {
+            if(this.dataProvider && !this._zoomChanged) {
+                await this.dataProvider(this._startOfPeriod, this._endOfPeriod).then((dataset) => {
                     dataset.forEach((set) => { data.push(set); });
                 });
             } else {
@@ -1112,22 +1228,37 @@ export class OrChart extends translate(i18next)(LitElement) {
                 promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
 
                     const asset = this.assets[assetIndex];
-                    const shownOnRightAxis = !!this.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const shownOnRightAxis = !!this.attributeSettings.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const smooth = !!this.attributeSettings.smoothAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const stepped = !!this.attributeSettings.steppedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const area = !!this.attributeSettings.areaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const faint = !!this.attributeSettings.faintAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const extended = !!this.attributeSettings.extendedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const color = this.colorPickedAttributes.find(({ attributeRef }) => attributeRef.name === attribute.name && attributeRef.id === asset.id)?.color;
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);
                     const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
                     const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
                     const colourIndex = index % this.colors.length;
                     const options = { signal: this._dataAbortController?.signal };
-                    let dataset = await this._loadAttributeData(asset, attribute, this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, false, asset.name + " " + label, options);
+
+                    //Load Historic Data
+                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], false, smooth, stepped, area, faint, false, asset.name + " " + label, options, unit);
                     (dataset as any).assetId = asset.id;
                     (dataset as any).attrName = attribute.name;
                     (dataset as any).unit = unit;
-                    (dataset as any).yAxisID = shownOnRightAxis ? 'y1' : 'y';
+                    (dataset as any).yAxisIndex = shownOnRightAxis ? '1' : '0';
                     data.push(dataset);
 
-                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], predictedFromTimestamp, this._endOfPeriod!, true, asset.name + " " + label + " " + i18next.t("predicted"), options);
-                    (dataset as any).unit = unit;
+                    //Load Predicted Data
+                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stepped, area, faint, false , asset.name + " " + label + " " + i18next.t("predicted"), options, unit);
                     data.push(dataset);
+
+                    //Load Extended Data
+                    if (extended) {
+                        dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, false, area, faint, extended, asset.name + " " + label + " " + "lastKnown", options, unit);
+                        data.push(dataset);
+                    }
+
                 });
             }
 
@@ -1137,6 +1268,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
             this._data = data;
             this._loading = false;
+            this._zoomChanged = false;
 
         } catch (ex) {
             console.error(ex);
@@ -1144,6 +1276,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 return; // If request has been canceled (using AbortController); return, and prevent _loading is set to false.
             }
             this._loading = false;
+            this._zoomChanged = false;
 
             if(isAxiosError(ex)) {
                 if(ex.message.includes("timeout")) {
@@ -1158,60 +1291,221 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
+    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string, predicted: boolean, smooth: boolean, stepped: boolean, area: boolean, faint: boolean, extended: boolean, label?: string, options?: any, unit?: any) {
 
-    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string | undefined, from: number, to: number, predicted: boolean, label?: string, options?: any): Promise<ChartDataset<"line", ScatterDataPoint[]>> {
+        function rgba (color: string, alpha: number) {
+            return `rgba(${parseInt(color.slice(-6,-4), 16)}, ${parseInt(color.slice(-4,-2), 16)}, ${parseInt(color.slice(-2), 16)}, ${alpha})`;
+        }
 
-        const dataset: ChartDataset<"line", ScatterDataPoint[]> = {
-            borderColor: color,
-            backgroundColor: color,
-            label: label,
-            pointRadius: 2,
-            fill: false,
-            data: [],
-            borderDash: predicted ? [2, 4] : undefined
-        };
+        const dataset = {
+            name: label,
+            type: 'line',
+            showSymbol: false,
+            data: [] as [any, any][],
+            sampling: 'lttb',
+            lineStyle: {
+                color: color,
+                type: predicted ? [2, 4] : extended ? [10, 2] : undefined,
+                opacity: faint ? 0.31 : 1,
+            },
+            itemStyle: {
+                color: color
+            },
+            smooth: smooth,
+            step: stepped ? 'end' : undefined,
+            extended: extended,
+            predicted: predicted,
+            areaStyle: area ? {color: new graphic.LinearGradient(0, 0, 0, 1, [
+                    {
+                        offset: 0,
+                        color: rgba(color, faint ? 0.1 : 0.5)
+                    },
+                    {
+                        offset: 1,
+                        color: rgba(color, 0)
+                    }
+                ])} as any : undefined,
+        }
 
         if (asset.id && attribute.name && this.datapointQuery) {
             let response: GenericAxiosResponse<ValueDatapoint<any>[]>;
             const query = JSON.parse(JSON.stringify(this.datapointQuery)); // recreating object, since the changes shouldn't apply to parent components; only or-chart itself.
-            query.fromTimestamp = this._startOfPeriod;
-            query.toTimestamp = this._endOfPeriod;
+            query.amountOfPoints = this.maxConcurrentDatapoints;
+            if (!this._zoomChanged) {
+                query.fromTimestamp = this._startOfPeriod;
+                query.toTimestamp = this._endOfPeriod;
+            } else {
+                query.fromTimestamp = this._zoomStartOfPeriod;
+                query.toTimestamp = this._zoomEndOfPeriod;
+            }
 
-            if(query.type == 'lttb') {
-
-                // If amount of data points is set, only allow a maximum of 1 points per pixel in width
-                // Otherwise, dynamically set amount of data points based on chart width (1000px = 200 data points)
-                if(query.amountOfPoints) {
-                    if(this._chartElem?.clientWidth > 0) {
-                        query.amountOfPoints = Math.min(query.amountOfPoints, this._chartElem?.clientWidth)
+            if (predicted) {
+                response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(asset.id, attribute.name, query, options);
+            } else  {
+                    if (extended) {
+                        // if request is for extended dataset, we want to get the last known value only
+                        query.type = 'nearest';
+                        query.timestamp = new Date().toISOString()
                     }
-                } else {
-                    if(this._chartElem?.clientWidth > 0) {
-                        query.amountOfPoints = Math.round(this._chartElem.clientWidth / 5)
+
+                    response = await manager.rest.api.AssetDatapointResource.getDatapoints(asset.id, attribute.name, query, options);
+                }
+
+            let data: ValueDatapoint<any>[] = [];
+
+            if (response.status === 200) {
+                data = response.data
+                    .filter(value => value.y !== null && value.y !== undefined)
+                    .map(point => ({ x: point.x, y: point.y } as ValueDatapoint<any>))
+
+                dataset.data = data.map(point => [point.x, point.y]);
+                dataset.showSymbol = data.length <= this.showSymbolMaxDatapoints;
+            }
+
+            if (extended) {
+                if (dataset.data.length > 0) {
+                    // Get the first datapoint's timestamp
+                    const firstPointTime = new Date(dataset.data[0][0]).getTime();
+
+                    // If the first point is earlier than startOfPeriod, use startOfPeriod as the starting timestamp
+                    const startTimestamp = firstPointTime < query.fromTimestamp! ?
+                        new Date(query.fromTimestamp!).toISOString() :
+                        dataset.data[0][0];
+
+                    // Use endOfPeriod if it's earlier than now, otherwise use the current time
+                    const now = new Date().getTime();
+                    const endTimestamp = query.toTimestamp! < now ?
+                        new Date(query.toTimestamp!).toISOString() :
+                        new Date().toISOString();
+                    // Create a clean extended line by removing any existing points and adding just two points:
+                    // One at the appropriate start time and one at the current time
+                    dataset.data = [
+                        [startTimestamp, dataset.data[0][1]],
+                        [endTimestamp, dataset.data[0][1]]
+                    ];
+                }
+            }
+        }
+        return dataset;
+    }
+
+    protected _onZoomChange(params: any) {
+        this._zoomChanged = true;
+        const { start: zoomStartPercentage, end: zoomEndPercentage } = params.batch?.[0] ?? params; // Events triggered by scroll and zoombar return different structures
+
+        //Define the start and end of the period based on the zoomed area
+        this._zoomStartOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomStartPercentage / 100);
+        this._zoomEndOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomEndPercentage / 100);
+        this._loadData().then(() => {
+            this._updateChartData();
+        });
+
+    }
+
+    protected _updateChartData(){
+        console.log("Data: ", this._data)
+        this._chart!.setOption({
+            xAxis: {
+                min: this._startOfPeriod,
+                max: this._endOfPeriod
+            },
+            series: this._data!.map(series => ({
+                ...series,
+                markLine: {
+                    symbol: 'none',
+                    silent: true,
+                    data: [{ name: '', xAxis: new Date().toISOString(), label: { formatter: '{b}' } }],
+                    lineStyle: {
+                        color: this._style.getPropertyValue("--internal-or-chart-text-color"),
+                        type: 'solid',
+                        width: 1,
+                        opacity: 1
+                    }
+                }
+            }))
+        });
+    }
+
+    protected _toggleChartEventListeners(connect: boolean){
+        if (connect) {
+            // Add resize eventlisteners to make chart size responsive
+            window.addEventListener("resize", () => this._chart!.resize());
+            this._containerResizeObserver = new ResizeObserver(() => { this._chart!.resize(); this.applyChartResponsiveness();});
+            if (this.shadowRoot) {
+                this._containerResizeObserver.observe(this.shadowRoot!.getElementById('container') as HTMLElement);
+            }
+            // Add event listener for zooming
+            this._zoomHandler = this._chart!.on('datazoom', debounce((params: any) => { this._onZoomChange(params); }, 1500));
+        }
+        else if (!connect) {
+            //Disconnect event listeners
+            this._chart!.off('datazoom', this._zoomHandler);
+            this._containerResizeObserver?.disconnect();
+            this._containerResizeObserver = undefined;
+        }
+    }
+
+    protected _getTooltipData(xTime:number) {
+        type DataPoint = { timestamp: number; value: number };
+        type tooltipRow = {value: number; text: string};
+        let tooltipArray: tooltipRow[] = [];
+        this._data!.forEach((dataset, index) => {
+            const xTimeIsFuture: boolean = xTime > moment().toDate().getTime();
+            // Load datasets to be shown. Show historic or predicted based on cursor location, dont show extended datasets.
+            if (dataset.data.length > 0 && !dataset.extended && (dataset.predicted === xTimeIsFuture)) {
+                const name = dataset.name
+                let left = 0;
+                let right = dataset.data.length - 1
+                let pastDatapoint: DataPoint | null = null;
+                let futureDatapoint: DataPoint | null = null;
+                let displayValue: number | null = null;
+                let exactMatch: boolean = false;
+
+                // Find closest past and future timestamps to given time
+                while (left <= right) {
+                    const mid = Math.floor((left + right) / 2);
+                    const [timestamp, value] = dataset.data[mid];
+                    if (timestamp === xTime) {
+                        displayValue = value;
+                        exactMatch = true;
+                        break;
+                    } else if (timestamp < xTime) {
+                        pastDatapoint = {timestamp, value};
+                        left = mid + 1;
                     } else {
-                        console.warn("Could not grab width of the Chart for estimating amount of data points. Using 100 points instead.")
-                        query.amountOfPoints = 100;
+                        futureDatapoint = {timestamp, value};
+                        right = mid - 1;
                     }
                 }
 
-            } else if(query.type === 'interval' && !query.interval) {
-                const diffInHours = (this.datapointQuery.toTimestamp! - this.datapointQuery.fromTimestamp!) / 1000 / 60 / 60;
-                const intervalArr = this._getInterval(diffInHours);
-                query.interval = (intervalArr[0].toString() + " " + intervalArr[1].toString()); // for example: "5 minute"
-            }
+                // Clear past/future if they are at dataset boundaries (ensuring they remain null if no valid data exists)
+                if (pastDatapoint && pastDatapoint.timestamp > xTime) pastDatapoint = null;
+                if (futureDatapoint && futureDatapoint.timestamp < xTime) futureDatapoint = null;
 
-            if(!predicted) {
-                response = await manager.rest.api.AssetDatapointResource.getDatapoints(asset.id, attribute.name, query, options)
-            } else {
-                response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(asset.id, attribute.name, query, options)
+                // Interpolate or show one of the closest datapoints.
+                if (!exactMatch) {
+                    if (pastDatapoint && futureDatapoint && !dataset.step) {
+                        // Interpolate between past and future datapoint if they exist, keep up to 2 decimals
+                        displayValue = parseFloat((pastDatapoint.value + ((xTime - pastDatapoint.timestamp) / (futureDatapoint.timestamp - pastDatapoint.timestamp)) * (futureDatapoint.value - pastDatapoint.value)).toFixed(2));
+                    } else if (!pastDatapoint && futureDatapoint) {
+                        //Show nearest future value if at start of dataset
+                        displayValue = futureDatapoint.value
+                    } else if (pastDatapoint && (!futureDatapoint || dataset.step == "end")) {
+                        //Show nearest past value if: at end of dataset or the stepped setting is active
+                        displayValue = pastDatapoint.value
+                    }
+                }
+                if (displayValue) {
+                    tooltipArray.push({
+                        value: displayValue,
+                        text: `<div><span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color: ${dataset.lineStyle.color}"></span> ${name}: <b>${displayValue} ${dataset.unit}</b></div>`
+                    })
+                }
             }
-
-            if (response.status === 200) {
-                dataset.data = response.data.filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
-            }
-        }
-
-        return dataset;
+        })
+        // Sort by value for better readability
+        tooltipArray.sort((a, b) => b.value - a.value);
+        return tooltipArray.map(t => t.text).join('');
     }
 
 }
