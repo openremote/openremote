@@ -68,6 +68,8 @@ public class StatusResourceImpl implements StatusResource {
             "version", version,
             "authServerUrl", authServerUrl
         );
+
+        LOG.info("Starting OpenRemote version: v"+version);
     }
 
     @Override
