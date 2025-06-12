@@ -12,6 +12,7 @@ import {when} from "lit/directives/when.js";
 import moment from "moment/moment";
 import {ListItem, ListType, OrMwcList, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
 import {showDialog, OrMwcDialog, DialogAction} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {IntervalConfig} from "@openremote/or-attribute-report";
 
 const styling = css`
   .switch-container {
@@ -31,7 +32,7 @@ export class ReportSettings extends WidgetSettings {
 
     protected timeWindowOptions: Map<string, [moment.unitOfTime.DurationConstructor, number]> = new Map<string, [moment.unitOfTime.DurationConstructor, number]>;
     protected timePrefixOptions: string[] = [];
-    protected samplingOptions: Map<string, string> = new Map<string, string>();
+    protected intervalOptions: Map<string, IntervalConfig> = new Map<string, IntervalConfig>();
 
     public setTimeWindowOptions(options: Map<string, [moment.unitOfTime.DurationConstructor, number]>) {
         this.timeWindowOptions = options;
@@ -41,8 +42,8 @@ export class ReportSettings extends WidgetSettings {
         this.timePrefixOptions = options;
     }
 
-    public setSamplingOptions(options: Map<string, string>) {
-        this.samplingOptions = options;
+    public setIntervalOptions(options: Map<string, IntervalConfig>) {
+        this.intervalOptions = options;
     }
 
     static get styles() {
@@ -122,7 +123,7 @@ export class ReportSettings extends WidgetSettings {
                 <!-- Time options -->
                 <settings-panel displayName="time" expanded="${true}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
-                        <!-- Timeframe -->
+                        <!-- Timeframe & interval -->
                         <div>
                             <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('prefixDefault')}" style="width: 100%;"
                                           .options="${this.timePrefixOptions}" value="${this.widgetConfig.defaultTimePrefixKey}"
@@ -131,6 +132,10 @@ export class ReportSettings extends WidgetSettings {
                             <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('timeframeDefault')}" style="width: 100%;"
                                           .options="${Array.from(this.timeWindowOptions.keys())}" value="${this.widgetConfig.defaultTimeWindowKey}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimeWindowSelect(ev)}"
+                            ></or-mwc-input>
+                           <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('dashboard.withInterval')}" style="width: 100%;"
+                                          .options="${Array.from(this.intervalOptions.keys())}" value="${this.widgetConfig.defaultInterval}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onIntervalSelect(ev)}"
                             ></or-mwc-input>
                         </div>
                         <!-- Time range selection -->
@@ -141,7 +146,7 @@ export class ReportSettings extends WidgetSettings {
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimestampControlsToggle(ev)}"
                                 ></or-mwc-input>
                             </div>
-                        </div> 
+                        </div>
                     </div>  
                </settings-panel>
                <!-- Display options --> 
@@ -432,6 +437,11 @@ export class ReportSettings extends WidgetSettings {
 
     protected onTimeWindowSelect(ev: OrInputChangedEvent) {
         this.widgetConfig.defaultTimeWindowKey = ev.detail.value.toString();
+        this.notifyConfigUpdate();
+    }
+
+    protected onIntervalSelect(ev: OrInputChangedEvent) {
+        this.widgetConfig.defaultInterval = ev.detail.value.toString();
         this.notifyConfigUpdate();
     }
 

@@ -1564,13 +1564,14 @@ export class OrAttributeReport extends translate(i18next)(LitElement) {
             const barAmount = this._data.length
             if (this._data.every(entry => entry.data.length < 1)) {
                 return;
-            } else if (this._data.every(entry => entry.data.length == 1)) {
+            } else if (this._data.every(entry => entry.data.length == 1) && this._intervalConfig!.millis == (this._endOfPeriod! - this._startOfPeriod!)) {
+                //For single intervals, eCharts convertToPixel bugs.
+               this._data.forEach((value, index) => {
+                   let width = 50 / (barAmount * 1.2)
+                   value.barWidth = `${width}%`;
+               });
 
-                this._data.forEach((value, index) => {
-                    let width = 50 / (barAmount * 1.2)
-                    value.barWidth = `${width}%`;
-                });
-            } else {
+             } else {
 
                 this._data.forEach((value, index) => {
                     const startTime = this._data?.find(entry => entry.data.length > 0)?.data?.[0][0]; //find some dataset that has a timestamp

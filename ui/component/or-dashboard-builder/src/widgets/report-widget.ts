@@ -1,4 +1,10 @@
-import {AssetDatapointIntervalQuery, AssetDatapointQueryUnion, Attribute, AttributeRef} from "@openremote/model";
+import {
+    AssetDatapointIntervalQuery,
+    AssetDatapointQueryUnion,
+    Attribute,
+    AttributeRef,
+    DatapointInterval
+} from "@openremote/model";
 import {html, PropertyValues, TemplateResult } from "lit";
 import { when } from "lit/directives/when.js";
 import moment from "moment";
@@ -9,6 +15,7 @@ import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {ReportSettings} from "../settings/report-settings";
 import {WidgetSettings} from "../util/widget-settings";
 import "@openremote/or-attribute-report";
+import {IntervalConfig} from "@openremote/or-attribute-report";
 
 export interface ReportWidgetConfig extends WidgetConfig {
     attributeRefs: AttributeRef[];
@@ -29,6 +36,7 @@ export interface ReportWidgetConfig extends WidgetConfig {
     showTimestampControls: boolean;
     defaultTimeWindowKey: string;
     defaultTimePrefixKey: string;
+    defaultInterval: string;
     chartSettings: {
         showLegend: boolean;
         showToolBox: boolean;
@@ -60,9 +68,21 @@ function getDefaultTimePreFixOptions(): string[] {
     return ["this", "last"];
 }
 
-function getDefaultSamplingOptions(): Map<string, string> {
-    return new Map<string, string>([["lttb", 'lttb'], ["withInterval", 'interval']]);
+function getDefaultIntervalOptions(): Map<string, IntervalConfig> {
+    return new Map<string, IntervalConfig>([
+        ["auto", {intervalName:"auto", steps: 1, orFormat: DatapointInterval.MINUTE, momentFormat: "minutes", millis: 60000}],
+        ["one", {intervalName:"one", steps:1, orFormat: DatapointInterval.MINUTE,momentFormat:"minutes", millis: 60000}],
+        ["1Minute", {intervalName:"1Minute", steps:1, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 60000}],
+        ["5Minutes", {intervalName:"5Minutes", steps:5, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 300000}],
+        ["30Minutes", {intervalName:"30Minutes", steps:30, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 1800000}],
+        ["hour", {intervalName:"hour", steps:1, orFormat:DatapointInterval.HOUR,momentFormat:"hours", millis: 3600000}],
+        ["day", {intervalName:"day", steps:1, orFormat:DatapointInterval.DAY,momentFormat:"days", millis: 86400000}],
+        ["week", {intervalName:"week", steps:1, orFormat:DatapointInterval.WEEK,momentFormat:"weeks", millis: 604800000}],
+        ["month", {intervalName:"month", steps:1, orFormat:DatapointInterval.MONTH,momentFormat:"months", millis: 2592000000}],
+        ["year", {intervalName:"year", steps:1, orFormat:DatapointInterval.MINUTE,momentFormat:"years", millis: 31536000000}]
+    ]);
 }
+
 
 function getDefaultWidgetConfig(): ReportWidgetConfig {
     const preset = "30Days";  // Default time preset, "last" prefix is hardcoded in startDate and endDate below.
@@ -105,6 +125,7 @@ function getDefaultWidgetConfig(): ReportWidgetConfig {
         showTimestampControls: false,
         defaultTimeWindowKey: preset,
         defaultTimePrefixKey: "last",
+        defaultInterval: 'auto',
         chartSettings: {
             showLegend: true,
             showToolBox: false,
@@ -142,7 +163,7 @@ export class ReportWidget extends OrAssetWidget {
                 const settings = new ReportSettings(config);
                 settings.setTimeWindowOptions(getDefaultTimeWindowOptions());
                 settings.setTimePrefixOptions(getDefaultTimePreFixOptions());
-                settings.setSamplingOptions(getDefaultSamplingOptions());
+                settings.setIntervalOptions(getDefaultIntervalOptions());
                 return settings;
             },
             getDefaultConfig(): ReportWidgetConfig {
@@ -236,10 +257,13 @@ export class ReportWidget extends OrAssetWidget {
                               .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
                               .timeWindowOptions="${getDefaultTimeWindowOptions()}"
                               .timePrefixOptions="${getDefaultTimePreFixOptions()}"
+                              .intervalOptions="${getDefaultIntervalOptions()}"
+                              .interval="${this.widgetConfig?.defaultInterval}"
                               .timePrefixKey="${this.widgetConfig?.defaultTimePrefixKey}"
                               .timeWindowKey="${this.widgetConfig?.defaultTimeWindowKey}"
                               .datapointQuery="${this.datapointQuery}" .chartOptions="${this.widgetConfig?.chartOptions}"
-                              .isChart="${this.widgetConfig?.isChart}"  .decimals="${this.widgetConfig?.decimals}"      
+                              .isChart="${this.widgetConfig?.isChart}"  .decimals="${this.widgetConfig?.decimals}"
+                               
                               style="height: 100%"
                     ></or-attribute-report>
                 `;
