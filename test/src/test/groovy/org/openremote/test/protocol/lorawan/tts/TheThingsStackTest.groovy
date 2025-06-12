@@ -154,7 +154,7 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait{
         agent.setApiKey(API_KEY)
         def assetTypeMap = new ValueType.StringMap()
         def key = "${VENDOR_ID}::${MODEL_ID}::${FIRMWARE_VERSION}".toString()
-        assetTypeMap.putAll([(key): "org.openremote.setup.integration.model.asset.TheThingsStackTestAsset"])
+        assetTypeMap.putAll([(key): "TheThingsStackTestAsset"])
         agent.setAssetTypeMap(assetTypeMap)
         agent = assetStorageService.merge(agent)
 

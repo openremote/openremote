@@ -100,7 +100,7 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait{
         agent.setApplicationId(APPLICATION_ID)
         def assetTypeMap = new ValueType.StringMap()
         def key = "${VENDOR_ID}::${MODEL_ID}::${FIRMWARE_VERSION}".toString()
-        assetTypeMap.putAll([(key): "org.openremote.setup.integration.model.asset.ChirpStackTestAsset"])
+        assetTypeMap.putAll([(key): "ChirpStackTestAsset"])
         agent.setAssetTypeMap(assetTypeMap)
         agent = assetStorageService.merge(agent)
 

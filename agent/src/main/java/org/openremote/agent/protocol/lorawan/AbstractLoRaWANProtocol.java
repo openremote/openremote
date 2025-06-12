@@ -41,13 +41,18 @@ import org.openremote.model.value.JsonPathFilter;
 import org.openremote.model.value.RegexValueFilter;
 import org.openremote.model.value.ValueFilter;
 import org.openremote.model.value.ValueType;
+import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
+import org.reflections.util.ConfigurationBuilder;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
@@ -72,6 +77,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
     private T agent;
     private ClassNameResolver classNameResolver;
     protected Container container;
+    private Map<String, Class<?>> nameToClassMap = new HashMap<>();
 
     public AbstractLoRaWANProtocol(T agent) {
         this.agent = agent;
@@ -341,26 +347,38 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
             .flatMap(asset -> configureAsset(asset, csvRecord));
     }
 
-    private Class<?> resolveAssetClass(String className, CsvRecord csvRecord) {
-        if (className == null || csvRecord == null) {
+    private Class<?> resolveAssetClass(String simpleClassName, CsvRecord csvRecord) {
+        if (simpleClassName == null || csvRecord == null) {
             return null;
         }
 
-        Class<?> clazz = null;
-        try {
-            clazz = Class.forName(className);
-            if(!Asset.class.isAssignableFrom(clazz)) {
-                clazz = null;
+        return nameToClassMap.computeIfAbsent(simpleClassName, name -> {
+            Class<?> clazz = resolveClassFromSimpleName(name);
+            if (clazz == null) {
+                LOG.log(Level.WARNING, "CSV import skipped a CSV record because of an invalid asset type mapping: " + csvRecord);
             }
-        } catch (ClassNotFoundException e) {
-            LOG.log(Level.WARNING, "CSV import skipped a CSV record because of an invalid asset type mapping: " + csvRecord, e);
-            return null;
-        }
+            return clazz;
+        });
+    }
 
-        if (clazz == null) {
-            LOG.log(Level.WARNING, "CSV import skipped a CSV record because of an invalid asset type mapping: " + csvRecord);
+    private Class<?> resolveClassFromSimpleName(String simpleClassName) {
+        Reflections reflections = new Reflections(
+            new ConfigurationBuilder()
+                .forPackages("org.openremote.model",
+                             "org.openremote.setup.integration.model")
+                .setScanners(new SubTypesScanner())
+        );
+
+        Set<Class<? extends Asset>> subclasses = reflections.getSubTypesOf(Asset.class);
+
+        for (Class<?> clazz : subclasses) {
+            if (clazz.getSimpleName().equals(simpleClassName)
+                    && !clazz.isAnonymousClass()
+                    && !clazz.getName().contains("$")) {
+                return clazz;
+            }
         }
-        return clazz;
+        return null;
     }
 
     private Asset<?> instantiateAsset(Class<?> clazz, CsvRecord csvRecord) {
