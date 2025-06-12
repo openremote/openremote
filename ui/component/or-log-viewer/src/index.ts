@@ -21,6 +21,8 @@ import "@openremote/or-mwc-components/or-mwc-menu";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import { GenericAxiosResponse } from "axios";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const linkParser = require("http-link-header");
@@ -164,6 +166,11 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
             style
         ];
     }
+
+    @property({ type: Boolean })
+    private secureContext = window.isSecureContext;
+
+
 
     @property({type: String})
     public interval?: Model.DatapointInterval;
@@ -412,7 +419,6 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
     }
 
     protected _getTable(): TemplateResult {
-
         return html`
             <div id="table" class="mdc-data-table">
                 <table class="mdc-data-table__table" aria-label="logs list">
@@ -422,7 +428,8 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                             <th style="width: 80px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("level")}</th>
                             <th style="width: 130px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("category")}</th>
                             <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("subCategory")}</th>
-                            <th style="width: 100%; min-width: 300px;" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("message")}</th>                            
+                            <th style="width: 100%; min-width: 300px;" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("message")}</th>
+                            <th style="width: 100%; min-width: 80px;" class="mdc-data-table__header-cell" role="columnheader" scope="col"></th>
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
@@ -433,7 +440,12 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                                     <td class="mdc-data-table__cell">${i18next.t(ev.level!)}</td>
                                     <td class="mdc-data-table__cell">${i18next.t(ev.category!)}</td>                                    
                                     <td class="mdc-data-table__cell">${i18next.t(ev.subCategory!)}</td>                                    
-                                    <td class="mdc-data-table__cell">${ev.message}</td>                                    
+                                    <td class="mdc-data-table__cell">${ev.message}</td>     
+                                    <td class="mdc-data-table__cell" style="display: flex; align-items: center; justify-content: center;">
+                                        ${this.secureContext
+                                                ? html`<or-mwc-input type="${InputType.BUTTON}" icon="content-copy" @or-mwc-input-changed="${() => this._copyRow(ev)}"></or-mwc-input>`
+                                                : html``}
+                                    </td>
                                 </tr>
                             `;            
                         })}
@@ -441,6 +453,17 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                 </table>
             </div>
             `;
+    }
+    
+    /** Copy a single log event to the clipboard as JSON */
+    protected async _copyRow(row: Model.SyslogEvent) {
+        try {
+            const text = JSON.stringify(row.message, null, 2);
+                await navigator.clipboard.writeText(text);
+                showSnackbar(undefined, "Copied to clipboard successfully.");
+        } catch (err){
+            console.error("Failed to copy:", err);
+        }
     }
 
     protected _getIntervalOptions(): [string, string][] {
