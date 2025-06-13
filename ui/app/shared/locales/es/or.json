@@ -283,6 +283,8 @@
   "sending": "Enviando",
   "submit": "Enviar",
   "password": "Contraseña",
+  "resetPassword": "Restablecer contraseña",
+  "resetPasswordConfirmation": "Se ha enviado un correo electrónico para restablecer su contraseña.",
   "repeatPassword": "Repetir contraseña",
   "details": "Detalles",
   "permissions": "Permisos",
