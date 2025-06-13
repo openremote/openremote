@@ -32,6 +32,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.Map;
 
+import jakarta.ws.rs.core.Response;
+
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
@@ -107,5 +109,5 @@ public interface AssetModelResource {
     @Path("getItemSchemas")
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getItemSchemas", summary = "Retrieve the available configuration item JSON Schemas.")
-    JsonNode getConfigurationItemSchemas(@BeanParam RequestParams requestParams, @RequestBody ValueDescriptor<?> item);
+    Response getConfigurationItemSchemas(@BeanParam RequestParams requestParams, @RequestBody ValueDescriptor<?> item, @QueryParam("descriptor") String descriptor);
 }

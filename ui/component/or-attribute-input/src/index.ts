@@ -168,7 +168,35 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
             initialised = true;
 
             if (!schema) {
-                schema = (await manager.rest.api.AssetModelResource.getConfigurationItemSchemas(valueDescriptor)).data as any;
+
+                // window.addEventListener("fetch", (event: any) => {
+                //   // We only want to call event.respondWith() if this is a GET request for an HTML document.
+                //   console.log("FETCH")
+                //   if (
+                //     event.request.method === "GET" &&
+                //     event.request.headers.get("accept").includes("text/html")
+                //   ) {
+                //     console.log("Handling fetch event for", event.request.url);
+                //     event.respondWith(
+                //       fetch(event.request).catch((e) => {
+                //         console.error("Fetch failed; returning offline page instead.", e);
+                //         return caches
+                //           .open(valueDescriptor.name!)
+                //           .then((cache) => cache.match(valueDescriptor.name!));
+                //       }),
+                //     );
+                //   }
+                // });
+
+                    const response = await manager.rest.api.AssetModelResource.getConfigurationItemSchemas(valueDescriptor, { descriptor: valueDescriptor.type })
+                    // await cache.put(response.request, new Response(response.data))
+                    schema = response.data;
+                    // label ||= schema.title
+                // const cache = await caches.open(valueDescriptor.name!);
+                // if (await caches.has(valueDescriptor.name!)) {
+                //     schema = await cache.match()
+                // } else {
+                // }
             }
 
             loadedAgents = await loadAgents();
@@ -247,7 +275,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
                 <or-loading-wrapper ${ref(loadingWrapper)} .loading="${true}">
                     <or-json-forms .renderers="${jsonFormsAttributeRenderers}" ${ref(jsonForms)}
                                    .disabled="${disabled}" .readonly="${readonly}" .label="${label}"
-                                   .schema="${schema}" label="Agent link" .uischema="${uiSchema}" .onChange="${onAgentLinkChanged}"></or-json-forms>
+                                   .schema="${schema}" .uischema="${uiSchema}" .onChange="${onAgentLinkChanged}"></or-json-forms>
                 </or-loading-wrapper>
             `;
         };

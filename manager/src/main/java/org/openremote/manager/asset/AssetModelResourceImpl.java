@@ -41,7 +41,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+
+import jakarta.ws.rs.core.Response;
 
 public class AssetModelResourceImpl extends ManagerWebResource implements AssetModelResource {
 
@@ -79,12 +81,13 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     }
 
     @Override
-    public JsonNode getConfigurationItemSchemas(RequestParams requestParams, ValueDescriptor<?> valueDescriptor) {
+    public Response getConfigurationItemSchemas(RequestParams requestParams, ValueDescriptor<?> valueDescriptor, String descriptor) {
         try {
-            return assetModelService.getConfigurationItemSchemas(valueDescriptor);
+            JsonNode schema = assetModelService.getConfigurationItemSchemas(valueDescriptor);
+            return Response.ok(schema).header("Cache-Control", "public,max-age=" + 1000000000 + ",must-revalidate").build();
         } catch (ClassNotFoundException | RuntimeException | IllegalAccessException | InstantiationException | InvocationTargetException | NoSuchMethodException e) {
             LOG.log(Level.SEVERE, "Error: ", e);
-            throw new WebApplicationException(Response.Status.NOT_FOUND);
+            throw new WebApplicationException(Status.NOT_FOUND);
         }
     }
 }
