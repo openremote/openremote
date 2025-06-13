@@ -881,6 +881,7 @@ Resources:
 
   EBSDataVolume:
     Type: AWS::EC2::Volume
+    DeletionPolicy: Snapshot
     Properties:
       AvailabilityZone: !GetAtt EC2Instance.AvailabilityZone
       Size: !Ref DataDiskSize
@@ -891,7 +892,6 @@ Resources:
           Value: !Sub ${Host}-data
         - Key: Type
           Value: !Sub ${Host}-or-data-not-in-use
-    DeletionPolicy: Snapshot
 
   # DLM Policy for automatic snapshot creation
 
@@ -900,7 +900,12 @@ Resources:
     DependsOn: EBSDataVolume
     Properties:
       ExecutionRoleArn: !Ref DLMExecutionRoleArn
-      Description: 'or-data'
+      Description: 
+        !Join
+          - '-'
+          - !Split
+            - '.'
+            - !Sub ${Host}-or-data
       State: ENABLED
       PolicyDetails:
         PolicyLanguage: STANDARD
@@ -912,13 +917,14 @@ Resources:
           - VOLUME
         Schedules:
           - Name: Daily Backup
+            CopyTags: true
             CreateRule:
               Interval: 24
               IntervalUnit: HOURS
               Times:
-              - '05:00'
+                - '05:00'
             RetainRule:
-              Count: 5
+              Count: 1
       Tags:
         - Key: Name
           Value: !Ref Host
