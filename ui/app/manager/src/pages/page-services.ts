@@ -69,10 +69,10 @@ class OrServiceTree extends OrTreeMenu {
     return [...super.styles, treeStyles];
   }
 
-  @property({type: Array})
+  @property({ type: Array })
   public services?: ExternalService[];
 
-  @property({type: Boolean})
+  @property({ type: Boolean })
   public readonly = false;
 
   nodes: ServiceTreeNode[] = [];
@@ -90,14 +90,14 @@ class OrServiceTree extends OrTreeMenu {
 
   protected _dispatchSelectEvent(nodes?: ServiceTreeNode[]): boolean {
     // Only select if ONE is selected
-    const newSelected = (!nodes || nodes.length > 1) ? undefined : nodes[0];
-    
+    const newSelected = !nodes || nodes.length > 1 ? undefined : nodes[0];
+
     if (newSelected?.service) {
       // Dispatch a custom event that the page can listen to
-      const event = new CustomEvent('service-selected', {
+      const event = new CustomEvent("service-selected", {
         detail: {
-          service: newSelected.service
-        }
+          service: newSelected.service,
+        },
       });
       this.dispatchEvent(event);
     }
@@ -106,11 +106,11 @@ class OrServiceTree extends OrTreeMenu {
   }
 
   protected _getServiceNodes(services: ExternalService[]): ServiceTreeNode[] {
-    return services.map(service => ({
+    return services.map((service) => ({
       id: service.name,
       label: service.label,
       service: service,
-      disabled: service.status === ServiceStatus.UNAVAILABLE
+      disabled: service.status === ServiceStatus.UNAVAILABLE,
     }));
   }
 
@@ -119,9 +119,7 @@ class OrServiceTree extends OrTreeMenu {
     return html`
       <or-icon slot="prefix" icon="puzzle"></or-icon>
       <span>${node.label}</span>
-      <or-icon slot="suffix" 
-               icon="${ServiceStatusIcon[service.status]}" 
-               class="${ServiceStatusColor[service.status]}">
+      <or-icon slot="suffix" icon="${ServiceStatusIcon[service.status]}" class="${ServiceStatusColor[service.status]}">
       </or-icon>
     `;
   }
@@ -165,6 +163,7 @@ const serviceStyles = css`
     align-items: center;
     height: 100%;
     width: 100%;
+    background-color: #f9f9f9;
   }
 `;
 
@@ -196,8 +195,8 @@ export class PageServices extends Page<AppStateKeyed> {
     // TODO: Get services from backend via registry mechanism
     const testService = {
       label: "ML Forecast Service",
-      name: "ml-forecast",
-      iframe_url: "http://localhost:8001/services/ml-forecast/ui",
+      name: "ml-forecast",  
+      iframe_url: "http://localhost:8001/",
       multiTenancy: true,
       status: ServiceStatus.AVAILABLE,
     };
