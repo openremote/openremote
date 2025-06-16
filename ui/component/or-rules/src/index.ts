@@ -1035,8 +1035,8 @@ export class OrRules extends translate(i18next)(LitElement) {
         } else {
             const groupNodes = selectedNodes.filter(n => n.type === "group") as RulesetGroupNode[]; // list of selected group nodes
             const rulesetNodes = selectedNodes.filter(n => n.type === "rule") as RulesetNode[]; // list of selected rule nodes
-            const selectedRuleIds = rulesetNodes.map((node) => node.ruleset.id!);
-            console.debug(`Selecting rule IDs ${selectedRuleIds}`);
+            const selectedIds = rulesetNodes.map((node) => node.ruleset.id!);
+            console.debug(`Selecting rule IDs ${selectedIds}`);
 
             // Deselect the group, and select either a new rule or group after that.
             this._deselectGroup().then(() => {

@@ -142,6 +142,9 @@ export class PageRules extends Page<AppStateKeyed>  {
                 this._ruleId = newRuleId;
                 this._updateRoute(newRuleId.toString());
             }
+        } else {
+            this._ruleId = undefined;
+            this._updateRoute();
         }
     }
 
