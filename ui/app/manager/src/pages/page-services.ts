@@ -61,6 +61,15 @@ const treeStyles = css`
   .iconfill-red {
     --or-icon-fill: var(--or-app-color6, ${unsafeCSS(DefaultColor6)});
   }
+
+  .service-icon {
+    --or-icon-fill: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+  }
+  
+
+  or-tree-node {
+    padding-left: 10px;
+  }
 `;
 
 @customElement("or-service-tree")
@@ -117,7 +126,7 @@ class OrServiceTree extends OrTreeMenu {
   protected _getSingleNodeSlotTemplate(node: ServiceTreeNode): TemplateResult {
     const service = node.service!;
     return html`
-      <or-icon slot="prefix" icon="puzzle"></or-icon>
+      <or-icon class="service-icon" slot="prefix" icon="puzzle"></or-icon>
       <span>${node.label}</span>
       <or-icon slot="suffix" icon="${ServiceStatusIcon[service.status]}" class="${ServiceStatusColor[service.status]}">
       </or-icon>
