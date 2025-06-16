@@ -9,7 +9,8 @@ import { DefaultColor3, DefaultColor4, DefaultColor5, DefaultColor6, manager } f
 import { style as OrAssetTreeStyle } from "@openremote/or-asset-tree";
 import "@openremote/or-components/or-iframe";
 import "@openremote/or-icon";
-import { OrTreeMenu, TreeNode, TreeMenuSelection } from "@openremote/or-tree-menu";
+import { OrTreeMenu, TreeNode, TreeMenuSelection, OrTreeNode } from "@openremote/or-tree-menu";
+import { ServiceDescriptor, ServiceStatus } from "@openremote/model";
 
 export function pageServicesProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
   return {
@@ -23,11 +24,6 @@ export function pageServicesProvider(store: Store<AppStateKeyed>): PageProvider<
 }
 
 // TODO: Needs to come from the manager backend model generator
-export enum ServiceStatus {
-  AVAILABLE = "available",
-  UNAVAILABLE = "unavailable",
-  UNHEALTHY = "unhealthy",
-}
 
 export enum ServiceStatusIcon {
   available = "play",
@@ -41,16 +37,8 @@ export enum ServiceStatusColor {
   unhealthy = "iconfill-red",
 }
 
-export interface ExternalService {
-  label: string;
-  name: string;
-  iframe_url: string;
-  multiTenancy: boolean;
-  status: ServiceStatus;
-}
-
 export interface ServiceTreeNode extends TreeNode {
-  service?: ExternalService;
+  service?: ServiceDescriptor;
 }
 
 const treeStyles = css`
@@ -65,7 +53,6 @@ const treeStyles = css`
   .service-icon {
     --or-icon-fill: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
   }
-  
 
   or-tree-node {
     padding-left: 10px;
@@ -79,7 +66,10 @@ class OrServiceTree extends OrTreeMenu {
   }
 
   @property({ type: Array })
-  public services?: ExternalService[];
+  public services?: ServiceDescriptor[];
+
+  @property({ type: String })
+  public selectedService?: ServiceDescriptor;
 
   @property({ type: Boolean })
   public readonly = false;
@@ -94,6 +84,19 @@ class OrServiceTree extends OrTreeMenu {
         this.nodes = this._getServiceNodes(this.services);
       }
     }
+
+    // Handle select change from parent
+    if (changedProps.has("selectedService")) {
+      if (this.selectedService) {
+        const nodeToSelect = this.nodes.find((node) => node.id === this.selectedService.name);
+        if (nodeToSelect) {
+          this._selectNode(nodeToSelect as unknown as OrTreeNode);
+        }
+      } else {
+        this.deselectAllNodes();
+      }
+    }
+
     return super.willUpdate(changedProps);
   }
 
@@ -114,7 +117,7 @@ class OrServiceTree extends OrTreeMenu {
     return super._dispatchSelectEvent(nodes);
   }
 
-  protected _getServiceNodes(services: ExternalService[]): ServiceTreeNode[] {
+  protected _getServiceNodes(services: ServiceDescriptor[]): ServiceTreeNode[] {
     return services.map((service) => ({
       id: service.name,
       label: service.label,
@@ -187,10 +190,10 @@ export class PageServices extends Page<AppStateKeyed> {
   }
 
   @state()
-  private externalServices: ExternalService[] = [];
+  private services: ServiceDescriptor[] = [];
 
   @state()
-  private selectedService: ExternalService | null = null;
+  private selectedService: ServiceDescriptor | null = null;
 
   @state()
   private serviceName: string | null = null;
@@ -200,12 +203,17 @@ export class PageServices extends Page<AppStateKeyed> {
 
   connectedCallback() {
     super.connectedCallback();
+  }
+
+  constructor(store: Store<AppStateKeyed>) {
+    super(store);
+    this.realmName = manager.displayRealm;
 
     // TODO: Get services from backend via registry mechanism
     const testService = {
       label: "ML Forecast Service",
-      name: "ml-forecast",  
-      iframe_url: "http://localhost:8001/",
+      name: "ml-forecast",
+      url: "http://localhost:8001/",
       multiTenancy: true,
       status: ServiceStatus.AVAILABLE,
     };
@@ -213,17 +221,12 @@ export class PageServices extends Page<AppStateKeyed> {
     const testService2 = {
       label: "Home Assistant",
       name: "home-assistant",
-      iframe_url: "http://192.168.0.106:8123/lovelace/default_view",
+      url: "http://192.168.0.106:8123/lovelace/default_view",
       multiTenancy: true,
       status: ServiceStatus.UNAVAILABLE,
     };
 
-    this.externalServices = [testService, testService2];
-  }
-
-  constructor(store: Store<AppStateKeyed>) {
-    super(store);
-    this.realmName = manager.displayRealm;
+    this.services = [testService, testService2];
   }
 
   public stateChanged(state: AppStateKeyed) {
@@ -231,18 +234,19 @@ export class PageServices extends Page<AppStateKeyed> {
 
     // If a service name is provided, try and find the service and select it
     this.serviceName = state.app.params?.serviceName;
+
     if (this.serviceName) {
-      const service = this.externalServices.find((service) => service.name === this.serviceName);
+      const service = this.services.find((service) => service.name === this.serviceName);
       if (service) {
         this.selectService(service);
       }
     } else {
       // If no service name is provided, clear the selected service
-      this.selectedService = null;
+      this.selectedService = undefined;
     }
   }
 
-  protected selectService(service: ExternalService) {
+  protected selectService(service: ServiceDescriptor) {
     this.selectedService = service;
     router.navigate(`/services/${service.name}`);
   }
@@ -254,7 +258,7 @@ export class PageServices extends Page<AppStateKeyed> {
   });
 
   protected _onServiceSelected(e: CustomEvent) {
-    const service = e.detail.service as ExternalService;
+    const service = e.detail.service as ServiceDescriptor;
     if (service) {
       this.selectService(service);
     }
@@ -265,21 +269,21 @@ export class PageServices extends Page<AppStateKeyed> {
    * @param service - The service to get the iframe path for
    * @returns The iframe path
    */
-  protected getIframePath(service: ExternalService) {
+  protected getServiceUrlPath(service: ServiceDescriptor) {
     const isSuperUser = manager.isSuperUser();
 
     // If the service is not multi-tenancy, we can just use the iframe_url
     if (!service.multiTenancy) {
-      return service.iframe_url;
+      return service.url;
     }
 
     // If the user is super user, we can just use the iframe_url with the realm name
     if (isSuperUser) {
-      return `${service.iframe_url}/${this.realmName}`;
+      return `${service.url}/${this.realmName}`;
     }
 
     // Otherwise we need to add the realm name to the iframe_url as a query param
-    return `${service.iframe_url}?realm=${this.realmName}`;
+    return `${service.url}?realm=${this.realmName}`;
   }
 
   protected render() {
@@ -289,13 +293,14 @@ export class PageServices extends Page<AppStateKeyed> {
       <div class="wrapper">
         <div class="sidebar">
           <or-service-tree
-            .services="${this.externalServices}"
+            .services="${this.services}"
+            .selectedService="${this.selectedService}"
             @service-selected="${this._onServiceSelected}"
           ></or-service-tree>
         </div>
         ${noSelection
           ? html`<div class="msg"><or-translate value="services.noServiceSelected"></or-translate></div>`
-          : html`<or-iframe .src="${this.getIframePath(this.selectedService)}"></or-iframe>`}
+          : html`<or-iframe .src="${this.getServiceUrlPath(this.selectedService)}"></or-iframe>`}
       </div>
     `;
   }
