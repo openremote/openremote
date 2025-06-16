@@ -916,5 +916,9 @@
     "source": "Source"
   },
   "expandAll": "Expand all",
-  "collapseAll": "Collapse all"
+  "collapseAll": "Collapse all",
+  "services": {
+    "noServiceSelected": "Please select a service on the left",
+    "title": "Services"
+  }
 }

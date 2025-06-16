@@ -915,5 +915,9 @@
     "source": "Bron"
   },
   "expandAll": "Alles uitklappen",
-  "collapseAll": "Alles inklappen"
+  "collapseAll": "Alles inklappen",
+  "services": {
+    "noServiceSelected": "Selecteer een service aan de linkerkant",
+    "title": "Services"
+  }
 }
