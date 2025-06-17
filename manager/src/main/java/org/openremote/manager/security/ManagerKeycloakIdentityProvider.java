@@ -1063,8 +1063,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             } else {
                 try (Response response = identityProvidersResource.create(representation)) {
                     if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
-                        LOG.warning("Failed to create identity provider response=" + response.getStatusInfo().getStatusCode() + ": " + representation);
-                        return null;
+                        throw new IllegalStateException("Failed to create identity provider response=" + response.getStatusInfo().getStatusCode() + ": " + representation);
                     }
                 }
             }
@@ -1089,7 +1088,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             } else {
                 try (Response response = idpResource.addMapper(mapper)) {
                     if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
-                        LOG.warning("Failed to create identity provider mapper '" + mapperName +  "' response=" + response.getStatusInfo().getStatusCode() + ": " + response.getStatusInfo().getReasonPhrase());
+                        throw new IllegalStateException("Failed to create identity provider mapper '" + mapperName +  "' response=" + response.getStatusInfo().getStatusCode() + ": " + response.getStatusInfo().getReasonPhrase());
                     }
                 }
             }
@@ -1110,7 +1109,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
                     try (Response response = authenticationManagementResource.newExecutionConfig(execution.getId(), config)) {
                         if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
-                            LOG.warning("Failed to create execution config '" + authenticatorAlias + "' response=" + response.getStatusInfo().getStatusCode() + ": " + response.getStatusInfo().getReasonPhrase());
+                            throw new IllegalStateException("Failed to create execution config '" + authenticatorAlias + "' response=" + response.getStatusInfo().getStatusCode() + ": " + response.getStatusInfo().getReasonPhrase());
                         }
                     }
                     return null;
