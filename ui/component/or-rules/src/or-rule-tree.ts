@@ -127,11 +127,14 @@ export class OrRuleTree extends OrTreeMenu {
             if (!this.rules) {
                 this._loadRulesets(this.global).then(rulesets => this.rules = rulesets);
             } else {
+                // This stops a group from showing up twice after its first rule is added.
+                // It removes the old, empty version of the group from memory so only the new, updated one is displayed.
                 const ruleNodes = this._getRuleNodes(this.rules);
                 const ruleNodeIds = new Set(ruleNodes.map(node => node.id));
                 const emptyGroups = this._cachedEmptyGroupNodes
                     .filter(cachedNode => !ruleNodeIds.has(cachedNode.id));
                 this.nodes = [...ruleNodes, ...emptyGroups];
+                this._cachedEmptyGroupNodes = emptyGroups;
             }
         }
         if (changedProps.has("nodes")) {
