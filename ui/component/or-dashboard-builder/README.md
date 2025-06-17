@@ -81,7 +81,6 @@ Looking into our existing widgets also helps understanding the codebase.
 import {CustomWidgetConfig} from "./custom-widget";
 
 export interface CustomWidgetConfig extends WidgetConfig {
-    attributeRefs: AttributeRef[];
     customFieldOne: string;
     customFieldTwo: number;
 }

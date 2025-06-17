@@ -2,7 +2,7 @@ import {customElement, state} from "lit/decorators.js";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {css, html, PropertyValues, TemplateResult} from "lit";
 import {WidgetSettings} from "../util/widget-settings";
-import {WidgetConfig} from "../util/widget-config";
+import {AssetWidgetConfig, WidgetConfig} from "../util/widget-config";
 import {GatewaySettings} from "../settings/gateway-settings";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {GatewayTunnelInfo, GatewayTunnelInfoType} from "@openremote/model";
@@ -32,7 +32,7 @@ const styling = css`
     }
 `;
 
-export interface GatewayWidgetConfig extends WidgetConfig {
+export interface GatewayWidgetConfig extends AssetWidgetConfig {
     gatewayId?: string;
     type: GatewayTunnelInfoType;
     target: string;
@@ -41,6 +41,7 @@ export interface GatewayWidgetConfig extends WidgetConfig {
 
 function getDefaultWidgetConfig(): GatewayWidgetConfig {
     return {
+        attributeRefs: [],
         type: GatewayTunnelInfoType.HTTPS,
         target: "localhost",
         targetPort: 443
