@@ -145,9 +145,9 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         def username = "${keycloakTestSetup.realmBuilding.name}:${keycloakTestSetup.serviceUser2.username}"
         def password = keycloakTestSetup.serviceUser2.secret
         def subscriptions = [
+                "${keycloakTestSetup.realmBuilding.name}/${clientId}/attribute/notes/${managerTestSetup.apartment1BathroomId}".toString(),
                 "${keycloakTestSetup.realmBuilding.name}/${clientId}/attribute/notes/${managerTestSetup.apartment1HallwayId}".toString(),
                 "${keycloakTestSetup.realmBuilding.name}/${clientId}/attribute/notes/${managerTestSetup.apartment1Bedroom1Id}".toString(),
-                "${keycloakTestSetup.realmBuilding.name}/${clientId}/attribute/notes/${managerTestSetup.apartment1BathroomId}".toString(),
                 "${keycloakTestSetup.realmBuilding.name}/${clientId}/attribute/notes/${managerTestSetup.apartment1KitchenId}".toString(),
                 "${keycloakTestSetup.realmBuilding.name}/${clientId}/attribute/notes/${managerTestSetup.apartment1LivingroomId}".toString()
         ]
@@ -200,10 +200,10 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         client.addMessageConsumer(subscriptions[3], consumer)
         client.addMessageConsumer(subscriptions[4], consumer)
 
-        then: "all subscriptions except the hallway should be in place (because user is not linked to the hallway)"
+        then: "all subscriptions except the hallway should be in place (because user is not linked to the bathroom)"
         conditions.eventually {
             assert client.topicConsumerMap.size() == 4
-            assert client.topicConsumerMap.keySet().stream().allMatch {subscriptions.contains(it)}
+            assert client.topicConsumerMap.keySet().stream().noneMatch {subscriptions[0] == it}
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id).size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
@@ -211,9 +211,9 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         }
 
         and: "subscribed attributes are updated"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1BathroomId, Asset.NOTES, Integer.toString(counter++)))
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1HallwayId, Asset.NOTES, Integer.toString(counter++)))
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1Bedroom1Id, Asset.NOTES, Integer.toString(counter++)))
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1BathroomId, Asset.NOTES, Integer.toString(counter++)))
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1KitchenId, Asset.NOTES, Integer.toString(counter++)))
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1LivingroomId, Asset.NOTES, Integer.toString(counter++)))
 
@@ -226,12 +226,12 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert received.any {it.topic == subscriptions[4] && ValueUtil.parse(it.payload, AttributeEvent.class).get().value.orElse(null) == "4"}
         }
 
-        when: "the user asset links are updated to include the hallway"
+        when: "the user asset links are updated to include the bathroom"
         def existingConnection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
         assetStorageService.storeUserAssetLinks(List.of(
             new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
                     keycloakTestSetup.serviceUser2.getId(),
-                    managerTestSetup.apartment1HallwayId)
+                    managerTestSetup.apartment1BathroomId)
         ))
 
         then: "the client should have disconnected and reconnected"
@@ -254,9 +254,9 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         when: "subscribed attributes are updated"
         counter = 0
         received.clear()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1BathroomId, Asset.NOTES, Integer.toString(counter++)))
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1HallwayId, Asset.NOTES, Integer.toString(counter++)))
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1Bedroom1Id, Asset.NOTES, Integer.toString(counter++)))
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1BathroomId, Asset.NOTES, Integer.toString(counter++)))
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1KitchenId, Asset.NOTES, Integer.toString(counter++)))
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1LivingroomId, Asset.NOTES, Integer.toString(counter++)))
 
@@ -302,9 +302,9 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         when: "subscribed attributes are updated"
         counter = 0
         received.clear()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1BathroomId, Asset.NOTES, Integer.toString(counter++)))
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1HallwayId, Asset.NOTES, Integer.toString(counter++)))
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1Bedroom1Id, Asset.NOTES, Integer.toString(counter++)))
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1BathroomId, Asset.NOTES, Integer.toString(counter++)))
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1KitchenId, Asset.NOTES, Integer.toString(counter++)))
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1LivingroomId, Asset.NOTES, Integer.toString(counter++)))
 

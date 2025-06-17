@@ -9,6 +9,7 @@ import org.openremote.agent.protocol.mqtt.MQTTLastWill
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
 import org.openremote.manager.asset.AssetProcessingService
+import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.agent.AgentService
@@ -167,7 +168,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "A subscription should exist"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
-            assert client.topicConsumerMap.get(topic).size() == 1
+            assert client.topicConsumerMap.get(topic).value.size() == 1
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
@@ -277,7 +278,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "the subscription should be created"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
-            assert client.topicConsumerMap.get(topic).size() == 1
+            assert client.topicConsumerMap.get(topic).value.size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
             assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
@@ -323,7 +324,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "a subscription should exist"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
-            assert client.topicConsumerMap.get(topic).size() == 1
+            assert client.topicConsumerMap.get(topic).value.size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
             assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
@@ -353,7 +354,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "the subscription should be created"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
-            assert client.topicConsumerMap.get(topic).size() == 1
+            assert client.topicConsumerMap.get(topic).value.size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
             assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 2
@@ -606,7 +607,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a restricted mqtt client subscribes to an unlinked asset"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1KitchenId".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1BathroomId".toString()
         newClient.addMessageConsumer(topic, {msg ->})
 
         then: "no subscription should exist"
@@ -637,10 +638,10 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
                         keycloakTestSetup.serviceUser2.getId(),
                         managerTestSetup.apartment1BathroomId)))
 
-        then: "the existing connection should not have been terminated"
-        new PollingConditions(initialDelay: 2, timeout: 10, delay: 1).eventually {
+        then: "the existing connection should be terminated and the client should reconnect"
+        conditions.eventually {
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id).size() == 1
-            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0].is(existingConnection)
+            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0] !== existingConnection
         }
 
         when: "a user asset link is removed for a connected restricted user"
@@ -693,14 +694,13 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", 40)
         assetProcessingService.sendAttributeEvent(attributeEvent)
 
-
         then: "the restricted client should not receive the event"
         conditions.eventually {
             assert restrictedReceivedEvents.size() == 0
         }
 
         when: "a linked asset attribute event occurs"
-        attributeEvent = new AttributeEvent(managerTestSetup.apartment1BathroomId, "notes", "This is a test note")
+        attributeEvent = new AttributeEvent(managerTestSetup.apartment1BathroomId, RoomAsset.ROOM_NUMBER, 1)
         assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "the restricted client should not receive the event since the attribute is not restricted"
@@ -708,10 +708,9 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert restrictedReceivedEvents.size() == 0
         }
 
-
         when: "a linked asset attribute has its restricted meta configuration set to true"
         def bathroomAsset = assetStorageService.find(managerTestSetup.apartment1BathroomId)
-        bathroomAsset.getAttributes().get("notes").get().addOrReplaceMeta(new MetaItem<>(ACCESS_RESTRICTED_READ, true))
+        bathroomAsset.getAttributes().get(RoomAsset.ROOM_NUMBER).get().addOrReplaceMeta(new MetaItem<>(ACCESS_RESTRICTED_READ, true))
         assetStorageService.merge(bathroomAsset)
 
         then: "the restricted client should still be connected"
@@ -727,9 +726,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         restrictedReceivedEvents.clear()
 
         when: "another attribute event occurs on the restricted read attribute"
-        attributeEvent = new AttributeEvent(managerTestSetup.apartment1BathroomId, "notes", "This is another test note")
+        attributeEvent = new AttributeEvent(managerTestSetup.apartment1BathroomId, RoomAsset.ROOM_NUMBER, 2)
         assetProcessingService.sendAttributeEvent(attributeEvent)
-
 
         then: "the restricted client should receive the triggered attribute event"
          conditions.eventually {
@@ -740,7 +738,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         when: "the restricted read meta item is removed"
         bathroomAsset = assetStorageService.find(managerTestSetup.apartment1BathroomId)
-        bathroomAsset.getAttributes().addOrReplace(new Attribute<>("notes", TEXT, "Set via attribute merge"))
+        bathroomAsset.getAttributes().addOrReplace(new Attribute<>(RoomAsset.ROOM_NUMBER, 2))
         assetStorageService.merge(bathroomAsset)
 
         then: "the restricted client should not receive the triggered attribute event"
@@ -749,7 +747,6 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
         newClient.removeAllMessageConsumers()
         restrictedReceivedEvents.clear()
-
 
         when: "a restricted mqtt client subscribes to the asset wildcard topic"
         topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ASSET_TOPIC/$MQTTHandler.TOKEN_MULTI_LEVEL_WILDCARD".toString()
@@ -762,14 +759,13 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         when: "a linked asset event occurs"
         bathroomAsset = assetStorageService.find(managerTestSetup.apartment1BathroomId)
-        bathroomAsset.getAttributes().get("notes").get().setValue("Set via asset merge")
+        bathroomAsset.getAttributes().get(RoomAsset.ROOM_NUMBER).get().setValue(2)
         assetStorageService.merge(bathroomAsset)
 
         then: "the restricted client should receive the triggered asset event"
         conditions.eventually {
             assert restrictedReceivedEvents.size() == 1
         }
-
 
         and: "the event should only contain attributes that are read restricted"
         conditions.eventually {
@@ -777,13 +773,13 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             def event = restrictedReceivedEvents.get(0)
             assert event instanceof AssetEvent
             def assetEvent = event as AssetEvent
-            assert !assetEvent.getAsset().hasAttribute("notes")
+            assert !assetEvent.getAsset().hasAttribute(RoomAsset.ROOM_NUMBER)
         }
         restrictedReceivedEvents.clear()
 
         when: "the restricted read meta item is added again"
         bathroomAsset = assetStorageService.find(managerTestSetup.apartment1BathroomId)
-        bathroomAsset.getAttributes().get("notes").get().addOrReplaceMeta(new MetaItem<>(ACCESS_RESTRICTED_READ, true))
+        bathroomAsset.getAttributes().get(RoomAsset.ROOM_NUMBER).get().addOrReplaceMeta(new MetaItem<>(ACCESS_RESTRICTED_READ, true))
         assetStorageService.merge(bathroomAsset)
 
         then: "the restricted client should receive the triggered asset event"
@@ -792,8 +788,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             def event = restrictedReceivedEvents.get(0)
             assert event instanceof AssetEvent
             def assetEvent = event as AssetEvent
-            assert assetEvent.getAsset().getAttribute("notes").isPresent()
-            assert assetEvent.getAsset().getAttribute("notes").get().getValue().orElse(null) == "Set via asset merge"
+            assert assetEvent.getAsset().getAttribute(RoomAsset.ROOM_NUMBER).isPresent()
+            assert assetEvent.getAsset().getAttribute(RoomAsset.ROOM_NUMBER).get().getValue().orElse(null) == 2
         }
         restrictedReceivedEvents.clear()
 
@@ -827,7 +823,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         when: "an asset event occurs on the now unlinked asset"
         bathroomAsset = assetStorageService.find(managerTestSetup.apartment1BathroomId)
-        bathroomAsset.getAttributes().get("notes").get().setValue("Set via asset merge")
+        bathroomAsset.getAttributes().get(RoomAsset.ROOM_NUMBER).get().setValue(2)
         assetStorageService.merge(bathroomAsset)
 
         then: "the restricted client should not receive the triggered asset event"

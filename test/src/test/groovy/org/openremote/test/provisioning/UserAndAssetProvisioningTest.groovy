@@ -164,6 +164,9 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         device1Client.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         device1Client.addConnectionStatusConsumer({connectionStatus ->
             connectionStatuses.add(connectionStatus)})
+        device1Client.setTopicSubscribeFailureConsumer {
+            LOG.info("device1Client failed to subscribe to topic: ${it}")
+        }
         device1Client.connect()
 
         then: "mqtt client should be connected"
@@ -183,7 +186,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert device1Client.topicConsumerMap.get(device1ResponseTopic) != null
-            assert device1Client.topicConsumerMap.get(device1ResponseTopic).size() == 1
+            assert device1Client.topicConsumerMap.get(device1ResponseTopic).value.size() == 1
         }
 
         when: "an eavesdropping client connects"
@@ -209,7 +212,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert device1Client.getConnectionStatus() == ConnectionStatus.CONNECTED
             assert device1Client.topicConsumerMap.get(device1ResponseTopic) != null
-            assert device1Client.topicConsumerMap.get(device1ResponseTopic).size() == 1
+            assert device1Client.topicConsumerMap.get(device1ResponseTopic).value.size() == 1
         }
 
         when: "the client publishes a valid x509 certificate that has been signed by the CA stored in the provisioning config"
@@ -255,7 +258,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert device1Client.topicConsumerMap.get(device1ResponseTopic) != null
-            assert device1Client.topicConsumerMap.get(device1ResponseTopic).size() == 1
+            assert device1Client.topicConsumerMap.get(device1ResponseTopic).value.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != null
         }
 
@@ -324,8 +327,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert device1Client.topicConsumerMap.get(assetSubscriptionTopic) != null
             assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic) != null
-            assert device1Client.topicConsumerMap.get(assetSubscriptionTopic).size() == 1
-            assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic).size() == 1
+            assert device1Client.topicConsumerMap.get(assetSubscriptionTopic).value.size() == 1
+            assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic).value.size() == 1
             connection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
             assert connection != null
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
@@ -450,8 +453,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert device1Client.topicConsumerMap.get(assetSubscriptionTopic) != null
             assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic) != null
-            assert device1Client.topicConsumerMap.get(assetSubscriptionTopic).size() == 1
-            assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic).size() == 1
+            assert device1Client.topicConsumerMap.get(assetSubscriptionTopic).value.size() == 1
+            assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic).value.size() == 1
             connection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
             assert connection != null
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
@@ -483,7 +486,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
-            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).size() == 1
+            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).value.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -532,7 +535,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
-            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).size() == 1
+            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).value.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -581,7 +584,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
-            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).size() == 1
+            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).value.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -663,7 +666,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
-            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).size() == 1
+            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).value.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -763,7 +766,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
-            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).size() == 1
+            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).value.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 

@@ -272,11 +272,15 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     @Override
     public void onConnectionLost(RemotingConnection connection) {
         provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
+        // Remove sessions as durable sessions will never reconnect if client ID already subscribed to attribute topics
+        mqttBrokerService.doForceDisconnect(connection);
     }
 
     @Override
     public void onDisconnect(RemotingConnection connection) {
         provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
+        // Remove sessions as durable sessions will never reconnect if client ID already subscribed to attribute topics
+        mqttBrokerService.doForceDisconnect(connection);
     }
 
     protected void processProvisioningRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
