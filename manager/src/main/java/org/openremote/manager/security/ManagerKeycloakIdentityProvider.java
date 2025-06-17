@@ -1028,6 +1028,19 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         }));
     }
 
+    /**
+     * Imports the identity provider configuration using the given import data. This simplifies configuring an OIDC or SAML
+     * identity provider from which some of the configuration parameters can be imported from the identity provider itself.
+     *
+     * @param realm the realm used for importing the identity provider configuration.
+     * @param importData contains the details required for importing the identity provider configuration.
+     *      E.g. the following values can be used:
+     *      <ul><li>{@code fromUrl}: The URL used for importing the configuration parameters</li>
+     *          <li>{@code providerId}: The identity provider ({@code oidc} or {@code saml}) to import the configuration for.</li></ul>
+     *
+     * @return the imported configuration parameters which can be added to the {@link Map} provided to
+     *      {@link #createUpdateIdentityProvider(String, String, String, Map)} when creating or updating an identity provider.
+     */
     public Map<String, String> getIdentityProviderImportConfig(String realm, Map<String, Object> importData) {
         if (importData == null || importData.isEmpty()) {
             throw new IllegalArgumentException("Import data is null or empty");
