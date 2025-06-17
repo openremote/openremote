@@ -6,7 +6,7 @@ SET template = jsonb_set(
             SELECT jsonb_agg(
                            CASE
                                WHEN widget->>'widgetTypeId' = 'gateway' THEN
-                                   jsonb_set(widget, '{widgetConfig,attributeRefs}', '[]'::jsonb)
+                                   jsonb_set(widget, '{widgetConfig,attributeRefs}', ('[' || widget->'widgetConfig'->>'gatewayId' || ']')::jsonb)
                                ELSE
                                    widget  -- Leave non-gateway widgets unchanged
                                END

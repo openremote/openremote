@@ -323,13 +323,15 @@ export class GatewayWidget extends OrWidget {
      * Internal function that requests the Manager API for the gatewayStatus of the gatewayId asset in {@link GatewayTunnelInfo}.
      * Returns undefined if there is misalignment in the linked asset id or unexpected http code.
      */
-   protected async _getGatewayStatus(info: GatewayTunnelInfo): Promise<string | undefined> {
-        const response =  await manager.rest.api.AssetResource.get(info.gatewayId!)
-        if (response.status === 200 && response.data && response.data.attributes && response.data.attributes.gatewayStatus) {
-            return response.data.attributes.gatewayStatus.value
-        } else {
-            return undefined;
-             }
+    protected async _getGatewayStatus(info: GatewayTunnelInfo): Promise<string | undefined> {
+        if(info.gatewayId) {
+            const promise = manager.rest.api.AssetResource.get(info.gatewayId);
+            promise.catch(err => console.error(err));
+            const response = await promise;
+            if (response.status === 200) {
+                return response.data.attributes?.gatewayStatus?.value;
+            }
+        }
     }
 
     /**
@@ -340,7 +342,7 @@ export class GatewayWidget extends OrWidget {
         //Check if the gateway is actually in a status to accept connections
         this._getGatewayStatus(tunnelInfo).then(status => {
             this._isReady = (status === "CONNECTED");
-            });
+        });
    }
 
     /**
