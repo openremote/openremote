@@ -25,6 +25,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.channel.ChannelId;
 import org.apache.activemq.artemis.api.core.ActiveMQException;
 import org.apache.activemq.artemis.api.core.ActiveMQExceptionType;
+import org.apache.activemq.artemis.api.core.QueueConfiguration;
 import org.apache.activemq.artemis.api.core.SimpleString;
 import org.apache.activemq.artemis.api.core.client.ActiveMQClient;
 import org.apache.activemq.artemis.api.core.client.ClientSession;
@@ -38,6 +39,7 @@ import org.apache.activemq.artemis.core.config.MetricsConfiguration;
 import org.apache.activemq.artemis.core.config.WildcardConfiguration;
 import org.apache.activemq.artemis.core.config.impl.ConfigurationImpl;
 import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
+import org.apache.activemq.artemis.core.protocol.mqtt.MQTTStateManager;
 import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
 import org.apache.activemq.artemis.core.remoting.FailureListener;
 import org.apache.activemq.artemis.core.remoting.impl.invm.InVMConnection;
@@ -105,6 +107,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
     public static final String MQTT_SERVER_LISTEN_PORT = "MQTT_SERVER_LISTEN_PORT";
     public static final String ANONYMOUS_USERNAME = "anonymous";
+    public static final int DEFAULT_SESSION_EXPIRY_MILLIS = 5000;
     protected final WildcardConfiguration wildcardConfiguration = new WildcardConfiguration();
     protected static final System.Logger LOG = System.getLogger(MQTTBrokerService.class.getName() + "." + API.name());
 
@@ -169,11 +172,12 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         // Create server config
         serverConfiguration = new ConfigurationImpl();
+        serverConfiguration.setMqttSessionScanInterval(5000);
         serverConfiguration.addAcceptorConfiguration("in-vm", "vm://0?protocols=core");
         String serverURI = new URIBuilder().setScheme("tcp").setHost(host).setPort(port)
             .setParameter("protocols", "MQTT")
             .setParameter("allowLinkStealing", "true")
-            .setParameter("defaultMqttSessionExpiryInterval", "0") // Don't support retained sessions
+            .setParameter("defaultMqttSessionExpiryInterval", Integer.toString(DEFAULT_SESSION_EXPIRY_MILLIS)) // Don't support retained sessions has to be positive due to https://issues.apache.org/jira/browse/ARTEMIS-5540
             .build().toString();
         serverConfiguration.addAcceptorConfiguration("tcp", serverURI);
         serverConfiguration.registerBrokerPlugin(this);
@@ -189,6 +193,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         serverConfiguration.setLiteralMatchMarkers("()");
 
         // Configure global address settings - aggressively cleanup queues (don't support resumable sessions)
+        serverConfiguration.addQueueConfiguration(QueueConfiguration.of(wildcardConfiguration.getAnyWordsString()).setDurable(false));
         serverConfiguration.addAddressSetting(wildcardConfiguration.getAnyWordsString(),
             new AddressSettings()
                 .setDeadLetterAddress(SimpleString.of("ActiveMQ.DLQ"))
@@ -381,7 +386,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
             @Override
             public void connectionFailed(ActiveMQException exception, boolean failedOver, String scaleDownTargetNodeID) {
-                // TODO: Force delete session (don't allow retained/durable sessions)
 
                 connectionIDConnectionMap.remove(getConnectionIDString(connection));
 
@@ -502,8 +506,14 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     }
 
     protected void doForceDisconnect(RemotingConnection connection) {
-        LOG.log(DEBUG, "Force disconnecting client connection: " + connectionToString(connection));
+        LOG.log(DEBUG, () -> "Force disconnecting client connection: " + connectionToString(connection));
         connection.disconnect(false);
+        // Destroy session for force disconnects
+        try {
+            MQTTStateManager.getInstance(server.getActiveMQServer()).removeSessionState(connection.getClientID());
+        } catch (Exception e) {
+            LOG.log(INFO, "Failed to get server instance to clear session for client connection: " + connectionToString(connection));
+        }
         ((SecurityStoreImpl)server.getActiveMQServer().getSecurityStore()).invalidateAuthorizationCache();
     }
 

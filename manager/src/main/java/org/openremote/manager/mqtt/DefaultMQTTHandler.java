@@ -24,6 +24,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import org.apache.activemq.artemis.core.protocol.mqtt.MQTTStateManager;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
 import org.keycloak.KeycloakSecurityContext;
@@ -387,10 +388,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public void onUserAssetLinksChanged(RemotingConnection connection, List<PersistenceEvent<UserAssetLink>> changes) {
         String sessionKey = getSessionKey(connection);
         if (sessionSubscriptionConsumers.containsKey(sessionKey)) {
-            if (changes.stream().allMatch(pe -> pe.getCause() == PersistenceEvent.Cause.CREATE)) {
-                // Do nothing if only links have been added
-                return;
-            }
             LOG.info("User asset links have changed for a connected user with active subscriptions so force disconnecting them: " + connectionToString(connection));
             mqttBrokerService.doForceDisconnect(connection);
         }

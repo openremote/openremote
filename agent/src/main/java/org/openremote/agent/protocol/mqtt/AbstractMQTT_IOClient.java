@@ -65,7 +65,6 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     protected int port;
     protected boolean secure;
     protected boolean cleanSession;
-    protected boolean resubscribeIfCleanSession;
     protected boolean resubscribeIfSessionPresent;
     protected UsernamePassword usernamePassword;
     protected URI websocketURI;
@@ -73,7 +72,6 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     protected final Set<Consumer<ConnectionStatus>> connectionStatusConsumers = new CopyOnWriteArraySet<>();
     protected final ConcurrentMap<String, Pair<MqttQos, Set<Consumer<MQTTMessage<S>>>>> topicConsumerMap = new ConcurrentHashMap<>();
     protected boolean disconnected = true; // Need to use this flag to cancel client reconnect task
-    protected boolean connectedCalled; // Used to resubscribe in clean session
     protected Consumer<String> topicSubscribeFailureConsumer;
     protected MqttQos publishQos = MqttQos.AT_MOST_ONCE;
     protected MqttQos subscribeQos = MqttQos.AT_MOST_ONCE;
@@ -100,19 +98,8 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
             .addConnectedListener(context -> {
                 LOG.info("Connection established uri=" + getClientUri());
                 onConnectionStatusChanged(ConnectionStatus.CONNECTED);
-                connectedCalled = true;
-                if (cleanSession && resubscribeIfCleanSession && !topicConsumerMap.isEmpty()) {
-                    Container.EXECUTOR.execute(() -> {
-                        LOG.fine("Recreating subscriptions for clean session uri=" + getClientUri());
-//                        topicConsumerMap.forEach((topic, qosAndConsumers) -> {
-//                            doClientSubscription(qosAndConsumers.getKey(), topic);
-//                        });
-                    });
-                }
             })
             .addDisconnectedListener(context -> {
-                connectedCalled = false;
-
                 if (this.usernamePassword != null) {
                     ((Mqtt3ClientDisconnectedContext) context).getReconnector().connectWith()
                             .simpleAuth()
@@ -198,15 +185,6 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
 
     public AbstractMQTT_IOClient<S> setSubscribeQos(MqttQos subscribeQos) {
         this.subscribeQos = subscribeQos;
-        return this;
-    }
-
-    public boolean isResubscribeIfCleanSession() {
-        return resubscribeIfCleanSession;
-    }
-
-    public AbstractMQTT_IOClient<S> setResubscribeIfCleanSession(boolean resubscribeIfCleanSession) {
-        this.resubscribeIfCleanSession = resubscribeIfCleanSession;
         return this;
     }
 
