@@ -97,8 +97,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def realm = new Realm()
         realm.setName("test")
         realm.setDisplayName("Test")
-        realm.setEnabled(true);
-        realm.setDuplicateEmailsAllowed(true);
+        realm.setEnabled(true)
+        realm.setDuplicateEmailsAllowed(true)
         realm.setRememberMe(true)
         realm = identityService.getIdentityProvider().createRealm(realm)
         (identityService.getIdentityProvider() as KeycloakIdentityProvider).getRealms(realmsResource -> {
@@ -274,16 +274,16 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert device1Responses.size() == 1
             assert device1Responses.get(0) instanceof SuccessResponseMessage
             assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingName
-            weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
-            assert weatherAsset != null
-            assert weatherAsset instanceof WeatherAsset
-            assert weatherAsset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
+            def wa = ((SuccessResponseMessage)device1Responses.get(0)).asset
+            assert wa != null
+            assert wa instanceof WeatherAsset
+            assert wa.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
         }
 
         and: "the connected attribute of the provisioned asset should show as connected"
         conditions.eventually {
-            weatherAsset = assetStorageService.find(weatherAssetID)
-            assert weatherAsset.getAttribute("connected").flatMap{it.value}.orElse(false)
+            def wa = assetStorageService.find(weatherAssetID)
+            assert wa.getAttribute("connected").flatMap{it.value}.orElse(false)
         }
 
         when: "the connected attribute user name is changed to something invalid"
@@ -292,18 +292,18 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the connected attribute should now be disconnected"
         conditions.eventually {
-            weatherAsset = assetStorageService.find(weatherAssetID)
-            assert !weatherAsset.getAttribute("connected").flatMap{it.value}.orElse(true)
+            def wa = assetStorageService.find(weatherAssetID)
+            assert !wa.getAttribute("connected").flatMap{it.value}.orElse(true)
         }
 
         when: "the connected attribute user name is changed to upper case"
         weatherAsset.getAttribute("connected").ifPresent{it.addOrReplaceMeta(new MetaItem<>(MetaItemType.USER_CONNECTED, PROVISIONING_USER_PREFIX + device1UniqueId.toUpperCase()))}
-        weatherAsset = assetStorageService.merge(weatherAsset)
+        assetStorageService.merge(weatherAsset)
 
         then: "the connected attribute should still find the right user and be connected"
         conditions.eventually {
-            weatherAsset = assetStorageService.find(weatherAssetID)
-                assert weatherAsset.getAttribute("connected").flatMap{it.value}.orElse(false)
+            def wa = assetStorageService.find(weatherAssetID)
+            assert wa.getAttribute("connected").flatMap{it.value}.orElse(false)
         }
 
         when: "the client then subscribes to attribute events for the generated asset and asset events for all assets"
@@ -345,8 +345,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the attribute should have been updated"
         conditions.eventually {
-            asset = assetStorageService.find(asset.id)
-            assert asset.getAttribute("customAttribute").flatMap{it.getValue()}.orElse(0d) == 99d
+            def a = assetStorageService.find(asset.id)
+            assert a.getAttribute("customAttribute").flatMap{it.getValue()}.orElse(0d) == 99d
         }
 
         and: "the client should have been notified about the attribute change"
@@ -394,8 +394,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         and: "the connected attribute of the provisioned asset should show as not connected"
         conditions.eventually {
-            weatherAsset = assetStorageService.find (weatherAsset.id)
-            assert !weatherAsset.getAttribute("connected").flatMap{it.value}.orElse(true)
+            def wa = assetStorageService.find (weatherAsset.id)
+            assert !wa.getAttribute("connected").flatMap{it.value}.orElse(true)
         }
 
         when: "the client reconnects"
@@ -408,16 +408,19 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert connection != null
         }
 
+        // Resubscribing has no callback mechanism so we cannot clear out topicConsumerMap entries in this scenario until
+        // the following is implemented: https://github.com/hivemq/hivemq-mqtt-client/issues/510
         and: "the provisioning subscription should be re-instated but the attribute and asset subscriptions should fail"
         conditions.eventually {
-            assert device1Client.topicConsumerMap.get(assetSubscriptionTopic) == null
-            assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic) == null
+//            assert device1Client.topicConsumerMap.get(assetSubscriptionTopic) == null
+//            assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic) == null
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != null
             connection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
             assert connection != null
-            assert subscribeFailures.size() == 2
-            assert subscribeFailures.contains(assetSubscriptionTopic)
-            assert subscribeFailures.contains(attributeSubscriptionTopic)
+            assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+//            assert subscribeFailures.size() == 2
+//            assert subscribeFailures.contains(assetSubscriptionTopic)
+//            assert subscribeFailures.contains(attributeSubscriptionTopic)
         }
 
         when: "the client re-authenticates"
@@ -433,10 +436,10 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert device1Responses.size() == 1
             assert device1Responses.get(0) instanceof SuccessResponseMessage
             assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingName
-            asset = ((SuccessResponseMessage)device1Responses.get(0)).asset
-            assert asset != null
-            assert asset instanceof WeatherAsset
-            assert asset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
+            def provisionedAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
+            assert provisionedAsset != null
+            assert provisionedAsset instanceof WeatherAsset
+            assert provisionedAsset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
         }
 
         and: "the connection should be recorded against the provisioning config"
@@ -600,10 +603,10 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert deviceNResponses.size() == 1
             assert deviceNResponses.get(0) instanceof SuccessResponseMessage
             assert ((SuccessResponseMessage)deviceNResponses.get(0)).realm == managerTestSetup.realmBuildingName
-            asset = ((SuccessResponseMessage)deviceNResponses.get(0)).asset
-            assert asset != null
-            assert asset instanceof WeatherAsset
-            assert asset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == deviceNUniqueId
+            def provisionedAsset = ((SuccessResponseMessage)deviceNResponses.get(0)).asset
+            assert provisionedAsset != null
+            assert provisionedAsset instanceof WeatherAsset
+            assert provisionedAsset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == deviceNUniqueId
         }
 
         when: "the client disconnects"
@@ -711,10 +714,10 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert device1Responses.size() == 1
             assert device1Responses.get(0) instanceof SuccessResponseMessage
             assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingName
-            asset = ((SuccessResponseMessage)device1Responses.get(0)).asset
-            assert asset != null
-            assert asset instanceof WeatherAsset
-            assert asset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
+            def provisionedAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
+            assert provisionedAsset != null
+            assert provisionedAsset instanceof WeatherAsset
+            assert provisionedAsset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
         }
 
         when: "a connected device user is disabled and an un-connected device user is disabled"
@@ -724,7 +727,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         device1User.setEnabled(false)
         deviceNUser.setEnabled(false)
         device1User = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingName, device1User, null, true)
-        deviceNUser = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingName, deviceNUser, null, true)
+        identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingName, deviceNUser, null, true)
 
         then: "already connected client that was authenticated should be disconnected, then reconnect"
         conditions.eventually {
@@ -786,9 +789,9 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         when: "a client user is re-enabled"
         existingConnection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
-        def existingNConnection = mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId)
+        mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId)
         device1User.setEnabled(true)
-        device1User = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingName, device1User, null, true)
+        identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingName, device1User, null, true)
 
         and: "the re-enabled client device publishes its' valid client certificate"
         device1Responses.clear()
@@ -803,10 +806,10 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert device1Responses.size() == 1
             assert device1Responses.get(0) instanceof SuccessResponseMessage
             assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingName
-            asset = ((SuccessResponseMessage)device1Responses.get(0)).asset
-            assert asset != null
-            assert asset instanceof WeatherAsset
-            assert asset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
+            def provisionedAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
+            assert provisionedAsset != null
+            assert provisionedAsset instanceof WeatherAsset
+            assert provisionedAsset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
         }
 
         cleanup: "disconnect the clients"
