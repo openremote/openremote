@@ -12,7 +12,6 @@ import {WidgetSettings} from "../util/widget-settings";
 import "@openremote/or-chart";
 
 export interface ChartWidgetConfig extends AssetWidgetConfig {
-    attributeRefs: AttributeRef[];
     rightAxisAttributes: AttributeRef[];
     datapointQuery: AssetDatapointQueryUnion;
     chartOptions?: any; // ChartConfiguration<"line", ScatterDataPoint[]>
