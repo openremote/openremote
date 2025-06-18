@@ -383,32 +383,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
     public JsonNode getConfigurationItemSchemas(ValueDescriptor<?> valueDescriptor) throws ClassNotFoundException, RuntimeException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
         return dynamicJsonSchemas.computeIfAbsent(valueDescriptor.getType().getName() + valueDescriptor.isArray(), key -> {
             Class<?> clazz = valueDescriptor.getType();
-            ObjectNode schema = (ObjectNode)ValueUtil.getSchema(clazz);
-
-            if (valueDescriptor.isArray()) {
-                JsonNode title = schema.get("title");
-                JsonNode type = schema.remove("type");
-                JsonNode oneOf = schema.remove("oneOf");
-                JsonNode properties = schema.remove("properties");
-
-                ObjectNode item = ValueUtil.JSON.createObjectNode();
-                // item.put("title", "Value Constraint");
-                if (title != null && title.isTextual()) {
-                    schema.put("title", title.textValue());
-                    item.set("title", title);
-                }
-                if (type != null) {
-                    item.putPOJO("type", type);
-                }
-                if (oneOf != null) {
-                    item.putPOJO("oneOf", oneOf);
-                }
-                if (properties != null) {
-                    item.putPOJO("properties", properties);
-                }
-                return schema.put("type", "array").putPOJO("items", item);
-            }
-            return schema;
+            return (ObjectNode)(valueDescriptor.isArray() ? ValueUtil.getSchema(clazz.arrayType()) : ValueUtil.getSchema(clazz));
         });
     }
 
