@@ -408,19 +408,17 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert connection != null
         }
 
-        // Resubscribing has no callback mechanism so we cannot clear out topicConsumerMap entries in this scenario until
-        // the following is implemented: https://github.com/hivemq/hivemq-mqtt-client/issues/510
         and: "the provisioning subscription should be re-instated but the attribute and asset subscriptions should fail"
         conditions.eventually {
-//            assert device1Client.topicConsumerMap.get(assetSubscriptionTopic) == null
-//            assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic) == null
+            assert device1Client.topicConsumerMap.get(assetSubscriptionTopic) == null
+            assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic) == null
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != null
             connection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
             assert connection != null
             assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
-//            assert subscribeFailures.size() == 2
-//            assert subscribeFailures.contains(assetSubscriptionTopic)
-//            assert subscribeFailures.contains(attributeSubscriptionTopic)
+            assert subscribeFailures.size() == 2
+            assert subscribeFailures.contains(assetSubscriptionTopic)
+            assert subscribeFailures.contains(attributeSubscriptionTopic)
         }
 
         when: "the client re-authenticates"

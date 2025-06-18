@@ -22,7 +22,6 @@ package org.openremote.agent.protocol.mqtt;
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.MqttClientSslConfig;
 import com.hivemq.client.mqtt.MqttClientSslConfigBuilder;
-import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.exceptions.ConnectionClosedException;
 import com.hivemq.client.mqtt.exceptions.ConnectionFailedException;
@@ -30,10 +29,11 @@ import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3ClientBuilder;
 import com.hivemq.client.mqtt.mqtt3.exceptions.Mqtt3ConnAckException;
 import com.hivemq.client.mqtt.mqtt3.exceptions.Mqtt3DisconnectException;
-import com.hivemq.client.mqtt.mqtt3.lifecycle.Mqtt3ClientDisconnectedContext;
 import com.hivemq.client.mqtt.mqtt3.message.connect.Mqtt3ConnectBuilder;
 import com.hivemq.client.mqtt.mqtt3.message.connect.connack.Mqtt3ConnAck;
 import com.hivemq.client.mqtt.mqtt3.message.subscribe.suback.Mqtt3SubAckReturnCode;
+import dev.failsafe.Failsafe;
+import dev.failsafe.RetryPolicy;
 import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.container.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -45,6 +45,7 @@ import org.openremote.model.util.ValueUtil;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 import java.net.URI;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -53,13 +54,21 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.agent.protocol.io.AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS;
-import static org.openremote.agent.protocol.io.AbstractNettyIOClient.RECONNECT_DELAY_MAX_MILLIS;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
+/**
+ * HiveMQ client re-subscribing has no callback mechanism so we cannot track which subscriptions fail on re-connect
+ * so we have to manually handle reconnect and re-subscribe until this issue is resolved
+ * (see https://github.com/hivemq/hivemq-mqtt-client/issues/510)
+ */
 public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S>> {
 
     public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractMQTT_IOClient.class);
+    public static long RECONNECT_DELAY_INITIAL_MILLIS = 1000L;
+    public static long RECONNECT_DELAY_MAX_MILLIS = 5*60000L;
+    protected CompletableFuture<Void> connectRetry;
+    protected int connectTimeout = 5000;
+    protected ConnectionStatus connectionStatus = ConnectionStatus.DISCONNECTED;
     protected String clientId;
     protected String host;
     protected int port;
@@ -71,7 +80,6 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     protected Mqtt3AsyncClient client;
     protected final Set<Consumer<ConnectionStatus>> connectionStatusConsumers = new CopyOnWriteArraySet<>();
     protected final ConcurrentMap<String, Pair<MqttQos, Set<Consumer<MQTTMessage<S>>>>> topicConsumerMap = new ConcurrentHashMap<>();
-    protected boolean disconnected = true; // Need to use this flag to cancel client reconnect task
     protected Consumer<String> topicSubscribeFailureConsumer;
     protected MqttQos publishQos = MqttQos.AT_MOST_ONCE;
     protected MqttQos subscribeQos = MqttQos.AT_MOST_ONCE;
@@ -96,47 +104,51 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
             .useMqttVersion3()
             .identifier(clientId)
             .addConnectedListener(context -> {
-                LOG.info("Connection established uri=" + getClientUri());
-                onConnectionStatusChanged(ConnectionStatus.CONNECTED);
+                // RT: Not using this as no access to the CONNACK to check session present flag
+                //LOG.info("Connection established uri=" + getClientUri());
+                //onConnectionStatusChanged(ConnectionStatus.CONNECTED);
             })
             .addDisconnectedListener(context -> {
-                if (this.usernamePassword != null) {
-                    ((Mqtt3ClientDisconnectedContext) context).getReconnector().connectWith()
-                            .simpleAuth()
-                            .username(usernamePassword.getUsername())
-                            .password(usernamePassword.getPassword().getBytes())
-                            .applySimpleAuth()
-                            .applyConnect();
+//                if (this.usernamePassword != null) {
+//                    ((Mqtt3ClientDisconnectedContext) context).getReconnector().connectWith()
+//                            .simpleAuth()
+//                            .username(usernamePassword.getUsername())
+//                            .password(usernamePassword.getPassword().getBytes())
+//                            .applySimpleAuth()
+//                            .applyConnect();
+//                }
+//
+//                context.getReconnector()
+//                        .resubscribeIfSessionPresent(resubscribeIfSessionPresent)
+//                        .resubscribeIfSessionExpired(true)
+//                        .reconnect(!disconnected);
+
+                boolean reconnect = false;
+
+                synchronized (this) {
+                    if (connectionStatus == ConnectionStatus.CONNECTED) {
+                        onConnectionStatusChanged(ConnectionStatus.CONNECTING);
+                        reconnect = true;
+                    }
                 }
 
-                context.getReconnector()
-                        .resubscribeIfSessionPresent(resubscribeIfSessionPresent)
-                        .resubscribeIfSessionExpired(true)
-                        .reconnect(!disconnected);
-
-                if (disconnected) {
-                    LOG.info("Connection disconnected uri=" + getClientUri());
-                    onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
-                    return;
+                if (reconnect) {
+                    if (context.getCause() instanceof Mqtt3DisconnectException) {
+                        LOG.info("Connection error uri=" + getClientUri() + ", initiator=" + context.getSource());
+                    } else if (context.getCause() instanceof Mqtt3ConnAckException) {
+                        LOG.info("Connection rejected uri=" + getClientUri() + ", reasonCode=" + ((Mqtt3ConnAckException)context.getCause()).getMqttMessage().getReturnCode());
+                    } else if (context.getCause() instanceof ConnectionClosedException) {
+                        LOG.info("Connection closed uri=" + getClientUri() + ", initiator=" + context.getSource());
+                    } else if (context.getCause() instanceof ConnectionFailedException) {
+                        LOG.info("Connection failed uri=" + getClientUri() + ", initiator=" + context.getSource() + ", message=" + context.getCause().getMessage());
+                    }
+                    doReconnect();
                 }
-
-                if (context.getCause() instanceof Mqtt3DisconnectException) {
-                    LOG.info("Connection error uri=" + getClientUri() + ", initiator=" + context.getSource());
-                } else if (context.getCause() instanceof Mqtt3ConnAckException) {
-                    LOG.info("Connection rejected uri=" + getClientUri() + ", reasonCode=" + ((Mqtt3ConnAckException)context.getCause()).getMqttMessage().getReturnCode());
-                } else if (context.getCause() instanceof ConnectionClosedException) {
-                    LOG.info("Connection closed uri=" + getClientUri() + ", initiator=" + context.getSource());
-                } else if (context.getCause() instanceof ConnectionFailedException) {
-                    LOG.info("Connection failed uri=" + getClientUri() + ", initiator=" + context.getSource() + ", message=" + context.getCause().getMessage());
-                }
-
-                onConnectionStatusChanged(ConnectionStatus.CONNECTING);
-                LOG.info("Reconnecting uri=" + getClientUri() + ", delay=" + context.getReconnector().getDelay(TimeUnit.MILLISECONDS) + "ms, attempt=" + context.getReconnector().getAttempts());
-            })
-            .automaticReconnect()
-            .initialDelay(RECONNECT_DELAY_INITIAL_MILLIS, TimeUnit.MILLISECONDS)
-            .maxDelay(RECONNECT_DELAY_MAX_MILLIS, TimeUnit.MILLISECONDS)
-            .applyAutomaticReconnect();
+            });
+//            .automaticReconnect()
+//            .initialDelay(RECONNECT_DELAY_INITIAL_MILLIS, TimeUnit.MILLISECONDS)
+//            .maxDelay(RECONNECT_DELAY_MAX_MILLIS, TimeUnit.MILLISECONDS)
+//            .applyAutomaticReconnect();
 
         if (secure) {
             MqttClientSslConfigBuilder sslBuilder = MqttClientSslConfig.builder();
@@ -175,6 +187,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Invalid config uri=" + getClientUri(), e);
             client = null;
+            connectionStatus = ConnectionStatus.ERROR;
         }
     }
 
@@ -354,49 +367,77 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
 
     @Override
     public ConnectionStatus getConnectionStatus() {
-        if (client == null) {
-            return ConnectionStatus.ERROR;
-        }
-        if (disconnected) {
-            return ConnectionStatus.DISCONNECTED;
-        }
-        MqttClientState state = client.getState();
-        if (state == MqttClientState.CONNECTED) {
-            return ConnectionStatus.CONNECTED;
-        }
-
-        // We cannot differentiate between connecting and waiting with the callbacks provided so just use waiting state
-        return ConnectionStatus.WAITING;
+        return connectionStatus;
     }
 
     @Override
     public void connect() {
         synchronized (this) {
-            if (client == null) {
-                return;
-            }
-            if (!disconnected) {
+            if (connectionStatus != ConnectionStatus.DISCONNECTED) {
                 LOG.finest("Must be disconnected before calling connect: " + getClientUri());
                 return;
             }
 
-            this.disconnected = false;
+            LOG.fine("Connecting client: " + getClientUri());
+            onConnectionStatusChanged(ConnectionStatus.CONNECTING);
         }
+        scheduleDoConnect(100);
+//        LOG.info("Establishing connection: " + getClientUri());
+//
+//        Mqtt3ConnectBuilder.Send<CompletableFuture<Mqtt3ConnAck>> completableFutureSend = client.connectWith()
+//                .cleanSession(cleanSession)
+//                .keepAlive(10);
+//
+//        if (usernamePassword != null) {
+//            completableFutureSend = completableFutureSend.simpleAuth()
+//                    .username(usernamePassword.getUsername())
+//                    .password(usernamePassword.getPassword().getBytes())
+//                    .applySimpleAuth();
+//        }
+//
+//        completableFutureSend.send().whenComplete((connAck, throwable) -> {
+//            if (connAck != null) {
+//                LOG.fine("Connected code=" + connAck.getReturnCode() + ", sessionPresent=" + connAck.isSessionPresent());
+//            } else if (throwable != null) {
+//                if (throwable instanceof CancellationException) {
+//                    LOG.info("Connection cancelled uri=" + getClientUri());
+//                } else {
+//                    LOG.info("Connection failed uri=" + getClientUri() + ", error=" + throwable.getMessage());
+//                }
+//            }
+//        });
+    }
 
-        LOG.info("Connecting uri=" + getClientUri());
+    protected Void waitForConnectFuture(Future<Void> connectFuture) throws Exception {
+        return connectFuture.get(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS);
+    }
+
+    public int getConnectTimeoutMillis() {
+        return this.connectTimeout;
+    }
+
+    protected void doReconnect() {
+        doDisconnect();
+        scheduleDoConnect(5000);
+    }
+
+    protected Future<Void> doConnect() {
+        LOG.info("Establishing connection: " + getClientUri());
 
         Mqtt3ConnectBuilder.Send<CompletableFuture<Mqtt3ConnAck>> completableFutureSend = client.connectWith()
-            .cleanSession(cleanSession)
-            .keepAlive(10);
+                .cleanSession(cleanSession)
+                .keepAlive(10);
 
         if (usernamePassword != null) {
             completableFutureSend = completableFutureSend.simpleAuth()
-                .username(usernamePassword.getUsername())
-                .password(usernamePassword.getPassword().getBytes())
-                .applySimpleAuth();
+                    .username(usernamePassword.getUsername())
+                    .password(usernamePassword.getPassword().getBytes())
+                    .applySimpleAuth();
         }
 
-        completableFutureSend.send().whenComplete((connAck, throwable) -> {
+        CompletableFuture<Mqtt3ConnAck> connAckFuture = completableFutureSend.send();
+
+        connAckFuture.whenComplete((connAck, throwable) -> {
             if (connAck != null) {
                 LOG.fine("Connected code=" + connAck.getReturnCode() + ", sessionPresent=" + connAck.isSessionPresent());
             } else if (throwable != null) {
@@ -407,13 +448,30 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
                 }
             }
         });
+
+        CompletableFuture<Void> voidFuture = connAckFuture.thenAccept(result -> {});
+
+        // Propagate cancellation from voidFuture to original
+        voidFuture.whenComplete((result, exception) -> {
+            if (voidFuture.isCancelled()) {
+                connAckFuture.cancel(true);
+            }
+        });
+        return voidFuture;
     }
 
-    protected void onConnectionStatusChanged(ConnectionStatus status) {
+    protected void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
+        if (this.connectionStatus == connectionStatus) {
+            return;
+        }
+        this.connectionStatus = connectionStatus;
+        if (!connectionStatusConsumers.isEmpty()) {
+            LOG.finest("Notifying connection status consumers: count=" + connectionStatusConsumers.size());
+        }
         connectionStatusConsumers.forEach(
                 consumer -> {
                     try {
-                        consumer.accept(status);
+                        consumer.accept(connectionStatus);
                     } catch (Exception e) {
                         LOG.log(Level.WARNING, "Connection status change handler threw an exception: " + getClientUri(), e);
                     }
@@ -427,18 +485,32 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         }
 
         synchronized (this) {
-            if (disconnected) {
-                LOG.finest("Already disconnected: " + getClientUri());
+            if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
+                LOG.finest("Already disconnected or disconnecting: " + getClientUri());
                 return;
             }
-            this.disconnected = true;
+
+            LOG.fine("Disconnecting: " + getClientUri());
+            onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
         }
 
-        LOG.finest("Disconnecting uri=" + getClientUri());
+        try {
+            if (connectRetry != null) {
+                connectRetry.cancel(true);
+                connectRetry = null;
+            }
+        } catch (Exception ignored) {}
+        doDisconnect();
+        onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
+    }
 
+    protected void doDisconnect() {
+        LOG.finest("Performing disconnect: " + getClientUri());
         client.disconnect().whenComplete((unused, throwable) -> {
             if (throwable != null) {
-                LOG.log(Level.INFO, "Disconnect error '" + getClientUri() + "':" + throwable.getMessage());
+                LOG.log(Level.WARNING, "Failed to disconnect gracefully: " + getClientUri(), throwable);
+            } else {
+                LOG.finest("Disconnect done: " + getClientUri());
             }
         });
     }
@@ -451,4 +523,43 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     public abstract byte[] messageToBytes(S message);
 
     public abstract S messageFromBytes(byte[] bytes);
+
+    protected void scheduleDoConnect(long initialDelay) {
+        long delay = Math.max(initialDelay, RECONNECT_DELAY_INITIAL_MILLIS);
+        long maxDelay = Math.max(delay+1, RECONNECT_DELAY_MAX_MILLIS);
+
+        RetryPolicy<Object> retryPolicy = RetryPolicy.builder()
+                .withJitter(Duration.ofMillis(delay))
+                .withBackoff(Duration.ofMillis(delay), Duration.ofMillis(maxDelay))
+                .handle(Exception.class)
+                .onRetryScheduled((execution) ->
+                        LOG.info("Re-connection scheduled in '" + execution.getDelay() + "' for: " + getClientUri()))
+                .onFailedAttempt((execution) -> {
+                    LOG.info("Connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri() + ", error=" + (execution.getLastException() != null ? execution.getLastException().getMessage() : null));
+                    doDisconnect();
+                })
+                .withMaxRetries(Integer.MAX_VALUE)
+                .build();
+
+        connectRetry = Failsafe.with(retryPolicy).with(Container.EXECUTOR).runAsyncExecution((execution) -> {
+
+            LOG.fine("Connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri());
+            // Connection future should timeout so we just wait for it but add additional timeout just in case
+            Future<Void> connectFuture = doConnect();
+            waitForConnectFuture(connectFuture);
+            execution.recordResult(null);
+        }).whenComplete((result, ex) -> {
+            if (ex != null) {
+                // Cleanup resources
+                disconnect();
+            } else {
+                synchronized (this) {
+                    if (connectionStatus == ConnectionStatus.CONNECTING) {
+                        LOG.fine("Connection attempt success: " + getClientUri());
+                        onConnectionStatusChanged(ConnectionStatus.CONNECTED);
+                    }
+                }
+            }
+        });
+    }
 }
