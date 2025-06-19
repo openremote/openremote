@@ -232,7 +232,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 if (clientRepresentations.size() > 1) {
                     throw new IllegalStateException("More than one matching client found realm=" + realm + ", client=" + client);
                 }
-                clientRepresentation = clientRepresentations.get(0);
+                clientRepresentation = clientRepresentations.getFirst();
                 clientResource = clientsResource.get(clientRepresentation.getId());
             }
         } catch (Exception e) {
@@ -791,7 +791,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     @Override
     public void updateRealm(Realm realm) {
         LOG.fine("Update realm: " + realm);
-        realmCache.remove(realm.getName());
         getRealms(realmsResource -> {
 
             if (TextUtil.isNullOrEmpty(realm.getId())) {
@@ -835,6 +834,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             realmRepresentation.setNotBefore(realm.getNotBefore() != null ? realm.getNotBefore().intValue() : null);
             configureRealm(realmRepresentation);
             realmResource.update(realmRepresentation);
+
+            realmCache.remove(realm.getName());
 
             Set<RealmRole> realmRoles = (realm.getRealmRoles() != null ? realm.getRealmRoles() : new HashSet<RealmRole>())
                     .stream()
