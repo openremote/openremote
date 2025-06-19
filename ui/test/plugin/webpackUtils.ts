@@ -32,15 +32,16 @@ export type ComponentDirs = {
   templateDir: string;
 };
 
-function resolveCtConfig(config: FullConfig): CtConfig | undefined {
+export function resolveCtConfig(config: FullConfig): CtConfig | undefined {
   return config.projects.find((project) => (project.use as CtConfig).ct)?.use;
 }
 
 export async function resolveDirs(configDir: string, config: FullConfig): Promise<ComponentDirs | null> {
   const use = resolveCtConfig(config);
   if (!use) return null;
-  const relativeTemplateDir = use.ctTemplateDir || "playwright";
-  const templateDir = await fs.promises.realpath(path.join(configDir, relativeTemplateDir)).catch(() => undefined);
+  const templateDir = await fs.promises
+    .realpath(use.ctTemplateDir || path.join(configDir, "playwright"))
+    .catch(() => undefined);
   if (!templateDir) return null;
 
   const outDir = use.ctCacheDir ? path.resolve(configDir, use.ctCacheDir) : path.resolve(templateDir, ".cache");

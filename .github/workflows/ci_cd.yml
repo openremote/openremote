@@ -432,11 +432,11 @@ jobs:
       - name: Define UI component test command
         id: test-ui-components-command
         if: ${{ steps.skip-ui-component-tests.outputs.value != 'true' }}
-        run: echo "value=npm test" >> $GITHUB_OUTPUT
+        run: echo "value=./gradlew -p ui/component npmTest" >> $GITHUB_OUTPUT
 
       - name: Define UI end-to-end test command
         id: e2e-test-command
-        run: echo "value=npm run e2e" >> $GITHUB_OUTPUT
+        run: echo "value=./gradlew -p ui/app/manager npmTest" >> $GITHUB_OUTPUT
 
       - name: Define manager docker build command
         id: manager-docker-command

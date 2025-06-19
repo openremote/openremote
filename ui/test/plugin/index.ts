@@ -18,6 +18,7 @@ import {
   populateComponentsFromTests,
   ImportInfo,
   transformIndexFile,
+  resolveCtConfig,
 } from "./webpackUtils";
 
 let devServer: WebpackDevServer;
@@ -97,6 +98,12 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<Webpa
   // Populate component registry based on the tests' component imports.
   await populateComponentsFromTests(componentRegistry, componentsByImportingFile);
 
+  const name = resolveCtConfig(config)?.ct;
+  if (!name) {
+    console.log(`Could not resolve component test configuration.`);
+    return null;
+  }
+
   // Consider including buildInfo in the cache dir to be able to know how to invalidate the cache dir
   const registerSource = fs.readFileSync(registerSourceFile, "utf-8");
   const indexSourcePath = path.join(dirs.templateDir, "index.js");
@@ -105,7 +112,7 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<Webpa
     registerSource,
     componentRegistry
   );
-  const outputIndexPath = path.join(dirs.outDir, "index.js");
+  const outputIndexPath = path.join(dirs.outDir, name + "-index.js");
   fs.mkdirSync(dirs.outDir, { recursive: true });
   fs.writeFileSync(outputIndexPath, transformedIndex);
 
@@ -123,7 +130,7 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<Webpa
       },
       // Force ipv4
       host: "127.0.0.1",
-      port: endpoint.port,
+      port: 0,
       https: !!endpoint.https,
     },
     module: getStandardModuleRules(),

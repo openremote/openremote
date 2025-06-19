@@ -1,0 +1,5 @@
+tasks.named("npmTest") {
+    onlyIf {
+        project.name != "component"
+    }
+}

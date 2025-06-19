@@ -7,11 +7,13 @@
   "private": true,
   "exports": {
     ".": "./index.js",
-    "./*.ts": "./*.ts",
-    "./*.js": "./*.js",
-    "./*.mjs": "./*.mjs",
-    "./*.cjs": "./*.cjs"
+    "./config/app": "./config/app.ts",
+    "./config/component": "./config/component.ts"
   },
+  "files": [
+    "./config/playwright/index.html",
+    "./config/playwright/index.js"
+  ],
   "typesVersions": {
     "*": {
       "*": [

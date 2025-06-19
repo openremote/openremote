@@ -65,5 +65,4 @@ local.properties
 test-results
 playwright-ct-report
 playwright-e2e-report
-ui/playwright/.cache/
 .auth

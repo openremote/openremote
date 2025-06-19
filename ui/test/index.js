@@ -4,22 +4,6 @@ import { expect, devices } from "@playwright/experimental-ct-core";
 import { createPlugin } from "./plugin";
 import { ct as ctBase, fixtures, camelCaseToSentenceCase } from "./fixtures";
 
-function createAppSetupAndTeardown(app) {
-  return [
-    {
-      name: `setup ${app}`,
-      testMatch: "**/*.setup.ts",
-      teardown: `cleanup ${app}`,
-      worker: 1,
-    },
-    {
-      name: `cleanup ${app}`,
-      testMatch: "**/*.cleanup.ts",
-      worker: 1,
-    },
-  ];
-}
-
 function defineCtConfig(...configs) {
   const original = defineConfig(...configs);
   return {
@@ -42,4 +26,4 @@ function defineCtConfig(...configs) {
 const test = base.extend(fixtures);
 const ct = ctBase.extend(fixtures);
 
-export { test, ct, expect, devices, defineConfig, defineCtConfig, createAppSetupAndTeardown, camelCaseToSentenceCase };
+export { test, ct, expect, devices, defineConfig, defineCtConfig, camelCaseToSentenceCase };
