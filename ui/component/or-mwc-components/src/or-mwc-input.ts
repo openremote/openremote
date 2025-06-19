@@ -803,6 +803,18 @@ export class OrMwcInput extends LitElement {
     @property({type: Boolean})
     public resizeVertical: boolean = false;
 
+    /**
+     * Always censure text fields (like a password), and do not allow toggling
+     */
+    @property({type: Boolean})
+    public censored: boolean = false;
+
+    /**
+     * Toggles visibility state of the password InputType (true = shown, false = hidden)
+     */
+    @property({type: Boolean, reflect: true})
+    public advertised: boolean = false;
+
     public get nativeValue(): any {
         if (this._mdcComponent) {
             return (this._mdcComponent as any).value;
@@ -1383,6 +1395,11 @@ export class OrMwcInput extends LitElement {
                     }
 
                     if (!(this.type === InputType.RANGE && this.disableSliderNumberInput)) {
+
+                        // Handle password toggling logic
+                        if(this.censored) type = InputType.PASSWORD;
+                        if(this.type === InputType.PASSWORD && this.advertised) type = InputType.TEXT;
+
                         const classes = {
                             "mdc-text-field": true,
                             "mdc-text-field--invalid": !this.valid,
@@ -1429,6 +1446,7 @@ export class OrMwcInput extends LitElement {
                                 ${inputElem}
                                 ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
                                 ${outlined ? `` : html`<span class="mdc-line-ripple"></span>`}
+                                ${this.type === InputType.PASSWORD && !this.censored ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--trailing" aria-hidden="true" icon=${this.advertised ? 'eye' : 'eye-off'} style="pointer-events: auto;" @click=${() => this.advertised = !this.advertised}></or-icon>` : ``}
                                 ${this.iconTrailing ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--trailing" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>` : ``}
                             </label>
                             ${hasHelper || showValidationMessage ? html`
