@@ -150,6 +150,33 @@ const style = css`
         word-wrap: break-word;
         white-space: pre-wrap;
     }
+    .message-block{
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center
+    }
+    .copy-icon-block{
+        display: flex; 
+        width: 48px; 
+        height: 48px;
+    }
+    .copy-button{
+        all:unset; 
+        position: relative;
+        color: var(--or-app-color5);
+        cursor: pointer !important;
+    }
+    .copy-button:hover{
+        color: var(--or-app-color4);
+    }
+    .mdc-data-table__row:hover .copy-button{
+        color: var(--or-app-color4);
+    }
+    .copy-icon{
+        position: absolute; 
+        top:50%;  
+        transform: translate(0, -50%);
+    }
 `;
 
 @customElement("or-log-viewer")
@@ -429,7 +456,6 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                             <th style="width: 130px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("category")}</th>
                             <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("subCategory")}</th>
                             <th style="width: 100%; min-width: 300px;" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("message")}</th>
-                            <th style="width: 100%; min-width: 80px;" class="mdc-data-table__header-cell" role="columnheader" scope="col"></th>
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
@@ -440,11 +466,15 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                                     <td class="mdc-data-table__cell">${i18next.t(ev.level!)}</td>
                                     <td class="mdc-data-table__cell">${i18next.t(ev.category!)}</td>                                    
                                     <td class="mdc-data-table__cell">${i18next.t(ev.subCategory!)}</td>                                    
-                                    <td class="mdc-data-table__cell">${ev.message}</td>     
-                                    <td class="mdc-data-table__cell" style="display: flex; align-items: center; justify-content: center;">
-                                        ${this.secureContext
-                                                ? html`<or-mwc-input type="${InputType.BUTTON}" icon="content-copy" @or-mwc-input-changed="${() => this._copyRow(ev)}"></or-mwc-input>`
-                                                : html``}
+                                    <td class="mdc-data-table__cell">
+                                        <div class="message-block">
+                                            <span>${ev.message}</span>
+                                            <span class="copy-icon-block">${this.secureContext 
+                                                    ? html`<button type="${InputType.BUTTON}" class="copy-button" @click="${() => this._copyRow(ev)}">
+                                                        <or-icon icon="content-copy" class="copy-icon"></or-icon>
+                                                    </button>` 
+                                                    : html``}</span>
+                                        </div>
                                     </td>
                                 </tr>
                             `;            
@@ -458,7 +488,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
     /** Copy a single log event to the clipboard as JSON */
     protected async _copyRow(row: Model.SyslogEvent) {
         try {
-            const text = JSON.stringify(row.message, null, 2);
+                const text = row.message || "";
                 await navigator.clipboard.writeText(text);
                 showSnackbar(undefined, "Copied to clipboard successfully.");
         } catch (err){
