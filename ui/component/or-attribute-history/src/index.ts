@@ -253,12 +253,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _loading: boolean = false;
 
     @property()
-    protected _zoomChanged: boolean = false;
-
-    @property()
-    protected _zoomReset: boolean = false;
-
-    @property()
     protected _data?: ValueDatapoint<any>[];
 
     @property()
@@ -280,7 +274,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _queryEndOfPeriod?: number;
     protected _updateTimestampTimer?: number;
     protected _dataAbortController?: AbortController;
-
+    protected _zoomChanged: boolean = false;
+    protected _zoomReset: boolean = false;
     protected _dataFirstLoaded: boolean = false;
 
     connectedCallback() {
@@ -351,10 +346,10 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     </div>
                 `, () => when(isChart, () => html`
                     
-                    ${when(this._loading, () => html`
+                    ${when((this._loading && !this._data), () => html`
                         <or-loading-indicator style="position: absolute; top: 50%; left: 50%;"></or-loading-indicator>
                     `)}
-                    <div id="chart-container" style="${this._loading ? 'opacity: 0.2' : undefined}">
+                    <div id="chart-container" style="${this._loading ? 'opacity: 0.7' : undefined}">
                         <div id="chart"></div>
                     </div>
                     
@@ -402,13 +397,14 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         show: true,
                         backgroundColor: this._style.getPropertyValue("--internal-or-asset-viewer-panel-color"),
                         borderColor: this._style.getPropertyValue("--internal-or-attribute-history-text-color"),
-                        left: 15,
-                        right: 15,
+                        left: 4,
+                        right: 4,
                         containLabel: true
                     },
                     backgroundColor: this._style.getPropertyValue("--internal-or-asset-viewer-panel-color"),
                     tooltip: {
                         trigger: 'axis',
+                        confine: true,
                         axisPointer: { type: 'cross'},
                         formatter: (params: any) => {
                             if (Array.isArray(params) && params.length > 0) {
@@ -437,8 +433,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         min: this._startOfPeriod,
                         max: this._endOfPeriod,
                         axisLabel: {
-                            //showMinLabel: true,
-                            //showMaxLabel: true,
                             hideOverlap: true,
                             fontSize: 10,
                             formatter: {
@@ -495,12 +489,14 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             },
                             handleLabel: {
                                 show: false
-                            }
+                            },
+                            showDetail: false
                         }
+
                     ],
                     series: [
                         {
-                            name: 'label',
+                            name: 'timestamp    value',
                             type: 'line',
                             showSymbol: data.length <= 30,
                             data: data,
@@ -520,7 +516,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 const resizeObserver = new ResizeObserver(() => this._chart?.resize());
                 resizeObserver.observe(this._chartElem);
                 // Add event listener for zooming
-                this._chart!.on('datazoom', debounce((params: any) => { this._onZoomChange(params); }, 1500));
+                this._chart!.on('datazoom', debounce((params: any) => { this._onZoomChange(params); }, 750));
 
             } else {
                 if (changedProperties.has("_data")) {
@@ -828,7 +824,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     { signal: this._dataAbortController.signal }
                 );
             }
-
+            await this.wait(3000);
             this._loading = false;
             this._zoomChanged = false;
 
@@ -902,6 +898,10 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 showSymbol: data.length <= 30
             }]
         });
+    }
+
+    protected wait(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
     
 }
