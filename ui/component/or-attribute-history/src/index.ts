@@ -824,7 +824,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     { signal: this._dataAbortController.signal }
                 );
             }
-            await this.wait(3000);
             this._loading = false;
             this._zoomChanged = false;
 
@@ -898,10 +897,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 showSymbol: data.length <= 30
             }]
         });
-    }
-
-    protected wait(ms: number): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, ms));
     }
     
 }
