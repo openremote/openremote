@@ -160,7 +160,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                 host,
                 port,
                 secure,
-                true,
+                false,
                 new UsernamePassword(username, password),
                 null,
                 new MQTTLastWill("${keycloakTestSetup.realmBuilding.name}/${clientId}/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/notes/${managerTestSetup.apartment1HallwayId}".toString(), "\"LAST WILL\"".toString(), false),
@@ -173,14 +173,14 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             failedSubs.add(it)
         }
         client.addConnectionStatusConsumer {
-            if (it == ConnectionStatus.CONNECTED) {
-                def temp = new ArrayList<>(failedSubs)
-                failedSubs.clear()
-                if (!temp.isEmpty()) {
-                    LOG.info("CONNECTED...retrying failed subscriptions")
-                    temp.forEach { t -> client.addMessageConsumer(t, consumer) }
-                }
-            }
+//            if (it == ConnectionStatus.CONNECTED) {
+//                def temp = new ArrayList<>(failedSubs)
+//                failedSubs.clear()
+//                if (!temp.isEmpty()) {
+//                    LOG.info("CONNECTED...retrying failed subscriptions")
+//                    temp.forEach { t -> client.addMessageConsumer(t, consumer) }
+//                }
+//            }
         }
 
         and: "subscriptions are added before connect"
@@ -200,10 +200,11 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         client.addMessageConsumer(subscriptions[3], consumer)
         client.addMessageConsumer(subscriptions[4], consumer)
 
-        then: "all subscriptions except the hallway should be in place (because user is not linked to the bathroom)"
+        then: "all consumers should be in place bathroom sub should have failed (because user is not linked to the bathroom)"
         conditions.eventually {
-            assert client.topicConsumerMap.size() == 4
-            assert client.topicConsumerMap.keySet().stream().noneMatch {subscriptions[0] == it}
+            assert client.topicConsumerMap.size() == 5
+            assert failedSubs.size() == 1
+            assert failedSubs[0] == subscriptions[0]
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id).size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
@@ -241,7 +242,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0] != existingConnection
         }
 
-        then: "all subscriptions including the hallway should be in place"
+        then: "all subscriptions including the bathroom should be in place"
         conditions.eventually {
             assert client.topicConsumerMap.size() == 5
             assert client.topicConsumerMap.keySet().stream().allMatch {subscriptions.contains(it)}
@@ -289,7 +290,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         }
 
 
-        then: "all subscriptions including the hallway should be in place"
+        then: "all subscriptions including the bathroom should be in place"
         conditions.eventually {
             assert client.topicConsumerMap.size() == 5
             assert client.topicConsumerMap.keySet().stream().allMatch {subscriptions.contains(it)}
