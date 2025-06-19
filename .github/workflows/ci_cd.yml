@@ -705,7 +705,7 @@ jobs:
 
       - name: Run install playwright browser(s)
         if: ${{ steps.test-ui-components-command.value != '' || steps.e2e-test-command.outputs.value != '' }}
-        run: npx playwright@$(npm test -- --version | xargs | awk '{ print $NF }') install --with-deps chromium
+        run: npx playwright install --with-deps chromium
         timeout-minutes: 20
 
       - name: Run frontend component tests
