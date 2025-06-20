@@ -25,39 +25,41 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.services.ServiceDescriptor;
-import org.openremote.model.services.ServiceResource;
+import org.openremote.model.services.Microservice;
+import org.openremote.model.services.MicroserviceResource;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.ForbiddenException;
 
-public class ServiceResourceImpl extends ManagerWebResource implements ServiceResource {
+public class MicroserviceResourceImpl extends ManagerWebResource implements MicroserviceResource {
 
-    protected ServiceRegistryService serviceRegistry;
-    private static final Logger LOG = Logger.getLogger(ServiceResourceImpl.class.getName());
+    protected MicroserviceRegistryService microserviceRegistry;
+    private static final Logger LOG = Logger.getLogger(MicroserviceResourceImpl.class.getName());
 
-    public ServiceResourceImpl(TimerService timerService, ManagerIdentityService identityService,
-            ServiceRegistryService serviceRegistry) {
+    public MicroserviceResourceImpl(TimerService timerService, ManagerIdentityService identityService,
+            MicroserviceRegistryService serviceRegistry) {
         super(timerService, identityService);
-        this.serviceRegistry = serviceRegistry;
+        this.microserviceRegistry = serviceRegistry;
     }
 
     @Override
     public boolean register(RequestParams requestParams,
-            @NotNull @Valid ServiceDescriptor serviceDescriptor) {
+            @NotNull @Valid Microservice serviceDescriptor) {
 
         if (!isSuperUser()) {
             LOG.warning("Only super users can register services");
             throw new ForbiddenException("Only super users can register services");
         }
 
-        return serviceRegistry.registerService(getClientRemoteAddress(), serviceDescriptor);
+        String providerIdentifier = getClientRemoteAddress();
+
+        return microserviceRegistry.register(providerIdentifier, serviceDescriptor);
     }
 
     @Override
-    public ServiceDescriptor[] list(RequestParams requestParams) {
-        return serviceRegistry.getRegisteredServices();
+    public Microservice[] list(RequestParams requestParams) {
+        return microserviceRegistry.getServices();
     }
 
 }

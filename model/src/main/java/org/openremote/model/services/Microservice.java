@@ -20,12 +20,11 @@
 package org.openremote.model.services;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * Represents a service's metadata and status information
+ * Represents an external service's/microservice's metadata and status information
  */
-public class ServiceDescriptor {
+public class Microservice {
 
     /**
      * The label of the service, e.g. "Energy Service"
@@ -36,8 +35,8 @@ public class ServiceDescriptor {
     /**
      * The unique identifier of the service, e.g. "energy-service"
      */
-    @JsonProperty("name")
-    protected String name;
+    @JsonProperty("serviceId")
+    protected String serviceId;
 
     /**
      * The URL of the service, e.g.
@@ -50,7 +49,7 @@ public class ServiceDescriptor {
      * The status of the service, e.g. "AVAILABLE"
      */
     @JsonProperty("status")
-    protected ServiceStatus status;
+    protected MicroserviceStatus status;
 
     /**
      * Indicates whether the service supports multi-tenancy
@@ -58,15 +57,11 @@ public class ServiceDescriptor {
     @JsonProperty("multiTenancy")
     protected Boolean multiTenancy;
 
-    /**
-     * The client remote address, e.g. "192.168.1.100" (used internally)
-     */
-    @JsonIgnore
-    protected String clientRemoteAddress;
+ 
 
-    public ServiceDescriptor(String label, String name, String url, ServiceStatus status, Boolean multiTenancy) {
+    public Microservice(String label, String serviceId, String url, MicroserviceStatus status, Boolean multiTenancy) {
         this.label = label;
-        this.name = name;
+        this.serviceId = serviceId;
         this.url = url;
         this.status = status;
         this.multiTenancy = multiTenancy;
@@ -80,35 +75,27 @@ public class ServiceDescriptor {
         this.label = label;
     }
 
-    public String getName() {
-        return name;
+    public String getServiceId() {
+        return serviceId;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setServiceId(String serviceId) {
+        this.serviceId = serviceId;
     }
 
     public String getUrl() {
         return url;
     }
 
-    public String getClientRemoteAddress() {
-        return clientRemoteAddress;
-    }
-
-    public void setClientRemoteAddress(String clientRemoteAddress) {
-        this.clientRemoteAddress = clientRemoteAddress;
-    }
-
     public void setUrl(String url) {
         this.url = url;
     }
 
-    public ServiceStatus getStatus() {
+    public MicroserviceStatus getStatus() {
         return status;
     }
 
-    public void setStatus(ServiceStatus status) {
+    public void setStatus(MicroserviceStatus status) {
         this.status = status;
     }
 
@@ -124,7 +111,7 @@ public class ServiceDescriptor {
     public String toString() {
         return "ServiceDescriptor{" +
                 "label='" + label + '\'' +
-                ", name='" + name + '\'' +
+                ", serviceId='" + serviceId + '\'' +
                 ", url='" + url + '\'' +
                 ", status='" + status + '\'' +
                 ", multiTenancy='" + multiTenancy + '\'' +
