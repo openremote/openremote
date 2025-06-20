@@ -152,7 +152,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                 "${keycloakTestSetup.realmBuilding.name}/${clientId}/attribute/notes/${managerTestSetup.apartment1LivingroomId}".toString()
         ]
         Consumer<MQTTMessage<String>> consumer = { it ->
-            LOG.info("Received: topic=${it.topic}, payload=${it.payload}")
+            LOG.info("Received on topic=${it.topic}")
             received.add(it)
         }
         def client = new MQTT_IOClient(

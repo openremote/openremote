@@ -99,7 +99,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         }
 
         boolean isSubFailed() {
-            return subAckFuture.getNow(false);
+            return !subAckFuture.getNow(false);
         }
 
         boolean isSubDone() {
@@ -318,6 +318,8 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         if (client == null) {
             return;
         }
+
+        LOG.fine("Adding message consumer uri=" + getClientUri() + ", topic=" + topic);
 
         synchronized (topicConsumerMap) {
              topicConsumerMap.compute(

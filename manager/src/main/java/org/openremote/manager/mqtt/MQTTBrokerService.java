@@ -58,6 +58,7 @@ import org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal;
 import org.apache.activemq.artemis.spi.core.security.jaas.UserPrincipal;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.client.utils.URIBuilder;
+import org.jboss.logging.Logger;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.adapters.jaas.AbstractKeycloakLoginModule;
 import org.openremote.container.message.MessageBrokerService;
@@ -176,7 +177,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         serverConfiguration.addAcceptorConfiguration("in-vm", "vm://0?protocols=core");
         String serverURI = new URIBuilder().setScheme("tcp").setHost(host).setPort(port)
             .setParameter("protocols", "MQTT")
-            .setParameter("allowLinkStealing", "true")
+            .setParameter("allowLinkStealing", "false") // Preventing this ensures previous connection/session is properly cleaned up before a reconnect
             .setParameter("defaultMqttSessionExpiryInterval", Integer.toString(DEFAULT_SESSION_EXPIRY_MILLIS)) // Don't support retained sessions has to be positive due to https://issues.apache.org/jira/browse/ARTEMIS-5540
             .build().toString();
         serverConfiguration.addAcceptorConfiguration("tcp", serverURI);
@@ -510,9 +511,11 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         connection.disconnect(false);
         // Destroy session for force disconnects
         try {
-            MQTTStateManager.getInstance(server.getActiveMQServer()).removeSessionState(connection.getClientID());
+            if (MQTTStateManager.getInstance(server.getActiveMQServer()).removeSessionState(connection.getClientID()) != null) {
+                LOG.log(TRACE, () -> "Removed session state for client connection: " + connectionToString(connection));
+            }
         } catch (Exception e) {
-            LOG.log(INFO, "Failed to get server instance to clear session for client connection: " + connectionToString(connection));
+            LOG.log(INFO, () -> "Failed to get server instance to clear session for client connection: " + connectionToString(connection));
         }
         ((SecurityStoreImpl)server.getActiveMQServer().getSecurityStore()).invalidateAuthorizationCache();
     }
