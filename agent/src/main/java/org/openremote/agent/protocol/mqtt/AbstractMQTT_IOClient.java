@@ -493,7 +493,6 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     }
 
     protected void doReconnect() {
-        doDisconnect();
         scheduleDoConnect(5000);
     }
 
