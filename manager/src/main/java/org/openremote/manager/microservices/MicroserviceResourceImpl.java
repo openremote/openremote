@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.services;
+package org.openremote.manager.microservices;
 
 import java.util.logging.Logger;
 
@@ -25,8 +25,8 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.services.Microservice;
-import org.openremote.model.services.MicroserviceResource;
+import org.openremote.model.microservices.Microservice;
+import org.openremote.model.microservices.MicroserviceResource;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -55,6 +55,20 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
         String providerIdentifier = getClientRemoteAddress();
 
         return microserviceRegistry.register(providerIdentifier, serviceDescriptor);
+    }
+
+    @Override
+    public boolean unregister(RequestParams requestParams,
+            @NotNull @Valid Microservice microservice) {
+
+        if (!isSuperUser()) {
+            LOG.warning("Only super users can unregister services");
+            throw new ForbiddenException("Only super users can unregister services");
+        }
+
+        String providerIdentifier = getClientRemoteAddress();
+
+        return microserviceRegistry.unregister(providerIdentifier, microservice);
     }
 
     @Override

@@ -17,9 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.services;
+package org.openremote.model.microservices;
 
-public enum ServiceStatus {
+/**
+ * The status of a microservice.
+ * 
+ * <ul>
+ * <li>AVAILABLE: The microservice is available and can be used.</li>
+ * <li>UNAVAILABLE: The microservice is unavailable.</li>
+ * <li>ERROR: The microservice is in an error state.</li>
+ * </ul>
+ */
+public enum MicroserviceStatus {
     AVAILABLE,
     UNAVAILABLE,
     ERROR

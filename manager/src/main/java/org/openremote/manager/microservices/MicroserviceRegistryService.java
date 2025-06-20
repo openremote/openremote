@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.services;
+package org.openremote.manager.microservices;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
@@ -28,21 +28,21 @@ import java.util.logging.Logger;
 import org.openremote.container.timer.TimerService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.services.Microservice;
-import org.openremote.model.services.MicroserviceStatus;
+import org.openremote.model.microservices.Microservice;
+import org.openremote.model.microservices.MicroserviceStatus;
 
 /**
  * {@link MicroserviceRegistryService} is responsible for registering and
- * managing external service registrations.
+ * managing microservice registrations.
  * 
  * <ul>
- * <li>Callers can register a microservice with a provider identifier, and the
- * service will be stored in the registry. The service will be set to available
- * by default.</li>
+ * <li>Callers can create a registration with a given identifier, and the
+ * registration will be stored in the registry. The registration will be set to
+ * available by default when created or updated.</li>
  * 
- * <li>The registry will also handle the expiration of service registrations when
- * the TTL has expired, and set the status to unavailable. TTL check can be
- * disabled by setting the ignoreTTL flag to true when registering a service.</li>
+ * <li>The registry will handle the expiration of registrations when the TTL has
+ * expired, and set the status to unavailable. TTL check can be disabled by
+ * setting the ignoreTTL flag to true when registering.</li>
  * </ul>
  */
 public class MicroserviceRegistryService implements ContainerService {
@@ -59,7 +59,7 @@ public class MicroserviceRegistryService implements ContainerService {
     protected record RegistrationEntry(Microservice service, long expirationTime, boolean ignoreTTL) {
     }
 
-    // Map of registrations, uses a composite key of service id and provider identifier
+    // Map of registrations, uses a composite key of service id and the given identifier
     protected ConcurrentHashMap<String, RegistrationEntry> registrationMap;
 
     // Scheduled future for the expiration check task
@@ -85,12 +85,11 @@ public class MicroserviceRegistryService implements ContainerService {
         if (expirationCheckFuture != null) {
             expirationCheckFuture.cancel(true);
         }
-        // Clear the in memory registration map
         registrationMap.clear();
     }
 
-    protected String getRegistrationKey(String serviceId, String clientAddress) {
-        return serviceId + ":" + clientAddress;
+    protected String getRegistrationKey(String serviceId, String identifier) {
+        return serviceId + ":" + identifier;
     }
 
     /**
@@ -109,29 +108,54 @@ public class MicroserviceRegistryService implements ContainerService {
     /**
      * Register or update a registration for a microservice with a given identifier.
      * 
-     * @param identifier   The given identifier of the provider
-     * @param microService The microservice to register
+     * @param identifier   The given identifier (e.g. client remote address)
+     * @param microservice The microservice to register
      * @return True if the microservice was registered/updated successfully
      */
-    public boolean register(String identifier, Microservice microService) {
-        return register(identifier, microService, false);
+    public boolean register(String identifier, Microservice microservice) {
+        return register(identifier, microservice, false);
     }
 
     /**
      * Register or update a registration for a microservice with a given identifier
      * 
-     * @param identifier   The given identifier of the provider (e.g. client remote address)
-     * @param microService The microservice to register
+     * @param identifier   The given identifier (e.g. client remote address)
+     * @param microservice The microservice to register
      * @param ignoreTTL    If true, the TTL will be ignored and the registration will not expire
      * @return True if the microservice was registered/updated successfully
      */
-    public boolean register(String identifier, Microservice microService, boolean ignoreTTL) {
-        String compositeKey = getRegistrationKey(microService.getServiceId(), identifier);
+    public boolean register(String identifier, Microservice microservice, boolean ignoreTTL) {
+        try {
+            String compositeKey = getRegistrationKey(microservice.getServiceId(), identifier);
+            LOG.fine("Registering microservice: " + compositeKey + ", ignoreTTL: " + ignoreTTL);
+            
+            registrationMap.put(compositeKey,
+                    new RegistrationEntry(microservice, timerService.getCurrentTimeMillis() + DEFAULT_TTL_MS, ignoreTTL));
 
-        registrationMap.put(compositeKey,
-                new RegistrationEntry(microService, timerService.getCurrentTimeMillis() + DEFAULT_TTL_MS, ignoreTTL));
+            return true;
+        } catch (Exception e) {
+            LOG.warning("Failed to register microservice: " + e.getMessage());
+            return false;
+        }
+    }
 
-        return true;
+    /**
+     * Unregister a microservice with a given identifier
+     * 
+     * @param identifier The given identifier (e.g. client remote address)
+     * @param microservice The microservice to unregister
+     * @return True if the microservice was unregistered successfully
+     */
+    public boolean unregister(String identifier, Microservice microservice) {
+        try {
+            String compositeKey = getRegistrationKey(microservice.getServiceId(), identifier);
+            LOG.fine("Unregistering microservice: " + compositeKey);
+            RegistrationEntry removed = registrationMap.remove(compositeKey);
+            return removed != null;
+        } catch (Exception e) {
+            LOG.warning("Failed to unregister microservice: " + e.getMessage());
+            return false;
+        }
     }
 
     /**

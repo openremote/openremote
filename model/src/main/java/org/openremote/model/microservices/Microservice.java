@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.services;
+package org.openremote.model.microservices;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -39,8 +39,8 @@ public class Microservice {
     protected String serviceId;
 
     /**
-     * The URL of the service, e.g.
-     * "https://test.openremote.app/services/energy-service"
+     * The URL of the service's configuration Web UI, e.g.
+     * "https://demo.openremote.app/services/energy-service/config"
      */
     @JsonProperty("url")
     protected String url;
@@ -52,7 +52,7 @@ public class Microservice {
     protected MicroserviceStatus status;
 
     /**
-     * Indicates whether the service supports multi-tenancy
+     * Indicates whether the service supports and uses multi-tenancy
      */
     @JsonProperty("multiTenancy")
     protected Boolean multiTenancy;

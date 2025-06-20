@@ -37,4 +37,4 @@ org.openremote.manager.asset.ForecastService
 org.openremote.manager.setup.KeycloakInitService
 org.openremote.manager.alarm.AlarmService
 org.openremote.manager.security.KeyStoreServiceImpl
-org.openremote.manager.services.ServiceRegistryService
+org.openremote.manager.microservices.MicroserviceRegistryService
