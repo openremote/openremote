@@ -1,0 +1,138 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Demo Setup",
+      "request": "launch",
+      "mainClass": "org.openremote.manager.Main",
+      "projectName": "manager_",
+      "env": {
+        "OR_SETUP_TYPE": "demo"
+      },
+      "console": "internalConsole",
+      "vmArgs": [
+        "-Dfile.encoding=UTF-8",
+        "-Dsun.stdout.encoding=UTF-8",
+        "-Dsun.stderr.encoding=UTF-8"
+      ],
+      "classPaths": [
+        "${workspaceFolder}/manager/build/install/manager/lib/*",
+        "${workspaceFolder}/setup/build/libs/*"
+      ],
+      "modulePaths": []
+    },
+    {
+      "type": "java",
+      "name": "Demo Setup with Proxy",
+      "request": "launch",
+      "mainClass": "org.openremote.manager.Main",
+      "projectName": "manager_",
+      "env": {
+        "OR_SSL_PORT": "-1",
+        "OR_SETUP_TYPE": "demo",
+        "OR_WEBSERVER_LISTEN_HOST": "0.0.0.0"
+      },
+      "console": "internalConsole",
+      "vmArgs": [
+        "-Dfile.encoding=UTF-8",
+        "-Dsun.stdout.encoding=UTF-8",
+        "-Dsun.stderr.encoding=UTF-8"
+      ],
+      "classPaths": [
+        "${workspaceFolder}/manager/build/install/manager/lib/*",
+        "${workspaceFolder}/setup/build/libs/*"
+      ],
+      "modulePaths": []
+    },
+    {
+      "type": "java",
+      "name": "Empty",
+      "request": "launch",
+      "mainClass": "org.openremote.manager.Main",
+      "projectName": "manager_",
+      "console": "internalConsole",
+      "classPaths": [
+        "${workspaceFolder}/manager/build/install/manager/lib/*"
+      ],
+      "modulePaths": []
+    },
+    {
+      "type": "java",
+      "name": "Empty with Proxy",
+      "request": "launch",
+      "mainClass": "org.openremote.manager.Main",
+      "projectName": "manager_",
+      "env": {
+        "OR_SSL_PORT": "-1",
+        "OR_WEBSERVER_LISTEN_HOST": "0.0.0.0"
+      },
+      "console": "internalConsole",
+      "classPaths": [
+        "${workspaceFolder}/manager/build/install/manager/lib/*"
+      ],
+      "modulePaths": []
+    },
+    {
+      "type": "java",
+      "name": "Test Setup",
+      "request": "launch",
+      "mainClass": "org.openremote.manager.Main",
+      "projectName": "manager_",
+      "console": "internalConsole",
+      "classPaths": [
+        "${workspaceFolder}/manager/build/install/manager/lib/*",
+        "${workspaceFolder}/test/build/libs/*"
+      ],
+      "modulePaths": []
+    },
+    {
+      "type": "java",
+      "name": "Test Setup with Proxy",
+      "request": "launch",
+      "mainClass": "org.openremote.manager.Main",
+      "projectName": "manager_",
+      "env": {
+        "OR_SSL_PORT": "-1",
+        "OR_WEBSERVER_LISTEN_HOST": "0.0.0.0"
+      },
+      "console": "internalConsole",
+      "classPaths": [
+        "${workspaceFolder}/manager/build/install/manager/lib/*",
+        "${workspaceFolder}/test/build/libs/*"
+      ],
+      "modulePaths": []
+    },
+    {
+      "type": "java",
+      "name": "Schema Exporter",
+      "request": "launch",
+      "mainClass": "org.openremote.manager.setup.SchemaExporter",
+      "projectName": "manager_",
+      "args": ["${workspaceFolder}/schema.sql"],
+      "console": "internalConsole",
+      "classPaths": [
+        "${workspaceFolder}/manager/build/install/manager/lib/*"
+      ],
+      "modulePaths": []
+    },
+    {
+      "type": "node",
+      "name": "UI Manager - Serve",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "serve"],
+      "cwd": "${workspaceFolder}/ui/app/manager",
+      "console": "internalConsole"
+    },
+    {
+      "type": "node",
+      "name": "UI Manager - Serve (No Model Build)",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "serveNoModelBuild"],
+      "cwd": "${workspaceFolder}/ui/app/manager",
+      "console": "internalConsole"
+    }
+  ]
+}
