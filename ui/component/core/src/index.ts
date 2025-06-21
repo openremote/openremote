@@ -100,10 +100,6 @@ export function normaliseConfig(config: ManagerConfig): ManagerConfig {
         normalisedConfig.managerUrl = normalisedConfig.managerUrl.replace(/\/+$/, "");
     }
 
-    if (!normalisedConfig.keycloakUrl || normalisedConfig.keycloakUrl === "") {
-        normalisedConfig.keycloakUrl =  normalisedConfig.managerUrl + "/auth";
-    }
-
     if (!normalisedConfig.realm || normalisedConfig.realm === "") {
         // Assume master realm
         normalisedConfig.realm = "master";
