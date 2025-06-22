@@ -76,7 +76,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "the client connection status should be in error"
         conditions.eventually {
-            assert client.getConnectionStatus() == ConnectionStatus.WAITING
+            assert client.getConnectionStatus() == ConnectionStatus.CONNECTING
         }
 
         when: "a mqtt client connects with valid credentials"
@@ -106,6 +106,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         mqttClientId = UniqueIdentifierGenerator.generateId()
         client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username, password), null, null)
         client.setTopicSubscribeFailureConsumer {subFailures.add(it)}
+        client.setRemoveConsumersOnSubscriptionFailure(true)
         client.connect()
 
         then: "mqtt connection should exist"
@@ -166,7 +167,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "A subscription should exist"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
-            assert client.topicConsumerMap.get(topic).getValue().size() == 1
+            assert client.topicConsumerMap.get(topic).consumers.size() == 1
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
@@ -276,7 +277,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "the subscription should be created"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
-            assert client.topicConsumerMap.get(topic).value.size() == 1
+            assert client.topicConsumerMap.get(topic).consumers.size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
             assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
@@ -322,7 +323,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "a subscription should exist"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
-            assert client.topicConsumerMap.get(topic).value.size() == 1
+            assert client.topicConsumerMap.get(topic).consumers.size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
             assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
@@ -352,7 +353,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "the subscription should be created"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
-            assert client.topicConsumerMap.get(topic).value.size() == 1
+            assert client.topicConsumerMap.get(topic).consumers.size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
             assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 2
@@ -414,10 +415,13 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         receivedEvents.clear()
         client.connect()
 
-        then: "the connection should exist"
+        then: "the connection should exist and the previous subscription should be recreated"
         conditions.eventually {
             assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
-            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
+            assert client.topicConsumerMap.size() == 1
+            def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
         }
 
         when: "a mqtt client subscribes to assets that are direct children of the realm"
@@ -428,7 +432,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
-            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 2
         }
 
         when: "an asset is updated with a new attribute"
@@ -455,7 +459,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert client.topicConsumerMap.get(topic) != null
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
-            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 2
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 3
         }
 
         when: "an asset is added as a descendant to the subscribed asset"
@@ -476,12 +480,12 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         when: "the mqtt client unsubscribes from the multilevel topic"
         client.removeMessageConsumer(topic, eventConsumer)
 
-        then: "only one subscription should be left"
+        then: "only two subscriptions should be left"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) == null
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
-            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 2
         }
 
         when: "the descendant asset is modified"
@@ -505,11 +509,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert newClient.getConnectionStatus() == ConnectionStatus.CONNECTED
         }
 
-        when: "the existing client subscribes to attribute events in the hallway"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId".toString()
-        client.addMessageConsumer(topic, eventConsumer)
-
-        and: "the new client publishes to a an attribute topic"
+        when: "the new client publishes to an attribute topic"
+        receivedEvents.clear()
         topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/motionSensor/${managerTestSetup.apartment1HallwayId}".toString()
         payload = "170"
         newClient.sendMessage(new MQTTMessage<String>(topic, payload))
@@ -606,13 +607,15 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         when: "a restricted mqtt client subscribes to an unlinked asset"
         topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1BathroomId".toString()
+        def failTopic = topic
         newClient.addMessageConsumer(topic, {msg ->})
 
-        then: "no subscription should exist"
+        then: "the subscription should fail but the consumer should still exist (as setRemoveConsumersOnSubscriptionFailure=false)"
         conditions.eventually {
             assert subFailures.size() == 4
             assert subFailures[3] == topic
-            assert newClient.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
+            assert newClient.topicConsumerMap.get(topic) != null
+            assert newClient.topicConsumerMap.get(topic).consumers.size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
             assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
         }
@@ -624,6 +627,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "a subscription should exist"
         conditions.eventually {
             assert newClient.topicConsumerMap.get(topic) != null
+            assert newClient.topicConsumerMap.get(topic).consumers.size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
             assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
@@ -636,10 +640,12 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
                         keycloakTestSetup.serviceUser2.getId(),
                         managerTestSetup.apartment1BathroomId)))
 
-        then: "the existing connection should be terminated and the client should reconnect"
+        then: "the existing connection should be terminated and the client should reconnect and the previously failed subscription should now succeed"
         conditions.eventually {
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id).size() == 1
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0] !== existingConnection
+            def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
         }
 
         when: "a user asset link is removed for a connected restricted user"
@@ -649,7 +655,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
                         keycloakTestSetup.serviceUser2.getId(),
                         managerTestSetup.apartment1HallwayId)))
 
-        then: "the existing connection should be terminated and the client should reconnect"
+        then: "the existing connection should be terminated and the client should reconnect and the previously failed subscription should be tried again but also fail"
         conditions.eventually {
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id).size() == 1
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0] !== existingConnection
@@ -661,31 +667,35 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "no subscriptions should exist in the client"
         assert newClient.topicConsumerMap.isEmpty()
 
-        when: "the restricted mqtt client subscribes to a now unlinked asset"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId".toString()
-        newClient.addMessageConsumer(topic, {msg ->})
-
-        then: "no subscription should exist"
-        conditions.eventually {
-            assert subFailures.size() == 5
-            assert subFailures[4] == topic
-            assert newClient.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
-            def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
-            assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
-        }
-
         Consumer<MQTTMessage<String>> restrictedEventConsumer = { msg ->
             def event = ValueUtil.parse(msg.payload as String, SharedEvent.class)
             restrictedReceivedEvents.add(event.get())
         }
 
-        when: "a restricted mqtt client subscribes to the attribute wildcard topic"
+        when: "the restricted mqtt client subscribes to a now unlinked asset"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId".toString()
+        newClient.addMessageConsumer(topic, restrictedEventConsumer)
+
+        then: "no subscription should exist"
+        conditions.eventually {
+            assert subFailures.size() == 6
+            assert subFailures[5] == topic
+            def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
+            assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+        }
+
+        when: "the previously failed message consumer is removed"
+        newClient.removeMessageConsumer(topic, restrictedEventConsumer)
+
+        and: "a restricted mqtt client subscribes to the attribute wildcard topic"
         topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$MQTTHandler.TOKEN_MULTI_LEVEL_WILDCARD".toString()
         newClient.addMessageConsumer(topic, restrictedEventConsumer)
 
         then: "a subscription should exist"
         conditions.eventually {
             assert newClient.topicConsumerMap.get(topic) != null
+            def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
         }
 
         when: "an unlinked asset attribute event occurs"

@@ -25,6 +25,7 @@ import com.hivemq.client.mqtt.MqttClientSslConfigBuilder;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.exceptions.ConnectionClosedException;
 import com.hivemq.client.mqtt.exceptions.ConnectionFailedException;
+import com.hivemq.client.mqtt.exceptions.MqttClientStateException;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3ClientBuilder;
 import com.hivemq.client.mqtt.mqtt3.exceptions.Mqtt3ConnAckException;
@@ -493,6 +494,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     }
 
     protected void doReconnect() {
+        doDisconnect();
         scheduleDoConnect(5000);
     }
 
@@ -607,7 +609,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     protected void doDisconnect() {
         LOG.finest("Performing disconnect: " + getClientUri());
         client.disconnect().whenComplete((unused, throwable) -> {
-            if (throwable != null) {
+            if (throwable != null && !(throwable instanceof MqttClientStateException)) {
                 LOG.log(Level.WARNING, "Failed to disconnect gracefully: " + getClientUri(), throwable);
             } else {
                 LOG.finest("Disconnect done: " + getClientUri());
@@ -648,11 +650,10 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
             Future<Void> connectFuture = doConnect();
             waitForConnectFuture(connectFuture);
             execution.recordResult(null);
-        }).whenComplete((result, ex) -> {
-            if (ex != null) {
-                // Cleanup resources
-                disconnect();
-            } else {
+        });
+
+        connectRetry.whenComplete((result, ex) -> {
+            if (ex == null) {
                 synchronized (this) {
                     if (connectionStatus == ConnectionStatus.CONNECTING) {
                         LOG.fine("Connection attempt success: " + getClientUri());
