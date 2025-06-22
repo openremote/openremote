@@ -188,7 +188,9 @@ export class PageAccount extends Page<AppStateKeyed>  {
             `;
         }
 
-        const readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
+        console.log(manager);
+        const readonly = !manager.hasRole(ClientRole.WRITE_ADMIN)
+            && !manager.hasRole(ClientRole.WRITE_USER);
 
         return html`
             <div id="wrapper">
@@ -239,6 +241,7 @@ export class PageAccount extends Page<AppStateKeyed>  {
         const registrationEmailAsUsername = true;
         if(!user) {
             user = await this._getUser();
+            console.log(user);
         }
         return html`
             <div class="row">
