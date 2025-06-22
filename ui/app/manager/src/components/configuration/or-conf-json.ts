@@ -24,13 +24,15 @@ import { DialogAction } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { createRef, Ref, ref } from "lit/directives/ref.js";
 import { OrAceEditor, OrAceEditorChangedEvent } from "@openremote/or-components/or-ace-editor";
-import { ManagerAppConfig } from "@openremote/model";
+import { ManagerAppConfig, MapConfig } from "@openremote/model";
 
 @customElement("or-conf-json")
 export class OrConfJson extends LitElement {
 
     @property({attribute: false})
-    public managerConfig: ManagerAppConfig = {};
+    public config: ManagerAppConfig | MapConfig = {};
+
+    public heading: string;
 
     protected _aceEditor: Ref<OrAceEditor> = createRef();
 
@@ -46,15 +48,15 @@ export class OrConfJson extends LitElement {
         }
     }
 
-    protected _showManagerConfigDialog(){
+    protected _showConfigDialog(){
         let dialog: OrMwcDialog;
         const _saveConfig = () => {
             const config = this.beforeSave()
             if (config) {
-                this.managerConfig = config as ManagerAppConfig
+                this.config = config as ManagerAppConfig | MapConfig
                 this.dispatchEvent(
-                    new CustomEvent('saveLocalManagerConfig',
-                        {detail: {value: this.managerConfig}}
+                    new CustomEvent('saveLocalConfig',
+                        {detail: {value: this.config}}
                     )
                 )
                 return true
@@ -76,11 +78,11 @@ export class OrConfJson extends LitElement {
 
         dialog = new OrMwcDialog()
             .setActions(dialogActions)
-            .setHeading("manager_config.json")
+            .setHeading(this.heading)
             .setContent(html`
                 <or-ace-editor 
                     ${ref(this._aceEditor)} 
-                    .value="${this.managerConfig}"
+                    .value="${this.config}"
                     @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => {
                         const okButton = dialog.actions?.find(action => action.actionName === "ok");
                         if (okButton) {
@@ -115,10 +117,7 @@ export class OrConfJson extends LitElement {
 
     render() {
         return html`
-            <or-mwc-input type="button" label="JSON" outlined icon="pencil" @click="${() => {this._showManagerConfigDialog()}}"></or-mwc-input>
+            <or-mwc-input type="button" label="JSON" outlined icon="pencil" @click="${() => {this._showConfigDialog()}}"></or-mwc-input>
         `
     }
-
-
-
 }

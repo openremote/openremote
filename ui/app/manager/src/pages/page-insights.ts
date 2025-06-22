@@ -127,9 +127,13 @@ export class PageInsights extends Page<AppStateKeyed>  {
     }
 
     protected _updateRoute(silent: boolean = true) {
-        router.navigate(getInsightsRoute(this._editMode, this._dashboardId), {
-            callHooks: !silent,
-            callHandler: !silent
-        });
+        // This if condition prevents updating the URL to /insights/false when no edit mode or dashboard is selected.
+        // This avoids polluting the browser history and ensures users don't get redirected to Insights on refresh.
+        if (this._editMode || this._dashboardId) {
+            router.navigate(getInsightsRoute(this._editMode, this._dashboardId), {
+                callHooks: !silent,
+                callHandler: !silent
+            });
+        }
     }
 }
