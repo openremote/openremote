@@ -323,6 +323,10 @@ public class ManagerTestSetup extends ManagerSetup {
         /* ############################ ROOMS ############################## */
 
         RoomAsset apartment1Livingroom = createDemoApartmentRoom(apartment1, "Living Room 1");
+        apartment1Livingroom.getAttribute(Asset.NOTES).ifPresent(notes -> notes.addMeta(
+                new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
+        ));
         apartment1Livingroom.getAttributes().addOrReplace(
             new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454213, 51.446884)),
             new Attribute<>("lightsCeiling", NUMBER, 0d)
@@ -357,6 +361,10 @@ public class ManagerTestSetup extends ManagerSetup {
         apartment1LivingroomId = apartment1Livingroom.getId();
 
         RoomAsset apartment1Kitchen = createDemoApartmentRoom(apartment1, "Kitchen 1");
+        apartment1Kitchen.getAttribute(Asset.NOTES).ifPresent(notes -> notes.addMeta(
+                new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
+        ));
         apartment1Kitchen.getAttributes().addOrReplace(
                     new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454122, 51.446800)),
                     new Attribute<>("lights", BOOLEAN, true)
@@ -385,6 +393,10 @@ public class ManagerTestSetup extends ManagerSetup {
         apartment1KitchenId = apartment1Kitchen.getId();
 
         RoomAsset apartment1Hallway = createDemoApartmentRoom(apartment1, "Hallway 1");
+        apartment1Hallway.getAttribute(Asset.NOTES).ifPresent(notes -> notes.addMeta(
+                new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
+        ));
         apartment1Hallway.getAttributes().addOrReplace(
                         new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454342, 51.446762)),
                         new Attribute<>("lights", BOOLEAN, true)
@@ -397,6 +409,10 @@ public class ManagerTestSetup extends ManagerSetup {
         apartment1HallwayId = apartment1Hallway.getId();
 
         RoomAsset apartment1Bedroom1 = createDemoApartmentRoom(apartment1, "Bedroom 1");
+        apartment1Bedroom1.getAttribute(Asset.NOTES).ifPresent(notes -> notes.addMeta(
+                new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
+        ));
         apartment1Bedroom1.getAttributes().addOrReplace(
                         new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454332, 51.446830)),
                         new Attribute<>("lights", BOOLEAN, true)
@@ -417,6 +433,10 @@ public class ManagerTestSetup extends ManagerSetup {
 
         RoomAsset apartment1Bathroom = new RoomAsset("Bathroom 1");
         apartment1Bathroom.setParent(apartment1);
+        apartment1Bathroom.getAttribute(Asset.NOTES).ifPresent(notes -> notes.addMeta(
+                new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
+        ));
         apartment1Bathroom.getAttributes().addOrReplace(
                 new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454227,51.446753)),
                 new Attribute<>("lights", BOOLEAN, true)
@@ -600,7 +620,17 @@ public class ManagerTestSetup extends ManagerSetup {
         assetStorageService.storeUserAssetLinks(List.of(
             new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
                 keycloakTestSetup.serviceUser2.getId(),
-                apartment1HallwayId)));
+                apartment1HallwayId),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
+                keycloakTestSetup.serviceUser2.getId(),
+                apartment1Bedroom1Id),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
+                keycloakTestSetup.serviceUser2.getId(),
+                apartment1KitchenId),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
+                keycloakTestSetup.serviceUser2.getId(),
+                apartment1LivingroomId)
+            ));
 
         // ################################ Realm smartcity ###################################
 
