@@ -280,6 +280,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
 
     // Return template for the anyOf/oneOf schema that matches the data
     const matchedSchema = renderInfos[resolvedProps.indexOfFittingSchema].schema;
+    const definition = resolvedProps.schema.oneOf?.[resolvedProps.indexOfFittingSchema]?.$ref;
     let matchedUischema = renderInfos[resolvedProps.indexOfFittingSchema].uischema;
 
     if (matchedSchema.allOf) {
@@ -307,7 +308,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
     const test = mapStateToControlProps({jsonforms: state}, contentProps as any)
     // console.debug("anyOfOneOfControlRenderer", state, { ...contentProps, label: test.label })
     // TODO: make sure to handle all possible controls here
-    return getTemplateFromProps(state, { ...contentProps, label: test.label });
+    return getTemplateFromProps(state, { ...contentProps, label: test.label, definition });
 }
 
 export const allOfControlTester: RankedTester = rankWith(

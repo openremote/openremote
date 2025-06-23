@@ -52,6 +52,7 @@ import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -380,10 +381,13 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         return ValueUtil.getMetaItemDescriptors();
     }
 
-    public JsonNode getConfigurationItemSchemas(ValueDescriptor<?> valueDescriptor) throws ClassNotFoundException, RuntimeException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
+    public JsonNode getConfigurationItemSchemas(ValueDescriptor<?> valueDescriptor) throws RuntimeException, ClassNotFoundException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException, NullPointerException, IllegalArgumentException, NegativeArraySizeException {
         return dynamicJsonSchemas.computeIfAbsent(valueDescriptor.getType().getName() + valueDescriptor.isArray(), key -> {
             Class<?> clazz = valueDescriptor.getType();
-            return (ObjectNode)(valueDescriptor.isArray() ? ValueUtil.getSchema(clazz.arrayType()) : ValueUtil.getSchema(clazz));
+            return (ObjectNode)(valueDescriptor.isArray()
+                ? ValueUtil.getSchema(Array.newInstance(clazz, valueDescriptor.getArrayDimensions()).getClass())
+                : ValueUtil.getSchema(clazz)
+            );
         });
     }
 

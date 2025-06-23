@@ -168,12 +168,13 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
 
         const expandable = (!!contentTemplate && (!Array.isArray(contentTemplate) || contentTemplate.length > 0)) || (!this.errors && optionalProps.length > 0);
 
-        const content = "layout:table" in this.schema ? this.tableControlRenderer() : html`
+        const content = html`
             ${header}
             <div id="content-wrapper" slot="content">
-                <div id="content">
+                ${"layout:table" in this.schema ? this.tableControlRenderer() : html`<div id="content">
                     ${contentTemplate || ``}
-                </div>
+                </div>`
+                }
 
                 ${this.errors || (optionalProps.length === 0 && !dynamic) ? `` : html`
                         <div id="footer">

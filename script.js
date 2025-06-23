@@ -20,7 +20,7 @@ const jsonSchemaKeywords = [
   "exclusiveMinimum",
   "maxLength",
   "minLength",
-  "pattern",
+  // "pattern",
   "additionalItems",
   "items",
   "maxItems",
@@ -30,7 +30,7 @@ const jsonSchemaKeywords = [
   "minProperties",
   "required",
   "additionalProperties",
-  "definitions",
+  // "definitions",
   "properties",
   "patternProperties",
   "dependencies",
@@ -52,56 +52,6 @@ const jsonSchemaKeywords = [
   "else",
   "errorMessage",
 ];
-
-function resolveSubSchemasRecursive(schema, rootSchema, keyword) {
-  const combinators = keyword ? [keyword] : ["allOf", "anyOf", "oneOf"];
-
-  if (schema.$ref) {
-    return resolveSubSchemasRecursive(
-      Resolve.schema(rootSchema, schema.$ref, rootSchema),
-      rootSchema
-    );
-  }
-
-  if (schema?.additionalProperties?.$ref) {
-    return resolveSubSchemasRecursive(
-      Resolve.schema(rootSchema, schema.additionalProperties.$ref, rootSchema),
-      rootSchema
-    );
-  }
-
-  combinators.forEach((combinator) => {
-    const schemas = schema[combinator];
-
-    if (schemas) {
-      schema[combinator] = schemas.map((subSchema) =>
-        resolveSubSchemasRecursive(subSchema, rootSchema)
-      );
-    }
-  });
-
-  if (schema.items) {
-    if (Array.isArray(schema.items)) {
-      schema.items = schema.items.map((itemSchema) =>
-        resolveSubSchemasRecursive(itemSchema, rootSchema)
-      );
-    } else {
-      schema.items = resolveSubSchemasRecursive(schema.items, rootSchema);
-    }
-  }
-
-  if (schema.properties) {
-    Object.keys(schema.properties).forEach(
-      (prop) =>
-        (schema.properties[prop] = resolveSubSchemasRecursive(
-          schema.properties[prop],
-          rootSchema
-        ))
-    );
-  }
-
-  return schema;
-}
 
 const response = await fetch(
   "http://localhost:8080/api/master/model/valueDescriptors"
@@ -184,12 +134,11 @@ async function processDescriptor(name, props, localesDir) {
     }
   );
 
-  const schema = await response.json();
+  const resolvedSchema = await response.json();
   const paths = new Set();
-  const resolvedSchema = resolveSubSchemasRecursive(schema, schema);
-  delete resolvedSchema.definitions;
 
   traverse(resolvedSchema, {}, (schema, jsonPtr, root) => {
+    if (schema.$ref) return;
     processSchemaPath(jsonPtr, root, name, paths);
   });
 

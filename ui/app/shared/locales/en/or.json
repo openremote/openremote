@@ -648,454 +648,1130 @@
     },
     "item": {
       "agentLink": {
-        "id": {
-          "label": "",
-          "description": ""
-        },
-        "valueFilters": {
-          "label": "",
-          "description": "",
-          "matchGroup": {
+        "definitions": {
+          "SNMPAgentLink": {
+            "label": "",
+            "description": "",
+            "id": {
+              "label": "",
+              "description": ""
+            },
+            "valueFilters": {
+              "label": "",
+              "description": ""
+            },
+            "valueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValue": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchFilters": {
+              "label": "",
+              "description": ""
+            },
+            "updateOnWrite": {
+              "label": "",
+              "description": ""
+            },
+            "oid": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "regex": {
+            "label": "",
+            "description": "",
+            "matchGroup": {
+              "label": "",
+              "description": ""
+            },
+            "matchIndex": {
+              "label": "",
+              "description": ""
+            },
+            "pattern": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "substring": {
+            "label": "",
+            "description": "",
+            "beginIndex": {
+              "label": "",
+              "description": ""
+            },
+            "endIndex": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "jsonPath": {
+            "label": "",
+            "description": "",
+            "path": {
+              "label": "",
+              "description": ""
+            },
+            "returnFirst": {
+              "label": "",
+              "description": ""
+            },
+            "returnLast": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "mathExpression": {
+            "label": "",
+            "description": "",
+            "expression": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "AnyType": {
             "label": "",
             "description": ""
           },
-          "matchIndex": {
+          "StringPredicate": {
+            "label": "",
+            "description": "",
+            "predicateType": {
+              "label": "",
+              "description": ""
+            },
+            "match": {
+              "label": "",
+              "description": ""
+            },
+            "caseSensitive": {
+              "label": "",
+              "description": ""
+            },
+            "value": {
+              "label": "",
+              "description": ""
+            },
+            "negate": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "BooleanPredicate": {
+            "label": "",
+            "description": "",
+            "predicateType": {
+              "label": "",
+              "description": ""
+            },
+            "value": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "DateTimePredicate": {
+            "label": "",
+            "description": "",
+            "predicateType": {
+              "label": "",
+              "description": ""
+            },
+            "value": {
+              "label": "",
+              "description": ""
+            },
+            "rangeValue": {
+              "label": "",
+              "description": ""
+            },
+            "operator": {
+              "label": "",
+              "description": ""
+            },
+            "negate": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "NumberPredicate": {
+            "label": "",
+            "description": "",
+            "predicateType": {
+              "label": "",
+              "description": ""
+            },
+            "value": {
+              "label": "",
+              "description": ""
+            },
+            "rangeValue": {
+              "label": "",
+              "description": ""
+            },
+            "operator": {
+              "label": "",
+              "description": ""
+            },
+            "negate": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "RadialGeofencePredicate": {
+            "label": "",
+            "description": "",
+            "predicateType": {
+              "label": "",
+              "description": ""
+            },
+            "radius": {
+              "label": "",
+              "description": ""
+            },
+            "lat": {
+              "label": "",
+              "description": ""
+            },
+            "lng": {
+              "label": "",
+              "description": ""
+            },
+            "negated": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "RectangularGeofencePredicate": {
+            "label": "",
+            "description": "",
+            "predicateType": {
+              "label": "",
+              "description": ""
+            },
+            "latMin": {
+              "label": "",
+              "description": ""
+            },
+            "lngMin": {
+              "label": "",
+              "description": ""
+            },
+            "latMax": {
+              "label": "",
+              "description": ""
+            },
+            "lngMax": {
+              "label": "",
+              "description": ""
+            },
+            "negated": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "ArrayPredicate": {
+            "label": "",
+            "description": "",
+            "predicateType": {
+              "label": "",
+              "description": ""
+            },
+            "index": {
+              "label": "",
+              "description": ""
+            },
+            "lengthEquals": {
+              "label": "",
+              "description": ""
+            },
+            "lengthGreaterThan": {
+              "label": "",
+              "description": ""
+            },
+            "lengthLessThan": {
+              "label": "",
+              "description": ""
+            },
+            "negated": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "ValueAnyPredicate": {
+            "label": "",
+            "description": "",
+            "predicateType": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "ValueEmptyPredicate": {
+            "label": "",
+            "description": "",
+            "predicateType": {
+              "label": "",
+              "description": ""
+            },
+            "negate": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "CalendarEventPredicate": {
+            "label": "",
+            "description": "",
+            "predicateType": {
+              "label": "",
+              "description": ""
+            },
+            "timestamp": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "DefaultAgentLink": {
+            "label": "",
+            "description": "",
+            "id": {
+              "label": "",
+              "description": ""
+            },
+            "valueFilters": {
+              "label": "",
+              "description": ""
+            },
+            "valueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValue": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchFilters": {
+              "label": "",
+              "description": ""
+            },
+            "updateOnWrite": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "HTTPAgentLink": {
+            "label": "",
+            "description": "",
+            "id": {
+              "label": "",
+              "description": ""
+            },
+            "valueFilters": {
+              "label": "",
+              "description": ""
+            },
+            "valueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValue": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchFilters": {
+              "label": "",
+              "description": ""
+            },
+            "updateOnWrite": {
+              "label": "",
+              "description": ""
+            },
+            "headers": {
+              "label": "",
+              "description": ""
+            },
+            "queryParameters": {
+              "label": "",
+              "description": ""
+            },
+            "pollingMillis": {
+              "label": "",
+              "description": ""
+            },
+            "pagingMode": {
+              "label": "",
+              "description": ""
+            },
+            "path": {
+              "label": "",
+              "description": ""
+            },
+            "method": {
+              "label": "",
+              "description": ""
+            },
+            "contentType": {
+              "label": "",
+              "description": ""
+            },
+            "pollingAttribute": {
+              "label": "",
+              "description": ""
+            },
+            "messageConvertBinary": {
+              "label": "",
+              "description": ""
+            },
+            "messageConvertHex": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "WebsocketAgentLink": {
+            "label": "",
+            "description": "",
+            "id": {
+              "label": "",
+              "description": ""
+            },
+            "valueFilters": {
+              "label": "",
+              "description": ""
+            },
+            "valueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValue": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchFilters": {
+              "label": "",
+              "description": ""
+            },
+            "updateOnWrite": {
+              "label": "",
+              "description": ""
+            },
+            "websocketSubscriptions": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "websocket": {
             "label": "",
             "description": ""
           },
-          "beginIndex": {
+          "http": {
             "label": "",
-            "description": ""
+            "description": "",
+            "method": {
+              "label": "",
+              "description": ""
+            },
+            "contentType": {
+              "label": "",
+              "description": ""
+            },
+            "headers": {
+              "label": "",
+              "description": ""
+            },
+            "uri": {
+              "label": "",
+              "description": ""
+            }
           },
-          "endIndex": {
+          "ZWaveAgentLink": {
             "label": "",
-            "description": ""
+            "description": "",
+            "id": {
+              "label": "",
+              "description": ""
+            },
+            "valueFilters": {
+              "label": "",
+              "description": ""
+            },
+            "valueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValue": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchFilters": {
+              "label": "",
+              "description": ""
+            },
+            "updateOnWrite": {
+              "label": "",
+              "description": ""
+            },
+            "deviceNodeId": {
+              "label": "",
+              "description": ""
+            },
+            "deviceEndpoint": {
+              "label": "",
+              "description": ""
+            },
+            "deviceValue": {
+              "label": "",
+              "description": ""
+            }
           },
-          "path": {
+          "ModbusAgentLink": {
             "label": "",
-            "description": ""
+            "description": "",
+            "id": {
+              "label": "",
+              "description": ""
+            },
+            "valueFilters": {
+              "label": "",
+              "description": ""
+            },
+            "valueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValue": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchFilters": {
+              "label": "",
+              "description": ""
+            },
+            "updateOnWrite": {
+              "label": "",
+              "description": ""
+            },
+            "pollingMillis": {
+              "label": "",
+              "description": ""
+            },
+            "readMemoryArea": {
+              "label": "",
+              "description": ""
+            },
+            "readValueType": {
+              "label": "",
+              "description": ""
+            },
+            "readAddress": {
+              "label": "",
+              "description": ""
+            },
+            "writeMemoryArea": {
+              "label": "",
+              "description": ""
+            },
+            "writeAddress": {
+              "label": "",
+              "description": ""
+            }
           },
-          "returnFirst": {
+          "StorageSimulatorAgentLink": {
             "label": "",
-            "description": ""
+            "description": "",
+            "id": {
+              "label": "",
+              "description": ""
+            },
+            "valueFilters": {
+              "label": "",
+              "description": ""
+            },
+            "valueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValue": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchFilters": {
+              "label": "",
+              "description": ""
+            },
+            "updateOnWrite": {
+              "label": "",
+              "description": ""
+            }
           },
-          "returnLast": {
+          "BluetoothMeshAgentLink": {
             "label": "",
-            "description": ""
+            "description": "",
+            "id": {
+              "label": "",
+              "description": ""
+            },
+            "valueFilters": {
+              "label": "",
+              "description": ""
+            },
+            "valueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValue": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchFilters": {
+              "label": "",
+              "description": ""
+            },
+            "updateOnWrite": {
+              "label": "",
+              "description": ""
+            },
+            "appKeyIndex": {
+              "label": "",
+              "description": ""
+            },
+            "address": {
+              "label": "",
+              "description": ""
+            },
+            "modelName": {
+              "label": "",
+              "description": ""
+            }
           },
-          "expression": {
+          "MQTTAgentLink": {
             "label": "",
-            "description": ""
-          }
-        },
-        "valueConverter": {
-          "label": "",
-          "description": "",
-          "": {
-            "+": {
+            "description": "",
+            "id": {
+              "label": "",
+              "description": ""
+            },
+            "valueFilters": {
+              "label": "",
+              "description": ""
+            },
+            "valueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValue": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchFilters": {
+              "label": "",
+              "description": ""
+            },
+            "updateOnWrite": {
+              "label": "",
+              "description": ""
+            },
+            "subscriptionTopic": {
+              "label": "",
+              "description": ""
+            },
+            "publishTopic": {
+              "label": "",
+              "description": ""
+            },
+            "qos": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "KNXAgentLink": {
+            "label": "",
+            "description": "",
+            "id": {
+              "label": "",
+              "description": ""
+            },
+            "valueFilters": {
+              "label": "",
+              "description": ""
+            },
+            "valueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValue": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchFilters": {
+              "label": "",
+              "description": ""
+            },
+            "updateOnWrite": {
+              "label": "",
+              "description": ""
+            },
+            "dpt": {
+              "label": "",
+              "description": ""
+            },
+            "actionGroupAddress": {
+              "label": "",
+              "description": ""
+            },
+            "statusGroupAddress": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "SimulatorAgentLink": {
+            "label": "",
+            "description": "",
+            "id": {
+              "label": "",
+              "description": ""
+            },
+            "valueFilters": {
+              "label": "",
+              "description": ""
+            },
+            "valueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValue": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchFilters": {
+              "label": "",
+              "description": ""
+            },
+            "updateOnWrite": {
+              "label": "",
+              "description": ""
+            },
+            "replayData": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "SimulatorReplayDatapoint": {
+            "label": "",
+            "description": "",
+            "timestamp": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "MailAgentLink": {
+            "label": "",
+            "description": "",
+            "id": {
+              "label": "",
+              "description": ""
+            },
+            "valueFilters": {
+              "label": "",
+              "description": ""
+            },
+            "valueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValue": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchFilters": {
+              "label": "",
+              "description": ""
+            },
+            "updateOnWrite": {
+              "label": "",
+              "description": ""
+            },
+            "useSubject": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "VelbusAgentLink": {
+            "label": "",
+            "description": "",
+            "id": {
+              "label": "",
+              "description": ""
+            },
+            "deviceAddress": {
+              "label": "",
+              "description": ""
+            },
+            "deviceValueLink": {
+              "label": "",
+              "description": ""
+            },
+            "valueFilters": {
+              "label": "",
+              "description": ""
+            },
+            "valueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValueConverter": {
+              "label": "",
+              "description": "",
+              "": {
+                "+": {
+                  "label": "",
+                  "description": ""
+                }
+              }
+            },
+            "writeValue": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "messageMatchFilters": {
+              "label": "",
+              "description": ""
+            },
+            "updateOnWrite": {
               "label": "",
               "description": ""
             }
           }
-        },
-        "writeValueConverter": {
-          "label": "",
-          "description": "",
-          "": {
-            "+": {
-              "label": "",
-              "description": ""
-            }
-          }
-        },
-        "writeValue": {
-          "label": "",
-          "description": ""
-        },
-        "messageMatchPredicate": {
-          "label": "",
-          "description": "",
-          "predicateType": {
-            "label": "",
-            "description": ""
-          },
-          "match": {
-            "label": "",
-            "description": ""
-          },
-          "caseSensitive": {
-            "label": "",
-            "description": ""
-          },
-          "value": {
-            "label": "",
-            "description": ""
-          },
-          "negate": {
-            "label": "",
-            "description": ""
-          },
-          "rangeValue": {
-            "label": "",
-            "description": ""
-          },
-          "operator": {
-            "label": "",
-            "description": ""
-          },
-          "radius": {
-            "label": "",
-            "description": ""
-          },
-          "lat": {
-            "label": "",
-            "description": ""
-          },
-          "lng": {
-            "label": "",
-            "description": ""
-          },
-          "negated": {
-            "label": "",
-            "description": ""
-          },
-          "latMin": {
-            "label": "",
-            "description": ""
-          },
-          "lngMin": {
-            "label": "",
-            "description": ""
-          },
-          "latMax": {
-            "label": "",
-            "description": ""
-          },
-          "lngMax": {
-            "label": "",
-            "description": ""
-          },
-          "index": {
-            "label": "",
-            "description": ""
-          },
-          "lengthEquals": {
-            "label": "",
-            "description": ""
-          },
-          "lengthGreaterThan": {
-            "label": "",
-            "description": ""
-          },
-          "lengthLessThan": {
-            "label": "",
-            "description": ""
-          },
-          "timestamp": {
-            "label": "",
-            "description": ""
-          }
-        },
-        "messageMatchFilters": {
-          "label": "",
-          "description": "",
-          "matchGroup": {
-            "label": "",
-            "description": ""
-          },
-          "matchIndex": {
-            "label": "",
-            "description": ""
-          },
-          "beginIndex": {
-            "label": "",
-            "description": ""
-          },
-          "endIndex": {
-            "label": "",
-            "description": ""
-          },
-          "path": {
-            "label": "",
-            "description": ""
-          },
-          "returnFirst": {
-            "label": "",
-            "description": ""
-          },
-          "returnLast": {
-            "label": "",
-            "description": ""
-          },
-          "expression": {
-            "label": "",
-            "description": ""
-          }
-        },
-        "updateOnWrite": {
-          "label": "",
-          "description": ""
-        },
-        "oid": {
-          "label": "",
-          "description": ""
-        },
-        "headers": {
-          "label": "",
-          "description": ""
-        },
-        "queryParameters": {
-          "label": "",
-          "description": ""
-        },
-        "pollingMillis": {
-          "label": "",
-          "description": ""
-        },
-        "pagingMode": {
-          "label": "",
-          "description": ""
-        },
-        "path": {
-          "label": "",
-          "description": ""
-        },
-        "method": {
-          "label": "",
-          "description": ""
-        },
-        "contentType": {
-          "label": "",
-          "description": ""
-        },
-        "pollingAttribute": {
-          "label": "",
-          "description": ""
-        },
-        "messageConvertBinary": {
-          "label": "",
-          "description": ""
-        },
-        "messageConvertHex": {
-          "label": "",
-          "description": ""
-        },
-        "websocketSubscriptions": {
-          "label": "",
-          "description": "",
-          "body": {
-            "label": "",
-            "description": ""
-          },
-          "method": {
-            "label": "",
-            "description": ""
-          },
-          "contentType": {
-            "label": "",
-            "description": ""
-          },
-          "headers": {
-            "label": "",
-            "description": ""
-          },
-          "uri": {
-            "label": "",
-            "description": ""
-          }
-        },
-        "deviceNodeId": {
-          "label": "",
-          "description": ""
-        },
-        "deviceEndpoint": {
-          "label": "",
-          "description": ""
-        },
-        "deviceValue": {
-          "label": "",
-          "description": ""
-        },
-        "readMemoryArea": {
-          "label": "",
-          "description": ""
-        },
-        "readValueType": {
-          "label": "",
-          "description": ""
-        },
-        "readAddress": {
-          "label": "",
-          "description": ""
-        },
-        "writeMemoryArea": {
-          "label": "",
-          "description": ""
-        },
-        "writeAddress": {
-          "label": "",
-          "description": ""
-        },
-        "appKeyIndex": {
-          "label": "",
-          "description": ""
-        },
-        "address": {
-          "label": "",
-          "description": ""
-        },
-        "modelName": {
-          "label": "",
-          "description": ""
-        },
-        "subscriptionTopic": {
-          "label": "",
-          "description": ""
-        },
-        "publishTopic": {
-          "label": "",
-          "description": ""
-        },
-        "qos": {
-          "label": "",
-          "description": ""
-        },
-        "dpt": {
-          "label": "",
-          "description": ""
-        },
-        "actionGroupAddress": {
-          "label": "",
-          "description": ""
-        },
-        "statusGroupAddress": {
-          "label": "",
-          "description": ""
-        },
-        "replayData": {
-          "label": "",
-          "description": "",
-          "timestamp": {
-            "label": "",
-            "description": ""
-          },
-          "value": {
-            "label": "",
-            "description": ""
-          }
-        },
-        "subjectMatchPredicate": {
-          "label": "",
-          "description": "",
-          "predicateType": {
-            "label": "",
-            "description": ""
-          },
-          "match": {
-            "label": "",
-            "description": ""
-          },
-          "caseSensitive": {
-            "label": "",
-            "description": ""
-          },
-          "value": {
-            "label": "",
-            "description": ""
-          },
-          "negate": {
-            "label": "",
-            "description": ""
-          }
-        },
-        "fromMatchPredicate": {
-          "label": "",
-          "description": "",
-          "predicateType": {
-            "label": "",
-            "description": ""
-          },
-          "match": {
-            "label": "",
-            "description": ""
-          },
-          "caseSensitive": {
-            "label": "",
-            "description": ""
-          },
-          "value": {
-            "label": "",
-            "description": ""
-          },
-          "negate": {
-            "label": "",
-            "description": ""
-          }
-        },
-        "useSubject": {
-          "label": "",
-          "description": ""
-        },
-        "deviceAddress": {
-          "label": "",
-          "description": ""
-        },
-        "deviceValueLink": {
-          "label": "",
-          "description": ""
         }
       },
       "attributeLink": {
-        "ref": {
-          "label": "",
-          "description": "",
-          "id": {
-            "label": "",
-            "description": ""
-          },
-          "name": {
-            "label": "",
-            "description": ""
-          }
-        },
         "converter": {
           "label": "",
           "description": ""
         },
         "filters": {
           "label": "",
-          "description": "",
-          "matchGroup": {
+          "description": ""
+        },
+        "definitions": {
+          "AttributeRef": {
+            "label": "",
+            "description": "",
+            "id": {
+              "label": "",
+              "description": ""
+            },
+            "name": {
+              "label": "",
+              "description": ""
+            }
+          },
+          "AnyType": {
             "label": "",
             "description": ""
           },
-          "matchIndex": {
+          "regex": {
             "label": "",
-            "description": ""
+            "description": "",
+            "matchGroup": {
+              "label": "",
+              "description": ""
+            },
+            "matchIndex": {
+              "label": "",
+              "description": ""
+            },
+            "pattern": {
+              "label": "",
+              "description": ""
+            }
           },
-          "beginIndex": {
+          "substring": {
             "label": "",
-            "description": ""
+            "description": "",
+            "beginIndex": {
+              "label": "",
+              "description": ""
+            },
+            "endIndex": {
+              "label": "",
+              "description": ""
+            }
           },
-          "endIndex": {
+          "jsonPath": {
             "label": "",
-            "description": ""
+            "description": "",
+            "path": {
+              "label": "",
+              "description": ""
+            },
+            "returnFirst": {
+              "label": "",
+              "description": ""
+            },
+            "returnLast": {
+              "label": "",
+              "description": ""
+            }
           },
-          "path": {
+          "mathExpression": {
             "label": "",
-            "description": ""
-          },
-          "returnFirst": {
-            "label": "",
-            "description": ""
-          },
-          "returnLast": {
-            "label": "",
-            "description": ""
-          },
-          "expression": {
-            "label": "",
-            "description": ""
+            "description": "",
+            "expression": {
+              "label": "",
+              "description": ""
+            }
           }
         }
       },
@@ -1115,6 +1791,32 @@
         "forecastCount": {
           "label": "Forecast Count",
           "description": "The number of future data points or intervals to predict."
+        },
+        "definitions": {
+          "wea": {
+            "label": "Weighted Exponential Average",
+            "description": "",
+            "pastPeriod": {
+              "label": "Past Period",
+              "description": "The specific time frame in the past used for analysis."
+            },
+            "pastCount": {
+              "label": "Past Count",
+              "description": "The number of past data points or intervals to consider."
+            },
+            "forecastPeriod": {
+              "label": "Forecast Period",
+              "description": "The time frame for which predictions will be made."
+            },
+            "forecastCount": {
+              "label": "Forecast Count",
+              "description": "The number of future data points or intervals to predict."
+            }
+          },
+          "ExtendedPeriodAndDuration": {
+            "label": "",
+            "description": ""
+          }
         }
       },
       "valueFormat": {
@@ -1252,33 +1954,151 @@
         }
       },
       "valueConstraint": {
-        "min": {
-          "label": "Minimum value",
-          "description": "The attribute value must be greater than or equal to this number. Null values are considered valid."
-        },
-        "max": {
-          "label": "Maximum value",
-          "description": "The attribute value must be less than or equal to this number. Null values are considered valid."
-        },
-        "message": {
-          "label": "Validation message",
-          "description": "Custom message to display when this constraint is violated."
-        },
-        "regexp": {
-          "label": "Regular expression",
-          "description": "The attribute value must match this regular expression. Follows Java regex syntax."
-        },
-        "flags": {
-          "label": "Regex flags",
-          "description": "Modifiers that affect regex matching behavior. Options: CASE_INSENSITIVE, MULTILINE, DOTALL, etc."
-        },
-        "allowedValueNames": {
-          "label": "Display names",
-          "description": "Names to display instead of the raw allowed values. Must match the number of allowed values to be used."
-        },
-        "allowedValues": {
-          "label": "Allowed values",
-          "description": "Accepted values for this attribute. If empty or missing, only null is accepted. Enables select input in the UI."
+        "definitions": {
+          "size": {
+            "label": "Size",
+            "description": "The attribute value must be between the specified boundaries based on the `min` and `max` properties. Supported types are JSON compatible strings, arrays and objects. Null values are considered valid.",
+            "min": {
+              "label": "Minimum value",
+              "description": "The attribute value must be greater than or equal to this number. Null values are considered valid."
+            },
+            "max": {
+              "label": "Maximum value",
+              "description": "The attribute value must be less than or equal to this number. Null values are considered valid."
+            },
+            "message": {
+              "label": "Validation message",
+              "description": "Custom message to display when this constraint is violated."
+            }
+          },
+          "regexp": {
+            "label": "Regular expression",
+            "description": "The attribute value must match this regular expression. Follows Java regex syntax."
+          },
+          "flags": {
+            "label": "Regex flags",
+            "description": "Modifiers that affect regex matching behavior. Options: CASE_INSENSITIVE, MULTILINE, DOTALL, etc."
+          },
+          "message": {
+            "label": "Validation message",
+            "description": "Custom message to display when this constraint is violated."
+          },
+          "min": {
+            "label": "Minimum value",
+            "description": "The attribute value must be greater than or equal to this number. Null values are considered valid.",
+            "min": {
+              "label": "Minimum value",
+              "description": "The attribute value must be greater than or equal to this number. Null values are considered valid."
+            },
+            "message": {
+              "label": "Validation message",
+              "description": "Custom message to display when this constraint is violated."
+            }
+          },
+          "max": {
+            "label": "Maximum value",
+            "description": "The attribute value must be less than or equal to this number. Null values are considered valid.",
+            "max": {
+              "label": "Maximum value",
+              "description": "The attribute value must be less than or equal to this number. Null values are considered valid."
+            },
+            "message": {
+              "label": "Validation message",
+              "description": "Custom message to display when this constraint is violated."
+            }
+          },
+          "allowedValues": {
+            "label": "Allowed values",
+            "description": "Accepted values for this attribute. If empty or missing, only null is accepted. Enables select input in the UI.",
+            "allowedValueNames": {
+              "label": "Display names",
+              "description": "Names to display instead of the raw allowed values. Must match the number of allowed values to be used."
+            },
+            "allowedValues": {
+              "label": "Allowed values",
+              "description": "Accepted values for this attribute. If empty or missing, only null is accepted. Enables select input in the UI."
+            },
+            "message": {
+              "label": "Validation message",
+              "description": "Custom message to display when this constraint is violated."
+            }
+          },
+          "AnyType": {
+            "label": "",
+            "description": ""
+          },
+          "past": {
+            "label": "Past",
+            "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past. Null values are considered valid.",
+            "message": {
+              "label": "Validation message",
+              "description": "Custom message to display when this constraint is violated."
+            }
+          },
+          "pastOrPresent": {
+            "label": "Past or present",
+            "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past or present. Null values are considered valid.",
+            "message": {
+              "label": "Validation message",
+              "description": "Custom message to display when this constraint is violated."
+            }
+          },
+          "future": {
+            "label": "Future",
+            "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future. Null values are considered valid.",
+            "message": {
+              "label": "Validation message",
+              "description": "Custom message to display when this constraint is violated."
+            }
+          },
+          "futureOrPresent": {
+            "label": "Future or present",
+            "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future or present. Null values are considered valid.",
+            "message": {
+              "label": "Validation message",
+              "description": "Custom message to display when this constraint is violated."
+            }
+          },
+          "notEmpty": {
+            "label": "Not empty",
+            "description": "The attribute value must not be null nor empty. Supported types are JSON compatible strings, arrays and objects which contain at least 1 character, item or property.",
+            "message": {
+              "label": "Validation message",
+              "description": "Custom message to display when this constraint is violated."
+            }
+          },
+          "notBlank": {
+            "label": "Not blank",
+            "description": "The attribute value must not be null and must contain at least 1 non-whitespace character. Accepts strings.",
+            "message": {
+              "label": "Validation message",
+              "description": "Custom message to display when this constraint is violated."
+            }
+          },
+          "notNull": {
+            "label": "Not null",
+            "description": "The attribute value must not be null. Accepts any type.",
+            "message": {
+              "label": "Validation message",
+              "description": "Custom message to display when this constraint is violated."
+            }
+          },
+          "pattern": {
+            "label": "Pattern",
+            "description": "The attribute value must match the regular expression pattern described in the `regexp` property. The regular expression follows the Java regular expression conventions. Flags can be specified using the `flags` property with values: CASE_INSENSITIVE, MULTILINE, DOTALL, UNIX_LINES, UNICODE_CASE, CANON_EQ and COMMENTS. Null values are considered valid.",
+            "regexp": {
+              "label": "Regular expression",
+              "description": "The attribute value must match this regular expression. Follows Java regex syntax."
+            },
+            "flags": {
+              "label": "Regex flags",
+              "description": "Modifiers that affect regex matching behavior. Options: CASE_INSENSITIVE, MULTILINE, DOTALL, etc."
+            },
+            "message": {
+              "label": "Validation message",
+              "description": "Custom message to display when this constraint is violated."
+            }
+          }
         }
       }
     }

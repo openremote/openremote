@@ -50,7 +50,7 @@ export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFo
     let template: TemplateResult | undefined;
 
     if (renderers && schema && uischema && state.core) {
-      const orderedRenderers: [JsonFormsRendererRegistryEntry, number][] = renderers.map(r => [r, r.tester(uischema, schema, { rootSchema: resolveSubSchemasRecursive(schema, state.core!.schema), config: state.config })] as [JsonFormsRendererRegistryEntry, number]).sort((a,b) => b[1] - a[1]);
+      const orderedRenderers: [JsonFormsRendererRegistryEntry, number][] = renderers.map(r => [r, r.tester(uischema, schema, { rootSchema: state.core!.schema, config: state.config })] as [JsonFormsRendererRegistryEntry, number]).sort((a,b) => b[1] - a[1]);
         const renderer = orderedRenderers && orderedRenderers.length > 0 ? orderedRenderers[0] : undefined;
         if (renderer && renderer[1] !== -1) {
             template = renderer[0].renderer(state, props) as TemplateResult;
@@ -74,13 +74,13 @@ export interface CombinatorInfo {
  * For a given anyOf schema array this will try and extract a common const property which can be used as a discriminator
  * when creating instances
  */
-export function getCombinatorInfos(schemas: JsonSchema[], rootSchema: JsonSchema): CombinatorInfo[] {
+export function getCombinatorInfos(schemas: JsonSchema[], rootSchema: JsonSchema, state?: JsonFormsState): CombinatorInfo[] {
 
     return schemas.map(schema => {
         let constProperty: string | undefined;
         let constValue: any | undefined;
         let creator: () => any;
-        const titleAndDescription = findSchemaTitleAndDescription(schema, rootSchema);
+        const titleAndDescription = findSchemaTitleAndDescription(schema, rootSchema, state);
 
         if (schema.$ref) {
             schema = Resolve.schema(schema, '', rootSchema);
@@ -151,13 +151,25 @@ export function getSchemaPicker(rootSchema: JsonSchema, resolvedSchema: JsonSche
     `;
 }
 
-// TODO: use i18n translations from jsonforms/core
-export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: JsonSchema): [string | undefined, string | undefined] {
+export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: JsonSchema, state?: JsonFormsState): [string | undefined, string | undefined] {
     let title: string | undefined;
 
+    let ref = Boolean(schema.$ref)
     if (schema.$ref) {
         title = getLabelFromScopeOrRef(schema.$ref);
         schema = Resolve.schema(schema, '', rootSchema);
+    }
+
+    // if (e.i18n) {
+    //   label = t(`${e.i18n}.label`, base);
+    //   description = t(`${e.i18n}.description`, base);
+    // } 
+    if (state && title) {
+      const t = getTranslator()(state);
+      if (ref) {
+        return [t("definitions." + title + ".label"), t("definitions." + title + ".description")];
+      }
+      return [t(title + ".label"), t(title + ".description")];
     }
 
     if (schema.title) {
@@ -279,60 +291,6 @@ export interface EnumOption {
 export interface OwnPropsOfEnum {
     options?: EnumOption[];
 }
-
-/**
- * Copied from eclipse source code to resolve translations for oneOf subSchemas
- */
-export const mapStateToOneOfEnumControlProps = (
-  state: JsonFormsState,
-  ownProps: OwnPropsOfControl & OwnPropsOfEnum
-): StatePropsOfControl & OwnPropsOfEnum => {
-  const props: StatePropsOfControl = mapStateToControlProps(state, ownProps);
-  const options: EnumOption[] =
-    ownProps.options ||
-    (props.schema.oneOf as JsonSchema[])?.map((oneOfSubSchema) =>
-      oneOfToEnumOptionMapper(
-        oneOfSubSchema,
-        getTranslator()(state),
-        getI18nKeyPrefix(props.schema, props.uischema, props.path)
-      )
-    );
-  return {
-    ...props,
-    options,
-  };
-};
-
-/**
- * Copied from eclipse source code to resolve translations for oneOf subSchemas
- */
-export const oneOfToEnumOptionMapper = (
-  e: any,
-  t?: Translator,
-  fallbackI18nKey?: string
-): EnumOption & { description: string } => {
-  const base =
-    e.title ??
-    (typeof e.const === 'string' ? e.const : JSON.stringify(e.const));
-  let label = ""
-  let description = ""
-  if (t) {
-    // prefer schema keys as they can be more specialized
-    if (e.i18n) {
-      label = t(`${e.i18n}.label`, base);
-      description = t(`${e.i18n}.description`, base);
-    } else {
-      label = t(`${base}.label`, base);
-      description = t(`${base}.description`, base);
-    }
-  }
-
-  return {
-    label,
-    description,
-    value: e.const,
-  };
-};
 
 export function getLabel(schema: JsonSchema, rootSchema: JsonSchema, uiElementLabel?: string, uiElementScope?: string): string | undefined {
     if (uiElementLabel) {

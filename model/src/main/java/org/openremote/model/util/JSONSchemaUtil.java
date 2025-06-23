@@ -105,31 +105,31 @@ public class JSONSchemaUtil {
 
     public static JsonSchemaConfig getJsonSchemaConfig() {
         return JsonSchemaConfig.create(
-            false,
-            Optional.empty(),
-            false,
-            false,
-            false,
-            false,
-            false,
-            false,
-            false,
-            Collections.emptyMap(),
-            false,
-            Collections.emptySet(),
-            Map.of(
+            false,                  // autoGenerateTitleForProperties
+            Optional.empty(),       // defaultArrayFormat
+            false,                  // useOneOfForOption
+            false,                  // useOneOfForNullables
+            false,                  // usePropertyOrdering
+            false,                  // hidePolymorphismTypeProperty
+            false,                  // disableWarnings
+            false,                  // useMinLengthForNotNull
+            false,                  // useTypeIdForDefinitionName
+            Collections.emptyMap(), // customType2FormatMapping
+            false,                  // useMultipleEditorSelectViaProperty
+            Collections.emptySet(), // uniqueItemClasses
+            Map.of(                 // classTypeReMapping
                 Object.class, AnyType.class,
                 ObjectNode.class, PatternPropertiesSimpleKeyAnyType.class
             ),
-            Map.of(
+            Map.of(                 // jsonSuppliers
                 SCHEMA_SUPPLIER_NAME_ANY_TYPE, () -> getSchemaType(true, TYPES_ALL),
                 SCHEMA_SUPPLIER_NAME_STRING_TYPE, () -> getSchemaType(true, TYPE_STRING),
                 SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE, JSONSchemaUtil::getSchemaPatternPropertiesAnyKeyAnyType,
                 SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_SIMPLE_KEY_ANY_TYPE, JSONSchemaUtil::getSchemaPatternPropertiesSimpleKeyAnyType
             ),
-            null,
-            false,
-            null,
+            null,                   // subclassesResolver
+            false,                  // failOnUnknownProperties
+            null,                   // javaxValidationGroups
             null,
             true
         ).withJsonSchemaDraft(JsonSchemaDraft.DRAFT_07);

@@ -167,12 +167,13 @@ export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPr
                     locale: this._language,
                     translate: (id, defaultMessage, values) => {
                         const path = ["schema.item", camelCase(this.schema?.title), id].join(".")
-                        console.log(path, id, defaultMessage)
-                        return i18next.t(path, { defaultValue: defaultMessage });
+                        const defPath = ["schema.item", camelCase(this.schema?.title), "definitions", id].join(".")
+                        // console.log(path, id, defaultMessage, values, i18next.t(path, { defaultValue: defaultMessage }))
+                        return i18next.t(path, { defaultValue: i18next.t(defPath, { defaultValue: defaultMessage }) }) || defaultMessage!;
                     },
                     translateError: (error, translate, uischema) => {
                         console.log(`Locale: ${this.contextValue?.i18n?.locale}, Error: ${error}, UI Schema: ${uischema}`);
-                        return "";
+                        return translate(error.message!, error.message!);
                     },
                 }
             }

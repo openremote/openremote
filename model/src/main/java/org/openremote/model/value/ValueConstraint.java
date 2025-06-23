@@ -20,7 +20,8 @@
 package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.*;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
+
 import org.openremote.model.util.ValueUtil;
 
 import java.io.Serializable;
@@ -381,7 +382,12 @@ public abstract class ValueConstraint implements Serializable {
      * accepts null values.
      */
     @JsonTypeName("allowedValues")
-    @JsonSchemaDescription("The attribute value must match any of the specified values in the `allowedValues` property. The associated input in the UI will change to a select input with the options specified in the `allowedValues` property. The `allowedValueNames` property accepts a list of names that replace the labels in the select input, if the `allowedValueNames` list matches the length of the `allowedValues` list otherwise it falls back to the `allowedValues` as labels. Null values are considered valid. If `allowedValues` is not specified or empty the constraint only accepts null values.")
+    @JsonSchemaInject(json = 
+        """
+            { "layout:table": [ "allowedValues", "allowedValueNames" ] },
+        """
+            // {  "decorators": { import: true, export: true, format: csv } }
+    )
     public static class AllowedValues extends ValueConstraint {
         @jakarta.validation.constraints.NotNull
         Object[] allowedValues;

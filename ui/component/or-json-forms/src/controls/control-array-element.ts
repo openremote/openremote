@@ -1,19 +1,16 @@
 import {
     computeLabel,
     createDefaultValue,
-    isControl,
     JsonSchema,
     mapDispatchToArrayControlProps,
-    OwnPropsOfControl,
     OwnPropsOfRenderer,
     Paths,
     Resolve,
-    StatePropsOfControl,
     update
 } from "@jsonforms/core";
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import {CombinatorInfo, controlWithoutLabel, getCombinatorInfos, getTemplateFromProps, mapStateToOneOfEnumControlProps, OwnPropsOfEnum, showJsonEditor} from "../util";
+import {CombinatorInfo, controlWithoutLabel, getCombinatorInfos, getTemplateFromProps, showJsonEditor} from "../util";
 import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -89,7 +86,6 @@ export class ControlArrayElement extends ControlBaseElement {
     protected minimal?: boolean;
     protected resolvedSchema!: JsonSchema;
     protected itemInfos: CombinatorInfo[] | undefined;
-    protected enumControlProps: StatePropsOfControl & OwnPropsOfEnum | undefined;
     protected addItem!: (value: any) => void;
     protected removeItem!: (index: number) => void;
     protected moveItem!: (fromIndex: number, toIndex: number) => void;
@@ -103,28 +99,14 @@ export class ControlArrayElement extends ControlBaseElement {
     }
 
     shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (_changedProperties.has("schema")) {
+        if (_changedProperties.has("schema") || (_changedProperties.has("state") && _changedProperties.get("state").i18n.locale !== this.state.i18n?.locale)) {
             this.itemInfos = undefined;
             this.resolvedSchema = Resolve.schema(this.schema, 'items', this.rootSchema);
 
             if (Array.isArray(this.resolvedSchema.anyOf)) {
                 this.itemInfos = getCombinatorInfos(this.resolvedSchema.anyOf, this.rootSchema);
             } else if (Array.isArray(this.resolvedSchema.oneOf)) {
-                this.itemInfos = getCombinatorInfos(this.resolvedSchema.oneOf, this.rootSchema);
-                // TODO: Refactor this into getCombinatorInfos
-                // TODO: Handle langauge change
-                const childProps: OwnPropsOfControl & OwnPropsOfEnum = {
-                    renderers: this.renderers,
-                    uischema: this.uischema,
-                    schema: this.resolvedSchema,
-                    path: this.path
-                }
-                this.enumControlProps = mapStateToOneOfEnumControlProps({ jsonforms: this.state }, childProps);
-                this.itemInfos = this.itemInfos.map((item, i) => ({ 
-                  ...item, 
-                  title: this.enumControlProps?.options?.[i].label || item.title,
-                  description: this.enumControlProps?.options?.[i].description || item.description,
-                }))
+                this.itemInfos = getCombinatorInfos(this.resolvedSchema.oneOf, this.rootSchema, { jsonforms: this.state });
             }
         }
 
@@ -155,7 +137,6 @@ export class ControlArrayElement extends ControlBaseElement {
     }
 
     render() {
-
         const maxItems = this.schema.maxItems ?? Number.MAX_SAFE_INTEGER;
         const itemCount = Array.isArray(this.data) ? (this.data as []).length : 0;
 
@@ -297,8 +278,8 @@ export class ControlArrayElement extends ControlBaseElement {
     protected showAddDialog() {
 
         let selectedItemInfo: CombinatorInfo | undefined;
-        const listItems: ListItem[] = this.itemInfos!.map((itemInfo, index) => {
-            const labelStr = this.enumControlProps?.options?.[index].label ?? itemInfo.title;
+        const listItems: ListItem[] = this.itemInfos!.map((itemInfo) => {
+            const labelStr = itemInfo.title;
             return {
                 text: labelStr,
                 value: labelStr,
