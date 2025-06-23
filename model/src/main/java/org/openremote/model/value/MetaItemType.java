@@ -137,7 +137,7 @@ public final class MetaItemType {
      * {@link org.openremote.model.Constants} for well known units that UIs should support as a minimum. Currencies get
      * special handling and should be represented using the upper case 3 letter currency code as defined in ISO 4217
      */
-    public static final MetaItemDescriptor<String[]> UNITS = new MetaItemDescriptor<>("units", ValueType.TEXT.asArray());
+    public static final MetaItemDescriptor<Units[]> UNITS = new MetaItemDescriptor<>("units", ValueType.VALUE_UNIT.asArray());
 
     /**
      * {@link ValueConstraint}s to be applied to the {@link Attribute} value; these are added to any constraints defined
