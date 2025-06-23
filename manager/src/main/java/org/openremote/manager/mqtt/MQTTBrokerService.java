@@ -58,7 +58,6 @@ import org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal;
 import org.apache.activemq.artemis.spi.core.security.jaas.UserPrincipal;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.client.utils.URIBuilder;
-import org.jboss.logging.Logger;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.adapters.jaas.AbstractKeycloakLoginModule;
 import org.openremote.container.message.MessageBrokerService;
@@ -108,7 +107,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
     public static final String MQTT_SERVER_LISTEN_PORT = "MQTT_SERVER_LISTEN_PORT";
     public static final String ANONYMOUS_USERNAME = "anonymous";
-    public static final int DEFAULT_SESSION_EXPIRY_MILLIS = 5000;
+    // Allow 5 min durable session but this will not enable retained topics etc. as we delete queues aggressively for now
+    public static final int DEFAULT_SESSION_EXPIRY_MILLIS = 300000;
     protected final WildcardConfiguration wildcardConfiguration = new WildcardConfiguration();
     protected static final System.Logger LOG = System.getLogger(MQTTBrokerService.class.getName() + "." + API.name());
 
@@ -173,12 +173,12 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         // Create server config
         serverConfiguration = new ConfigurationImpl();
-        serverConfiguration.setMqttSessionScanInterval(5000);
+        serverConfiguration.setMqttSessionScanInterval(10000);
         serverConfiguration.addAcceptorConfiguration("in-vm", "vm://0?protocols=core");
         String serverURI = new URIBuilder().setScheme("tcp").setHost(host).setPort(port)
             .setParameter("protocols", "MQTT")
             .setParameter("allowLinkStealing", "false") // Preventing this ensures previous connection/session is properly cleaned up before a reconnect
-            .setParameter("defaultMqttSessionExpiryInterval", Integer.toString(DEFAULT_SESSION_EXPIRY_MILLIS)) // Don't support retained sessions has to be positive due to https://issues.apache.org/jira/browse/ARTEMIS-5540
+            .setParameter("defaultMqttSessionExpiryInterval", Integer.toString(DEFAULT_SESSION_EXPIRY_MILLIS))
             .build().toString();
         serverConfiguration.addAcceptorConfiguration("tcp", serverURI);
         serverConfiguration.registerBrokerPlugin(this);
@@ -193,7 +193,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         serverConfiguration.setWildCardConfiguration(wildcardConfiguration);
         serverConfiguration.setLiteralMatchMarkers("()");
 
-        // Configure global address settings - aggressively cleanup queues (don't support resumable sessions)
+        // Configure global address settings - aggressively cleanup queues (don't support retained messages)
         serverConfiguration.addQueueConfiguration(QueueConfiguration.of(wildcardConfiguration.getAnyWordsString()).setDurable(false));
         serverConfiguration.addAddressSetting(wildcardConfiguration.getAnyWordsString(),
             new AddressSettings()
@@ -387,7 +387,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
             @Override
             public void connectionFailed(ActiveMQException exception, boolean failedOver, String scaleDownTargetNodeID) {
-
                 connectionIDConnectionMap.remove(getConnectionIDString(connection));
 
                 if (connection.getClientID() != null) {

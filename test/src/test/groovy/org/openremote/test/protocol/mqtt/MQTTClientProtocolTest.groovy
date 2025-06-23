@@ -19,29 +19,11 @@
  */
 package org.openremote.test.protocol.mqtt
 
+import com.hivemq.client.internal.mqtt.MqttClientConnectionConfig
 import com.hivemq.client.internal.mqtt.handler.disconnect.MqttDisconnectUtil
-import com.hivemq.client.internal.mqtt.message.connect.connack.MqttConnAck
 import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3AsyncClientView
 import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
-import com.hivemq.client.mqtt.MqttClient
 import com.hivemq.client.mqtt.MqttClientConfig
-import com.hivemq.client.internal.mqtt.MqttClientConnectionConfig
-import com.hivemq.client.mqtt.MqttClientState
-import com.hivemq.client.mqtt.datatypes.MqttQos
-import com.hivemq.client.mqtt.exceptions.ConnectionClosedException
-import com.hivemq.client.mqtt.exceptions.ConnectionFailedException
-import com.hivemq.client.mqtt.lifecycle.MqttDisconnectSource
-import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient
-import com.hivemq.client.mqtt.mqtt3.Mqtt3ClientBuilder
-import com.hivemq.client.mqtt.mqtt3.exceptions.Mqtt3ConnAckException
-import com.hivemq.client.mqtt.mqtt3.exceptions.Mqtt3DisconnectException
-import com.hivemq.client.mqtt.mqtt3.lifecycle.Mqtt3ClientDisconnectedContext
-import com.hivemq.client.mqtt.mqtt3.message.connect.Mqtt3ConnectBuilder
-import com.hivemq.client.mqtt.mqtt3.message.connect.connack.Mqtt3ConnAck
-import com.hivemq.client.mqtt.mqtt3.message.subscribe.Mqtt3Subscribe
-import com.hivemq.client.mqtt.mqtt3.message.subscribe.suback.Mqtt3SubAck
-import com.hivemq.client.mqtt.mqtt3.message.subscribe.suback.Mqtt3SubAckReturnCode
-import io.netty.channel.socket.SocketChannel
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
@@ -52,20 +34,11 @@ import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder
 import org.bouncycastle.util.io.pem.PemObject
 import org.bouncycastle.util.io.pem.PemWriter
-import org.openremote.agent.protocol.mqtt.MQTTAgent
-import org.openremote.agent.protocol.mqtt.MQTTAgentLink
-import org.openremote.agent.protocol.mqtt.MQTTLastWill
-import org.openremote.agent.protocol.mqtt.MQTTMessage
-import org.openremote.agent.protocol.mqtt.MQTTProtocol
-import org.openremote.agent.protocol.mqtt.MQTT_IOClient
+import org.openremote.agent.protocol.mqtt.*
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
-import org.openremote.container.Container
-import org.openremote.container.concurrent.ContainerScheduledExecutor
-import org.openremote.container.concurrent.ContainerThreadFactory
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.mqtt.DefaultMQTTHandler
 import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.manager.security.KeyStoreServiceImpl
@@ -90,7 +63,6 @@ import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import org.opentest4j.TestAbortedException
 import spock.lang.Ignore
-import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -104,19 +76,13 @@ import java.security.PrivateKey
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
-import java.util.concurrent.CancellationException
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.SynchronousQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
-import static org.openremote.model.value.ValueType.BOOLEAN
-import static org.openremote.model.value.ValueType.JSON
-import static org.openremote.model.value.ValueType.NUMBER
+import static org.openremote.model.value.ValueType.*
 
 class MQTTClientProtocolTest extends Specification implements ManagerContainerTrait {
 

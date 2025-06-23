@@ -9,28 +9,26 @@ import org.openremote.agent.protocol.mqtt.MQTTLastWill
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
 import org.openremote.manager.asset.AssetProcessingService
-import org.openremote.model.asset.impl.RoomAsset
-import org.openremote.model.attribute.MetaItem
-import org.openremote.model.util.UniqueIdentifierGenerator
-import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.mqtt.DefaultMQTTHandler
-import org.openremote.manager.mqtt.MQTTHandler
 import org.openremote.manager.mqtt.MQTTBrokerService
+import org.openremote.manager.mqtt.MQTTHandler
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.AssetEvent
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.agent.ConnectionStatus
+import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.UsernamePassword
 import org.openremote.model.event.shared.SharedEvent
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
-import org.openremote.test.ManagerContainerTrait
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
+import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -39,9 +37,7 @@ import java.util.function.Consumer
 
 import static org.openremote.container.util.MapAccess.getInteger
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_HOST
-import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_PORT
-import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString
+import static org.openremote.manager.mqtt.MQTTBrokerService.*
 import static org.openremote.model.value.MetaItemType.ACCESS_RESTRICTED_READ
 import static org.openremote.model.value.ValueType.TEXT
 
@@ -607,7 +603,6 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         when: "a restricted mqtt client subscribes to an unlinked asset"
         topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1BathroomId".toString()
-        def failTopic = topic
         newClient.addMessageConsumer(topic, {msg ->})
 
         then: "the subscription should fail but the consumer should still exist (as setRemoveConsumersOnSubscriptionFailure=false)"
