@@ -27,16 +27,14 @@ import org.openremote.model.value.*;
 import jakarta.persistence.Entity;
 import java.util.Optional;
 
-import static org.openremote.model.Constants.*;
-
 @Entity
 public class VentilationAsset extends Asset<VentilationAsset> {
 
     public static final AttributeDescriptor<Integer> FAN_SPEED = new AttributeDescriptor<>("fanSpeed", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+        .withUnits(Units.PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
     public static final AttributeDescriptor<Double> FLOW = new AttributeDescriptor<>("flow", ValueType.NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY))
-        .withUnits(UNITS_METRE, UNITS_CUBED, UNITS_PER, UNITS_HOUR);
+        .withUnits(Units.METRE, Units.CUBED, Units.PER, Units.HOUR);
 
     public static final AssetDescriptor<VentilationAsset> DESCRIPTOR = new AssetDescriptor<>("fan", "0b99c3", VentilationAsset.class);
 

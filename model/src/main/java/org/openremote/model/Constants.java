@@ -86,68 +86,6 @@ public interface Constants {
     String DYNAMIC_VALUE_PLACEHOLDER_REGEXP = "\\%VALUE(?::([^:]+))?\\%";
     String DYNAMIC_TIME_PLACEHOLDER_REGEXP = "\\%TIME([+-]P\\w*)?(?::(.+?))?\\%";
 
-    static String[] units(String...units) {
-        return units;
-    }
-
-    String UNITS_PER = "per";
-    String UNITS_SQUARED = "squared";
-    String UNITS_CUBED = "cubed";
-    String UNITS_PEAK = "peak";
-    String UNITS_MEGA = "mega";
-    String UNITS_KILO = "kilo";
-    String UNITS_CENTI = "centi";
-    String UNITS_HECTO = "hecto";
-    String UNITS_MICRO = "micro";
-    String UNITS_MILLI = "milli";
-    String UNITS_PERCENTAGE = "percentage";
-    String UNITS_ACRE = "acre";
-    String UNITS_HECTARE = "hectare";
-    String UNITS_DECIBEL = "decibel";
-    String UNITS_DECIBEL_ATTENUATED = "decibel_attenuated";
-    String UNITS_KNOT = "knot";
-    String UNITS_CELSIUS = "celsius";
-    String UNITS_KELVIN = "kelvin";
-    String UNITS_FAHRENHEIT = "fahrenheit";
-    String UNITS_YEAR = "year";
-    String UNITS_MONTH = "month";
-    String UNITS_WEEK = "week";
-    String UNITS_DAY = "day";
-    String UNITS_HOUR = "hour";
-    String UNITS_MINUTE = "minute";
-    String UNITS_SECOND = "second";
-    String UNITS_METRE = "metre";
-    String UNITS_INCH = "inch";
-    String UNITS_FOOT = "foot";
-    String UNITS_YARD = "yard";
-    String UNITS_MILE = "mile";
-    String UNITS_MILE_SCANDINAVIAN = "mile_scandinavian";
-    String UNITS_GRAM = "gram";
-    String UNITS_OUNCE = "ounce";
-    String UNITS_MASS_POUND = "pound";
-    String UNITS_STONE = "stone";
-    String UNITS_DEGREE = "degree";
-    String UNITS_RADIAN = "radian";
-    String UNITS_LITRE = "litre";
-    String UNITS_GALLON = "gallon";
-    String UNITS_FLUID_OUNCE = "fluid_ounce";
-    String UNITS_JOULE = "joule";
-    String UNITS_BTU = "btu";
-    String UNITS_WATT = "watt";
-    String UNITS_LUX = "lux";
-    String UNITS_LUMEN = "lumen";
-    String UNITS_PASCAL = "pascal";
-    String UNITS_BAR = "bar";
-    String UNITS_IN_HG = "inch_mercury";
-    String UNITS_VOLT = "volt";
-    String UNITS_OHM = "ohm";
-    String UNITS_AMP = "amp";
-    String UNITS_HERTZ = "hertz";
-    String UNITS_RPM = "rpm";
-    String UNITS_PART_PER_MILLION = "ppm";
-    String UNITS_CARBON = "carbon";
-    String UNITS_VAR = "var";
-
     static boolean containsDynamicValuePlaceholder(String str) {
         return str.contains("%VALUE");
     }

@@ -189,12 +189,12 @@ public class ManagerDemoSetup extends ManagerSetup {
         energyManagement.getAttributes().addOrReplace(
                 new Attribute<>("powerTotalProducers", ValueType.NUMBER)
                     .addOrReplaceMeta(
-                        new MetaItem<>(MetaItemType.UNITS, Constants.units(Constants.UNITS_KILO, Constants.UNITS_WATT)),
+                        new MetaItem<>(MetaItemType.UNITS, Units.units(Units.KILO, Units.WATT)),
                         new MetaItem<>(MetaItemType.READ_ONLY, true),
                         new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),
                         new MetaItem<>(MetaItemType.RULE_STATE, true)),
                 new Attribute<>("powerTotalConsumers", ValueType.NUMBER).addOrReplaceMeta(
-                        new MetaItem<>(MetaItemType.UNITS, Constants.units(Constants.UNITS_KILO, Constants.UNITS_WATT)),
+                        new MetaItem<>(MetaItemType.UNITS, Units.units(Units.KILO, Units.WATT)),
                         new MetaItem<>(MetaItemType.READ_ONLY, true),
                         new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),
                         new MetaItem<>(MetaItemType.RULE_STATE, true))
@@ -213,7 +213,7 @@ public class ManagerDemoSetup extends ManagerSetup {
                 new Attribute<>(BuildingAsset.COUNTRY, "Netherlands"),
                 new Attribute<>(Asset.LOCATION, new GeoJSONPoint(4.488324, 51.906577)),
                 new Attribute<>("powerBalance", ValueType.NUMBER).addMeta(
-                        new MetaItem<>(MetaItemType.UNITS, Constants.units(Constants.UNITS_KILO, Constants.UNITS_WATT)),
+                        new MetaItem<>(MetaItemType.UNITS, Units.units(Units.KILO, Units.WATT)),
                         new MetaItem<>(MetaItemType.READ_ONLY),
                         new MetaItem<>(MetaItemType.RULE_STATE),
                         new MetaItem<>(MetaItemType.STORE_DATA_POINTS))
@@ -1024,7 +1024,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         parkingGroupAsset.getAttributes().addOrReplace(
                 new Attribute<>("totalOccupancy", ValueType.POSITIVE_INTEGER)
                         .addMeta(
-                                new MetaItem<>(MetaItemType.UNITS, Constants.units(Constants.UNITS_PERCENTAGE)),
+                                new MetaItem<>(MetaItemType.UNITS, Units.units(Units.PERCENTAGE)),
                                 new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100))),
                                 new MetaItem<>(MetaItemType.READ_ONLY),
                                 new MetaItem<>(MetaItemType.RULE_STATE),
@@ -1754,7 +1754,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         paprika.setParent(distributor1);
         paprika.getAttributes().getOrCreate("flowPerMeter", ValueType.NUMBER)
                 .addMeta(new MetaItem<>(READ_ONLY), new MetaItem<>(RULE_STATE), new MetaItem<>(STORE_DATA_POINTS),
-                        new MetaItem<>(UNITS, Constants.units(UNITS_LITRE, UNITS_PER, UNITS_METRE, UNITS_SQUARED, UNITS_HOUR)));
+                        new MetaItem<>(UNITS, Units.units(Units.LITRE, Units.PER, Units.METRE, Units.SQUARED, Units.HOUR)));
         paprika.getAttribute(BuildingAsset.AREA).ifPresent(assetAttribute -> {
             assetAttribute.addMeta(new MetaItem<>(RULE_STATE))
                     .setValue(1800);});

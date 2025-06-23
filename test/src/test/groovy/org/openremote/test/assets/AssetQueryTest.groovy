@@ -8,6 +8,7 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.Constants
+import org.openremote.model.value.Units
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.agent.Agent
@@ -457,7 +458,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 .select(new Select().excludeAttributes())
                 .attributes(
                     new AttributePredicate().meta(
-                        new NameValuePredicate(UNITS.name, new ArrayPredicate(Constants.UNITS_KILO, 0, 3, null, null, false))
+                        new NameValuePredicate(UNITS.name, new ArrayPredicate(Units.KILO, 0, 3, null, null, false))
                     )
                 )
         )

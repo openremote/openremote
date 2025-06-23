@@ -22,18 +22,17 @@ package org.openremote.model.asset.impl;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.Units;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
 import java.util.Optional;
 
-import static org.openremote.model.Constants.*;
-
 @Entity
 public class RoomAsset extends Asset<RoomAsset> {
 
     public static final AttributeDescriptor<Integer> AREA = new AttributeDescriptor<>("area", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_METRE, UNITS_SQUARED);
+        .withUnits(Units.METRE, Units.SQUARED);
     public static final AttributeDescriptor<Integer> ROOM_NUMBER = new AttributeDescriptor<>("roomNumber", ValueType.POSITIVE_INTEGER);
 
     public static final AssetDescriptor<RoomAsset> DESCRIPTOR = new AssetDescriptor<>("door", "2eaaa2", RoomAsset.class);
