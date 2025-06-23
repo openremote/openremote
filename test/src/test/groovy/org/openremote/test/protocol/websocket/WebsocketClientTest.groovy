@@ -253,7 +253,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             assert (receivedMessages.get(0) as TriggeredEventSubscription).events.size() == 1
             assert (receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) instanceof AssetEvent
             assert ((receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) as AssetEvent).id == managerTestSetup.apartment1LivingroomId
-            assert ((receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) as AssetEvent).attributeNames.size() == 7
+            assert ((receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) as AssetEvent).attributeNames.size() == 8
             assert !((receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) as AssetEvent).attributeNames.contains("testAttribute")
         }
 
