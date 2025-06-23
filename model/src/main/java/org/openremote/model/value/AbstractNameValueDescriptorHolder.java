@@ -40,7 +40,7 @@ public abstract class AbstractNameValueDescriptorHolder<T> implements ValueDescr
     @JsonIgnore
     protected ValueFormat format;
     @JsonIgnore
-    protected String[] units;
+    protected Units[] units;
 
     AbstractNameValueDescriptorHolder() {}
 
@@ -50,7 +50,7 @@ public abstract class AbstractNameValueDescriptorHolder<T> implements ValueDescr
         this.constraints = constraints;
     }
 
-    public AbstractNameValueDescriptorHolder(String name, ValueDescriptor<T> type, ValueConstraint[] constraints, ValueFormat format, String[] units) {
+    public AbstractNameValueDescriptorHolder(String name, ValueDescriptor<T> type, ValueConstraint[] constraints, ValueFormat format, Units[] units) {
         this.name = name;
         this.type = type;
         this.constraints = constraints;
@@ -88,7 +88,7 @@ public abstract class AbstractNameValueDescriptorHolder<T> implements ValueDescr
     }
 
     @Override
-    public String[] getUnits() {
+    public Units[] getUnits() {
         return units;
     }
 
