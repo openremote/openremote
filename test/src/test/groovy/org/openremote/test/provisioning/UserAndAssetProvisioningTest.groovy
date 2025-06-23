@@ -160,13 +160,14 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         List<ConnectionStatus> connectionStatuses = new CopyOnWriteArrayList<>()
         Consumer<String> subscribeFailureCallback = {String topic ->
             subscribeFailures.add(topic)
-            LOG.info("device1Client failed to subscribe to topic: ${it}")
+            LOG.info("device1Client failed to subscribe to topic: ${topic}")
         }
         device1Client = new MQTT_IOClient(mqttDevice1ClientId, mqttHost, mqttPort, false, false, null, null, null)
         device1SnoopClient = new MQTT_IOClient(mqttDevice1SnoopClientId, mqttHost, mqttPort, false, false, null, null, null)
         device1Client.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         device1Client.setRemoveConsumersOnSubscriptionFailure(true)
         device1Client.addConnectionStatusConsumer({connectionStatus ->
+            LOG.info("Device 1 connection status changed: $connectionStatus")
             connectionStatuses.add(connectionStatus)})
         device1Client.connect()
 
@@ -623,17 +624,19 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         existingConnection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
         device1Responses.clear()
         connectionStatuses.clear()
+        subscribeFailures.clear()
         provisioningConfig.setDisabled(true)
         provisioningConfig = provisioningService.merge(provisioningConfig)
 
         then: "already connected client that was authenticated should be disconnected, then reconnect and should fail to re-subscribe to asset and attribute events"
         conditions.eventually {
             assert connectionStatuses.size() >= 1
-            assert connectionStatuses.get(0) == ConnectionStatus.DISCONNECTED
+            assert connectionStatuses.get(0) == ConnectionStatus.CONNECTING
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != null
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != existingConnection
             connection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
             assert connection != null
+            subscribeFailures.size() == 2
         }
 
         when: "the re-connected client re-authenticates"
