@@ -1,12 +1,10 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+import {customElement, property} from "lit/decorators.js";
 import {ifDefined} from "lit/directives/if-defined.js";
 import {until} from "lit/directives/until.js";
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
 import {i18next, translate} from "@openremote/or-translate";
 import {
-    Agent,
-    AgentDescriptor,
     AgentLink,
     Attribute,
     AttributeDescriptor,
@@ -30,7 +28,6 @@ import {
     InputType,
     OrInputChangedEvent,
     OrInputChangedEventDetail,
-    OrMwcInput,
     ValueInputProvider,
     ValueInputProviderGenerator,
     ValueInputProviderOptions,
@@ -40,7 +37,7 @@ import "@openremote/or-map";
 import {geoJsonPointInputTemplateProvider} from "@openremote/or-map";
 import "@openremote/or-json-forms";
 import {ErrorObject, OrJSONForms, StandardRenderers} from "@openremote/or-json-forms";
-import {agentIdRendererRegistryEntry, loadAgents} from "./agent-link-json-forms-renderer";
+import {agentIdRendererRegistryEntry} from "./agent-link-json-forms-renderer";
 
 export class OrAttributeInputChangedEvent extends CustomEvent<OrAttributeInputChangedEventDetail> {
 
@@ -118,7 +115,6 @@ export function getHelperText(sending: boolean, error: boolean, timestamp: numbe
 }
 
 const jsonFormsAttributeRenderers = [...StandardRenderers, agentIdRendererRegistryEntry];
-type ErrorMessage = "agentNotFound" | "agentTypeMismatch";
 
 export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => ValueInputProviderGenerator = (fallback) => (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
     if (valueDescriptor.jsonType === "object" || valueDescriptor.arrayDimensions && valueDescriptor.arrayDimensions > 0) {
@@ -131,39 +127,26 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
         let schema: any;
         const jsonForms: Ref<OrJSONForms> = createRef();
         const loadingWrapper: Ref<OrLoadingWrapper> = createRef();
-        let loadedAgents: Agent[] = []; // TODO: handle CUSTOM field properly
+
         let initialised = false;
-        let agentLink: AgentLink | undefined; // TODO: handle CUSTOM field properly
+        let prevValue: any;
 
-        const onAgentLinkChanged = (dataAndErrors: {errors: ErrorObject[] | undefined, data: any}) => {
-            if (!initialised) {
-                return;
-            }
+        const onChanged = (dataAndErrors: {errors: ErrorObject[] | undefined, data: any}) => {
+          if (!initialised) { 
+              return
+          };
 
-            const newAgentLink: AgentLink | undefined = dataAndErrors.data;
-
-            if (newAgentLink) {
-                const agent = loadedAgents.find((agnt) => agnt.id === newAgentLink!.id);
-                if (agent) {
-                    const newAgentDescriptor = AssetModelUtil.getAssetDescriptor(agent.type) as AgentDescriptor;
-                    if (newAgentDescriptor) {
-                        newAgentLink.type = newAgentDescriptor.agentLinkType!;
-                    }
-                }
-            }
-
-            if (!Util.objectsEqual(newAgentLink, agentLink)) {
-                agentLink = newAgentLink;
-                valueChangeNotifier({
-                    value: newAgentLink
-                });
-            }
+          if (!Util.objectsEqual(dataAndErrors.data, prevValue)) {
+              prevValue = dataAndErrors.data;
+              valueChangeNotifier({
+                  value: dataAndErrors.data
+              });
+          }
         };
-
-        const doLoad = async (link: AgentLink) => {
-
+        
+        const doLoad = async (data: any) => {
             if (!initialised) {
-                agentLink = link;
+                prevValue = data;
             }
             initialised = true;
 
@@ -199,68 +182,27 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
                 // }
             }
 
-            loadedAgents = await loadAgents();
-
-            if (!loadedAgents) {
-                console.warn("Failed to load agents for agent link");
-                return;
-            }
-
-            // if (link) {
-            //     if (link.id) {
-            //         const matchedAgent = loadedAgents.find(agent => agent.id === link.id);
-            //         if (!matchedAgent) {
-            //             console.warn("Agent link: linked agent could not be found");
-            //             link.id = "";
-            //         }
-            //     } else {
-            //         link.id = "";
-            //     }
-            // }
-
-            // let error: ErrorMessage | undefined;
-            //
-            // if (!matchedAgent) {
-            //     console.warn("Linked agent cannot be found: " + agentLink);
-            //     error = "agentNotFound";
-            // } else {
-            //     // Check agent link type
-            //     const agentDescriptor = AssetModelUtil.getAssetDescriptor(matchedAgent.type) as AgentDescriptor;
-            //     if (!agentDescriptor) {
-            //         console.warn("Failed to load agent descriptor for agent link: " + agentLink);
-            //         error = "agentNotFound";
-            //     } else if (agentDescriptor.agentLinkType !== agentLink.type) {
-            //         console.warn("Agent link type does not match agent descriptor agent link type: " + agentLink);
-            //         error = "agentTypeMismatch";
-            //     }
-            // }
-
             if (jsonForms.value && loadingWrapper.value) {
                 const forms = jsonForms.value;
                 forms.schema = schema;
-                forms.data = link;
+                forms.data = data;
                 loadingWrapper.value.loading = false;
             }
         };
 
         const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
-
-            // Need to have a value so that the agent ID picker is shown
             if (!value) {
-                if (valueDescriptor.arrayDimensions && valueDescriptor.arrayDimensions > 0) {
-                    value = [];
-                } else if (valueDescriptor.name === "agentLink") { // TODO: resolve default and all required properties on root object
+                // Need to have a value so that the agent ID picker is shown
+                if (valueDescriptor.name === "agentLink") {
                     value = {
                         id: "",
                         type: "DefaultAgentLink"
                     };
-                } else if (valueDescriptor.jsonType === "object") {
-                    value = {}
                 }
             }
 
             // Schedule loading
-            window.setTimeout(() => doLoad(value as AgentLink), 0);
+            window.setTimeout(() => doLoad(value), 0);
 
             return html`
                 <style>
@@ -275,7 +217,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
                 <or-loading-wrapper ${ref(loadingWrapper)} .loading="${true}">
                     <or-json-forms .renderers="${jsonFormsAttributeRenderers}" ${ref(jsonForms)}
                                    .disabled="${disabled}" .readonly="${readonly}" .label="${label}"
-                                   .schema="${schema}" .uischema="${uiSchema}" .onChange="${onAgentLinkChanged}"></or-json-forms>
+                                   .schema="${schema}" .uischema="${uiSchema}" .onChange="${onChanged}"></or-json-forms>
                 </or-loading-wrapper>
             `;
         };

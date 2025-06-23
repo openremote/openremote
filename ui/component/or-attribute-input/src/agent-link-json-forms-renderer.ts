@@ -9,14 +9,13 @@ import {
     formatIs
 } from "@jsonforms/core";
 import manager, { OREvent } from "@openremote/core";
-import { Agent } from "@openremote/model";
+import { Agent, AgentDescriptor, AssetModelUtil } from "@openremote/model";
 import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { html } from "lit";
 import "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import { until } from "lit/directives/until.js";
-import { showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 /**
  * This function creates a short lived cache for loading the list of agents; this is useful when multiple instances
@@ -27,7 +26,7 @@ let loadingPromise: Promise<Agent[]> | undefined;
 let subscribed = false;
 const timeout = 2000;
 
-export function loadAgents(): PromiseLike<Agent[]> {
+function loadAgents(): PromiseLike<Agent[]> {
 
     if (agents) {
         return Promise.resolve(agents);
@@ -77,6 +76,8 @@ export function loadAgents(): PromiseLike<Agent[]> {
     return loadingPromise;
 }
 
+type ErrorMessage = "agentNotFound" | "agentTypeMismatch";
+
 const agentIdTester: RankedTester = rankWith(
     6,
     and(uiTypeIs("Control"), formatIs("or-agent-id"))
@@ -89,12 +90,22 @@ const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
     };
 
     const onAgentChanged = (agent: Agent | undefined) => {
-        props.handleChange(props.path, agent ? agent.id : undefined);
-        return;
+        if (!agents) {
+            return;
+        }
+
+        if (agent) {
+            const newAgentDescriptor = AssetModelUtil.getAssetDescriptor(agent.type) as AgentDescriptor;
+            if (newAgentDescriptor) {
+                props.handleChange("", {
+                  id: agent.id,
+                  type: newAgentDescriptor.agentLinkType
+                });
+            }
+        }
     };
 
     const loadedTemplatePromise = loadAgents().then(agents => {
-
         const options: [string, string][] = agents.map(agent => [agent.id!, agent.name + " (" + agent.id + ")"]);
 
         return html`
@@ -120,3 +131,26 @@ export const agentIdRendererRegistryEntry: JsonFormsRendererRegistryEntry = {
     tester: agentIdTester,
     renderer: agentIdRenderer
 };
+
+
+// if (!loadedAgents) {
+//     console.warn("Failed to load agents for agent link");
+//     return;
+// }
+
+// let error: ErrorMessage | undefined;
+//
+// if (!matchedAgent) {
+//     console.warn("Linked agent cannot be found: " + agentLink);
+//     error = "agentNotFound";
+// } else {
+//     // Check agent link type
+//     const agentDescriptor = AssetModelUtil.getAssetDescriptor(matchedAgent.type) as AgentDescriptor;
+//     if (!agentDescriptor) {
+//         console.warn("Failed to load agent descriptor for agent link: " + agentLink);
+//         error = "agentNotFound";
+//     } else if (agentDescriptor.agentLinkType !== agentLink.type) {
+//         console.warn("Agent link type does not match agent descriptor agent link type: " + agentLink);
+//         error = "agentTypeMismatch";
+//     }
+// }

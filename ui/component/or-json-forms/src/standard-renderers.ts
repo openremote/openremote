@@ -294,7 +294,8 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
     const contentProps: OwnPropsOfRenderer & AdditionalProps = {
         schema: matchedSchema,
         uischema: matchedUischema,
-        path: [path, matchedSchema.title].filter(Boolean).join("."),
+        path,
+        // path: [path, matchedSchema.title].filter(Boolean).join("."),
         renderers: renderers,
         cells: cells,
         required: props.required || !!required,
@@ -304,6 +305,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
     }
 
     const test = mapStateToControlProps({jsonforms: state}, contentProps as any)
+    // console.debug("anyOfOneOfControlRenderer", state, { ...contentProps, label: test.label })
     // TODO: make sure to handle all possible controls here
     return getTemplateFromProps(state, { ...contentProps, label: test.label });
 }
