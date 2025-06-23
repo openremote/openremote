@@ -139,14 +139,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             failedSubs.add(it)
         }
         client.addConnectionStatusConsumer {
-//            if (it == ConnectionStatus.CONNECTED) {
-//                def temp = new ArrayList<>(failedSubs)
-//                failedSubs.clear()
-//                if (!temp.isEmpty()) {
-//                    LOG.info("CONNECTED...retrying failed subscriptions")
-//                    temp.forEach { t -> client.addMessageConsumer(t, consumer) }
-//                }
-//            }
+            LOG.info("Connection status changed: $it")
         }
 
         and: "subscriptions are added before connect"

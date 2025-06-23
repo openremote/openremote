@@ -58,7 +58,8 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * HiveMQ client re-subscribing has no callback mechanism so we cannot track which subscriptions fail on re-connect
- * so we have to manually handle reconnect and re-subscribe until this issue is resolved
+ * so we have to manually handle reconnect and re-subscribe until this issue is resolved, if this is ever implemented
+ * then automaticReconnect could be reinstated - see version history if/when needed
  * (see <a href="https://github.com/hivemq/hivemq-mqtt-client/issues/510"></a>)
  */
 public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S>> {
@@ -154,29 +155,9 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         Mqtt3ClientBuilder builder = MqttClient.builder()
             .useMqttVersion3()
             .identifier(clientId)
-// RT: Not using this as no access to the CONNACK to check session present flag
-//            .addConnectedListener(context -> {
-//                LOG.info("Connection established uri=" + getClientUri());
-//                onConnectionStatusChanged(ConnectionStatus.CONNECTED);
-//            })
             .addDisconnectedListener(context -> {
-//                if (this.usernamePassword != null) {
-//                    ((Mqtt3ClientDisconnectedContext) context).getReconnector().connectWith()
-//                            .simpleAuth()
-//                            .username(usernamePassword.getUsername())
-//                            .password(usernamePassword.getPassword().getBytes())
-//                            .applySimpleAuth()
-//                            .applyConnect();
-//                }
-//
-//                context.getReconnector()
-//                        .resubscribeIfSessionPresent(resubscribeIfSessionPresent)
-//                        .resubscribeIfSessionExpired(true)
-//                        .reconnect(!disconnected);
-
                 // Remove all subscriptions so we can add them again on connect and get a completable future for them
                 // this allows us to track any failed subscriptions on reconnect
-
                 boolean reconnect = false;
 
                 synchronized (this) {
@@ -199,10 +180,6 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
                     doReconnect();
                 }
             });
-//            .automaticReconnect()
-//            .initialDelay(RECONNECT_DELAY_INITIAL_MILLIS, TimeUnit.MILLISECONDS)
-//            .maxDelay(RECONNECT_DELAY_MAX_MILLIS, TimeUnit.MILLISECONDS)
-//            .applyAutomaticReconnect();
 
         if (secure) {
             MqttClientSslConfigBuilder sslBuilder = MqttClientSslConfig.builder();
@@ -459,30 +436,6 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
             onConnectionStatusChanged(ConnectionStatus.CONNECTING);
         }
         scheduleDoConnect(100);
-//        LOG.info("Establishing connection: " + getClientUri());
-//
-//        Mqtt3ConnectBuilder.Send<CompletableFuture<Mqtt3ConnAck>> completableFutureSend = client.connectWith()
-//                .cleanSession(cleanSession)
-//                .keepAlive(10);
-//
-//        if (usernamePassword != null) {
-//            completableFutureSend = completableFutureSend.simpleAuth()
-//                    .username(usernamePassword.getUsername())
-//                    .password(usernamePassword.getPassword().getBytes())
-//                    .applySimpleAuth();
-//        }
-//
-//        completableFutureSend.send().whenComplete((connAck, throwable) -> {
-//            if (connAck != null) {
-//                LOG.fine("Connected code=" + connAck.getReturnCode() + ", sessionPresent=" + connAck.isSessionPresent());
-//            } else if (throwable != null) {
-//                if (throwable instanceof CancellationException) {
-//                    LOG.info("Connection cancelled uri=" + getClientUri());
-//                } else {
-//                    LOG.info("Connection failed uri=" + getClientUri() + ", error=" + throwable.getMessage());
-//                }
-//            }
-//        });
     }
 
     protected void waitForConnectFuture(Future<Void> connectFuture) throws Exception {
