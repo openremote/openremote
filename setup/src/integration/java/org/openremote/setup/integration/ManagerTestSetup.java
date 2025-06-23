@@ -186,7 +186,7 @@ public class ManagerTestSetup extends ManagerSetup {
                     .addOrReplaceMeta(
                         new MetaItem<>(LABEL, "Light 1 Dimmer"),
                         new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId())),
-                        new MetaItem<>(UNITS, Constants.units(UNITS_PERCENTAGE)),
+                        new MetaItem<>(UNITS, Units.units(Units.PERCENTAGE)),
                         new MetaItem<>(CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100)))
                     ),
             new Attribute<>("light1Color", COLOUR_RGB, new ColourRGB(88, 123, 88))
@@ -202,7 +202,7 @@ public class ManagerTestSetup extends ManagerSetup {
                     .addOrReplaceMeta(
                         new MetaItem<>(LABEL, "Light 1 Usage"),
                         new MetaItem<>(READ_ONLY, true),
-                        new MetaItem<>(UNITS, Constants.units(UNITS_KILO, UNITS_WATT, UNITS_HOUR)),
+                        new MetaItem<>(UNITS, Units.units(Units.KILO, Units.WATT, Units.HOUR)),
                         new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()))
                     )
         );
@@ -489,7 +489,7 @@ public class ManagerTestSetup extends ManagerSetup {
                 new Attribute<>("co2Level", POSITIVE_INTEGER, 350)
                         .addMeta(
                                 new MetaItem<>(LABEL, "CO2 Level"),
-                                new MetaItem<>(UNITS, Constants.units(UNITS_PART_PER_MILLION)),
+                                new MetaItem<>(UNITS, Units.units(Units.PART_PER_MILLION)),
                                 new MetaItem<>(RULE_STATE, true)
                         ),
                 new Attribute<>("lightSwitch", BOOLEAN, true)

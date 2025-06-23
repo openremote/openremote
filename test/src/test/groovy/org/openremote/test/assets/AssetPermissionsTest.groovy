@@ -647,7 +647,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         resultMeta.has(AGENT_LINK)
         resultMeta.getValue(ACCESS_RESTRICTED_READ).orElse(false)
         resultMeta.getValue(UNITS).isPresent()
-        resultMeta.getValue(UNITS).get()[0] == UNITS_CELSIUS
+        resultMeta.getValue(UNITS).get()[0] == Units.CELSIUS
 
         when: "an asset is retrieved by ID in a foreign realm"
         assetResource.get(null, managerTestSetup.thingId)

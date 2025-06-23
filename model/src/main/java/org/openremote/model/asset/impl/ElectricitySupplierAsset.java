@@ -21,36 +21,32 @@ package org.openremote.model.asset.impl;
 
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.value.AbstractNameValueHolder;
-import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueType;
+import org.openremote.model.value.*;
 
 import jakarta.persistence.Entity;
 import java.util.Optional;
 
-import static org.openremote.model.Constants.*;
 import static org.openremote.model.value.ValueType.NUMBER;
 
 @Entity
 public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySupplierAsset> {
 
-    public static final AttributeDescriptor<Double> FINANCIAL_COST = new AttributeDescriptor<>("financialCost", ValueType.NUMBER).withUnits("EUR");
+    public static final AttributeDescriptor<Double> FINANCIAL_COST = new AttributeDescriptor<>("financialCost", ValueType.NUMBER).withUnits(Units.EUR);
     public static final AttributeDescriptor<Double> CARBON_COST = new AttributeDescriptor<>("carbonCost", ValueType.NUMBER,
             new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_GRAM);
+    ).withUnits(Units.KILO, Units.GRAM);
     public static final AttributeDescriptor<Double> ENERGY_LOCAL = new AttributeDescriptor<>("energyLocal", NUMBER,
             new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
+    ).withUnits(Units.KILO, Units.WATT, Units.HOUR);
     public static final AttributeDescriptor<Double> ENERGY_RENEWABLE_SHARE = new AttributeDescriptor<>("energyRenewableShare", NUMBER,
             new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_PERCENTAGE);
+    ).withUnits(Units.PERCENTAGE);
     public static final AttributeDescriptor<Double> ENERGY_SELF_CONSUMPTION = new AttributeDescriptor<>("energySelfConsumption", NUMBER,
             new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_PERCENTAGE);
+    ).withUnits(Units.PERCENTAGE);
     public static final AttributeDescriptor<Double> ENERGY_AUTARKY = new AttributeDescriptor<>("energyAutarky", NUMBER,
             new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_PERCENTAGE);
+    ).withUnits(Units.PERCENTAGE);
 
     public static final AttributeDescriptor<Double> POWER_SETPOINT = ElectricityAsset.POWER_SETPOINT.withOptional(true);
     public static final AttributeDescriptor<Double> POWER_IMPORT_MIN = ElectricityAsset.POWER_IMPORT_MIN.withOptional(true);
@@ -63,9 +59,9 @@ public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySuppli
 
     public static final AssetDescriptor<ElectricitySupplierAsset> DESCRIPTOR = new AssetDescriptor<>("upload-network", "9257A9", ElectricitySupplierAsset.class);
     public static final AttributeDescriptor<Double> CARBON_IMPORT = new AttributeDescriptor<>("carbonImport", ValueType.NUMBER)
-            .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(false);
+            .withUnits(Units.KILO, Units.GRAM, Units.PER, Units.KILO, Units.WATT, Units.HOUR).withOptional(false);
     public static final AttributeDescriptor<Double> CARBON_EXPORT = new AttributeDescriptor<>("carbonExport", ValueType.NUMBER)
-            .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(false);
+            .withUnits(Units.KILO, Units.GRAM, Units.PER, Units.KILO, Units.WATT, Units.HOUR).withOptional(false);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)

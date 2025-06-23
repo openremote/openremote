@@ -26,24 +26,24 @@ import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.AbstractNameValueHolder;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.Units;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
 import java.util.Collection;
 import java.util.Optional;
 
-import static org.openremote.model.Constants.*;
 import static org.openremote.model.value.ValueType.BOOLEAN;
 
 @Entity
 public class ElectricityProducerWindAsset extends ElectricityProducerAsset {
 
     public static final AttributeDescriptor<Double> WIND_SPEED_REFERENCE = new AttributeDescriptor<>("windSpeedReference", ValueType.POSITIVE_NUMBER
-    ).withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND);
+    ).withUnits(Units.METRE, Units.PER, Units.SECOND);
     public static final AttributeDescriptor<Double> WIND_SPEED_MIN = new AttributeDescriptor<>("windSpeedMin", ValueType.POSITIVE_NUMBER
-    ).withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND);
+    ).withUnits(Units.METRE, Units.PER, Units.SECOND);
     public static final AttributeDescriptor<Double> WIND_SPEED_MAX = new AttributeDescriptor<>("windSpeedMax", ValueType.POSITIVE_NUMBER
-    ).withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND);
+    ).withUnits(Units.METRE, Units.PER, Units.SECOND);
 
     public static final AttributeDescriptor<Boolean> INCLUDE_FORECAST_WIND_SERVICE = new AttributeDescriptor<>("includeForecastWindService", BOOLEAN);
 

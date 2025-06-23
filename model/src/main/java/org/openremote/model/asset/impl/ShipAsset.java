@@ -27,9 +27,6 @@ import org.openremote.model.value.*;
 import jakarta.persistence.Entity;
 import java.util.Optional;
 
-import static org.openremote.model.Constants.UNITS_KNOT;
-import static org.openremote.model.Constants.UNITS_METRE;
-
 @Entity
 public class ShipAsset extends Asset<ShipAsset> {
 
@@ -41,9 +38,9 @@ public class ShipAsset extends Asset<ShipAsset> {
         new MetaItem<>(MetaItemType.FORMAT, new ValueFormat().setUseGrouping(false)));
     public static final AttributeDescriptor<Integer> DIRECTION = new AttributeDescriptor<>("direction", ValueType.DIRECTION);
     public static final AttributeDescriptor<Integer> LENGTH = new AttributeDescriptor<>("length", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_METRE);
+        .withUnits(Units.METRE);
     public static final AttributeDescriptor<Double> SPEED = new AttributeDescriptor<>("speed", ValueType.POSITIVE_NUMBER)
-        .withUnits(UNITS_KNOT);
+        .withUnits(Units.KNOT);
     public static final AttributeDescriptor<String> SHIP_TYPE = new AttributeDescriptor<>("shipType", ValueType.TEXT);
 
     public static final AssetDescriptor<ShipAsset> DESCRIPTOR = new AssetDescriptor<>("ferry", "000080", ShipAsset.class);

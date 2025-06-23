@@ -113,7 +113,7 @@ public class ManagerDemoSetup extends ManagerSetup {
                         new MetaItem<>(MetaItemType.RULE_RESET_IMMEDIATE, true),
                         new MetaItem<>(MetaItemType.LABEL, ""),
                         // new MetaItem<>(MetaItemType.FORMAT, ),
-                        new MetaItem<>(MetaItemType.UNITS, Constants.units(Constants.UNITS_CELSIUS, Constants.UNITS_FAHRENHEIT, Constants.UNITS_KELVIN)),
+                        new MetaItem<>(MetaItemType.UNITS, Constants.unitsUnits.CELSIUS, Constants.Units.FAHRENHEIT, Constants.Units.KELVIN)),
                         // new MetaItem<>(MetaItemType.CONSTRAINTS, {}),
                         new MetaItem<>(MetaItemType.SECRET, true),
                         new MetaItem<>(MetaItemType.MULTILINE, true),

@@ -457,7 +457,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 .select(new Select().excludeAttributes())
                 .attributes(
                     new AttributePredicate().meta(
-                        new NameValuePredicate(UNITS.name, new ArrayPredicate(Constants.UNITS_KILO, 0, 3, null, null, false))
+                        new NameValuePredicate(UNITS.name, new ArrayPredicate(Units.KILO, 0, 3, null, null, false))
                     )
                 )
         )

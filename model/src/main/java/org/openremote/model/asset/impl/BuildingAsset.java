@@ -25,6 +25,7 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.Units;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
@@ -39,7 +40,7 @@ public class BuildingAsset extends CityAsset {
     public static final AttributeDescriptor<String> STREET = new AttributeDescriptor<>("street", ValueType.TEXT);
     public static final AttributeDescriptor<String> POSTAL_CODE = new AttributeDescriptor<>("postalCode", ValueType.TEXT);
     public static final AttributeDescriptor<Integer> AREA = new AttributeDescriptor<>("area", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_METRE, UNITS_SQUARED);
+        .withUnits(Units.METRE, Units.SQUARED);
     public static final AttributeDescriptor<String> COUNTRY = CityAsset.COUNTRY;
     public static final AttributeDescriptor<String> CITY = new AttributeDescriptor<>("city", ValueType.TEXT).withOptional(false);
 

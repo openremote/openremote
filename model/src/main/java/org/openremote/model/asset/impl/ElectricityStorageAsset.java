@@ -21,14 +21,9 @@ package org.openremote.model.asset.impl;
 
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueConstraint;
-import org.openremote.model.value.ValueType;
+import org.openremote.model.value.*;
 
 import java.util.Optional;
-
-import static org.openremote.model.Constants.*;
 
 public abstract class ElectricityStorageAsset extends ElectricityAsset<ElectricityStorageAsset> {
 
@@ -37,16 +32,16 @@ public abstract class ElectricityStorageAsset extends ElectricityAsset<Electrici
     public static final AttributeDescriptor<Boolean> SUPPORTS_IMPORT = new AttributeDescriptor<>("supportsImport", ValueType.BOOLEAN);
     public static final AttributeDescriptor<Double> ENERGY_LEVEL = new AttributeDescriptor<>("energyLevel", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
+    ).withUnits(Units.KILO, Units.WATT, Units.HOUR);
     public static final AttributeDescriptor<Double> ENERGY_CAPACITY = new AttributeDescriptor<>("energyCapacity", ValueType.POSITIVE_NUMBER)
-        .withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
+        .withUnits(Units.KILO, Units.WATT, Units.HOUR);
     public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE = new AttributeDescriptor<>("energyLevelPercentage", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+    ).withUnits(Units.PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
     public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE_MAX = new AttributeDescriptor<>("energyLevelPercentageMax", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+        .withUnits(Units.PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
     public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE_MIN = new AttributeDescriptor<>("energyLevelPercentageMin", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+        .withUnits(Units.PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
     public static final AttributeDescriptor<Integer[][]> ENERGY_LEVEL_SCHEDULE = new AttributeDescriptor<>("energyLevelSchedule", ValueType.POSITIVE_INTEGER.asArray().asArray())
         .withOptional(true);
     public static final AttributeDescriptor<AttributeExecuteStatus> FORCE_CHARGE = new AttributeDescriptor<>("forceCharge", ValueType.EXECUTION_STATUS);

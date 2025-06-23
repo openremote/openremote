@@ -21,29 +21,23 @@ package org.openremote.model.asset.impl;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
-import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.ValueConstraint;
-import org.openremote.model.value.ValueFormat;
-import org.openremote.model.value.ValueType;
+import org.openremote.model.value.*;
 import org.openremote.model.value.impl.ColourRGB;
 
 import jakarta.persistence.Entity;
 import java.util.Optional;
-
-import static org.openremote.model.Constants.UNITS_KELVIN;
-import static org.openremote.model.Constants.UNITS_PERCENTAGE;
 
 @Entity
 public class LightAsset extends Asset<LightAsset> {
 
     public static final AttributeDescriptor<Boolean> ON_OFF = new AttributeDescriptor<>("onOff", ValueType.BOOLEAN).withFormat(ValueFormat.BOOLEAN_ON_OFF());
     public static final AttributeDescriptor<Integer> BRIGHTNESS = new AttributeDescriptor<>("brightness", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_PERCENTAGE)
+        .withUnits(Units.PERCENTAGE)
         .withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100))
         .withFormat(new ValueFormat().setAsSlider(true));
     public static final AttributeDescriptor<ColourRGB> COLOUR_RGB = new AttributeDescriptor<>("colourRGB", ValueType.COLOUR_RGB);
     public static final AttributeDescriptor<Integer> COLOUR_TEMPERATURE = new AttributeDescriptor<>("colourTemperature", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_KELVIN).withConstraints(new ValueConstraint.Min(1000), new ValueConstraint.Max(10000));
+        .withUnits(Units.KELVIN).withConstraints(new ValueConstraint.Min(1000), new ValueConstraint.Max(10000));
     public static final AssetDescriptor<LightAsset> DESCRIPTOR = new AssetDescriptor<>("lightbulb", "e6688a", LightAsset.class);
 
     /**

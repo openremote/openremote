@@ -37,6 +37,7 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.setup.Setup;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.Units;
 import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 
@@ -48,7 +49,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.model.Constants.*;
 import static org.openremote.model.value.MetaItemType.*;
 import static org.openremote.model.value.ValueType.*;
 
@@ -168,7 +168,7 @@ public class ManagerSetup implements Setup {
     protected void addDemoApartmentRoomCO2Sensor(RoomAsset room, boolean shouldBeLinked,
             Supplier<AgentLink<?>> agentLinker) {
         room.getAttributes().addOrReplace(new Attribute<>("co2Level", POSITIVE_INTEGER).addMeta(
-                new MetaItem<>(UNITS, Constants.units(UNITS_PART_PER_MILLION)), new MetaItem<>(LABEL, "CO2 level"),
+                new MetaItem<>(UNITS, Units.units(Units.PART_PER_MILLION)), new MetaItem<>(LABEL, "CO2 level"),
                 new MetaItem<>(RULE_STATE, true), new MetaItem<>(ACCESS_RESTRICTED_READ, true),
                 new MetaItem<>(READ_ONLY, true), new MetaItem<>(STORE_DATA_POINTS)));
 
@@ -183,7 +183,7 @@ public class ManagerSetup implements Setup {
         room.getAttributes()
                 .addOrReplace(new Attribute<>("humidity", POSITIVE_INTEGER).addMeta(new MetaItem<>(LABEL, "Humidity"),
                         new MetaItem<>(RULE_STATE, true), new MetaItem<>(ACCESS_RESTRICTED_READ, true),
-                        new MetaItem<>(READ_ONLY, true), new MetaItem<>(UNITS, Constants.units(UNITS_PERCENTAGE)),
+                        new MetaItem<>(READ_ONLY, true), new MetaItem<>(UNITS, Units.units(Units.PERCENTAGE)),
                         new MetaItem<>(STORE_DATA_POINTS)));
 
         if (shouldBeLinked) {
@@ -198,7 +198,7 @@ public class ManagerSetup implements Setup {
                 .addOrReplace(new Attribute<>("currentTemperature", NUMBER).addMeta(
                         new MetaItem<>(LABEL, "Current temperature"), new MetaItem<>(RULE_STATE, true),
                         new MetaItem<>(ACCESS_RESTRICTED_READ, true), new MetaItem<>(READ_ONLY, true),
-                        new MetaItem<>(UNITS, Constants.units(UNITS_CELSIUS)),
+                        new MetaItem<>(UNITS, Units.units(Units.CELSIUS)),
                         new MetaItem<>(FORMAT, ValueFormat.NUMBER_1_DP()), new MetaItem<>(STORE_DATA_POINTS)));
 
         if (shouldBeLinked) {
@@ -213,7 +213,7 @@ public class ManagerSetup implements Setup {
                 .addOrReplace(new Attribute<>("targetTemperature", NUMBER).addMeta(
                         new MetaItem<>(LABEL, "Target temperature"), new MetaItem<>(RULE_STATE, true),
                         new MetaItem<>(ACCESS_RESTRICTED_READ, true), new MetaItem<>(ACCESS_RESTRICTED_WRITE, true),
-                        new MetaItem<>(UNITS, Constants.units(UNITS_CELSIUS)),
+                        new MetaItem<>(UNITS, Units.units(Units.CELSIUS)),
                         new MetaItem<>(FORMAT, ValueFormat.NUMBER_1_DP()), new MetaItem<>(STORE_DATA_POINTS)));
 
         if (shouldBeLinked) {
@@ -245,12 +245,12 @@ public class ManagerSetup implements Setup {
                 // StartTime
                 new Attribute<>("smartSwitchStartTime" + switchName, TIMESTAMP).addMeta(
                         new MetaItem<>(LABEL, "Smart Switch actuator earliest start time " + switchName),
-                        new MetaItem<>(READ_ONLY, true), new MetaItem<>(UNITS, Constants.units(UNITS_SECOND)),
+                        new MetaItem<>(READ_ONLY, true), new MetaItem<>(UNITS, Units.units(Units.SECOND)),
                         new MetaItem<>(RULE_STATE, true)),
                 // StopTime
                 new Attribute<>("smartSwitchStopTime" + switchName, TIMESTAMP).addMeta(
                         new MetaItem<>(LABEL, "Smart Switch actuator latest stop time " + switchName),
-                        new MetaItem<>(READ_ONLY, true), new MetaItem<>(UNITS, Constants.units(UNITS_SECOND)),
+                        new MetaItem<>(READ_ONLY, true), new MetaItem<>(UNITS, Units.units(Units.SECOND)),
                         new MetaItem<>(RULE_STATE, true)),
                 // Enabled
                 new Attribute<>("smartSwitchEnabled" + switchName, NUMBER).addMeta(
