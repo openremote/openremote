@@ -66,7 +66,7 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
         },
         output: {
             path: dirname + "/dist",
-            publicPath: "/" + dirname.split(path.sep).slice(-1)[0] + "/",
+            publicPath: isDevServer ? "/" + dirname.split(path.sep).slice(-1)[0] + "/" : "./",
             filename: production ? "[name].[contenthash].js" : "[name].js"
         },
         module: {...getStandardModuleRules()},
@@ -274,7 +274,7 @@ function generateExports(dirname) {
         const entry = {};
         entry[name] = "./src/index.ts";
 
-        return {
+        const config = {
             entry: entry,
             mode: "production",
             output: {
@@ -290,6 +290,8 @@ function generateExports(dirname) {
             module: {...getStandardModuleRules()},
             externals: generateExternals(bundle)
         };
+
+        return config;
     });
 }
 

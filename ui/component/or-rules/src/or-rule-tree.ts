@@ -443,7 +443,7 @@ export class OrRuleTree extends OrTreeMenu {
 
         return getContentWithMenuTemplate(
             html`
-                <or-mwc-input type=${InputType.BUTTON} icon="plus"></or-mwc-input>`,
+                <or-mwc-input type=${InputType.BUTTON} icon="plus" title="${i18next.t("addRule")}"></or-mwc-input>`,
             menuOptions,
             undefined,
             value => onValueChange(String(value))
@@ -459,7 +459,6 @@ export class OrRuleTree extends OrTreeMenu {
         const type = global ? "global" : "realm";
         const realm = manager.isSuperUser() ? manager.displayRealm : manager.config.realm;
         const ruleset: RulesetUnion = {
-            id: 0,
             type: type,
             name: OrRules.DEFAULT_RULESET_NAME,
             lang: lang,
