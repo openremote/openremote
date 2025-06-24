@@ -35,6 +35,9 @@ import org.hibernate.type.SqlTypes;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Defines the model for connecting a realm in one instance to another instance
+ */
 @Entity
 @Table(name = "GATEWAY_CONNECTION")
 public class GatewayConnection {
