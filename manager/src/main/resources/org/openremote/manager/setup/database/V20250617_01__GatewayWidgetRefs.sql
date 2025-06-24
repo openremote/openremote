@@ -9,7 +9,7 @@ SET template = jsonb_set(
                                         widget,
                                         '{widgetConfig,attributeRefs}',
                                         CASE
-                                            WHEN widget -> 'widgetConfig' ->> 'gatewayId' <> '' THEN
+                                            WHEN widget -> 'widgetConfig' ->> 'gatewayId' != '' THEN
                                                 jsonb_build_array(
                                                         jsonb_build_object(
                                                                 'id', widget -> 'widgetConfig' ->> 'gatewayId',
