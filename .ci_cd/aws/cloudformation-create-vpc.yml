@@ -3,9 +3,8 @@
 # optional SSH access security group and optional VPC peer accepter role or peering request.
 # ---------------------------------------------------------------------------------------------------------------------
 
-AWSTemplateFormatVersion: 2010-09-09
+AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Creates standard OR VPC, subnets, route tables and IGW; optionally create VPC Peering request or acceptor role'
-
 Parameters:
   IPV4CIDR:
     Description: IPv4 CIDR for VPC

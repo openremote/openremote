@@ -1,4 +1,4 @@
-import {property, state} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import {AttributePicker, AttributePickerPickedEvent} from "./attribute-picker";
 import {PropertyValues, html, unsafeCSS} from "lit";
 import {DefaultColor5, Util} from "@openremote/core";
@@ -13,12 +13,12 @@ import "./assettype-list";
  * Custom Event that is dispatched upon closing the dialog.
  * Contains a map that is keyed by {@link AssetDescriptor.name}, with an array of {@link AttributeDescriptor}s of the selected attributes.
  */
-export class AssetTypeAttributePickerPickedEvent extends AttributePickerPickedEvent {
+export class OrAssetTypeAttributePickerPickedEvent extends AttributePickerPickedEvent {
 
     public static readonly NAME = "or-asset-type-attribute-picker-picked";
 
     constructor(attrDescriptors: Map<string, AttributeDescriptor[]>) {
-        super(AssetTypeAttributePickerPickedEvent.NAME, {
+        super(OrAssetTypeAttributePickerPickedEvent.NAME, {
             bubbles: true,
             composed: true,
             detail: attrDescriptors
@@ -28,7 +28,7 @@ export class AssetTypeAttributePickerPickedEvent extends AttributePickerPickedEv
 
 declare global {
     export interface HTMLElementEventMap {
-        [AssetTypeAttributePickerPickedEvent.NAME]: AssetTypeAttributePickerPickedEvent;
+        [OrAssetTypeAttributePickerPickedEvent.NAME]: OrAssetTypeAttributePickerPickedEvent;
     }
 }
 
@@ -37,10 +37,9 @@ declare global {
  *
  * @attribute {object} assetTypeFilter -Callback method for consumers to filter the asset type list shown. Returning true will make the asset type visible, returning false hides it.
  * @attribute {object} attributeFilter - Callback method for consumers to filter the attribute list shown. Returning true will make the attribute visible, returning false hides it.
- *
- * @remarks TODO: In the future this should be a separate component named "or-assettype-attribute-picker"
  */
-export class AssetTypeAttributePicker extends AttributePicker {
+@customElement("or-assettype-attribute-picker")
+export class OrAssetTypeAttributePicker extends AttributePicker {
 
     @property()
     public assetTypeFilter?: (descriptor: AssetDescriptor) => boolean;
@@ -185,7 +184,7 @@ export class AssetTypeAttributePicker extends AttributePicker {
                     <or-mwc-input id="add-btn" class="button" label="add" .type="${InputType.BUTTON}"></or-mwc-input>`,
                 action: () => {
                     if (!this.addBtn.disabled) {
-                        this.dispatchEvent(new AssetTypeAttributePickerPickedEvent(this.selectedAttributes));
+                        this.dispatchEvent(new OrAssetTypeAttributePickerPickedEvent(this.selectedAttributes));
                     }
                 }
             }
