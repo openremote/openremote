@@ -902,7 +902,7 @@ Resources:
       ExecutionRoleArn: !Ref DLMExecutionRoleArn
       Description: !Join 
         - ''
-        - - 'OpenRemote Docker Volumes from instance '
+        - - 'Docker Volumes from instance '
           - !Ref EC2Instance
       State: ENABLED
       PolicyDetails:
