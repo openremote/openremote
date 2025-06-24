@@ -905,7 +905,7 @@ Resources:
           - '-'
           - !Split
             - '.'
-            - !Sub ${Host}-or-data
+            - !Sub ${Host}
       State: ENABLED
       PolicyDetails:
         PolicyLanguage: STANDARD
