@@ -900,12 +900,10 @@ Resources:
     DependsOn: EBSDataVolume
     Properties:
       ExecutionRoleArn: !Ref DLMExecutionRoleArn
-      Description: 
-        !Join
-          - '-'
-          - !Split
-            - '.'
-            - !Sub ${Host}
+      Description: !Join 
+        - ''
+        - - 'OpenRemote Docker Volumes from instance '
+          - !Ref EC2Instance
       State: ENABLED
       PolicyDetails:
         PolicyLanguage: STANDARD
