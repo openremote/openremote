@@ -48,7 +48,7 @@ export default (path: string) => {
     /* Retry on CI only */
     retries: CI ? 2 : 0,
     /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-    reporter: [["html", { outputFolder: "playwright-e2e-report" }]],
+    reporter: [["html", { outputFolder: "playwright-app-report" }]],
     /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
     use: {
       // Defaults to the default Manager Docker container port as that significantly speeds up the tests compared to serving the frontend with Webpack

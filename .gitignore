@@ -63,6 +63,6 @@ local.properties
 
 # Playwright
 test-results
+playwright-app-report
 playwright-ct-report
-playwright-e2e-report
 .auth

@@ -435,7 +435,7 @@ jobs:
         run: echo "value=./gradlew -p ui/component npmTest" >> $GITHUB_OUTPUT
 
       - name: Define UI end-to-end test command
-        id: e2e-test-command
+        id: test-ui-apps-command
         run: echo "value=./gradlew -p ui/app/manager npmTest" >> $GITHUB_OUTPUT
 
       - name: Define manager docker build command
@@ -464,7 +464,7 @@ jobs:
           FIRST_MANAGER_TAG: ${{ steps.ci-cd-output.outputs.firstDockerTag }}
           MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.dockerTags }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
-          TEST_UI_CMD: ${{ steps.e2e-test-command.outputs.value }}
+          TEST_UI_CMD: ${{ steps.test-ui-apps-command.outputs.value }}
 
       - name: Define maven publish command
         id: maven-publish-command
@@ -578,7 +578,7 @@ jobs:
           echo 'Deployments: ${{ steps.deployments.outputs.value }}'
           echo 'Test backend command: ${{ steps.test-backend-command.outputs.value }}'
           echo 'Test UI components command: ${{ steps.test-ui-components-command.outputs.value }}'
-          echo 'End-To-End test command: ${{ steps.e2e-test-command.outputs.value }}'
+          echo 'End-To-End test command: ${{ steps.test-ui-apps-command.outputs.value }}'
           echo 'Manager docker build command: ${{ steps.manager-docker-command.outputs.value }}'
           echo 'Manager docker image: ${{ steps.manager-docker-command.outputs.managerDockerImage }}'
           echo 'Maven publish command: ${{ steps.maven-publish-command.outputs.value }}'
@@ -591,7 +591,7 @@ jobs:
           echo "************************************************************"
 
       - name: Pull docker images
-        if: ${{ steps.test-backend-command.outputs.value != '' || steps.e2e-test-command.outputs.value != '' }}
+        if: ${{ steps.test-backend-command.outputs.value != '' || steps.test-ui-apps-command.outputs.value != '' }}
         run: |
           # Only need keycloak and postgres services for backend and end-to-end testing
           docker compose -f profile/dev-testing.yml pull
@@ -662,7 +662,7 @@ jobs:
           path: test/build/reports/tests
 
       - name: Cleanup backend tests
-        if: ${{ steps.test-backend-command.outputs.value != '' && steps.e2e-test-command.outputs.value != '' }}
+        if: ${{ steps.test-backend-command.outputs.value != '' && steps.test-ui-apps-command.outputs.value != '' }}
         run: ${{ steps.run-backend-tests.outputs.cleanup }}
 
       - name: Run install dist
@@ -704,21 +704,21 @@ jobs:
         timeout-minutes: 20
 
       - name: Run install playwright browser(s)
-        if: ${{ steps.test-ui-components-command.value != '' || steps.e2e-test-command.outputs.value != '' }}
+        if: ${{ steps.test-ui-components-command.value != '' || steps.test-ui-apps-command.outputs.value != '' }}
         run: npx playwright install --with-deps chromium
         timeout-minutes: 20
 
-      - name: Run frontend component tests
+      - name: Run UI component tests
         if: steps.test-ui-components-command.outputs.value != ''
         run: ${{ steps.test-ui-components-command.outputs.value }}
         timeout-minutes: 20
         # continue-on-error: true
 
-      - name: Archive frontend component test results
+      - name: Archive UI component test results
         if: always()
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
         with:
-          name: frontend-component-test-results
+          name: ui-component-test-results
           path: playwright-ct-report
 
       - name: Run manager docker build command
@@ -726,8 +726,8 @@ jobs:
         run: |
           ${{ steps.manager-docker-command.outputs.value }}
 
-      - name: Run e2e tests
-        if: steps.e2e-test-command.outputs.value != ''
+      - name: Run UI app tests
+        if: steps.test-ui-apps-command.outputs.value != ''
         run: |
           composeProfile='profile/dev-ui.yml'
 
@@ -742,19 +742,19 @@ jobs:
           bash .ci_cd/host_init/healthy.sh profile
 
           # Run the tests
-          ${{ steps.e2e-test-command.outputs.value }}
+          ${{ steps.test-ui-apps-command.outputs.value }}
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
         timeout-minutes: 20
         # continue-on-error: true
 
-      - name: Archive e2e test results
+      - name: Archive UI app test results
         if: always()
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
         with:
-          name: e2e-test-results
-          path: playwright-e2e-report
+          name: ui-app-test-results
+          path: playwright-app-report
 
       - name: Scan manager docker image
         if: steps.manager-docker-command.outputs.pushRequired == 'true'
