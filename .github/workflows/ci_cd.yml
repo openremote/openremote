@@ -434,9 +434,9 @@ jobs:
         if: ${{ steps.skip-ui-component-tests.outputs.value != 'true' }}
         run: echo "value=./gradlew -p ui/component npmTest" >> $GITHUB_OUTPUT
 
-      - name: Define UI end-to-end test command
+      - name: Define UI app test command
         id: test-ui-apps-command
-        run: echo "value=./gradlew -p ui/app/manager npmTest" >> $GITHUB_OUTPUT
+        run: echo "value=./gradlew -p ui/app npmTest" >> $GITHUB_OUTPUT
 
       - name: Define manager docker build command
         id: manager-docker-command
@@ -719,7 +719,7 @@ jobs:
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
         with:
           name: ui-component-test-results
-          path: playwright-ct-report
+          path: ui/component/*/component-test-report/**
 
       - name: Run manager docker build command
         if: steps.manager-docker-command.outputs.value != ''
@@ -754,7 +754,7 @@ jobs:
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
         with:
           name: ui-app-test-results
-          path: playwright-app-report
+          path: ui/app/*/app-test-report/**
 
       - name: Scan manager docker image
         if: steps.manager-docker-command.outputs.pushRequired == 'true'

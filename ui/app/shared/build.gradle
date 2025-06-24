@@ -84,6 +84,10 @@ tasks.register('installDist', Copy) {
     into project(':manager').layout.buildDirectory.dir("install/manager/web/${project.name}")
 }
 
+tasks.named("npmTest") {
+    enabled = false
+}
+
 jar.dependsOn(generateSources)
 processResources.dependsOn(generateSources)
 sourcesJar.dependsOn(generateSources)

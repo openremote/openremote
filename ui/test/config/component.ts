@@ -15,7 +15,7 @@ export default (path: string) => {
     /* Retry on CI only */
     retries: CI ? 2 : 0,
     /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-    reporter: [["html", { outputFolder: "playwright-ct-report" }]],
+    reporter: [["html", { outputFolder: "component-test-report" }]],
     /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
     use: {
       /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */

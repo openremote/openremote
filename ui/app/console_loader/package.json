@@ -14,7 +14,7 @@
     "modelWatch": "npx orutil watch",
     "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack --mode production",
     "serve": "npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --host 0.0.0.0 --mode development",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"No tests\" && exit 0"
   },
   "dependencies": {
     "@openremote/or-app": "workspace:*"
