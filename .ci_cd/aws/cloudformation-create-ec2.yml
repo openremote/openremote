@@ -29,7 +29,7 @@ Parameters:
   Host:
     Description: FQDN for host
     Type: String
-    #AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
+    # AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
     Default: ""
   VpcId:
     Description: VPC ID in which to create instance
@@ -70,7 +70,7 @@ Parameters:
   DNSHostedZoneName:
     Description: Name of hosted domain zone to insert host A record into
     Type: String
-    #AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
+    # AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
     ConstraintDescription: Must be a valid FQDN
     Default: ""
   DNSHostedZoneRoleArn:
@@ -78,10 +78,10 @@ Parameters:
     Type: String
     Default: ""
   DLMExecutionRoleArn:
-    Description: Role ARN for executing the DLM operations
+    Description: Role ARN that can be assumed for executing DLM operations
     Type: String
   SnapshotId:
-    Description: Snapshot ID to create the EBS data volume based of an existing snapshot
+    Description: Snapshot ID to create EBS data volume based of an existing snapshot
     Type: String
     Default: ""
   ElasticIP:
@@ -103,7 +103,7 @@ Parameters:
     Type: Number
     Default: 16
   DataDiskSize:
-    Description: Amount of storage you want to provision for this EBS data volume
+    Description: Data EBS volume size GB
     Type: Number
     Default: 16
   HealthChecks:
@@ -836,8 +836,8 @@ Resources:
       ImageId: !If [UseAMIID, !Ref ImageAMI, !Ref ImageId]
       SubnetId: !Ref SubnetId
       SecurityGroupIds:
-        - Ref: SSHSecurityGroupId
-        - Ref: StandardSecurityGroup
+        - !Ref SSHSecurityGroupId
+        - !Ref StandardSecurityGroup
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
@@ -927,7 +927,7 @@ Resources:
         - Key: Name
           Value: !Ref Host
 
-  # Telemetry and Alarms.
+  # Telemetry and Alarms
 
   EmailSubscription:
     Condition: CreateHealthChecks
