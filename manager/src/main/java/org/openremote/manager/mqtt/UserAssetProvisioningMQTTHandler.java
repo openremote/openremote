@@ -271,12 +271,22 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
     @Override
     public void onConnectionLost(RemotingConnection connection) {
-        provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
+        provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> {
+            if (connections.remove(connection)) {
+                // Remove sessions as durable sessions will never reconnect if client ID already subscribed to attribute topics
+                mqttBrokerService.doForceDisconnect(connection);
+            }
+        });
     }
 
     @Override
     public void onDisconnect(RemotingConnection connection) {
-        provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
+        provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> {
+            if (connections.remove(connection)) {
+                // Remove sessions as durable sessions will never reconnect if client ID already subscribed to attribute topics
+                mqttBrokerService.doForceDisconnect(connection);
+            }
+        });
     }
 
     protected void processProvisioningRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
@@ -541,18 +551,16 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     protected void forceClientDisconnects(long provisioningConfigId) {
-        provisioningConfigAuthenticatedConnectionMap.computeIfPresent(provisioningConfigId, (id, connections) -> {
-            // Force disconnect of each connection and the disconnect handler will remove the connection from the map
-            connections.forEach(connection -> {
-                try {
-                    LOG.fine("Force disconnecting client that is using provisioning config ID '" + provisioningConfigId + "': " + MQTTBrokerService.connectionToString(connection));
-                    connection.disconnect(false);
-                } catch (Exception e) {
-                    getLogger().log(Level.WARNING, "Failed to disconnect client: " + MQTTBrokerService.connectionToString(connection), e);
-                }
-            });
-            connections.clear();
-            return connections;
+
+        Set<RemotingConnection> connections = provisioningConfigAuthenticatedConnectionMap.remove(provisioningConfigId);
+
+        // Force disconnect of each connection and the disconnect handler will remove the connection from the map
+        connections.forEach(connection -> {
+            try {
+                mqttBrokerService.doForceDisconnect(connection);
+            } catch (Exception e) {
+                getLogger().log(Level.WARNING, "Failed to disconnect client: " + MQTTBrokerService.connectionToString(connection), e);
+            }
         });
     }
 }

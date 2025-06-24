@@ -45,4 +45,13 @@ public class MQTTMessage<T> {
     }
 
     public Integer getQos() { return qos; }
+
+    @Override
+    public String toString() {
+        return "MQTTMessage{" +
+                "topic='" + topic + '\'' +
+                ", payload=" + payload +
+                ", qos=" + qos +
+                '}';
+    }
 }
