@@ -66,7 +66,7 @@ Wait for the server to be ready: Periodically pings the service until it returns
 
 ### Error when instance type is unavaialbe
 
-The chosen region currently is "hel1"
+The chosen region currently is "hel1". When the instance type in this region is unavailable, the deployment fails.
 
 ### Moving an instance to another project blocks ports 25 and 465
 
