@@ -1,7 +1,7 @@
 import {html, css, TemplateResult} from "lit";
 import {customElement, state} from "lit/decorators.js";
 import {OrAssetWidget} from "../util/or-asset-widget";
-import {WidgetConfig} from "../util/widget-config";
+import {AssetWidgetConfig} from "../util/widget-config";
 import {Attribute, AttributeRef} from "@openremote/model";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {WidgetSettings} from "../util/widget-settings";
@@ -9,8 +9,7 @@ import {GaugeSettings} from "../settings/gauge-settings";
 import {when} from "lit/directives/when.js";
 import "@openremote/or-gauge";
 
-export interface GaugeWidgetConfig extends WidgetConfig {
-    attributeRefs: AttributeRef[];
+export interface GaugeWidgetConfig extends AssetWidgetConfig {
     thresholds: [number, string][];
     decimals: number;
     min: number;
