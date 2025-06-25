@@ -232,7 +232,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 if (clientRepresentations.size() > 1) {
                     throw new IllegalStateException("More than one matching client found realm=" + realm + ", client=" + client);
                 }
-                clientRepresentation = clientRepresentations.get(0);
+                clientRepresentation = clientRepresentations.getFirst();
                 clientResource = clientsResource.get(clientRepresentation.getId());
             }
         } catch (Exception e) {
@@ -791,7 +791,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     @Override
     public void updateRealm(Realm realm) {
         LOG.fine("Update realm: " + realm);
-        realmCache.remove(realm.getName());
         getRealms(realmsResource -> {
 
             if (TextUtil.isNullOrEmpty(realm.getId())) {
@@ -835,6 +834,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             realmRepresentation.setNotBefore(realm.getNotBefore() != null ? realm.getNotBefore().intValue() : null);
             configureRealm(realmRepresentation);
             realmResource.update(realmRepresentation);
+
+            realmCache.remove(realm.getName());
 
             Set<RealmRole> realmRoles = (realm.getRealmRoles() != null ? realm.getRealmRoles() : new HashSet<RealmRole>())
                     .stream()
@@ -1021,11 +1022,102 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 return null;
             }
 
-            ClientRepresentation newClient = clientsResource.findByClientId(client.getClientId()).get(0);
+            ClientRepresentation newClient = clientsResource.findByClientId(client.getClientId()).getFirst();
             ClientResource clientResource = clientsResource.get(newClient.getId());
             addDefaultRoles(clientResource.roles());
             return newClient;
         }));
+    }
+
+    /**
+     * Imports the identity provider configuration using the given import data. This simplifies configuring an OIDC or SAML
+     * identity provider from which some of the configuration parameters can be imported from the identity provider itself.
+     *
+     * @param realm the realm used for importing the identity provider configuration.
+     * @param importData contains the details required for importing the identity provider configuration.
+     *      E.g. the following values can be used:
+     *      <ul><li>{@code fromUrl}: The URL used for importing the configuration parameters</li>
+     *          <li>{@code providerId}: The identity provider ({@code oidc} or {@code saml}) to import the configuration for.</li></ul>
+     *
+     * @return the imported configuration parameters which can be added to the {@link Map} provided to
+     *      {@link #createUpdateIdentityProvider(String, String, String, Map)} when creating or updating an identity provider.
+     */
+    public Map<String, String> getIdentityProviderImportConfig(String realm, Map<String, Object> importData) {
+        if (importData == null || importData.isEmpty()) {
+            throw new IllegalArgumentException("Import data is null or empty");
+        }
+
+        return getRealms(realmsResource -> realmsResource.realm(realm).identityProviders().importFrom(importData));
+    }
+
+    public void createUpdateIdentityProvider(String realm, String alias, String providerId, Map<String, String> config) {
+        IdentityProviderRepresentation representation = new IdentityProviderRepresentation();
+        representation.setAlias(alias);
+        representation.setProviderId(providerId);
+        representation.setConfig(config);
+
+        getRealms(realmsResource -> {
+            IdentityProvidersResource identityProvidersResource = realmsResource.realm(realm).identityProviders();
+
+            if (identityProvidersResource.findAll().stream().anyMatch(ipr -> alias.equals(ipr.getAlias()))) {
+                identityProvidersResource.get(alias).update(representation);
+            } else {
+                try (Response response = identityProvidersResource.create(representation)) {
+                    if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+                        throw new IllegalStateException("Failed to create identity provider response=" + response.getStatusInfo().getStatusCode() + ": " + representation);
+                    }
+                }
+            }
+
+            return identityProvidersResource.get(alias).toRepresentation();
+        });
+    }
+
+    public void createUpdateIdentityProviderMapper(String realm, String idpAlias, String mapperName, String idpMapper, Map<String, String> mapperConfig) {
+        getRealms(realmsResource -> {
+            IdentityProviderResource idpResource = realmsResource.realm(realm).identityProviders().get(idpAlias);
+
+            IdentityProviderMapperRepresentation mapper = new IdentityProviderMapperRepresentation();
+            mapper.setName(mapperName);
+            mapper.setConfig(mapperConfig);
+            mapper.setIdentityProviderAlias(idpAlias);
+            mapper.setIdentityProviderMapper(idpMapper);
+
+            Optional<IdentityProviderMapperRepresentation> existingMapper = idpResource.getMappers().stream().filter(m -> mapperName.equals(m.getName())).findFirst();
+            if (existingMapper.isPresent()) {
+                idpResource.update(existingMapper.get().getId(), mapper);
+            } else {
+                try (Response response = idpResource.addMapper(mapper)) {
+                    if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+                        throw new IllegalStateException("Failed to create identity provider mapper '" + mapperName +  "' response=" + response.getStatusInfo().getStatusCode() + ": " + response.getStatusInfo().getReasonPhrase());
+                    }
+                }
+            }
+
+            return null;
+        });
+    }
+
+    public void addAuthenticationExecutionConfig(String realm, String flowAlias, String executionProviderId, String authenticatorAlias, Map<String, String> authenticatorConfig) {
+        getRealms(realmsResource -> {
+            AuthenticationManagementResource authenticationManagementResource = realmsResource.realm(realm).flows();
+            List<AuthenticationExecutionInfoRepresentation> executions = authenticationManagementResource.getExecutions(flowAlias);
+            for (AuthenticationExecutionInfoRepresentation execution : executions) {
+                if (executionProviderId.equals(execution.getProviderId())) {
+                    AuthenticatorConfigRepresentation config = new AuthenticatorConfigRepresentation();
+                    config.setAlias(authenticatorAlias);
+                    config.setConfig(authenticatorConfig);
+
+                    try (Response response = authenticationManagementResource.newExecutionConfig(execution.getId(), config)) {
+                        if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+                            throw new IllegalStateException("Failed to create execution config '" + authenticatorAlias + "' response=" + response.getStatusInfo().getStatusCode() + ": " + response.getStatusInfo().getReasonPhrase());
+                        }
+                    }
+                    return null;
+                }
+            }
+            return null;
+        });
     }
 
     public void deleteClient(String realm, String clientId) {
@@ -1225,7 +1317,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 ComponentRepresentation newComponentRepresentation = realmResource.components()
                     .query(componentRepresentation.getParentId(),
                         componentRepresentation.getProviderType(),
-                        componentRepresentation.getName()).get(0);
+                        componentRepresentation.getName()).getFirst();
                 syncUsers(newComponentRepresentation.getId(), realm, "triggerFullSync");
                 return newComponentRepresentation.getId();
             }
@@ -1244,7 +1336,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 ComponentRepresentation newComponentRepresentation = realmResource.components()
                     .query(componentRepresentation.getParentId(),
                         componentRepresentation.getProviderType(),
-                        componentRepresentation.getName()).get(0);
+                        componentRepresentation.getName()).getFirst();
                 realmResource.userStorage().syncMapperData(newComponentRepresentation.getParentId(), newComponentRepresentation.getId(), "fedToKeycloak");
                 return newComponentRepresentation.getId();
             }
