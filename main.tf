@@ -51,7 +51,7 @@ provider "hcloud" {
 resource "hcloud_volume" "openremote_data" {
   name     = "${var.instance_name}-vol"
   size     = var.volume_size
-  location = "nbg1"
+  location = "hel1"
   format   = "ext4"
 }
 
