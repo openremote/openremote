@@ -387,10 +387,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public void onUserAssetLinksChanged(RemotingConnection connection, List<PersistenceEvent<UserAssetLink>> changes) {
         String sessionKey = getSessionKey(connection);
         if (sessionSubscriptionConsumers.containsKey(sessionKey)) {
-            if (changes.stream().allMatch(pe -> pe.getCause() == PersistenceEvent.Cause.CREATE)) {
-                // Do nothing if only links have been added
-                return;
-            }
             LOG.info("User asset links have changed for a connected user with active subscriptions so force disconnecting them: " + connectionToString(connection));
             mqttBrokerService.doForceDisconnect(connection);
         }

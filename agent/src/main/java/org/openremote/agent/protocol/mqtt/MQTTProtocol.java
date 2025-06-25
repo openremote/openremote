@@ -64,7 +64,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
                     updateLinkedAttribute(new AttributeRef(assetId, attribute.getName()), msg.payload);
                 }
             };
-            client.addMessageConsumer(topic, agentLink.getQos().map(qos -> qos > 2 || qos < 0 ? null : qos).map(MqttQos::fromCode).orElse(null), messageConsumer);
+            client.addMessageConsumer(topic, Optional.of(agentLink.getQos().orElse(agent.getSubscribeQoS().orElse(0))).map(qos -> qos > 2 || qos < 0 ? null : qos).map(MqttQos::fromCode).orElse(MqttQos.AT_MOST_ONCE), messageConsumer);
             protocolMessageConsumers.put(new AttributeRef(assetId, attribute.getName()), messageConsumer);
         });
     }
@@ -85,14 +85,6 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
                 client.removeMessageConsumer(topic, messageConsumer);
             }
         });
-    }
-
-    @Override
-    protected MQTT_IOClient createIoClient() throws Exception {
-        MQTT_IOClient client = super.createIoClient();
-        // Don't want the default message consumer, topic specific consumers will do the message routing for us
-        client.removeAllMessageConsumers();
-        return client;
     }
 
     @Override
@@ -140,6 +132,11 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
         agent.getPublishQoS().ifPresent(qos -> client.setPublishQos(MqttQos.fromCode(qos)));
 
         return client;
+    }
+
+    @Override
+    protected void addMessageConsumer(MQTT_IOClient client) {
+        // Don't want the default message consumer, topic specific consumers will do the message routing for us
     }
 
     @Override
