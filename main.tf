@@ -27,26 +27,44 @@ variable "github_ref" {
   type        = string
 }
 
+variable "server_type" {
+  description = "Hetzner server type"
+  type        = string
+}
+
+variable "volume_size" {
+  description = "Volume size in GB (10-1000)"
+  type        = number
+  default     = 10
+}
+
+variable "enable_monitoring" {
+  description = "Enable monitoring stack?"
+  type        = bool
+  default     = true
+}
+
 provider "hcloud" {
   token = var.hcloud_token
 }
 
 resource "hcloud_volume" "openremote_data" {
   name     = "${var.instance_name}-vol"
-  size     = 10
+  size     = var.volume_size
   location = "nbg1"
   format   = "ext4"
 }
 
 resource "hcloud_server" "openremote" {
   name        = var.instance_name
-  server_type = "cx22"   # Change to your desired instance type
+  server_type = var.server_type
   image       = "ubuntu-22.04" # OS image
   location    = "nbg1"   # Data center (e.g., nbg1, fsn1, hel1)
   ssh_keys    = [28907178, 28907172]
   user_data   = templatefile("${path.module}/cloud-init.yml", {
     github_repository = var.github_repository
     github_ref        = var.github_ref
+    enable_monitoring = var.enable_monitoring
   })
 
   lifecycle {
