@@ -64,6 +64,10 @@ Wait for the server to be ready: Periodically pings the service until it returns
 
 ## Known Issues
 
+### Error when instance type is unavaialbe
+
+The chosen region currently is "hel1"
+
 ### Moving an instance to another project blocks ports 25 and 465
 
 The current pipeline implementation aims to create multiple instances within the OpenRemote parent project. However, when a client prefers to manage their instance independently, a transfer is necessary to achieve this.
