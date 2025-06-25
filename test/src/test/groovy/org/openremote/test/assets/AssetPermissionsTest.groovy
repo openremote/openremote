@@ -635,7 +635,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1Livingroom.id == managerTestSetup.apartment1LivingroomId
         apartment1Livingroom.name == "Living Room 1"
         def resultAttributes = apartment1Livingroom.getAttributes()
-        resultAttributes.size() == 7
+        resultAttributes.size() == 8
         def currentTemperatureAttr = apartment1Livingroom.getAttribute("currentTemperature").orElse(null)
         currentTemperatureAttr.getType() == NUMBER
         !currentTemperatureAttr.getValue().isPresent()

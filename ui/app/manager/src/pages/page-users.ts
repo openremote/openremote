@@ -873,7 +873,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                   .type="${InputType.EMAIL}"
                                   .value="${user.email}" autocomplete="false"
                                   ?required="${!isServiceUser && this._registrationEmailAsUsername}"
-                                  pattern="^[\\w\\.\\-]+@([\\w\\-]+\\.)+[\\w]{2,4}$"
+                                  pattern="^[\\w\\.\\-\\+\\%]+@([\\w\\-]+\\.)+[\\w]{2,}$"
                                   .validationMessage="${i18next.t("invalidEmail")}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       if(this._registrationEmailAsUsername) {
