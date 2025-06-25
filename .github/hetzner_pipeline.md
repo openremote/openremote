@@ -6,6 +6,8 @@ The current Hetzner pipeline successfully creates a new instance on trigger, att
 
 ## User Guide
 
+Important: For the pipeline to work, a GitHub secret called `HETZNER_API_TOKEN` must be created in the repository settings. This secret must contain the API token for Hetzner.
+
 The pipeline is triggered only manually from the project’s GitHub page.
 
 Use the following steps to take:
