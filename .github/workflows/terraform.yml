@@ -7,9 +7,31 @@ on:
         description: "Name of the instance"
         required: true
       server_type:
-        description: "Hetzner server type"
+        description: |
+          Hetzner server type.
+          Choices:
+            - cpx11: 2 vCPU, 2GB RAM, 40GB Disk
+            - cpx21: 3 vCPU, 4GB RAM, 80GB Disk
+            - cpx31: 4 vCPU, 8GB RAM, 160GB Disk
+            - cpx41: 6 vCPU, 16GB RAM, 240GB Disk
+            - cpx51: 8 vCPU, 32GB RAM, 360GB Disk
+            - cax11: 2 vCPU, 2GB RAM, 40GB Disk (ARM)
+            - cax21: 4 vCPU, 4GB RAM, 80GB Disk (ARM)
+            - cax31: 8 vCPU, 8GB RAM, 160GB Disk (ARM)
+            - cax41: 16 vCPU, 16GB RAM, 320GB Disk (ARM)
+            - ccx13: 2 vCPU, 8GB RAM, 80GB Disk 
+            - ccx23: 4 vCPU, 16GB RAM, 160GB Disk 
+            - ccx33: 8 vCPU, 32GB RAM, 240GB Disk 
+            - ccx43: 16 vCPU, 64GB RAM, 360GB Disk 
+            - ccx53: 32 vCPU, 128GB RAM, 600GB Disk 
+            - ccx63: 48 vCPU, 192GB RAM, 960GB Disk 
+            - cx22: 2 vCPU, 4GB RAM, 40GB Disk
+            - cx32: 2 vCPU, 8GB RAM, 80GB Disk
+            - cx42: 4 vCPU, 16GB RAM, 160GB Disk
+            - cx52: 8 vCPU, 32GB RAM, 240GB Disk
         required: true
         type: choice
+        default: cx22
         options:
           - cpx11
           - cpx21
@@ -30,7 +52,6 @@ on:
           - cx32
           - cx42
           - cx52
-        default: "cx22"
       volume_size:
         description: "Volume size in GB (10-1000)"
         required: true
