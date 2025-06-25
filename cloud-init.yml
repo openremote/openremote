@@ -18,13 +18,13 @@ runcmd:
   - systemctl start docker
   - usermod -aG docker root
   - mkdir -p /opt/openremote
-  - cd /opt/openremote && curl -o docker-compose.yml https://raw.githubusercontent.com/Iskrata/openremote/refs/heads/master/docker-compose.yml
-  - cd /opt/openremote && curl -o prometheus.yml https://raw.githubusercontent.com/Iskrata/openremote/refs/heads/master/prometheus.yml
+  - cd /opt/openremote && curl -o docker-compose.yml https://raw.githubusercontent.com/${github_repository}/refs/heads/${github_ref}/docker-compose.yml
+  - cd /opt/openremote && curl -o prometheus.yml https://raw.githubusercontent.com/${github_repository}/refs/heads/${github_ref}/prometheus.yml
   - mkdir -p /opt/openremote/grafana/provisioning/datasources
   - mkdir -p /opt/openremote/grafana/provisioning/dashboards
   - mkdir -p /opt/openremote/grafana/provisioning/dashboards/dashboards
-  - cd /opt/openremote && curl -o grafana/provisioning/datasources/prometheus.yml https://raw.githubusercontent.com/Iskrata/openremote/refs/heads/master/grafana/provisioning/datasources/prometheus.yml
-  - cd /opt/openremote && curl -o grafana/provisioning/dashboards/dashboard.yml https://raw.githubusercontent.com/Iskrata/openremote/refs/heads/master/grafana/provisioning/dashboards/dashboard.yml
-  - cd /opt/openremote && curl -o grafana/provisioning/dashboards/dashboards/openremote-overview.json https://raw.githubusercontent.com/Iskrata/openremote/refs/heads/master/grafana/provisioning/dashboards/dashboards/openremote-overview.json
+  - cd /opt/openremote && curl -o grafana/provisioning/datasources/prometheus.yml https://raw.githubusercontent.com/${github_repository}/refs/heads/${github_ref}/grafana/provisioning/datasources/prometheus.yml
+  - cd /opt/openremote && curl -o grafana/provisioning/dashboards/dashboard.yml https://raw.githubusercontent.com/${github_repository}/refs/heads/${github_ref}/grafana/provisioning/dashboards/dashboard.yml
+  - cd /opt/openremote && curl -o grafana/provisioning/dashboards/dashboards/openremote-overview.json https://raw.githubusercontent.com/${github_repository}/refs/heads/${github_ref}/grafana/provisioning/dashboards/dashboards/openremote-overview.json
   - cd /opt/openremote && docker compose pull
   - cd /opt/openremote && OR_HOSTNAME=$(hostname -I | awk '{print $1}') docker compose -p openremote up -d

@@ -17,6 +17,16 @@ variable "instance_name" {
   type        = string
 }
 
+variable "github_repository" {
+  description = "GitHub repository (owner/repo)"
+  type        = string
+}
+
+variable "github_ref" {
+  description = "GitHub branch or tag reference"
+  type        = string
+}
+
 provider "hcloud" {
   token = var.hcloud_token
 }
@@ -34,7 +44,10 @@ resource "hcloud_server" "openremote" {
   image       = "ubuntu-22.04" # OS image
   location    = "nbg1"   # Data center (e.g., nbg1, fsn1, hel1)
   ssh_keys    = [28907178, 28907172]
-  user_data   = file("${path.module}/cloud-init.yml")
+  user_data   = templatefile("${path.module}/cloud-init.yml", {
+    github_repository = var.github_repository
+    github_ref        = var.github_ref
+  })
 
   lifecycle {
     create_before_destroy = true
