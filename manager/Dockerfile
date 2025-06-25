@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/openjdk-21-runtime
+FROM registry.access.redhat.com/ubi9/openjdk-21-runtime
 
 # Add git commit label must be specified at build time using --build-arg GIT_COMMIT=dadadadadad
 ARG GIT_COMMIT=unknown
