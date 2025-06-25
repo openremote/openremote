@@ -57,7 +57,7 @@ public class GatewayConnector {
     public static final String ASSET_READ_EVENT_NAME_INITIAL = "INITIAL";
     public static final String ASSET_READ_EVENT_NAME_BATCH = "BATCH";
     public static final long RESPONSE_TIMEOUT_MILLIS = 10000;
-    protected static final Map<String, Pair<Function<String, String>, Function<String, String>>> ASSET_ID_MAPPERS = new HashMap<>();
+    protected static final Map<String, Pair<Function<String, String>, Function<String, String>>> ASSET_ID_MAPPERS = new ConcurrentHashMap<>();
     protected final String realm;
     protected final String gatewayId;
     protected final AssetStorageService assetStorageService;
