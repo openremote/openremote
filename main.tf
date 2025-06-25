@@ -59,7 +59,7 @@ resource "hcloud_server" "openremote" {
   name        = var.instance_name
   server_type = var.server_type
   image       = "ubuntu-22.04" # OS image
-  location    = "nbg1"   # Data center (e.g., nbg1, fsn1, hel1)
+  location    = "hel1"   # Data center (e.g., nbg1, fsn1, hel1)
   ssh_keys    = [28907178, 28907172]
   user_data   = templatefile("${path.module}/cloud-init.yml", {
     github_repository = var.github_repository
