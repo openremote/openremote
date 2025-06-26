@@ -151,35 +151,13 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
             initialised = true;
 
             if (!schema) {
-
-                // window.addEventListener("fetch", (event: any) => {
-                //   // We only want to call event.respondWith() if this is a GET request for an HTML document.
-                //   console.log("FETCH")
-                //   if (
-                //     event.request.method === "GET" &&
-                //     event.request.headers.get("accept").includes("text/html")
-                //   ) {
-                //     console.log("Handling fetch event for", event.request.url);
-                //     event.respondWith(
-                //       fetch(event.request).catch((e) => {
-                //         console.error("Fetch failed; returning offline page instead.", e);
-                //         return caches
-                //           .open(valueDescriptor.name!)
-                //           .then((cache) => cache.match(valueDescriptor.name!));
-                //       }),
-                //     );
-                //   }
-                // });
-
-                    const response = await manager.rest.api.AssetModelResource.getConfigurationItemSchemas(valueDescriptor, { descriptor: valueDescriptor.type })
-                    // await cache.put(response.request, new Response(response.data))
-                    schema = response.data;
-                    // label ||= schema.title
-                // const cache = await caches.open(valueDescriptor.name!);
-                // if (await caches.has(valueDescriptor.name!)) {
-                //     schema = await cache.match()
-                // } else {
-                // }
+                const response = await manager.rest.api.AssetModelResource.getValueDescriptorSchema({
+                  name: valueDescriptor.type,
+                  descriptorType: valueDescriptor.type,
+                  arrayDimensions: valueDescriptor.arrayDimensions,
+                });
+                schema = response.data;
+                // label ||= schema.title
             }
 
             if (jsonForms.value && loadingWrapper.value) {

@@ -53,7 +53,6 @@ import org.openremote.model.value.ValueDescriptor;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -381,14 +380,11 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         return ValueUtil.getMetaItemDescriptors();
     }
 
-    public JsonNode getConfigurationItemSchemas(ValueDescriptor<?> valueDescriptor) throws RuntimeException, ClassNotFoundException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException, NullPointerException, IllegalArgumentException, NegativeArraySizeException {
-        return dynamicJsonSchemas.computeIfAbsent(valueDescriptor.getType().getName() + valueDescriptor.isArray(), key -> {
-            Class<?> clazz = valueDescriptor.getType();
-            return (ObjectNode)(valueDescriptor.isArray()
-                ? ValueUtil.getSchema(Array.newInstance(clazz, valueDescriptor.getArrayDimensions()).getClass())
-                : ValueUtil.getSchema(clazz)
-            );
-        });
+    public JsonNode getValueDescriptorSchema(String name, String descriptorType, Integer arrayDimensions) throws ClassNotFoundException {
+        Class<?> clazz = Class.forName(descriptorType);
+        return dynamicJsonSchemas.computeIfAbsent(clazz.getTypeName(), key -> (ObjectNode)ValueUtil.getSchema(
+            arrayDimensions != null && arrayDimensions > 0 ? Array.newInstance(clazz, new int[arrayDimensions]).getClass() : clazz
+        ));
     }
 
     protected <T> T parse(String jsonString, Class<T> type) throws JsonProcessingException {

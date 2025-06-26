@@ -105,9 +105,9 @@ public interface AssetModelResource {
     @Operation(operationId = "getMetaItemDescriptors", summary = "Retrieve the available meta item descriptors")
     Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
 
-    @POST
+    @GET
     @Path("getItemSchemas")
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getItemSchemas", summary = "Retrieve the available configuration item JSON Schemas.")
-    Response getConfigurationItemSchemas(@BeanParam RequestParams requestParams, @RequestBody ValueDescriptor<?> item, @QueryParam("descriptor") String descriptor);
+    @Operation(operationId = "getValueDescriptorSchema", summary = "Retrieve the available configuration item JSON Schemas.")
+    Response getValueDescriptorSchema(@BeanParam RequestParams requestParams, @QueryParam("name") String name, @QueryParam("descriptorType") String descriptorType, @QueryParam("arrayDimensions") Integer arrayDimensions);
 }

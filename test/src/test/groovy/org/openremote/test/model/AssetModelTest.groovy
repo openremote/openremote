@@ -1,5 +1,6 @@
 package org.openremote.test.model
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import jakarta.ws.rs.WebApplicationException
 import org.jboss.resteasy.api.validation.ViolationReport
@@ -8,6 +9,7 @@ import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.agent.protocol.velbus.VelbusTCPAgent
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.container.timer.TimerService
+import org.openremote.model.attribute.AttributeLink
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetModelService
 import org.openremote.manager.asset.AssetStorageService
@@ -34,6 +36,7 @@ import org.openremote.setup.integration.protocol.http.HTTPServerTestAgent
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.lang.reflect.Array
 import java.nio.file.Files
@@ -603,5 +606,55 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         attributeEventObjectNode2.get("deleted").asBoolean()
         !attributeEventObjectNode2.has("source")
         !attributeEventObjectNode2.has("meta")
+    }
+
+    @Unroll
+    def "Get #name valueDescriptor schema with #dimension dimensions"(String name, String fqcn, int dimension, Class<?> clazz) {
+        given: "required services are setup"
+        def assetModelService = container.getService(AssetModelService.class)
+
+        when: "we ask to generate a #name schema with #dimension dimensions"
+        def schema = assetModelService.getValueDescriptorSchema(name, fqcn, dimension)
+        def expected = ValueUtil.getSchema(clazz)
+
+        then: "the schema to be the same"
+        Objects.equals(schema, expected)
+
+        where:
+        name                    | fqcn                                               | dimension | clazz
+        "text"                  | "java.lang.String"                                 | 0         | String
+        "1-dimension"           | "java.lang.String"                                 | 1         | String[]
+        "2-dimensions"          | "java.lang.String"                                 | 2         | String[][]
+        "agentLink"             | "org.openremote.model.asset.agent.AgentLink"       | 0         | AgentLink
+        "attributeLink"         | "org.openremote.model.attribute.AttributeLink"     | 0         | AttributeLink
+        "valueConstraint"       | "org.openremote.model.value.ValueConstraint"       | 1         | ValueConstraint[]
+        "forecastConfiguration" | "org.openremote.model.value.ForecastConfiguration" | 0         | ForecastConfiguration
+        "valueFormat"           | "org.openremote.model.value.ValueFormat"           | 0         | ValueFormat
+        "units"                 | "org.openremote.model.value.Units"                 | 1         | Units[]
+    }
+
+    def "Get valueDescriptor schema with illegal arguments"() {
+        given: "required services are setup"
+        def assetModelService = container.getService(AssetModelService.class)
+
+        when: "we ask to generate a schema for a nonexistent class"
+        assetModelService.getValueDescriptorSchema("nonexistent", "test.test.String", 0)
+
+        then: "not to find the class"
+        thrown ClassNotFoundException
+
+        when: "we ask to generate a schema with -1 dimensions"
+        def schema1 = assetModelService.getValueDescriptorSchema("negative dimensions", "java.lang.String", -1)
+        def expected1 = ValueUtil.getSchema(Class.forName("java.lang.String"))
+
+        then: "the schema to be of type string"
+        Objects.equals(schema1, expected1)
+
+        when: "we ask to generate a schema with no dimensions"
+        def schema2 = assetModelService.getValueDescriptorSchema("simple", "java.lang.String", null)
+        def expected2 = ValueUtil.getSchema(Class.forName("java.lang.String"))
+
+        then: "the schema to be of type string"
+        Objects.equals(schema2, expected2)
     }
 }

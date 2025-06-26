@@ -31,11 +31,6 @@ import org.openremote.model.value.ValueDescriptor;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import jakarta.ws.rs.NotFoundException;
-
-import static java.util.logging.Level.INFO;
-
-import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -81,12 +76,12 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     }
 
     @Override
-    public Response getConfigurationItemSchemas(RequestParams requestParams, ValueDescriptor<?> valueDescriptor, String descriptor) {
+    public Response getValueDescriptorSchema(RequestParams requestParams, String name, String descriptorType, Integer arrayDimensions) {
         try {
-            JsonNode schema = assetModelService.getConfigurationItemSchemas(valueDescriptor);
+            JsonNode schema = assetModelService.getValueDescriptorSchema(name, descriptorType, arrayDimensions);
             return Response.ok(schema).header("Cache-Control", "public,max-age=" + 1000000000 + ",must-revalidate").build();
-        } catch (ClassNotFoundException | RuntimeException | IllegalAccessException | InstantiationException | InvocationTargetException | NoSuchMethodException e) {
-            LOG.log(Level.SEVERE, "Error: ", e);
+        } catch (ClassNotFoundException error) {
+            LOG.log(Level.SEVERE, "Could not find class'" + name + "': " + error.getMessage());
             throw new WebApplicationException(Status.NOT_FOUND);
         }
     }
