@@ -4,8 +4,8 @@ import {OrAssetWidget} from "../util/or-asset-widget";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {WidgetSettings} from "../util/widget-settings";
 import {MapSettings} from "../settings/map-settings";
-import {WidgetConfig} from "../util/widget-config";
-import {Asset, AssetDescriptor, Attribute, AttributeRef, GeoJSONPoint, WellknownAttributes, WellknownMetaItems} from "@openremote/model";
+import {AssetWidgetConfig} from "../util/widget-config";
+import {Asset, AssetDescriptor, Attribute, GeoJSONPoint, WellknownAttributes, WellknownMetaItems} from "@openremote/model";
 import {
     LngLatLike,
     AttributeMarkerColours,
@@ -18,9 +18,7 @@ import manager, {Util} from "@openremote/core";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import "@openremote/or-map";
 
-export interface MapWidgetConfig extends WidgetConfig {
-    // General values
-    attributeRefs: AttributeRef[];
+export interface MapWidgetConfig extends AssetWidgetConfig {
     // Map related values
     zoom?: number,
     center?: LngLatLike,
