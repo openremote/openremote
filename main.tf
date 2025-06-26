@@ -2,7 +2,7 @@ terraform {
   required_providers {
     hcloud = {
       source  = "hetznercloud/hcloud"
-      version = "~> 1.43.0" # Use the latest version
+      version = "~> 1.43.0"
     }
   }
 }
@@ -57,10 +57,17 @@ resource "hcloud_volume" "openremote_data" {
 
 resource "hcloud_server" "openremote" {
   name        = var.instance_name
+<<<<<<< feature_choices
   server_type = var.server_type
   image       = "ubuntu-22.04" # OS image
   location    = "hel1"   # Data center (e.g., nbg1, fsn1, hel1)
   ssh_keys    = [28907178, 28907172]
+=======
+  server_type = "cx22" 
+  image       = "ubuntu-22.04"
+  location    = "nbg1" 
+  ssh_keys    = []
+>>>>>>> master
   user_data   = templatefile("${path.module}/cloud-init.yml", {
     github_repository = var.github_repository
     github_ref        = var.github_ref
