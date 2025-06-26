@@ -237,8 +237,6 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         if (!this.categories) {
             if (this.config && this.config.initialCategories) {
                 this.categories = [...this.config.initialCategories];
-            } else {
-                this.categories = Object.keys((Model as any)["SyslogCategory"]) as Model.SyslogCategory[];
             }
         }
 
@@ -288,7 +286,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                     <div id="log-controls">
                         ${hideCategories ? `` : getContentWithMenuTemplate(
                             html`<or-mwc-input .type=${InputType.BUTTON} raised ?disabled="${disabled}" .label="${i18next.t("categories")}" icontrailing="chevron-down"></or-mwc-input>`,
-                            this._getCategoryMenuItems(),
+                            this._getCategoryMenuItems(), 
                             this.categories,
                             (v) => this._onCategoriesChanged(v as Model.SyslogCategory[]),
                             () => this._onCategoriesClosed(),
