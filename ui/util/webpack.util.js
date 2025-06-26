@@ -206,6 +206,13 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
       );
     }
 
+    patterns.push(
+        {
+          from: path.resolve(__dirname, 'service-worker.js'),
+          to: 'service-worker.js',
+        },
+    );
+
     // Copy unprocessed files
     config.plugins.push(
         new CopyWebpackPlugin({
