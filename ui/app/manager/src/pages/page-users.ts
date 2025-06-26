@@ -1032,7 +1032,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             ${when(!(readonly && !this._saveUserPromise), () => html`
                 <div class="row button-row">
 
-                    ${when((!isSameUser && user.id), () => html`
+                    ${when((!isSameUser && !isGatewayServiceUser && user.id), () => html`
                         <or-mwc-input style="margin: 0;" outlined ?disabled="${readonly}"
                                       .label="${i18next.t("delete")}"
                                       .type="${InputType.BUTTON}"
