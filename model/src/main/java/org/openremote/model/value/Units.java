@@ -21,6 +21,8 @@ package org.openremote.model.value;
 
 import org.openremote.model.util.TsIgnore;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 @TsIgnore
 public enum Units {
     PER("per"),
@@ -86,6 +88,11 @@ public enum Units {
 
     Units(final String value) {
         this.value = value;
+    }
+
+    @JsonValue
+    public String getValue() {
+        return value;
     }
 
     public static Units[] units(Units...units) {
