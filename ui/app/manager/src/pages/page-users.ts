@@ -847,6 +847,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     protected getSingleUserTemplate(user: UserModel, compositeRoleOptions: string[], realmRoleOptions: [string, string][], suffix: string, readonly: boolean = true): TemplateResult {
         const isServiceUser = user.serviceAccount;
         const isSameUser = user.username === manager.username;
+        const isGatewayServiceUser = user.serviceAccount && user.username?.startsWith("gateway-");
         const implicitRoleNames = user.loaded ? this.getImplicitUserRoles(user) : [];
         return html`
             <div class="row">
@@ -912,6 +913,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                           .value="${user.secret}"
                                           .type="${InputType.TEXT}"></or-mwc-input>
                             <or-mwc-input ?readonly="${!user.id || readonly}"
+                                          ?disabled="${isGatewayServiceUser}"
                                           .label="${i18next.t("regenerateSecret")}"
                                           .type="${InputType.BUTTON}"
                                           @or-mwc-input-changed="${(ev) => {
@@ -964,7 +966,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     <!-- realm roles -->
                     <or-mwc-input
                             ?readonly="${readonly}"
-                            ?disabled="${isSameUser}"
+                            ?disabled="${isSameUser || isGatewayServiceUser}"
                             class = "validate"
                             .value="${user.realmRoles}"
                             .type="${InputType.SELECT}" multiple
@@ -978,7 +980,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     <!-- composite client roles -->
                     <or-mwc-input
                             ?readonly="${readonly}"
-                            ?disabled="${isSameUser}"
+                            ?disabled="${isSameUser || isGatewayServiceUser}"
                             class = "validate"
                             .value="${user.roles && user.roles.length > 0 ? user.roles.filter(r => this._compositeRoles.some(cr => cr.name === r)) : undefined}"
                             .type="${InputType.SELECT}" multiple
@@ -997,7 +999,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                             return html`
                                 <or-mwc-input
                                         ?readonly="${readonly}"
-                                        ?disabled="${implicitRoleNames.find(name => r.name === name)}"
+                                        ?disabled="${implicitRoleNames.find(name => r.name === name) || isGatewayServiceUser}"
                                         class = "validate"
                                         .value="${!!user.roles.find(userRole => userRole === r.name) || implicitRoleNames.some(implicitRoleName => implicitRoleName === r.name)}"
                                         .type="${InputType.CHECKBOX}"
@@ -1019,7 +1021,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     <!-- Asset-User links -->
                     <div>
                         <span>${i18next.t("linkedAssets")}:</span>
-                        <or-mwc-input outlined ?disabled="${readonly}" style="margin-left: 4px;"
+                        <or-mwc-input outlined ?disabled="${readonly || isGatewayServiceUser}" style="margin-left: 4px;"
                                       .type="${InputType.BUTTON}"
                                       .label="${i18next.t("selectRestrictedAssets", {number: user.userAssetLinks.length})}"
                                       @or-mwc-input-changed="${(ev: MouseEvent) => this._openAssetSelector(ev, user, readonly, suffix)}"></or-mwc-input>
