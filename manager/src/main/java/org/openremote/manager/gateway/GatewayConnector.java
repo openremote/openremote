@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.gateway;
 
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.asset.*;
@@ -65,6 +66,7 @@ public class GatewayConnector {
     protected final ScheduledExecutorService scheduledExecutorService;
     protected final AssetProcessingService assetProcessingService;
     protected final GatewayService gatewayService;
+    protected final TimerService timerService;
     protected List<AssetEvent> cachedAssetEvents;
     protected List<AttributeEvent> cachedAttributeEvents;
     protected Consumer<Object> gatewayMessageConsumer;
@@ -102,6 +104,7 @@ public class GatewayConnector {
         ExecutorService executorService,
         ScheduledExecutorService scheduledExecutorService,
         GatewayService gatewayService,
+        TimerService timerService,
         GatewayAsset gateway) {
 
         this.assetStorageService = assetStorageService;
@@ -109,6 +112,7 @@ public class GatewayConnector {
         this.executorService = executorService;
         this.scheduledExecutorService = scheduledExecutorService;
         this.gatewayService = gatewayService;
+        this.timerService = timerService;
         this.disabled = gateway.getDisabled().orElse(false);
         this.realm = gateway.getRealm();
         this.gatewayId = gateway.getId();
@@ -119,7 +123,7 @@ public class GatewayConnector {
             eventConsumerMap.put(AssetEvent.class, (e) -> onAssetEvent((AssetEvent) e));
             eventConsumerMap.put(AttributeEvent.class, (e) -> onAttributeEvent((AttributeEvent) e));
         }
-        publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED));
+        publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED, timerService.getNow()));
     }
 
     protected void sendMessageToGateway(Object message) {
@@ -157,7 +161,7 @@ public class GatewayConnector {
         syncIndex = 0;
         syncErrors = 0;
 
-        publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.CONNECTING));
+        publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.CONNECTING, timerService.getNow()));
         startSync();
     }
 
@@ -184,7 +188,7 @@ public class GatewayConnector {
         }
 
         initialSyncInProgress = false;
-        publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED));
+        publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED, timerService.getNow()));
     }
 
     protected void disconnect(GatewayDisconnectEvent.Reason reason) {
@@ -608,7 +612,7 @@ public class GatewayConnector {
             }
             tunnellingSupported = response != null && response.isTunnelingSupported();
             publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));
-            publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.CONNECTED));
+            publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.CONNECTED, timerService.getNow()));
         });
     }
 
