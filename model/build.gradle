@@ -11,7 +11,6 @@ dependencies {
     api "org.hibernate.orm:hibernate-core:$hibernateVersion"
     api "org.hibernate.validator:hibernate-validator:$hibernateValidatorVersion"
     api "jakarta.el:jakarta.el-api:$javaxELAPIVersion"
-
     api "jakarta.annotation:jakarta.annotation-api:$javaxAnnotationsVersion"
     api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxrsSpecVersion"
 
@@ -36,6 +35,17 @@ dependencies {
     api "com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion"
 
     api "fr.neolegal:exp4j:$exp4jVersion"
+
+    dependencies {
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+        testImplementation 'org.mockito:mockito-core:5.12.0'
+        testRuntimeOnly 'org.glassfish:jakarta.el:4.0.2'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    }
+}
+
+test {
+    useJUnitPlatform()
 }
 
 base {

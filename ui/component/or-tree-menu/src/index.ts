@@ -29,6 +29,7 @@ import {OrTreeNode} from "./or-tree-node";
 import {OrTreeGroup} from "./or-tree-group";
 import {moveNodesToGroupNode} from "./util";
 import {OrTreeDragEvent, OrTreeSelectEvent, TreeMenuSelection, TreeMenuSorting, TreeNode} from "./model";
+import {i18next} from "@openremote/or-translate";
 
 import "./or-tree-group";
 import "./or-tree-node";
@@ -326,7 +327,7 @@ export class OrTreeMenu extends LitElement {
      */
     protected _getSortActionTemplate(value?: string, options?: TreeMenuSorting[]): TemplateResult {
         return getContentWithMenuTemplate(
-            html`<or-mwc-input type=${InputType.BUTTON} icon="sort-variant"></or-mwc-input>`,
+            html`<or-mwc-input type=${InputType.BUTTON} icon="sort-variant" title="${i18next.t("sort")}"></or-mwc-input>`,
             (options || []).map(sort => ({ value: sort, text: sort } as ListItem)),
             value,
             value => this._onSortClick(String(value))
@@ -734,5 +735,23 @@ export class OrTreeMenu extends LitElement {
             default:
                 return Util.sortByString(node => node.label);
         }
+    }
+
+    /**
+     * Programmatically finds a group by its ID and sets it to be expanded.
+     * This is called by the parent component after a new node is added to a tree group.
+     * @param {string} groupId The ID of the group to expand.
+     */
+    public expandGroup(groupId: string) {
+        // Wait for any pending Lit updates to complete to ensure the node list is stable.
+        this.updateComplete.then(() => {
+            const groupNode = this.nodes.find(node => node.id === groupId && node.children);
+
+            if (groupNode) {
+                groupNode.expanded = true;
+                // re-render with the change.
+                this.requestUpdate();
+            }
+        });
     }
 }

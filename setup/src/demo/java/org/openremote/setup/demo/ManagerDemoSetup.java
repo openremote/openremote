@@ -114,7 +114,7 @@ public class ManagerDemoSetup extends ManagerSetup {
                         new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));
         harvestRobotAsset.getAttributes().getOrCreate(HarvestRobotAsset.HARVESTED_TOTAL)
                 .addMeta(new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY))
-                .setValue(harvestedTotal);;
+                .setValue(harvestedTotal);
 
         return harvestRobotAsset;
     }
@@ -2284,7 +2284,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         // ################################ Make user restricted ###################################
         ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
         identityProvider.updateUserRealmRoles(realmManufacturer.getName(), KeycloakDemoSetup.customerUserId, identityProvider
-                .addRealmRoles(realmManufacturer.getName(), 
+                .addUserRealmRoles(realmManufacturer.getName(),
                         KeycloakDemoSetup.customerUserId, RESTRICTED_USER_REALM_ROLE));
     }
 
