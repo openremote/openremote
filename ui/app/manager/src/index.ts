@@ -47,7 +47,6 @@ import {pageAlarmsProvider} from "./pages/page-alarms";
 import { ManagerAppConfig } from "@openremote/model";
 import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
 
-declare var CONFIG_URL_PREFIX: string | undefined;
 declare var MANAGER_URL: string | undefined;
 
 const rootReducer = combineReducers({
@@ -115,7 +114,9 @@ export const DefaultRealmConfig: RealmAppConfig = {
 };
 
 // Try and load the app config from JSON and if anything is found amalgamate it with default
-const configURL =  (MANAGER_URL ?? "") + "/api/master/configuration/manager";
+const managerURL = MANAGER_URL || window.location.protocol + "//" + window.location.hostname + (window.location.port ? ":" + window.location.port : "")
+    + window.location.pathname.replace(/\/[^/]+\/?$/, '');
+const configURL = managerURL + "/api/master/configuration/manager";
 
 fetch(configURL).then<ManagerAppConfig>(async (result) => {
     let appConfig: ManagerAppConfig;
@@ -137,13 +138,6 @@ fetch(configURL).then<ManagerAppConfig>(async (result) => {
 
         if (!appConfig.manager.translationsLoadPath) {
             appConfig.manager.translationsLoadPath = "/locales/{{lng}}/{{ns}}.json";
-        }
-    }
-
-    // Add config prefix if defined (used in dev)
-    if (CONFIG_URL_PREFIX) {
-        if (appConfig.manager.translationsLoadPath) {
-            appConfig.manager.translationsLoadPath = CONFIG_URL_PREFIX + appConfig.manager.translationsLoadPath;
         }
     }
 

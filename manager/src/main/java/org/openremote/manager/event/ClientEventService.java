@@ -171,6 +171,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         from(WEBSOCKET_URI)
             .routeId("ClientInbound-Websocket")
             .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
+            .threads().executorService(executorService) // Ensure processing is not done on the WebService I/O threads
             .choice()
             .when(header(UndertowConstants.EVENT_TYPE))
             .process(exchange -> {
@@ -528,7 +529,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             try {
                 webSocketChannel.close();
             } catch (IOException e) {
-                LOG.log(INFO, () -> "Failed to close websocket session: " + sessionKey);
+                LOG.log(DEBUG, () -> "Failed to close websocket session: " + sessionKey);
                 throw new RuntimeException(e);
             }
         }

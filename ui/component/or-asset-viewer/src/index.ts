@@ -15,7 +15,7 @@ import {showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or
 import "@openremote/or-mwc-components/or-mwc-list";
 import {translate} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import manager, {subscribe, Util, DefaultColor5} from "@openremote/core";
+import manager, {OPENREMOTE_CLIENT_ID, RESTRICTED_USER_REALM_ROLE, subscribe, Util} from "@openremote/core";
 import {OrMwcTable, OrMwcTableRowClickEvent} from "@openremote/or-mwc-components/or-mwc-table";
 import {OrChartConfig} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory} from "@openremote/or-attribute-history";
@@ -44,8 +44,7 @@ import "./or-edit-asset-panel";
 import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-edit-asset-panel";
 import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import { progressCircular } from "@openremote/or-mwc-components/style";
-import { OrAssetTree } from "@openremote/or-asset-tree";
+import {progressCircular} from "@openremote/or-mwc-components/style";
 
 export interface PanelConfig {
     type: "info" | "setup" | "history" | "group" | "survey" | "survey-results" | "linkedUsers" | "alarm.linkedAlarms";
@@ -128,7 +127,6 @@ export interface ViewerConfig {
 interface UserAssetLinkInfo {
     userId: string;
     usernameAndId: string;
-    roles: string[];
     restrictedUser: boolean;
 }
 
@@ -792,11 +790,10 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             return;
         }
 
-        const cols = [i18next.t("username"), i18next.t("roles"), i18next.t("restrictedUser")];
+        const cols = [i18next.t("username"), i18next.t("restrictedUser")];
         const rows = assetLinkInfos.sort(Util.sortByString(u => u.usernameAndId)).map(assetLinkInfo => {
             return [
                 assetLinkInfo.usernameAndId,
-                assetLinkInfo.roles.join(", "),
                 assetLinkInfo.restrictedUser ? i18next.t("yes") : i18next.t("no")
             ];
         });
@@ -973,24 +970,14 @@ async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAsse
     const userId = userAssetLink.id!.userId!;
     const username = userAssetLink.userFullName!;
 
-    const roleNames = await manager.rest.api.UserResource.getUserRoles(manager.displayRealm, userId)
-        .then((response) => {
-            return response.data.filter(role => role.composite && role.assigned).map(r => r.name!);
-        })
-        .catch((err) => {
-            console.info('User not allowed to get roles', err);
-            return [];
-        });
-
     const isRestrictedUser = await manager.rest.api.UserResource.getUserRealmRoles(manager.displayRealm, userId)
         .then((rolesRes) => {
-            return rolesRes.data ? !!rolesRes.data.find(r => r.assigned && r.name === "restricted_user") : false;
+            return rolesRes.data ? !!rolesRes.data.find(r => r === RESTRICTED_USER_REALM_ROLE) : false;
         });
 
     return {
         userId: userId,
         usernameAndId: username,
-        roles: roleNames,
         restrictedUser: isRestrictedUser
     };
 }
@@ -1479,12 +1466,12 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             } catch (e) {
                 // We can ignore this as it should indicate that the asset has changed
             }
-            this.wrapperElem?.classList.remove("saving");
             if (this.saveBtnElem) {
                 this.saveBtnElem.disabled = false;
             }
         }
         this._saveInProgress = false;
+        this.wrapperElem?.classList.remove("saving");
         this.dispatchEvent(new OrAssetViewerSaveEvent(saveResult));
     }
 

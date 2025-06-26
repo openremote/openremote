@@ -663,8 +663,9 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         }
 
         connector.connected(sessionId, createConnectorMessageConsumer(sessionId), () -> {
-            clientEventService.closeWebsocketSession(sessionId);
-            tunnelInfos.values().removeIf(tunnelInfo -> tunnelInfo.getGatewayId().equals(gatewayId));
+            try {
+                clientEventService.closeWebsocketSession(sessionId);
+            } catch (Exception ignored) {}
         });
     }
 
@@ -672,8 +673,13 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         String gatewayId = getGatewayIdFromClientId(gatewayClientId);
         GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
-        if (connector != null) {
-            connector.disconnected(sessionId);
+        try {
+            if (connector != null) {
+                connector.disconnected(sessionId);
+            }
+        } finally {
+            // Assume all gateway tunnels have been terminated
+            tunnelInfos.values().removeIf(tunnelInfo -> tunnelInfo.getGatewayId().equalsIgnoreCase(gatewayId));
         }
     }
 
@@ -810,7 +816,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                         gateway.getRealm(),
                         gatewayUser.getId(),
                         identityProvider
-                            .addRealmRoles(gateway.getRealm(), gatewayUser.getId(), RESTRICTED_USER_REALM_ROLE));
+                            .addUserRealmRoles(gateway.getRealm(), gatewayUser.getId(), RESTRICTED_USER_REALM_ROLE));
             }
 
             if (!clientId.equals(gateway.getClientId().orElse(null)) || !secret.equals(gateway.getClientSecret().orElse(null))) {

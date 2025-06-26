@@ -99,7 +99,7 @@ jobs:
     steps:
 
       - name: Cancel previous runs
-        uses: styfle/cancel-workflow-action@0.12.1
+        uses: styfle/cancel-workflow-action@85880fa0301c86cca9da44039ee3bb12d3bedbfa # 0.12.1
         with:
           access_token: ${{ github.token }}
 
@@ -167,7 +167,7 @@ jobs:
           echo "ipv6=$PUBLIC_IPV6" >> $GITHUB_OUTPUT
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           # This will only be available when run by workflow_dispatch otherwise will checkout branch/commit that triggered the workflow
           ref: ${{ steps.inputs-and-secrets.outputs.COMMIT }}
@@ -178,7 +178,7 @@ jobs:
       - name: Backend files changed
         id: backend-files-changed
         if: github.event_name == 'pull_request'
-        uses: tj-actions/changed-files@v45
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c # v45
         with:
           files_ignore: |
             .ci_cd/**
@@ -192,7 +192,7 @@ jobs:
       - name: UI files changed
         id: ui-files-changed
         if: github.event_name == 'pull_request'
-        uses: tj-actions/changed-files@v45
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c # v45
         with:
           files: |
             ui/**
@@ -235,7 +235,7 @@ jobs:
           fi
 
       - name: Checkout main repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         if: ${{ steps.is_main_repo.outputs.value == 'false' }}
         with:
           repository: ${{ steps.is_main_repo.outputs.repository }}
@@ -248,19 +248,19 @@ jobs:
 
       - name: Check deployment build.gradle
         id: check_deployment_gradle
-        uses: andstor/file-existence-action@v3
+        uses: andstor/file-existence-action@076e0072799f4942c8bc574a82233e1e4d13e9d6 # v3
         with:
           files: "deployment/build.gradle"
 
       - name: Check deployment dockerfile
         id: check_deployment_dockerfile
-        uses: andstor/file-existence-action@v3
+        uses: andstor/file-existence-action@076e0072799f4942c8bc574a82233e1e4d13e9d6 # v3
         with:
           files: "deployment/Dockerfile"
 
       - name: Check ci_cd existence
         id: check_cicd_json
-        uses: andstor/file-existence-action@v3
+        uses: andstor/file-existence-action@076e0072799f4942c8bc574a82233e1e4d13e9d6 # v3
         with:
           files: ".ci_cd/ci_cd.json"
 
@@ -517,21 +517,21 @@ jobs:
 
       - name: Login to DockerHub
         if: ${{ steps.manager-docker-command.outputs.pushRequired == 'true' }}
-        uses: docker/login-action@v3
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
         with:
           username: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_USER }}
           password: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_PASSWORD }}
 
       - name: set up QEMU
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3
         with:
           platforms: linux/amd64,linux/aarch64
 
       - name: install buildx
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
         id: buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3
         with:
           version: latest
           install: true
@@ -539,7 +539,7 @@ jobs:
       - name: Set up JDK 21 and gradle cache
         id: java
         if: ${{ steps.install-command.outputs.value != '' || steps.test-backend-command.outputs.value != '' }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -550,7 +550,7 @@ jobs:
         run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
 
       - name: Yarn cache
-        uses: actions/cache@v4
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
         if: steps.skip-cicd.outputs.value != 'true'
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
@@ -601,7 +601,7 @@ jobs:
           TEST_UI_COMMAND: ${{ steps.test-ui-command.outputs.value }}
 
       # Use docker layer caching to speed up image building
-      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+      - uses: jpribyl/action-docker-layer-caching@c632825d12ec837065f49726ea27ddd40bcc7894 # v0.1.1
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
         # Ignore the failure of a step and avoid terminating the job.
         continue-on-error: true
@@ -660,7 +660,7 @@ jobs:
 
       - name: Archive backend test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
         with:
           name: backend-test-results
           path: test/build/reports/tests
@@ -734,7 +734,7 @@ jobs:
 
       - name: Scan manager docker image
         if: steps.manager-docker-command.outputs.pushRequired == 'true'
-        uses: anchore/scan-action@v3
+        uses: anchore/scan-action@2c901ab7378897c01b8efaa2d0c9bf519cc64b9e # v6.2.0
         id: manager-anchore-scan
         with:
           image: ${{ steps.manager-docker-command.outputs.managerDockerImage }}
@@ -745,7 +745,7 @@ jobs:
         if: |
           !cancelled() &&
           steps.manager-docker-command.outputs.pushRequired == 'true'
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@e488e3c8239c26bf8e6704904a8cb59be658d450 # v3
         with:
           sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
 
@@ -910,7 +910,7 @@ jobs:
           IPV6: ${{ steps.ip-address.outputs.ipv6 }}
 
 #       - name: Setup upterm session
-#         uses: lhotari/action-upterm@v1
+#         uses: lhotari/action-upterm@b0357f23233f5ea6d58947c0c402e0631bab7334 # v1
 #         with:
 #           ## limits ssh access and adds the ssh public keys of the listed GitHub users
 #           limit-access-to-actor: true
