@@ -40,12 +40,15 @@ public class CsvRecord {
     @JsonProperty("firmwareVersion")
     private String firmwareVersion;
 
+    @JsonProperty("assetTypeName")
+    private String assetTypeName;
+
     public String getDevEUI() { return devEUI; }
     public void setDevEUI(String devEUI) { this.devEUI = devEUI; }
 
     public String getName() {
         if (name == null || name.trim().isEmpty()) {
-            return Optional.of(modelId).orElse("") + "-" + Optional.of(devEUI).orElse("");
+            return Optional.ofNullable(devEUI).orElse("");
         }
         return name;
     }
@@ -60,6 +63,9 @@ public class CsvRecord {
     public String getFirmwareVersion() { return firmwareVersion; }
     public void setFirmwareVersion(String firmwareVersion) { this.firmwareVersion = firmwareVersion; }
 
+    public String getAssetTypeName() { return assetTypeName; }
+    public void setAssetTypeName(String assetTypeName) { this.assetTypeName = assetTypeName; }
+
     @Override
     public String toString() {
         return "CsvRecord{" +
@@ -68,12 +74,12 @@ public class CsvRecord {
             ", vendorId='" + (vendorId != null ? vendorId : "") + '\'' +
             ", modelId='" + (modelId != null ? modelId : "") + '\'' +
             ", firmwareVersion='" + (firmwareVersion != null ? firmwareVersion : "") + '\'' +
+            ", assetTypeName='" + (assetTypeName != null ? assetTypeName : "") + '\'' +
             '}';
     }
 
     public boolean isValid() {
         return devEUI != null && !devEUI.trim().isEmpty() &&
-               vendorId != null && !vendorId.trim().isEmpty() &&
-               modelId != null && !modelId.trim().isEmpty();
+               assetTypeName != null && !assetTypeName.trim().isEmpty();
     }
 }

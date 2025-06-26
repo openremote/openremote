@@ -47,7 +47,6 @@ public abstract class LoRaWANAgent<T extends LoRaWANAgent<T, U>, U extends Abstr
     public static final AttributeDescriptor<String> LAST_WILL_PAYLOAD = MQTTAgent.LAST_WILL_PAYLOAD;
     public static final AttributeDescriptor<Boolean> LAST_WILL_RETAIN = MQTTAgent.LAST_WILL_RETAIN;
 
-    public static final AttributeDescriptor<ValueType.StringMap> ASSET_TYPE_MAP = new AttributeDescriptor<>("assetTypeMap", ValueType.TEXT_MAP);
     public static final AttributeDescriptor<String> APPLICATION_ID = new AttributeDescriptor<>("applicationId", ValueType.TEXT);
 
 
@@ -172,15 +171,6 @@ public abstract class LoRaWANAgent<T extends LoRaWANAgent<T, U>, U extends Abstr
 
     public LoRaWANAgent<T, U> setSubscribeQos(int subscribeQos) {
         getAttributes().getOrCreate(SUBSCRIBE_QOS).setValue(subscribeQos);
-        return this;
-    }
-
-    public Optional<ValueType.StringMap> getAssetTypeMap() {
-        return getAttributes().getValue(ASSET_TYPE_MAP);
-    }
-
-    public LoRaWANAgent<T, U> setAssetTypeMap(ValueType.StringMap value) {
-        getAttributes().getOrCreate(ASSET_TYPE_MAP).setValue(value);
         return this;
     }
 

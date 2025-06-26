@@ -98,10 +98,6 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait{
         agent.setMqttPort(mqttBrokerPort)
         agent.setClientId(CLIENT_ID)
         agent.setApplicationId(APPLICATION_ID)
-        def assetTypeMap = new ValueType.StringMap()
-        def key = "${VENDOR_ID}::${MODEL_ID}::${FIRMWARE_VERSION}".toString()
-        assetTypeMap.putAll([(key): "ChirpStackTestAsset"])
-        agent.setAssetTypeMap(assetTypeMap)
         agent = assetStorageService.merge(agent)
 
         then: "the protocol instance for the agent should be created"
@@ -130,8 +126,8 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait{
 
         and: "CSV import is executed"
         def csvContent = """\
-            ${DEV_EUI_1},${ASSET_NAME_1},${VENDOR_ID},${MODEL_ID},${FIRMWARE_VERSION}
-            ${DEV_EUI_2},${ASSET_NAME_2},${VENDOR_ID},${MODEL_ID},${FIRMWARE_VERSION}
+            ${DEV_EUI_1},${ASSET_NAME_1},ChirpStackTestAsset,${VENDOR_ID},${MODEL_ID},${FIRMWARE_VERSION}
+            ${DEV_EUI_2},${ASSET_NAME_2},ChirpStackTestAsset,${VENDOR_ID},${MODEL_ID},${FIRMWARE_VERSION}
         """.stripIndent()
         def fileInfo = new FileInfo("devices.csv", csvContent, false)
         AssetTreeNode[] assets = agentResource.doProtocolAssetImport(null, agent.getId(), null, fileInfo)

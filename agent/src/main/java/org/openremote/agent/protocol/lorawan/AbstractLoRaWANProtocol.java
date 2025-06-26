@@ -60,7 +60,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.APPLICATION_ID;
-import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.ASSET_TYPE_MAP;
 import static org.openremote.agent.protocol.lorawan.LoRaWANConstants.*;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
@@ -75,7 +74,6 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
     private ProtocolAssetService assetService;
     private MQTTProtocol mqttProtocol;
     private T agent;
-    private ClassNameResolver classNameResolver;
     protected Container container;
     private Map<String, Class<?>> nameToClassMap = new HashMap<>();
 
@@ -102,7 +100,6 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         agent.getUsernamePassword().ifPresent(usernamePassword -> mqttAgent.setUsernamePassword(usernamePassword));
 
         this.mqttProtocol = new LoRaWANMQTTProtocol(mqttAgent);
-        this.classNameResolver = new ClassNameResolver(agent.getAssetTypeMap().orElse(null));
     }
 
     @Override
@@ -160,9 +157,6 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
 
     @Override
     public boolean onAgentAttributeChanged(AttributeEvent event) {
-        if (ASSET_TYPE_MAP.getName().equals(event.getName())) {
-            this.classNameResolver = new ClassNameResolver(agent.getAssetTypeMap().orElse(null));
-        }
         return mqttProtocol.onAgentAttributeChanged(event);
     }
 
@@ -179,6 +173,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
             CsvSchema schema = CsvSchema.builder()
                 .addColumn("devEUI")
                 .addColumn("name")
+                .addColumn("assetTypeName")
                 .addColumn("vendor_id")
                 .addColumn("model_id")
                 .addColumn("firmwareVersion")
@@ -336,12 +331,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
             return Optional.empty();
         }
 
-        String className = classNameResolver.getClassName(csvRecord.getVendorId(), csvRecord.getModelId(), csvRecord.getFirmwareVersion());
-        if (className == null) {
-            LOG.log(Level.INFO, "CSV import skipped a CSV record because asset type mapping is missing: " + csvRecord);
-            return Optional.empty();
-        }
-        return Optional.of(className)
+        return Optional.ofNullable(csvRecord.getAssetTypeName())
             .map(name -> resolveAssetClass(name, csvRecord))
             .map(clazz -> instantiateAsset(clazz, csvRecord))
             .flatMap(asset -> configureAsset(asset, csvRecord));
@@ -355,7 +345,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         return nameToClassMap.computeIfAbsent(simpleClassName, name -> {
             Class<?> clazz = resolveClassFromSimpleName(name);
             if (clazz == null) {
-                LOG.log(Level.WARNING, "CSV import skipped a CSV record because of an invalid asset type mapping: " + csvRecord);
+                LOG.log(Level.WARNING, "CSV import skipped a CSV record because of an invalid asset type name: " + csvRecord);
             }
             return clazz;
         });
