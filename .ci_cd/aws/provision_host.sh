@@ -20,7 +20,7 @@
 # 3 - INSTANCE_TYPE EC2 instance type see cloud formation template parameter
 # 4 - ROOT_DISK_SIZE to use for created EBS root volume (GB)
 # 5 - DATA_DISK_SIZE to use for created EBS data volume (GB)
-# 6 - SNAPSHOT_ID to use for creating the EBS data volume based of an existing snapshot
+# 6 - SNAPSHOT_ID to use for creating the EBS data volume based on an existing snapshot
 # 7 - ELASTIC_IP if 'true' then create an elastic public IP for this host
 # 8 - PROVISION_S3_BUCKET set to 'false' to not provision an S3 bucket for this host
 # 9 - ENABLE_METRICS set to 'false' to not enable cloudwatch metrics for this instance
