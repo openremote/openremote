@@ -81,7 +81,7 @@ Parameters:
     Description: Role ARN that can be assumed for executing DLM operations
     Type: String
   SnapshotId:
-    Description: Snapshot ID to create EBS data volume based of an existing snapshot
+    Description: Snapshot ID to create EBS data volume based on an existing snapshot
     Type: String
     Default: ""
   ElasticIP:
