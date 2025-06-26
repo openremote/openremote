@@ -116,6 +116,8 @@ export function getHelperText(sending: boolean, error: boolean, timestamp: numbe
 
 const jsonFormsAttributeRenderers = [...StandardRenderers, agentIdRendererRegistryEntry];
 
+const schemas = new Map<string, any>()
+
 export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => ValueInputProviderGenerator = (fallback) => (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
     if (valueDescriptor.jsonType === "object" || valueDescriptor.arrayDimensions && valueDescriptor.arrayDimensions > 0) {
         const disabled = !!(options && options.disabled);
@@ -150,14 +152,18 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
             }
             initialised = true;
 
-            if (!schema) {
+            const cacheKey = `${valueDescriptor.type}:${valueDescriptor.arrayDimensions}`;
+            if (!schema && !schemas.has(cacheKey)) {
                 const response = await manager.rest.api.AssetModelResource.getValueDescriptorSchema({
                   name: valueDescriptor.type,
                   descriptorType: valueDescriptor.type,
                   arrayDimensions: valueDescriptor.arrayDimensions,
                 });
                 schema = response.data;
+                schemas.set(cacheKey, schema);
                 // label ||= schema.title
+            } else {
+                schema = schemas.get(cacheKey);
             }
 
             if (jsonForms.value && loadingWrapper.value) {
