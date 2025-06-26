@@ -334,7 +334,7 @@ if [ "$PROVISION_S3_BUCKET" != 'false' ]; then
   fi
 fi
 
-# Provision Route53 HealthCheck Alarm CloudFormation (if stack doesn't already exist) - must be in the us-east-1 region
+# Provision Route53 Health Check Alarm CloudFormation (if stack doesn't already exist) - must be in the us-east-1 region
 echo "Provisioning Healthcheck Alarm"
 STATUS=$(aws cloudformation describe-stacks --stack-name $HEALTH_STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE --region us-east-1 2>/dev/null)
 

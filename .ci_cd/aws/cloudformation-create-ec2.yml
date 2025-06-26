@@ -99,11 +99,11 @@ Parameters:
       - false
     Default: false
   RootDiskSize:
-    Description: Root EBS volume size GB
+    Description: Size of the EBS root volume (in GB)
     Type: Number
     Default: 16
   DataDiskSize:
-    Description: Data EBS volume size GB
+    Description: Size of the EBS data volume (in GB)
     Type: Number
     Default: 16
   HealthChecks:
