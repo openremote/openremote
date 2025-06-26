@@ -9,65 +9,12 @@ volumes:
   proxy-data:
   manager-data:
   postgresql-data:
-  prometheus-data: {}
-  grafana-data:
 
 networks:
   monitoring:
-    driver: bridge
+    external: true
 
 services:
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    depends_on:
-      - prometheus
-    volumes:
-      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
-      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
-      - ./grafana/provisioning/dashboards/dashboards:/etc/grafana/provisioning/dashboards/dashboards
-      - grafana-data:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
-    ports:
-      - 3000:3000
-    networks:
-      - monitoring
-
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: node-exporter
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/host:ro,rslave
-    command:
-      - "--path.procfs=/host/proc"
-      - "--path.rootfs=/host"
-      - "--path.sysfs=/host/sys"
-      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
-    expose:
-      - 9100
-    ports:
-      - 9100:9100
-    networks:
-      - monitoring
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
-    networks:
-      - monitoring
-    expose:
-      - 9090
-    ports:
-      - 9090:9090
-
   proxy:
     image: openremote/proxy:${PROXY_VERSION:-latest}
     restart: always
