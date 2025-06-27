@@ -405,12 +405,6 @@ export class Manager implements EventProviderFactory {
             return false;
         }
 
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.register(window.location.pathname.slice(0, -1) + '/service-worker.js')
-            .then(() => console.log('[SW] Registered'))
-            .catch(console.error);
-        }
-
         if (success) {
             success = this.doRestApiInit();
         }

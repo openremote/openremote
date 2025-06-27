@@ -380,7 +380,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         return ValueUtil.getMetaItemDescriptors();
     }
 
-    public JsonNode getValueDescriptorSchema(String name, String descriptorType, Integer arrayDimensions) throws ClassNotFoundException {
+    public JsonNode getValueDescriptorSchema(String descriptorType, Integer arrayDimensions) throws ClassNotFoundException {
         Class<?> clazz = Class.forName(descriptorType);
         return dynamicJsonSchemas.computeIfAbsent(clazz.getTypeName(), key -> (ObjectNode)ValueUtil.getSchema(
             arrayDimensions != null && arrayDimensions > 0 ? Array.newInstance(clazz, new int[arrayDimensions]).getClass() : clazz

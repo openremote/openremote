@@ -35,9 +35,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response.Status;
-
 import jakarta.ws.rs.core.Response;
 
 public class AssetModelResourceImpl extends ManagerWebResource implements AssetModelResource {
@@ -76,13 +73,14 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     }
 
     @Override
-    public Response getValueDescriptorSchema(RequestParams requestParams, String name, String descriptorType, Integer arrayDimensions) {
+    public Response getValueDescriptorSchema(RequestParams requestParams, String version, String descriptorType, Integer arrayDimensions) {
         try {
-            JsonNode schema = assetModelService.getValueDescriptorSchema(name, descriptorType, arrayDimensions);
-            return Response.ok(schema).header("Cache-Control", "public,max-age=" + 1000000000 + ",must-revalidate").build();
-        } catch (ClassNotFoundException error) {
-            LOG.log(Level.SEVERE, "Could not find class'" + name + "': " + error.getMessage());
-            throw new WebApplicationException(Status.NOT_FOUND);
+            JsonNode schema = assetModelService.getValueDescriptorSchema(descriptorType, arrayDimensions);
+            // A 1-year immutable cache as the responses are versioned making invalidation largely automatic
+            return Response.ok(schema).header("Cache-Control", "public,max-age=" + 31536000 + ",immutable").build();
+        } catch (ClassNotFoundException e) {
+            LOG.log(Level.INFO, "Could not find class: '" + descriptorType + "'", e);
+            return Response.status(404).build();
         }
     }
 }

@@ -5,7 +5,6 @@ import {until} from "lit/directives/until.js";
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
 import {i18next, translate} from "@openremote/or-translate";
 import {
-    AgentLink,
     Attribute,
     AttributeDescriptor,
     AttributeEvent,
@@ -155,9 +154,9 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
             const cacheKey = `${valueDescriptor.type}:${valueDescriptor.arrayDimensions}`;
             if (!schema && !schemas.has(cacheKey)) {
                 const response = await manager.rest.api.AssetModelResource.getValueDescriptorSchema({
-                  name: valueDescriptor.type,
-                  descriptorType: valueDescriptor.type,
-                  arrayDimensions: valueDescriptor.arrayDimensions,
+                    version: manager.managerVersion,
+                    descriptorType: valueDescriptor.type,
+                    arrayDimensions: valueDescriptor.arrayDimensions,
                 });
                 schema = response.data;
                 schemas.set(cacheKey, schema);
