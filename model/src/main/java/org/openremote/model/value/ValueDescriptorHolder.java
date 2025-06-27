@@ -39,5 +39,5 @@ public interface ValueDescriptorHolder<T> {
     ValueConstraint[] getConstraints();
 
     @JsonProperty
-    String[] getUnits();
+    Units[] getUnits();
 }

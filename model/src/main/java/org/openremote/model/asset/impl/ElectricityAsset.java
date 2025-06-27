@@ -25,41 +25,39 @@ import org.openremote.model.value.*;
 
 import java.util.Optional;
 
-import static org.openremote.model.Constants.*;
-
 @SuppressWarnings("unchecked")
 public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends Asset<T> {
 
     public static final AttributeDescriptor<Double> POWER = new AttributeDescriptor<>("power", ValueType.NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT);
+    ).withUnits(Units.KILO, Units.WATT);
     public static final AttributeDescriptor<Double> POWER_SETPOINT = new AttributeDescriptor<>("powerSetpoint", ValueType.NUMBER)
-        .withUnits(UNITS_KILO, UNITS_WATT).withOptional(true);
+        .withUnits(Units.KILO, Units.WATT).withOptional(true);
     public static final AttributeDescriptor<Double> POWER_IMPORT_MIN = new AttributeDescriptor<>("powerImportMin", ValueType.POSITIVE_NUMBER)
-        .withUnits(UNITS_KILO, UNITS_WATT);
+        .withUnits(Units.KILO, Units.WATT);
     public static final AttributeDescriptor<Double> POWER_IMPORT_MAX = new AttributeDescriptor<>("powerImportMax", ValueType.POSITIVE_NUMBER)
-        .withUnits(UNITS_KILO, UNITS_WATT);
+        .withUnits(Units.KILO, Units.WATT);
     public static final AttributeDescriptor<Double> POWER_EXPORT_MIN = new AttributeDescriptor<>("powerExportMin", ValueType.POSITIVE_NUMBER)
-        .withUnits(UNITS_KILO, UNITS_WATT);
+        .withUnits(Units.KILO, Units.WATT);
     public static final AttributeDescriptor<Double> POWER_EXPORT_MAX = new AttributeDescriptor<>("powerExportMax", ValueType.POSITIVE_NUMBER)
-        .withUnits(UNITS_KILO, UNITS_WATT);
+        .withUnits(Units.KILO, Units.WATT);
 
     
     public static final AttributeDescriptor<Double> ENERGY_IMPORT_TOTAL = new AttributeDescriptor<>("energyImportTotal", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
+    ).withUnits(Units.KILO, Units.WATT, Units.HOUR);
     public static final AttributeDescriptor<Double> ENERGY_EXPORT_TOTAL = new AttributeDescriptor<>("energyExportTotal", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
+    ).withUnits(Units.KILO, Units.WATT, Units.HOUR);
     public static final AttributeDescriptor<Integer> EFFICIENCY_IMPORT = new AttributeDescriptor<>("efficiencyImport", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+        .withUnits(Units.PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
     public static final AttributeDescriptor<Integer> EFFICIENCY_EXPORT = new AttributeDescriptor<>("efficiencyExport", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+        .withUnits(Units.PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
 
     public static final AttributeDescriptor<Double> TARIFF_IMPORT = new AttributeDescriptor<>("tariffImport", ValueType.NUMBER)
-        .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(true);
+        .withUnits(Units.EUR, Units.PER, Units.KILO, Units.WATT, Units.HOUR).withOptional(true);
     public static final AttributeDescriptor<Double> TARIFF_EXPORT = new AttributeDescriptor<>("tariffExport", ValueType.NUMBER)
-        .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(true);
+        .withUnits(Units.EUR, Units.PER, Units.KILO, Units.WATT, Units.HOUR).withOptional(true);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
