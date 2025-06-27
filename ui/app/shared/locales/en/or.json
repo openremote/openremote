@@ -294,6 +294,7 @@
   "subCategoryFilters": "Sub category filters",
   "category": "Category",
   "subCategory": "Sub category",
+  "copiedToClipboard": "Copied to clipboard successfully.",
   "message": "Message",
   "warn": "Warning",
   "error": "Error",
