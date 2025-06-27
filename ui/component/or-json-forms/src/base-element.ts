@@ -4,7 +4,7 @@ import {
     JsonFormsCellRendererRegistryEntry,
     JsonFormsRendererRegistryEntry,
     JsonFormsUISchemaRegistryEntry,
-    JsonSchema,
+    JsonSchema7,
     OwnPropsOfRenderer,
     UISchemaElement
 } from '@jsonforms/core';
@@ -30,7 +30,7 @@ export abstract class BaseElement<T extends UISchemaElement, P extends OwnPropsO
     public uischema!: T;
 
     @property({type: Object})
-    public schema!: JsonSchema;
+    public schema!: JsonSchema7;
 
     @property({type: String, attribute: false})
     public data: any;
