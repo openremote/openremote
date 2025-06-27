@@ -337,6 +337,11 @@ export class PageUsers extends Page<AppStateKeyed> {
             showSnackbar(undefined, "noUsernameSet", "dismiss");
             return false;
         }
+        // New service users with the 'gateway-' prefix are not allowed
+        if(user.serviceAccount && (user.email.startsWith('gateway-') || user.username.startsWith('gateway-'))) {
+            showSnackbar(undefined, "createUserFailed", "dismiss")
+            return false;
+        }
 
         if (user.password === "") {
             // Means a validation failure shouldn't get here
