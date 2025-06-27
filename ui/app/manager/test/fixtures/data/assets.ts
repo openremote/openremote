@@ -113,8 +113,8 @@ export const thing: Asset = {
   realm: "smartcity",
   type: "ThingAsset",
   attributes: {
-    notes: { name: "notes", type: "text", meta: {}, value: null, timestamp: 1748772049557 },
-    location: { name: "location", type: "GEO_JSONPoint", meta: {}, value: null, timestamp: 1748771034882 },
+    notes: { name: "notes", type: "text", meta: {}, value: null },
+    location: { name: "location", type: "GEO_JSONPoint", meta: {}, value: null },
   },
 };
 

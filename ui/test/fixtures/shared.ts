@@ -20,6 +20,10 @@ export function camelCaseToSentenceCase(value: string) {
   return result.charAt(0).toUpperCase() + result.slice(1);
 }
 
+export interface BasePage {
+  goto(): Promise<void>;
+}
+
 export class Shared {
   constructor(readonly page: Page) {}
 

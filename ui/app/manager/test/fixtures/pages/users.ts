@@ -1,10 +1,14 @@
-import { Locator, Page, Shared, expect } from "@openremote/test";
+import { BasePage, Locator, Page, Shared, expect } from "@openremote/test";
 import { Manager } from "../manager";
 import permissions from "../data/permissions";
 import { UserModel } from "../../../src/pages/page-users";
 
-export class UsersPage {
+export class UsersPage implements BasePage {
   constructor(private readonly page: Page, private readonly shared: Shared, private readonly manager: Manager) {}
+
+  async goto() {
+    this.manager.navigateToMenuItem("Users");
+  }
 
   getPermission(permission: string): Locator {
     return this.page.getByRole("checkbox", { name: permission });

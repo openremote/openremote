@@ -2,7 +2,7 @@ import type { Fixtures, PlaywrightTestArgs, Page, PlaywrightTestOptions, TestFix
 import { test, type TestType as ComponentTestType } from "@playwright/experimental-ct-core";
 
 import { Components, type MountOptions, type MountResult } from "./component";
-import { Shared, camelCaseToSentenceCase } from "./shared";
+import { Shared, camelCaseToSentenceCase, type BasePage } from "./shared";
 
 export interface ComponentFixtures {
   mount<HooksConfig, Component extends HTMLElement = HTMLElement>(
@@ -28,4 +28,4 @@ export const fixtures: Fixtures<PlaywrightTestArgs & PlaywrightTestOptions & Com
   components: withPage(Components),
 };
 
-export { test as ct, camelCaseToSentenceCase, type ComponentTestType, type Shared, type Components };
+export { test as ct, camelCaseToSentenceCase, type ComponentTestType, type Shared, type Components, type BasePage };
