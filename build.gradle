@@ -1,5 +1,7 @@
 import java.nio.file.Paths
 
+import groovy.json.JsonSlurper
+
 import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
 import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 
@@ -22,9 +24,25 @@ scmVersion {
     }
 }
 
+def hasScriptsSection(File packageJsonFile) {
+    if (!packageJsonFile.exists()) return false
+
+    def json = new JsonSlurper().parseText(packageJsonFile.text)
+    return json.scripts instanceof Map && !json.scripts.isEmpty()
+}
+
 allprojects {
     apply from: "${findProject(':openremote') != null ? project(':openremote').projectDir : rootDir}/project.gradle"
     version = scmVersion.version
+
+    afterEvaluate { proj ->
+        def pkgJson = file("${project.projectDir}/package.json")
+        if (!hasScriptsSection(pkgJson)) {
+            tasks.matching { it.name.startsWith('npm') }.configureEach {
+                enabled = false
+            }
+        }
+    }
 }
 
 // Uncomment the following to configure files to be encrypted/decrypted
