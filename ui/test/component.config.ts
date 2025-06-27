@@ -1,4 +1,4 @@
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 import { defineCtConfig as baseConfig, Project } from ".";
 
 const { CI } = process.env;
@@ -7,7 +7,7 @@ const { CI } = process.env;
  * See https://playwright.dev/docs/test-configuration.
  */
 export const defineCtConfig = (path: string) => {
-  const name = path.split("/").at(-1);
+  const name = basename(path);
   return baseConfig({
     testMatch: "*.test.ts",
     /* Fail the build on CI if you accidentally left test.only in the source code. */

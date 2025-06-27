@@ -1,4 +1,4 @@
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 import { defineConfig as baseConfig, devices, Project } from ".";
 
 const { CI, DEV, managerUrl } = process.env;
@@ -43,9 +43,7 @@ function createAppSetupAndTeardown(app: string) {
  * See https://playwright.dev/docs/test-configuration.
  */
 export const defineAppConfig = (path: string) => {
-  const name = path.split("/").at(-1);
-  if (!name) return;
-
+  const name = basename(path);
   return baseConfig({
     testMatch: "*.test.ts",
     /* Fail the build on CI if you accidentally left test.only in the source code. */
