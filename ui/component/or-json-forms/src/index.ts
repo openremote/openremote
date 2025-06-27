@@ -18,10 +18,10 @@ import {
     JsonFormsRendererRegistryEntry,
     JsonFormsSubStates,
     JsonFormsUISchemaRegistryEntry,
-    JsonSchema,
+    JsonSchema7,
     mapStateToJsonFormsRendererProps,
     OwnPropsOfJsonFormsRenderer,
-    Paths,
+
     setConfig,
     UISchemaElement
 } from "@jsonforms/core";
@@ -68,7 +68,7 @@ export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPr
     public uischema?: UISchemaElement;
 
     @property({type: Object})
-    public schema?: JsonSchema;
+    public schema?: JsonSchema7;
 
     @property({type: Object, attribute: false})
     public data: any;
@@ -119,7 +119,8 @@ export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPr
         super.shouldUpdate(_changedProperties);
 
         if (!this.schema) {
-            this.schema = this.data !== undefined ? generateJsonSchema(this.data) : {};
+            // Actually JsonSchema4 `generateJsonSchema` has no union JsonSchema return type
+            this.schema = this.data !== undefined ? generateJsonSchema(this.data) as JsonSchema7 : {};
         }
 
         if (!this.data) {

@@ -3,7 +3,7 @@ import path from "node:path";
 import type { i18n, Resource } from "i18next";
 import type { Page } from "@playwright/test";
 
-import { Resolve, type JsonSchema, type JsonSchema4, type CombinatorKeyword } from "@jsonforms/core";
+import { Resolve, type CombinatorKeyword, type JsonSchema7 } from "@jsonforms/core";
 
 declare global {
   interface Window {
@@ -101,7 +101,7 @@ export class Shared {
   }
 
   // TODO: move to `@openremote/util`
-  resolveSubSchemasRecursive(schema: JsonSchema, rootSchema: JsonSchema, keyword?: CombinatorKeyword): JsonSchema {
+  resolveSubSchemasRecursive(schema: JsonSchema7, rootSchema: JsonSchema7, keyword?: CombinatorKeyword): JsonSchema7 {
     const combinators: string[] = keyword ? [keyword] : ["allOf", "anyOf", "oneOf"];
 
     if (schema.$ref) {
@@ -109,7 +109,7 @@ export class Shared {
     }
 
     combinators.forEach((combinator) => {
-      const schemas = (schema as any)[combinator] as JsonSchema[];
+      const schemas = (schema as any)[combinator] as JsonSchema7[];
 
       if (schemas) {
         (schema as any)[combinator] = schemas.map((subSchema) =>
@@ -120,11 +120,11 @@ export class Shared {
 
     if (schema.items) {
       if (Array.isArray(schema.items)) {
-        schema.items = (schema.items as JsonSchema4[]).map(
-          (itemSchema) => this.resolveSubSchemasRecursive(itemSchema, rootSchema) as JsonSchema4
+        schema.items = schema.items.map(
+          (itemSchema) => this.resolveSubSchemasRecursive(itemSchema, rootSchema)
         );
       } else {
-        schema.items = this.resolveSubSchemasRecursive(schema.items as JsonSchema, rootSchema);
+        schema.items = this.resolveSubSchemasRecursive(schema.items, rootSchema);
       }
     }
 

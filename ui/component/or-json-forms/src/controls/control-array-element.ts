@@ -1,7 +1,7 @@
 import {
     computeLabel,
     createDefaultValue,
-    JsonSchema,
+    JsonSchema7,
     mapDispatchToArrayControlProps,
     OwnPropsOfRenderer,
     Paths,
@@ -84,7 +84,7 @@ export class ControlArrayElement extends ControlBaseElement {
 
     @property()
     protected minimal?: boolean;
-    protected resolvedSchema!: JsonSchema;
+    protected resolvedSchema!: JsonSchema7;
     protected itemInfos: CombinatorInfo[] | undefined;
     protected addItem!: (value: any) => void;
     protected removeItem!: (index: number) => void;
@@ -101,7 +101,7 @@ export class ControlArrayElement extends ControlBaseElement {
     shouldUpdate(_changedProperties: PropertyValues): boolean {
         if (_changedProperties.has("schema") || (_changedProperties.has("state") && _changedProperties.get("state").i18n.locale !== this.state.i18n?.locale)) {
             this.itemInfos = undefined;
-            this.resolvedSchema = Resolve.schema(this.schema, 'items', this.rootSchema);
+            this.resolvedSchema = Resolve.schema(this.schema, 'items', this.rootSchema) as JsonSchema7;
 
             if (Array.isArray(this.resolvedSchema.anyOf)) {
                 this.itemInfos = getCombinatorInfos(this.resolvedSchema.anyOf, this.rootSchema);
