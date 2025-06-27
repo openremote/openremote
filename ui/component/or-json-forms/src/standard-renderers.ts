@@ -292,7 +292,8 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
     const contentProps: OwnPropsOfRenderer & AdditionalProps = {
         schema: matchedSchema,
         uischema: matchedUischema,
-        path: path,
+        path,
+        // path: [path, matchedSchema.title].filter(Boolean).join("."),
         renderers: renderers,
         cells: cells,
         label: props.label || getLabel(matchedSchema, rootSchema, label) || "",
