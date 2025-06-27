@@ -714,6 +714,10 @@ public abstract class ValueConstraint implements Serializable {
         }
     }
 
+    @JsonSchemaInject(json =
+    """
+        { "i18n": "schema.meta.constraint.message" },
+    """)
     protected String message;
 
     protected ValueConstraint(String message) {

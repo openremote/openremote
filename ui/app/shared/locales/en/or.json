@@ -646,6 +646,12 @@
     "title": {
       "indexedItem": "Item {{index}}"
     },
+    "meta": {
+      "constraint.message": {
+        "label": "Validation message",
+        "description": "Custom message to display when this constraint is violated."
+      }
+    },
     "item": {
       "agentLink": {
         "definitions": {
@@ -1965,10 +1971,6 @@
             "max": {
               "label": "Maximum value",
               "description": "The attribute value must be less than or equal to this number. Null values are considered valid."
-            },
-            "message": {
-              "label": "Validation message",
-              "description": "Custom message to display when this constraint is violated."
             }
           },
           "regexp": {
@@ -1979,20 +1981,12 @@
             "label": "Regex flags",
             "description": "Modifiers that affect regex matching behavior. Options: CASE_INSENSITIVE, MULTILINE, DOTALL, etc."
           },
-          "message": {
-            "label": "Validation message",
-            "description": "Custom message to display when this constraint is violated."
-          },
           "min": {
             "label": "Minimum value",
             "description": "The attribute value must be greater than or equal to this number. Null values are considered valid.",
             "min": {
               "label": "Minimum value",
               "description": "The attribute value must be greater than or equal to this number. Null values are considered valid."
-            },
-            "message": {
-              "label": "Validation message",
-              "description": "Custom message to display when this constraint is violated."
             }
           },
           "max": {
@@ -2001,10 +1995,6 @@
             "max": {
               "label": "Maximum value",
               "description": "The attribute value must be less than or equal to this number. Null values are considered valid."
-            },
-            "message": {
-              "label": "Validation message",
-              "description": "Custom message to display when this constraint is violated."
             }
           },
           "allowedValues": {
@@ -2017,10 +2007,6 @@
             "allowedValues": {
               "label": "Allowed values",
               "description": "Accepted values for this attribute. If empty or missing, only null is accepted. Enables select input in the UI."
-            },
-            "message": {
-              "label": "Validation message",
-              "description": "Custom message to display when this constraint is violated."
             }
           },
           "AnyType": {
@@ -2029,59 +2015,31 @@
           },
           "past": {
             "label": "Past",
-            "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past. Null values are considered valid.",
-            "message": {
-              "label": "Validation message",
-              "description": "Custom message to display when this constraint is violated."
-            }
+            "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past. Null values are considered valid."
           },
           "pastOrPresent": {
             "label": "Past or present",
-            "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past or present. Null values are considered valid.",
-            "message": {
-              "label": "Validation message",
-              "description": "Custom message to display when this constraint is violated."
-            }
+            "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past or present. Null values are considered valid."
           },
           "future": {
             "label": "Future",
-            "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future. Null values are considered valid.",
-            "message": {
-              "label": "Validation message",
-              "description": "Custom message to display when this constraint is violated."
-            }
+            "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future. Null values are considered valid."
           },
           "futureOrPresent": {
             "label": "Future or present",
-            "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future or present. Null values are considered valid.",
-            "message": {
-              "label": "Validation message",
-              "description": "Custom message to display when this constraint is violated."
-            }
+            "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future or present. Null values are considered valid."
           },
           "notEmpty": {
             "label": "Not empty",
-            "description": "The attribute value must not be null nor empty. Supported types are JSON compatible strings, arrays and objects which contain at least 1 character, item or property.",
-            "message": {
-              "label": "Validation message",
-              "description": "Custom message to display when this constraint is violated."
-            }
+            "description": "The attribute value must not be null nor empty. Supported types are JSON compatible strings, arrays and objects which contain at least 1 character, item or property."
           },
           "notBlank": {
             "label": "Not blank",
-            "description": "The attribute value must not be null and must contain at least 1 non-whitespace character. Accepts strings.",
-            "message": {
-              "label": "Validation message",
-              "description": "Custom message to display when this constraint is violated."
-            }
+            "description": "The attribute value must not be null and must contain at least 1 non-whitespace character. Accepts strings."
           },
           "notNull": {
             "label": "Not null",
-            "description": "The attribute value must not be null. Accepts any type.",
-            "message": {
-              "label": "Validation message",
-              "description": "Custom message to display when this constraint is violated."
-            }
+            "description": "The attribute value must not be null. Accepts any type."
           },
           "pattern": {
             "label": "Pattern",
@@ -2093,10 +2051,6 @@
             "flags": {
               "label": "Regex flags",
               "description": "Modifiers that affect regex matching behavior. Options: CASE_INSENSITIVE, MULTILINE, DOTALL, etc."
-            },
-            "message": {
-              "label": "Validation message",
-              "description": "Custom message to display when this constraint is violated."
             }
           }
         }

@@ -645,6 +645,12 @@
     "title": {
       "indexedItem": "Item {{index}}"
     },
+    "meta": {
+      "constraint.message": {
+        "label": "Validatiebericht",
+        "description": "Aangepast bericht dat wordt weergegeven wanneer deze beperking wordt geschonden."
+      }
+    },
     "item": {
       "agentLink": {
         "definitions": {
@@ -1964,23 +1970,7 @@
             "max": {
               "label": "Maximale waarde",
               "description": "De attribuutwaarde moet kleiner dan of gelijk zijn aan dit getal. Null-waarden worden als geldig beschouwd."
-            },
-            "message": {
-              "label": "Validatiebericht",
-              "description": "Aangepast bericht dat wordt weergegeven wanneer deze beperking wordt geschonden."
             }
-          },
-          "regexp": {
-            "label": "Reguliere expressie",
-            "description": "De attribuutwaarde moet overeenkomen met deze reguliere expressie. Volgt de Java-regex-syntaxis."
-          },
-          "flags": {
-            "label": "Regex-vlaggen",
-            "description": "Modificatoren die het gedrag van regex-overeenkoming beïnvloeden. Opties: CASE_INSENSITIVE, MULTILINE, DOTALL, enz."
-          },
-          "message": {
-            "label": "Validatiebericht",
-            "description": "Aangepast bericht dat wordt weergegeven wanneer deze beperking wordt geschonden."
           },
           "min": {
             "label": "Minimale waarde",
@@ -1988,10 +1978,6 @@
             "min": {
               "label": "Minimale waarde",
               "description": "De attribuutwaarde moet groter dan of gelijk zijn aan dit getal. Null-waarden worden als geldig beschouwd."
-            },
-            "message": {
-              "label": "Validatiebericht",
-              "description": "Aangepast bericht dat wordt weergegeven wanneer deze beperking wordt geschonden."
             }
           },
           "max": {
@@ -2000,10 +1986,6 @@
             "max": {
               "label": "Maximale waarde",
               "description": "De attribuutwaarde moet kleiner dan of gelijk zijn aan dit getal. Null-waarden worden als geldig beschouwd."
-            },
-            "message": {
-              "label": "Validatiebericht",
-              "description": "Aangepast bericht dat wordt weergegeven wanneer deze beperking wordt geschonden."
             }
           },
           "allowedValues": {
@@ -2016,10 +1998,6 @@
             "allowedValues": {
               "label": "Toegestane waarden",
               "description": "Geaccepteerde waarden voor dit attribuut. Indien leeg of afwezig, wordt alleen null geaccepteerd. Maakt select-invoer mogelijk in de gebruikersinterface."
-            },
-            "message": {
-              "label": "Validatiebericht",
-              "description": "Aangepast bericht dat wordt weergegeven wanneer deze beperking wordt geschonden."
             }
           },
           "AnyType": {
@@ -2028,59 +2006,31 @@
           },
           "past": {
             "label": "Verleden",
-            "description": "De attribuutwaarde moet een Java tijdobject, Java datumobject, een string in ISO8601-formaat of een getal zijn dat epoch-milliseconden vertegenwoordigt; de waarde moet een tijd in het verleden vertegenwoordigen. Null-waarden worden als geldig beschouwd.",
-            "message": {
-              "label": "Validatiebericht",
-              "description": "Aangepast bericht dat wordt weergegeven wanneer deze beperking wordt geschonden."
-            }
+            "description": "De attribuutwaarde moet een Java tijdobject, Java datumobject, een string in ISO8601-formaat of een getal zijn dat epoch-milliseconden vertegenwoordigt; de waarde moet een tijd in het verleden vertegenwoordigen. Null-waarden worden als geldig beschouwd."
           },
           "pastOrPresent": {
             "label": "Verleden of heden",
-            "description": "De attribuutwaarde moet een Java tijdobject, Java datumobject, een string in ISO8601-formaat of een getal zijn dat epoch-milliseconden vertegenwoordigt; de waarde moet een tijd in het verleden of heden vertegenwoordigen. Null-waarden worden als geldig beschouwd.",
-            "message": {
-              "label": "Validatiebericht",
-              "description": "Aangepast bericht dat wordt weergegeven wanneer deze beperking wordt geschonden."
-            }
+            "description": "De attribuutwaarde moet een Java tijdobject, Java datumobject, een string in ISO8601-formaat of een getal zijn dat epoch-milliseconden vertegenwoordigt; de waarde moet een tijd in het verleden of heden vertegenwoordigen. Null-waarden worden als geldig beschouwd."
           },
           "future": {
             "label": "Toekomst",
-            "description": "De attribuutwaarde moet een Java tijdobject, Java datumobject, een string in ISO8601-formaat of een getal zijn dat epoch-milliseconden vertegenwoordigt; de waarde moet een tijd in de toekomst vertegenwoordigen. Null-waarden worden als geldig beschouwd.",
-            "message": {
-              "label": "Validatiebericht",
-              "description": "Aangepast bericht dat wordt weergegeven wanneer deze beperking wordt geschonden."
-            }
+            "description": "De attribuutwaarde moet een Java tijdobject, Java datumobject, een string in ISO8601-formaat of een getal zijn dat epoch-milliseconden vertegenwoordigt; de waarde moet een tijd in de toekomst vertegenwoordigen. Null-waarden worden als geldig beschouwd."
           },
           "futureOrPresent": {
             "label": "Toekomst of heden",
-            "description": "De attribuutwaarde moet een Java tijdobject, Java datumobject, een string in ISO8601-formaat of een getal zijn dat epoch-milliseconden vertegenwoordigt; de waarde moet een tijd in de toekomst of heden vertegenwoordigen. Null-waarden worden als geldig beschouwd.",
-            "message": {
-              "label": "Validatiebericht",
-              "description": "Aangepast bericht dat wordt weergegeven wanneer deze beperking wordt geschonden."
-            }
+            "description": "De attribuutwaarde moet een Java tijdobject, Java datumobject, een string in ISO8601-formaat of een getal zijn dat epoch-milliseconden vertegenwoordigt; de waarde moet een tijd in de toekomst of heden vertegenwoordigen. Null-waarden worden als geldig beschouwd."
           },
           "notEmpty": {
             "label": "Niet leeg",
-            "description": "De attribuutwaarde mag niet null of leeg zijn. Ondersteunde typen zijn JSON-compatibele strings, arrays en objecten die ten minste 1 teken, item of eigenschap bevatten.",
-            "message": {
-              "label": "Validatiebericht",
-              "description": "Aangepast bericht dat wordt weergegeven wanneer deze beperking wordt geschonden."
-            }
+            "description": "De attribuutwaarde mag niet null of leeg zijn. Ondersteunde typen zijn JSON-compatibele strings, arrays en objecten die ten minste 1 teken, item of eigenschap bevatten."
           },
           "notBlank": {
             "label": "Niet blanco",
-            "description": "De attribuutwaarde mag niet null zijn en moet ten minste 1 niet-witruimte-teken bevatten. Accepteert strings.",
-            "message": {
-              "label": "Validatiebericht",
-              "description": "Aangepast bericht dat wordt weergegeven wanneer deze beperking wordt geschonden."
-            }
+            "description": "De attribuutwaarde mag niet null zijn en moet ten minste 1 niet-witruimte-teken bevatten. Accepteert strings."
           },
           "notNull": {
             "label": "Niet null",
-            "description": "De attribuutwaarde mag niet null zijn. Accepteert elk type.",
-            "message": {
-              "label": "Validatiebericht",
-              "description": "Aangepast bericht dat wordt weergegeven wanneer deze beperking wordt geschonden."
-            }
+            "description": "De attribuutwaarde mag niet null zijn. Accepteert elk type."
           },
           "pattern": {
             "label": "Patroon",
@@ -2092,10 +2042,6 @@
             "flags": {
               "label": "Regex-vlaggen",
               "description": "Modificatoren die het gedrag van regex-overeenkoming beïnvloeden. Opties: CASE_INSENSITIVE, MULTILINE, DOTALL, enz."
-            },
-            "message": {
-              "label": "Validatiebericht",
-              "description": "Aangepast bericht dat wordt weergegeven wanneer deze beperking wordt geschonden."
             }
           }
         }
