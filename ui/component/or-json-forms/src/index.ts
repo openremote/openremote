@@ -7,6 +7,7 @@ import {
     CoreActions,
     coreReducer,
     createAjv,
+    createDefaultValue,
     Dispatch,
     generateDefaultUISchema,
     generateJsonSchema,
@@ -117,6 +118,10 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
         if (!this.schema) {
             // Actually JsonSchema4 `generateJsonSchema` has no union JsonSchema return type
             this.schema = this.data !== undefined ? generateJsonSchema(this.data) as JsonSchema7 : {};
+        }
+
+        if (!this.data) {
+          this.data = createDefaultValue(this.schema, this.schema);
         }
 
         if (!this.uischema) {
