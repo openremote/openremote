@@ -71,7 +71,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def assetProcessingService = container.getService(AssetProcessingService.class)
-        def executorService = container.getScheduledExecutor()
         def timerService = container.getService(TimerService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def agentService = container.getService(AgentService.class)
