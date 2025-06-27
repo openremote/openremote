@@ -4,24 +4,34 @@ import { preparedAssetsWithLocation as assets } from "./fixtures/data/assets.js"
 
 test.use({ storageState: userStatePath });
 
-test("Check markers on map", async ({ page, manager, browserName }) => {
+/**
+ * @given Assets with location are set up in the "smartcity" realm
+ * @when Logging in to OpenRemote "smartcity" realm as "smartcity"
+ * @and Navigating to the "map" tab
+ * @and Checking that asset markers are displayed on the map
+ * @and Clicking on a marker for the asset "Battery"
+ * @and Navigating to the asset detail page from the map card
+ * @then The asset detail page for "Battery" is visible
+ *
+ * @skip This test is skipped on Firefox because headless mode does not support WebGL required by maplibre
+ */
+test("Verify that asset markers appear on the map and navigate correctly", async ({ page, manager, browserName }) => {
   test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
-  // Given assets with location are setup
+
   await manager.setup("smartcity", { assets });
-  // When Login to OpenRemote "smartcity" realm as "smartcity"
   await manager.goToRealmStartPage("smartcity");
+
   const asset = assets[0].name;
-  // Then Navigate to "map" tab
-  // When Check "Battery" on map
+
   await expect(page.locator(".marker-icon")).toHaveCount(2);
 
   await page.click(".marker-container div or-icon svg path");
   const mapAssetCard = page.locator("#card-container", { hasText: asset });
   await mapAssetCard.waitFor();
   await expect(mapAssetCard).toBeVisible();
-  // Then Click and navigate
+
   await page.click('button:has-text("View")');
-  // Then We are at "Battery" page
+
   const assetPage = page.locator(`#asset-header >> text=${asset}`);
   await expect(assetPage).toBeVisible();
 });
