@@ -675,7 +675,7 @@
   },
   "realmDeleteConfirm": "Let op! Hiermee verwijder je alles in deze realm, typ de realm naam '{{realmName}}' om te bevestigen.",
   "realmDeleteFailed": "Realm verwijderen mislukt",
-	"addRule": "Regel toevoegen"											
+	"addRule": "Regel toevoegen",
   "rulesetStatus": {
     "DEPLOYED": "Succesvol aangemaakt",
     "NOSTATUS": "Uitgeschakeld",
@@ -696,9 +696,11 @@
   "display": "Weergave",
   "screen": "Scherm",
   "uploadFile" : "Uploaden bestand",
+  "fileSelected" : "Bestand geselecteerd",
+  "fileSaved" : "Bestand opgeslagen",
   "thresholds": "Drempelwaardes",
   "threshold": "Drempelwaarde",
-	"addInsights": "Dashboard toevoegen"															 
+	"addInsights": "Dashboard toevoegen",
   "noDashboardSelected": "Selecteer een dashboard aan de linkerkant",
   "noDashboardSelected-mobile": "Selecteer een dashboard in het menu linksboven",
   "noDashboardFound": "Geen dashboard gevonden.",
@@ -740,8 +742,7 @@
     "saveSuccessful": "Dashboard succesvol opgeslagen!",
     "initialName": "Nieuw dashboard",
     "openInNewTab": "Openen in een nieuw tabblad",
-    "whoCanView": "Wie kan het dashboard <b>bekijken</b>?",
-    "whoCanEdit": "Wie kan het dashboard <b>bewerken</b>?",
+    "whoCanView": "Wie heeft er toegang tot het dashboard?",
     "numberOfColumns": "Aantal kolommen",
     "numberOfRows": "Aantal rijen",
     "maxScreenWidth": "Max schermbreedte",
@@ -766,8 +767,6 @@
     "showHelperText": "Toon moment van bijwerken",
     "tableSettings": "Tabeleigenschappen",
     "deleteWidget": "Verwijder widget",
-    "myDashboards": "Mijn dashboards",
-    "createdByOthers": "Gemaakt door anderen",
     "showUnits": "Toon eenheden",
     "showLabels": "Toon labels",
     "zoom": "Zoom",
@@ -790,6 +789,7 @@
     "tryAgain": "Probeer opnieuw",
     "addRealmCustomization" : "Voeg realm stijl toe",
     "realmTitle": "Manager app titel",
+    "realmMapSettingsTitle": "Realm Kaart Stijl",
     "defaultLanguage": "Standaard taal",
     "images": "Afbeeldingen",
     "logo": "Logo",
@@ -825,7 +825,28 @@
     "geoJsonDescription": "Bewerk de GeoJSON; voeg punten, lijnen, en andere vormen toe aan de kaart.",
     "deleteMapCustomization": "Kaartinstelling verwijderen",
     "deleteMapCustomizationConfirm":"Weet je zeker dat je deze kaart wilt verwijderen",
-    "addMapCustomization" : "Voeg een Kaartinstelling toe"
+    "addMapCustomization" : "Voeg een Kaartinstelling toe",
+    "global": {
+      "reset": "Resetten",
+      "import": "Importeren",
+      "mapLayers": "Kaartlagen",
+      "mapStyleJsonUrl": "Stijl JSON-URL",
+      "mapStyleJsonUrlDescription": "Overschrijf kaartinstellingen met externe JSON-kaartstijlen.",
+      "mapStyleJsonUrlNote": "Alle andere kaartinstellingen worden genegeerd.",
+      "mapStyleJsonUrlPlaceholder": "Stijl JSON-URL",
+      "mapImportStyle": "Optioneel kunt u de stijl-URL importeren om de kaart lagen te bewerken via de JSON-editor.",
+      "mapImportStyleNote": "Reset naar de standaardkaart om de standaardkaartlagen te bewerken.",
+      "mapTileServer": "Kaartserver",
+      "mapTileServerDescription": "Configureer een kaartserver.",
+      "mapTileServerNote": "De kaart van de server URL heeft voorrang op de kaarttegels.",
+      "mapTileServerPlaceholder": "Kaartserver URL",
+      "mapTiles": "Kaarttegels",
+      "uploadMapTiles": "Upload kaarttegels.",
+      "uploadMapTilesNote": "De maximaal toegestaande bestandsgrootte is {{limit}}.",
+      "uploadingMapTiles": "Kaarttegels worden geüpload... Dit kan even duren.",
+      "uploadMapTilesError": "Kaarttegel bestand overschrijdt de maximale bestandsgrootte.",
+      "uploadingMapTilesError": "Uploaden van kaarttegels mislukt"
+    }
   },
   "realmRole": {
     "admin": "Super admin"

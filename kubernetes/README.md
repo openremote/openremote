@@ -55,7 +55,7 @@ helm install postgresql postgresql --set requiresPermissionsFix=true
 ### Persistent Volumes lifecycle
 
 Uninstalling the charts will delete the Persistent Volume Claims but not the PVs.  
-Those will go the 'Released' state, at which point they can't be bound again.  
+Those will go to the 'Released' state, at which point they can't be bound again.  
 You need to manually transition them to 'Available' before you re-install the charts
 ```bash
 kubectl patch pv manager-data-pv -p '{"spec":{"claimRef": null}}'
@@ -100,6 +100,7 @@ or:
     - name: KC_HOSTNAME_STRICT_HTTPS
       value: "false"
  ```
+
 ### When using HAProxy
 
 #### Accessing MQTT

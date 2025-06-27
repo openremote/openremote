@@ -22,6 +22,7 @@ package org.openremote.agent.protocol.mqtt;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import org.apache.http.client.utils.URIBuilder;
 import org.openremote.model.Container;
+import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.security.KeyStoreService;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.attribute.Attribute;
@@ -53,10 +54,17 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
     @Override
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, MQTTAgentLink agentLink) throws RuntimeException {
         agentLink.getSubscriptionTopic().ifPresent(topic -> {
-            Consumer<MQTTMessage<String>> messageConsumer = msg -> updateLinkedAttribute(
-                new AttributeRef(assetId, attribute.getName()), msg.payload
+            Consumer<String> genericConsumer = ProtocolUtil.createGenericAttributeMessageConsumer(
+                assetId, attribute, agentLink, timerService::getCurrentTimeMillis, this::updateLinkedAttribute
             );
-            client.addMessageConsumer(topic, agentLink.getQos().map(qos -> qos > 2 || qos < 0 ? null : qos).map(MqttQos::fromCode).orElse(null), messageConsumer);
+            Consumer<MQTTMessage<String>> messageConsumer = msg -> {
+                if (genericConsumer != null) {
+                    genericConsumer.accept(msg.payload);
+                } else {
+                    updateLinkedAttribute(new AttributeRef(assetId, attribute.getName()), msg.payload);
+                }
+            };
+            client.addMessageConsumer(topic, Optional.of(agentLink.getQos().orElse(agent.getSubscribeQoS().orElse(0))).map(qos -> qos > 2 || qos < 0 ? null : qos).map(MqttQos::fromCode).orElse(MqttQos.AT_MOST_ONCE), messageConsumer);
             protocolMessageConsumers.put(new AttributeRef(assetId, attribute.getName()), messageConsumer);
         });
     }
@@ -77,14 +85,6 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
                 client.removeMessageConsumer(topic, messageConsumer);
             }
         });
-    }
-
-    @Override
-    protected MQTT_IOClient createIoClient() throws Exception {
-        MQTT_IOClient client = super.createIoClient();
-        // Don't want the default message consumer, topic specific consumers will do the message routing for us
-        client.removeAllMessageConsumers();
-        return client;
     }
 
     @Override
@@ -132,6 +132,11 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
         agent.getPublishQoS().ifPresent(qos -> client.setPublishQos(MqttQos.fromCode(qos)));
 
         return client;
+    }
+
+    @Override
+    protected void addMessageConsumer(MQTT_IOClient client) {
+        // Don't want the default message consumer, topic specific consumers will do the message routing for us
     }
 
     @Override

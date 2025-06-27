@@ -1,6 +1,6 @@
 # OpenRemote
 
-![CI/CD](https://github.com/openremote/openremote/workflows/CI/CD/badge.svg)
+[![CI/CD](https://github.com/openremote/openremote/actions/workflows/ci_cd.yml/badge.svg?branch=master&event=push)](https://github.com/openremote/openremote/actions/workflows/ci_cd.yml?query=event%3Apush+branch%3Amaster)
 [![Open Source? Yes!](https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github)](https://github.com/Naereen/badges/)
 <!-- ![tests](https://github.com/openremote/openremote/workflows/tests/badge.svg) -->
 
@@ -24,8 +24,8 @@ The quickest way to get your own environment with full access is to make use of 
 [OpenRemote Stack](https://raw.githubusercontent.com/openremote/openremote/master/docker-compose.yml) (Right click 'Save link as...')
 3. In a terminal `cd` to where you just saved the compose file and then run:
 ```
-    docker compose pull
-    docker compose -p openremote up
+docker compose pull
+docker compose -p openremote up
 ```
 If all goes well then you should now be able to access the OpenRemote Manager UI at [https://localhost](https://localhost). You will need to accept the self-signed 
 certificate, see [here](https://www.technipages.com/google-chrome-bypass-your-connection-is-not-private-message) for details how to do this in Chrome (similar for other browsers).
@@ -36,17 +36,17 @@ Username: admin
 Password: secret
 
 ### Changing host and/or port
-The URL you use to access the system is important, the default is configured as `https://localhost` if you are using a VM or want to run on a different port then you will need to set the `OR_HOSTNAME` and `OR_SSL_PORT` environment variables, so if for example you will be accessing using `https://192.168.1.1:8443` then use the following startup command:
+The URL you use to access the system is important, the default is configured as `https://localhost` if you are using a VM then you will need to set the `OR_HOSTNAME` environment variable, so if for example you will be accessing using `https://192.168.1.1` then use the following startup command:
 
 BASH: 
-```
-OR_HOSTNAME=192.168.1.1 OR_SSL_PORT=8443 docker compose -p openremote up -d
+```shell
+OR_HOSTNAME=192.168.1.1 docker-compose -p openremote up -d
 ```
 or
 
 CMD:
-```
-cmd /C "set OR_HOSTNAME=192.168.1.1 && set OR_SSL_PORT=8443 && docker compose -p openremote up -d"
+```shell
+cmd /C "set OR_HOSTNAME=192.168.1.1 && docker-compose -p openremote up -d"
 ```
 
 ## What next

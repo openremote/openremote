@@ -74,7 +74,7 @@ export class NodeMenuItem extends translate(i18next)(LitElement) {
         if (this.node.displayCharacter) {
             this.classList.add("small");
         }
-        this.title = i18next.t(this.node.name!, Utilities.humanLike(this.node.name!));
+        this.title = i18next.t(this.node.name!, Utilities.humanLike(this.node.name!.toLowerCase()));
         return html`
         <div class="label">${this.flowNodeName}</div>
         ${this.isDragging ? this.dragNodeTemplate : null}
