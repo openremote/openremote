@@ -113,8 +113,8 @@ export const thing: Asset = {
   realm: "smartcity",
   type: "ThingAsset",
   attributes: {
-    notes: { name: "notes", type: "text", meta: {}, value: null },
-    location: { name: "location", type: "GEO_JSONPoint", meta: {}, value: null },
+    notes: { name: "notes", type: "text", meta: {} },
+    location: { name: "location", type: "GEO_JSONPoint", meta: {} },
   },
 };
 
@@ -123,15 +123,9 @@ export const agent: Asset = {
   realm: "smartcity",
   type: "SimulatorAgent",
   attributes: {
-    notes: { name: "notes", type: "text", meta: {}, value: null, timestamp: 1748772065494 },
-    agentDisabled: { name: "agentDisabled", type: "boolean", meta: {}, value: null, timestamp: 1748772065494 },
-    location: { name: "location", type: "GEO_JSONPoint", meta: {}, value: null, timestamp: 1748772065494 },
-    agentStatus: {
-      name: "agentStatus",
-      type: "connectionStatus",
-      meta: { readOnly: true },
-      value: null,
-      timestamp: 1748772065494,
-    },
+    notes: { name: "notes", type: "text", meta: {} },
+    agentDisabled: { name: "agentDisabled", type: "boolean", meta: {} },
+    location: { name: "location", type: "GEO_JSONPoint", meta: {} },
+    agentStatus: { name: "agentStatus", type: "connectionStatus", meta: { readOnly: true } },
   },
 };
