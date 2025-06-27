@@ -1,0 +1,15 @@
+ingress:
+  enabled: false
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: topology.kubernetes.io/zone
+              operator: In
+              values:
+                - eu-west-1a
+
+or:
+  hostname: k8stest.openremote.app
