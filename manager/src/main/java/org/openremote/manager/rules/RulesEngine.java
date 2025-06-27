@@ -424,12 +424,12 @@ public class RulesEngine<T extends Ruleset> {
         LOG.finest("Scheduling rules firing in " + fireTimeMillis + "ms");
         fireTimer = scheduledExecutorService.schedule(
             () -> {
-                fireTimer = null;
                 if (!running) {
                     return;
                 }
                 // Process rules for all deployments
                 fireAllDeployments();
+                fireTimer = null;
                 scheduleFire(false);
             },
             fireTimeMillis,
