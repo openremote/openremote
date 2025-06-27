@@ -70,6 +70,16 @@ public abstract class ValueConstraint implements Serializable {
     public static final String NOT_EMPTY_MESSAGE_TEMPLATE = "{ValueConstraint.NotEmpty.message}";
     public static final String NOT_BLANK_MESSAGE_TEMPLATE = "{ValueConstraint.NotBlank.message}";
     public static final String NOT_NULL_MESSAGE_TEMPLATE = "{ValueConstraint.NotNull.message}";
+    public static final String TIME_CONSTRAINT_EXAMPLES = """
+        { "examples": [
+            "Date Only: 2025-04-18",
+            "Date and Time (UTC): 2025-04-18T14:30:00Z",
+            "Date and Time with Time Zone: 2025-04-18T14:30:00+02:00",
+            "Date and Time with Fractional Seconds: 2025-04-18T14:30:00.123Z",
+            "Combined Date and Time with Time Zone: 2025-04-18T14:30:00.456-05:00",
+            "Milliseconds Timestamp: 1713442200456"
+        ] }
+    """;
 
     /**
      * The attribute value must be between the specified boundaries based on the {@link #min} and
@@ -454,6 +464,7 @@ public abstract class ValueConstraint implements Serializable {
      * considered valid.
      */
     @JsonTypeName("past")
+    @JsonSchemaInject(json = TIME_CONSTRAINT_EXAMPLES)
     public static class Past extends ValueConstraint {
 
         public Past() {
@@ -493,6 +504,7 @@ public abstract class ValueConstraint implements Serializable {
      * values are considered valid.
      */
     @JsonTypeName("pastOrPresent")
+    @JsonSchemaInject(json = TIME_CONSTRAINT_EXAMPLES)
     public static class PastOrPresent extends ValueConstraint {
 
         public PastOrPresent() {
@@ -532,6 +544,7 @@ public abstract class ValueConstraint implements Serializable {
      * considered valid.
      */
     @JsonTypeName("future")
+    @JsonSchemaInject(json = TIME_CONSTRAINT_EXAMPLES)
     public static class Future extends ValueConstraint {
 
         public Future() {
@@ -571,6 +584,7 @@ public abstract class ValueConstraint implements Serializable {
      * values are considered valid.
      */
     @JsonTypeName("futureOrPresent")
+    @JsonSchemaInject(json = TIME_CONSTRAINT_EXAMPLES)
     public static class FutureOrPresent extends ValueConstraint {
 
         public FutureOrPresent() {
