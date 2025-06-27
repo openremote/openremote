@@ -1,6 +1,7 @@
 import { expect } from "@openremote/test";
 import { test, userStatePath } from "./fixtures/manager.js";
 import { preparedAssetsForRules as assets } from "./fixtures/data/assets.js";
+import { energyRule } from "./fixtures/data/rules.js";
 
 test.beforeEach(async ({ manager }) => {
   // Given the Realm "smartcity" with the user "smartcity" and assets is setup
@@ -8,15 +9,6 @@ test.beforeEach(async ({ manager }) => {
   // When Login to OpenRemote "smartcity" realm as "smartcity"
   await manager.goToRealmStartPage("smartcity");
 });
-
-const energyRule = {
-  name: "Energy rule",
-  attribute_type: "Electricity battery asset",
-  asset: "Battery",
-  attribute_when: "Energy level",
-  attribute_then: "Energy capacity",
-  value: 50,
-};
 
 test.use({ storageState: userStatePath });
 
