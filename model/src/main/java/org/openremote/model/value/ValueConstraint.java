@@ -21,6 +21,8 @@ package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.*;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
+
 import org.openremote.model.util.ValueUtil;
 
 import java.io.Serializable;
@@ -70,6 +72,16 @@ public abstract class ValueConstraint implements Serializable {
     public static final String NOT_EMPTY_MESSAGE_TEMPLATE = "{ValueConstraint.NotEmpty.message}";
     public static final String NOT_BLANK_MESSAGE_TEMPLATE = "{ValueConstraint.NotBlank.message}";
     public static final String NOT_NULL_MESSAGE_TEMPLATE = "{ValueConstraint.NotNull.message}";
+    public static final String TIME_CONSTRAINT_EXAMPLES = """
+        { "examples": [
+            "Date Only: 2025-04-18",
+            "Date and Time (UTC): 2025-04-18T14:30:00Z",
+            "Date and Time with Time Zone: 2025-04-18T14:30:00+02:00",
+            "Date and Time with Fractional Seconds: 2025-04-18T14:30:00.123Z",
+            "Combined Date and Time with Time Zone: 2025-04-18T14:30:00.456-05:00",
+            "Milliseconds Timestamp: 1713442200456"
+        ] }
+    """;
 
     /**
      * The attribute value must be between the specified boundaries based on the {@link #min} and
@@ -453,7 +465,7 @@ public abstract class ValueConstraint implements Serializable {
      * considered valid.
      */
     @JsonTypeName("past")
-    @JsonSchemaDescription("The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past. Null values are considered valid.")
+    @JsonSchemaInject(json = TIME_CONSTRAINT_EXAMPLES)
     public static class Past extends ValueConstraint {
 
         public Past() {
@@ -493,7 +505,7 @@ public abstract class ValueConstraint implements Serializable {
      * values are considered valid.
      */
     @JsonTypeName("pastOrPresent")
-    @JsonSchemaDescription("The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past or present. Null values are considered valid.")
+    @JsonSchemaInject(json = TIME_CONSTRAINT_EXAMPLES)
     public static class PastOrPresent extends ValueConstraint {
 
         public PastOrPresent() {
@@ -533,7 +545,7 @@ public abstract class ValueConstraint implements Serializable {
      * considered valid.
      */
     @JsonTypeName("future")
-    @JsonSchemaDescription("The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future. Null values are considered valid.")
+    @JsonSchemaInject(json = TIME_CONSTRAINT_EXAMPLES)
     public static class Future extends ValueConstraint {
 
         public Future() {
@@ -573,7 +585,7 @@ public abstract class ValueConstraint implements Serializable {
      * values are considered valid.
      */
     @JsonTypeName("futureOrPresent")
-    @JsonSchemaDescription("The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future or present. Null values are considered valid.")
+    @JsonSchemaInject(json = TIME_CONSTRAINT_EXAMPLES)
     public static class FutureOrPresent extends ValueConstraint {
 
         public FutureOrPresent() {

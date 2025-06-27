@@ -16,11 +16,12 @@ import {i18next} from "@openremote/or-translate";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {addItemOrParameterDialogStyle, baseStyle, panelStyle} from "../styles";
-import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
+import {ListItem, ListType, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
 import {DefaultColor4, DefaultColor5} from "@openremote/core";
 import {ControlBaseElement} from "./control-base-element";
 import {getTemplateWrapper} from "../index";
 import {AdditionalProps} from "../base-element";
+import { when } from "lit/directives/when.js";
 
 // language=CSS
 const style = css`
@@ -303,7 +304,13 @@ export class ControlArrayElement extends ControlBaseElement {
                         <div id="type-list" class="col">
                             <or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) onParamChanged((evt.detail[0] as ListItem).data as CombinatorInfo); }}" .listItems="${listItems.sort((a, b) => a.text!.localeCompare(b.text!))}" id="parameter-list"></or-mwc-list>
                         </div>
-                        <div id="parameter-desc" class="col"></div>
+                        <div id="parameter-desc" class="col">
+                            <or-translate id="parameter-title" value="${selectedItemInfo?.title}"></or-translate>
+                            <p>${selectedItemInfo?.description}</p>
+                            ${when(selectedItemInfo && selectedItemInfo.examples.length > 0, () => html`<ul>
+                                <or-mwc-list .type="${ListType.PLAIN}" .listItems="${selectedItemInfo?.examples.sort((a, b) => a.localeCompare(b)).map((s) => ({ text: s }))}" id="examples-list"></or-mwc-list>
+                            </ul>`)}
+                        </div>
                     </form>
                 </div>
             `)

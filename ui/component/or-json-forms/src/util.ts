@@ -60,6 +60,7 @@ export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFo
 export interface CombinatorInfo {
     title: string;
     description: string;
+    examples: string[];
     constProperty?: string;
     constValue?: any;
     defaultValueCreator: () => any;
@@ -75,7 +76,8 @@ export function getCombinatorInfos(schemas: JsonSchema7[], rootSchema: JsonSchem
         let constProperty: string | undefined;
         let constValue: any | undefined;
         let creator: () => any;
-        const titleAndDescription = findSchemaTitleAndDescription(schema, rootSchema);
+        const titleAndDescription = findSchemaTitleAndDescription(schema, rootSchema, state);
+        const examples = findSchemaExamples(schema, rootSchema, state);
 
         if (schema.$ref) {
             schema = Resolve.schema(schema, '', rootSchema) as JsonSchema7;
@@ -112,6 +114,7 @@ export function getCombinatorInfos(schemas: JsonSchema7[], rootSchema: JsonSchem
         return {
             title: titleAndDescription[0],
             description: titleAndDescription[1],
+            examples,
             defaultValueCreator: creator,
             constProperty: constProperty,
             constValue: constValue
@@ -146,8 +149,20 @@ export function getSchemaPicker(rootSchema: JsonSchema7, resolvedSchema: JsonSch
     `;
 }
 
-// TODO: use i18n translations from jsonforms/core
-export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: JsonSchema): [string | undefined, string | undefined] {
+export function findSchemaExamples(schema: JsonSchema7, rootSchema: JsonSchema7, state?: JsonFormsState): string[] {
+    let title: string | undefined;
+
+    if (schema.$ref) {
+        schema = Resolve.schema(schema, '', rootSchema) as JsonSchema7;
+    }
+
+    if (schema.examples) {
+      return schema.examples
+    }
+    return []
+}
+
+export function findSchemaTitleAndDescription(schema: JsonSchema7, rootSchema: JsonSchema7, state?: JsonFormsState): [string | undefined, string | undefined] {
     let title: string | undefined;
 
     if (schema.$ref) {
