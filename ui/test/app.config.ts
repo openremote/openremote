@@ -19,9 +19,14 @@ const browsers: Project[] = [
 ];
 
 /**
- * Creates setup and teardown projects for app tests to depend on. These projects are run before and after all tests, and
- * @param app
- * @returns
+ * Creates a setup and teardown test project for a given app.
+ * These configurations are intended to run before and after all other tests,
+ * typically for initializing and cleaning up test environments. The app
+ * project should have a dependency on the setup project while the cleanup
+ * project is referenced to the setup project.
+ *
+ * @param app - The name of the app these projects are meant to be used by.
+ * @returns An array of two configuration objects: one for setup and one for cleanup
  */
 function createAppSetupAndTeardown(app: string) {
   return [
