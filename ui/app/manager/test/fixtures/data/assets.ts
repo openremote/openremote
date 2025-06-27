@@ -1,6 +1,5 @@
-// TODO: use Util.mergeObjects from @openremote/core instead when DOM related utilities and or-icon are moved out
+import * as Util from "@openremote/core/lib/util";
 import { Asset } from "@openremote/model";
-import { merge } from "lodash-es";
 
 const assets = [
   {
@@ -48,25 +47,33 @@ const assets = [
   },
 ] as const;
 
-export const preparedAssetsWithLocation = merge(structuredClone(assets), [
-  { attributes: { location: { value: { type: "Point", coordinates: [4.482259693115793, 51.91756799273] } } } },
-  { attributes: { location: { value: { type: "Point", coordinates: [4.4845127486877345, 51.917435642781214] } } } },
-]);
+export const preparedAssetsWithLocation = Object.values(Util.mergeObjects(
+  structuredClone(assets),
+  [
+    { attributes: { location: { value: { type: "Point", coordinates: [4.482259693115793, 51.91756799273] } } } },
+    { attributes: { location: { value: { type: "Point", coordinates: [4.4845127486877345, 51.917435642781214] } } } },
+  ],
+  true
+));
 
-export const preparedAssetsForRules = merge(structuredClone(assets), [
-  {
-    attributes: {
-      energyLevel: { meta: { ruleState: true, storeDataPoints: true } },
-      power: { meta: { ruleState: true, storeDataPoints: true } },
+export const preparedAssetsForRules = Object.values(Util.mergeObjects(
+  structuredClone(assets),
+  [
+    {
+      attributes: {
+        energyLevel: { meta: { ruleState: true, storeDataPoints: true } },
+        power: { meta: { ruleState: true, storeDataPoints: true } },
+      },
     },
-  },
-  {
-    attributes: {
-      power: { meta: { ruleState: true, storeDataPoints: true } },
-      powerForecast: { meta: { ruleState: true, storeDataPoints: true } },
+    {
+      attributes: {
+        power: { meta: { ruleState: true, storeDataPoints: true } },
+        powerForecast: { meta: { ruleState: true, storeDataPoints: true } },
+      },
     },
-  },
-]);
+  ],
+  true
+));
 
 type AssetNames = (typeof assets)[number]["name"];
 

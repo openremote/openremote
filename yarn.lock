@@ -3090,7 +3090,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/test@workspace:ui/test"
   dependencies:
-    "@jsonforms/core": "npm:^3.5.1"
+    "@openremote/core": "workspace:*"
     "@openremote/util": "workspace:*"
     "@playwright/experimental-ct-core": "npm:1.52.0"
     "@playwright/test": "npm:1.52.0"

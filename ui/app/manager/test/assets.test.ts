@@ -1,7 +1,8 @@
-import { expect, camelCaseToSentenceCase } from "@openremote/test";
+import { expect } from "@openremote/test";
 import { test, userStatePath } from "./fixtures/manager.js";
 import assets, { assetPatches, thing } from "./fixtures/data/assets.js";
 import { WellknownMetaItems } from "@openremote/model";
+import * as Util from "@openremote/core/lib/util";
 
 test.use({ storageState: userStatePath });
 
@@ -184,7 +185,7 @@ test("Add all primitive configuration items", async ({ page, manager, components
   await components.assetViewer.addConfigurationItems("notes", ...items.map(([item]) => item));
   for (const [item, value] of items) {
     const itemLocator = components.assetViewer.getConfigurationItemLocator("notes");
-    const options = { name: camelCaseToSentenceCase(item) };
+    const options = { name: Util.camelCaseToSentenceCase(item) };
     if (typeof value === "string") {
       const input = itemLocator.getByRole("textbox", options);
       await input.fill(value);

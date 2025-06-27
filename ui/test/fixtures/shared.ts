@@ -3,21 +3,10 @@ import path from "node:path";
 import type { i18n, Resource } from "i18next";
 import type { Page } from "@playwright/test";
 
-import { Resolve, type JsonSchema, type JsonSchema4, type CombinatorKeyword } from "@jsonforms/core";
-
 declare global {
   interface Window {
     _i18next: i18n;
   }
-}
-
-// TODO: move to `@openremote/util`
-export function camelCaseToSentenceCase(value: string) {
-  const result = value
-    .replace(/([A-Z])/g, " $1") // Add space before uppercase letters
-    .replace(/(\d)([A-Za-z])/g, "$1 $2") // Add space between numbers and letters
-    .replace(/([A-Za-z])(\d)/g, "$1 $2"); // Add space between letters and numbers
-  return result.charAt(0).toUpperCase() + result.slice(1);
 }
 
 export interface BasePage {
@@ -98,43 +87,6 @@ export class Shared {
         );
       }
     }, resources);
-  }
-
-  // TODO: move to `@openremote/util`
-  resolveSubSchemasRecursive(schema: JsonSchema, rootSchema: JsonSchema, keyword?: CombinatorKeyword): JsonSchema {
-    const combinators: string[] = keyword ? [keyword] : ["allOf", "anyOf", "oneOf"];
-
-    if (schema.$ref) {
-      return this.resolveSubSchemasRecursive(Resolve.schema(rootSchema, schema.$ref, rootSchema), rootSchema);
-    }
-
-    combinators.forEach((combinator) => {
-      const schemas = (schema as any)[combinator] as JsonSchema[];
-
-      if (schemas) {
-        (schema as any)[combinator] = schemas.map((subSchema) =>
-          this.resolveSubSchemasRecursive(subSchema, rootSchema)
-        );
-      }
-    });
-
-    if (schema.items) {
-      if (Array.isArray(schema.items)) {
-        schema.items = (schema.items as JsonSchema4[]).map(
-          (itemSchema) => this.resolveSubSchemasRecursive(itemSchema, rootSchema) as JsonSchema4
-        );
-      } else {
-        schema.items = this.resolveSubSchemasRecursive(schema.items as JsonSchema, rootSchema);
-      }
-    }
-
-    if (schema.properties) {
-      Object.keys(schema.properties).forEach(
-        (prop) => (schema.properties![prop] = this.resolveSubSchemasRecursive(schema.properties![prop], rootSchema))
-      );
-    }
-
-    return schema;
   }
 
   private urlPathToFsPath(url: string) {

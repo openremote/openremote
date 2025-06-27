@@ -1,7 +1,7 @@
+import * as Util from "@openremote/core/lib/util";
 import type { WellknownMetaItems } from "@openremote/model";
 import type { Page } from "playwright-core";
 import { expect, type Locator } from "@playwright/experimental-ct-core";
-import { camelCaseToSentenceCase } from "./shared";
 
 type ComponentProps<Component extends HTMLElement> = Partial<Component>;
 type ComponentSlot = number | string | ComponentSlot[];
@@ -106,7 +106,10 @@ class JsonForms {
           for (const key of options?.selectAllProps ? Object.keys(schema.properties) : schema["or:test:props"]) {
             if (key === "type" || key === "id" || schema.required?.includes(key)) continue;
             await locator.getByRole("button", { name: "Add Parameter" }).click();
-            await dialog.locator("or-mwc-list li").getByText(camelCaseToSentenceCase(key), { exact: true }).click();
+            await dialog
+              .locator("or-mwc-list li")
+              .getByText(Util.camelCaseToSentenceCase(key), { exact: true })
+              .click();
             const anyOfPicker = dialog.locator("#schema-picker or-mwc-input");
             if (await anyOfPicker.isVisible()) {
               await anyOfPicker.click();
@@ -229,7 +232,7 @@ class AssetViewer {
     for (const item of items) {
       await this.page
         .locator("li")
-        .filter({ hasText: camelCaseToSentenceCase(item) })
+        .filter({ hasText: Util.camelCaseToSentenceCase(item) })
         .check();
     }
     await this.page.getByRole("button", { name: "Add", exact: true }).click();
