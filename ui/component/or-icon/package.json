@@ -14,7 +14,7 @@
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "copyMdiFont": "node mdi-font-copy.js",
     "build": "npx tsc -b",
-    "test": "npx tsc -b && npx playwright test --config playwright-ct.config.ts",
+    "test": "npx tsc -b && npx playwright test",
     "prepack": "npx webpack"
   },
   "author": "OpenRemote",

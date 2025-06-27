@@ -1,3 +1,3 @@
-import defineConfig from "@openremote/test/config/app";
+import { defineAppConfig } from "@openremote/test/app.config";
 
-export default defineConfig(__dirname);
+export default defineAppConfig(__dirname);

@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { defineConfig, devices, Project } from "../";
+import { defineConfig as baseConfig, devices, Project } from ".";
 
 const { CI, DEV, managerUrl } = process.env;
 
@@ -18,6 +18,11 @@ const browsers: Project[] = [
   // },
 ];
 
+/**
+ * Creates setup and teardown projects for app tests to depend on. These projects are run before and after all tests, and
+ * @param app
+ * @returns
+ */
 function createAppSetupAndTeardown(app: string) {
   return [
     {
@@ -37,11 +42,11 @@ function createAppSetupAndTeardown(app: string) {
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
-export default (path: string) => {
+export const defineAppConfig = (path: string) => {
   const name = path.split("/").at(-1);
   if (!name) return;
 
-  return defineConfig({
+  return baseConfig({
     testMatch: "*.test.ts",
     /* Fail the build on CI if you accidentally left test.only in the source code. */
     forbidOnly: Boolean(CI),
