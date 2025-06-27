@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import org.apache.camel.builder.RouteBuilder;
@@ -51,9 +52,14 @@ import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -203,6 +209,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
     protected GatewayService gatewayService;
     protected PersistenceService persistenceService;
     protected Map<String, AssetTypeInfo> dynamicAssetTypeInfos;
+    protected Map<String, ObjectNode> dynamicJsonSchemas = new ConcurrentHashMap<>();
     protected Path storageDir;
 
     @Override
@@ -371,6 +378,13 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         }
 
         return ValueUtil.getMetaItemDescriptors();
+    }
+
+    public JsonNode getValueDescriptorSchema(String descriptorType, Integer arrayDimensions) throws ClassNotFoundException {
+        Class<?> clazz = Class.forName(descriptorType);
+        return dynamicJsonSchemas.computeIfAbsent(clazz.getTypeName() + ":" + arrayDimensions, key -> (ObjectNode)ValueUtil.getSchema(
+            arrayDimensions != null && arrayDimensions > 0 ? Array.newInstance(clazz, new int[arrayDimensions]).getClass() : clazz
+        ));
     }
 
     protected <T> T parse(String jsonString, Class<T> type) throws JsonProcessingException {
