@@ -5,7 +5,7 @@ import {
     getSchema,
     GroupLayout,
     isControl,
-    JsonSchema,
+    JsonSchema7,
     mapStateToControlProps,
     mapStateToControlWithDetailProps,
     mapStateToJsonFormsRendererProps,
@@ -88,7 +88,7 @@ const style = css`
     }
 `;
 
-function isDynamic(schema: JsonSchema): boolean {
+function isDynamic(schema: JsonSchema7): boolean {
     return schema.allOf === undefined && schema.anyOf === undefined && (schema.properties === undefined || Object.keys(schema.properties).length === 0);
 }
 
@@ -113,17 +113,17 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
 
         const optionalProps: StatePropsOfControl[] = [];
         const jsonFormsState = {jsonforms: {...this.state}};
-        const rootSchema = getSchema(jsonFormsState);
+        const rootSchema = getSchema(jsonFormsState) as JsonSchema7;
         const dynamic = isDynamic(this.schema);
         let dynamicPropertyRegex = ".+";
-        let dynamicValueSchema: JsonSchema | undefined;
+        let dynamicValueSchema: JsonSchema7 | undefined;
 
         if (dynamic) {
             if (typeof this.schema.patternProperties === "object") {
                 const patternObjs = Object.entries(this.schema.patternProperties);
                 if (patternObjs.length === 1) {
                     dynamicPropertyRegex = patternObjs[0][0];
-                    dynamicValueSchema = (patternObjs[0][1] as JsonSchema);
+                    dynamicValueSchema = patternObjs[0][1];
                 }
             } else if (typeof this.schema.additionalProperties === "object") {
                 dynamicValueSchema = this.schema.additionalProperties;
@@ -187,7 +187,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
         return this.minimal ? html`<div>${content}</div>` : html`<or-collapsible-panel .expandable="${expandable}">${content}</or-collapsible-panel>`;
     }
 
-    protected _getDynamicContentTemplate(dynamicPropertyRegex: string, dynamicValueSchema: JsonSchema): TemplateResult | undefined {
+    protected _getDynamicContentTemplate(dynamicPropertyRegex: string, dynamicValueSchema: JsonSchema7): TemplateResult | undefined {
         if (!this.data) {
             return undefined;
         }
@@ -263,7 +263,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
         });
     }
 
-    protected _addParameter(rootSchema: JsonSchema, optionalProps: StatePropsOfControl[], dynamicPropertyRegex?: string, dynamicValueSchema?: JsonSchema) {
+    protected _addParameter(rootSchema: JsonSchema7, optionalProps: StatePropsOfControl[], dynamicPropertyRegex?: string, dynamicValueSchema?: JsonSchema7) {
 
         const dynamic = optionalProps.length === 0;
         let selectedParameter: StatePropsOfControl | undefined;
@@ -316,7 +316,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                     (dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput).disabled = !selectedOneOf;
                     (dialog.shadowRoot!.getElementById("schema-description") as HTMLParagraphElement).innerHTML = (selectedOneOf ? selectedOneOf.description : i18next.t("schema.selectTypeMessage")) || i18next.t("schema.noDescriptionAvailable");
                 };
-                schemaPicker = getSchemaPicker(rootSchema, selectedParameter.schema, selectedParameter.path, "oneOf", selectedParameter.label, handleChange);
+                schemaPicker = getSchemaPicker(rootSchema, selectedParameter.schema as JsonSchema7, selectedParameter.path, "oneOf", selectedParameter.label, handleChange);
             }
 
             return html`

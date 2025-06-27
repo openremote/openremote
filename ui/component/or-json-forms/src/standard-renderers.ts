@@ -20,7 +20,7 @@ import {
     isStringControl,
     isTimeControl,
     JsonFormsRendererRegistryEntry,
-    JsonSchema,
+    JsonSchema7,
     mapDispatchToControlProps,
     mapStateToControlProps,
     mapStateToControlWithDetailProps,
@@ -56,14 +56,14 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-m
 import {AdditionalProps} from "./base-element";
 import {Util} from "@openremote/core";
 
-const hasOneOfItems = (schema: JsonSchema): boolean =>
+const hasOneOfItems = (schema: JsonSchema7): boolean =>
     schema.oneOf !== undefined &&
     schema.oneOf.length > 0 &&
-    (schema.oneOf as JsonSchema[]).every((entry: JsonSchema) => {
+    schema.oneOf.every((entry: JsonSchema7) => {
         return getSchemaConst(entry) !== undefined;
     });
 
-const hasEnumItems = (schema: JsonSchema): boolean =>
+const hasEnumItems = (schema: JsonSchema7): boolean =>
     Array.isArray(schema.enum);
 
 export const isEnumArray: Tester = and(
@@ -76,7 +76,7 @@ export const isEnumArray: Tester = and(
                 schema.uniqueItems === true
         ),
         schemaSubPathMatches('items', schema => {
-            return hasOneOfItems(schema) || hasEnumItems(schema);
+            return hasOneOfItems(schema as JsonSchema7) || hasEnumItems(schema as JsonSchema7);
         })
     )
 );
@@ -112,7 +112,7 @@ export const verticalLayoutRenderer = (state: JsonFormsStateContext, props: OwnP
 
 export const constTester: RankedTester = rankWith(
     6,
-    schemaMatches(schema => getSchemaConst(schema) !== undefined)
+    schemaMatches(schema => getSchemaConst(schema as JsonSchema7) !== undefined)
 );
 export const constRenderer = (state: JsonFormsStateContext, props: OwnPropsOfJsonFormsRenderer) => {
     // Don't render const
@@ -192,7 +192,7 @@ export const objectControlRenderer = (state: JsonFormsStateContext, props: Contr
         path: path,
         renderers: renderers,
         cells: cells,
-        label: props.label || getLabel(schema, rootSchema, label) || "",
+        label: props.label || getLabel(schema as JsonSchema7, rootSchema as JsonSchema7, label) || "",
         required: !!props.required || !!required,
         errors: errors,
         minimal: props.minimal
@@ -232,7 +232,8 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
     const resolvedProps = mapStateToCombinatorRendererProps(jsonFormsContext, props, keyword);
 
     const renderInfos = createCombinatorRenderInfos(
-        resolvedSchema! as JsonSchema[],
+      // TODO: get rid of this
+        resolvedSchema! as JsonSchema7[],
         rootSchema,
         keyword,
         resolvedProps.uischema || uischema,
@@ -242,7 +243,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
 
     if (data !== undefined && data !== null && (resolvedProps.indexOfFittingSchema === undefined || resolvedProps.indexOfFittingSchema < 0)) {
         // Try and match the data using our own combinator info objects
-        const combinatorInfos = getCombinatorInfos(resolvedSchema! as JsonSchema[], rootSchema);
+        const combinatorInfos = getCombinatorInfos(resolvedSchema! as JsonSchema7[], rootSchema as JsonSchema7);
 
         const constProp = combinatorInfos.length > 0 ? combinatorInfos[0].constProperty : undefined;
         if (constProp && typeof data === "object" && data[constProp]) {
@@ -271,7 +272,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
             `;
         } else {
             // We have no data so show a schema picker
-            return getSchemaPicker(rootSchema, resolvedSchema, path, keyword, props.label || label, (selectedSchema => handleChange(path, selectedSchema.defaultValueCreator())))
+            return getSchemaPicker(rootSchema as JsonSchema7, resolvedSchema as JsonSchema7, path, keyword, props.label || label, (selectedSchema => handleChange(path, selectedSchema.defaultValueCreator())))
         }
     }
 
@@ -294,7 +295,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
         path: path,
         renderers: renderers,
         cells: cells,
-        label: props.label || getLabel(matchedSchema, rootSchema, label) || "",
+        label: props.label || getLabel(matchedSchema as JsonSchema7, rootSchema as JsonSchema7, label) || "",
         required: props.required || !!required,
         errors: errors,
         minimal: props.minimal,
@@ -316,7 +317,7 @@ export const allOfControlRenderer = (state: JsonFormsStateContext, props: Contro
 
     // Merge the schemas
     const allOfSchema = resolveSchema(contentProps.schema, "allOf", contentProps.rootSchema);
-    contentProps.schema = (allOfSchema.allOf! as JsonSchema[]).reduce((accumulator, value) => Util.mergeObjects(accumulator, value, false));
+    contentProps.schema = allOfSchema.allOf!.reduce((accumulator, value) => Util.mergeObjects(accumulator, value, false));
     // Reset the uischema scope
     contentProps.uischema.scope = "#";
 
