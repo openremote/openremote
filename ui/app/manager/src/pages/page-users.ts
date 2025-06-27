@@ -339,7 +339,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         }
         // New service users with the 'gateway-' prefix are not allowed
         if(user.serviceAccount && (user.email.startsWith('gateway-') || user.username.startsWith('gateway-'))) {
-            showSnackbar(undefined, "createUserFailed", "dismiss")
+            showSnackbar(undefined, "noGatewayUsername", "dismiss")
             return false;
         }
 
@@ -773,6 +773,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         const btnElem = ev.currentTarget as OrMwcInput;
         const secretElem = this.shadowRoot.getElementById(secretInputId) as OrMwcInput;
         if (!btnElem || !secretElem) {
+            showSnackbar(undefined, "errorOccurred");
             return;
         }
         btnElem.disabled = true;
@@ -852,7 +853,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     protected getSingleUserTemplate(user: UserModel, compositeRoleOptions: string[], realmRoleOptions: [string, string][], suffix: string, readonly: boolean = true): TemplateResult {
         const isServiceUser = user.serviceAccount;
         const isSameUser = user.username === manager.username;
-        const isGatewayServiceUser = user.serviceAccount && user.username?.startsWith("gateway-");
+        const isGatewayServiceUser = isServiceUser && user.username?.startsWith("gateway-");
         const implicitRoleNames = user.loaded ? this.getImplicitUserRoles(user) : [];
         return html`
             <div class="row">
@@ -922,7 +923,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                           .label="${i18next.t("regenerateSecret")}"
                                           .type="${InputType.BUTTON}"
                                           @or-mwc-input-changed="${(ev) => {
-                                              this._regenerateSecret(ev, user, "password-" + suffix);
+                                              this._regenerateSecret(ev, user, "new-password-" + suffix).catch(() => showSnackbar(undefined, 'errorOccurred'));
                                               this.onUserChanged(suffix);
                                           }}"></or-mwc-input>
                         `, () => html`
