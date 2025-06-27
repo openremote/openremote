@@ -26,6 +26,7 @@ import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Response;
 
 import java.util.Map;
 
@@ -99,4 +100,16 @@ public interface AssetModelResource {
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getMetaItemDescriptors", summary = "Retrieve the available meta item descriptors")
     Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
+
+    /**
+     * Retrieve the JSON Schema for a {@link ValueDescriptor} available in this system. A value descriptor schema is only meant to be retrieved
+     * once. Either when a new {@code version}, {@code descriptorType} or {@code arrayDimensions} are requested. The HTTP client should cache the response based on the
+     * {@code Cache-Control} header. The {@code version} currently represents the system version and does not account for runtime asset model changes.
+     * TODO: The {@code version} parameter should use the asset model version instead once this is maintained.
+     */
+    @GET
+    @Path("getValueDescriptorSchema")
+    @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getValueDescriptorSchema", summary = "Retrieve the valueDescriptor JSON Schema.")
+    Response getValueDescriptorSchema(@BeanParam RequestParams requestParams, @QueryParam("version") String version, @QueryParam("descriptorType") String descriptorType, @QueryParam("arrayDimensions") Integer arrayDimensions);
 }

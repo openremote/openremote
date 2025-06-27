@@ -29,10 +29,17 @@ import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import jakarta.ws.rs.core.Response;
 
 public class AssetModelResourceImpl extends ManagerWebResource implements AssetModelResource {
 
+    private static final Logger LOG = Logger.getLogger(AssetModelResourceImpl.class.getName());
     protected AssetModelService assetModelService;
 
     public AssetModelResourceImpl(TimerService timerService, ManagerIdentityService identityService, AssetModelService assetModelService) {
@@ -63,5 +70,17 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     @Override
     public Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(RequestParams requestParams, String parentId) {
         return assetModelService.getMetaItemDescriptors(parentId);
+    }
+
+    @Override
+    public Response getValueDescriptorSchema(RequestParams requestParams, String version, String descriptorType, Integer arrayDimensions) {
+        try {
+            JsonNode schema = assetModelService.getValueDescriptorSchema(descriptorType, arrayDimensions);
+            // A 1-year immutable cache as the responses are versioned making invalidation largely automatic
+            return Response.ok(schema).header("Cache-Control", "public,max-age=" + 31536000 + ",immutable").build();
+        } catch (ClassNotFoundException e) {
+            LOG.log(Level.INFO, "Could not find class: '" + descriptorType + "'", e);
+            return Response.status(404).build();
+        }
     }
 }
