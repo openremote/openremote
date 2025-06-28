@@ -58,6 +58,8 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     void deleteUser(String realm, String userId);
 
+    void requestPasswordReset(String realm, String userId);
+
     void resetPassword(String realm, String userId, Credential credential);
 
     String resetSecret(String realm, String userId, String secret);

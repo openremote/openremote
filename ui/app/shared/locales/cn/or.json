@@ -282,6 +282,8 @@
   "sending": "发送中",
   "submit": "提交",
   "password": "密码",
+  "resetPassword": "重置密码",
+  "resetPasswordConfirmation": "已发送电子邮件重置您的密码。",
   "repeatPassword": "重复密码",
   "details": "Details",
   "permissions":"权限",
