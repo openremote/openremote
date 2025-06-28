@@ -83,9 +83,6 @@ export class OrAddAssetDialog extends LitElement {
         // language=CSS
         return css`
             :host{
-                border-style: solid;
-                border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-                border-width: 1px 0;
             }
             
             #name-wrapper {
