@@ -26,6 +26,7 @@
     "@openremote/or-gauge": "workspace:*",
     "@openremote/or-map": "workspace:*",
     "@openremote/rest": "workspace:*",
+    "dompurify": "^3.2.4",
     "gridstack": "^7.2.0",
     "lit": "^2.0.2"
   },
