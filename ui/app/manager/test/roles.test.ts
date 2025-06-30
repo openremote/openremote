@@ -24,26 +24,18 @@ test("Create a new role, assign it to a user, and verify permissions", async ({ 
   await manager.navigateToMenuItem("Roles");
   await page.getByText("Add Role").click();
 
-  let rows = await page.$$(".mdc-data-table__row");
-  const count = await rows.length;
-
-  await page.fill(`#attribute-meta-row-${count - 1} input[type="text"] >> nth=0`, "Custom");
-  await page.fill(`#attribute-meta-row-${count - 1} input[type="text"] >> nth=1`, "read:asset, write:asset");
-  await page
-    .locator(`#attribute-meta-row-${count - 1}`)
-    .getByText("assets: Read asset data")
-    .click();
-  await page
-    .locator(`#attribute-meta-row-${count - 1}`)
-    .getByText("assets: Write asset data")
-    .click();
+  const lastRow = page.locator("#table-roles tbody tr").last();
+  await lastRow.getByRole("textbox", { name: "Role" }).fill("Custom");
+  await lastRow.getByRole("textbox", { name: "Description" }).fill("read:asset, write:asset");
+  await lastRow.getByRole("checkbox", { name: "assets: Read asset data" }).click();
+  await lastRow.getByRole("checkbox", { name: "assets: Write asset data" }).click();
 
   await shared.interceptRequest<Role[]>("**/user/master/roles", (roles) => {
     const role = roles?.find(({ name }) => name === "Custom");
     if (role) manager.role = role;
   });
-  await page.click('button:has-text("create")');
-  await expect(page.locator("text=Custom")).toHaveCount(1);
+  await page.getByRole("button", { name: "create" }).click();
+  await expect(page.getByText("Custom").first()).toBeVisible();
 
   await manager.navigateToMenuItem("Users");
   await page.getByRole("cell", { name: "smartcity" }).click();
@@ -68,9 +60,11 @@ test("Delete an existing role and verify it no longer appears", async ({ page, m
   await manager.goToRealmStartPage("master");
   await manager.switchToRealmByRealmPicker("smartcity");
   await manager.navigateToMenuItem("Roles");
-  await page.click("text=Custom");
-  await page.click('tr[class="attribute-meta-row expanded"] >> button:has-text("delete")');
-  await page.click('div[role="alertdialog"] button:has-text("Delete")');
+
+  const row = page.locator("#table-roles tbody tr", { hasText: "Custom" });
+  await row.click();
+  await row.locator("+ tr").getByRole("button", { name: "Delete" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
   await expect(page.locator("text=Custom")).toHaveCount(0);
 });
 

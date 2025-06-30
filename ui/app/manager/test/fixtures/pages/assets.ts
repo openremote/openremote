@@ -22,52 +22,7 @@ export class AssetsPage implements BasePage {
   }
 
   /**
-   * Unselect the asset
-   */
-  async unselect() {
-    const isCloseVisible = await this.page.isVisible(".mdi-close >> nth=0");
-
-    // unselect the asset
-    if (isCloseVisible) {
-      //await page.page?.locator('.mdi-close').first().click()
-      await this.page.click(".mdi-close >> nth=0");
-    }
-  }
-
-  /**
-   * Update asset in the general panel
-   * @param attr attribute's name
-   * @param type attribute's input type
-   * @param value input value
-   */
-  async updateAssets(attr: string, type: string, value: string) {
-    await this.page.fill(`#field-${attr} input[type="${type}"]`, value);
-    await this.page.click(`#field-${attr} #send-btn span`);
-  }
-
-  /**
-   * Update the data in the modify mode
-   * @param attr attribute's name
-   * @param type attribute's input type
-   * @param value input value
-   */
-  async updateInModify(attr: string, type: string, value: string) {
-    await this.page.fill(`text=${attr} ${type} >> input[type="number"]`, value);
-  }
-
-  /**
-   * Update location so we can see in the map
-   * @param location_x horizental coordinator (start from left edge)
-   * @param location_y vertail coordinator (start from top edge)
-   */
-  async updateLocation(x: number, y: number) {
-    await this.page.click("text=location GEO JSON point >> button span");
-    await this.page.mouse.click(x, y, { delay: 1000 });
-    await this.page.click('button:has-text("OK")');
-  }
-
-  /**
-   * Delete an asset by its name
+   * Delete an asset by its name.
    * @param asset The asset name
    */
   async deleteSelectedAsset(asset: string) {

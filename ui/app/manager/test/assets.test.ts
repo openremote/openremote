@@ -48,7 +48,7 @@ assets.forEach(({ type, name, attributes }) => {
     await manager.navigateToTab("asset");
     await page.fill('#filterInput input[type="text"]', name);
     await page.click(`text=${name}`);
-    await expect(await page.waitForSelector(`#asset-header >> text=${name}`)).not.toBeNull();
+    await expect(page.locator(`#asset-header`, { hasText: name })).toBeVisible();
   });
 
   /**
@@ -76,9 +76,9 @@ assets.forEach(({ type, name, attributes }) => {
     }
 
     await components.assetViewer.switchMode("modify");
-    await page.click("text=location GEO JSON point >> button span");
+    await components.assetViewer.getAttributeLocator("location").getByRole("button").click();
     await page.mouse.click(x, y, { delay: 1000 });
-    await page.click('button:has-text("OK")');
+    await page.getByRole("button", { name: "OK" }).click();
 
     const saveBtn = page.getByRole("button", { name: "Save" });
     await saveBtn.click();

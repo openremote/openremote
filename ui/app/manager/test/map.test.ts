@@ -25,15 +25,11 @@ test("Verify that asset markers appear on the map and navigate correctly", async
 
   await expect(page.locator(".marker-icon")).toHaveCount(2);
 
-  await page.click(".marker-container div or-icon svg path");
-  const mapAssetCard = page.locator("#card-container", { hasText: asset });
-  await mapAssetCard.waitFor();
-  await expect(mapAssetCard).toBeVisible();
+  await page.click(".marker-container");
+  await expect(page.locator("#card-container", { hasText: asset })).toBeVisible();
 
-  await page.click('button:has-text("View")');
-
-  const assetPage = page.locator(`#asset-header >> text=${asset}`);
-  await expect(assetPage).toBeVisible();
+  await page.getByRole("button", { name: "View" }).click();
+  await expect(page.locator(`#asset-header`, { hasText: asset })).toBeVisible();
 });
 
 test.afterEach(async ({ manager }) => {

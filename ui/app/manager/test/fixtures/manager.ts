@@ -48,7 +48,7 @@ export class Manager {
    * @param setting Name of the setting menu item
    */
   async navigateToMenuItem(setting: string) {
-    await this.page.click('button[id="menu-btn-desktop"]');
+    await this.page.click("button#menu-btn-desktop");
     const menu = this.page.locator("#menu > #list > li").filter({ hasText: setting });
     await menu.waitFor({ state: "visible" });
     await menu.click();
@@ -58,9 +58,9 @@ export class Manager {
    * Switch to a realm in the manager's realm picker
    * @param name Name of custom realm
    */
-  async switchToRealmByRealmPicker(name: string) {
+  async switchToRealmByRealmPicker(realm: string) {
     await this.page.click("#realm-picker");
-    await this.page.click(`li[role="menuitem"]:has-text("${name}")`);
+    await this.page.locator("#desktop-right li", { hasText: realm }).click();
   }
 
   /**
@@ -90,12 +90,7 @@ export class Manager {
    * Logout and delete login
    */
   async logout() {
-    const isPanelVisibile = await this.page.isVisible('button:has-text("Cancel")');
-    if (isPanelVisibile) {
-      await this.page.click('button:has-text("Cancel")');
-    }
-    const isMenuBtnVisible = await this.page.isVisible("#menu-btn-desktop");
-    if (isMenuBtnVisible) {
+    if (await this.page.isVisible("#menu-btn-desktop")) {
       await this.page.click("#menu-btn-desktop");
       await this.page.locator("#menu > #list > li").filter({ hasText: "Log out" }).click();
     }

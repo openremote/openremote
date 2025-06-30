@@ -16,10 +16,10 @@ cleanup(`Delete the "smartcity" user`, async ({ page, manager }) => {
   await manager.goToRealmStartPage("master");
   await manager.switchToRealmByRealmPicker("smartcity");
   await manager.navigateToMenuItem("Users");
-  await page.click('td:has-text("smartcity")');
-  await page.click('button:has-text("delete")');
-  await page.click('div[role="alertdialog"] button:has-text("Delete")');
-  await expect(page.locator(`td:has-text("smartcity")`)).toHaveCount(0);
+  await page.getByRole("cell", { name: "smartcity" }).click();
+  await page.getByRole("button", { name: "delete" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
+  await expect(page.locator("td", { hasText: "smartcity" })).toHaveCount(0);
 });
 
 /**

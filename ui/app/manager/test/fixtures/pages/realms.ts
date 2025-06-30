@@ -21,17 +21,8 @@ export class RealmsPage implements BasePage {
       await this.page.click("text=Add Realm");
       await this.page.locator("#realm-row-1 label").filter({ hasText: "Realm" }).fill(name);
       await this.page.locator("#realm-row-1 label").filter({ hasText: "Friendly name" }).fill(name);
-      await this.page.click('button:has-text("create")');
+      await this.page.getByRole("button", { name: "create" }).click();
     }
-  }
-
-  /**
-   * Select realm by its name
-   * @param name Realm's name
-   */
-  async selectRealm(realm: string) {
-    await this.page.click("#realm-picker");
-    await this.page.locator("#desktop-right li").filter({ hasText: realm }).click();
   }
 
   /**
@@ -40,8 +31,8 @@ export class RealmsPage implements BasePage {
    */
   async deleteRealm(realm: string) {
     await this.page.getByRole("cell", { name: realm }).first().click();
-    await this.page.click('button:has-text("Delete")');
-    await this.page.fill('div[role="alertdialog"] input[type="text"]', realm);
-    await this.page.click('button:has-text("OK")');
+    await this.page.getByRole("button", { name: "Delete" }).click();
+    await this.page.getByRole("alertdialog").getByRole("textbox", { name: "Realm" }).fill(realm);
+    await this.page.getByRole("button", { name: "OK" }).click();
   }
 }

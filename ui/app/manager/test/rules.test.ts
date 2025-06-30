@@ -34,31 +34,25 @@ test("Create a When-Then rule for an asset with a trigger and action", async ({ 
   await page.locator("or-rule-when li").filter({ hasText: energyRule.attribute_type }).click();
   await page.click("text=Asset Any of this type");
   await page.click(`#idSelect >> text=${energyRule.asset}`);
-  await page.click('div[role="button"]:has-text("Attribute")');
+  await page.getByRole("button", { name: "Attribute", exact: true }).click();
   await page.click(`li[role="option"]:has-text("${energyRule.attribute_when}")`);
-  await page.click('div[role="button"]:has-text("Operator")');
+  await page.getByRole("button", { name: "Operator", exact: true }).click();
   await page.click("text=Less than or equal to");
-  await page.fill('input[type="number"]', energyRule.value.toString());
+  await page.getByRole("spinbutton", { name: "Energy level" }).fill(energyRule.value.toString());
 
-  await page.click('button:has-text("Add action")');
+  await page.getByRole("button", { name: "Add action" }).click();
   await page.click(`or-rule-then-otherwise li[role="menuitem"]:has-text("${energyRule.attribute_type}")`);
   await page.click("text=Asset Matched");
   await page.click(`#matchSelect li[role="option"]:has-text("${energyRule.asset}")`);
-  await page.click(
-    'text=Attribute Efficiency export Efficiency import Energy capacity Energy export tota >> div[role="button"]'
-  );
+  await page.getByRole("button", { name: "Attribute", exact: true }).click();
   await page.click(`li[role="option"]:has-text("${energyRule.attribute_then}")`);
-  await page.click('label:has-text("Value")', { force: true });
-  await page.fill(
-    'text=Always Always Once Once per hour Once per day Once per week Building asset City  >> input[type="number"]',
-    energyRule.value.toString()
-  );
+  await page.getByRole("spinbutton", { name: "Value" }).fill(energyRule.value.toString());
 
   await shared.interceptResponse<number>("**/rules/realm", (rule) => {
     if (rule) manager.rules.push(rule);
   });
 
-  await page.click('or-mwc-input:has-text("Save")');
+  await page.getByRole("button", { name: "Save" }).click();
   await expect(page.locator(`text=${energyRule.name}`)).toHaveCount(1);
 });
 
@@ -77,11 +71,11 @@ test("Create a Flow rule for an asset with logic connections", async ({ page, sh
 
   await page.locator(".node-item.input-node", { hasText: "Attribute value" }).hover();
   await shared.drag(450, 250);
-  await page.hover("text=Number >> nth=0");
+  await page.hover("text=Number");
   await shared.drag(450, 350);
-  await page.hover("text=Number >> nth=0");
+  await page.hover("text=Number");
   await shared.drag(450, 500);
-  await page.hover("text=Number >> nth=0");
+  await page.hover("text=Number");
   await shared.drag(450, 600);
   await page.hover("text=>");
   await shared.drag(650, 300);
@@ -90,15 +84,15 @@ test("Create a Flow rule for an asset with logic connections", async ({ page, sh
   await page.locator(".node-item.output-node", { hasText: "Attribute value" }).hover();
   await shared.drag(1000, 425);
 
-  await page.click('button:has-text("Attribute") >> nth=0');
-  await page.click('div[role="alertdialog"] >> text=Solar Panel');
-  await page.click('or-translate:has-text("Power") >> nth=0');
-  await page.click('button:has-text("Add")');
+  await page.getByRole("button", { name: "Attribute" }).nth(0).click();
+  await page.getByRole("alertdialog").getByText("Solar Panel").click();
+  await page.getByRole("option", { name: "Power", exact: true }).click();
+  await page.getByRole("button", { name: "Add" }).click();
 
-  await page.click('button:has-text("Attribute") >> nth=1');
-  await page.click('div[role="alertdialog"] >> text=Solar Panel');
-  await page.click('or-translate:has-text("Power forecast")');
-  await page.click('button:has-text("Add")');
+  await page.getByRole("button", { name: "Attribute" }).nth(1).click();
+  await page.getByRole("alertdialog").getByText("Solar Panel").click();
+  await page.getByRole("option", { name: "Power forecast", exact: true }).click();
+  await page.getByRole("button", { name: "Add" }).click();
 
   await page.fill('[placeholder="value"] >> nth=0', "50");
   await page.fill('[placeholder="value"] >> nth=1', "60");
@@ -130,8 +124,8 @@ test("Create a Flow rule for an asset with logic connections", async ({ page, sh
     if (rule) manager.rules.push(rule);
   });
 
-  await page.click('or-mwc-input:has-text("Save")');
-  await expect(page.locator(`text="Solar panel"`)).toHaveCount(1);
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.locator("text=Solar panel")).toHaveCount(1);
 });
 
 test.afterEach(async ({ manager }) => {

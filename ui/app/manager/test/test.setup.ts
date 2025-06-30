@@ -25,7 +25,7 @@ setup.describe(async () => {
     await manager.goToRealmStartPage("master");
     await realmsPage.goto();
     await realmsPage.addRealm("smartcity");
-    await realmsPage.selectRealm("smartcity");
+    await manager.switchToRealmByRealmPicker("smartcity");
     await expect(page.locator("#desktop-right #realm-picker")).toContainText("smartcity");
   });
 
