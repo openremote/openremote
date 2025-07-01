@@ -86,15 +86,15 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller
 
-PSQL_VOLUMEID=`aws ec2 create-volume --size 1 --availability-zone eu-west-1a --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=psql-data}]" --query VolumeId`
-MANAGER_VOLUMEID=`aws ec2 create-volume --size 1 --availability-zone eu-west-1a --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=manager-data}]" --query VolumeId`
+PSQL_VOLUMEID=$(aws ec2 create-volume --size 1 --availability-zone eu-west-1a --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=psql-data}]" --query VolumeId)
+MANAGER_VOLUMEID=$(aws ec2 create-volume --size 1 --availability-zone eu-west-1a --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=manager-data}]" --query VolumeId)
 
 # Wait for AWS LB ctrl to be ready
 kubectl rollout status deployment aws-load-balancer-controller -n kube-system --timeout=300s
 
 helm install or-setup or-setup --set aws.enabled=true --set aws.managerVolumeId=$MANAGER_VOLUMEID --set aws.psqlVolumeId=$PSQL_VOLUMEID
 
-CERTIFICATE_ARN=`aws acm request-certificate --domain-name $FQDN --subject-alternative-names $MQTTS_FQDN --validation-method DNS --profile or --query "CertificateArn" --output text`
+CERTIFICATE_ARN=$(aws acm request-certificate --domain-name $FQDN --subject-alternative-names $MQTTS_FQDN --validation-method DNS --profile or --query "CertificateArn" --output text)
 aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or
 
 helm install postgresql postgresql -f postgresql/values-eks.yaml
@@ -108,8 +108,8 @@ helm install manager manager -f manager/values-eks.yaml \
 
 # For FQDN
 
-DNS_RECORD_NAME=`aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[0].ResourceRecord.Name"`
-DNS_RECORD_VALUE=`aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[0].ResourceRecord.Value"`
+DNS_RECORD_NAME=$(aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[0].ResourceRecord.Name")
+DNS_RECORD_VALUE=$(aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[0].ResourceRecord.Value")
 
 aws route53 change-resource-record-sets \
     --hosted-zone-id /hostedzone/Z08751721JH0NB6LLCB4V \
@@ -119,8 +119,8 @@ aws route53 change-resource-record-sets \
 
 # For MQTTS_FQDN
 
-DNS_RECORD_NAME=`aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[1].ResourceRecord.Name"`
-DNS_RECORD_VALUE=`aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[1].ResourceRecord.Value"`
+DNS_RECORD_NAME=$(aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[1].ResourceRecord.Name")
+DNS_RECORD_VALUE=$(aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or --query "Certificate.DomainValidationOptions[1].ResourceRecord.Value")
 
 aws route53 change-resource-record-sets \
     --hosted-zone-id /hostedzone/Z08751721JH0NB6LLCB4V \
@@ -136,8 +136,8 @@ while ! aws elbv2 describe-load-balancers  --profile or --query "LoadBalancers[?
 done
 
 # We're re-directing the FQDN to the application LB (web interface)
-DNS_NAME=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='application'].DNSName | [0]"`
-HOSTED_ZONE_ID=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='application'].CanonicalHostedZoneId | [0]"`
+DNS_NAME=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='application'].DNSName | [0]")
+HOSTED_ZONE_ID=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='application'].CanonicalHostedZoneId | [0]")
 
 aws route53 change-resource-record-sets \
     --hosted-zone-id /hostedzone/Z08751721JH0NB6LLCB4V \
@@ -146,12 +146,12 @@ aws route53 change-resource-record-sets \
      --profile dnschg
 
 # We're re-directing the MQTT_FQDN to its network load balancer
-DNS_NAME=`kubectl get svc manager-mqtt -o jsonpath="{.status.loadBalancer.ingress[0].hostname}"`
+DNS_NAME=$(kubectl get svc manager-mqtt -o jsonpath="{.status.loadBalancer.ingress[0].hostname}")
 while ! aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?DNSName=='$DNS_NAME']" 2>/dev/null | grep '"Code": "active"'; do
   echo "Waiting for network load balancer to be created for $DNS_NAME..."
   sleep 10
 done
-HOSTED_ZONE_ID=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?DNSName=='$DNS_NAME'].CanonicalHostedZoneId | [0]"`
+HOSTED_ZONE_ID=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?DNSName=='$DNS_NAME'].CanonicalHostedZoneId | [0]")
 
 aws route53 change-resource-record-sets \
     --hosted-zone-id /hostedzone/Z08751721JH0NB6LLCB4V \
@@ -160,12 +160,12 @@ aws route53 change-resource-record-sets \
      --profile dnschg
 
 # We're re-directing the MQTTS_FQDN to its network load balancer
-DNS_NAME=`kubectl get svc manager-mqtts -o jsonpath="{.status.loadBalancer.ingress[0].hostname}"`
+DNS_NAME=$(kubectl get svc manager-mqtts -o jsonpath="{.status.loadBalancer.ingress[0].hostname}")
 while ! aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?DNSName=='$DNS_NAME']" 2>/dev/null | grep '"Code": "active"'; do
   echo "Waiting for network load balancer to be created for $DNS_NAME..."
   sleep 10
 done
-HOSTED_ZONE_ID=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?DNSName=='$DNS_NAME'].CanonicalHostedZoneId | [0]"`
+HOSTED_ZONE_ID=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?DNSName=='$DNS_NAME'].CanonicalHostedZoneId | [0]")
 
 aws route53 change-resource-record-sets \
     --hosted-zone-id /hostedzone/Z08751721JH0NB6LLCB4V \

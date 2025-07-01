@@ -29,8 +29,8 @@ fi
 
 aws sts assume-role --role-arn $DNSCHG_ROLE_ARN --role-session-name dnschg --profile or --query "Credentials.[AccessKeyId, SecretAccessKey, SessionToken]" --output text | awk -F'\t' '{print "aws_access_key_id "$1"\naws_secret_access_key "$2"\naws_session_token "$3 }' | xargs -L 1 aws configure --profile dnschg set
 
-DNS_NAME=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[0].DNSName"`
-HOSTED_ZONE_ID=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[0].CanonicalHostedZoneId"`
+DNS_NAME=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[0].DNSName")
+HOSTED_ZONE_ID=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[0].CanonicalHostedZoneId")
 
 echo "Delete DNS record $FQDN"
 
@@ -52,8 +52,8 @@ while aws elbv2 describe-load-balancers  --profile or --query "LoadBalancers[?Ty
 done
 helm uninstall aws-load-balancer-controller -n kube-system
 
-MANAGER_VOLUMEID=`kubectl get pv manager-data-pv -o=jsonpath='{.spec.awsElasticBlockStore.volumeID}'`
-PSQL_VOLUMEID=`kubectl get pv postgresql-data-pv -o=jsonpath='{.spec.awsElasticBlockStore.volumeID}'`
+MANAGER_VOLUMEID=$(kubectl get pv manager-data-pv -o=jsonpath='{.spec.awsElasticBlockStore.volumeID}')
+PSQL_VOLUMEID=$(kubectl get pv postgresql-data-pv -o=jsonpath='{.spec.awsElasticBlockStore.volumeID}')
 kubectl delete pv manager-data-pv
 kubectl delete pv postgresql-data-pv
 aws ec2 delete-volume --volume-id $MANAGER_VOLUMEID

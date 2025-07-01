@@ -84,13 +84,13 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller
 
-PSQL_VOLUMEID=`aws ec2 create-volume --size 1 --availability-zone eu-west-1a --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=psql-data}]" --query VolumeId`
-MANAGER_VOLUMEID=`aws ec2 create-volume --size 1 --availability-zone eu-west-1a --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=manager-data}]" --query VolumeId`
+PSQL_VOLUMEID=$(aws ec2 create-volume --size 1 --availability-zone eu-west-1a --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=psql-data}]" --query VolumeId)
+MANAGER_VOLUMEID=$(aws ec2 create-volume --size 1 --availability-zone eu-west-1a --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=manager-data}]" --query VolumeId)
 
 # Wait for AWS LB ctrl to be ready
 kubectl rollout status deployment aws-load-balancer-controller -n kube-system --timeout=300s
 
-CLUSTER_DNS=`kubectl get svc kube-dns -n kube-system -o jsonpath='{.spec.clusterIP}:{.spec.ports[?(@.name=="dns")].port}'`
+CLUSTER_DNS=$(kubectl get svc kube-dns -n kube-system -o jsonpath='{.spec.clusterIP}:{.spec.ports[?(@.name=="dns")].port}')
 
 helm install or-setup or-setup --set aws.enabled=true --set aws.managerVolumeId=$MANAGER_VOLUMEID --set aws.psqlVolumeId=$PSQL_VOLUMEID
 
@@ -106,8 +106,8 @@ while ! aws elbv2 describe-load-balancers  --profile or --query "LoadBalancers[?
   sleep 10
 done
 
-DNS_NAME=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='network'].DNSName | [0]"`
-HOSTED_ZONE_ID=`aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='network'].CanonicalHostedZoneId | [0]"`
+DNS_NAME=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='network'].DNSName | [0]")
+HOSTED_ZONE_ID=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='network'].CanonicalHostedZoneId | [0]")
 
 aws route53 change-resource-record-sets \
     --hosted-zone-id /hostedzone/Z08751721JH0NB6LLCB4V \
