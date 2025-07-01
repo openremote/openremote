@@ -18,8 +18,8 @@ export class Shared {
 
   /**
    * Drag to position x and position y
-   * @param x coordinate of screen pixel
-   * @param y coordinate of screen pixel
+   * @param x coordinate of screen in pixels
+   * @param y coordinate of screen in pixels
    */
   async drag(x: number, y: number) {
     await this.page.mouse.down();
@@ -28,8 +28,9 @@ export class Shared {
   }
 
   /**
-   * Intercept a request and handle request body
-   * @param url
+   * Intercept a request and handle the request body.
+   * @param url The URL to intercept
+   * @param cb The callback to handle the request
    */
   async interceptRequest<T>(url: string, cb: (body?: T) => void) {
     await this.page.route(
@@ -43,8 +44,9 @@ export class Shared {
   }
 
   /**
-   * Intercept the response of a request and handle response body
-   * @param url
+   * Intercept the response of a request and handle the response body.
+   * @param url The URL to intercept
+   * @param cb The callback to handle the response
    */
   async interceptResponse<T>(url: string, cb: (body?: T) => void) {
     await this.page.route(
@@ -58,12 +60,19 @@ export class Shared {
     );
   }
 
+  /**
+   * Init shared fonts to be served for material design icons.
+   */
   async fonts() {
     await this.page.route("**/shared/fonts/**", (route, request) => {
       route.fulfill({ path: this.urlPathToFsPath(request.url()) });
     });
   }
 
+  /**
+   * Init shared translations to be served for i18next.
+   * @param resources The custom translations to add
+   */
   async locales(resources?: Resource) {
     await this.page.route("**/shared/locales/**", (route, request) => {
       route.fulfill({ path: this.urlPathToFsPath(request.url()) });
@@ -89,6 +98,10 @@ export class Shared {
     }, resources);
   }
 
+  /**
+   * Resolves a request URL to a local filesystem path.
+   * @param url The icoming request URL to resolve
+   */
   private urlPathToFsPath(url: string) {
     return path.resolve(__dirname, global.decodeURI(`../../app${new URL(url).pathname}`));
   }

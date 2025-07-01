@@ -9,8 +9,8 @@ export class RealmsPage implements BasePage {
   }
 
   /**
-   * Create Realm with name
-   * @param name realm name
+   * Create realm with name if not already present.
+   * @param name The realm name
    */
   async addRealm(name: string) {
     const locator = this.page.getByRole("cell", { name, exact: true });
@@ -26,8 +26,8 @@ export class RealmsPage implements BasePage {
   }
 
   /**
-   * Delete a certain realm by its name
-   * @param name Realm's name
+   * Delete a certain realm by its name.
+   * @param name The realm's name
    */
   async deleteRealm(realm: string) {
     await this.page.getByRole("cell", { name: realm }).first().click();

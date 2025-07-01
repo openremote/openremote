@@ -9,12 +9,18 @@ export class AssetsPage implements BasePage {
     this.manager.navigateToTab("Assets");
   }
 
+  /**
+   * Add asset of type and with name.
+   *
+   * Internally registers the asset for cleanup.
+   *
+   * @param type The asset type
+   * @param name The name of the asset
+   */
   async addAsset(type: string, name: string) {
-    // start adding assets
     await this.page.click(".mdi-plus");
     await this.page.click(`li[data-value="${type}"]`);
     await this.page.fill('#name-input input[type="text"]', name);
-    // create
     await this.shared.interceptResponse<Asset>("**/asset", (asset) => {
       if (asset) this.manager.assets.push(asset);
     });

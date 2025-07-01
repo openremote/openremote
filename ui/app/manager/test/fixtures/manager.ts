@@ -43,8 +43,7 @@ export class Manager {
   }
 
   /**
-   * Navigate to a setting page inside the manager
-   * for the setting list menu at the top right
+   * Navigate to a settings page inside the manager using the settings menu at the top right
    * @param setting Name of the setting menu item
    */
   async navigateToMenuItem(setting: string) {
@@ -55,8 +54,8 @@ export class Manager {
   }
 
   /**
-   * Switch to a realm in the manager's realm picker
-   * @param name Name of custom realm
+   * Switch to a realm using the realm picker
+   * @param name Name of the realm
    */
   async switchToRealmByRealmPicker(realm: string) {
     await this.page.click("#realm-picker");
@@ -72,7 +71,7 @@ export class Manager {
   }
 
   /**
-   * Login as user
+   * Login as user, waits for username and password fields to be visible.
    * @param user Username (admin or other)
    */
   async login(user: Usernames) {
@@ -87,7 +86,9 @@ export class Manager {
   }
 
   /**
-   * Logout and delete login
+   * Logout from the manager.
+   *
+   * After logout waits until redirection finished.
    */
   async logout() {
     if (await this.page.isVisible("#menu-btn-desktop")) {
