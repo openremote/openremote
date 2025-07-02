@@ -17,6 +17,12 @@ spec:
       targetPort: 1883
       protocol: TCP
     {{- end }}
+    {{- if .Values.or.metricsEnabled }}
+    - name: metrics
+      port: {{ .Values.or.metricsPort }}
+      targetPort: {{ .Values.or.metricsPort }}
+      protocol: TCP
+    {{- end }}
   selector:
     {{- include "manager.selectorLabels" . | nindent 4 }}
 ---
