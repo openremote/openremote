@@ -1,38 +1,6 @@
 #!/bin/bash
 
-# Name of cluster, not exposed but must be unique within account
-CLUSTER_NAME=testcluster
-
-# Hostname to use for public access to this instance, always under the openremote.app domain
-HOSTNAME=testmanager
-FQDN=$HOSTNAME.openremote.app
-MQTT_FQDN=mqtt.$FQDN
-MQTTS_FQDN=mqtts.$FQDN
-
-AWS_REGION="eu-west-1"
-AWS_ACCOUNT_ID="463235666115" # openremote
-
-DNSCHG_ROLE_ARN="arn:aws:iam::134517981306:role/route53-full-access"
-
-aws configure set region $AWS_REGION
-aws configure --profile or set region $AWS_REGION
-aws configure --profile or set output json
-aws configure --profile dnschg set source_profile or
-aws configure --profile dnschg set role_arn $DNSCHG_ROLE_ARN
-
-if [ -n "$AWS_ACCESS_KEY_ID" ]; then
-  aws configure --profile or set aws_access_key_id $AWS_ACCESS_KEY_ID
-fi
-
-if [ -n "$AWS_SECRET_ACCESS_KEY" ]; then
-  aws configure --profile or set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-fi
-
-if [ -n "$AWS_SESSION_TOKEN" ]; then
-  aws configure --profile or set aws_session_token $AWS_SESSION_TOKEN
-fi
-
-aws sts assume-role --role-arn $DNSCHG_ROLE_ARN --role-session-name dnschg --profile or --query "Credentials.[AccessKeyId, SecretAccessKey, SessionToken]" --output text | awk -F'\t' '{print "aws_access_key_id "$1"\naws_secret_access_key "$2"\naws_session_token "$3 }' | xargs -L 1 aws configure --profile dnschg set
+. ./eks-common.sh
 
 # TODO: --name $CLUSTER_NAME -> in cluster.yaml
 # TODO: region is duplicated in cluster.yaml
@@ -62,9 +30,15 @@ eksctl create addon --profile or --cluster $CLUSTER_NAME --name aws-ebs-csi-driv
 
 curl -O https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.11.0/docs/install/iam_policy.json
 
-aws iam create-policy --profile or \
-    --policy-name AWSLoadBalancerControllerIAMPolicy \
-    --policy-document file://iam_policy.json
+POLICY_NAME="AWSLoadBalancerControllerIAMPolicy"
+POLICY_ARN="arn:aws:iam::$AWS_ACCOUNT_ID:policy/$POLICY_NAME"
+
+if ! aws iam get-policy --policy-arn "$POLICY_ARN" >/dev/null 2>&1; then
+    echo "Policy does not exist. Creating..."
+    aws iam create-policy \
+      --policy-name "$POLICY_NAME" \
+      --policy-document file://iam_policy.json
+fi
 
 eksctl create iamserviceaccount --profile or \
   --cluster=$CLUSTER_NAME \
