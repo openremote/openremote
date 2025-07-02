@@ -56,7 +56,6 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
         KeycloakSetup keycloakSetup = setupService.getTaskOfType(KeycloakSetup.class);
         int devices = getInteger(container.getConfig(), OR_SETUP_DEVICES, 10);
         int groups = getInteger(container.getConfig(), OR_SETUP_GROUPS, 2);
-        int devicesPerGroup = devices / groups;
         LOG.info("Starting load2 Manager setup with " + devices + " devices, spread over " + groups + " groups.");
 
         // Create groups
@@ -64,6 +63,7 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
 
         // Create devices
         if(!groupAssets.isEmpty()) {
+            int devicesPerGroup = devices / groups;
             this.buildDeviceAssets(devicesPerGroup, keycloakSetup.realmOne.getName(), groupAssets);
         } else {
             this.buildDeviceAssets(devices, keycloakSetup.realmOne.getName());
