@@ -30,14 +30,11 @@ import org.openremote.model.attribute.Attribute;
 
 import java.util.ArrayList;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
 
 import static org.openremote.container.util.MapAccess.getInteger;
 
 public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
     public static final String OR_SETUP_DEVICES = "OR_SETUP_DEVICES";
-    public static final String OR_SETUP_DEVICES_SKIP_COUNT = "OR_SETUP_DEVICES_SKIP_COUNT";
     public static final String OR_SETUP_GROUPS = "OR_SETUP_GROUPS";
     final protected AssetStorageService assetStorageService;
     protected Container container;
@@ -111,6 +108,7 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
     }
 
     /**
+     * TODO
      *
      * @param amountPerGroup
      * @param realm
@@ -130,6 +128,7 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
     }
 
     /**
+     * TODO
      *
      * @param amount
      * @param realm
@@ -170,6 +169,12 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
         }*/
     }
 
+    /**
+     * TODO
+     *
+     * @param amount
+     * @param realm
+     */
     protected void buildDeviceAssets(int amount, String realm) {
         for(int i = 0; i < amount; i++) {
             LightAsset lightAsset = new LightAsset("Light #" + i);
