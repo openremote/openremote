@@ -10,7 +10,7 @@ import { style as OrAssetTreeStyle } from "@openremote/or-asset-tree";
 import "@openremote/or-components/or-iframe";
 import "@openremote/or-icon";
 import { OrTreeMenu, TreeNode, TreeMenuSelection, OrTreeNode } from "@openremote/or-tree-menu";
-import { ServiceDescriptor, ServiceStatus } from "@openremote/model";
+import { Microservice, MicroserviceStatus } from "@openremote/model";
 
 export function pageServicesProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
   return {
@@ -38,7 +38,7 @@ export enum ServiceStatusColor {
 }
 
 export interface ServiceTreeNode extends TreeNode {
-  service?: ServiceDescriptor;
+  service?: Microservice;
 }
 
 const treeStyles = css`
@@ -66,10 +66,10 @@ class OrServiceTree extends OrTreeMenu {
   }
 
   @property({ type: Array })
-  public services?: ServiceDescriptor[];
+  public services?: Microservice[];
 
   @property({ type: String })
-  public selectedService?: ServiceDescriptor;
+  public selectedService?: Microservice;
 
   @property({ type: Boolean })
   public readonly = false;
@@ -88,7 +88,7 @@ class OrServiceTree extends OrTreeMenu {
     // Handle select change from parent
     if (changedProps.has("selectedService")) {
       if (this.selectedService) {
-        const nodeToSelect = this.nodes.find((node) => node.id === this.selectedService.name);
+        const nodeToSelect = this.nodes.find((node) => node.id === this.selectedService.serviceId);
         if (nodeToSelect) {
           this._selectNode(nodeToSelect as unknown as OrTreeNode);
         }
@@ -117,12 +117,12 @@ class OrServiceTree extends OrTreeMenu {
     return super._dispatchSelectEvent(nodes);
   }
 
-  protected _getServiceNodes(services: ServiceDescriptor[]): ServiceTreeNode[] {
+  protected _getServiceNodes(services: Microservice[]): ServiceTreeNode[] {
     return services.map((service) => ({
-      id: service.name,
+      id: service.serviceId,
       label: service.label,
       service: service,
-      disabled: service.status === ServiceStatus.UNAVAILABLE,
+      disabled: service.status === MicroserviceStatus.UNAVAILABLE,
     }));
   }
 
@@ -190,10 +190,10 @@ export class PageServices extends Page<AppStateKeyed> {
   }
 
   @state()
-  private services: ServiceDescriptor[] = [];
+  private services: Microservice[] = [];
 
   @state()
-  private selectedService: ServiceDescriptor | null = null;
+  private selectedService: Microservice | null = null;
 
   @state()
   private serviceName: string | null = null;
@@ -215,7 +215,7 @@ export class PageServices extends Page<AppStateKeyed> {
       name: "ml-forecast",
       url: "http://localhost:8001/",
       multiTenancy: true,
-      status: ServiceStatus.AVAILABLE,
+      status: MicroserviceStatus.AVAILABLE,
     };
 
     const testService2 = {
@@ -223,7 +223,7 @@ export class PageServices extends Page<AppStateKeyed> {
       name: "home-assistant",
       url: "http://192.168.0.106:8123/lovelace/default_view",
       multiTenancy: true,
-      status: ServiceStatus.UNAVAILABLE,
+      status: MicroserviceStatus.UNAVAILABLE,
     };
 
     this.services = [testService, testService2];
@@ -236,7 +236,7 @@ export class PageServices extends Page<AppStateKeyed> {
     this.serviceName = state.app.params?.serviceName;
 
     if (this.serviceName) {
-      const service = this.services.find((service) => service.name === this.serviceName);
+      const service = this.services.find((service) => service.serviceId === this.serviceName);
       if (service) {
         this.selectService(service);
       }
@@ -246,9 +246,9 @@ export class PageServices extends Page<AppStateKeyed> {
     }
   }
 
-  protected selectService(service: ServiceDescriptor) {
+  protected selectService(service: Microservice) {
     this.selectedService = service;
-    router.navigate(`/services/${service.name}`);
+    router.navigate(`/services/${service.serviceId}`);
   }
 
   protected realmSelector = (state: AppStateKeyed) => state.app.realm || manager.config.realm;
@@ -258,7 +258,7 @@ export class PageServices extends Page<AppStateKeyed> {
   });
 
   protected _onServiceSelected(e: CustomEvent) {
-    const service = e.detail.service as ServiceDescriptor;
+    const service = e.detail.service as Microservice;
     if (service) {
       this.selectService(service);
     }
@@ -269,7 +269,7 @@ export class PageServices extends Page<AppStateKeyed> {
    * @param service - The service to get the iframe path for
    * @returns The iframe path
    */
-  protected getServiceUrlPath(service: ServiceDescriptor) {
+  protected getServiceUrlPath(service: Microservice) {
     const isSuperUser = manager.isSuperUser();
 
     // If the service is not multi-tenancy, we can just use the iframe_url
