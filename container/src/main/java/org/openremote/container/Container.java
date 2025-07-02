@@ -24,6 +24,13 @@ import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmHeapPressureMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmInfoMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmThreadDeadlockMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
+import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
 import io.micrometer.prometheusmetrics.PrometheusConfig;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
@@ -32,13 +39,32 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static java.lang.System.Logger.Level.*;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.WARNING;
 import static java.util.stream.StreamSupport.stream;
 import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getInteger;
@@ -74,6 +100,7 @@ public class Container implements org.openremote.model.Container {
     protected final Map<String, String> config = new HashMap<>();
     protected final boolean devMode;
     protected MeterRegistry meterRegistry;
+    private List<AutoCloseable> closeables;
 
     protected Thread waitingThread;
     protected final Map<Class<? extends ContainerService>, ContainerService> services = new LinkedHashMap<>();
@@ -111,6 +138,20 @@ public class Container implements org.openremote.model.Container {
         if (metricsEnabled) {
             // TODO: Add a meter registry provider SPI to make this pluggable
             meterRegistry = new io.micrometer.prometheusmetrics.PrometheusMeterRegistry(PrometheusConfig.DEFAULT, PrometheusRegistry.defaultRegistry, Clock.SYSTEM);
+
+            this.closeables = new ArrayList<>();
+
+            new JvmInfoMetrics().bindTo(meterRegistry);
+            new JvmMemoryMetrics().bindTo(meterRegistry);
+            JvmGcMetrics jvmGcMetrics = new JvmGcMetrics();
+            closeables.add(jvmGcMetrics);
+            jvmGcMetrics.bindTo(meterRegistry);
+            new ProcessorMetrics().bindTo(meterRegistry);
+            new JvmThreadMetrics().bindTo(meterRegistry);
+            new JvmThreadDeadlockMetrics().bindTo(meterRegistry);
+            JvmHeapPressureMetrics jvmHeapPressureMetrics = new JvmHeapPressureMetrics();
+            closeables.add(jvmHeapPressureMetrics);
+            jvmHeapPressureMetrics.bindTo(meterRegistry);
         }
 
         int scheduledExecutorThreads = getInteger(
@@ -209,11 +250,22 @@ public class Container implements org.openremote.model.Container {
         }
 
         Metrics.globalRegistry.remove(meterRegistry);
+        if (closeables != null) {
+            closeables.forEach(this::safeClose);
+        }
         PrometheusRegistry.defaultRegistry.clear();
         meterRegistry = null;
         waitingThread.interrupt();
         waitingThread = null;
         LOG.log(INFO, "<<< Runtime container stopped");
+    }
+
+    private void safeClose(AutoCloseable it) {
+        try {
+            it.close();
+        } catch (Exception e) {
+            LOG.log(WARNING, "Error when closing {}", it, e);
+        }
     }
 
     /**
