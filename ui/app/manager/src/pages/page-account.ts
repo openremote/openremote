@@ -7,6 +7,7 @@ import {Store} from "@reduxjs/toolkit";
 import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
 import {when} from "lit/directives/when.js";
 import {until} from "lit/directives/until.js";
+import {map} from 'lit/directives/map.js';
 import {guard} from "lit/directives/guard.js";
 import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
@@ -146,6 +147,9 @@ export class PageAccount extends Page<AppStateKeyed> {
     protected _user?: UserModel;
 
     @state()
+    protected _passwordPolicy: string[] = [];
+
+    @state()
     protected _dirty = false;
 
     @state()
@@ -176,7 +180,7 @@ export class PageAccount extends Page<AppStateKeyed> {
             `;
         }
 
-        const readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
+        const readonly = !manager.hasRole(ClientRole.WRITE_USER);
 
         return html`
             <div id="wrapper">
@@ -225,7 +229,10 @@ export class PageAccount extends Page<AppStateKeyed> {
      * Will call {@link onchange} when an input field submits a new value.
      */
     protected async _getAccountRowTemplate(user?: UserModel, readonly = true, onchange?: (user: User, dirty: boolean, invalid: boolean) => void): Promise<TemplateResult> {
-        const registrationEmailAsUsername = true;
+        const realmResponse = await manager.rest.api.RealmResource.get(manager.displayRealm);
+        const registrationEmailAsUsername = realmResponse.data.registrationEmailAsUsername;
+        console.log(realmResponse.data);
+        const smtpConfigured = realmResponse.data.smtpUser && realmResponse.data.smtpHost && realmResponse.data.smtpPort;
         if (!user) {
             user = await this._getUser();
         }
@@ -289,12 +296,41 @@ export class PageAccount extends Page<AppStateKeyed> {
                 </div>
                 <div class="column">
                     <h5>${i18next.t("password")}</h5>
-                    <or-mwc-input id="reset-password" raised
-                                  .label="${i18next.t("resetPassword")}"
-                                  .type="${InputType.BUTTON}"
-                                  .disabled="${!user.email}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onResetPasswordBtnClick(e)}"
-                    ></or-mwc-input>
+                    ${smtpConfigured ? html`
+                        <!-- Reset password button when SMTP is configured -->
+                        <or-mwc-input id="reset-password" raised
+                                      .label="${i18next.t("resetPassword")}"
+                                      .type="${InputType.BUTTON}"
+                                      .disabled="${!user.email}"
+                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onResetPasswordBtnClick(e)}"
+                        ></or-mwc-input>
+                    ` : html`
+                        <!-- Direct password input fields when SMTP is not configured -->
+                        <or-mwc-input id="new-password" class="validate"
+                                      .label="${i18next.t("password")}"
+                                      .type="${InputType.PASSWORD}"
+                                      ?readonly="${readonly}"
+                                      .disabled="${!user}"
+                                      min="1" autocomplete="false"
+                                      @or-mwc-input-changed="${(_e: OrInputChangedEvent) => {
+                                          const changed = this._onPasswordChanged(user);
+                                          onchange?.(user, changed, this._isInvalid());
+                                      }}"
+                        ></or-mwc-input>
+                        <or-mwc-input id="new-repeatPassword"
+                                      .label="${i18next.t("repeatPassword")}"
+                                      .type="${InputType.PASSWORD}"
+                                      helperPersistent
+                                      ?readonly="${readonly}"
+                                      .disabled="${!user}"
+                                      min="1" autocomplete="false"
+                                      @or-mwc-input-changed="${(_e: OrInputChangedEvent) => {
+                                          const changed = this._onPasswordChanged(user);
+                                          onchange?.(user, changed, this._isInvalid());
+                                      }}"
+                        ></or-mwc-input>
+                        ${when(this._passwordPolicy, () => until(this._getPasswordPolicyTemplate(user, this._passwordPolicy)))}
+                    `}
                 </div>
             </div>
 
@@ -416,10 +452,10 @@ export class PageAccount extends Page<AppStateKeyed> {
      * If the password has been changed, it will, after updating the user, also request to reset the password.
      */
     protected async _updateUser(user: UserModel): Promise<void> {
-        await manager.rest.api.UserResource.update(manager.getRealm(), user).then(() => {
+        await manager.rest.api.UserResource.update(user).then(() => {
             if (user.password) {
                 const credentials = {value: user.password} as Credential;
-                manager.rest.api.UserResource.resetPassword(manager.getRealm(), user.id, credentials)
+                manager.rest.api.UserResource.resetPassword(credentials)
                     .then(() => {
                         showSnackbar(undefined, "saveUserSucceeded");
                     })
@@ -433,5 +469,110 @@ export class PageAccount extends Page<AppStateKeyed> {
 
     protected async _requestPasswordReset() {
         await manager.rest.api.UserResource.requestPasswordReset(manager.getRealm(), this._user.id);
+    }
+
+    /**
+     * HTML callback function when any of the password input fields change.
+     * Checks whether {@link _passwordElem} and {@link _repeatPasswordElem} are the same,
+     * and updates the {@link user} object with the new password.
+     */
+    protected _onPasswordChanged(user: UserModel): boolean {
+        const password = this.shadowRoot?.querySelector("#new-password") as OrMwcInput;
+        const repeatPassword = this.shadowRoot?.querySelector("#new-repeatPassword") as OrMwcInput;
+        if (password && repeatPassword) {
+
+            if (password.value !== repeatPassword.value) {
+                const error = i18next.t("passwordMismatch");
+                repeatPassword.setCustomValidity(error);
+                user.password = "";
+
+            } else {
+                repeatPassword.setCustomValidity(undefined);
+                user.password = password.value as string;
+                return true;
+            }
+        } else {
+            console.warn("Could not update password; some fields are empty;", password, repeatPassword);
+        }
+        return false;
+    }
+
+    /**
+     * Function that formats the password policy into a displayable html format.
+     */
+    protected async _getPasswordPolicyTemplate(user: UserModel, passwordPolicy = this._passwordPolicy): Promise<TemplateResult> {
+        const policyMap = new Map(passwordPolicy.map(policyStr => {
+            const name = policyStr.split("(")[0];
+            const value = policyStr.split("(")[1]?.split(")")[0];
+            return [name, value];
+        }));
+        const policies = Array.from(policyMap.keys());
+        const policyTexts: TemplateResult[] = [];
+
+        // Minimum / maximum length warning
+        if (policies.includes("length") && policies.includes("maxLength")) {
+            policyTexts.push(html`
+                <or-translate value="password-policy-invalid-length" .options="${{
+                    0: policyMap.get("length"),
+                    1: policyMap.get("maxLength")
+                }}"></or-translate>`);
+        } else if (policies.includes("length")) {
+            policyTexts.push(html`
+                <or-translate value="password-policy-invalid-length-too-short"
+                              .options="${{0: policyMap.get("length")}}"></or-translate>`);
+        } else if (policies.includes("maxLength")) {
+            policyTexts.push(html`
+                <or-translate value="password-policy-invalid-length-too-long"
+                              .options="${{0: policyMap.get("maxLength")}}"></or-translate>`);
+        }
+
+        // Special characters
+        if (policies.includes("specialChars")) {
+            const value = policyMap.get("specialChars");
+            const translation = value === "1" ? "password-policy-special-chars-single" : "password-policy-special-chars";
+            policyTexts.push(html`
+                <or-translate value="${translation}" .options="${{0: value}}"></or-translate>`);
+        }
+
+        // Digits/numbers
+        if (policies.includes("digits")) {
+            const value = policyMap.get("digits");
+            const translation = value === "1" ? "password-policy-digits-single" : "password-policy-digits";
+            policyTexts.push(html`
+                <or-translate value="${translation}" .options="${{0: value}}"></or-translate>`);
+        }
+
+        // Uppercase / lowercase letters
+        if (policies.includes("upperCase")) {
+            const value = policyMap.get("upperCase");
+            const translation = value === "1" ? "password-policy-uppercase-single" : "password-policy-uppercase";
+            policyTexts.push(html`
+                <or-translate value="${translation}" .options="${{0: value}}"></or-translate>`);
+        }
+
+        // Warn for recently used passwords
+        if (policies.includes("passwordHistory")) {
+            policyTexts.push(html`
+                <or-translate value="password-policy-recently-used"></or-translate>`);
+        }
+
+        // Cannot be username and/or email
+        if (policies.includes("notUsername") && policies.includes("notEmail")) {
+            policyTexts.push(html`
+                <or-translate value="password-policy-not-email-username"></or-translate>`);
+        } else if (policies.includes("notUsername")) {
+            policyTexts.push(html`
+                <or-translate value="password-policy-not-username"></or-translate>`);
+        } else if (policies.includes("notEmail")) {
+            policyTexts.push(html`
+                <or-translate value="password-policy-not-email"></or-translate>`);
+        }
+
+        return html`
+            <ul>
+                ${map(policyTexts, text => html`
+                    <li>${text}</li>`)}
+            </ul>
+        `;
     }
 }

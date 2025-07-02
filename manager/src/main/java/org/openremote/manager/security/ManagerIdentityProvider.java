@@ -348,7 +348,12 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     static Realm[] getRealmsFromDb(PersistenceService persistenceService) {
         return persistenceService.doReturningTransaction(entityManager -> {
             List<Realm> realms = (List<Realm>) entityManager.createNativeQuery(
-                    "select *, (select ra.VALUE from PUBLIC.REALM_ATTRIBUTE ra where ra.REALM_ID = r.ID and ra.name = 'displayName') as displayName from public.realm r  where r.not_before is null or r.not_before = 0 or r.not_before <= extract('epoch' from now())"
+                    "select *, " +
+                    "(select ra.VALUE from PUBLIC.REALM_ATTRIBUTE ra where ra.REALM_ID = r.ID and ra.name = 'displayName') as displayName, " +
+                    "(select rsc.VALUE from PUBLIC.REALM_SMTP_CONFIG rsc where rsc.REALM_ID = r.ID and rsc.name = 'host') as smtpHost, " +
+                    "(select rsc.VALUE from PUBLIC.REALM_SMTP_CONFIG rsc where rsc.REALM_ID = r.ID and rsc.name = 'port') as smtpPort, " +
+                    "(select rsc.VALUE from PUBLIC.REALM_SMTP_CONFIG rsc where rsc.REALM_ID = r.ID and rsc.name = 'user') as smtpUser " +
+                    "from public.realm r where r.not_before is null or r.not_before = 0 or r.not_before <= extract('epoch' from now())"
                     , Realm.class).getResultList();
 
             // Make sure the master realm is always on top
