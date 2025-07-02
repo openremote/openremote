@@ -30,6 +30,7 @@ import org.openremote.model.attribute.Attribute;
 
 import java.util.ArrayList;
 import java.util.concurrent.Executor;
+import java.util.logging.Logger;
 
 import static org.openremote.container.util.MapAccess.getInteger;
 
@@ -39,6 +40,8 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
     final protected AssetStorageService assetStorageService;
     protected Container container;
     protected Executor executor;
+
+    private static final Logger LOG = Logger.getLogger(ManagerSetup.class.getName());
 
     public ManagerSetup(Container container, Executor executor) {
         super(container);
@@ -54,6 +57,7 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
         int devices = getInteger(container.getConfig(), OR_SETUP_DEVICES, 10);
         int groups = getInteger(container.getConfig(), OR_SETUP_GROUPS, 2);
         int devicesPerGroup = devices / groups;
+        LOG.info("Starting load2 Manager setup with " + devices + " devices, spread over " + groups + " groups.");
 
         // Create groups
         ArrayList<Asset<?>> groupAssets = this.buildGroupAssets(groups, keycloakSetup.realmOne.getName());
@@ -64,6 +68,7 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
         } else {
             this.buildDeviceAssets(devices, keycloakSetup.realmOne.getName());
         }
+        LOG.info("Finished with the load2 Manager setup.");
     }
 
     /**

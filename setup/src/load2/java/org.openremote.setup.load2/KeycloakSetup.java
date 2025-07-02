@@ -25,6 +25,7 @@ import org.openremote.model.security.Realm;
 import org.openremote.model.security.User;
 
 import java.util.concurrent.ExecutorService;
+import java.util.logging.Logger;
 
 public class KeycloakSetup extends AbstractKeycloakSetup {
 
@@ -32,6 +33,8 @@ public class KeycloakSetup extends AbstractKeycloakSetup {
     public User realmOneUser;
     public Realm realmTwo;
     public User realmTwoUser;
+
+    private static final Logger LOG = Logger.getLogger(KeycloakSetup.class.getName());
 
     public KeycloakSetup(Container container, ExecutorService executor) {
         super(container);
@@ -41,6 +44,7 @@ public class KeycloakSetup extends AbstractKeycloakSetup {
     public void onStart() throws Exception {
         super.onStart();
 
+        LOG.info("Creating realmone and realmtwo realms for the load2 Keycloak setup...");
         realmOne = createRealm("realmone", "Realm One", true);
         realmOneUser = createUser(realmOne.getName(), "user1", "user1", "User", "One", "user1@openremote.local", true, REGULAR_USER_ROLES);
 
