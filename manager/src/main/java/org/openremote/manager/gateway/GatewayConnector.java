@@ -130,9 +130,14 @@ public class GatewayConnector {
         try {
             if (gatewayMessageConsumer != null) {
                 gatewayMessageConsumer.accept(message);
+                if (LOG.isLoggable(Level.FINEST)) {
+                    LOG.fine(() -> "Sending message to gateway '" + message + "': " + this);
+                } else {
+                    LOG.fine(() -> "Sending message to gateway: " + this);
+                }
             }
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to send message to gateway: " + this, e);
+            LOG.log(Level.SEVERE, "Failed to send message to gateway: " + this, e.getMessage());
         }
     }
 
