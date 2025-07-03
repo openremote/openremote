@@ -113,12 +113,15 @@ class IdentityProviderTest extends Specification implements ManagerContainerTrai
         idpConfig.put("claimFilterName", "claimName");
         idpConfig.put("claimFilterValue", "claimValue");
 
-        identityProvider.createUpdateIdentityProvider(realmName, idpAlias, "oidc", idpConfig);
+        identityProvider.createUpdateIdentityProvider(realmName, idpAlias, "oidc", "IdP Name", idpConfig);
 
         then: "the identity provider is created in the realm"
         identityProvider.getRealms { realmsResource ->
             IdentityProvidersResource identityProvidersResource = realmsResource.realm(realmName).identityProviders();
-            assert identityProvidersResource.findAll().stream().anyMatch(ipr -> idpAlias == ipr.getAlias())
+            def ipr = identityProvidersResource.findAll().stream().filter(ipr -> idpAlias == ipr.getAlias()).findFirst()
+            assert ipr.isPresent()
+            assert ipr.get().getProviderId() == "oidc"
+            assert ipr.get().getDisplayName() == "IdP Name"
             return null
         } == null
 
