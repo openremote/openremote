@@ -23,13 +23,18 @@ import jakarta.persistence.Entity;
 import org.openremote.agent.protocol.io.IOAgent;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.http.HTTPMethod;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Entity
 public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
@@ -52,6 +57,7 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     public static final AttributeDescriptor<String> LAST_WILL_TOPIC = new AttributeDescriptor<>("lastWillTopic", ValueType.TEXT);
     public static final AttributeDescriptor<String> LAST_WILL_PAYLOAD = new AttributeDescriptor<>("lastWillPayload", ValueType.TEXT);
     public static final AttributeDescriptor<Boolean> LAST_WILL_RETAIN = new AttributeDescriptor<>("lastWillRetain", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<String> WILDCARD_SUBSCRIPTION_TOPICS = new AttributeDescriptor<>("wildcardSubscriptionTopicList", ValueType.TEXT, new MetaItem<>(MetaItemType.MULTILINE));
 
     public static final AgentDescriptor<MQTTAgent, MQTTProtocol, MQTTAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         MQTTAgent.class, MQTTProtocol.class, MQTTAgentLink.class
@@ -177,6 +183,28 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
 
     public MQTTAgent setSubscribeQos(int subscribeQos) {
         getAttributes().getOrCreate(SUBSCRIBE_QOS).setValue(subscribeQos);
+        return this;
+    }
+
+    public Optional<List<String>> getWildcardSubscriptionTopicList() {
+        Optional<List<String>> wildcards = getAttributes()
+            .getValue(WILDCARD_SUBSCRIPTION_TOPICS)
+            .map(topics -> topics.lines()
+                .map(String::trim)
+                .filter(line -> !line.isEmpty())
+                .collect(Collectors.toCollection(LinkedHashSet::new)))
+            .map(ArrayList::new);
+        return wildcards;
+    }
+
+    public MQTTAgent setWildcardSubscriptionTopicList(List<String> wildcardList) {
+        String wildcards = Optional.ofNullable(wildcardList)
+            .orElseGet(List::of)
+            .stream()
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .collect(Collectors.joining("\n"));
+        getAttributes().getOrCreate(WILDCARD_SUBSCRIPTION_TOPICS).setValue(wildcards);
         return this;
     }
 }

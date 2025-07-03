@@ -521,6 +521,153 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         }
     }
 
+    def "Check MQTT client protocol wildcard subscriptions"() {
+
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        when: "the container starts"
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def agentService = container.getService(AgentService.class)
+        def brokerService = container.getService(MQTTBrokerService.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def mqttHost = brokerService.host
+        def mqttPort = brokerService.port
+        def mqttAgentClientId = UniqueIdentifierGenerator.generateId()
+
+        and: "test assets are created"
+        def testThing1 = new ThingAsset("Test thing 1")
+            .setRealm(keycloakTestSetup.realmBuilding.name)
+            .addOrReplaceAttributes(
+                new Attribute<Object>("temperature", NUMBER)
+            )
+            .addOrReplaceAttributes(
+                new Attribute<Object>("humidity", NUMBER)
+            )
+        def testThing2 = new ThingAsset("Test thing 2")
+            .setRealm(keycloakTestSetup.realmBuilding.name)
+            .addOrReplaceAttributes(
+                new Attribute<Object>("pressure", NUMBER)
+            )
+        def testThing3 = new ThingAsset("Test thing 3")
+            .setRealm(keycloakTestSetup.realmBuilding.name)
+            .addOrReplaceAttributes(
+                new Attribute<Object>("uvIndex", NUMBER)
+            )
+
+        and: "the test assets are added to the asset service"
+        testThing1 = assetStorageService.merge(testThing1)
+        testThing2 = assetStorageService.merge(testThing2)
+        testThing3 = assetStorageService.merge(testThing3)
+
+        and: "a MQTT agent is created"
+        def wildcardTopic1 = "${keycloakTestSetup.realmBuilding.name}/$mqttAgentClientId/${DefaultMQTTHandler.ATTRIBUTE_VALUE_TOPIC}/+/${testThing1.id}".toString()
+        def wildcardTopic2 = "${keycloakTestSetup.realmBuilding.name}/$mqttAgentClientId/${DefaultMQTTHandler.ATTRIBUTE_VALUE_TOPIC}/+/${testThing2.id}".toString()
+        def agent = new MQTTAgent("Test agent")
+            .setRealm(MASTER_REALM)
+            .setClientId(mqttAgentClientId)
+            .setHost(mqttHost)
+            .setPort(mqttPort)
+            .setUsernamePassword(new UsernamePassword(keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser.username, keycloakTestSetup.serviceUser.secret))
+            .setWildcardSubscriptionTopicList([wildcardTopic1, wildcardTopic2])
+
+        and: "the agent is added to the asset service"
+        agent = assetStorageService.merge(agent)
+
+        then: "the protocol should authenticate and the agent status should become CONNECTED"
+        conditions.eventually {
+            agent = assetStorageService.find(agent.id, Agent.class)
+            assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+        }
+
+        and: "there should be wildcard subscriptions"
+        conditions.eventually {
+            def protocol = (MQTTProtocol)agentService.getProtocolInstance(agent.id)
+            def client = protocol.@client
+            assert client.topicConsumerMap.containsKey(wildcardTopic1)
+            assert client.topicConsumerMap[wildcardTopic1].isSubscription()
+            assert client.topicConsumerMap.containsKey(wildcardTopic2)
+            assert client.topicConsumerMap[wildcardTopic2].isSubscription()
+        }
+
+        when: "an asset is created with attributes linked to the agent"
+        def temperatureTopic = "${keycloakTestSetup.realmBuilding.name}/$mqttAgentClientId/${DefaultMQTTHandler.ATTRIBUTE_VALUE_TOPIC}/temperature/${testThing1.id}".toString()
+        def humidityTopic = "${keycloakTestSetup.realmBuilding.name}/$mqttAgentClientId/${DefaultMQTTHandler.ATTRIBUTE_VALUE_TOPIC}/humidity/${testThing1.id}".toString()
+        def pressureTopic = "${keycloakTestSetup.realmBuilding.name}/$mqttAgentClientId/${DefaultMQTTHandler.ATTRIBUTE_VALUE_TOPIC}/pressure/${testThing2.id}".toString()
+        def uvIndexTopic = "${keycloakTestSetup.realmBuilding.name}/$mqttAgentClientId/${DefaultMQTTHandler.ATTRIBUTE_VALUE_TOPIC}/uvIndex/${testThing3.id}".toString()
+        def asset = new ThingAsset("Test Asset")
+            .setParent(agent)
+            .addOrReplaceAttributes(
+                new Attribute<>("temperature", NUMBER)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
+                            .setSubscriptionTopic(temperatureTopic)
+                        )),
+                new Attribute<>("humidity", NUMBER)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
+                            .setSubscriptionTopic(humidityTopic)
+                        )),
+                new Attribute<>("pressure", NUMBER)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
+                            .setSubscriptionTopic(pressureTopic)
+                        )),
+                new Attribute<>("uvIndex", NUMBER)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
+                            .setSubscriptionTopic(uvIndexTopic)
+                        ))
+            )
+
+        and: "the asset is merged into the asset service"
+        asset = assetStorageService.merge(asset)
+
+        then: "subscriptions should not have been created because of a matching wildcard subscription"
+        conditions.eventually {
+            asset = assetStorageService.find(asset.id, true)
+            def protocol = (MQTTProtocol)agentService.getProtocolInstance(agent.id)
+            def client = protocol.@client
+            assert client.topicConsumerMap.containsKey(temperatureTopic)
+            assert !client.topicConsumerMap[temperatureTopic].isSubscription()
+            assert client.topicConsumerMap.containsKey(humidityTopic)
+            assert !client.topicConsumerMap[humidityTopic].isSubscription()
+            assert client.topicConsumerMap.containsKey(pressureTopic)
+            assert !client.topicConsumerMap[pressureTopic].isSubscription()
+        }
+
+        and: "subscription should have been created because wildcard doesn't match"
+        conditions.eventually {
+            asset = assetStorageService.find(asset.id, true)
+            def protocol = (MQTTProtocol)agentService.getProtocolInstance(agent.id)
+            def client = protocol.@client
+            assert client.topicConsumerMap.containsKey(uvIndexTopic)
+            assert client.topicConsumerMap[uvIndexTopic].isSubscription()
+        }
+
+        when: "mqtt data is published"
+        def attributeEvent = new AttributeEvent(testThing1.id, "temperature", 19.5)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+        attributeEvent = new AttributeEvent(testThing1.id, "humidity", 85.0)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        attributeEvent = new AttributeEvent(testThing2.id, "pressure", 1013.25)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        attributeEvent = new AttributeEvent(testThing3.id, "uvIndex", 3.0)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        then: "asset attribute values should be updated"
+        conditions.eventually {
+            asset = assetStorageService.find(asset.id, true)
+            assert asset.getAttribute("temperature").flatMap { it.value }.map { it == 19.5 }.orElse(false)
+            assert asset.getAttribute("humidity").flatMap { it.value }.map { it == 85 }.orElse(false)
+            assert asset.getAttribute("pressure").flatMap { it.value }.map { it == 1013.25 }.orElse(false)
+            assert asset.getAttribute("uvIndex").flatMap { it.value }.map { it == 3.0 }.orElse(false)
+        }
+    }
+
     /**
     * This test is not fully done right now, as a non-internet-requiring test would require mTLS functionality within the
     * OpenRemote broker, something that will eventually be done.

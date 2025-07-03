@@ -64,7 +64,8 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
                     updateLinkedAttribute(new AttributeRef(assetId, attribute.getName()), msg.payload);
                 }
             };
-            client.addMessageConsumer(topic, Optional.of(agentLink.getQos().orElse(agent.getSubscribeQoS().orElse(0))).map(qos -> qos > 2 || qos < 0 ? null : qos).map(MqttQos::fromCode).orElse(MqttQos.AT_MOST_ONCE), messageConsumer);
+            boolean isSubscription = !matchWildcardTopicList(topic);
+            client.addMessageConsumer(topic, isSubscription, Optional.of(agentLink.getQos().orElse(agent.getSubscribeQoS().orElse(0))).map(qos -> qos > 2 || qos < 0 ? null : qos).map(MqttQos::fromCode).orElse(MqttQos.AT_MOST_ONCE), messageConsumer);
             protocolMessageConsumers.put(new AttributeRef(assetId, attribute.getName()), messageConsumer);
         });
     }
@@ -85,6 +86,20 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
                 client.removeMessageConsumer(topic, messageConsumer);
             }
         });
+    }
+
+    @Override
+    protected MQTT_IOClient createIoClient() throws Exception {
+        MQTT_IOClient client = super.createIoClient();
+        if (client != null) {
+            getAgent().getWildcardSubscriptionTopicList().ifPresent(wildcardTopicList -> {
+                MqttQos subscribeQoS = Optional.of(getAgent().getSubscribeQoS().orElse(0)).map(qos -> qos > 2 || qos < 0 ? null : qos).map(MqttQos::fromCode).orElse(MqttQos.AT_MOST_ONCE);
+                for (String topic : wildcardTopicList) {
+                    client.addWildcardMessageConsumer(topic, subscribeQoS);
+                }
+            });
+        }
+        return client;
     }
 
     @Override
@@ -160,5 +175,43 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
     @Override
     public String getProtocolName() {
         return "MQTT Client";
+    }
+
+    private boolean matchWildcardTopicList(String topic) {
+        return getAgent().getWildcardSubscriptionTopicList()
+            .map(list -> list.stream().anyMatch(wildcardTopic -> matchWildcardTopic(wildcardTopic, topic)))
+            .orElse(false);
+    }
+
+    private boolean matchWildcardTopic(String wildcardTopic, String topic) {
+        if (wildcardTopic == null || topic == null) {
+            return false;
+        }
+
+        String[] wildcardLevels = wildcardTopic.split("/");
+        String[] topicLevels = topic.split("/");
+
+        int i = 0;
+        for (; i < wildcardLevels.length; i++) {
+            String w = wildcardLevels[i];
+
+            if (w.equals("#")) {
+                return true;
+            }
+
+            if (i >= topicLevels.length) {
+                return false;
+            }
+
+            if (w.equals("+")) {
+                continue;
+            }
+
+            if (!w.equals(topicLevels[i])) {
+                return false;
+            }
+        }
+
+        return i == topicLevels.length;
     }
 }
