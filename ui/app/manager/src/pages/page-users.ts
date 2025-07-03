@@ -337,6 +337,11 @@ export class PageUsers extends Page<AppStateKeyed> {
             showSnackbar(undefined, "noUsernameSet", "dismiss");
             return false;
         }
+        // New service users with the 'gateway-' prefix are not allowed
+        if(user.serviceAccount && (user.email.startsWith('gateway-') || user.username.startsWith('gateway-'))) {
+            showSnackbar(undefined, "noGatewayUsername", "dismiss")
+            return false;
+        }
 
         if (user.password === "") {
             // Means a validation failure shouldn't get here
@@ -772,6 +777,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         const btnElem = ev.currentTarget as OrMwcInput;
         const secretElem = this.shadowRoot.getElementById(secretInputId) as OrMwcInput;
         if (!btnElem || !secretElem) {
+            showSnackbar(undefined, "errorOccurred");
             return;
         }
         btnElem.disabled = true;
@@ -851,6 +857,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     protected getSingleUserTemplate(user: UserModel, compositeRoleOptions: string[], realmRoleOptions: [string, string][], suffix: string, readonly: boolean = true): TemplateResult {
         const isServiceUser = user.serviceAccount;
         const isSameUser = user.username === manager.username;
+        const isGatewayServiceUser = isServiceUser && user.username?.startsWith("gateway-");
         const implicitRoleNames = user.loaded ? this.getImplicitUserRoles(user) : [];
         return html`
             <div class="row">
@@ -931,10 +938,11 @@ export class PageUsers extends Page<AppStateKeyed> {
                                           .value="${user.secret}"
                                           .type="${InputType.TEXT}"></or-mwc-input>
                             <or-mwc-input ?readonly="${!user.id || readonly}"
+                                          ?disabled="${isGatewayServiceUser}"
                                           .label="${i18next.t("regenerateSecret")}"
                                           .type="${InputType.BUTTON}"
                                           @or-mwc-input-changed="${(ev) => {
-                                              this._regenerateSecret(ev, user, "password-" + suffix);
+                                              this._regenerateSecret(ev, user, "new-password-" + suffix).catch(() => showSnackbar(undefined, 'errorOccurred'));
                                               this.onUserChanged(suffix);
                                           }}"></or-mwc-input>
                         `, () => html`
@@ -983,7 +991,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     <!-- realm roles -->
                     <or-mwc-input
                             ?readonly="${readonly}"
-                            ?disabled="${isSameUser}"
+                            ?disabled="${isSameUser || isGatewayServiceUser}"
                             class = "validate"
                             .value="${user.realmRoles}"
                             .type="${InputType.SELECT}" multiple
@@ -997,7 +1005,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     <!-- composite client roles -->
                     <or-mwc-input
                             ?readonly="${readonly}"
-                            ?disabled="${isSameUser}"
+                            ?disabled="${isSameUser || isGatewayServiceUser}"
                             class = "validate"
                             .value="${user.roles && user.roles.length > 0 ? user.roles.filter(r => this._compositeRoles.some(cr => cr.name === r)) : undefined}"
                             .type="${InputType.SELECT}" multiple
@@ -1016,7 +1024,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                             return html`
                                 <or-mwc-input
                                         ?readonly="${readonly}"
-                                        ?disabled="${implicitRoleNames.find(name => r.name === name)}"
+                                        ?disabled="${implicitRoleNames.find(name => r.name === name) || isGatewayServiceUser}"
                                         class = "validate"
                                         .value="${!!user.roles.find(userRole => userRole === r.name) || implicitRoleNames.some(implicitRoleName => implicitRoleName === r.name)}"
                                         .type="${InputType.CHECKBOX}"
@@ -1038,7 +1046,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     <!-- Asset-User links -->
                     <div>
                         <span>${i18next.t("linkedAssets")}:</span>
-                        <or-mwc-input outlined ?disabled="${readonly}" style="margin-left: 4px;"
+                        <or-mwc-input outlined ?disabled="${readonly || isGatewayServiceUser}" style="margin-left: 4px;"
                                       .type="${InputType.BUTTON}"
                                       .label="${i18next.t("selectRestrictedAssets", {number: user.userAssetLinks.length})}"
                                       @or-mwc-input-changed="${(ev: MouseEvent) => this._openAssetSelector(ev, user, readonly, suffix)}"></or-mwc-input>
@@ -1049,7 +1057,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             ${when(!(readonly && !this._saveUserPromise), () => html`
                 <div class="row button-row">
 
-                    ${when((!isSameUser && user.id), () => html`
+                    ${when((!isSameUser && !isGatewayServiceUser && user.id), () => html`
                         <or-mwc-input style="margin: 0;" outlined ?disabled="${readonly}"
                                       .label="${i18next.t("delete")}"
                                       .type="${InputType.BUTTON}"
