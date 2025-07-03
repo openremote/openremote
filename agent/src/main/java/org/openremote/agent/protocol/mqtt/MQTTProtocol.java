@@ -92,9 +92,9 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
     protected MQTT_IOClient createIoClient() throws Exception {
         MQTT_IOClient client = super.createIoClient();
         if (client != null) {
-            getAgent().getWildcardSubscriptionTopicList().ifPresent(wildcardTopicList -> {
+            getAgent().getWildcardSubscriptionTopics().ifPresent(wildcards -> {
                 MqttQos subscribeQoS = Optional.of(getAgent().getSubscribeQoS().orElse(0)).map(qos -> qos > 2 || qos < 0 ? null : qos).map(MqttQos::fromCode).orElse(MqttQos.AT_MOST_ONCE);
-                for (String topic : wildcardTopicList) {
+                for (String topic : wildcards) {
                     client.addWildcardMessageConsumer(topic, subscribeQoS);
                 }
             });
@@ -178,8 +178,9 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
     }
 
     private boolean matchWildcardTopicList(String topic) {
-        return getAgent().getWildcardSubscriptionTopicList()
-            .map(list -> list.stream().anyMatch(wildcardTopic -> matchWildcardTopic(wildcardTopic, topic)))
+        return getAgent().getWildcardSubscriptionTopics()
+            .map(wildcardArray -> Arrays.stream(wildcardArray)
+                .anyMatch(wildcardTopic -> matchWildcardTopic(wildcardTopic, topic)))
             .orElse(false);
     }
 

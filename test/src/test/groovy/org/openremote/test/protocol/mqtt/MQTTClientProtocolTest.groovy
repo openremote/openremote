@@ -570,7 +570,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             .setHost(mqttHost)
             .setPort(mqttPort)
             .setUsernamePassword(new UsernamePassword(keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser.username, keycloakTestSetup.serviceUser.secret))
-            .setWildcardSubscriptionTopicList([wildcardTopic1, wildcardTopic2])
+            .setWildcardSubscriptionTopics([wildcardTopic1, wildcardTopic2] as String[])
 
         and: "the agent is added to the asset service"
         agent = assetStorageService.merge(agent)
