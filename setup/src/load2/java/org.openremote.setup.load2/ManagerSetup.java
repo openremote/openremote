@@ -25,10 +25,10 @@ import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.impl.CityAsset;
 import org.openremote.model.asset.impl.ElectricityChargerAsset;
-import org.openremote.model.asset.impl.LightAsset;
 import org.openremote.model.attribute.Attribute;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.logging.Logger;
 
@@ -54,92 +54,61 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
     @Override
     public void onStart() throws Exception {
         KeycloakSetup keycloakSetup = setupService.getTaskOfType(KeycloakSetup.class);
-        int devices = getInteger(container.getConfig(), OR_SETUP_DEVICES, 10);
-        int groups = getInteger(container.getConfig(), OR_SETUP_GROUPS, 2);
-        LOG.info("Starting load2 Manager setup with " + devices + " devices, spread over " + groups + " groups.");
+        int devicesAmount = getInteger(container.getConfig(), OR_SETUP_DEVICES, 10);
+        int parentsAmount = getInteger(container.getConfig(), OR_SETUP_GROUPS, 2);
+        LOG.info("Starting load2 Manager setup with " + devicesAmount + " devices, spread over " + parentsAmount + " parents.");
 
-        // Create groups
-        ArrayList<Asset<?>> groupAssets = this.buildGroupAssets(groups, keycloakSetup.realmOne.getName());
+        // Create parents
+        List<Asset<?>> parentAssets = buildParentAssets(parentsAmount, keycloakSetup.realmOne.getName());
 
         // Create devices
-        if(!groupAssets.isEmpty()) {
-            int devicesPerGroup = devices / groups;
-            this.buildDeviceAssets(devicesPerGroup, keycloakSetup.realmOne.getName(), groupAssets);
+        if(!parentAssets.isEmpty()) {
+            buildDeviceAssets(devicesAmount, keycloakSetup.realmOne.getName(), parentAssets);
         } else {
-            this.buildDeviceAssets(devices, keycloakSetup.realmOne.getName());
+            buildDeviceAssets(devicesAmount, keycloakSetup.realmOne.getName());
         }
         LOG.info("Finished with the load2 Manager setup.");
     }
 
     /**
-     * TODO
-     *
-     * @param amount
-     * @return
-     * @throws Exception
+     * Creates an X amount of {@link CityAsset}, and inserts them into the root level.
+     * @param amount Number of parent {@link CityAsset} to generate
+     * @return List of generated {@link CityAsset}
      */
-    protected ArrayList<Asset<?>> buildGroupAssets(int amount, String realm) throws Exception {
-        ArrayList<Asset<?>> groupAssets = new ArrayList<>();
+    protected List<Asset<?>> buildParentAssets(int amount, String realm) {
+        List<Asset<?>> parentAssets = new ArrayList<>();
         for(int i = 0; i < amount; i++) {
-            CityAsset groupAsset = new CityAsset("City #" + i);
-            groupAsset.setRealm(realm);
-            groupAsset = assetStorageService.merge(groupAsset);
-            groupAssets.add(groupAsset);
+            CityAsset cityAsset = new CityAsset("City #" + i);
+            cityAsset.setRealm(realm);
+            cityAsset = assetStorageService.merge(cityAsset);
+            parentAssets.add(cityAsset);
         }
-        /*AtomicInteger createdAssets = new AtomicInteger(0);
-        ArrayList<Asset<?>> groupAssets = new ArrayList<>();
-        if (amount > 0) {
-            IntStream.rangeClosed(0, amount).forEach(i -> {
-                executor.execute(() -> {
-                    // Build group asset
-                    CityAsset groupAsset = new CityAsset("City #" + i);
-                    groupAsset.setRealm(realm);
-                    groupAsset = assetStorageService.merge(groupAsset);
-                    groupAssets.add(groupAsset);
-                    createdAssets.incrementAndGet();
-                });
-            });
-        }
-        // Wait until all assets created
-        int waitCounter = 0;
-        while (createdAssets.get() < amount) {
-            if (waitCounter > 200) {
-                throw new IllegalStateException("Failed to create all requested group assets in the specified time");
-            }
-            waitCounter++;
-            Thread.sleep(10000);
-        }*/
-        return groupAssets;
+        return parentAssets;
     }
 
     /**
-     * TODO
+     * Creates an X amount of {@link ElectricityChargerAsset}, and inserts them as a child under a parent asset.
+     * It will equally spread the number of assets across the given parent assets.
+     * (100 assets with 5 parents will generate 20 assets for each parent)
      *
-     * @param amountPerGroup
-     * @param realm
-     * @param parents
+     * @param amount Number of {@link ElectricityChargerAsset} to generate
+     * @param realm Realm to insert the generated assets into
+     * @param parents Parent assets to insert the generated assets as children
      */
-    protected void buildDeviceAssets(int amountPerGroup, String realm, ArrayList<Asset<?>> parents) throws Exception {
-        for(int i = 0; i < parents.size(); i++) {
-            buildDeviceAssets(amountPerGroup, realm, parents.get(i));
+    protected void buildDeviceAssets(int amount, String realm, List<Asset<?>> parents) {
+        int childrenAmount = amount / parents.size();
+        for (Asset<?> parent : parents) {
+            buildDeviceAssets(childrenAmount, realm, parent);
         }
-        /*IntStream.rangeClosed(1, parents.size()).forEach(i -> {
-            try {
-                buildDeviceAssets(amountPerGroup, realm, parents.get(i));
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });*/
     }
 
     /**
-     * TODO
-     *
-     * @param amount
-     * @param realm
-     * @param parentAsset
+     * Creates an X amount of {@link ElectricityChargerAsset}, and inserts them as a child under the given parent asset.
+     * @param amount Number of {@link ElectricityChargerAsset} to generate
+     * @param realm Realm to insert the generated assets into
+     * @param parentAsset Parent asset to insert the generated assets as children
      */
-    protected void buildDeviceAssets(int amount, String realm, Asset<?> parentAsset) throws Exception {
+    protected void buildDeviceAssets(int amount, String realm, Asset<?> parentAsset) {
         for(int i = 0; i < amount; i++) {
             ElectricityChargerAsset chargerAsset = new ElectricityChargerAsset("Charger #" + i);
             chargerAsset.setRealm(realm);
@@ -149,56 +118,14 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
             );
             assetStorageService.merge(chargerAsset);
         }
-        /*AtomicInteger createdAssets = new AtomicInteger(0);
-        IntStream.rangeClosed(1, amount).forEach(i -> {
-            executor.execute(() -> {
-                // Build light asset
-                LightAsset lightAsset = new LightAsset("Light #" + i);
-                lightAsset.setRealm(realm);
-                lightAsset.setParent(parentAsset);
-                lightAsset.getAttributes().addOrReplace(
-                        new Attribute<>(LightAsset.BRIGHTNESS, 30)
-                );
-                assetStorageService.merge(lightAsset);
-                createdAssets.incrementAndGet();
-            });
-        });
-        // Wait until all assets created
-        int waitCounter = 0;
-        while (createdAssets.get() < amount) {
-            if (waitCounter > 200) {
-                throw new IllegalStateException("Failed to create all requested assets in the specified time");
-            }
-            waitCounter++;
-            Thread.sleep(10000);
-        }*/
     }
 
     /**
-     * TODO
-     *
-     * @param amount
-     * @param realm
+     * Creates an X amount of {@link ElectricityChargerAsset}, and inserts them in the database on root level.
+     * @param amount Number of {@link ElectricityChargerAsset} to generate
+     * @param realm Realm to insert the generated assets into
      */
     protected void buildDeviceAssets(int amount, String realm) {
-        for(int i = 0; i < amount; i++) {
-            LightAsset lightAsset = new LightAsset("Light #" + i);
-            lightAsset.setRealm(realm);
-            lightAsset.getAttributes().addOrReplace(
-                    new Attribute<>(LightAsset.BRIGHTNESS, 30)
-            );
-            assetStorageService.merge(lightAsset);
-        }
-        /*IntStream.rangeClosed(1, amount).forEach(i -> {
-            executor.execute(() -> {
-                // Build light asset
-                LightAsset lightAsset = new LightAsset("Light #" + i);
-                lightAsset.setRealm(realm);
-                lightAsset.getAttributes().addOrReplace(
-                        new Attribute<>(LightAsset.BRIGHTNESS, 30)
-                );
-                assetStorageService.merge(lightAsset);
-            });
-        });*/
+        buildDeviceAssets(amount, realm, (Asset<?>) null);
     }
 }
