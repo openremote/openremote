@@ -3,14 +3,13 @@ import { when } from "lit/directives/when.js";
 import {OrAssetWidget} from "../util/or-asset-widget";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {WidgetSettings} from "../util/widget-settings";
-import {WidgetConfig} from "../util/widget-config";
+import {AssetWidgetConfig} from "../util/widget-config";
 import {Attribute, AttributeRef} from "@openremote/model";
 import {html, TemplateResult } from "lit";
 import {KpiSettings} from "../settings/kpi-settings";
 import "@openremote/or-attribute-card";
 
-export interface KpiWidgetConfig extends WidgetConfig {
-    attributeRefs: AttributeRef[];
+export interface KpiWidgetConfig extends AssetWidgetConfig {
     period?: 'year' | 'month' | 'week' | 'day' | 'hour';
     decimals: number;
     deltaFormat: "absolute" | "percentage";
