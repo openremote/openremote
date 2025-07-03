@@ -338,7 +338,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             return false;
         }
         // New service users with the 'gateway-' prefix are not allowed
-        if(user.serviceAccount && (user.email?.startsWith('gateway-') || user.username?.startsWith('gateway-'))) {
+        if(user.serviceAccount && user.username.startsWith('gateway-')) {
             showSnackbar(undefined, "noGatewayUsername", "dismiss")
             return false;
         }
