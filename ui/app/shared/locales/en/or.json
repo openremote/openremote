@@ -535,6 +535,7 @@
     "hertz": "Hz",
     "rpm": "rpm",
     "carbon": "CO2",
+    "ppm": "ppm",
     "var": "var",
     "meta": {},
     "attribute": {}
@@ -652,6 +653,7 @@
   "search": "Search",
   "noEmailSet": "Create user failed, no email set.",
   "noUsernameSet": "Create user failed, no username set",
+  "noGatewayUsername": "You cannot start your username or email with 'gateway-'",
   "createUserFailed": "Create user failed",
   "saveUserFailed": "Save user failed",
   "saveUserSucceeded": "Saved user successfully!",

@@ -534,6 +534,7 @@
     "hertz": "Hz",
     "rpm": "rpm",
     "carbon": "CO2",
+    "ppm": "ppm",
     "var": "var",
     "meta": {},
     "attribute": {}
@@ -651,6 +652,7 @@
   "search": "Zoeken",
   "noEmailSet": "Gebruiker aanmaken mislukt, geen email ingevuld.",
   "noUsernameSet": "Gebruiker aanmaken mislukt, geen gebruikersnaam ingevuld.",
+  "noGatewayUsername": "Gebruikersnaam en email mogen niet beginnen met 'gateway-'",
   "createUserFailed": "Aanmaken gebruiker mislukt",
   "saveUserFailed": "Opslaan gebruiker mislukt",
   "saveUserSucceeded": "Gebruiker succesvol opgeslagen!",
