@@ -224,7 +224,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     protected _saveUserPromise?: Promise<any>;
 
     @state()
-    private _sessionLoader: Promise<TemplateResult>;
+    private _sessionLoader?: Promise<TemplateResult>;
 
     get name(): string {
         return "user_plural";
@@ -237,6 +237,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             this.loadData();
         }
         if (changedProperties.has('userId')) {
+            this._sessionLoader = undefined; // Reset the MQTT sessions view
             this._updateRoute();
         } else if (changedProperties.has('creationState')) {
             this._updateNewUserRoute();
@@ -538,7 +539,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                 ${this.getSingleUserView(user, compositeRoleOptions, realmRoleOptions, ("user" + index), (readonly || this._saveUserPromise != undefined))}
                             </div>
                             
-                            ${user.serviceAccount ? this.getMQTTSessionTemplate(user) : ``}
+                            ${user.serviceAccount && this.userId ? this.getMQTTSessionTemplate(user) : ``}
                         `;
                     })}
 
