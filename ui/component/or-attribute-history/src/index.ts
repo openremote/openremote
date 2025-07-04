@@ -191,7 +191,7 @@ const style = css`
     
     #chart-container {
         position: relative;
-        min-height: 350px;
+        min-height: 250px;
     }
         
     #table-container {
@@ -399,6 +399,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         borderColor: this._style.getPropertyValue("--internal-or-attribute-history-text-color"),
                         left: 4,
                         right: 4,
+                        top: 10,
                         containLabel: true
                     },
                     backgroundColor: this._style.getPropertyValue("--internal-or-asset-viewer-panel-color"),
@@ -413,18 +414,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             }
                             return ''
                             }
-                    },
-                    toolbox: {
-                        right: '2%',
-                        top: '5%',
-                        feature: {
-                            dataView: {readOnly: true},
-                            saveAsImage: {
-                                name: ['History', this.assetId, this.attribute?.name, `${moment(this._startOfPeriod).format("DD-MM-YYYY HH:mm")} - ${moment(this._endOfPeriod).format("DD-MM-YYYY HH:mm")}`]
-                                    .filter(Boolean)
-                                    .join(' ')
-                            },
-                        }
                     },
                     xAxis: {
                         type: 'time',
