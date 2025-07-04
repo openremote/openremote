@@ -25,7 +25,10 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+
 import org.openremote.container.timer.TimerService;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.microservices.Microservice;
@@ -54,6 +57,7 @@ public class MicroserviceRegistryService implements ContainerService {
 
     protected TimerService timerService;
     protected ScheduledExecutorService scheduledExecutorService;
+    protected ManagerIdentityService identityService;
 
     // Registration entry record for the in-memory cache
     protected record RegistrationEntry(Microservice service, long expirationTime, boolean ignoreTTL) {
@@ -69,6 +73,12 @@ public class MicroserviceRegistryService implements ContainerService {
     public void init(Container container) throws Exception {
         this.timerService = container.getService(TimerService.class);
         this.scheduledExecutorService = container.getScheduledExecutor();
+        this.identityService = container.getService(ManagerIdentityService.class);
+
+        // Register the microservice resource
+        container.getService(ManagerWebService.class).addApiSingleton(
+                new MicroserviceResourceImpl(timerService, identityService, this));
+
         this.registrationMap = new ConcurrentHashMap<>();
     }
 
