@@ -191,6 +191,8 @@ public final class ValueType {
 
     public static final ValueDescriptor<AgentLink> VALUE_AGENT_LINK = new ValueDescriptor<>("agentLink", AgentLink.class).forMetaUseOnly();
 
+    public static final ValueDescriptor<Units> VALUE_UNIT = new ValueDescriptor<>("units", Units.class).forMetaUseOnly();
+
     public static final ValueDescriptor<CronExpressionParser> CRON_EXPRESSION = new ValueDescriptor<>("CRONExpression", CronExpressionParser.class);
 
     public static final ValueDescriptor<String> HTTP_URL = new ValueDescriptor<>("HTTP_URL", String.class,
