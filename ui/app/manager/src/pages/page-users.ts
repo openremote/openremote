@@ -531,6 +531,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                 ${when((this.userId && index !== undefined) || this.creationState, () => html`
                     ${when(mergedUserList[index] !== undefined || this.creationState, () => {
                         const user: UserModel = (index !== undefined ? mergedUserList[index] : this.creationState.userModel);
+                        const showMqttSessions = user.serviceAccount && this.userId;
                         return html`
                             <div id="content" class="panel">
                                 <p class="panel-title">
@@ -539,7 +540,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                 ${this.getSingleUserView(user, compositeRoleOptions, realmRoleOptions, ("user" + index), (readonly || this._saveUserPromise != undefined))}
                             </div>
                             
-                            ${user.serviceAccount && this.userId ? this.getMQTTSessionTemplate(user) : ``}
+                            ${when(showMqttSessions, () => this.getMQTTSessionTemplate(user))}
                         `;
                     })}
 
