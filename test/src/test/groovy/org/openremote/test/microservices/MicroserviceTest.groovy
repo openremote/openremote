@@ -4,10 +4,9 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
+import spock.util.concurrent.PollingConditions
 
-import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
-import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
-import static org.openremote.container.util.MapAccess.getString
+
 import static org.openremote.model.Constants.*
 
 class MicroserviceTest extends Specification implements ManagerContainerTrait {
@@ -17,8 +16,7 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
-
-
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         when: "the service user is authenticated"
         def username2 = keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser2.username
@@ -41,8 +39,6 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         def serverUri = serverUri(serverPort)
         def microserviceResource = getClientApiTarget(serverUri, MASTER_REALM, serviceUserAccessToken).proxy(MicroserviceResource)
 
-
-        // TODO:
 
 
         // Register a service
