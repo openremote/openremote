@@ -191,7 +191,7 @@ const style = css`
     
     #chart-container {
         position: relative;
-        min-height: 250px;
+        min-height: 350px;
     }
         
     #table-container {
