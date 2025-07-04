@@ -101,15 +101,19 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         }
 
         boolean isSubFailed() {
-            return !subAckFuture.getNow(false);
+            return isSubscription() ? (!subAckFuture.getNow(false)) : false;
         }
 
         boolean isSubDone() {
-            return subAckFuture.isDone();
+            return isSubscription() ? subAckFuture.isDone() : true;
         }
 
         void updateSubAck(@NotNull CompletableFuture<Boolean> subAckFuture) {
             this.subAckFuture = subAckFuture;
+        }
+
+        boolean isSubscription() {
+            return subAckFuture != null;
         }
     }
 
@@ -285,32 +289,45 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
 
     @Override
     public void addMessageConsumer(Consumer<MQTTMessage<S>> messageConsumer) {
-        addMessageConsumer("#", null, messageConsumer);
+        addMessageConsumer("#", true, null, messageConsumer);
     }
 
     public void addMessageConsumer(String topic, Consumer<MQTTMessage<S>> messageConsumer) {
-        addMessageConsumer(topic, subscribeQos, messageConsumer);
+        addMessageConsumer(topic, true, subscribeQos, messageConsumer);
     }
 
-    public void addMessageConsumer(String topic, MqttQos qos, Consumer<MQTTMessage<S>> messageConsumer) {
+    public void addMessageConsumer(String topic, boolean isSubscription, MqttQos qos, Consumer<MQTTMessage<S>> messageConsumer) {
         if (client == null) {
             return;
         }
 
-        LOG.fine("Adding message consumer uri=" + getClientUri() + ", topic=" + topic);
+        LOG.fine("Adding message consumer uri=" + getClientUri() + ", topic=" + topic + ", isSubscription=" + isSubscription);
 
         synchronized (topicConsumerMap) {
              topicConsumerMap.compute(
                     topic,
                     (t, subInfo) -> {
                         if (subInfo == null) {
-                            subInfo = new TopicSubscriptionInfo<>(doSubscribe(qos, topic), qos, messageConsumer);
+                            subInfo = new TopicSubscriptionInfo<>(isSubscription ? doSubscribe(qos, topic) : null, qos, messageConsumer);
                         } else {
                             subInfo.addConsumer(messageConsumer);
                         }
                         return subInfo;
                     });
         }
+    }
+
+    public void addWildcardMessageConsumer(String wildcardTopic, MqttQos qos) {
+        Consumer<MQTTMessage<S>> messageConsumer = message -> {
+            TopicSubscriptionInfo<S> topicSubscriptionInfo;
+            synchronized (topicConsumerMap) {
+                topicSubscriptionInfo = topicConsumerMap.get(message.topic);
+            }
+            if (topicSubscriptionInfo != null) {
+                topicSubscriptionInfo.consume(message);
+            }
+        };
+        addMessageConsumer(wildcardTopic, true, qos, messageConsumer);
     }
 
     public void setTopicSubscribeFailureConsumer(Consumer<String> topicSubscribeFailureConsumer) {
@@ -389,7 +406,9 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         synchronized (topicConsumerMap) {
             topicConsumerMap.computeIfPresent(topic, (t, subscriptionInfo) -> {
                 if (subscriptionInfo.removeConsumer(messageConsumer)) {
-                    doUnsubscribe(topic);
+                    if (subscriptionInfo.isSubscription()) {
+                        doUnsubscribe(topic);
+                    }
                     return null;
                 }
                 return subscriptionInfo;
@@ -399,9 +418,10 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
 
     @Override
     public void removeAllMessageConsumers() {
-        Set<String> topics = new HashSet<>(topicConsumerMap.keySet());
+        topicConsumerMap.entrySet().stream()
+            .filter(entry -> entry.getValue().isSubscription())
+            .forEach(entry -> doUnsubscribe(entry.getKey()));
         topicConsumerMap.clear();
-        topics.forEach(this::doUnsubscribe);
     }
 
     @Override
@@ -480,7 +500,8 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
                             topicConsumerMap.entrySet()
                                 .stream()
                                 .filter(topicSubscriptionInfo ->
-                                    topicSubscriptionInfo.getValue().isSubDone()
+                                    topicSubscriptionInfo.getValue().isSubscription()
+                                        && topicSubscriptionInfo.getValue().isSubDone()
                                         && (retryAll || topicSubscriptionInfo.getValue().isSubFailed()))
                                 .forEach(topicSubscriptionInfo -> {
                                     LOG.finest("Resubscribing uri=" + getClientUri() + ", topic=" + topicSubscriptionInfo.getKey());
