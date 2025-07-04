@@ -44,7 +44,7 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
     }
 
     @Override
-    public boolean register(RequestParams requestParams,
+    public boolean registerService(RequestParams requestParams,
             @NotNull @Valid Microservice serviceDescriptor) {
 
         if (!isSuperUser()) {
@@ -54,11 +54,11 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
 
         String providerIdentifier = getClientRemoteAddress();
 
-        return microserviceRegistry.register(providerIdentifier, serviceDescriptor);
+        return microserviceRegistry.registerService(providerIdentifier, serviceDescriptor);
     }
 
     @Override
-    public boolean unregister(RequestParams requestParams,
+    public boolean unregisterService(RequestParams requestParams,
             @NotNull @Valid Microservice microservice) {
 
         if (!isSuperUser()) {
@@ -68,11 +68,11 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
 
         String providerIdentifier = getClientRemoteAddress();
 
-        return microserviceRegistry.unregister(providerIdentifier, microservice);
+        return microserviceRegistry.unregisterService(providerIdentifier, microservice);
     }
 
     @Override
-    public Microservice[] list(RequestParams requestParams) {
+    public Microservice[] getServices(RequestParams requestParams) {
         return microserviceRegistry.getServices();
     }
 

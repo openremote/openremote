@@ -112,8 +112,8 @@ public class MicroserviceRegistryService implements ContainerService {
      * @param microservice The microservice to register
      * @return True if the microservice was registered/updated successfully
      */
-    public boolean register(String identifier, Microservice microservice) {
-        return register(identifier, microservice, false);
+    public boolean registerService(String identifier, Microservice microservice) {
+        return registerService(identifier, microservice, false);
     }
 
     /**
@@ -124,7 +124,7 @@ public class MicroserviceRegistryService implements ContainerService {
      * @param ignoreTTL    If true, the TTL will be ignored and the registration will not expire
      * @return True if the microservice was registered/updated successfully
      */
-    public boolean register(String identifier, Microservice microservice, boolean ignoreTTL) {
+    public boolean registerService(String identifier, Microservice microservice, boolean ignoreTTL) {
         try {
             String compositeKey = getRegistrationKey(microservice.getServiceId(), identifier);
             LOG.fine("Registering microservice: " + compositeKey + ", ignoreTTL: " + ignoreTTL);
@@ -146,7 +146,7 @@ public class MicroserviceRegistryService implements ContainerService {
      * @param microservice The microservice to unregister
      * @return True if the microservice was unregistered successfully
      */
-    public boolean unregister(String identifier, Microservice microservice) {
+    public boolean unregisterService(String identifier, Microservice microservice) {
         try {
             String compositeKey = getRegistrationKey(microservice.getServiceId(), identifier);
             LOG.fine("Unregistering microservice: " + compositeKey);

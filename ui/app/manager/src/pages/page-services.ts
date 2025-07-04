@@ -23,15 +23,13 @@ export function pageServicesProvider(store: Store<AppStateKeyed>): PageProvider<
   };
 }
 
-// TODO: Needs to come from the manager backend model generator
-
-export enum ServiceStatusIcon {
+export enum MicroserviceStatusIcon {
   available = "play",
   unavailable = "alert-octagon",
   unhealthy = "minus-circle",
 }
 
-export enum ServiceStatusColor {
+export enum MicroserviceStatusColor {
   available = "iconfill-gray",
   unavailable = "iconfill-red",
   unhealthy = "iconfill-red",
@@ -131,7 +129,7 @@ class OrServiceTree extends OrTreeMenu {
     return html`
       <or-icon class="service-icon" slot="prefix" icon="puzzle"></or-icon>
       <span>${node.label}</span>
-      <or-icon slot="suffix" icon="${ServiceStatusIcon[service.status]}" class="${ServiceStatusColor[service.status]}">
+      <or-icon slot="suffix" icon="${MicroserviceStatusIcon[service.status]}" class="${MicroserviceStatusColor[service.status]}">
       </or-icon>
     `;
   }
@@ -201,8 +199,25 @@ export class PageServices extends Page<AppStateKeyed> {
   @state()
   protected realmName: string;
 
+
+  @state()
+  protected _loading = false;
+
   connectedCallback() {
     super.connectedCallback();
+    this._loadData();
+  }
+
+  private async _loadData() {
+    this._loading = true;
+
+    const response = await manager.rest.api.MicroserviceResource.getServices();
+    if (response.status === 200) {
+      this.services = response.data;
+      this.requestUpdate();
+    }
+
+    this._loading = false;
   }
 
   constructor(store: Store<AppStateKeyed>) {

@@ -46,8 +46,8 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
  * <li>The {@link MicroserviceRegistryService} will also handle the expiration of
  * registrations.
  */
-@Tag(name = "Service", description = "Registration and management of services/microservices")
-@Path("service")
+@Tag(name = "Microservice", description = "Registration and management of microservices")
+@Path("microservice")
 public interface MicroserviceResource {
 
     /**
@@ -61,8 +61,8 @@ public interface MicroserviceResource {
     @Path("register")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "register", summary = "Create/update the registration for a service/microservice")
-    boolean register(@BeanParam RequestParams requestParams, @NotNull @Valid Microservice microservice);
+    @Operation(operationId = "registerService", summary = "Create/update the registration for a service/microservice")
+    boolean registerService(@BeanParam RequestParams requestParams, @NotNull @Valid Microservice microservice);
 
     /**
      * Unregisters the active registration for the specified microservice. This
@@ -77,8 +77,8 @@ public interface MicroserviceResource {
     @Path("unregister")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "unregister", summary = "Directly remove the registration for a service/microservice, this causes the service to no longer be listed")
-    boolean unregister(@BeanParam RequestParams requestParams, @NotNull @Valid Microservice microservice);
+    @Operation(operationId = "unregisterService", summary = "Directly remove the registration for a service/microservice, this causes the service to no longer be listed")
+    boolean unregisterService(@BeanParam RequestParams requestParams, @NotNull @Valid Microservice microservice);
 
     /**
      * Lists all currently registered microservices with their details and status.
@@ -90,7 +90,7 @@ public interface MicroserviceResource {
     @Path("")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({ Constants.READ_SERVICES_ROLE })
-    @Operation(operationId = "list", summary = "List all registered microservices with their details and status")
-    Microservice[] list(@BeanParam RequestParams requestParams);
+    @Operation(operationId = "getServices", summary = "List all registered microservices with their details and status")
+    Microservice[] getServices(@BeanParam RequestParams requestParams);
 
 }
