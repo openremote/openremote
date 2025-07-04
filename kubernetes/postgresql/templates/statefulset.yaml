@@ -68,6 +68,9 @@ spec:
           {{- end }}
           volumeMounts:
             - mountPath: /var/lib/postgresql/data
+              {{- if .Values.useSubPath }}
+              subPath: psql-data
+              {{- end }}
               name: postgresql-data
           {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
@@ -81,6 +84,9 @@ spec:
             runAsUser: 0
           volumeMounts:
             - mountPath: /var/lib/postgresql/data
+              {{- if .Values.useSubPath }}
+              subPath: psql-data
+              {{- end }}
               name: postgresql-data
       {{- end }}
       volumes:

@@ -1,0 +1,5 @@
+ingress:
+  enabled: false
+
+or:
+  hostname: "localhost"
