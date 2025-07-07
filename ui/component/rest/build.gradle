@@ -39,6 +39,12 @@ clean {
     }
 }
 
+tasks.register('npmBuild', Exec) {
+    mustRunAfter npmClean
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "run", "build"
+}
+
 build.dependsOn generateTypeScript, npmBuild
 npmBuild.dependsOn generateTypeScript
 

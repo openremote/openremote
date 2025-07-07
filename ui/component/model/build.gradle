@@ -24,13 +24,18 @@ dependencies {
 
 generateTypeScript createTSGeneratorConfigForModel("src/model.ts")
 
+tasks.register('npmBuild', Exec) {
+    mustRunAfter npmClean
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "run", "build"
+}
+
 build.dependsOn generateTypeScript, npmBuild
 npmBuild.dependsOn generateTypeScript
 
 clean {
     doLast {
-        def dir = new File("${projectDir}/dist")
-        dir.deleteDir()
+        delete "dist"
     }
 }
 
