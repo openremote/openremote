@@ -16,7 +16,6 @@ module.exports = (env, argv) => {
     };
   }
 
-
   // Add a custom base URL to resolve the config dir to the path of the dev server not root
   config.plugins.push(
     new rspack.DefinePlugin({
