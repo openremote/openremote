@@ -247,7 +247,7 @@ function generateExports(dirname) {
         const entry = {};
         entry[name] = "./src/index.ts";
 
-        return {
+        const config = {
             entry: entry,
             mode: "production",
             output: {
@@ -263,6 +263,8 @@ function generateExports(dirname) {
             module: {...getStandardModuleRules()},
             externals: generateExternals(bundle)
         };
+
+        return config;
     });
 }
 

@@ -366,6 +366,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     public set selectedNodes(nodes: UiAssetTreeNode[]) {
         this.selectedIds = nodes.map((node) => node.asset!.id!);
+        console.debug("Updating selected nodes to", this.selectedIds);
     }
 
     public connectedCallback() {
@@ -604,6 +605,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
+        console.log("_changedProps", _changedProperties);
         const result = super.shouldUpdate(_changedProperties);
         if (_changedProperties.has("assets")
             || _changedProperties.has("rootAssets")
@@ -636,6 +638,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected _updateSelectedNodes() {
+        console.debug("Updating HTML nodes... Ids is", this.selectedIds);
         const actuallySelectedIds: string[] = [];
         const selectedNodes: UiAssetTreeNode[] = [];
         OrAssetTree._forEachNodeRecursive(this._nodes!, (node) => {
@@ -675,6 +678,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             }
         });
 
+        console.debug("Selected nodes were", actuallySelectedIds);
         this.selectedIds = actuallySelectedIds;
         const oldSelection = this._selectedNodes;
         this._selectedNodes = selectedNodes;
@@ -1968,6 +1972,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected _treeNodeTemplate(treeNode: UiAssetTreeNode, level: number): TemplateResult | string | undefined {
+        if(treeNode.selected) {
+            console.log("_treeNodeTemplate() selected is", treeNode.asset?.name);
+        }
         const descriptor = AssetModelUtil.getAssetDescriptor(treeNode.asset!.type!);
 
         let parentCheckboxIcon;

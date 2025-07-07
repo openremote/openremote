@@ -114,7 +114,7 @@ public class ManagerDemoSetup extends ManagerSetup {
                         new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));
         harvestRobotAsset.getAttributes().getOrCreate(HarvestRobotAsset.HARVESTED_TOTAL)
                 .addMeta(new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY))
-                .setValue(harvestedTotal);;
+                .setValue(harvestedTotal);
 
         return harvestRobotAsset;
     }

@@ -30,6 +30,7 @@ import org.keycloak.representations.AccessTokenResponse
 import org.openremote.container.Container
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.persistence.PersistenceService
+import org.openremote.container.security.ClientCredentialsAuthForm
 import org.openremote.container.security.IdentityService
 import org.openremote.container.security.PasswordAuthForm
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
@@ -238,15 +239,27 @@ trait ContainerTrait {
 
                         if (!TestFixture.assetRulesets.isEmpty()) {
                             LOG.info("Re-inserting ${TestFixture.assetRulesets.size()} asset ruleset(s)")
-                            TestFixture.assetRulesets.forEach { rulesetStorageService.merge(it) }
+                            TestFixture.assetRulesets = TestFixture.assetRulesets.stream().map {
+                                it.id = null
+                                it.version = 0
+                                return rulesetStorageService.merge(it)
+                            }.toList()
                         }
                         if (!TestFixture.realmRulesets.isEmpty()) {
                             LOG.info("Re-inserting ${TestFixture.realmRulesets.size()} realm ruleset(s)")
-                            TestFixture.realmRulesets.forEach { rulesetStorageService.merge(it) }
+                            TestFixture.realmRulesets = TestFixture.realmRulesets.stream().map {
+                                it.id = null
+                                it.version = 0
+                                return rulesetStorageService.merge(it)
+                            }.toList()
                         }
                         if (!TestFixture.globalRulesets.isEmpty()) {
                             LOG.info("Re-inserting ${TestFixture.globalRulesets.size()} global ruleset(s)")
-                            TestFixture.globalRulesets.forEach { rulesetStorageService.merge(it) }
+                            TestFixture.globalRulesets = TestFixture.globalRulesets.stream().map {
+                                it.id = null
+                                it.version = 0
+                                return rulesetStorageService.merge(it)
+                            }
                         }
                     }
 
@@ -512,6 +525,11 @@ trait ContainerTrait {
     AccessTokenResponse authenticate(Container container, String realm, String clientId, String username, String password) {
         ((KeycloakIdentityProvider)container.getService(IdentityService.class).getIdentityProvider()).getKeycloak()
                 .getAccessToken(realm, new PasswordAuthForm(clientId, username, password))
+    }
+
+    AccessTokenResponse authenticate(Container container, String realm, String clientId, String clientSecret) {
+        ((KeycloakIdentityProvider)container.getService(IdentityService.class).getIdentityProvider()).getKeycloak()
+                .getAccessToken(realm, new ClientCredentialsAuthForm(clientId, clientSecret))
     }
 
     ProducerTemplate getMessageProducerTemplate(Container container) {

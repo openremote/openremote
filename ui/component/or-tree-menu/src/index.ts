@@ -736,4 +736,22 @@ export class OrTreeMenu extends LitElement {
                 return Util.sortByString(node => node.label);
         }
     }
+
+    /**
+     * Programmatically finds a group by its ID and sets it to be expanded.
+     * This is called by the parent component after a new node is added to a tree group.
+     * @param {string} groupId The ID of the group to expand.
+     */
+    public expandGroup(groupId: string) {
+        // Wait for any pending Lit updates to complete to ensure the node list is stable.
+        this.updateComplete.then(() => {
+            const groupNode = this.nodes.find(node => node.id === groupId && node.children);
+
+            if (groupNode) {
+                groupNode.expanded = true;
+                // re-render with the change.
+                this.requestUpdate();
+            }
+        });
+    }
 }

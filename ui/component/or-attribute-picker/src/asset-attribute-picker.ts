@@ -91,6 +91,10 @@ export class OrAssetAttributePicker extends AttributePicker {
 
     protected _setDialogContent(): void {
 
+        console.log("asset-attribute-picker assets;", this.selectedAssets);
+        console.log("asset-attribute-picker attributes;", this.selectedAttributes);
+        console.log("asset-attribute-picker assetattributes;", this._assetAttributes);
+
         this.content = () => html`
             <div class="row" style="display: flex;height: 600px;width: 800px;border-top: 1px solid ${unsafeCSS(DefaultColor5)};">
                 <div class="col" style="width: 260px;overflow: auto;border-right: 1px solid ${unsafeCSS(DefaultColor5)};">

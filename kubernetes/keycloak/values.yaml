@@ -137,6 +137,10 @@ or:
     accountTheme: "openremote"
     welcomeTheme: "keycloak"
 
+    # Configuration for roles to be assigned to self-registered users (when the listener is enabled)
+    # Example is "{\"realmRoles\":[\"restricted_user\"],\"clientRoles\":[{\"client\":\"openremote\",\"roles\":[\"read:assets\",\"write:attributes\"]}]}"
+    selfRegisteredUserRoles: "{}"
+
   # Configure how Keycloak connects to the database
   postgresql:
     host: "postgresql"
