@@ -21,6 +21,9 @@ import {
   resolveCtConfig,
 } from "./webpackUtils";
 
+// Copied Playwright module (not exported in the playwright-core/package.json)
+const injectedSource = require.resolve("./injectedScriptSource");
+
 let devServer: WebpackDevServer;
 
 export function createPlugin() {
@@ -105,7 +108,7 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<Webpa
   }
 
   // Consider including buildInfo in the cache dir to be able to know how to invalidate the cache dir
-  const registerSource = fs.readFileSync(registerSourceFile, "utf-8");
+  const registerSource = fs.readFileSync(injectedSource, "utf-8") + "\n" + fs.readFileSync(registerSourceFile, "utf-8");
   const indexSourcePath = path.join(dirs.templateDir, "index.js");
   const transformedIndex = transformIndexFile(
     fs.readFileSync(indexSourcePath, "utf-8"),

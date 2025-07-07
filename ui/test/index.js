@@ -19,7 +19,7 @@ function defineCtConfig(...configs) {
     },
     "@playwright/experimental-ct-core": {
       // Used to attach components to the document
-      registerSourceFile: require.resolve("./plugin/registerSource"),
+      ...original["@playwright/experimental-ct-core"],
     },
   };
 }
