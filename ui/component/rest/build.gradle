@@ -42,10 +42,10 @@ clean {
 build.dependsOn generateTypeScript, npmBuild
 npmBuild.dependsOn generateTypeScript
 
-task prepareUi() {
+tasks.register('prepareUi') {
     dependsOn clean, build, npmPrepare
 }
 
-task publishUi() {
+tasks.register('publishUi') {
     dependsOn clean, build, npmPublish
 }

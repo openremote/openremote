@@ -1,15 +1,15 @@
 buildDir = "dist"
 
-task clean() {
+tasks.register('clean') {
     doLast {
         delete "dist"
     }
 }
 
-task prepareUi() {
+tasks.register('prepareUi') {
     dependsOn clean, npmPrepare
 }
 
-task publishUi() {
+tasks.register('publishUi') {
     dependsOn clean, npmPublish
 }

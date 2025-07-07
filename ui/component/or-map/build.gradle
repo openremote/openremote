@@ -1,17 +1,17 @@
-task clean() {
+tasks.register('clean') {
     doLast {
         delete "dist"
     }
 }
 
-task installDist() {
+tasks.register('installDist') {
     dependsOn npmAnalyze
 }
 
-task prepareUi() {
+tasks.register('prepareUi') {
     dependsOn clean, npmPublish, npmPrepare
 }
 
-task publishUi() {
+tasks.register('publishUi') {
     dependsOn clean, npmPublish
 }

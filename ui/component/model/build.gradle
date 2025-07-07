@@ -34,10 +34,10 @@ clean {
     }
 }
 
-task prepareUi() {
+tasks.register('prepareUi') {
     dependsOn clean, npmPrepare
 }
 
-task publishUi() {
+tasks.register('publishUi') {
     dependsOn clean, npmPublish
 }
