@@ -8,7 +8,6 @@ import { resolveHook } from "playwright/lib/transform/transform";
 
 import type { PlaywrightTestConfig as BasePlaywrightTestConfig } from "playwright/types/test";
 import type { FullConfig } from "playwright/types/testReporter";
-import type webpack from "webpack";
 import type { Configuration as WebpackConfig } from "webpack";
 
 export type CtConfig = BasePlaywrightTestConfig["use"] & {
@@ -19,26 +18,16 @@ export type CtConfig = BasePlaywrightTestConfig["use"] & {
   ctWebpackConfig?: WebpackConfig | (() => Promise<WebpackConfig>);
 };
 
-export type ImportInfo = {
-  id: string;
-  filename: string;
-  importSource: string;
-  remoteName: string | undefined;
-};
-export type ComponentRegistry = Map<string, ImportInfo>;
-export type ComponentDirs = {
-  configDir: string;
-  outDir: string;
-  templateDir: string;
-};
-
+/**
+ * Resolves the first project that contains a `project.use.ct`.
+ * @param config The full Playwright configuration
+ * @returns The projects' `UseOptions`
+ */
 export function resolveCtConfig(config: FullConfig): CtConfig | undefined {
   return config.projects.find((project) => (project.use as CtConfig).ct)?.use;
 }
 
-export async function resolveDirs(configDir: string, config: FullConfig): Promise<ComponentDirs | null> {
-  const use = resolveCtConfig(config);
-  if (!use) return null;
+export async function resolveDirs(configDir: string, use: CtConfig) {
   const templateDir = await fs.promises
     .realpath(use.ctTemplateDir || path.join(configDir, "playwright"))
     .catch(() => undefined);
@@ -53,9 +42,7 @@ export async function resolveDirs(configDir: string, config: FullConfig): Promis
   };
 }
 
-export function resolveEndpoint(config: FullConfig) {
-  const use = resolveCtConfig(config);
-  if (!use) return null;
+export function resolveEndpoint(use: CtConfig) {
   const baseURL = new URL(use.baseURL || "http://localhost");
   return {
     https: baseURL.protocol.startsWith("https:"),
@@ -63,6 +50,14 @@ export function resolveEndpoint(config: FullConfig) {
     port: use.ctPort || Number(baseURL.port) || 3100,
   };
 }
+
+export type ImportInfo = {
+  id: string;
+  filename: string;
+  importSource: string;
+  remoteName: string | undefined;
+};
+export type ComponentRegistry = Map<string, ImportInfo>;
 
 export async function populateComponentsFromTests(
   componentRegistry: ComponentRegistry,
@@ -101,11 +96,4 @@ export function transformIndexFile(
   lines.push(`__pwRegistry.initialize({ ${[...importInfos.keys()].join(",\n  ")} });`);
 
   return lines.join("\n");
-}
-
-export function frameworkConfig(config: FullConfig): {
-  registerSourceFile: string;
-  frameworkPluginFactory?: () => Promise<webpack.WebpackPluginInstance>;
-} {
-  return (config as any)["@playwright/experimental-ct-core"];
 }
