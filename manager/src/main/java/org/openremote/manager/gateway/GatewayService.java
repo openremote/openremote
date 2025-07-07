@@ -238,7 +238,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         gateways = gateways.stream()
             .filter(gateway ->
                 Arrays.stream(gateway.getPath()).noneMatch(p -> !p.equals(gateway.getId()) && gatewayIds.contains(p)))
-            .collect(Collectors.toList());
+            .toList();
 
         if (!gateways.isEmpty()) {
             LOG.info("Directly registered gateways found = " + gateways.size());
@@ -656,7 +656,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         }
 
         if (connector.isDisabled()) {
-            LOG.warning("Gateway is currently disabled so will be ignored: " + this);
+            LOG.warning("Gateway is currently disabled so will be ignored: GatewayID=" + gatewayId);
             clientEventService.sendToWebsocketSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
             clientEventService.closeWebsocketSession(sessionId);
             return;
