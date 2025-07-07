@@ -3094,6 +3094,7 @@ __metadata:
     "@openremote/util": "workspace:*"
     "@playwright/experimental-ct-core": "npm:1.52.0"
     "@playwright/test": "npm:1.52.0"
+    "@sand4rt/experimental-ct-web": "npm:1.52.0"
     css-loader: "npm:^6.5.1"
     html-webpack-plugin: "npm:^5.5.0"
     i18next: "npm:^21.5.3"
@@ -3345,6 +3346,17 @@ __metadata:
   version: 4.41.0
   resolution: "@rollup/rollup-win32-x64-msvc@npm:4.41.0"
   conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@sand4rt/experimental-ct-web@npm:1.52.0":
+  version: 1.52.0
+  resolution: "@sand4rt/experimental-ct-web@npm:1.52.0"
+  dependencies:
+    "@playwright/experimental-ct-core": "npm:1.52.0"
+  bin:
+    playwright: cli.js
+  checksum: 10c0/b64d847bcb5d03b5af17256462d52f27be36860613c69785632ec1474af9d076ecc5ab77128c5caeb2dafc0f3debd037a193dac389196c74c5e4bec6c0798c6c
   languageName: node
   linkType: hard
 
