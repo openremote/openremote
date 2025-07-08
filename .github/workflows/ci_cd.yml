@@ -453,7 +453,11 @@ jobs:
               echo "pushRequired=true" >> $GITHUB_OUTPUT
               echo "managerDockerImage=openremote/manager:$FIRST_MANAGER_TAG" >> $GITHUB_OUTPUT
             else
-              command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64 -t openremote/manager:$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
+              if [ "$(uname -m)" == "aarch64" ]; then
+                PLATFORM=linux/aarch64
+                OTHER_PLATFORM=linux/amd64
+              fi
+              command="docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${OTHER_PLATFORM:-linux/aarch64} -t openremote/manager:$commitShaShort $buildPath"
               echo "managerDockerImage=openremote/manager:$commitShaShort" >> $GITHUB_OUTPUT
             fi
             echo "value=$command" >> $GITHUB_OUTPUT
