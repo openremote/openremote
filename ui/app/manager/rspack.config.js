@@ -1,6 +1,5 @@
 const util = require("@openremote/util");
-const CopyWebpackPlugin = require("copy-webpack-plugin");
-const webpack = require("webpack");
+const { rspack } = require('@rspack/core');
 const packageJson = require('./package.json');
 
 module.exports = (env, argv) => {
@@ -19,8 +18,8 @@ module.exports = (env, argv) => {
 
     // Add a custom base URL to resolve the config dir to the path of the dev server not root
     config.plugins.push(
-        new webpack.DefinePlugin({
-            APP_VERSION: JSON.stringify(packageJson.version)
+        new rspack.DefinePlugin({
+          APP_VERSION: JSON.stringify(packageJson.version)
         })
     );
 

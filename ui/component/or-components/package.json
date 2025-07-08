@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-components",
-  "version": "1.7.0-snapshot",
+  "version": "1.8.0-snapshot",
   "description": "OpenRemote basic UI components",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -28,6 +28,7 @@
     "@material/elevation": "^9.0.0",
     "@openremote/core": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
+    "ace-builds": "^1.41.0",
     "lit": "^2.0.2",
     "simplebar": "^5.3.6"
   },

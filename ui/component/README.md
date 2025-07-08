@@ -8,6 +8,6 @@ Library of UI components that can be used to build web applications that communi
 Please refer to the [Developer Guide](https://docs.openremote.io/docs/developer-guide/working-on-ui-and-apps) on how to contribute to the UI components.
 
 ## Usage
-To consume the components in an application simply add the required dependencies to your `package.json` and then import the required component(s) using standard ES6 module syntax; for our own applications we use webpack for bundling (see the existing [apps](../apps) for examples). When using components from a custom project, yarn workspaces can be used to `symlink` the components to the code base allowing for tight development of components within an application.
+To consume the components in an application simply add the required dependencies to your `package.json` and then import the required component(s) using standard ES6 module syntax; for our own applications we use rspack for bundling (see the existing [apps](../apps) for examples). When using components from a custom project, yarn workspaces can be used to `symlink` the components to the code base allowing for tight development of components within an application.
 
 For usage information on each component refer to the component's `README` file and the TypeDoc generated documentation.
