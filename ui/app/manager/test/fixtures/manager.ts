@@ -116,7 +116,124 @@ export class Manager {
   }
 
   /**
-   * setup the testing environment by giving the realm name and additional parameters
+   * Get the roles of the current realm
+   *
+   * Expects a realm to be configured
+   * @param config The axios request config
+   */
+  async getClientRoles(config) {
+    try {
+      const response = await rest.api.UserResource.getClientRoles(this.realm!, this.clientId, config);
+      expect(response.status).toBe(200);
+      return response.data;
+    } catch (e) {
+      console.error("Failed to get roles", e.response.status);
+    }
+  }
+
+  /**
+   * Create an new role
+   *
+   * The `compositeRoleIds` are mapped by name to the corresponding role id.
+   *
+   * Expects a realm to be configured
+   * @param newRole The role to create
+   * @param roles The current stored roles to add the new role to
+   * @param config The axios request config
+   */
+  async createRole(newRole: Role, roles: Role[], config) {
+    if (newRole.compositeRoleIds) {
+      newRole.compositeRoleIds = newRole.compositeRoleIds
+        .map((name) => roles.find((r) => r.name === name)?.id)
+        .filter(Boolean) as string[];
+    }
+    roles.push(newRole);
+    try {
+      const response = await rest.api.UserResource.updateRoles(this.realm!, roles, config);
+      expect(response.status).toBe(204);
+      this.role = newRole;
+    } catch (e) {
+      console.error("Failed to create role", e.response.status);
+    }
+  }
+
+  /**
+   * Create an new user
+   *
+   * Expects a realm to be configured
+   * @param user The user to create
+   * @param config The axios request config
+   */
+  async createUser(user: UserModel, config) {
+    try {
+      const response = await rest.api.UserResource.create(this.realm!, user, config);
+      expect(response.status).toBe(200);
+      this.user = response.data;
+    } catch (e) {
+      console.error("Failed to create user", e.response.status);
+    }
+  }
+
+  /**
+   * Add a role to the current user
+   *
+   * Expects a realm and user to be configured
+   * @param roles A list of roles to add to the user
+   * @param config The axios request config
+   */
+  async addUserRoles(roles: string[], config) {
+    try {
+      const response = await rest.api.UserResource.updateUserClientRoles(
+        this.realm!,
+        this.user!.id!,
+        this.clientId,
+        roles,
+        config
+      );
+      expect(response.status).toBe(204);
+    } catch (e) {
+      console.error("Failed to update users' roles", e.response.status);
+    }
+  }
+
+  /**
+   * Reset the user password with the smartcity users' password
+   *
+   * Expects a realm and user to be configured
+   * @param config The axios request config
+   */
+  async resetUserPassword(config) {
+    try {
+      const response = await rest.api.UserResource.resetPassword(
+        this.realm!,
+        this.user!.id!,
+        { value: smartcity.password },
+        config
+      );
+      expect(response.status).toBe(204);
+    } catch (e) {
+      console.error("Failed to reset user password", e.response.status);
+    }
+  }
+
+  /**
+   * Create an asset
+   * @param asset The asset to create
+   * @param config The axios request config
+   */
+  async createAsset(asset: Asset, config) {
+    await rest.api.AssetResource.create(asset, config)
+      .then((response) => {
+        expect(response.status).toBe(200);
+        this.assets.push(response.data);
+      })
+      .catch((e) => {
+        expect(e.response.status, { message: "Failed to create asset" }).toBe(409);
+      });
+  }
+
+  /**
+   * Setup the testing environment by giving the realm name and additional parameters
    * @param realm Realm to create
    * @param user Realm user to create
    * @param user Role to create
@@ -131,80 +248,76 @@ export class Manager {
 
     this.realm = realm;
 
-    // Add role
+    // Provision role
     if (role) {
-      let roles: Role[] = [];
-      try {
-        const response = await rest.api.UserResource.getClientRoles(realm, this.clientId, config);
-        expect(response.status).toBe(200);
-        roles = response.data;
-        if (role.compositeRoleIds) {
-          role.compositeRoleIds = role.compositeRoleIds
-            .map((name) => roles.find((r) => r.name === name)?.id)
-            .filter(Boolean) as string[];
-        }
-        roles.push(role);
-        try {
-          const response = await rest.api.UserResource.updateRoles(realm, roles, config);
-          expect(response.status).toBe(204);
-          this.role = role;
-        } catch (e) {
-          console.error("Failed to create role", e.response.status);
-        }
-      } catch (e) {
-        console.error("Failed to get roles", e.response.status);
+      const roles = await this.getClientRoles(config);
+      if (roles) {
+        await this.createRole(role, roles, config);
       }
     }
 
-    // Add user
+    // Provision user
     if (user) {
-      try {
-        const response = await rest.api.UserResource.create(realm, user, config);
-        expect(response.status).toBe(200);
-        this.user = response.data;
-        // Add users' roles
-        try {
-          const response = await rest.api.UserResource.updateUserClientRoles(
-            realm,
-            this.user!.id!,
-            this.clientId,
-            user.roles!,
-            config
-          );
-          expect(response.status).toBe(204);
-          // Reset users' password
-          try {
-            const response = await rest.api.UserResource.resetPassword(
-              realm,
-              this.user!.id!,
-              { value: smartcity.password },
-              config
-            );
-            expect(response.status).toBe(204);
-          } catch (e) {
-            console.error("Failed to reset user password", e.response.status);
-          }
-        } catch (e) {
-          console.error("Failed to update users' roles", e.response.status);
-        }
-      } catch (e) {
-        console.error("Failed to create user", e.response.status);
-      }
+      await this.createUser(user, config);
+      await this.addUserRoles(user.roles!, config);
+      await this.resetUserPassword(config);
     }
 
+    // Provision assets
     if (assets) {
-      // Add assets
       this.assets = [];
       for (const asset of assets) {
-        await rest.api.AssetResource.create(asset, config)
-          .then((response) => {
-            expect(response.status).toBe(200);
-            this.assets!.push(response.data);
-          })
-          .catch((e) => {
-            expect(e.response.status, { message: "Failed to create asset" }).toBe(409);
-          });
+        await this.createAsset(asset, config);
       }
+    }
+  }
+
+  /**
+   * Deletes rules in the active realm
+   * @param config The axios request config
+   */
+  async deleteRealmRulesets(config) {
+    for (const [i, id] of this.rules.entries()) {
+      try {
+        const response = await rest.api.RulesResource.deleteRealmRuleset(id!, config);
+        expect(response.status).toBe(204);
+        this.rules.splice(i);
+      } catch (e) {
+        console.warn("Could not delete realm rule: ", id);
+      }
+    }
+  }
+
+  /**
+   * Deletes assets
+   * @param config The axios request config
+   */
+  async deleteAssets(config) {
+    const assetIds = this.assets.map(({ id }) => id!);
+    try {
+      const response = await rest.api.AssetResource.delete({ assetId: assetIds }, config);
+      expect(response.status).toBe(204);
+      this.assets = [];
+    } catch (e) {
+      console.warn("Could not delete asset(s): ", assetIds);
+    }
+  }
+
+  /**
+   * Delete role
+   *
+   * Expects a realm to be configured
+   * @param roles The stored roles
+   * @param config The axios request config
+   */
+  async deleteRole(roles: Role[], config) {
+    roles = roles.filter((r) => r.id !== this.role!.id);
+    try {
+      const response = await rest.api.UserResource.updateRoles(this.realm!, roles, config);
+      expect(response.status).toBe(204);
+      delete this.role;
+    } catch (e) {
+      console.warn("Could not update roles: ", this.role);
     }
   }
 
@@ -216,42 +329,17 @@ export class Manager {
     const config = { headers: { Authorization: `Bearer ${access_token}` } };
 
     if (this.rules.length > 0) {
-      for (const [i, id] of this.rules.entries()) {
-        try {
-          const response = await rest.api.RulesResource.deleteRealmRuleset(id!, config);
-          expect(response.status).toBe(204);
-          this.rules.splice(i);
-        } catch (e) {
-          console.warn("Could not delete realm rule: ", id);
-        }
-      }
+      await this.deleteRealmRulesets(config);
     }
 
     if (this.assets.length > 0) {
-      const assetIds = this.assets.map(({ id }) => id!);
-      try {
-        const response = await rest.api.AssetResource.delete({ assetId: assetIds }, config);
-        expect(response.status).toBe(204);
-        this.assets = [];
-      } catch (e) {
-        console.warn("Could not delete asset(s): ", assetIds);
-      }
+      await this.deleteAssets(config);
     }
 
     if (this.role && this.realm) {
-      let roles;
-      try {
-        const response = await rest.api.UserResource.getClientRoles(this.realm, this.clientId, config);
-        roles = response.data.filter((r) => r.id !== this.role!.id);
-        try {
-          const response = await rest.api.UserResource.updateRoles(this.realm, roles, config);
-          expect(response.status).toBe(204);
-          delete this.role;
-        } catch (e) {
-          console.warn("Could not update roles: ", this.role);
-        }
-      } catch (e) {
-        console.warn("Could not get roles: ", this.user);
+      const roles = await this.getClientRoles(config);
+      if (roles) {
+        await this.deleteRole(roles, config);
       }
     }
   }
