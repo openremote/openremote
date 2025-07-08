@@ -1040,7 +1040,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
      *          <li>{@code providerId}: The identity provider ({@code oidc} or {@code saml}) to import the configuration for.</li></ul>
      *
      * @return the imported configuration parameters which can be added to the {@link Map} provided to
-     *      {@link #createUpdateIdentityProvider(String, String, String, Map)} when creating or updating an identity provider.
+     *      {@link #createUpdateIdentityProvider(String, String, String, String, Map)} when creating or updating an identity provider.
      */
     public Map<String, String> getIdentityProviderImportConfig(String realm, Map<String, Object> importData) {
         if (importData == null || importData.isEmpty()) {
@@ -1050,10 +1050,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         return getRealms(realmsResource -> realmsResource.realm(realm).identityProviders().importFrom(importData));
     }
 
-    public void createUpdateIdentityProvider(String realm, String alias, String providerId, Map<String, String> config) {
+    public void createUpdateIdentityProvider(String realm, String alias, String providerId, String displayName, Map<String, String> config) {
         IdentityProviderRepresentation representation = new IdentityProviderRepresentation();
         representation.setAlias(alias);
         representation.setProviderId(providerId);
+        representation.setDisplayName(displayName);
         representation.setConfig(config);
 
         getRealms(realmsResource -> {
