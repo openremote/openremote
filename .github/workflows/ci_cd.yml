@@ -655,7 +655,7 @@ jobs:
         #continue-on-error: true
 
       - name: Archive backend test results
-        if: always()
+        if: steps.test-backend-command.outputs.value != ''
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
         with:
           name: backend-test-results
@@ -715,7 +715,7 @@ jobs:
         # continue-on-error: true
 
       - name: Archive UI component test results
-        if: always()
+        if: steps.test-ui-components-command.outputs.value != ''
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
         with:
           name: ui-component-test-results
@@ -750,7 +750,7 @@ jobs:
         # continue-on-error: true
 
       - name: Archive UI app test results
-        if: always()
+        if: steps.test-ui-apps-command.outputs.value != ''
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
         with:
           name: ui-app-test-results
