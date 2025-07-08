@@ -230,9 +230,10 @@ export class Manager {
   /**
    * Setup the testing environment by giving the realm name and additional parameters
    * @param realm Realm to create
-   * @param user Realm user to create
-   * @param user Role to create
-   * @param user Assets to create
+   * @param [options] - Optional parameters for setup
+   * @param [options.user] - The user to create within the realm
+   * @param [options.role] - The role to assign or create
+   * @param [options.assets] - Assets to create for the realm
    */
   async setup(
     realm: string,
