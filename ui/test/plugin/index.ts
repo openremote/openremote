@@ -34,7 +34,7 @@ let devServer: WebpackDevServer;
  *
  * Each component is mounted using the `mount` fixture available through `playwright-ct-core`. The plugin
  * starts a webpack development server that bundles the code to register and mount components to the
- * document. The bundle will reference the component source code through the provides import alias.
+ * document. The bundle will reference the component source code through the provided import alias.
  *
  * Note: You must use an import alias (like `@openremote/or-icon`) to import a component in a test file,
  * because the component code is expected to be transpiled when referenced in the bundle.
