@@ -324,12 +324,22 @@ Resources:
                 # If hostname is not provided, use the IPv4 address of the EC2 instance, otherwise use the hostname.
                 [ -z "${Host}" ] && HOST=$(curl v4.ident.me 2>/dev/null) || HOST="${Host}"
 
+                # Avoid parameter expansion if the password contains `$`
+                PASSWORD=$(cat << 'EOF'
+                ${Password}
+                EOF
+                )
+                SMTP_PASSWORD=$(cat << 'EOF'
+                ${SMTPPassword}
+                EOF
+                )
+
                 # Set environment variables and start OpenRemote with the Docker Compose file.
                 OR_HOSTNAME="$HOST" \
-                OR_ADMIN_PASSWORD="${Password}" \
+                OR_ADMIN_PASSWORD="$PASSWORD" \
                 OR_EMAIL_HOST="${SMTPHost}" \
                 OR_EMAIL_USER="${SMTPUser}" \
-                OR_EMAIL_PASSWORD="${SMTPPassword}" \
+                OR_EMAIL_PASSWORD="$SMTP_PASSWORD" \
                 OR_EMAIL_FROM="${SMTPFrom}" \
                 docker-compose -f /openremote/docker-compose.yml -p openremote up -d
     

@@ -224,7 +224,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     protected _saveUserPromise?: Promise<any>;
 
     @state()
-    private _sessionLoader: Promise<TemplateResult>;
+    private _sessionLoader?: Promise<TemplateResult>;
 
     get name(): string {
         return "user_plural";
@@ -237,6 +237,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             this.loadData();
         }
         if (changedProperties.has('userId')) {
+            this._sessionLoader = undefined; // Reset the MQTT sessions view
             this._updateRoute();
         } else if (changedProperties.has('creationState')) {
             this._updateNewUserRoute();
@@ -338,7 +339,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             return false;
         }
         // New service users with the 'gateway-' prefix are not allowed
-        if(user.serviceAccount && (user.email.startsWith('gateway-') || user.username.startsWith('gateway-'))) {
+        if(user.serviceAccount && user.username.startsWith('gateway-')) {
             showSnackbar(undefined, "noGatewayUsername", "dismiss")
             return false;
         }
@@ -530,6 +531,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                 ${when((this.userId && index !== undefined) || this.creationState, () => html`
                     ${when(mergedUserList[index] !== undefined || this.creationState, () => {
                         const user: UserModel = (index !== undefined ? mergedUserList[index] : this.creationState.userModel);
+                        const showMqttSessions = user.serviceAccount && this.userId;
                         return html`
                             <div id="content" class="panel">
                                 <p class="panel-title">
@@ -538,7 +540,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                 ${this.getSingleUserView(user, compositeRoleOptions, realmRoleOptions, ("user" + index), (readonly || this._saveUserPromise != undefined))}
                             </div>
                             
-                            ${user.serviceAccount ? this.getMQTTSessionTemplate(user) : ``}
+                            ${when(showMqttSessions, () => this.getMQTTSessionTemplate(user))}
                         `;
                     })}
 
@@ -1059,6 +1061,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                                   this.reset();
                                               }
                                           }).catch((ex) => {
+                                              console.error(ex);
                                               if (isAxiosError(ex)) {
                                                   error = {
                                                       status: ex.response.status,
