@@ -1,79 +1,69 @@
 import * as Util from "@openremote/core/lib/util";
 import { Asset } from "@openremote/model";
 
+export const assetMap = {
+  Battery: "ElectricityBatteryAsset",
+  "Solar Panel": "ElectricityProducerSolarAsset",
+};
 const assets = [
   {
     name: "Battery",
-    type: "ElectricityBatteryAsset",
+    type: "ThingAsset",
     realm: "smartcity",
     attributes: {
-      energyLevelPercentage: { name: "energyLevelPercentage", type: "positiveInteger", meta: { readOnly: true } },
       notes: { name: "notes", type: "text" },
-      energyLevelPercentageMin: { name: "energyLevelPercentageMin", type: "positiveInteger" },
-      supportsExport: { name: "supportsExport", type: "boolean" },
-      efficiencyImport: { name: "efficiencyImport", type: "positiveInteger" },
-      energyCapacity: { name: "energyCapacity", type: "positiveNumber" },
-      powerSetpoint: { name: "powerSetpoint", type: "number" },
-      energyLevel: { name: "energyLevel", type: "positiveNumber", meta: { readOnly: true } },
-      efficiencyExport: { name: "efficiencyExport", type: "positiveInteger" },
-      power: { name: "power", type: "number", meta: { readOnly: false } },
-      supportsImport: { name: "supportsImport", type: "boolean" },
-      powerImportMax: { name: "powerImportMax", type: "positiveNumber" },
-      energyImportTotal: { name: "energyImportTotal", type: "positiveNumber", meta: { readOnly: true } },
-      forceCharge: { name: "forceCharge", type: "executionStatus" },
-      energyExportTotal: { name: "energyExportTotal", type: "positiveNumber", meta: { readOnly: true } },
-      energyLevelPercentageMax: { name: "energyLevelPercentageMax", type: "positiveInteger" },
-      powerExportMax: { name: "powerExportMax", type: "positiveNumber" },
       location: { name: "location", type: "GEO_JSONPoint" },
+      energyLevel: { name: "energyLevel", type: "positiveNumber", meta: { readOnly: true } },
+      power: { name: "power", type: "number", meta: { readOnly: false } },
+      powerSetpoint: { name: "powerSetpoint", type: "number" },
+      energyCapacity: { name: "energyCapacity", type: "positiveNumber" },
     },
   },
   {
     name: "Solar Panel",
-    type: "ElectricityProducerSolarAsset",
+    type: "ThingAsset",
     realm: "smartcity",
     attributes: {
       notes: { name: "notes", type: "text" },
-      panelAzimuth: { name: "panelAzimuth", type: "integer" },
-      panelPitch: { name: "panelPitch", type: "positiveInteger", meta: { readOnly: true } },
-      includeForecastSolarService: { name: "includeForecastSolarService", type: "boolean" },
-      power: { name: "power", type: "number", meta: { readOnly: false } },
-      setActualSolarValueWithForecast: { name: "setActualSolarValueWithForecast", type: "boolean" },
-      powerForecast: { name: "powerForecast", type: "number", meta: { readOnly: true } },
-      panelOrientation: { name: "panelOrientation", type: "panelOrientation" },
-      energyExportTotal: { name: "energyExportTotal", type: "positiveNumber", meta: { readOnly: true } },
-      powerExportMax: { name: "powerExportMax", type: "positiveNumber" },
       location: { name: "location", type: "GEO_JSONPoint" },
+      panelPitch: { name: "panelPitch", type: "positiveInteger", meta: { readOnly: true } },
+      power: { name: "power", type: "number", meta: { readOnly: false } },
+      powerForecast: { name: "powerForecast", type: "number", meta: { readOnly: true } },
     },
   },
 ] as const;
 
-export const preparedAssetsWithLocation = Object.values(Util.mergeObjects(
-  structuredClone(assets),
-  [
-    { attributes: { location: { value: { type: "Point", coordinates: [4.482259693115793, 51.91756799273] } } } },
-    { attributes: { location: { value: { type: "Point", coordinates: [4.4845127486877345, 51.917435642781214] } } } },
-  ],
-  true
-));
+export const preparedAssetsWithLocation = Object.values(
+  Util.mergeObjects(
+    structuredClone(assets),
+    [
+      { attributes: { location: { value: { type: "Point", coordinates: [4.482259693115793, 51.91756799273] } } } },
+      { attributes: { location: { value: { type: "Point", coordinates: [4.4845127486877345, 51.917435642781214] } } } },
+    ],
+    true
+  )
+);
 
-export const preparedAssetsForRules = Object.values(Util.mergeObjects(
-  structuredClone(assets),
-  [
-    {
-      attributes: {
-        energyLevel: { meta: { ruleState: true, storeDataPoints: true } },
-        power: { meta: { ruleState: true, storeDataPoints: true } },
+export const preparedAssetsForRules = Object.values(
+  Util.mergeObjects(
+    structuredClone(assets),
+    [
+      {
+        attributes: {
+          energyLevel: { meta: { ruleState: true, storeDataPoints: true } },
+          power: { meta: { ruleState: true, storeDataPoints: true } },
+        },
       },
-    },
-    {
-      attributes: {
-        power: { meta: { ruleState: true, storeDataPoints: true } },
-        powerForecast: { meta: { ruleState: true, storeDataPoints: true } },
+      {
+        attributes: {
+          power: { meta: { ruleState: true, storeDataPoints: true } },
+          powerForecast: { meta: { ruleState: true, storeDataPoints: true } },
+        },
       },
-    },
-  ],
-  true
-));
+    ],
+    true
+  )
+);
 
 type AssetNames = (typeof assets)[number]["name"];
 

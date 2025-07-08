@@ -1,6 +1,6 @@
 import { expect } from "@openremote/test";
 import { test, userStatePath } from "./fixtures/manager.js";
-import assets, { assetPatches, thing } from "./fixtures/data/assets.js";
+import assets, { assetMap, assetPatches, thing } from "./fixtures/data/assets.js";
 import { WellknownMetaItems } from "@openremote/model";
 import * as Util from "@openremote/core/lib/util";
 
@@ -23,7 +23,7 @@ assets.forEach(({ type, name, attributes }) => {
   test(`Add new ${name} asset and configure its attributes`, async ({ page, manager, assetsPage, assetViewer }) => {
     await manager.goToRealmStartPage("smartcity");
     await assetsPage.goto();
-    await assetsPage.addAsset(type!, name!);
+    await assetsPage.addAsset(assetMap[name!], name!);
     await page.click(`#list-container >> text=${name}`);
     await assetViewer.switchMode("modify");
     await assetViewer.setAttributeValue(attribute1, value1);
