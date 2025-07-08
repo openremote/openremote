@@ -1,4 +1,4 @@
-import { ct } from "@openremote/test";
+import { ct } from "./fixtures/index";
 
 import { OrJSONForms, StandardRenderers } from "@openremote/or-json-forms";
 import { schemas } from "./fixtures/schemas";
@@ -17,7 +17,7 @@ ct.beforeEach(async ({ shared }) => {
 });
 
 for (const schema of schemas) {
-  ct(`Should render form for: ${schema.title}`, async ({ mount, components }) => {
+  ct(`Should render form for: ${schema.title}`, async ({ mount, jsonForms }) => {
     const component = await mount(OrJSONForms, {
       props: {
         uischema: { type: "Control", scope: "#" } as any,
@@ -31,6 +31,6 @@ for (const schema of schemas) {
       },
       on: {},
     });
-    await components.jsonForms.walkForm(component, schema);
+    await jsonForms.walkForm(component, schema);
   });
 }

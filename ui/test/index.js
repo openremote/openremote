@@ -4,7 +4,7 @@ import { expect, devices } from "@playwright/experimental-ct-core";
 import { defineConfig as defineCtWebConfig } from "@sand4rt/experimental-ct-web";
 
 import { createPlugin } from "./plugin";
-import { ct as ctBase, fixtures, camelCaseToSentenceCase } from "./fixtures";
+import { ct as ctBase, withPage, fixtures, camelCaseToSentenceCase } from "./fixtures";
 
 function defineCtConfig(...configs) {
   const original = defineCtWebConfig(...configs);
@@ -28,4 +28,4 @@ function defineCtConfig(...configs) {
 const test = base.extend(fixtures);
 const ct = ctBase.extend(fixtures);
 
-export { test, ct, expect, devices, defineConfig, defineCtConfig, camelCaseToSentenceCase };
+export { test, ct, expect, devices, defineConfig, defineCtConfig, camelCaseToSentenceCase, withPage };

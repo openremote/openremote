@@ -13,10 +13,14 @@ import {
   type Page,
   type Locator,
   type TestFixture,
-  type ComponentFixtures,
+  type ComponentTestFixtures,
   type Shared,
+  withPage,
 } from "@openremote/test";
 import { AssetsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
+import { AssetViewer } from "../../../../component/or-asset-viewer/test/fixtures";
+import { CollapsiblePanel } from "../../../../component/or-components/test/fixtures";
+import { JsonForms } from "../../../../component/or-json-forms/test/fixtures";
 
 export const adminStatePath = path.join(__dirname, "data/.auth/admin.json");
 export const userStatePath = path.join(__dirname, "data/.auth/user.json");
@@ -356,8 +360,7 @@ function withManager<R>(managerPage: Function): TestFixture<R, { page: Page; sha
   };
 }
 
-interface Fixtures extends ComponentFixtures {
-  manager: Manager;
+interface PageFixtures {
   assetsPage: AssetsPage;
   realmsPage: RealmsPage;
   rolesPage: RolesPage;
@@ -365,11 +368,26 @@ interface Fixtures extends ComponentFixtures {
   usersPage: UsersPage;
 }
 
+interface ComponentFixtures extends ComponentTestFixtures {
+  assetViewer: AssetViewer;
+  collapsiblePanel: CollapsiblePanel;
+  jsonForms: JsonForms;
+}
+
+interface Fixtures extends PageFixtures, ComponentFixtures {
+  manager: Manager;
+}
+
 export const test = base.extend<Fixtures>({
   manager: async ({ page, baseURL }, use) => await use(new Manager(page, baseURL!)),
+  // Pages
   assetsPage: withManager(AssetsPage),
   realmsPage: withManager(RealmsPage),
   rolesPage: withManager(RolesPage),
   rulesPage: withManager(RulesPage),
   usersPage: withManager(UsersPage),
+  // Components
+  assetViewer: withPage(AssetViewer),
+  collapsiblePanel: withPage(CollapsiblePanel),
+  jsonForms: withPage(JsonForms),
 });

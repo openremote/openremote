@@ -1,31 +1,28 @@
 import type { Fixtures, PlaywrightTestArgs, Page, PlaywrightTestOptions, TestFixture } from "@playwright/test";
 import { test, type TestType as ComponentTestType } from "@playwright/experimental-ct-core";
 
-import { Components, type MountOptions, type MountResult } from "./component";
+import { type MountOptions, type MountResult } from "./component";
 import { Shared, type BasePage } from "./shared";
 
-export interface ComponentFixtures {
+export interface ComponentTestFixtures {
   mount<HooksConfig, Component extends HTMLElement = HTMLElement>(
     component: new (...args: any[]) => Component,
     options?: MountOptions<HooksConfig, Component>
   ): Promise<MountResult<Component>>;
   shared: Shared;
-  components: Components;
 }
 
 // TODO: Separate our component test fixtures from the default playwright component test fixtures
 declare module "@playwright/experimental-ct-core" {
-  const test: ComponentTestType<ComponentFixtures>;
+  const test: ComponentTestType<ComponentTestFixtures>;
 }
 
-function withPage<R>(component: Function): TestFixture<R, { page: Page }> {
+export function withPage<R>(component: Function): TestFixture<R, { page: Page }> {
   return async ({ page }, use) => await use(new (component.bind(null, page))());
 }
 
-export const fixtures: Fixtures<PlaywrightTestArgs & PlaywrightTestOptions & ComponentFixtures> = {
+export const fixtures: Fixtures<PlaywrightTestArgs & PlaywrightTestOptions & ComponentTestFixtures> = {
   shared: withPage(Shared),
-  // Build the component tree using nested objects internally where the keys represent the well known internals and their values the corresponding locator.
-  components: withPage(Components),
 };
 
-export { test as ct, type ComponentTestType, type Shared, type Components, type BasePage };
+export { test as ct, type ComponentTestType, type Shared, type BasePage };
