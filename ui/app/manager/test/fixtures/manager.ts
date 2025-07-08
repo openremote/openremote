@@ -7,16 +7,7 @@ const { admin, smartcity } = users;
 
 import { UserModel } from "../../src/pages/page-users";
 import { Asset, Role } from "@openremote/model";
-import {
-  test as base,
-  expect,
-  type Page,
-  type Locator,
-  type TestFixture,
-  type ComponentTestFixtures,
-  type Shared,
-  withPage,
-} from "@openremote/test";
+import { test as base, expect, type Page, type ComponentTestFixtures, type Shared, withPage } from "@openremote/test";
 import { AssetsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
 import { AssetViewer } from "../../../../component/or-asset-viewer/test/fixtures";
 import { CollapsiblePanel } from "../../../../component/or-components/test/fixtures";

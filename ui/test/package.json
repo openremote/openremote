@@ -6,7 +6,7 @@
   "module": "index.js",
   "private": true,
   "exports": {
-    ".": "./index.js",
+    ".": "./index.ts",
     "./app.config": "./app.config.ts",
     "./component.config": "./component.config.ts"
   },

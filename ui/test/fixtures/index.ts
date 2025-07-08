@@ -25,4 +25,4 @@ export const fixtures: Fixtures<PlaywrightTestArgs & PlaywrightTestOptions & Com
   shared: withPage(Shared),
 };
 
-export { test as ct, type ComponentTestType, type Shared, type BasePage };
+export { test as ct, type ComponentTestType, type Shared, type BasePage, type Page };
