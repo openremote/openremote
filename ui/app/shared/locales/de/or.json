@@ -299,6 +299,8 @@
   "sending": "Senden",
   "submit": "Einreichen",
   "password": "Passwort",
+  "resetPassword": "Passwort zurücksetzen",
+  "resetPasswordConfirmation": "Eine E-Mail zum Zurücksetzen Ihres Passworts wurde gesendet.",
   "repeatPassword": "Passwort wiederholen",
   "details": "Details",
   "permissions":"Berechtigungen",

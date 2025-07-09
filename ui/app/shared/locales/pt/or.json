@@ -281,6 +281,8 @@
   "sending": "Enviando",
   "submit": "Enviar",
   "password": "Senha",
+  "resetPassword": "Redefinir senha",
+  "resetPasswordConfirmation": "Um e-mail foi enviado para redefinir sua senha.",
   "repeatPassword": "Repetir senha",
   "details": "Detalhes",
   "permissions":"Permissões",

@@ -262,6 +262,8 @@
   "sending": "إرسال",
   "submit": "رفع",
   "password": "كلمة السر",
+  "resetPassword": "إعادة تعيين كلمة السر",
+  "resetPasswordConfirmation": "تم إرسال بريد إلكتروني لإعادة تعيين كلمة السر الخاصة بك.",
   "repeatPassword": "إعادة كتابة كلمة السر",
   "permissions":"الصلاحيات",
   "noChildAssets": "لايوجد مكون فرعي",

@@ -292,12 +292,44 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
 
         when: "a new attribute is added to the user"
         user.setAttribute("test", "testvalue")
-        user = adminUserResource.update(null, keycloakTestSetup.realmBuilding.name, user)
+        user = adminUserResource.updateUser(null, keycloakTestSetup.realmBuilding.name, user)
 
         then: "the update should have succeeded"
         user.attributes.size() == 2
         user.attributes.any {it.name == EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE && it.value == "true"}
         user.attributes.any {it.name == "test" && it.value == "testvalue"}
+    }
+    
+    def "Self update user with WRITE_USER role"() {
+        when: "a regular user gets their own information"
+        // First get the user's ID from the authentication context
+        def users = regularUserBuildingResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)))
+        def currentUser = users.find { it.username == "testuser3" }
+        
+        then: "the user should be found"
+        currentUser != null
+        
+        when: "the user updates their own information using the update method with WRITE_USER role"
+        currentUser.setAttribute("selfUpdate", "success")
+        def updatedUser = regularUserBuildingResource.update(null, currentUser)
+        
+        then: "the update should succeed"
+        updatedUser != null
+        updatedUser.attributes.any { it.name == "selfUpdate" && it.value == "success" }
+        
+        when: "the user tries to update another user's information"
+        def otherUser = adminUserResource.get(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id)
+        otherUser.setAttribute("unauthorizedUpdate", "shouldFail")
+        regularUserBuildingResource.update(null, otherUser)
+        
+        then: "an exception should be thrown"
+        thrown(ForbiddenException)
+        
+        when: "the admin verifies the user's attributes were updated"
+        def verifiedUser = adminUserResource.get(null, keycloakTestSetup.realmBuilding.name, currentUser.id)
+        
+        then: "the self-update attribute should be present"
+        verifiedUser.attributes.any { it.name == "selfUpdate" && it.value == "success" }
     }
 
     def "Create invalid users"() {

@@ -43,6 +43,12 @@ public class RealmView {
 
     protected String displayName;
 
+    protected String smtpHost;
+
+    protected String smtpPort;
+
+    protected String smtpUser;
+
     public RealmView() {
     }
 
@@ -89,5 +95,32 @@ public class RealmView {
 
     protected void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    @Formula("(select rsc.VALUE from PUBLIC.REALM_SMTP_CONFIG rsc where rsc.REALM_ID = ID and rsc.name = 'host')")
+    public String getSmtpHost() {
+        return smtpHost;
+    }
+
+    protected void setSmtpHost(String smtpHost) {
+        this.smtpHost = smtpHost;
+    }
+
+    @Formula("(select rsc.VALUE from PUBLIC.REALM_SMTP_CONFIG rsc where rsc.REALM_ID = ID and rsc.name = 'port')")
+    public String getSmtpPort() {
+        return smtpPort;
+    }
+
+    protected void setSmtpPort(String smtpPort) {
+        this.smtpPort = smtpPort;
+    }
+
+    @Formula("(select rsc.VALUE from PUBLIC.REALM_SMTP_CONFIG rsc where rsc.REALM_ID = ID and rsc.name = 'user')")
+    public String getSmtpUser() {
+        return smtpUser;
+    }
+
+    protected void setSmtpUser(String smtpUser) {
+        this.smtpUser = smtpUser;
     }
 }
