@@ -1,7 +1,5 @@
 import java.nio.file.Paths
 
-import groovy.json.JsonSlurper
-
 import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
 import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 
