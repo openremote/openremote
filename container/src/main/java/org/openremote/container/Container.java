@@ -32,31 +32,13 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static java.lang.System.Logger.Level.ERROR;
-import static java.lang.System.Logger.Level.INFO;
-import static java.lang.System.Logger.Level.WARNING;
+import static java.lang.System.Logger.Level.*;
 import static java.util.stream.StreamSupport.stream;
 import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getInteger;
@@ -132,9 +114,9 @@ public class Container implements org.openremote.model.Container {
         }
 
         int scheduledExecutorThreads = getInteger(
-            getConfig(),
-            OR_SCHEDULED_EXECUTOR_THREADS,
-            OR_SCHEDULED_EXECUTOR_THREADS_DEFAULT);
+                getConfig(),
+                OR_SCHEDULED_EXECUTOR_THREADS,
+                OR_SCHEDULED_EXECUTOR_THREADS_DEFAULT);
 
         int executorThreadsMin = getInteger(getConfig(), OR_EXECUTOR_THREADS_MIN, OR_EXECUTOR_THREADS_MIN_DEFAULT);
         int executorThreadsMax = getInteger(getConfig(), OR_EXECUTOR_THREADS_MAX, OR_EXECUTOR_THREADS_MAX_DEFAULT);
