@@ -6,5 +6,4 @@ type: application
 
 version: 0.1.0
 
-appVersion: "23.0.7.2"
-# Using latest for now but would be better to have specific SemVer version
+appVersion: "23.0.7.3"
