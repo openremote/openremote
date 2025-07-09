@@ -42,3 +42,6 @@ eksctl delete addon --cluster $CLUSTER_NAME --name coredns
 eksctl delete addon --cluster $CLUSTER_NAME --name kube-proxy
 
 eksctl delete cluster --name $CLUSTER_NAME
+
+echo "Clean-up is still on-going, please check the status in AWS CloudFormation console at https://eu-west-1.console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks?filteringText=&filteringStatus=active&viewNested=true"
+echo "Failed clean-ups are often caused by a dangling VPC. Manually delete the VPC and then retry the cluster stack delete operation."

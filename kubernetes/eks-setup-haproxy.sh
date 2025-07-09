@@ -103,5 +103,8 @@ done
 
 # Now that DNS is in place, HAProxy can properly create the certificate
 kubectl exec $(kubectl get pod -l "app.kubernetes.io/name=proxy" -o name) -- sh -c "/entrypoint.sh add $FQDN"
+echo "Certificate generation sometimes fail with a timeout."
+echo "In such a case, execute the following command:"
+echo 'kubectl exec $(kubectl get pod -l "app.kubernetes.io/name=proxy" -o name) -- sh -c "/entrypoint.sh add <fully qualified hostname>"'
 
 echo "Access the manager at https://$FQDN"
