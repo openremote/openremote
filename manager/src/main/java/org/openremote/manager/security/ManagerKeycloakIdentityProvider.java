@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.security;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.undertow.util.Headers;
 import jakarta.persistence.Query;
 import jakarta.validation.constraints.NotNull;
@@ -66,8 +68,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -110,7 +113,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     protected Container container;
     protected String frontendURI;
     protected List<String> validRedirectUris;
-    protected Map<String, Realm> realmCache = new ConcurrentHashMap<>();
+    protected Cache<String, Realm> realmCache = CacheBuilder.newBuilder()
+            .maximumSize(100)
+            .expireAfterWrite(Duration.ofMinutes(1))
+            .build();
 
     @Override
     public void init(Container container) {
@@ -458,7 +464,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     @Override
     public void requestPasswordReset(String realm, String userId) {
         getRealms(realmsResource -> {
-            realmsResource.realm(realm).users().get(userId).executeActionsEmail(
+            RealmResource realmResource = realmsResource.realm(realm);
+            if (realmResource.toRepresentation().getSmtpServer().isEmpty())
+                throw new IllegalStateException("SMTP server is not configured for realm: " + realm);
+            realmResource.users().get(userId).executeActionsEmail(
                     Collections.singletonList(UserModel.RequiredAction.UPDATE_PASSWORD.toString())
             );
             return null;
@@ -781,22 +790,26 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     @Override
     public Realm getRealm(String name) {
         // This gets hit a lot for event authorisation so caching added
-        return realmCache.computeIfAbsent(name, k -> {
-            try {
-                Realm realm = ManagerIdentityProvider.getRealmFromDb(persistenceService, name);
-                // Filter out built in roles
-                realm.setRealmRoles(
-                    realm.getRealmRoles()
-                            .stream()
-                            .filter(rr -> (MASTER_REALM.equals(name) && SUPER_USER_REALM_ROLE.equals(rr.getName())) || !isBuiltInRealmRole(rr.getName()))
-                            .collect(Collectors.toSet())
-                );
-                return realm;
-            } catch (Exception ex) {
-                LOG.log(Level.INFO, "Failed to get realm by name: " + name, ex);
-            }
-            return null;
-        });
+        try {
+            return realmCache.get(name, () -> {
+                try {
+                    Realm realm = ManagerIdentityProvider.getRealmFromDb(persistenceService, name);
+                    // Filter out built in roles
+                    realm.setRealmRoles(
+                        realm.getRealmRoles()
+                                .stream()
+                                .filter(rr -> (MASTER_REALM.equals(name) && SUPER_USER_REALM_ROLE.equals(rr.getName())) || !isBuiltInRealmRole(rr.getName()))
+                                .collect(Collectors.toSet())
+                    );
+                    return realm;
+                } catch (Exception ex) {
+                    LOG.log(Level.INFO, "Failed to get realm by name: " + name, ex);
+                }
+                return null;
+            });
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -846,7 +859,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             configureRealm(realmRepresentation);
             realmResource.update(realmRepresentation);
 
-            realmCache.remove(realm.getName());
+            realmCache.invalidate(realm.getName());
 
             Set<RealmRole> realmRoles = (realm.getRealmRoles() != null ? realm.getRealmRoles() : new HashSet<RealmRole>())
                     .stream()
@@ -938,7 +951,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             throw new NotFoundException("Realm does not exist: " + realmName);
         }
 
-        realmCache.remove(realmName);
+        realmCache.invalidate(realmName);
         persistenceService.doTransaction(entityManager -> {
 
             // Delete gateway connections

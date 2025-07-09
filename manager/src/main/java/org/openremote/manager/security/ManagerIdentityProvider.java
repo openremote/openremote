@@ -294,7 +294,8 @@ public interface ManagerIdentityProvider extends IdentityProvider {
             users.forEach(user -> {
                 // Clear out data and leave only basic info
                 user.setAttributes((UserAttribute[]) null);
-                user.setEmail(null);
+                //TODO restricted user should be able to see email?
+//                user.setEmail(null);
                 user.setRealmId(null);
                 user.setSecret(null);
             });

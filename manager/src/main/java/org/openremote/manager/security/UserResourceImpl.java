@@ -35,6 +35,7 @@ import jakarta.ws.rs.*;
 import org.openremote.model.util.TextUtil;
 
 import java.util.*;
+import java.util.AbstractMap;
 
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.Constants.MASTER_REALM;
@@ -140,18 +141,9 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     @Override
     public User update(RequestParams requestParams, User user) {
         try {
-            // Get the current authenticated user information
-            AuthContext authContext = getAuthContext();
-            if (authContext == null) {
-                throw new NotAuthorizedException("Not authenticated");
-            }
-            
-            String userId = authContext.getUserId();
-            String realm = authContext.getAuthenticatedRealmName();
-            
-            if (userId == null || realm == null) {
-                throw new NotAuthorizedException("User ID or realm not available");
-            }
+            Map.Entry<String, String> authInfo = getCurrentUserAuthInfo();
+            String userId = authInfo.getKey();
+            String realm = authInfo.getValue();
             
             // Ensure the user ID in the provided user object matches the current user
             if (user.getId() != null && !user.getId().equals(userId)) {
@@ -204,8 +196,24 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public void requestPasswordReset(RequestParams requestParams, String realm, String userId) {
+    public void requestUserPasswordReset(RequestParams requestParams, String realm, String userId) {
         try {
+            identityService.getIdentityProvider().requestPasswordReset(realm, userId);
+        } catch (ClientErrorException ex) {
+            throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex);
+        }
+    }
+
+    @Override
+    public void requestPasswordReset(RequestParams requestParams) {
+        try {
+            Map.Entry<String, String> authInfo = getCurrentUserAuthInfo();
+            String userId = authInfo.getKey();
+            String realm = authInfo.getValue();
+            
+            // Call the identity provider to request password reset for the current user
             identityService.getIdentityProvider().requestPasswordReset(realm, userId);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -228,18 +236,9 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     @Override
     public void resetPassword(@BeanParam RequestParams requestParams, Credential credential) {
         try {
-            // Get the current authenticated user information
-            AuthContext authContext = getAuthContext();
-            if (authContext == null) {
-                throw new NotAuthorizedException("Not authenticated");
-            }
-            
-            String userId = authContext.getUserId();
-            String realm = authContext.getAuthenticatedRealmName();
-            
-            if (userId == null || realm == null) {
-                throw new NotAuthorizedException("User ID or realm not available");
-            }
+            Map.Entry<String, String> authInfo = getCurrentUserAuthInfo();
+            String userId = authInfo.getKey();
+            String realm = authInfo.getValue();
             
             // Call the identity provider to reset the password
             identityService.getIdentityProvider().resetPassword(realm, userId, credential);
@@ -444,5 +443,21 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
             throw new NotAllowedException("The master realm admin user cannot be disabled");
         }
     }
-}
 
+    protected Map.Entry<String, String> getCurrentUserAuthInfo() {
+        // Get the current authenticated user information
+        AuthContext authContext = getAuthContext();
+        if (authContext == null) {
+            throw new NotAuthorizedException("Not authenticated");
+        }
+        
+        String userId = authContext.getUserId();
+        String realm = authContext.getAuthenticatedRealmName();
+        
+        if (userId == null || realm == null) {
+            throw new NotAuthorizedException("User ID or realm not available");
+        }
+        
+        return new AbstractMap.SimpleEntry<>(userId, realm);
+    }
+}

@@ -231,7 +231,6 @@ export class PageAccount extends Page<AppStateKeyed> {
     protected async _getAccountRowTemplate(user?: UserModel, readonly = true, onchange?: (user: User, dirty: boolean, invalid: boolean) => void): Promise<TemplateResult> {
         const realmResponse = await manager.rest.api.RealmResource.get(manager.displayRealm);
         const registrationEmailAsUsername = realmResponse.data.registrationEmailAsUsername;
-        console.log(realmResponse.data);
         const smtpConfigured = realmResponse.data.smtpUser && realmResponse.data.smtpHost && realmResponse.data.smtpPort;
         if (!user) {
             user = await this._getUser();
@@ -452,23 +451,36 @@ export class PageAccount extends Page<AppStateKeyed> {
      * If the password has been changed, it will, after updating the user, also request to reset the password.
      */
     protected async _updateUser(user: UserModel): Promise<void> {
-        await manager.rest.api.UserResource.update(user).then(() => {
+        try {
+            await manager.rest.api.UserResource.update(user);
+            
             if (user.password) {
                 const credentials = {value: user.password} as Credential;
-                manager.rest.api.UserResource.resetPassword(credentials)
-                    .then(() => {
-                        showSnackbar(undefined, "saveUserSucceeded");
-                    })
-                    .catch(() => {
-                        showSnackbar(undefined, "saveUserFailed");
-                    });
-                this._dirty = false;
+                try {
+                    await manager.rest.api.UserResource.resetPassword(credentials);
+                    showSnackbar(undefined, "saveUserSucceeded");
+                } catch (e) {
+                    showSnackbar(undefined, "saveUserFailed");
+                    return;
+                }
+            } else {
+                showSnackbar(undefined, "saveUserSucceeded");
             }
-        })
+            
+            // Update the stored user with the saved version and reset dirty flag
+            this._user = {...user};
+            this._dirty = false;
+            
+            // Force re-render to update UI elements (like the reset password button)
+            this.requestUpdate();
+        } catch (e) {
+            console.error("Failed to update user:", e);
+            showSnackbar(undefined, "saveUserFailed");
+        }
     }
 
     protected async _requestPasswordReset() {
-        await manager.rest.api.UserResource.requestPasswordReset(manager.getRealm(), this._user.id);
+        await manager.rest.api.UserResource.requestPasswordReset();
     }
 
     /**
