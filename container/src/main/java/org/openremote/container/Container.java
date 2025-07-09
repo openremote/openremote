@@ -114,9 +114,9 @@ public class Container implements org.openremote.model.Container {
         }
 
         int scheduledExecutorThreads = getInteger(
-                getConfig(),
-                OR_SCHEDULED_EXECUTOR_THREADS,
-                OR_SCHEDULED_EXECUTOR_THREADS_DEFAULT);
+            getConfig(),
+            OR_SCHEDULED_EXECUTOR_THREADS,
+            OR_SCHEDULED_EXECUTOR_THREADS_DEFAULT);
 
         int executorThreadsMin = getInteger(getConfig(), OR_EXECUTOR_THREADS_MIN, OR_EXECUTOR_THREADS_MIN_DEFAULT);
         int executorThreadsMax = getInteger(getConfig(), OR_EXECUTOR_THREADS_MAX, OR_EXECUTOR_THREADS_MAX_DEFAULT);
