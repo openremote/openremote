@@ -123,10 +123,11 @@ async function processLocaleFile(currFile, name, paths) {
 async function processDescriptor(name, props, localesDir) {
   console.log("valueDescriptor: ", name);
   const response = await fetch(
-    "http://localhost:8080/api/master/model/getItemSchemas",
+    `http://localhost:8080/api/master/model/getValueDescriptorSchema?version=unknown&descriptorType=${
+      props.type
+    }&arrayDimensions=${props.arrayDimensions || 0}`,
     {
-      method: "POST",
-      body: JSON.stringify({ name, ...props }),
+      method: "GET",
       headers: { "Content-Type": "application/json" },
     }
   );
