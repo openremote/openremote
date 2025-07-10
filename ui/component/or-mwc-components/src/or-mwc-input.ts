@@ -1,3 +1,21 @@
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {Ref, ref, createRef} from "lit/directives/ref.js";
@@ -17,7 +35,6 @@ import {MDCList, MDCListActionEvent} from "@material/list";
 import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
 import {MDCIconButtonToggle, MDCIconButtonToggleEventDetail} from "@material/icon-button";
 import {DefaultColor4, DefaultColor5, DefaultColor8, Util} from "@openremote/core";
-import "@openremote/or-icon";
 import {OrIcon} from "@openremote/or-icon";
 import {
     AssetDescriptor,
@@ -670,13 +687,13 @@ export class OrMwcInput extends LitElement {
     public type?: InputType;
 
     @property({type: String})
-    public name?: String;
+    public name?: string;
 
     @property({type: Boolean})
-    public readonly: boolean = false;
+    public readonly = false;
 
     @property({type: Boolean})
-    public required: boolean = false;
+    public required = false;
 
     @property()
     public max?: any;
@@ -688,10 +705,10 @@ export class OrMwcInput extends LitElement {
     public step?: number;
 
     @property({type: Boolean})
-    public checked: boolean = false;
+    public checked = false;
 
     @property({type: Boolean})
-    public indeterminate: boolean = false;
+    public indeterminate = false;
 
     @property({type: Number})
     public maxLength?: number;
@@ -706,7 +723,7 @@ export class OrMwcInput extends LitElement {
     public cols?: number;
 
     @property({type: Boolean})
-    public multiple: boolean = false;
+    public multiple = false;
 
     @property({type: String, attribute: true, reflect: false})
     public pattern?: string;
@@ -741,46 +758,46 @@ export class OrMwcInput extends LitElement {
     public iconTrailing?: string;
 
     @property({type: Boolean})
-    public compact: boolean = false;
+    public compact = false;
 
     @property({type: Boolean})
-    public comfortable: boolean = false;
+    public comfortable = false;
 
     /* BUTTON STYLES START */
 
     @property({type: Boolean})
-    public raised: boolean = false;
+    public raised = false;
 
     @property({type: Boolean})
-    public action: boolean = false;
+    public action = false;
 
     @property({type: Boolean})
-    public unElevated: boolean = false;
+    public unElevated = false;
 
     @property({type: Boolean})
-    public outlined: boolean = false;
+    public outlined = false;
 
     @property({type: Boolean})
-    public rounded: boolean = false;
+    public rounded = false;
 
     @property({type: Object})
     public format?: ValueFormat;
 
     @property({type: Boolean})
-    public disableSliderNumberInput: boolean = false;
+    public disableSliderNumberInput = false;
 
     /* BUTTON STYLES END */
 
     /* TEXT INPUT STYLES START */
 
     @property({type: Boolean})
-    public fullWidth: boolean = false;
+    public fullWidth = false;
 
     @property({type: String})
     public helperText?: string;
 
     @property({type: Boolean})
-    public helperPersistent: boolean = false;
+    public helperPersistent = false;
 
     @property({type: String, attribute: true})
     public validationMessage?: string;
@@ -789,31 +806,31 @@ export class OrMwcInput extends LitElement {
     public autoValidate = false;
 
     @property({type: Boolean})
-    public charCounter: boolean = false;
+    public charCounter = false;
 
     @property({type: String})
     public label?: string;
 
     @property({type: Boolean})
-    public disabled: boolean = false;
+    public disabled = false;
 
     @property({type: Boolean})
-    public continuous: boolean = false;
+    public continuous = false;
 
     @property({type: Boolean})
-    public resizeVertical: boolean = false;
+    public resizeVertical = false;
 
     /**
      * Always censure text fields (like a password), and do not allow toggling
      */
     @property({type: Boolean})
-    public censored: boolean = false;
+    public censored = false;
 
     /**
      * Toggles visibility state of the password InputType (true = shown, false = hidden)
      */
     @property({type: Boolean, reflect: true})
-    public advertised: boolean = false;
+    public advertised = false;
 
     public get nativeValue(): any {
         if (this._mdcComponent) {
@@ -830,8 +847,10 @@ export class OrMwcInput extends LitElement {
     protected _tempValue: any;
     @state()
     protected isUiValid = true;
+
     @state()
     public searchableValue?: string;
+
     @state()
     protected errorMessage?: string;
 
@@ -912,7 +931,7 @@ export class OrMwcInput extends LitElement {
                 "mdc-text-field-helper-text--validation-msg": showValidationMessage,
             };
             const hasValue = (this.value !== null && this.value !== undefined) || this.value === false;
-            let labelTemplate = showLabel ? html`<span class="mdc-floating-label ${hasValue ? "mdc-floating-label--float-above" : ""}" id="label">${this.label}</span>` : undefined;
+            const labelTemplate = showLabel ? html`<span class="mdc-floating-label ${hasValue ? "mdc-floating-label--float-above" : ""}" id="label">${this.label}</span>` : undefined;
 
             switch (this.type) {
                 case InputType.RADIO:
@@ -1032,8 +1051,8 @@ export class OrMwcInput extends LitElement {
                             } else {
                                 inputValue.push(value);
                             }
-                            const listItemEl = (ev.composedPath()[0] as HTMLElement).closest("li") as HTMLElement,
-                                iconEl = listItemEl.getElementsByTagName("or-icon")[0] as OrIcon;
+                            const listItemEl = (ev.composedPath()[0] as HTMLElement).closest("li") as HTMLElement;
+                                const iconEl = listItemEl.getElementsByTagName("or-icon")[0] as OrIcon;
                             if (listItemEl) {
                                 if (index >= 0) {
                                     listItemEl.classList.remove("mdc-list-item--selected");
@@ -1273,7 +1292,7 @@ export class OrMwcInput extends LitElement {
                             </div>
                     `;
                 case InputType.CHECKBOX:
-                    let classList = {
+                    const classList = {
                         "mdc-checkbox": true,
                         "mdc-checkbox--disabled": this.disabled || this.readonly
                     };

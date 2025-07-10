@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,135 +12,173 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.auth;
+
+import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
+
+import java.io.Serializable;
+import java.util.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import org.openremote.model.util.TextUtil;
 
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
-import java.io.Serializable;
-import java.util.*;
 
-import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
-
-@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.EXISTING_PROPERTY, property = OAuthGrant.VALUE_KEY_GRANT_TYPE)
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    property = OAuthGrant.VALUE_KEY_GRANT_TYPE)
 @JsonSubTypes({
-    @JsonSubTypes.Type(name=OAuthPasswordGrant.PASSWORD_GRANT_TYPE, value=OAuthPasswordGrant.class),
-    @JsonSubTypes.Type(name=OAuthClientCredentialsGrant.CLIENT_CREDENTIALS_GRANT_TYPE, value=OAuthClientCredentialsGrant.class),
-    @JsonSubTypes.Type(name=OAuthRefreshTokenGrant.REFRESH_TOKEN_GRANT_TYPE, value=OAuthRefreshTokenGrant.class),
+  @JsonSubTypes.Type(
+      name = OAuthPasswordGrant.PASSWORD_GRANT_TYPE,
+      value = OAuthPasswordGrant.class),
+  @JsonSubTypes.Type(
+      name = OAuthClientCredentialsGrant.CLIENT_CREDENTIALS_GRANT_TYPE,
+      value = OAuthClientCredentialsGrant.class),
+  @JsonSubTypes.Type(
+      name = OAuthRefreshTokenGrant.REFRESH_TOKEN_GRANT_TYPE,
+      value = OAuthRefreshTokenGrant.class),
 })
 public abstract class OAuthGrant implements Serializable {
 
-    public static final String VALUE_KEY_GRANT_TYPE = "grant_type";
-    public static final String VALUE_KEY_TOKEN_ENDPOINT_URI = "tokenEndpointUri";
-    public static final String VALUE_KEY_CLIENT_ID = "client_id";
-    public static final String VALUE_KEY_CLIENT_SECRET = "client_secret";
-    public static final String VALUE_KEY_SCOPE = "scope";
-    protected String tokenEndpointUri;
-    protected boolean basicAuthHeader;
-    protected Map<String, List<String>> additionalValueMap = null;
-    @JsonProperty(VALUE_KEY_GRANT_TYPE)
-    protected String grantType;
-    @JsonProperty(VALUE_KEY_CLIENT_ID)
-    String clientId;
-    @JsonProperty(VALUE_KEY_CLIENT_SECRET)
-    String clientSecret;
-    @JsonProperty(VALUE_KEY_SCOPE)
-    String scope;
+  public static final String VALUE_KEY_GRANT_TYPE = "grant_type";
+  public static final String VALUE_KEY_TOKEN_ENDPOINT_URI = "tokenEndpointUri";
+  public static final String VALUE_KEY_CLIENT_ID = "client_id";
+  public static final String VALUE_KEY_CLIENT_SECRET = "client_secret";
+  public static final String VALUE_KEY_SCOPE = "scope";
+  protected String tokenEndpointUri;
+  protected boolean basicAuthHeader;
+  protected Map<String, List<String>> additionalValueMap = null;
 
-    protected OAuthGrant(String tokenEndpointUri, String grantType, String clientId, String clientSecret, String scope) {
-        requireNonNullAndNonEmpty(tokenEndpointUri);
-        requireNonNullAndNonEmpty(grantType);
-        requireNonNullAndNonEmpty(clientId);
-        this.grantType = grantType;
-        this.clientId = clientId;
-        this.clientSecret = clientSecret;
-        this.scope = scope;
-        this.tokenEndpointUri = tokenEndpointUri;
-    }
+  @JsonProperty(VALUE_KEY_GRANT_TYPE)
+  protected String grantType;
 
-    public MultivaluedMap<String, String> asMultivaluedMap() {
-        MultivaluedMap<String, String> valueMap = new MultivaluedHashMap<>();
-        valueMap.put(VALUE_KEY_GRANT_TYPE, Collections.singletonList(grantType));
-        valueMap.put(VALUE_KEY_CLIENT_ID, Collections.singletonList(clientId));
-        if(!TextUtil.isNullOrEmpty(clientSecret)) {
-            valueMap.put(VALUE_KEY_CLIENT_SECRET, Collections.singletonList(clientSecret));
-        }
-        if(!TextUtil.isNullOrEmpty(scope)) {
-            valueMap.put(VALUE_KEY_SCOPE, Collections.singletonList(scope));
-        }
-        if(additionalValueMap != null)
-            valueMap.putAll(additionalValueMap);
-        return valueMap;
-    }
+  @JsonProperty(VALUE_KEY_CLIENT_ID)
+  String clientId;
 
-    public void addFormParameter(String key, String value) {
-        if(additionalValueMap == null)
-            additionalValueMap = new HashMap<>();
-        additionalValueMap.put(key, Collections.singletonList(value));
-    }
+  @JsonProperty(VALUE_KEY_CLIENT_SECRET)
+  String clientSecret;
 
-    public String getTokenEndpointUri() {
-        return tokenEndpointUri;
-    }
+  @JsonProperty(VALUE_KEY_SCOPE)
+  String scope;
 
-    public OAuthGrant setTokenEndpointUri(String tokenEndpointUri) {
-        this.tokenEndpointUri = tokenEndpointUri;
-        return this;
-    }
+  protected OAuthGrant(
+      String tokenEndpointUri,
+      String grantType,
+      String clientId,
+      String clientSecret,
+      String scope) {
+    requireNonNullAndNonEmpty(tokenEndpointUri);
+    requireNonNullAndNonEmpty(grantType);
+    requireNonNullAndNonEmpty(clientId);
+    this.grantType = grantType;
+    this.clientId = clientId;
+    this.clientSecret = clientSecret;
+    this.scope = scope;
+    this.tokenEndpointUri = tokenEndpointUri;
+  }
 
-    public String getGrantType() {
-        return grantType;
+  public MultivaluedMap<String, String> asMultivaluedMap() {
+    MultivaluedMap<String, String> valueMap = new MultivaluedHashMap<>();
+    valueMap.put(VALUE_KEY_GRANT_TYPE, Collections.singletonList(grantType));
+    valueMap.put(VALUE_KEY_CLIENT_ID, Collections.singletonList(clientId));
+    if (!TextUtil.isNullOrEmpty(clientSecret)) {
+      valueMap.put(VALUE_KEY_CLIENT_SECRET, Collections.singletonList(clientSecret));
     }
+    if (!TextUtil.isNullOrEmpty(scope)) {
+      valueMap.put(VALUE_KEY_SCOPE, Collections.singletonList(scope));
+    }
+    if (additionalValueMap != null) valueMap.putAll(additionalValueMap);
+    return valueMap;
+  }
 
-    public String getClientId() {
-        return clientId;
-    }
+  public void addFormParameter(String key, String value) {
+    if (additionalValueMap == null) additionalValueMap = new HashMap<>();
+    additionalValueMap.put(key, Collections.singletonList(value));
+  }
 
-    public String getClientSecret() {
-        return clientSecret;
-    }
+  public String getTokenEndpointUri() {
+    return tokenEndpointUri;
+  }
 
-    public String getScope() {
-        return scope;
-    }
+  public OAuthGrant setTokenEndpointUri(String tokenEndpointUri) {
+    this.tokenEndpointUri = tokenEndpointUri;
+    return this;
+  }
 
-    public boolean isBasicAuthHeader() {
-        return basicAuthHeader;
-    }
+  public String getGrantType() {
+    return grantType;
+  }
 
-    public OAuthGrant setBasicAuthHeader(boolean basicAuthHeader) {
-        this.basicAuthHeader = basicAuthHeader;
-        return this;
-    }
+  public String getClientId() {
+    return clientId;
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        OAuthGrant grant = (OAuthGrant) o;
-        return basicAuthHeader == grant.basicAuthHeader && Objects.equals(tokenEndpointUri, grant.tokenEndpointUri) && Objects.equals(grantType, grant.grantType) && Objects.equals(clientId, grant.clientId) && Objects.equals(clientSecret, grant.clientSecret) && Objects.equals(scope, grant.scope);
-    }
+  public String getClientSecret() {
+    return clientSecret;
+  }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(tokenEndpointUri, basicAuthHeader, grantType, clientId, clientSecret, scope);
-    }
+  public String getScope() {
+    return scope;
+  }
 
-    @Override
-    public String toString() {
-        return OAuthGrant.class.getSimpleName() + "{" +
-            "tokenEndpointUri='" + tokenEndpointUri + '\'' +
-            ", basicAuthHeader=" + basicAuthHeader +
-            ", grantType='" + grantType + '\'' +
-            ", clientId='" + clientId + '\'' +
-            ", clientSecret='" + clientSecret + '\'' +
-            ", scope='" + scope + '\'' +
-            '}';
-    }
+  public boolean isBasicAuthHeader() {
+    return basicAuthHeader;
+  }
+
+  public OAuthGrant setBasicAuthHeader(boolean basicAuthHeader) {
+    this.basicAuthHeader = basicAuthHeader;
+    return this;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    OAuthGrant grant = (OAuthGrant) o;
+    return basicAuthHeader == grant.basicAuthHeader
+        && Objects.equals(tokenEndpointUri, grant.tokenEndpointUri)
+        && Objects.equals(grantType, grant.grantType)
+        && Objects.equals(clientId, grant.clientId)
+        && Objects.equals(clientSecret, grant.clientSecret)
+        && Objects.equals(scope, grant.scope);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        tokenEndpointUri, basicAuthHeader, grantType, clientId, clientSecret, scope);
+  }
+
+  @Override
+  public String toString() {
+    return OAuthGrant.class.getSimpleName()
+        + "{"
+        + "tokenEndpointUri='"
+        + tokenEndpointUri
+        + '\''
+        + ", basicAuthHeader="
+        + basicAuthHeader
+        + ", grantType='"
+        + grantType
+        + '\''
+        + ", clientId='"
+        + clientId
+        + '\''
+        + ", clientSecret='"
+        + clientSecret
+        + '\''
+        + ", scope='"
+        + scope
+        + '\''
+        + '}';
+  }
 }

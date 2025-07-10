@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,56 +12,58 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.velbus;
 
+import java.util.Optional;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.openremote.model.asset.agent.AgentLink;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import java.util.Optional;
 
 public class VelbusAgentLink extends AgentLink<VelbusAgentLink> {
 
-    @NotBlank
-    protected String deviceValueLink;
+  @NotBlank protected String deviceValueLink;
 
-    @Min(1)
-    @Max(255)
-    @NotNull
-    protected Integer deviceAddress;
+  @Min(1) @Max(255) @NotNull protected Integer deviceAddress;
 
-    // For Hydrators
-    protected VelbusAgentLink() {
-    }
+  // For Hydrators
+  protected VelbusAgentLink() {}
 
-    @JsonCreator
-    public VelbusAgentLink(@JsonProperty("id") String id, @JsonProperty("deviceAddress") Integer deviceAddress, @JsonProperty("deviceValueLink") String deviceValueLink) {
-        super(id);
-        this.deviceValueLink = deviceValueLink;
-        this.deviceAddress = deviceAddress;
-    }
+  @JsonCreator
+  public VelbusAgentLink(
+      @JsonProperty("id") String id,
+      @JsonProperty("deviceAddress") Integer deviceAddress,
+      @JsonProperty("deviceValueLink") String deviceValueLink) {
+    super(id);
+    this.deviceValueLink = deviceValueLink;
+    this.deviceAddress = deviceAddress;
+  }
 
-    public Optional<String> getDeviceValueLink() {
-        return Optional.ofNullable(deviceValueLink);
-    }
+  public Optional<String> getDeviceValueLink() {
+    return Optional.ofNullable(deviceValueLink);
+  }
 
-    public VelbusAgentLink setDeviceValueLink(String deviceValueLink) {
-        this.deviceValueLink = deviceValueLink;
-        return this;
-    }
+  public VelbusAgentLink setDeviceValueLink(String deviceValueLink) {
+    this.deviceValueLink = deviceValueLink;
+    return this;
+  }
 
-    public Optional<Integer> getDeviceAddress() {
-        return Optional.ofNullable(deviceAddress);
-    }
+  public Optional<Integer> getDeviceAddress() {
+    return Optional.ofNullable(deviceAddress);
+  }
 
-    public VelbusAgentLink setDeviceAddress(Integer deviceAddress) {
-        this.deviceAddress = deviceAddress;
-        return this;
-    }
+  public VelbusAgentLink setDeviceAddress(Integer deviceAddress) {
+    this.deviceAddress = deviceAddress;
+    return this;
+  }
 }

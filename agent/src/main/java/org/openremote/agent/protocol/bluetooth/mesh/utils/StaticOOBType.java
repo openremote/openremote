@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,37 +12,35 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.utils;
 
 public enum StaticOOBType {
 
-    /**
-     * Static OOB Type
-     */
-    STATIC_OOB_AVAILABLE((short) 0x0001);
+  /** Static OOB Type */
+  STATIC_OOB_AVAILABLE((short) 0x0001);
 
-    private static final String TAG = StaticOOBType.class.getSimpleName();
-    private short staticOobType;
+  private static final String TAG = StaticOOBType.class.getSimpleName();
+  private short staticOobType;
 
-    StaticOOBType(final short staticOobType) {
-        this.staticOobType = staticOobType;
+  StaticOOBType(final short staticOobType) {
+    this.staticOobType = staticOobType;
+  }
+
+  public static String parseStaticOOBActionInformation(final StaticOOBType type) {
+    switch (type) {
+      case STATIC_OOB_AVAILABLE:
+        return "Static OOB Actions available";
+      default:
+        return "Static OOB Actions unavailable";
     }
+  }
 
-    public static String parseStaticOOBActionInformation(final StaticOOBType type) {
-        switch (type) {
-            case STATIC_OOB_AVAILABLE:
-                return "Static OOB Actions available";
-            default:
-                return "Static OOB Actions unavailable";
-        }
-    }
-
-    /**
-     * Returns the static oob type value
-     */
-    public short getStaticOobType() {
-        return staticOobType;
-    }
+  /** Returns the static oob type value */
+  public short getStaticOobType() {
+    return staticOobType;
+  }
 }

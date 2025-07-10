@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { css, html, TemplateResult, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
@@ -42,16 +41,16 @@ export class OrConfMapCard extends LitElement {
     public map: MapRealmConfig = {};
 
     @property({ attribute: true })
-    public name: string = "";
+    public name = "";
 
     @property({ type: Boolean })
-    expanded: boolean = false;
+    expanded = false;
 
     @property()
-    public canRemove: boolean = false;
+    public canRemove = false;
 
     @state()
-    protected zoom: number = 1;
+    protected zoom = 1;
 
     protected notifyConfigChange(config: MapRealmConfig) {
         this.dispatchEvent(new CustomEvent("change", { detail: config }));

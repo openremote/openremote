@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,207 +12,231 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.notification;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 import java.util.Date;
 
-import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "NOTIFICATION")
 public class SentNotification {
 
-    @Id
-    @Column(name = "ID")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
-    @SequenceGenerator(name = PERSISTENCE_SEQUENCE_ID_GENERATOR, initialValue = 1000, allocationSize = 1)
-    protected Long id;
+  @Id
+  @Column(name = "ID")
+  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
+  @SequenceGenerator(
+      name = PERSISTENCE_SEQUENCE_ID_GENERATOR,
+      initialValue = 1000,
+      allocationSize = 1)
+  protected Long id;
 
-    @Column(name = "NAME")
-    protected String name;
+  @Column(name = "NAME")
+  protected String name;
 
-    @NotNull
-    @Column(name = "TYPE", nullable = false, length = 50)
-    protected String type;
+  @NotNull @Column(name = "TYPE", nullable = false, length = 50)
+  protected String type;
 
-    @NotNull
-    @Column(name = "TARGET", length = 50)
-    @Enumerated(EnumType.STRING)
-    protected Notification.TargetType target;
+  @NotNull @Column(name = "TARGET", length = 50)
+  @Enumerated(EnumType.STRING)
+  protected Notification.TargetType target;
 
-    @NotNull
-    @Column(name = "TARGET_ID")
-    protected String targetId;
+  @NotNull @Column(name = "TARGET_ID")
+  protected String targetId;
 
-    @NotNull()
-    @Column(name = "SOURCE", length = 50)
-    @Enumerated(EnumType.STRING)
-    protected Notification.Source source;
+  @NotNull() @Column(name = "SOURCE", length = 50)
+  @Enumerated(EnumType.STRING)
+  protected Notification.Source source;
 
-    @Column(name = "SOURCE_ID", length = 43)
-    protected String sourceId;
+  @Column(name = "SOURCE_ID", length = 43)
+  protected String sourceId;
 
-    @Column(name = "MESSAGE")
-    @JdbcTypeCode(SqlTypes.JSON)
-    protected AbstractNotificationMessage message;
+  @Column(name = "MESSAGE")
+  @JdbcTypeCode(SqlTypes.JSON)
+  protected AbstractNotificationMessage message;
 
-    @Column(name = "ERROR", length = 4096)
-    protected String error;
+  @Column(name = "ERROR", length = 4096)
+  protected String error;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "SENT_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    protected Date sentOn;
+  @Temporal(TemporalType.TIMESTAMP)
+  @Column(
+      name = "SENT_ON",
+      updatable = false,
+      nullable = false,
+      columnDefinition = "TIMESTAMP WITH TIME ZONE")
+  protected Date sentOn;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "DELIVERED_ON", columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    protected Date deliveredOn;
+  @Temporal(TemporalType.TIMESTAMP)
+  @Column(name = "DELIVERED_ON", columnDefinition = "TIMESTAMP WITH TIME ZONE")
+  protected Date deliveredOn;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "ACKNOWLEDGED_ON", columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    protected Date acknowledgedOn;
+  @Temporal(TemporalType.TIMESTAMP)
+  @Column(name = "ACKNOWLEDGED_ON", columnDefinition = "TIMESTAMP WITH TIME ZONE")
+  protected Date acknowledgedOn;
 
-    @Column(name = "ACKNOWLEDGEMENT")
-    protected String acknowledgement;
+  @Column(name = "ACKNOWLEDGEMENT")
+  protected String acknowledgement;
 
-    public Long getId() {
-        return id;
-    }
+  public Long getId() {
+    return id;
+  }
 
-    public SentNotification setId(Long id) {
-        this.id = id;
-        return this;
-    }
+  public SentNotification setId(Long id) {
+    this.id = id;
+    return this;
+  }
 
-    public String getName() {
-        return name;
-    }
+  public String getName() {
+    return name;
+  }
 
-    public SentNotification setName(String name) {
-        this.name = name;
-        return this;
-    }
+  public SentNotification setName(String name) {
+    this.name = name;
+    return this;
+  }
 
-    public String getType() {
-        return type;
-    }
+  public String getType() {
+    return type;
+  }
 
-    public SentNotification setType(String type) {
-        this.type = type;
-        return this;
-    }
+  public SentNotification setType(String type) {
+    this.type = type;
+    return this;
+  }
 
-    public Date getSentOn() {
-        return sentOn;
-    }
+  public Date getSentOn() {
+    return sentOn;
+  }
 
-    public SentNotification setSentOn(Date sentOn) {
-        this.sentOn = sentOn;
-        return this;
-    }
+  public SentNotification setSentOn(Date sentOn) {
+    this.sentOn = sentOn;
+    return this;
+  }
 
-    public Notification.Source getSource() {
-        return source;
-    }
+  public Notification.Source getSource() {
+    return source;
+  }
 
-    public SentNotification setSource(Notification.Source source) {
-        this.source = source;
-        return this;
-    }
+  public SentNotification setSource(Notification.Source source) {
+    this.source = source;
+    return this;
+  }
 
-    public String getSourceId() {
-        return sourceId;
-    }
+  public String getSourceId() {
+    return sourceId;
+  }
 
-    public SentNotification setSourceId(String sourceId) {
-        this.sourceId = sourceId;
-        return this;
-    }
+  public SentNotification setSourceId(String sourceId) {
+    this.sourceId = sourceId;
+    return this;
+  }
 
-    public Notification.TargetType getTarget() {
-        return target;
-    }
+  public Notification.TargetType getTarget() {
+    return target;
+  }
 
-    public SentNotification setTarget(Notification.TargetType target) {
-        this.target = target;
-        return this;
-    }
+  public SentNotification setTarget(Notification.TargetType target) {
+    this.target = target;
+    return this;
+  }
 
-    public String getTargetId() {
-        return targetId;
-    }
+  public String getTargetId() {
+    return targetId;
+  }
 
-    public SentNotification setTargetId(String targetId) {
-        this.targetId = targetId;
-        return this;
-    }
+  public SentNotification setTargetId(String targetId) {
+    this.targetId = targetId;
+    return this;
+  }
 
-    public AbstractNotificationMessage getMessage() {
-        return message;
-    }
+  public AbstractNotificationMessage getMessage() {
+    return message;
+  }
 
-    public SentNotification setMessage(AbstractNotificationMessage message) {
-        this.message = message;
-        return this;
-    }
+  public SentNotification setMessage(AbstractNotificationMessage message) {
+    this.message = message;
+    return this;
+  }
 
-    public Date getDeliveredOn() {
-        return deliveredOn;
-    }
+  public Date getDeliveredOn() {
+    return deliveredOn;
+  }
 
-    public SentNotification setDeliveredOn(Date deliveredOn) {
-        this.deliveredOn = deliveredOn;
-        return this;
-    }
+  public SentNotification setDeliveredOn(Date deliveredOn) {
+    this.deliveredOn = deliveredOn;
+    return this;
+  }
 
-    public Date getAcknowledgedOn() {
-        return acknowledgedOn;
-    }
+  public Date getAcknowledgedOn() {
+    return acknowledgedOn;
+  }
 
-    public SentNotification setAcknowledgedOn(Date acknowledgedOn) {
-        this.acknowledgedOn = acknowledgedOn;
-        return this;
-    }
+  public SentNotification setAcknowledgedOn(Date acknowledgedOn) {
+    this.acknowledgedOn = acknowledgedOn;
+    return this;
+  }
 
-    public String getAcknowledgement() {
-        return acknowledgement;
-    }
+  public String getAcknowledgement() {
+    return acknowledgement;
+  }
 
-    public SentNotification setAcknowledgement(String acknowledgement) {
-        this.acknowledgement = acknowledgement;
-        return this;
-    }
+  public SentNotification setAcknowledgement(String acknowledgement) {
+    this.acknowledgement = acknowledgement;
+    return this;
+  }
 
-    public String getError() {
-        return error;
-    }
+  public String getError() {
+    return error;
+  }
 
-    public SentNotification setError(String error) {
-        this.error = error;
-        return this;
-    }
+  public SentNotification setError(String error) {
+    this.error = error;
+    return this;
+  }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "id=" + id +
-            ", name='" + name + '\'' +
-            ", type='" + type + '\'' +
-            ", target=" + target +
-            ", targetId='" + targetId + '\'' +
-            ", source=" + source +
-            ", sourceId='" + sourceId + '\'' +
-            ", message=" + message +
-            ", sentOn=" + sentOn +
-            ", deliveredOn=" + deliveredOn +
-            ", acknowledgedOn=" + acknowledgedOn +
-            ", acknowledgement='" + acknowledgement + '\'' +
-            '}';
-    }
+  @Override
+  public String toString() {
+    return getClass().getSimpleName()
+        + "{"
+        + "id="
+        + id
+        + ", name='"
+        + name
+        + '\''
+        + ", type='"
+        + type
+        + '\''
+        + ", target="
+        + target
+        + ", targetId='"
+        + targetId
+        + '\''
+        + ", source="
+        + source
+        + ", sourceId='"
+        + sourceId
+        + '\''
+        + ", message="
+        + message
+        + ", sentOn="
+        + sentOn
+        + ", deliveredOn="
+        + deliveredOn
+        + ", acknowledgedOn="
+        + acknowledgedOn
+        + ", acknowledgement='"
+        + acknowledgement
+        + '\''
+        + '}';
+  }
 }
