@@ -4,7 +4,7 @@ import {
     JsonFormsCellRendererRegistryEntry,
     JsonFormsRendererRegistryEntry,
     JsonFormsUISchemaRegistryEntry,
-    JsonSchema,
+    JsonSchema7,
     OwnPropsOfRenderer,
     UISchemaElement
 } from '@jsonforms/core';
@@ -19,6 +19,7 @@ export interface AdditionalProps {
     errors?: string;
     minimal?: boolean;
     type?: string;
+    definition?: string;
 }
 
 export abstract class BaseElement<T extends UISchemaElement, P extends OwnPropsOfRenderer> extends LitElement implements OwnPropsOfRenderer, AdditionalProps {
@@ -30,7 +31,7 @@ export abstract class BaseElement<T extends UISchemaElement, P extends OwnPropsO
     public uischema!: T;
 
     @property({type: Object})
-    public schema!: JsonSchema;
+    public schema!: JsonSchema7;
 
     @property({type: String, attribute: false})
     public data: any;
@@ -65,8 +66,19 @@ export abstract class BaseElement<T extends UISchemaElement, P extends OwnPropsO
     @property()
     public errors!: string;
 
+    @property()
+    public definition!: string;
+
     public set props(props: P) {
         delete (props as any).id;
         Object.assign(this, props);
+    }
+
+    protected getOwnProps(): OwnPropsOfRenderer {
+      return {
+        uischema: this.uischema,
+        schema: this.schema,
+        path: this.path,
+      };
     }
 }
