@@ -60,6 +60,15 @@ export interface ChartViewConfig {
     decimals?: number;
 }
 
+export interface ChartAttributeConfig {
+    rightAxisAttributes: AttributeRef[],
+    smoothAttributes: AttributeRef[],
+    steppedAttributes: AttributeRef[],
+    areaAttributes: AttributeRef[],
+    faintAttributes: AttributeRef[],
+    extendedAttributes: AttributeRef[]
+}
+
 export interface OrChartEventDetail {
     value?: any;
     previousValue?: any;
@@ -342,26 +351,11 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Object})
     public assetAttributes: [number, Attribute<any>][] = [];
 
-    @property({type: Array})
-    public colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }> = [];
+    @property({type: Object})
+    public colorPickedAttributes?: Map<AttributeRef, string> = new Map();
 
     @property({type: Object})
-    public attributeSettings: {
-        rightAxisAttributes: AttributeRef[],
-        smoothAttributes: AttributeRef[],
-        steppedAttributes: AttributeRef[],
-        areaAttributes: AttributeRef[],
-        faintAttributes: AttributeRef[],
-        extendedAttributes: AttributeRef[],
-    } = {
-        rightAxisAttributes: [],
-        smoothAttributes: [],
-        steppedAttributes: [],
-        areaAttributes: [],
-        faintAttributes: [],
-        extendedAttributes: [],
-    };
-
+    public attributeConfig: ChartAttributeConfig = this._getDefaultAttributeConfig();
 
     @property()
     public dataProvider?: (startOfPeriod: number, endOfPeriod: number) => Promise<[]>
@@ -486,7 +480,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         const reloadData = changedProperties.has('colorPickedAttributes') || changedProperties.has("datapointQuery") || changedProperties.has("timeframe") || changedProperties.has("timePrefixKey") || changedProperties.has("timeWindowKey")||
-            changedProperties.has("attributeSettings") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
+            changedProperties.has("attributeConfig") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
 
         if (reloadData) {
             this._data = undefined;
@@ -522,7 +516,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                     borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
                     left: 10,
-                    right: this.attributeSettings.rightAxisAttributes.length > 0 ? 50 : 20,
+                    right: this.attributeConfig?.rightAxisAttributes?.length > 0 ? 50 : 20,
                     top: this.showToolBox ? 28 : 10,
                     bottom: this.showZoomBar ? 68 : 10,
                     containLabel: true
@@ -581,7 +575,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     },
                     {
                         type: 'value',
-                        show: this.attributeSettings.rightAxisAttributes.length > 0,
+                        show: this.attributeConfig.rightAxisAttributes.length > 0,
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ['10%', '10%'],
                         scale: true,
@@ -794,10 +788,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
                                     const asset: Asset | undefined = this.assets[assetIndex];
                                     const colourIndex = index % this.colors.length;
-                                    const color = this.colorPickedAttributes.find(({ attributeRef }) => attributeRef.name === attr.name && attributeRef.id === asset.id)?.color;
+                                    const color = this.colorPickedAttributes?.get({id: asset.id, name: attr.name});
                                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset!.type, attr.name, attr);
                                     const label = Util.getAttributeLabel(attr, descriptors[0], asset!.type, true);
-                                    const axisNote = (this.attributeSettings.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
+                                    const axisNote = (this.attributeConfig.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
                                     const bgColor = ( color ?? this.colors[colourIndex] ) || "";
                                     return html`
                                         <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseenter="${() => this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseleave="${()=> this.removeDatasetHighlight()}">
@@ -1226,13 +1220,13 @@ export class OrChart extends translate(i18next)(LitElement) {
                 promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
 
                     const asset = this.assets[assetIndex];
-                    const shownOnRightAxis = !!this.attributeSettings.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
-                    const smooth = !!this.attributeSettings.smoothAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
-                    const stepped = !!this.attributeSettings.steppedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
-                    const area = !!this.attributeSettings.areaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
-                    const faint = !!this.attributeSettings.faintAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
-                    const extended = !!this.attributeSettings.extendedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
-                    const color = this.colorPickedAttributes.find(({ attributeRef }) => attributeRef.name === attribute.name && attributeRef.id === asset.id)?.color;
+                    const shownOnRightAxis = !!this.attributeConfig.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const smooth = !!this.attributeConfig.smoothAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const stepped = !!this.attributeConfig.steppedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const area = !!this.attributeConfig.areaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const faint = !!this.attributeConfig.faintAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const extended = !!this.attributeConfig.extendedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const color = this.colorPickedAttributes?.get({ id: asset.id, name: attribute.name });
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);
                     const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
                     const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
@@ -1504,6 +1498,21 @@ export class OrChart extends translate(i18next)(LitElement) {
         // Sort by value for better readability
         tooltipArray.sort((a, b) => b.value - a.value);
         return tooltipArray.map(t => t.text).join('');
+    }
+
+    /**
+     * Internal function to get the default Chart attribute config.
+     * @protected
+     */
+    protected _getDefaultAttributeConfig(): ChartAttributeConfig {
+        return {
+            rightAxisAttributes: [],
+            smoothAttributes: [],
+            steppedAttributes: [],
+            areaAttributes: [],
+            faintAttributes: [],
+            extendedAttributes: []
+        };
     }
 
 }

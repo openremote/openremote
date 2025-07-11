@@ -48,18 +48,18 @@ export class ChartSettings extends WidgetSettings {
         const attributeFilter: (attr: Attribute<any>) => boolean = (attr): boolean => {
             return ["boolean", "positiveInteger", "positiveNumber", "number", "long", "integer", "bigInteger", "negativeInteger", "negativeNumber", "bigNumber", "integerByte", "direction"].includes(attr.type!)
         };
-        const attrSettings = this.widgetConfig.attributeSettings;
+        const attrConfig = this.widgetConfig.attributeConfig;
         const min = this.widgetConfig.chartOptions.options?.scales?.y?.min;
         const max = this.widgetConfig.chartOptions.options?.scales?.y?.max;
-        const isMultiAxis = attrSettings.rightAxisAttributes.length > 0;
+        const isMultiAxis = attrConfig.rightAxisAttributes.length > 0;
         const samplingValue = Array.from(this.samplingOptions.entries()).find((entry => entry[1] === this.widgetConfig.datapointQuery.type))![0]
         const attributeLabelCallback = (asset: Asset, attribute: Attribute<any>, attributeLabel: string) => {
-            const isOnRightAxis = isMultiAxis && attrSettings.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isFaint = attrSettings.faintAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isSmooth = attrSettings.smoothAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isStepped = attrSettings.steppedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isArea = attrSettings.areaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isExtended = attrSettings.extendedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isOnRightAxis = isMultiAxis && attrConfig.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isFaint = attrConfig.faintAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isSmooth = attrConfig.smoothAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isStepped = attrConfig.steppedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isArea = attrConfig.areaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isExtended = attrConfig.extendedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
             return html`
                 <span>${asset.name}</span>
                 <span style="font-size:14px; color:grey;">${attributeLabel}</span>
@@ -119,7 +119,7 @@ export class ChartSettings extends WidgetSettings {
                 },
 
                 {
-                    icon: this.widgetConfig.attributeSettings.rightAxisAttributes.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
+                    icon: this.widgetConfig.attributeConfig.rightAxisAttributes.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
                     tooltip: i18next.t('dashboard.toggleAxis'),
                     disabled: false
                 },
@@ -336,7 +336,7 @@ export class ChartSettings extends WidgetSettings {
             default:
                 console.warn('Unknown attribute panel action:', action);
         }
-        console.log("end of onAttributeAction" + JSON.stringify(this.widgetConfig.attributeSettings));
+        console.log("end of onAttributeAction" + JSON.stringify(this.widgetConfig.attributeConfig));
     }
 
     // When the list of attributeRefs is changed by the asset selector,
@@ -346,7 +346,7 @@ export class ChartSettings extends WidgetSettings {
         const removedAttributeRefs = this.widgetConfig.attributeRefs.filter(ar => !ev.detail.attributeRefs.includes(ar));
 
         removedAttributeRefs.forEach(raf => {
-            this.removeFromAttributeSettings(raf);
+            this.removeFromAttributeConfig(raf);
             this.removeFromColorPickedAttributes(raf);
         });
 
@@ -354,18 +354,18 @@ export class ChartSettings extends WidgetSettings {
         this.notifyConfigUpdate();
     }
 
-    protected removeFromAttributeSettings(attributeRef: AttributeRef) {
-        const settings = this.widgetConfig.attributeSettings;
-        (Object.keys(settings) as (keyof typeof settings)[]).forEach(key => {
-            settings[key] = settings[key].filter((ar: AttributeRef) => ar.id !== attributeRef.id || ar.name !== attributeRef.name);
+    protected removeFromAttributeConfig(attributeRef: AttributeRef) {
+        const config = this.widgetConfig.attributeConfig;
+        (Object.keys(config) as (keyof typeof config)[]).forEach(key => {
+            config[key] = config[key].filter((ar: AttributeRef) => ar.id !== attributeRef.id || ar.name !== attributeRef.name);
         });
     }
 
     protected toggleAttributeSetting(
-        setting: keyof ChartWidgetConfig["attributeSettings"],
-        attributeRef: AttributeRef,
+        setting: keyof ChartWidgetConfig["attributeConfig"],
+        attributeRef: AttributeRef
     ): void {
-        const attributes = this.widgetConfig.attributeSettings[setting];
+        const attributes = this.widgetConfig.attributeConfig[setting];
         const index = attributes.findIndex(
             (item: AttributeRef) => item.id === attributeRef.id && item.name === attributeRef.name
         );
@@ -378,9 +378,7 @@ export class ChartSettings extends WidgetSettings {
     }
 
     protected removeFromColorPickedAttributes(attributeRef: AttributeRef) {
-        this.widgetConfig.colorPickedAttributes = this.widgetConfig.colorPickedAttributes.filter(
-            item => item.attributeRef.id !== attributeRef.id || item.attributeRef.name !== attributeRef.name
-        );
+        this.widgetConfig.colorPickedAttributes.delete(attributeRef);
     }
 
     protected openColorPickDialog(attributeRef: AttributeRef) {
@@ -395,14 +393,7 @@ export class ChartSettings extends WidgetSettings {
         colorInput.style.cursor = 'pointer';
         colorInput.addEventListener('change', (e: any) => {
             const color = e.target.value;
-            const existingIndex = this.widgetConfig.colorPickedAttributes.findIndex(item =>
-                item.attributeRef.id === attributeRef.id && item.attributeRef.name === attributeRef.name
-            );
-            if (existingIndex >= 0) {
-                this.widgetConfig.colorPickedAttributes[existingIndex].color = color;
-            } else {
-                this.widgetConfig.colorPickedAttributes.push({ attributeRef, color });
-            }
+            this.widgetConfig.colorPickedAttributes.set(attributeRef, color);
             this.notifyConfigUpdate();
         });
         colorInput.click();

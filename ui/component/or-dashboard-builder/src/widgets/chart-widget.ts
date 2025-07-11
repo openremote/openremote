@@ -2,6 +2,7 @@ import {AssetDatapointLTTBQuery, AssetDatapointQueryUnion, Attribute, AttributeR
 import {html, PropertyValues, TemplateResult } from "lit";
 import { when } from "lit/directives/when.js";
 import moment from "moment";
+import {ChartAttributeConfig} from "@openremote/or-chart";
 import {OrAssetWidget} from "../util/or-asset-widget";
 import { customElement, state } from "lit/decorators.js";
 import {AssetWidgetConfig} from "../util/widget-config";
@@ -11,15 +12,8 @@ import {WidgetSettings} from "../util/widget-settings";
 import "@openremote/or-chart";
 
 export interface ChartWidgetConfig extends AssetWidgetConfig {
-    colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }>;
-    attributeSettings: {
-        rightAxisAttributes: AttributeRef[],
-        smoothAttributes: AttributeRef[],
-        steppedAttributes: AttributeRef[],
-        areaAttributes: AttributeRef[],
-        faintAttributes: AttributeRef[],
-        extendedAttributes: AttributeRef[],
-    },
+    colorPickedAttributes: Map<AttributeRef, string>;
+    attributeConfig: ChartAttributeConfig,
     datapointQuery: AssetDatapointQueryUnion;
     chartOptions?: any;
     showTimestampControls: boolean;
@@ -65,14 +59,14 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
     const endDate = dateFunc![1]== 1 ? moment().endOf(dateFunc![0]) : moment();
     return {
         attributeRefs: [],
-        colorPickedAttributes: [],
-        attributeSettings: {
+        colorPickedAttributes: new Map<AttributeRef, string>(),
+        attributeConfig: {
             rightAxisAttributes: [],
             smoothAttributes: [],
             steppedAttributes: [],
             areaAttributes: [],
             faintAttributes: [],
-            extendedAttributes: [],
+            extendedAttributes: []
         },
         datapointQuery: {
             type: "lttb",
@@ -220,8 +214,8 @@ export class ChartWidget extends OrAssetWidget {
             `, () => {
                 return html`
                     <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
-                              .colorPickedAttributes="${this.widgetConfig?.colorPickedAttributes != null ? this.widgetConfig?.colorPickedAttributes : []}"
-                              .attributeSettings="${this.widgetConfig?.attributeSettings != null ? this.widgetConfig.attributeSettings : {}}"
+                              .colorPickedAttributes="${this.widgetConfig?.colorPickedAttributes}"
+                              .attributeConfig="${this.widgetConfig?.attributeConfig != null ? this.widgetConfig.attributeConfig : {}}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
                               .showZoomBar="${(this.widgetConfig?.showZoomBar != null) ? this.widgetConfig?.showZoomBar : true}"
                               .showToolBox="${(this.widgetConfig?.showToolBox != null) ? this.widgetConfig?.showToolBox : true}"
@@ -245,6 +239,6 @@ export class ChartWidget extends OrAssetWidget {
             type: "lttb",
             fromTimestamp: moment().set('minute', -60).toDate().getTime(),
             toTimestamp: moment().set('minute', 60).toDate().getTime()
-        }
+        };
     }
 }
