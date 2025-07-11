@@ -1,8 +1,8 @@
 import {AssetDatapointLTTBQuery, AssetDatapointQueryUnion, Attribute, AttributeRef} from "@openremote/model";
 import {html, PropertyValues, TemplateResult } from "lit";
 import { when } from "lit/directives/when.js";
-import {TimePresetCallback} from "@openremote/or-chart";
 import moment from "moment";
+import {ChartAttributeConfig} from "@openremote/or-chart";
 import {OrAssetWidget} from "../util/or-asset-widget";
 import { customElement, state } from "lit/decorators.js";
 import {AssetWidgetConfig} from "../util/widget-config";
@@ -12,51 +12,66 @@ import {WidgetSettings} from "../util/widget-settings";
 import "@openremote/or-chart";
 
 export interface ChartWidgetConfig extends AssetWidgetConfig {
-    rightAxisAttributes: AttributeRef[];
+    attributeColors: [AttributeRef, string][];
+    attributeConfig: ChartAttributeConfig,
     datapointQuery: AssetDatapointQueryUnion;
-    chartOptions?: any; // ChartConfiguration<"line", ScatterDataPoint[]>
+    chartOptions?: any;
     showTimestampControls: boolean;
-    defaultTimePresetKey: string;
+    defaultTimeWindowKey: string;
+    defaultTimePrefixKey: string;
     showLegend: boolean;
+    showZoomBar: boolean;
+    showToolBox: boolean;
+    showSymbolMaxDatapoints: number;
+    maxConcurrentDatapoints: number;
 }
 
-function getDefaultTimePresetOptions(): Map<string, TimePresetCallback> {
-    return new Map<string, TimePresetCallback>([
-        ["lastHour", (date: Date) => [moment(date).subtract(1, 'hour').toDate(), date]],
-        ["last24Hours", (date: Date) => [moment(date).subtract(24, 'hours').toDate(), date]],
-        ["last7Days", (date: Date) => [moment(date).subtract(7, 'days').toDate(), date]],
-        ["last30Days", (date: Date) => [moment(date).subtract(30, 'days').toDate(), date]],
-        ["last90Days", (date: Date) => [moment(date).subtract(90, 'days').toDate(), date]],
-        ["last6Months", (date: Date) => [moment(date).subtract(6, 'months').toDate(), date]],
-        ["lastYear", (date: Date) => [moment(date).subtract(1, 'year').toDate(), date]],
-        ["thisHour", (date: Date) => [moment(date).startOf('hour').toDate(), moment(date).endOf('hour').toDate()]],
-        ["thisDay", (date: Date) => [moment(date).startOf('day').toDate(), moment(date).endOf('day').toDate()]],
-        ["thisWeek", (date: Date) => [moment(date).startOf('isoWeek').toDate(), moment(date).endOf('isoWeek').toDate()]],
-        ["thisMonth", (date: Date) => [moment(date).startOf('month').toDate(), moment(date).endOf('month').toDate()]],
-        ["thisYear", (date: Date) => [moment(date).startOf('year').toDate(), moment(date).endOf('year').toDate()]],
-        ["yesterday", (date: Date) => [moment(date).subtract(24, 'hours').startOf('day').toDate(), moment(date).subtract(24, 'hours').endOf('day').toDate()]],
-        ["thisDayLastWeek", (date: Date) => [moment(date).subtract(1, 'week').startOf('day').toDate(), moment(date).subtract(1, 'week').endOf('day').toDate()]],
-        ["previousWeek", (date: Date) => [moment(date).subtract(1, 'week').startOf('isoWeek').toDate(), moment(date).subtract(1, 'week').endOf('isoWeek').toDate()]],
-        ["previousMonth", (date: Date) => [moment(date).subtract(1, 'month').startOf('month').toDate(), moment(date).subtract(1, 'month').endOf('month').toDate()]],
-        ["previousYear", (date: Date) => [moment(date).subtract(1, 'year').startOf('year').toDate(), moment(date).subtract(1, 'year').endOf('year').toDate()]]
+function getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
+    return new Map<string, [moment.unitOfTime.DurationConstructor, number]>([
+        ["5Minutes", ['minutes', 5]],
+        ["20Minutes", ['minutes', 20]],
+        ["60Minutes", ['minutes', 60]],
+        ["hour", ['hours', 1]],
+        ["6Hours", ['hours', 6]],
+        ["24Hours", ['hours', 24]],
+        ["day", ['days', 1]],
+        ["7Days", ['days', 7]],
+        ["week", ['weeks', 1]],
+        ["30Days", ['days', 30]],
+        ["month", ['months', 1]],
+        ["365Days", ['days', 365]],
+        ["year", ['years', 1]]
     ]);
 }
 
+function getDefaultTimePreFixOptions(): string[] {
+    return ["this", "last"];
+}
+
 function getDefaultSamplingOptions(): Map<string, string> {
-    return new Map<string, string>([["lttb", 'lttb'], ["withInterval", 'interval']]);
+    return new Map<string, string>([["lttb", 'lttb']]); //, ["withInterval", 'interval'] interval removed because bar-chart feature instead of line-chart
 }
 
 function getDefaultWidgetConfig(): ChartWidgetConfig {
-    const preset = "last24Hours"
-    const dateFunc = getDefaultTimePresetOptions().get(preset) as TimePresetCallback;
-    const dates = dateFunc(new Date());
+    const preset = "24Hours";  // Default time preset, "last" prefix is hardcoded in startDate and endDate below.
+    const dateFunc = getDefaultTimeWindowOptions().get(preset);
+    const startDate = moment().subtract(dateFunc![1], dateFunc![0]).startOf(dateFunc![0]);
+    const endDate = dateFunc![1]== 1 ? moment().endOf(dateFunc![0]) : moment();
     return {
         attributeRefs: [],
-        rightAxisAttributes: [],
+        attributeColors: [],
+        attributeConfig: {
+            rightAxisAttributes: [],
+            smoothAttributes: [],
+            steppedAttributes: [],
+            areaAttributes: [],
+            faintAttributes: [],
+            extendedAttributes: []
+        },
         datapointQuery: {
             type: "lttb",
-            fromTimestamp: dates[0].getTime(),
-            toTimestamp: dates[1].getTime()
+            fromTimestamp: startDate.toDate().getTime(),
+            toTimestamp: endDate.toDate().getTime(),
         },
         chartOptions: {
             options: {
@@ -73,8 +88,14 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
             },
         },
         showTimestampControls: false,
-        defaultTimePresetKey: preset,
-        showLegend: true
+        defaultTimeWindowKey: preset,
+        defaultTimePrefixKey: "last",
+        showLegend: true,
+        showZoomBar: false,
+        showToolBox: false,
+        showSymbolMaxDatapoints: 30,
+        maxConcurrentDatapoints: 100
+
     };
 }
 
@@ -103,7 +124,8 @@ export class ChartWidget extends OrAssetWidget {
             },
             getSettingsHtml(config: ChartWidgetConfig): WidgetSettings {
                 const settings = new ChartSettings(config);
-                settings.setTimePresetOptions(getDefaultTimePresetOptions());
+                settings.setTimeWindowOptions(getDefaultTimeWindowOptions());
+                settings.setTimePrefixOptions(getDefaultTimePreFixOptions());
                 settings.setSamplingOptions(getDefaultSamplingOptions());
                 return settings;
             },
@@ -191,11 +213,20 @@ export class ChartWidget extends OrAssetWidget {
                 
             `, () => {
                 return html`
-                    <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .rightAxisAttributes="${this.widgetConfig.rightAxisAttributes}"
+                    <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
+                              .attributeColors="${this.widgetConfig?.attributeColors}"
+                              .attributeConfig="${this.widgetConfig?.attributeConfig != null ? this.widgetConfig.attributeConfig : {}}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
+                              .showZoomBar="${(this.widgetConfig?.showZoomBar != null) ? this.widgetConfig?.showZoomBar : true}"
+                              .showToolBox="${(this.widgetConfig?.showToolBox != null) ? this.widgetConfig?.showToolBox : true}"
                               .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
-                              .timePresetOptions="${getDefaultTimePresetOptions()}" .timePresetKey="${this.widgetConfig?.defaultTimePresetKey}"
+                              .timeWindowOptions="${getDefaultTimeWindowOptions()}"
+                              .timePrefixOptions="${getDefaultTimePreFixOptions()}"
+                              .timePrefixKey="${this.widgetConfig?.defaultTimePrefixKey}"
+                              .timeWindowKey="${this.widgetConfig?.defaultTimeWindowKey}"
                               .datapointQuery="${this.datapointQuery}" .chartOptions="${this.widgetConfig?.chartOptions}"
+                              .showSymbolMaxDatapoints="${this.widgetConfig?.showSymbolMaxDatapoints}"
+                              .maxConcurrentDatapoints="${this.widgetConfig?.maxConcurrentDatapoints}"
                               style="height: 100%"
                     ></or-chart>
                 `;
@@ -208,6 +239,6 @@ export class ChartWidget extends OrAssetWidget {
             type: "lttb",
             fromTimestamp: moment().set('minute', -60).toDate().getTime(),
             toTimestamp: moment().set('minute', 60).toDate().getTime()
-        }
+        };
     }
 }
