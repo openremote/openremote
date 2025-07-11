@@ -634,6 +634,11 @@ jobs:
         env:
           VERSION: ${{ steps.get-version-details.outputs.version_with_qualifier }}
 
+      - name: Run Spotless check
+        id: run-spotless-check
+        if: steps.backend-files-changed.outputs.any_modified  == 'true' || steps.ui-files-changed.outputs.any_modified == 'true'
+        run: ./gradlew spotlessCheck
+
       - name: Run backend tests
         id: run-backend-tests
         if: ${{ steps.test-backend-command.outputs.value != '' }}
