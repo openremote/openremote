@@ -112,7 +112,9 @@ while ! aws elbv2 describe-load-balancers  --profile or --query "LoadBalancers[?
 done
 
 # We're re-directing the FQDN to the application LB (web interface)
-DNS_NAME=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='application'].DNSName | [0]")
+until DNS_NAME=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='application'].DNSName | [0]") && [ -n "$DNS_NAME" ]; do
+  echo "Waiting for LoadBalancer DNS..."; sleep 5
+done
 HOSTED_ZONE_ID=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='application'].CanonicalHostedZoneId | [0]")
 
 aws route53 change-resource-record-sets \
@@ -122,7 +124,9 @@ aws route53 change-resource-record-sets \
      --profile dnschg
 
 # We're re-directing the MQTT_FQDN to its network load balancer
-DNS_NAME=$(kubectl get svc manager-mqtt -o jsonpath="{.status.loadBalancer.ingress[0].hostname}")
+until DNS_NAME=$(kubectl get svc manager-mqtt -o jsonpath="{.status.loadBalancer.ingress[0].hostname}") && [ -n "$DNS_NAME" ]; do
+  echo "Waiting for LoadBalancer DNS..."; sleep 5
+done
 while ! aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?DNSName=='$DNS_NAME']" 2>/dev/null | grep '"Code": "active"'; do
   echo "Waiting for network load balancer to be created for $DNS_NAME..."
   sleep 10
@@ -136,7 +140,9 @@ aws route53 change-resource-record-sets \
      --profile dnschg
 
 # We're re-directing the MQTTS_FQDN to its network load balancer
-DNS_NAME=$(kubectl get svc manager-mqtts -o jsonpath="{.status.loadBalancer.ingress[0].hostname}")
+until DNS_NAME=$(kubectl get svc manager-mqtts -o jsonpath="{.status.loadBalancer.ingress[0].hostname}") && [ -n "$DNS_NAME" ]; do
+  echo "Waiting for LoadBalancer DNS..."; sleep 5
+done
 while ! aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?DNSName=='$DNS_NAME']" 2>/dev/null | grep '"Code": "active"'; do
   echo "Waiting for network load balancer to be created for $DNS_NAME..."
   sleep 10
