@@ -11,8 +11,7 @@ import {
     Attribute,
     AttributeRef,
     ReadAssetEvent,
-    ValueDatapoint,
-    WellknownMetaItems
+    ValueDatapoint
 } from "@openremote/model";
 import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
 import "@openremote/or-asset-tree";
@@ -25,7 +24,6 @@ import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
-import "chartjs-adapter-moment";
 import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
 import {OrAssetAttributePicker, OrAssetAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";

@@ -23,6 +23,8 @@
     "@openremote/or-attribute-picker": "workspace:*",
     "@openremote/or-chart": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
+    "chart.js": "^3.6.0",
+    "chartjs-adapter-moment": "^1.0.0",
     "lit": "^2.0.2",
     "moment": "^2.29.4"
   },
