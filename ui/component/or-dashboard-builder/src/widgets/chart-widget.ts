@@ -12,7 +12,7 @@ import {WidgetSettings} from "../util/widget-settings";
 import "@openremote/or-chart";
 
 export interface ChartWidgetConfig extends AssetWidgetConfig {
-    colorPickedAttributes: Map<AttributeRef, string>;
+    attributeColors: [AttributeRef, string][];
     attributeConfig: ChartAttributeConfig,
     datapointQuery: AssetDatapointQueryUnion;
     chartOptions?: any;
@@ -59,7 +59,7 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
     const endDate = dateFunc![1]== 1 ? moment().endOf(dateFunc![0]) : moment();
     return {
         attributeRefs: [],
-        colorPickedAttributes: new Map<AttributeRef, string>(),
+        attributeColors: [],
         attributeConfig: {
             rightAxisAttributes: [],
             smoothAttributes: [],
@@ -214,7 +214,7 @@ export class ChartWidget extends OrAssetWidget {
             `, () => {
                 return html`
                     <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
-                              .colorPickedAttributes="${this.widgetConfig?.colorPickedAttributes}"
+                              .attributeColors="${this.widgetConfig?.attributeColors}"
                               .attributeConfig="${this.widgetConfig?.attributeConfig != null ? this.widgetConfig.attributeConfig : {}}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
                               .showZoomBar="${(this.widgetConfig?.showZoomBar != null) ? this.widgetConfig?.showZoomBar : true}"

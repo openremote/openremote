@@ -352,7 +352,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     public assetAttributes: [number, Attribute<any>][] = [];
 
     @property({type: Object})
-    public colorPickedAttributes?: Map<AttributeRef, string> = new Map();
+    public attributeColors: [AttributeRef, string][] = [];
 
     @property({type: Object})
     public attributeConfig: ChartAttributeConfig = this._getDefaultAttributeConfig();
@@ -479,7 +479,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
         }
 
-        const reloadData = changedProperties.has('colorPickedAttributes') || changedProperties.has("datapointQuery") || changedProperties.has("timeframe") || changedProperties.has("timePrefixKey") || changedProperties.has("timeWindowKey")||
+        const reloadData = changedProperties.has('attributeColors') || changedProperties.has("datapointQuery") || changedProperties.has("timeframe") || changedProperties.has("timePrefixKey") || changedProperties.has("timeWindowKey")||
             changedProperties.has("attributeConfig") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
 
         if (reloadData) {
@@ -575,7 +575,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     },
                     {
                         type: 'value',
-                        show: this.attributeConfig.rightAxisAttributes.length > 0,
+                        show: this.attributeConfig.rightAxisAttributes?.length > 0,
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ['10%', '10%'],
                         scale: true,
@@ -788,10 +788,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
                                     const asset: Asset | undefined = this.assets[assetIndex];
                                     const colourIndex = index % this.colors.length;
-                                    const color = this.colorPickedAttributes?.get({id: asset.id, name: attr.name});
+                                    const color = this.attributeColors.find(x => x[0].id === asset.id && x[0].name === attr.name)?.[1];
                                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset!.type, attr.name, attr);
                                     const label = Util.getAttributeLabel(attr, descriptors[0], asset!.type, true);
-                                    const axisNote = (this.attributeConfig.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
+                                    const axisNote = (this.attributeConfig.rightAxisAttributes?.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
                                     const bgColor = ( color ?? this.colors[colourIndex] ) || "";
                                     return html`
                                         <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseenter="${() => this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseleave="${()=> this.removeDatasetHighlight()}">
@@ -1009,10 +1009,9 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _openTimeDialog(startTimestamp?: number, endTimestamp?: number) {
-        this.isCustomWindow = true;
         const startRef: Ref<OrMwcInput> = createRef();
         const endRef: Ref<OrMwcInput> = createRef();
-        const dialog = showDialog(new OrMwcDialog()
+        showDialog(new OrMwcDialog()
             .setHeading(i18next.t('timeframe'))
             .setContent(() => html`
                 <div>
@@ -1028,11 +1027,12 @@ export class OrChart extends translate(i18next)(LitElement) {
                 content: "ok",
                 action: () => {
                     if(startRef.value?.value && endRef.value?.value) {
+                        this.isCustomWindow = true;
                         this.timeframe = [new Date(startRef.value.value), new Date(endRef.value.value)];
                     }
                 }
             }])
-        )
+        );
     }
 
 
@@ -1220,13 +1220,13 @@ export class OrChart extends translate(i18next)(LitElement) {
                 promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
 
                     const asset = this.assets[assetIndex];
-                    const shownOnRightAxis = !!this.attributeConfig.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const shownOnRightAxis = !!this.attributeConfig.rightAxisAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const smooth = !!this.attributeConfig.smoothAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const stepped = !!this.attributeConfig.steppedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const area = !!this.attributeConfig.areaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const faint = !!this.attributeConfig.faintAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const extended = !!this.attributeConfig.extendedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
-                    const color = this.colorPickedAttributes?.get({ id: asset.id, name: attribute.name });
+                    const color = this.attributeColors.find(x => x[0].id === asset.id && x[0].name === attribute.name)?.[1];
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);
                     const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
                     const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
