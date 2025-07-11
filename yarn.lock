@@ -2556,7 +2556,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/util": "workspace:*"
-    "@types/chart.js": "npm:^2.9.34"
+    echarts: "npm:^5.6.0"
     jsonpath-plus: "npm:^6.0.1"
     lit: "npm:^2.0.2"
   languageName: unknown

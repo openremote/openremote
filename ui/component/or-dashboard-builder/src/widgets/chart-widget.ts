@@ -4,14 +4,13 @@ import { when } from "lit/directives/when.js";
 import moment from "moment";
 import {OrAssetWidget} from "../util/or-asset-widget";
 import { customElement, state } from "lit/decorators.js";
-import {WidgetConfig} from "../util/widget-config";
+import {AssetWidgetConfig} from "../util/widget-config";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {ChartSettings} from "../settings/chart-settings";
 import {WidgetSettings} from "../util/widget-settings";
 import "@openremote/or-chart";
 
-export interface ChartWidgetConfig extends WidgetConfig {
-    attributeRefs: AttributeRef[];
+export interface ChartWidgetConfig extends AssetWidgetConfig {
     colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }>;
     attributeSettings: {
         rightAxisAttributes: AttributeRef[],
