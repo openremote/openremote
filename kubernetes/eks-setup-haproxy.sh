@@ -40,6 +40,8 @@ if ! aws iam get-policy --policy-arn "$POLICY_ARN" >/dev/null 2>&1; then
       --policy-document file://iam_policy.json
 fi
 
+rm -f iam_policy.json
+
 eksctl create iamserviceaccount --profile or \
   --cluster=$CLUSTER_NAME \
   --namespace=kube-system \
