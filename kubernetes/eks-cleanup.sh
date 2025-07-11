@@ -61,15 +61,25 @@ helm uninstall manager
 helm uninstall keycloak
 helm uninstall postgresql
 
-# Give the AWS LB Controller time to delete the NLB after the Service is deleted
-while aws elbv2 describe-load-balancers  --profile or --query "LoadBalancers[?Type=='network']" 2>/dev/null | grep '"Code": "active"'; do
+# Give the AWS LB Controller time to delete the ALB and NLB after the Service is deleted
+while aws elbv2 describe-load-balancers --profile or --query "LoadBalancers" --output text 2>/dev/null | grep -q .; do
   echo "Waiting for load balancer to be deleted..."
   sleep 10
 done
 helm uninstall aws-load-balancer-controller -n kube-system
 
 echo "Delete certificate $CERTIFICATE_ARN"
-aws acm delete-certificate --certificate-arn $CERTIFICATE_ARN --profile or
+MAX_RETRIES=30
+for ((i=1; i<=MAX_RETRIES; i++)); do
+  if aws acm delete-certificate --certificate-arn "$CERTIFICATE_ARN" --profile or; then
+    break
+  else
+    sleep 10
+  fi
+done
+if (( i > MAX_RETRIES )); then
+  echo "⚠️ Timed out trying to delete certificate $CERTIFICATE_ARN after $MAX_RETRIES attempts."
+fi
 
 MANAGER_VOLUMEID=$(kubectl get pv manager-data-pv -o=jsonpath='{.spec.awsElasticBlockStore.volumeID}')
 PSQL_VOLUMEID=$(kubectl get pv postgresql-data-pv -o=jsonpath='{.spec.awsElasticBlockStore.volumeID}')
