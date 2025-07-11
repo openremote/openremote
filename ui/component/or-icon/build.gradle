@@ -6,10 +6,8 @@ task copyMdiFont(type: Exec) {
     commandLine npmCommand("npm"), "run", "copyMdiFont"
 }
 
-task clean() {
-    doLast {
-        delete "dist"
-    }
+clean.doLast {
+    delete "dist"
 }
 
 task prepareUi() {

@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,29 +12,31 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.value;
+
+import java.io.Serializable;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
-import java.io.Serializable;
-
 /**
- * Interface for a filter that can be applied to a value, the filter can return a different value type to the supplied
- * value (i.e. value conversion as well as filtering). Filters can be chained and if a null value is supplied to a
- * filter then the filter must also return null.
+ * Interface for a filter that can be applied to a value, the filter can return a different value
+ * type to the supplied value (i.e. value conversion as well as filtering). Filters can be chained
+ * and if a null value is supplied to a filter then the filter must also return null.
  */
-@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = RegexValueFilter.class),
-    @JsonSubTypes.Type(value = SubStringValueFilter.class),
-    @JsonSubTypes.Type(value = JsonPathFilter.class),
-    @JsonSubTypes.Type(value = MathExpressionValueFilter.class)
+  @JsonSubTypes.Type(value = RegexValueFilter.class),
+  @JsonSubTypes.Type(value = SubStringValueFilter.class),
+  @JsonSubTypes.Type(value = JsonPathFilter.class),
+  @JsonSubTypes.Type(value = MathExpressionValueFilter.class)
 })
 // TODO: Standardise inbound/outbound value processing as ordered list of filters and/or converters
 public abstract class ValueFilter implements Serializable {
 
-    public abstract Object filter(Object value);
+  public abstract Object filter(Object value);
 }

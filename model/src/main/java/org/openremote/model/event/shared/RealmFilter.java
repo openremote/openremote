@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,36 +12,35 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.event.shared;
 
 public class RealmFilter<T extends RealmScopedEvent> implements EventFilter<T> {
 
-    public static final String FILTER_TYPE = "realm";
+  public static final String FILTER_TYPE = "realm";
 
-    protected String name;
+  protected String name;
 
-    protected RealmFilter() {
-    }
+  protected RealmFilter() {}
 
-    public RealmFilter(String name) {
-        this.name = name;
-    }
+  public RealmFilter(String name) {
+    this.name = name;
+  }
 
-    public String getName() {
-        return name;
-    }
+  public String getName() {
+    return name;
+  }
 
-    @Override
-    public T apply(T event) {
-        return getName().equals(event.getRealm()) ? event : null;
-    }
+  @Override
+  public T apply(T event) {
+    return getName().equals(event.getRealm()) ? event : null;
+  }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "realm='" + name + '\'' +
-            '}';
-    }
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "{" + "realm='" + name + '\'' + '}';
+  }
 }

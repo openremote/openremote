@@ -1,9 +1,6 @@
 /*
  * Copyright 2023, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,15 +12,22 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.attribute;
+
+import java.time.Instant;
+import java.util.Date;
+import java.util.Objects;
+import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import jakarta.annotation.Nonnull;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
 import org.openremote.model.event.shared.SharedEvent;
@@ -33,347 +37,364 @@ import org.openremote.model.validation.AttributeInfoValid;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
-import java.time.Instant;
-import java.util.Date;
-import java.util.Objects;
-import java.util.Optional;
+import jakarta.annotation.Nonnull;
 
-/**
- * Represents an {@link Attribute} value at a point in time.
- */
+/** Represents an {@link Attribute} value at a point in time. */
 @SuppressWarnings({"rawtypes", "unchecked"})
 @AttributeInfoValid
 public class AttributeEvent extends SharedEvent implements AttributeInfo {
 
-    static {
-        // Set the default view for serialisation
-        ValueUtil.JSON.setConfig(ValueUtil.JSON.getSerializationConfig().withView(Basic.class));
+  static {
+    // Set the default view for serialisation
+    ValueUtil.JSON.setConfig(ValueUtil.JSON.getSerializationConfig().withView(Basic.class));
+  }
+
+  @TsIgnore
+  protected interface Basic {}
+
+  @TsIgnore
+  public interface Enhanced {}
+
+  protected AttributeRef ref;
+  protected Object value;
+  protected boolean deleted;
+  @JsonIgnore protected String source;
+  protected String realm;
+
+  @JsonView(Enhanced.class)
+  protected String parentId;
+
+  @JsonIgnore protected ValueDescriptor<?> valueType;
+
+  @JsonView(Enhanced.class)
+  protected Object oldValue;
+
+  @JsonView(Enhanced.class)
+  protected Long oldValueTimestamp;
+
+  @JsonView(Enhanced.class)
+  protected String[] path;
+
+  @JsonView(Enhanced.class)
+  protected String assetName;
+
+  @JsonView(Enhanced.class)
+  protected String assetType;
+
+  @JsonIgnore protected Class<? extends Asset> assetClass;
+
+  @JsonView(Enhanced.class)
+  protected Date createdOn;
+
+  @JsonIgnore protected MetaMap meta;
+
+  public <T> AttributeEvent(String assetId, AttributeDescriptor<T> attributeDescriptor, T value) {
+    this(assetId, attributeDescriptor.getName(), value);
+  }
+
+  public <T> AttributeEvent(
+      String assetId, AttributeDescriptor<T> attributeDescriptor, T value, Long timestamp) {
+    this(assetId, attributeDescriptor.getName(), value, timestamp);
+  }
+
+  public <T> AttributeEvent(
+      String assetId, AttributeDescriptor<T> attributeDescriptor, T value, Instant timestamp) {
+    this(assetId, attributeDescriptor.getName(), value, timestamp);
+  }
+
+  public AttributeEvent(String assetId, String attributeName, Object value) {
+    this(new AttributeRef(assetId, attributeName), value);
+  }
+
+  public AttributeEvent(String assetId, String attributeName, Object value, Long timestamp) {
+    this(new AttributeRef(assetId, attributeName), value, timestamp);
+  }
+
+  public AttributeEvent(String assetId, String attributeName, Object value, Instant timestamp) {
+    this(new AttributeRef(assetId, attributeName), value, timestamp.toEpochMilli());
+  }
+
+  public AttributeEvent(AttributeState attributeState) {
+    this(attributeState.getRef(), attributeState.getValue().orElse(null));
+  }
+
+  public AttributeEvent(AttributeState attributeState, Long timestamp) {
+    this(attributeState.getRef(), attributeState.getValue().orElse(null), timestamp);
+  }
+
+  public AttributeEvent(AttributeState attributeState, Instant timestamp) {
+    this(attributeState.getRef(), attributeState.getValue().orElse(null), timestamp.toEpochMilli());
+  }
+
+  public AttributeEvent(AttributeRef attributeRef, Object value) {
+    this(attributeRef, value, 0L);
+  }
+
+  public AttributeEvent(AttributeRef ref, Object value, Instant timestamp) {
+    this(ref, value, timestamp.toEpochMilli());
+  }
+
+  public AttributeEvent(AttributeRef ref, Object value, Long timestamp) {
+    super(timestamp);
+    Objects.requireNonNull(ref);
+    this.ref = ref;
+    this.value = value;
+  }
+
+  @JsonCreator
+  // This allows backwards compatibility with old attribute event JSON that used attributeState
+  protected AttributeEvent(
+      AttributeState attributeState, AttributeRef ref, Object value, Long timestamp) {
+    super(timestamp);
+    if (attributeState != null) {
+      this.ref = attributeState.getRef();
+      this.value = attributeState.getValue().orElse(null);
+    } else {
+      this.ref = ref;
+      this.value = value;
     }
+  }
 
-    @TsIgnore
-    protected interface Basic {}
-    @TsIgnore
-    public interface Enhanced {}
+  public AttributeEvent(
+      AssetInfo asset,
+      Attribute<?> attribute,
+      String source,
+      Object value,
+      Long valueTimestamp,
+      Object oldValue,
+      Long oldValueTimestamp) {
+    this(new AttributeRef(asset.getId(), attribute.getName()), value, valueTimestamp);
 
-    protected AttributeRef ref;
-    protected Object value;
-    protected boolean deleted;
-    @JsonIgnore
-    protected String source;
-    protected String realm;
-    @JsonView(Enhanced.class)
-    protected String parentId;
-    @JsonIgnore
-    protected ValueDescriptor<?> valueType;
-    @JsonView(Enhanced.class)
-    protected Object oldValue;
-    @JsonView(Enhanced.class)
-    protected Long oldValueTimestamp;
-    @JsonView(Enhanced.class)
-    protected String[] path;
-    @JsonView(Enhanced.class)
-    protected String assetName;
-    @JsonView(Enhanced.class)
-    protected String assetType;
-    @JsonIgnore
-    protected Class<? extends Asset> assetClass;
-    @JsonView(Enhanced.class)
-    protected Date createdOn;
-    @JsonIgnore
-    protected MetaMap meta;
+    this.oldValue = oldValue;
+    this.oldValueTimestamp = oldValueTimestamp;
+    this.source = source;
 
-    public <T> AttributeEvent(String assetId, AttributeDescriptor<T> attributeDescriptor, T value) {
-        this(assetId, attributeDescriptor.getName(), value);
-    }
+    this.valueType = attribute.getType();
+    this.meta = attribute.getMeta();
 
-    public <T> AttributeEvent(String assetId, AttributeDescriptor<T> attributeDescriptor, T value, Long timestamp) {
-        this(assetId, attributeDescriptor.getName(), value, timestamp);
-    }
+    this.path = asset.getPath();
+    this.createdOn = asset.getCreatedOn();
+    this.assetName = asset.getAssetName();
+    this.assetType = asset.getAssetType();
+    this.assetClass = asset.getAssetClass();
+    this.parentId = asset.getParentId();
+    this.realm = asset.getRealm();
+  }
 
-    public <T> AttributeEvent(String assetId, AttributeDescriptor<T> attributeDescriptor, T value, Instant timestamp) {
-        this(assetId, attributeDescriptor.getName(), value, timestamp);
-    }
+  @Override
+  public AttributeState getState() {
+    return new AttributeState(ref, value);
+  }
 
-    public AttributeEvent(String assetId, String attributeName, Object value) {
-        this(new AttributeRef(assetId, attributeName), value);
-    }
+  @Override
+  public long getTimestamp() {
+    return super.getTimestamp();
+  }
 
-    public AttributeEvent(String assetId, String attributeName, Object value, Long timestamp) {
-        this(new AttributeRef(assetId, attributeName), value, timestamp);
-    }
+  public Optional<Object> getOldValue() {
+    return Optional.ofNullable(oldValue);
+  }
 
-    public AttributeEvent(String assetId, String attributeName, Object value, Instant timestamp) {
-        this(new AttributeRef(assetId, attributeName), value, timestamp.toEpochMilli());
-    }
+  public <U> Optional<U> getOldValue(@Nonnull Class<U> valueType) {
+    return ValueUtil.getValueCoerced(oldValue, valueType);
+  }
 
-    public AttributeEvent(AttributeState attributeState) {
-        this(attributeState.getRef(), attributeState.getValue().orElse(null));
-    }
+  public long getOldValueTimestamp() {
+    return oldValueTimestamp;
+  }
 
-    public AttributeEvent(AttributeState attributeState, Long timestamp) {
-        this(attributeState.getRef(), attributeState.getValue().orElse(null), timestamp);
-    }
+  @Override
+  public AttributeRef getRef() {
+    return ref;
+  }
 
-    public AttributeEvent(AttributeState attributeState, Instant timestamp) {
-        this(attributeState.getRef(), attributeState.getValue().orElse(null), timestamp.toEpochMilli());
-    }
+  @Override
+  public String getId() {
+    return getRef().getId();
+  }
 
-    public AttributeEvent(AttributeRef attributeRef, Object value) {
-        this(attributeRef, value, 0L);
-    }
+  @Override
+  public String getRealm() {
+    return realm;
+  }
 
-    public AttributeEvent(AttributeRef ref, Object value, Instant timestamp) {
-        this(ref, value, timestamp.toEpochMilli());
-    }
+  public AttributeEvent setRealm(String realm) {
+    this.realm = realm;
+    return this;
+  }
 
-    public AttributeEvent(AttributeRef ref, Object value, Long timestamp) {
-        super(timestamp);
-        Objects.requireNonNull(ref);
-        this.ref = ref;
-        this.value = value;
-    }
+  public String getSource() {
+    return source;
+  }
 
-    @JsonCreator
-    // This allows backwards compatibility with old attribute event JSON that used attributeState
-    protected AttributeEvent(AttributeState attributeState, AttributeRef ref, Object value, Long timestamp) {
-        super(timestamp);
-        if (attributeState != null) {
-            this.ref = attributeState.getRef();
-            this.value = attributeState.getValue().orElse(null);
-        } else {
-            this.ref = ref;
-            this.value = value;
-        }
-    }
+  public AttributeEvent setSource(String source) {
+    this.source = source;
+    return this;
+  }
 
-    public AttributeEvent(AssetInfo asset, Attribute<?> attribute, String source, Object value, Long valueTimestamp, Object oldValue, Long oldValueTimestamp) {
-        this(new AttributeRef(asset.getId(), attribute.getName()),value, valueTimestamp);
+  public boolean isOutdated() {
+    return oldValueTimestamp - getTimestamp() > 0;
+  }
 
-        this.oldValue = oldValue;
-        this.oldValueTimestamp = oldValueTimestamp;
-        this.source = source;
+  @Override
+  public String getParentId() {
+    return parentId;
+  }
 
-        this.valueType = attribute.getType();
-        this.meta = attribute.getMeta();
+  public AttributeEvent setParentId(String parentId) {
+    this.parentId = parentId;
+    return this;
+  }
 
-        this.path = asset.getPath();
-        this.createdOn = asset.getCreatedOn();
-        this.assetName = asset.getAssetName();
-        this.assetType = asset.getAssetType();
-        this.assetClass = asset.getAssetClass();
-        this.parentId = asset.getParentId();
-        this.realm = asset.getRealm();
-    }
+  @Override
+  public String[] getPath() {
+    return path;
+  }
 
-    @Override
-    public AttributeState getState() {
-        return new AttributeState(ref, value);
-    }
+  @Override
+  public String[] getAttributeNames() {
+    return new String[] {getRef().getName()};
+  }
 
-    @Override
-    public long getTimestamp() {
-        return super.getTimestamp();
-    }
+  @Override
+  public String getAssetName() {
+    return assetName;
+  }
 
-    public Optional<Object> getOldValue() {
-        return Optional.ofNullable(oldValue);
-    }
+  @Override
+  public String getAssetType() {
+    return assetType;
+  }
 
-    public <U> Optional<U> getOldValue(@Nonnull Class<U> valueType) {
-        return ValueUtil.getValueCoerced(oldValue, valueType);
-    }
+  @Override
+  public Class<? extends Asset> getAssetClass() {
+    return assetClass;
+  }
 
-    public long getOldValueTimestamp() {
-        return oldValueTimestamp;
-    }
+  @Override
+  public Date getCreatedOn() {
+    return createdOn;
+  }
 
-    @Override
-    public AttributeRef getRef() {
-        return ref;
-    }
+  @JsonView(Enhanced.class)
+  @JsonSerialize(converter = ValueDescriptor.NameHolderToStringConverter.class)
+  @Override
+  public ValueDescriptor getType() {
+    return valueType;
+  }
 
-    @Override
-    public String getId() {
-        return getRef().getId();
-    }
+  @Override
+  public Class<?> getTypeClass() {
+    return getType() != null ? getType().getType() : Object.class;
+  }
 
-    @Override
-    public String getRealm() {
-        return realm;
-    }
+  public AttributeEvent setValue(Object value) {
+    this.value = value;
+    return this;
+  }
 
-    public AttributeEvent setRealm(String realm) {
-        this.realm = realm;
-        return this;
-    }
+  @Override
+  public Optional<Object> getValue() {
+    return Optional.ofNullable(value);
+  }
 
-    public String getSource() {
-        return source;
-    }
+  @Override
+  public <U> Optional<U> getValue(@Nonnull Class<U> valueType) {
+    return ValueUtil.getValueCoerced(value, valueType);
+  }
 
-    public AttributeEvent setSource(String source) {
-        this.source = source;
-        return this;
-    }
+  @JsonIgnore
+  @Override
+  public MetaMap getMeta() {
+    return meta;
+  }
 
-    public boolean isOutdated() {
-        return oldValueTimestamp - getTimestamp() > 0;
-    }
+  public AttributeEvent setMeta(MetaMap meta) {
+    this.meta = meta;
+    return this;
+  }
 
-    @Override
-    public String getParentId() {
-        return parentId;
-    }
+  @JsonIgnore
+  @Override
+  public String getName() {
+    return ref.getName();
+  }
 
-    public AttributeEvent setParentId(String parentId) {
-        this.parentId = parentId;
-        return this;
-    }
+  public boolean isDeleted() {
+    return deleted;
+  }
 
-    @Override
-    public String[] getPath() {
-        return path;
-    }
+  public AttributeEvent setDeleted(boolean deleted) {
+    this.deleted = deleted;
+    return this;
+  }
 
-    @Override
-    public String[] getAttributeNames() {
-        return new String[]{getRef().getName()};
-    }
+  /** Compares entity identifier, attribute name, value, source, and optional timestamp. */
+  public boolean matches(AttributeEvent event) {
+    return getId().equals(event.getId())
+        && getName().equals(event.getName())
+        && isDeleted() == event.isDeleted()
+        && getTimestamp() == event.getTimestamp();
+  }
 
-    @Override
-    public String getAssetName() {
-        return assetName;
-    }
+  @Override
+  public int compareTo(AttributeInfo that) {
+    int result = getId().compareTo(that.getId());
+    if (result == 0) result = getName().compareTo(that.getName());
+    if (result == 0) result = Long.compare(getTimestamp(), that.getTimestamp());
+    return result;
+  }
 
-    @Override
-    public String getAssetType() {
-        return assetType;
-    }
+  public boolean valueChanged() {
+    // Just use the timestamp for performance
+    return oldValueTimestamp != getTimestamp();
+  }
 
-    @Override
-    public Class<? extends Asset> getAssetClass() {
-        return assetClass;
-    }
+  /** Simple equality comparing {@link #getId()} and {@link #getName()} */
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    AttributeEvent that = (AttributeEvent) o;
+    return Objects.equals(getName(), that.getName()) && Objects.equals(getId(), that.getId());
+  }
 
-    @Override
-    public Date getCreatedOn() {
-        return createdOn;
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(getName(), getId());
+  }
 
-    @JsonView(Enhanced.class)
-    @JsonSerialize(converter = ValueDescriptor.NameHolderToStringConverter.class)
-    @Override
-    public ValueDescriptor getType() {
-        return valueType;
-    }
+  @Override
+  public String toString() {
+    return getClass().getSimpleName()
+        + "{"
+        + "timestamp="
+        + (timestamp != null ? timestamp.toInstant() : "null")
+        + ", ref="
+        + ref
+        + ", realm="
+        + realm
+        + ", source="
+        + source
+        + ", valueType="
+        + (value != null ? value.getClass().getName() : "null")
+        + "}";
+  }
 
-    @Override
-    public Class<?> getTypeClass() {
-        return getType() != null ? getType().getType() : Object.class;
-    }
-
-    public AttributeEvent setValue(Object value) {
-        this.value = value;
-        return this;
-    }
-
-    @Override
-    public Optional<Object> getValue() {
-        return Optional.ofNullable(value);
-    }
-
-    @Override
-    public <U> Optional<U> getValue(@Nonnull Class<U> valueType) {
-        return ValueUtil.getValueCoerced(value, valueType);
-    }
-
-    @JsonIgnore
-    @Override
-    public MetaMap getMeta() {
-        return meta;
-    }
-
-    public AttributeEvent setMeta(MetaMap meta) {
-        this.meta = meta;
-        return this;
-    }
-
-    @JsonIgnore
-    @Override
-    public String getName() {
-        return ref.getName();
-    }
-
-    public boolean isDeleted() {
-        return deleted;
-    }
-
-    public AttributeEvent setDeleted(boolean deleted) {
-        this.deleted = deleted;
-        return this;
-    }
-
-    /**
-     * Compares entity identifier, attribute name, value, source, and optional timestamp.
-     */
-    public boolean matches(AttributeEvent event) {
-        return getId().equals(event.getId())
-            && getName().equals(event.getName())
-            && isDeleted() == event.isDeleted()
-            && getTimestamp() == event.getTimestamp();
-    }
-
-    @Override
-    public int compareTo(AttributeInfo that) {
-        int result = getId().compareTo(that.getId());
-        if (result == 0)
-            result = getName().compareTo(that.getName());
-        if (result == 0)
-            result = Long.compare(getTimestamp(), that.getTimestamp());
-        return result;
-    }
-
-    public boolean valueChanged() {
-        // Just use the timestamp for performance
-        return oldValueTimestamp != getTimestamp();
-    }
-
-    /**
-     * Simple equality comparing {@link #getId()} and {@link #getName()}
-     */
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        AttributeEvent that = (AttributeEvent) o;
-        return Objects.equals(getName(), that.getName())
-            && Objects.equals(getId(), that.getId());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(getName(), getId());
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "timestamp=" + (timestamp != null ? timestamp.toInstant() : "null") +
-            ", ref=" + ref +
-            ", realm=" + realm +
-            ", source=" + source +
-            ", valueType=" + (value != null ? value.getClass().getName() : "null") +
-            "}";
-    }
-
-    public String toStringWithValue() {
-        String valueStr = Objects.toString(value);
-        return getClass().getSimpleName() + "{" +
-            "timestamp=" + timestamp.toInstant() +
-            ", ref=" + ref +
-            ", realm=" + realm +
-            ", source=" + source +
-            ", value=" + (valueStr.length() > 100 ? valueStr.substring(0, 100) + "..." : valueStr) +
-            "}";
-    }
+  public String toStringWithValue() {
+    String valueStr = Objects.toString(value);
+    return getClass().getSimpleName()
+        + "{"
+        + "timestamp="
+        + timestamp.toInstant()
+        + ", ref="
+        + ref
+        + ", realm="
+        + realm
+        + ", source="
+        + source
+        + ", value="
+        + (valueStr.length() > 100 ? valueStr.substring(0, 100) + "..." : valueStr)
+        + "}";
+  }
 }

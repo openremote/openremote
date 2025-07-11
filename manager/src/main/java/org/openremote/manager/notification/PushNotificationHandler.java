@@ -1,9 +1,6 @@
 /*
  * Copyright 2018, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,9 +12,24 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.notification;
+
+import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
+import static org.openremote.model.notification.PushNotificationMessage.TargetType.*;
+import static org.openremote.model.security.User.PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE;
+
+import java.io.InputStream;
+import java.lang.reflect.Array;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -25,6 +37,7 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.*;
+
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -47,453 +60,554 @@ import org.openremote.model.security.User;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import java.io.InputStream;
-import java.lang.reflect.Array;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
-import static org.openremote.model.notification.PushNotificationMessage.TargetType.*;
-import static org.openremote.model.security.User.PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE;
-
 @SuppressWarnings("deprecation")
 public class PushNotificationHandler extends RouteBuilder implements NotificationHandler {
 
-    private static final Logger LOG = Logger.getLogger(PushNotificationHandler.class.getName());
-    public static final String OR_FIREBASE_CONFIG_FILE = "OR_FIREBASE_CONFIG_FILE";
-    public static final int CONNECT_TIMEOUT_MILLIS = 3000;
-    public static final int READ_TIMEOUT_MILLIS = 3000;
-    public static final String FCM_PROVIDER_NAME = "fcm";
+  private static final Logger LOG = Logger.getLogger(PushNotificationHandler.class.getName());
+  public static final String OR_FIREBASE_CONFIG_FILE = "OR_FIREBASE_CONFIG_FILE";
+  public static final int CONNECT_TIMEOUT_MILLIS = 3000;
+  public static final int READ_TIMEOUT_MILLIS = 3000;
+  public static final String FCM_PROVIDER_NAME = "fcm";
 
-    protected ManagerIdentityService managerIdentityService;
-    protected AssetStorageService assetStorageService;
-    protected GatewayService gatewayService;
-    protected boolean valid;
-    protected Map<String, String> consoleFCMTokenMap = new ConcurrentHashMap<>();
-    protected Set<String> fcmTokenBlacklist = Collections.synchronizedSet(new HashSet<>());
+  protected ManagerIdentityService managerIdentityService;
+  protected AssetStorageService assetStorageService;
+  protected GatewayService gatewayService;
+  protected boolean valid;
+  protected Map<String, String> consoleFCMTokenMap = new ConcurrentHashMap<>();
+  protected Set<String> fcmTokenBlacklist = Collections.synchronizedSet(new HashSet<>());
 
-    @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
+  @Override
+  public int getPriority() {
+    return ContainerService.DEFAULT_PRIORITY;
+  }
+
+  public void init(Container container) throws Exception {
+    this.managerIdentityService = container.getService(ManagerIdentityService.class);
+    this.assetStorageService = container.getService(AssetStorageService.class);
+    this.gatewayService = container.getService(GatewayService.class);
+    container.getService(MessageBrokerService.class).getContext().addRoutes(this);
+
+    String firebaseConfigFilePath = container.getConfig().get(OR_FIREBASE_CONFIG_FILE);
+
+    if (TextUtil.isNullOrEmpty(firebaseConfigFilePath)) {
+      LOG.warning(OR_FIREBASE_CONFIG_FILE + " not defined, can not send FCM notifications");
+      return;
     }
 
-    public void init(Container container) throws Exception {
-        this.managerIdentityService = container.getService(ManagerIdentityService.class);
-        this.assetStorageService = container.getService(AssetStorageService.class);
-        this.gatewayService = container.getService(GatewayService.class);
-        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
-
-        String firebaseConfigFilePath = container.getConfig().get(OR_FIREBASE_CONFIG_FILE);
-
-        if (TextUtil.isNullOrEmpty(firebaseConfigFilePath)) {
-            LOG.warning(OR_FIREBASE_CONFIG_FILE + " not defined, can not send FCM notifications");
-            return;
-        }
-
-        if (!Files.isReadable(Paths.get(firebaseConfigFilePath))) {
-            LOG.warning(OR_FIREBASE_CONFIG_FILE + " invalid path or file not readable: " + firebaseConfigFilePath);
-            return;
-        }
-
-        try (InputStream is = Files.newInputStream(Paths.get(firebaseConfigFilePath))) {
-            FirebaseOptions options = new FirebaseOptions.Builder()
-                .setCredentials(GoogleCredentials.fromStream(is))
-                .setConnectTimeout(CONNECT_TIMEOUT_MILLIS)
-                .setReadTimeout(READ_TIMEOUT_MILLIS)
-                .build();
-
-            FirebaseApp.initializeApp(options);
-            valid = true;
-        } catch (Exception ex) {
-            LOG.severe("Exception occurred whilst initialising FCM");
-        }
+    if (!Files.isReadable(Paths.get(firebaseConfigFilePath))) {
+      LOG.warning(
+          OR_FIREBASE_CONFIG_FILE
+              + " invalid path or file not readable: "
+              + firebaseConfigFilePath);
+      return;
     }
 
-    @Override
-    public void start(Container container) throws Exception {
+    try (InputStream is = Files.newInputStream(Paths.get(firebaseConfigFilePath))) {
+      FirebaseOptions options =
+          new FirebaseOptions.Builder()
+              .setCredentials(GoogleCredentials.fromStream(is))
+              .setConnectTimeout(CONNECT_TIMEOUT_MILLIS)
+              .setReadTimeout(READ_TIMEOUT_MILLIS)
+              .build();
 
-        if (!isValid()) {
-            LOG.warning("FCM configuration invalid so cannot start");
-            return;
-        }
+      FirebaseApp.initializeApp(options);
+      valid = true;
+    } catch (Exception ex) {
+      LOG.severe("Exception occurred whilst initialising FCM");
+    }
+  }
 
-        // Not using Collectors.toMap as there is a quirk in there which means null values aren't supported!
-        consoleFCMTokenMap = new HashMap<>();
+  @Override
+  public void start(Container container) throws Exception {
 
-        // Find all console assets that use this adapter
-        assetStorageService.findAll(
+    if (!isValid()) {
+      LOG.warning("FCM configuration invalid so cannot start");
+      return;
+    }
+
+    // Not using Collectors.toMap as there is a quirk in there which means null values aren't
+    // supported!
+    consoleFCMTokenMap = new HashMap<>();
+
+    // Find all console assets that use this adapter
+    assetStorageService
+        .findAll(
             new AssetQuery()
-                .select(new AssetQuery.Select().attributes(ConsoleAsset.CONSOLE_PROVIDERS.getName()))
+                .select(
+                    new AssetQuery.Select().attributes(ConsoleAsset.CONSOLE_PROVIDERS.getName()))
                 .types(ConsoleAsset.class)
                 .attributes(
-                    new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, new ValueEmptyPredicate().negate(true), false, new NameValuePredicate.Path(PushNotificationMessage.TYPE, "data", "token"))
-                ))
-            .stream()
-            .map(asset -> (ConsoleAsset) asset)
-            .filter(PushNotificationHandler::isLinkedToFcmProvider)
-            .forEach(asset -> consoleFCMTokenMap.put(asset.getId(), getFcmToken(asset).orElse(null)));
-    }
+                    new AttributePredicate(
+                        ConsoleAsset.CONSOLE_PROVIDERS,
+                        new ValueEmptyPredicate().negate(true),
+                        false,
+                        new NameValuePredicate.Path(
+                            PushNotificationMessage.TYPE, "data", "token"))))
+        .stream()
+        .map(asset -> (ConsoleAsset) asset)
+        .filter(PushNotificationHandler::isLinkedToFcmProvider)
+        .forEach(asset -> consoleFCMTokenMap.put(asset.getId(), getFcmToken(asset).orElse(null)));
+  }
 
-    @Override
-    public void stop(Container container) throws Exception {
+  @Override
+  public void stop(Container container) throws Exception {}
 
-    }
-
-    @Override
-    public void configure() throws Exception {
-        // If any console asset was modified in the database, detect push provider changes
-        from(PersistenceService.PERSISTENCE_TOPIC)
-            .routeId("Persistence-PushNotificationConsoleAsset")
-            .filter(PersistenceService.isPersistenceEventForEntityType(ConsoleAsset.class))
-            .filter(isNotForGateway(gatewayService))
-            .process(exchange -> {
-                @SuppressWarnings("unchecked")
-                PersistenceEvent<ConsoleAsset> persistenceEvent = (PersistenceEvent<ConsoleAsset>)exchange.getIn().getBody(PersistenceEvent.class);
-                final ConsoleAsset asset = persistenceEvent.getEntity();
-                processConsoleAssetChange(asset, persistenceEvent);
+  @Override
+  public void configure() throws Exception {
+    // If any console asset was modified in the database, detect push provider changes
+    from(PersistenceService.PERSISTENCE_TOPIC)
+        .routeId("Persistence-PushNotificationConsoleAsset")
+        .filter(PersistenceService.isPersistenceEventForEntityType(ConsoleAsset.class))
+        .filter(isNotForGateway(gatewayService))
+        .process(
+            exchange -> {
+              @SuppressWarnings("unchecked")
+              PersistenceEvent<ConsoleAsset> persistenceEvent =
+                  (PersistenceEvent<ConsoleAsset>) exchange.getIn().getBody(PersistenceEvent.class);
+              final ConsoleAsset asset = persistenceEvent.getEntity();
+              processConsoleAssetChange(asset, persistenceEvent);
             });
+  }
+
+  @Override
+  public String getTypeName() {
+    return PushNotificationMessage.TYPE;
+  }
+
+  @Override
+  public boolean isMessageValid(AbstractNotificationMessage message) {
+
+    if (!(message instanceof PushNotificationMessage pushMessage)) {
+      LOG.warning(
+          "Invalid message: '"
+              + message.getClass().getSimpleName()
+              + "' is not an instance of PushNotificationMessage");
+      return false;
     }
 
-    @Override
-    public String getTypeName() {
-        return PushNotificationMessage.TYPE;
+    if (TextUtil.isNullOrEmpty(pushMessage.getTitle()) && pushMessage.getData() == null) {
+      LOG.warning("Invalid message: must either contain a title and/or data");
+      return false;
     }
 
-    @Override
-    public boolean isMessageValid(AbstractNotificationMessage message) {
+    return true;
+  }
 
-        if (!(message instanceof PushNotificationMessage pushMessage)) {
-            LOG.warning("Invalid message: '" + message.getClass().getSimpleName() + "' is not an instance of PushNotificationMessage");
-            return false;
-        }
+  @Override
+  public List<Notification.Target> getTargets(
+      Notification.Source source,
+      String sourceId,
+      List<Notification.Target> targets,
+      AbstractNotificationMessage message) {
 
-        if (TextUtil.isNullOrEmpty(pushMessage.getTitle()) && pushMessage.getData() == null) {
-            LOG.warning("Invalid message: must either contain a title and/or data");
-            return false;
-        }
+    // Check if message is going to a topic if so then filter consoles subscribed to that topic
+    PushNotificationMessage pushMessage = (PushNotificationMessage) message;
+    List<Notification.Target> mappedTargets = new ArrayList<>();
 
-        return true;
+    if (pushMessage.getTargetType() == TOPIC || pushMessage.getTargetType() == CONDITION) {
+      mappedTargets.add(
+          new Notification.Target(
+              Notification.TargetType.CUSTOM,
+              pushMessage.getTargetType() + ": " + pushMessage.getTarget()));
+      return mappedTargets;
     }
 
-    @Override
-    public List<Notification.Target> getTargets(Notification.Source source, String sourceId, List<Notification.Target> targets, AbstractNotificationMessage message) {
+    if (targets != null) {
 
-        // Check if message is going to a topic if so then filter consoles subscribed to that topic
-        PushNotificationMessage pushMessage = (PushNotificationMessage) message;
-        List<Notification.Target> mappedTargets = new ArrayList<>();
+      // Filter out console targets
+      String[] assetTargets =
+          targets.stream()
+              .filter(target -> target.getType() == Notification.TargetType.ASSET)
+              .map(Notification.Target::getId)
+              .toArray(String[]::new);
 
-        if (pushMessage.getTargetType() == TOPIC || pushMessage.getTargetType() == CONDITION) {
-            mappedTargets.add(new Notification.Target(Notification.TargetType.CUSTOM, pushMessage.getTargetType() + ": " + pushMessage.getTarget()));
-            return mappedTargets;
+      if (assetTargets.length > 0) {
+        List<String> consoleAssets =
+            assetStorageService
+                .findAll(
+                    new AssetQuery()
+                        .ids(assetTargets)
+                        .select(new AssetQuery.Select().excludeAttributes())
+                        .types(ConsoleAsset.class))
+                .stream()
+                .map(Asset::getId)
+                .toList();
+
+        if (!consoleAssets.isEmpty()) {
+          targets =
+              targets.stream()
+                  .filter(
+                      target -> {
+                        boolean isConsoleAsset = consoleAssets.contains(target.getId());
+                        if (isConsoleAsset) {
+                          // Don't filter out consoles without FCM here so we can record the failure
+                          // in the actual send
+                          mappedTargets.add(
+                              new Notification.Target(
+                                  Notification.TargetType.ASSET, target.getId()));
+                        }
+                        return !isConsoleAsset;
+                      })
+                  .collect(Collectors.toList());
         }
+      }
 
-        if (targets != null) {
-
-            // Filter out console targets
-            String[] assetTargets = targets.stream().filter(target -> target.getType() == Notification.TargetType.ASSET)
-                    .map(Notification.Target::getId).toArray(String[]::new);
-
-            if (assetTargets.length > 0) {
-                List<String> consoleAssets = assetStorageService.findAll(new AssetQuery().ids(assetTargets)
-                        .select(new AssetQuery.Select().excludeAttributes()).types(ConsoleAsset.class))
-                    .stream().map(Asset::getId).toList();
-
-                if (!consoleAssets.isEmpty()) {
-                    targets = targets.stream()
-                        .filter(target -> {
-                            boolean isConsoleAsset = consoleAssets.contains(target.getId());
-                            if (isConsoleAsset) {
-                                // Don't filter out consoles without FCM here so we can record the failure in the actual send
-                                mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId()));
-                            }
-                            return !isConsoleAsset;
-                        }).collect(Collectors.toList());
-                }
-            }
-
-            targets.forEach(target -> {
-
-                Notification.TargetType targetType = target.getType();
-                String targetId = target.getId();
-                AssetQuery assetQuery = new AssetQuery()
+      targets.forEach(
+          target -> {
+            Notification.TargetType targetType = target.getType();
+            String targetId = target.getId();
+            AssetQuery assetQuery =
+                new AssetQuery()
                     .select(new AssetQuery.Select().excludeAttributes())
                     .types(ConsoleAsset.class)
-                    .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, new ValueEmptyPredicate().negate(true), false, new NameValuePredicate.Path(PushNotificationMessage.TYPE, "data", "token")));
+                    .attributes(
+                        new AttributePredicate(
+                            ConsoleAsset.CONSOLE_PROVIDERS,
+                            new ValueEmptyPredicate().negate(true),
+                            false,
+                            new NameValuePredicate.Path(
+                                PushNotificationMessage.TYPE, "data", "token")));
 
-                switch (targetType) {
-                    case REALM ->
-                        // Any console assets in the target realm
-                        assetQuery.realm(new RealmPredicate(targetId));
-                    case USER ->
-                        // Any console assets linked to the target user
-                        assetQuery.userIds(targetId);
-                    case ASSET ->
-                        // Any users linked to this asset and then their linked console assets
-                        assetQuery.userIds(
-                            assetStorageService.findUserAssetLinks(null, null, targetId)
-                                .stream()
-                                .map(ual -> ual.getId().getUserId())
-                                .collect(Collectors.toSet())
-                                .toArray(String[]::new));
+            switch (targetType) {
+              case REALM ->
+                  // Any console assets in the target realm
+                  assetQuery.realm(new RealmPredicate(targetId));
+              case USER ->
+                  // Any console assets linked to the target user
+                  assetQuery.userIds(targetId);
+              case ASSET ->
+                  // Any users linked to this asset and then their linked console assets
+                  assetQuery.userIds(
+                      assetStorageService.findUserAssetLinks(null, null, targetId).stream()
+                          .map(ual -> ual.getId().getUserId())
+                          .collect(Collectors.toSet())
+                          .toArray(String[]::new));
+            }
+
+            List<String> consoleAssetIds =
+                assetStorageService.findAll(assetQuery).stream()
+                    .map(Asset::getId)
+                    .distinct()
+                    .toList();
+
+            if (!consoleAssetIds.isEmpty()) {
+              // Special handling if target type is user (don't need to find all linked users)
+              if (targetType == Notification.TargetType.USER) {
+                if (Arrays.stream(
+                        managerIdentityService
+                            .getIdentityProvider()
+                            .queryUsers(
+                                // Exclude service accounts, system accounts and accounts with
+                                // disabled push notifications
+                                new UserQuery()
+                                    .ids(targetId)
+                                    .serviceUsers(false)
+                                    .attributes(
+                                        new UserQuery.AttributeValuePredicate(
+                                            true,
+                                            new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
+                                        new UserQuery.AttributeValuePredicate(
+                                            true,
+                                            new StringPredicate(
+                                                PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE),
+                                            new StringPredicate("true")))))
+                    .allMatch(User::isSystemAccount)) {
+                  consoleAssetIds = Collections.emptyList();
                 }
+              } else {
 
-                List<String> consoleAssetIds = assetStorageService.findAll(assetQuery).stream().map(Asset::getId).distinct().toList();
+                consoleAssetIds =
+                    consoleAssetIds.stream()
+                        .filter(
+                            consoleId -> {
 
-                if (!consoleAssetIds.isEmpty()) {
-                    // Special handling if target type is user (don't need to find all linked users)
-                    if (targetType == Notification.TargetType.USER) {
-                        if (Arrays.stream(managerIdentityService.getIdentityProvider().queryUsers(
-                            // Exclude service accounts, system accounts and accounts with disabled push notifications
-                            new UserQuery().ids(targetId).serviceUsers(false).attributes(
-                                new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
-                                new UserQuery.AttributeValuePredicate(true, new StringPredicate(PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
-                            )))
-                            .allMatch(User::isSystemAccount)) {
-                            consoleAssetIds = Collections.emptyList();
-                        }
-                    } else {
-
-                        consoleAssetIds = consoleAssetIds.stream()
-                            .filter(consoleId -> {
-
-                                //  Check there are no regular users with disabled push notifications linked to this console
-                                // TODO: This should be handled by the console provider on the console itself
-                                long count = Arrays.stream(managerIdentityService.getIdentityProvider().queryUsers(
-                                        // Exclude service accounts, system accounts and accounts with disabled email notifications
-                                        new UserQuery()
-                                            .assets(consoleId)
-                                            .serviceUsers(false).attributes(
-                                                new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
-                                                new UserQuery.AttributeValuePredicate(false, new StringPredicate(PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
-                                            )
-                                    )).count();
-                                return count == 0;
-                            }).collect(Collectors.toList());
-                    }
-                }
-
-                if (consoleAssetIds.isEmpty()) {
-                    LOG.fine("No console asset targets have been mapped");
-                } else {
-                    mappedTargets.addAll(
-                        consoleAssetIds
-                            .stream()
-                            .filter(id -> mappedTargets.stream().noneMatch(t -> t.getId().equals(id)))
-                            .map(id -> new Notification.Target(Notification.TargetType.ASSET, id))
-                            .toList());
-                }
-            });
-        }
-
-        return mappedTargets;
-    }
-
-    @Override
-    public void sendMessage(long id, Notification.Source source, String sourceId, Notification.Target target, AbstractNotificationMessage message) throws Exception {
-
-        Notification.TargetType targetType = target.getType();
-        String targetId = target.getId();
-
-        if (targetType != Notification.TargetType.ASSET && targetType != Notification.TargetType.CUSTOM) {
-            String msg = "Target type not supported: " + targetType;
-            LOG.warning(msg);
-            throw new Exception(msg);
-        }
-
-        // Check this asset has an FCM token (i.e. it is registered for push notifications)
-        String fcmToken = consoleFCMTokenMap.get(targetId);
-
-        if (TextUtil.isNullOrEmpty(fcmToken)) {
-            String msg = "No FCM token found for console: " + targetId;
-            LOG.finer(msg);
-            throw new Exception(msg);
-        }
-
-        PushNotificationMessage pushMessage = (PushNotificationMessage) message;
-
-        // Assume DEVICE target if not specified
-        if (pushMessage.getTargetType() == null) {
-            pushMessage.setTargetType(DEVICE);
-        }
-
-        switch (pushMessage.getTargetType()) {
-            case DEVICE ->
-                // Always use fcm token from the console asset (so users cannot target other devices)
-                pushMessage.setTarget(fcmToken);
-            case TOPIC -> {
-            }
-            // TODO: Decide how to handle FCM topic support (too much power for users to put anything in target)
-            case CONDITION -> {
-            }
-            // TODO: Decide how to handle conditions support (too much power for users to put anything in target)
-        }
-
-        sendMessage(buildFCMMessage(id, pushMessage));
-    }
-
-//    public NotificationSendResult sendMessage(PushNotificationMessage.TargetType targetType, String fcmTarget, Message.Builder messageBuilder) {
-//
-//        switch (targetType) {
-//            case DEVICE:
-//                messageBuilder.setToken(fcmTarget);
-//                break;
-//            case TOPIC:
-//                messageBuilder.setTopic(fcmTarget);
-//                break;
-//            case CONDITION:
-//                messageBuilder.setCondition(fcmTarget);
-//                break;
-//        }
-//
-//        NotificationSendResult result = sendMessage(messageBuilder.build());
-//        if (result.isSuccess()) {
-//            LOG.warning("FCM send to '" + targetType + ":" + fcmTarget + "' success");
-//        } else {
-//            LOG.warning("FCM send to '" + targetType + ":" + fcmTarget + "' failed: " + result.getMessage());
-//        }
-//
-//        return result;
-//    }
-
-    @Override
-    public boolean isValid() {
-        return valid;
-    }
-
-    public void sendMessage(Message message) throws Exception {
-        FirebaseMessaging.getInstance().send(message);
-    }
-
-    protected boolean isConsoleSubscribedToTopic(ConsoleAsset consoleAsset, String topic) {
-        return consoleAsset.getConsoleProviders().flatMap(consoleProviders ->
-            Optional.ofNullable(consoleProviders.get(PushNotificationMessage.TYPE))
-                .map(ConsoleProvider::getData)
-                .map(data -> data.get("topics"))
-                .map(arrayValue -> {
-                    int length = Array.getLength(arrayValue);
-                    for (int i = 0; i < length; i ++) {
-                        Object arrayElement = Array.get(arrayValue, i);
-                        if (arrayElement instanceof String && arrayElement.equals(topic)) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }))
-            .orElse(false);
-    }
-
-    protected static Message buildFCMMessage(long id, PushNotificationMessage pushMessage) {
-
-        Message.Builder builder = Message.builder();
-        boolean dataOnly = TextUtil.isNullOrEmpty(pushMessage.getTitle());
-
-        switch (pushMessage.getTargetType()) {
-            case DEVICE -> builder.setToken(pushMessage.getTarget());
-            case TOPIC -> builder.setTopic(pushMessage.getTarget());
-            case CONDITION -> builder.setCondition(pushMessage.getTarget());
-        }
-
-        AndroidConfig.Builder androidConfigBuilder = AndroidConfig.builder();
-        ApnsConfig.Builder apnsConfigBuilder = ApnsConfig.builder();
-        Aps.Builder apsBuilder = Aps.builder();
-        WebpushConfig.Builder webpushConfigBuilder = WebpushConfig.builder();
-
-        if (!dataOnly) {
-            // Don't set basic notification on Android if there is data so even if app is in background we can show a custom notification
-            // with actions that use the actions from the data
-            if (pushMessage.getData() != null || pushMessage.getAction() != null || pushMessage.getButtons() != null) {
-                androidConfigBuilder.putData("or-title", pushMessage.getTitle());
-                if (pushMessage.getBody() != null) {
-                    androidConfigBuilder.putData("or-body", pushMessage.getBody());
-                }
+                              //  Check there are no regular users with disabled push notifications
+                              // linked to this console
+                              // TODO: This should be handled by the console provider on the console
+                              // itself
+                              long count =
+                                  Arrays.stream(
+                                          managerIdentityService
+                                              .getIdentityProvider()
+                                              .queryUsers(
+                                                  // Exclude service accounts, system accounts and
+                                                  // accounts with disabled email notifications
+                                                  new UserQuery()
+                                                      .assets(consoleId)
+                                                      .serviceUsers(false)
+                                                      .attributes(
+                                                          new UserQuery.AttributeValuePredicate(
+                                                              true,
+                                                              new StringPredicate(
+                                                                  User.SYSTEM_ACCOUNT_ATTRIBUTE)),
+                                                          new UserQuery.AttributeValuePredicate(
+                                                              false,
+                                                              new StringPredicate(
+                                                                  PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE),
+                                                              new StringPredicate("true")))))
+                                      .count();
+                              return count == 0;
+                            })
+                        .collect(Collectors.toList());
+              }
             }
 
-            // Use alert dictionary for apns
-            // https://developer.apple.com/library/content/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/PayloadKeyReference.html
-            apsBuilder.setAlert(ApsAlert.builder().setTitle(pushMessage.getTitle()).setBody(pushMessage.getBody()).build())
-                    .setSound("default").setCategory("openremoteNotification");
-
-            webpushConfigBuilder.setNotification(new WebpushNotification(pushMessage.getTitle(), pushMessage.getBody()));
-        }
-
-        if (pushMessage.getData() != null) {
-            builder.putAllData(ValueUtil.JSON.convertValue(pushMessage.getData(), new TypeReference<Map<String, String>>(){}));
-
-            if (dataOnly) {
-                apsBuilder.setContentAvailable(true);
+            if (consoleAssetIds.isEmpty()) {
+              LOG.fine("No console asset targets have been mapped");
+            } else {
+              mappedTargets.addAll(
+                  consoleAssetIds.stream()
+                      .filter(id -> mappedTargets.stream().noneMatch(t -> t.getId().equals(id)))
+                      .map(id -> new Notification.Target(Notification.TargetType.ASSET, id))
+                      .toList());
             }
-        }
-
-        // Store ID so console can mark notification as delivered and/or acknowledged
-        builder.putData("notification-id", Long.toString(id));
-
-        try {
-            if (pushMessage.getAction() != null) {
-                builder.putData("action", ValueUtil.asJSONOrThrow(pushMessage.getAction()));
-            }
-
-            if (pushMessage.getButtons() != null) {
-                builder.putData("buttons", ValueUtil.asJSONOrThrow(pushMessage.getButtons()));
-            }
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
-
-        androidConfigBuilder.setPriority(pushMessage.getPriority() == PushNotificationMessage.MessagePriority.HIGH ? AndroidConfig.Priority.HIGH : AndroidConfig.Priority.NORMAL);
-        apnsConfigBuilder.putHeader("apns-priority", !dataOnly ? "10" : "5"); // Don't use 10 for data only
-
-        // set the following APNS flag to allow console to customise the notification before delivery and to ensure delivery
-        apsBuilder.setMutableContent(true);
-
-        if (pushMessage.getTtlSeconds() != null) {
-            long timeToLiveSeconds = Math.max(pushMessage.getTtlSeconds(), 0);
-            long timeToLiveMillis = timeToLiveSeconds * 1000;
-            Date expirationDate = new Date(new Date().getTime() + timeToLiveMillis);
-            long epochSeconds = Math.round(((float) expirationDate.getTime()) / 1000);
-
-            apnsConfigBuilder.putHeader("apns-expiration", Long.toString(epochSeconds));
-            androidConfigBuilder.setTtl(timeToLiveMillis);
-            webpushConfigBuilder.putHeader("TTL", Long.toString(timeToLiveSeconds));
-        }
-
-        apnsConfigBuilder.setAps(apsBuilder.build());
-        builder.setAndroidConfig(androidConfigBuilder.build());
-        builder.setApnsConfig(apnsConfigBuilder.build());
-        builder.setWebpushConfig(webpushConfigBuilder.build());
-
-        return builder.build();
+          });
     }
 
-    protected static boolean isLinkedToFcmProvider(ConsoleAsset asset) {
-        return asset.getConsoleProviders().flatMap(consoleProviders ->
-            Optional.ofNullable(consoleProviders.get(PushNotificationMessage.TYPE))
-                .map(ConsoleProvider::getVersion)
-                .map(FCM_PROVIDER_NAME::equals))
-            .orElse(false);
+    return mappedTargets;
+  }
+
+  @Override
+  public void sendMessage(
+      long id,
+      Notification.Source source,
+      String sourceId,
+      Notification.Target target,
+      AbstractNotificationMessage message)
+      throws Exception {
+
+    Notification.TargetType targetType = target.getType();
+    String targetId = target.getId();
+
+    if (targetType != Notification.TargetType.ASSET
+        && targetType != Notification.TargetType.CUSTOM) {
+      String msg = "Target type not supported: " + targetType;
+      LOG.warning(msg);
+      throw new Exception(msg);
     }
 
-    protected static Optional<String> getFcmToken(ConsoleAsset asset) {
-        return asset.getConsoleProviders().flatMap(consoleProviders ->
-            Optional.ofNullable(consoleProviders.get(PushNotificationMessage.TYPE))
-                .map(ConsoleProvider::getData)
-                .map(data -> {
-                    Object token = data.get("token");
-                    return token instanceof String ? (String)token : null;
-                }));
+    // Check this asset has an FCM token (i.e. it is registered for push notifications)
+    String fcmToken = consoleFCMTokenMap.get(targetId);
+
+    if (TextUtil.isNullOrEmpty(fcmToken)) {
+      String msg = "No FCM token found for console: " + targetId;
+      LOG.finer(msg);
+      throw new Exception(msg);
     }
 
-    protected void processConsoleAssetChange(ConsoleAsset asset, PersistenceEvent<ConsoleAsset> persistenceEvent) {
-        String fcmToken = consoleFCMTokenMap.remove(asset.getId());
-        if (!TextUtil.isNullOrEmpty(fcmToken)) {
-            fcmTokenBlacklist.remove(fcmToken);
+    PushNotificationMessage pushMessage = (PushNotificationMessage) message;
+
+    // Assume DEVICE target if not specified
+    if (pushMessage.getTargetType() == null) {
+      pushMessage.setTargetType(DEVICE);
+    }
+
+    switch (pushMessage.getTargetType()) {
+      case DEVICE ->
+          // Always use fcm token from the console asset (so users cannot target other devices)
+          pushMessage.setTarget(fcmToken);
+      case TOPIC -> {}
+      // TODO: Decide how to handle FCM topic support (too much power for users to put anything in
+      // target)
+      case CONDITION -> {}
+        // TODO: Decide how to handle conditions support (too much power for users to put anything
+        // in target)
+    }
+
+    sendMessage(buildFCMMessage(id, pushMessage));
+  }
+
+  //    public NotificationSendResult sendMessage(PushNotificationMessage.TargetType targetType,
+  // String fcmTarget, Message.Builder messageBuilder) {
+  //
+  //        switch (targetType) {
+  //            case DEVICE:
+  //                messageBuilder.setToken(fcmTarget);
+  //                break;
+  //            case TOPIC:
+  //                messageBuilder.setTopic(fcmTarget);
+  //                break;
+  //            case CONDITION:
+  //                messageBuilder.setCondition(fcmTarget);
+  //                break;
+  //        }
+  //
+  //        NotificationSendResult result = sendMessage(messageBuilder.build());
+  //        if (result.isSuccess()) {
+  //            LOG.warning("FCM send to '" + targetType + ":" + fcmTarget + "' success");
+  //        } else {
+  //            LOG.warning("FCM send to '" + targetType + ":" + fcmTarget + "' failed: " +
+  // result.getMessage());
+  //        }
+  //
+  //        return result;
+  //    }
+
+  @Override
+  public boolean isValid() {
+    return valid;
+  }
+
+  public void sendMessage(Message message) throws Exception {
+    FirebaseMessaging.getInstance().send(message);
+  }
+
+  protected boolean isConsoleSubscribedToTopic(ConsoleAsset consoleAsset, String topic) {
+    return consoleAsset
+        .getConsoleProviders()
+        .flatMap(
+            consoleProviders ->
+                Optional.ofNullable(consoleProviders.get(PushNotificationMessage.TYPE))
+                    .map(ConsoleProvider::getData)
+                    .map(data -> data.get("topics"))
+                    .map(
+                        arrayValue -> {
+                          int length = Array.getLength(arrayValue);
+                          for (int i = 0; i < length; i++) {
+                            Object arrayElement = Array.get(arrayValue, i);
+                            if (arrayElement instanceof String && arrayElement.equals(topic)) {
+                              return true;
+                            }
+                          }
+                          return false;
+                        }))
+        .orElse(false);
+  }
+
+  protected static Message buildFCMMessage(long id, PushNotificationMessage pushMessage) {
+
+    Message.Builder builder = Message.builder();
+    boolean dataOnly = TextUtil.isNullOrEmpty(pushMessage.getTitle());
+
+    switch (pushMessage.getTargetType()) {
+      case DEVICE -> builder.setToken(pushMessage.getTarget());
+      case TOPIC -> builder.setTopic(pushMessage.getTarget());
+      case CONDITION -> builder.setCondition(pushMessage.getTarget());
+    }
+
+    AndroidConfig.Builder androidConfigBuilder = AndroidConfig.builder();
+    ApnsConfig.Builder apnsConfigBuilder = ApnsConfig.builder();
+    Aps.Builder apsBuilder = Aps.builder();
+    WebpushConfig.Builder webpushConfigBuilder = WebpushConfig.builder();
+
+    if (!dataOnly) {
+      // Don't set basic notification on Android if there is data so even if app is in background we
+      // can show a custom notification
+      // with actions that use the actions from the data
+      if (pushMessage.getData() != null
+          || pushMessage.getAction() != null
+          || pushMessage.getButtons() != null) {
+        androidConfigBuilder.putData("or-title", pushMessage.getTitle());
+        if (pushMessage.getBody() != null) {
+          androidConfigBuilder.putData("or-body", pushMessage.getBody());
         }
+      }
 
-        switch (persistenceEvent.getCause()) {
-            case CREATE, UPDATE -> getFcmToken(asset).ifPresent(token -> consoleFCMTokenMap.put(asset.getId(), token));
-        }
+      // Use alert dictionary for apns
+      // https://developer.apple.com/library/content/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/PayloadKeyReference.html
+      apsBuilder
+          .setAlert(
+              ApsAlert.builder()
+                  .setTitle(pushMessage.getTitle())
+                  .setBody(pushMessage.getBody())
+                  .build())
+          .setSound("default")
+          .setCategory("openremoteNotification");
+
+      webpushConfigBuilder.setNotification(
+          new WebpushNotification(pushMessage.getTitle(), pushMessage.getBody()));
     }
+
+    if (pushMessage.getData() != null) {
+      builder.putAllData(
+          ValueUtil.JSON.convertValue(
+              pushMessage.getData(), new TypeReference<Map<String, String>>() {}));
+
+      if (dataOnly) {
+        apsBuilder.setContentAvailable(true);
+      }
+    }
+
+    // Store ID so console can mark notification as delivered and/or acknowledged
+    builder.putData("notification-id", Long.toString(id));
+
+    try {
+      if (pushMessage.getAction() != null) {
+        builder.putData("action", ValueUtil.asJSONOrThrow(pushMessage.getAction()));
+      }
+
+      if (pushMessage.getButtons() != null) {
+        builder.putData("buttons", ValueUtil.asJSONOrThrow(pushMessage.getButtons()));
+      }
+    } catch (JsonProcessingException e) {
+      e.printStackTrace();
+    }
+
+    androidConfigBuilder.setPriority(
+        pushMessage.getPriority() == PushNotificationMessage.MessagePriority.HIGH
+            ? AndroidConfig.Priority.HIGH
+            : AndroidConfig.Priority.NORMAL);
+    apnsConfigBuilder.putHeader(
+        "apns-priority", !dataOnly ? "10" : "5"); // Don't use 10 for data only
+
+    // set the following APNS flag to allow console to customise the notification before delivery
+    // and to ensure delivery
+    apsBuilder.setMutableContent(true);
+
+    if (pushMessage.getTtlSeconds() != null) {
+      long timeToLiveSeconds = Math.max(pushMessage.getTtlSeconds(), 0);
+      long timeToLiveMillis = timeToLiveSeconds * 1000;
+      Date expirationDate = new Date(new Date().getTime() + timeToLiveMillis);
+      long epochSeconds = Math.round(((float) expirationDate.getTime()) / 1000);
+
+      apnsConfigBuilder.putHeader("apns-expiration", Long.toString(epochSeconds));
+      androidConfigBuilder.setTtl(timeToLiveMillis);
+      webpushConfigBuilder.putHeader("TTL", Long.toString(timeToLiveSeconds));
+    }
+
+    apnsConfigBuilder.setAps(apsBuilder.build());
+    builder.setAndroidConfig(androidConfigBuilder.build());
+    builder.setApnsConfig(apnsConfigBuilder.build());
+    builder.setWebpushConfig(webpushConfigBuilder.build());
+
+    return builder.build();
+  }
+
+  protected static boolean isLinkedToFcmProvider(ConsoleAsset asset) {
+    return asset
+        .getConsoleProviders()
+        .flatMap(
+            consoleProviders ->
+                Optional.ofNullable(consoleProviders.get(PushNotificationMessage.TYPE))
+                    .map(ConsoleProvider::getVersion)
+                    .map(FCM_PROVIDER_NAME::equals))
+        .orElse(false);
+  }
+
+  protected static Optional<String> getFcmToken(ConsoleAsset asset) {
+    return asset
+        .getConsoleProviders()
+        .flatMap(
+            consoleProviders ->
+                Optional.ofNullable(consoleProviders.get(PushNotificationMessage.TYPE))
+                    .map(ConsoleProvider::getData)
+                    .map(
+                        data -> {
+                          Object token = data.get("token");
+                          return token instanceof String ? (String) token : null;
+                        }));
+  }
+
+  protected void processConsoleAssetChange(
+      ConsoleAsset asset, PersistenceEvent<ConsoleAsset> persistenceEvent) {
+    String fcmToken = consoleFCMTokenMap.remove(asset.getId());
+    if (!TextUtil.isNullOrEmpty(fcmToken)) {
+      fcmTokenBlacklist.remove(fcmToken);
+    }
+
+    switch (persistenceEvent.getCause()) {
+      case CREATE, UPDATE ->
+          getFcmToken(asset).ifPresent(token -> consoleFCMTokenMap.put(asset.getId(), token));
+    }
+  }
 }

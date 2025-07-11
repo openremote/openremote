@@ -1,12 +1,29 @@
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import manager, {DefaultColor3, DefaultColor4, OPENREMOTE_CLIENT_ID, Util} from "@openremote/core";
 import "@openremote/or-components/or-panel";
-import "@openremote/or-translate";
+import {i18next} from "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {ClientRole, Credential, Role, User, UserAssetLink, UserQuery, UserSession} from "@openremote/model";
-import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -191,8 +208,10 @@ export class PageUsers extends Page<AppStateKeyed> {
 
     @property()
     public realm?: string;
+
     @property()
     public userId?: string;
+
     @property()
     public creationState?: {
         userModel: UserModel
@@ -200,26 +219,34 @@ export class PageUsers extends Page<AppStateKeyed> {
 
     @state()
     protected _users: UserModel[] = [];
+
     @state()
     protected _serviceUsers: UserModel[] = [];
+
     @state()
     protected _userFilter = this.getDefaultUserFilter(false);
+
     @state()
     protected _serviceUserFilter = this.getDefaultUserFilter(true);
+
     @state()
     protected _passwordPolicy: string[] = []
+
     @state()
     protected _roles: Role[] = [];
+
     @state()
     protected _realmRoles: string[] = [];
+
     @state()
-    protected _registrationEmailAsUsername: boolean = false;
+    protected _registrationEmailAsUsername = false;
 
     @state()
     protected _compositeRoles: Role[] = [];
 
     @state()
     protected _loadDataPromise?: Promise<any>;
+
     @state()
     protected _saveUserPromise?: Promise<any>;
 
@@ -803,7 +830,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         return this._compositeRoles.filter((role) => user.roles.some(ur => ur === role.name)).flatMap((role) => role.compositeRoleIds).map(id => this._roles.find(r => r.id === id).name);
     }
 
-    protected getSingleUserView(user: UserModel, compositeRoleOptions: string[], realmRoleOptions: [string, string][], suffix: string, readonly: boolean = true): TemplateResult {
+    protected getSingleUserView(user: UserModel, compositeRoleOptions: string[], realmRoleOptions: [string, string][], suffix: string, readonly = true): TemplateResult {
         return html`
             ${when((user.loaded || (user.roles && user.realmRoles)), () => {
                 return this.getSingleUserTemplate(user, compositeRoleOptions, realmRoleOptions, suffix, readonly);
@@ -852,7 +879,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         return html`<or-mwc-table id="session-table" .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"></or-mwc-table>`;
     }
 
-    protected getSingleUserTemplate(user: UserModel, compositeRoleOptions: string[], realmRoleOptions: [string, string][], suffix: string, readonly: boolean = true): TemplateResult {
+    protected getSingleUserTemplate(user: UserModel, compositeRoleOptions: string[], realmRoleOptions: [string, string][], suffix: string, readonly = true): TemplateResult {
         const isServiceUser = user.serviceAccount;
         const isSameUser = user.username === manager.username;
         const isGatewayServiceUser = isServiceUser && user.username?.startsWith("gateway-");
@@ -1015,7 +1042,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                         title="${r.description}"
                                         style="flex: 0 1 160px; margin: 0; overflow: hidden;"
                                         @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                            if (!!e.detail.value) {
+                                            if (e.detail.value) {
                                                 user.roles.push(r.name);
                                             } else {
                                                 user.roles = user.roles.filter(ur => ur !== r.name);
@@ -1166,14 +1193,14 @@ export class PageUsers extends Page<AppStateKeyed> {
         }
     }
 
-    protected _updateRoute(silent: boolean = false) {
+    protected _updateRoute(silent = false) {
         router.navigate(getUsersRoute(this.userId), {
             callHooks: !silent,
             callHandler: !silent
         });
     }
 
-    protected _updateNewUserRoute(silent: boolean = false) {
+    protected _updateNewUserRoute(silent = false) {
         router.navigate(getNewUserRoute(this.creationState?.userModel.serviceAccount), {
             callHooks: !silent,
             callHandler: !silent

@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,63 +12,46 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.rules;
 
 public enum RulesetStatus {
-    /**
-     * Ruleset compiled successfully but is not running, due to failure of other rulesets in same scope.
-     */
-    READY,
+  /**
+   * Ruleset compiled successfully but is not running, due to failure of other rulesets in same
+   * scope.
+   */
+  READY,
 
-    /**
-     * Ruleset has been compiled and can be executed.
-     */
-    DEPLOYED,
+  /** Ruleset has been compiled and can be executed. */
+  DEPLOYED,
 
-    /**
-     * Ruleset did not compile successfully and can not be executed.
-     */
-    COMPILATION_ERROR,
+  /** Ruleset did not compile successfully and can not be executed. */
+  COMPILATION_ERROR,
 
-    /**
-     * Validity period is not valid
-     */
-    VALIDITY_PERIOD_ERROR,
+  /** Validity period is not valid */
+  VALIDITY_PERIOD_ERROR,
 
-    /**
-     * Ruleset was executed but there was a runtime error.
-     */
-    EXECUTION_ERROR,
+  /** Ruleset was executed but there was a runtime error. */
+  EXECUTION_ERROR,
 
-    /**
-     * Ruleset caused a loop whilst being executed.
-     */
-    LOOP_ERROR,
+  /** Ruleset caused a loop whilst being executed. */
+  LOOP_ERROR,
 
-    /**
-     * Ruleset has been disabled.
-     */
-    DISABLED,
+  /** Ruleset has been disabled. */
+  DISABLED,
 
-    /**
-     * Ruleset is outside of validity period but will be valid again in the future.
-     */
-    PAUSED,
+  /** Ruleset is outside of validity period but will be valid again in the future. */
+  PAUSED,
 
-    /**
-     * Ruleset is outside of validity period and will nt be valid again.
-     */
-    EXPIRED,
+  /** Ruleset is outside of validity period and will nt be valid again. */
+  EXPIRED,
 
-    /**
-     * Ruleset has been removed.
-     */
-    REMOVED,
+  /** Ruleset has been removed. */
+  REMOVED,
 
-    /**
-     * Contains no rules
-     */
-    EMPTY
+  /** Contains no rules */
+  EMPTY
 }
