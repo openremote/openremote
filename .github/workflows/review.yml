@@ -47,11 +47,27 @@ jobs:
               - '!package.json'
               - '!yarn.lock'
 
+  check-spotless:
+    name: Lint
+    needs: detect-changes
+    if: ${{ !failure() && !cancelled() }}
+    uses: "./.github/workflows/check-spotless.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.backend_any_modified != 'true' }}
+
   ui-check-dependencies:
     name: Lint
     needs: detect-changes
     if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/ui-check-dependencies.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.ui_any_modified != 'true' }}
+
+  ui-check-spotless:
+    name: Lint
+    needs: detect-changes
+    if: ${{ !failure() && !cancelled() }}
+    uses: "./.github/workflows/ui-check-spotless.yml"
     with:
       skip: ${{ needs.detect-changes.outputs.ui_any_modified != 'true' }}
 
