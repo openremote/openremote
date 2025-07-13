@@ -1,266 +1,431 @@
 package org.openremote.manager.graphql;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import graphql.ExecutionResult;
 import graphql.GraphQL;
+import graphql.Scalars;
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
-import graphql.schema.idl.RuntimeWiring;
-import graphql.schema.idl.SchemaGenerator;
-import graphql.schema.idl.SchemaParser;
-import graphql.schema.idl.TypeDefinitionRegistry;
-import io.leangen.graphql.GraphQLSchemaGenerator;
-import io.leangen.graphql.metadata.messages.MessageBundle;
-import io.leangen.graphql.metadata.strategy.query.BeanResolverBuilder;
-import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
-import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
-import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
-import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverBuilder;
-import io.leangen.graphql.metadata.strategy.query.MemberOperationInfoGenerator;
-import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
-import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
-import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.geantyref.TypeFactory;
-import io.leangen.graphql.annotations.types.GraphQLType;
-
+import graphql.schema.GraphQLList;
+import graphql.schema.GraphQLTypeReference;
+import graphql.schema.idl.SchemaPrinter;
+import graphql.schema.GraphQLEnumType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import org.openremote.container.timer.TimerService;
-import org.openremote.manager.asset.AssetResourceImpl;
-import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.datapoint.AssetDatapointService;
-import org.openremote.manager.map.MapResourceImpl;
-import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.container.web.WebResource;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.datapoint.AssetDatapoint;
-import org.openremote.model.datapoint.query.AssetDatapointAllQuery;
-import org.openremote.model.datapoint.query.AssetDatapointQuery;
-import org.openremote.model.asset.impl.ThingAsset;
-import org.openremote.model.query.AssetQuery;
+import org.openremote.model.util.ValueUtil;
 
-import java.io.InputStreamReader;
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.WildcardType;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static org.openremote.model.syslog.SyslogCategory.API;
 
 public class GraphQlService implements ContainerService {
-    protected GraphQL graphQL;
+    /**
+     * Scans for JAX-RS resource classes and generates a GraphQL schema based on their endpoints.
+     * No manual schema file or code changes required.
+     */
 
-    protected AssetDatapointService assetDatapointService;
-    protected AssetStorageService assetStorageService;
-    protected ManagerIdentityService managerIdentityService;
+    private static final System.Logger LOG = System.getLogger(GraphQlService.class.getName() + "." + API.name());
+
+    private GraphQLSchema schema;
+
+    private List<WebResource> resources = null;
+    private GraphQlWebResourceImpl graphQlResource;
+
+    public void setResources(WebResource[] resources) {
+        this.resources = List.of(resources);
+    }
 
     @Override
     public int getPriority() {
-        return LOW_PRIORITY;
+        return ManagerWebService.PRIORITY+200;
+    }
+
+    public GraphQLSchema getSchema() {return schema;}
+
+    private final Map<Class<?>, graphql.schema.GraphQLOutputType> typeCache = new ConcurrentHashMap<>();
+
+    public GraphQLSchema generateSchemaFromApis() {
+        Set<Class<?>> resourceClasses = getJaxRsResources();
+        GraphQLObjectType.Builder queryType = GraphQLObjectType.newObject().name("Query");
+        GraphQLObjectType.Builder mutationType = GraphQLObjectType.newObject().name("Mutation");
+
+        for (Class<?> resource : resourceClasses) {
+            for (Method method : resource.getDeclaredMethods()) {
+                if (method.isAnnotationPresent(GET.class)) {
+                    queryType.field(buildField(method));
+                } else {
+                    mutationType.field(buildField(method));
+                }
+            }
+        }
+
+        GraphQLSchema.Builder schemaBuilder = GraphQLSchema.newSchema().query(queryType.build());
+        GraphQLObjectType mutation = mutationType.build();
+        if (!mutation.getFieldDefinitions().isEmpty()) {
+            schemaBuilder.mutation(mutation);
+        }
+        return schemaBuilder.build();
+    }
+
+    private GraphQLFieldDefinition buildField(Method method) {
+        // Prefix the method name with the resource (interface) name to avoid collisions
+        String resourceName = method.getDeclaringClass().getSimpleName();
+        String methodName = resourceName + "_" + method.getName();
+        GraphQLFieldDefinition.Builder builder = GraphQLFieldDefinition.newFieldDefinition().name(methodName);
+
+        // Add arguments for each method parameter
+        java.lang.reflect.Parameter[] params = method.getParameters();
+        for (java.lang.reflect.Parameter param : params) {
+            String argName = null;
+            if (param.isAnnotationPresent(jakarta.ws.rs.QueryParam.class)) {
+                argName = param.getAnnotation(jakarta.ws.rs.QueryParam.class).value();
+            } else if (param.isAnnotationPresent(jakarta.ws.rs.PathParam.class)) {
+                argName = param.getAnnotation(jakarta.ws.rs.PathParam.class).value();
+            } else if (param.isAnnotationPresent(jakarta.ws.rs.HeaderParam.class)) {
+                argName = param.getAnnotation(jakarta.ws.rs.HeaderParam.class).value();
+            } else if (param.isAnnotationPresent(jakarta.ws.rs.CookieParam.class)) {
+                argName = param.getAnnotation(jakarta.ws.rs.CookieParam.class).value();
+            } else if (param.isAnnotationPresent(jakarta.ws.rs.FormParam.class)) {
+                argName = param.getAnnotation(jakarta.ws.rs.FormParam.class).value();
+            } else {
+                argName = param.getName();
+            }
+            // Override any query input named "requestParams"; do not expose it as a user input
+            if ("requestParams".equals(argName)) {
+                continue;
+            }
+            // Default to String type for simplicity; you can expand this to map types as needed
+            builder.argument(graphql.schema.GraphQLArgument.newArgument()
+                .name(argName)
+                .type(Scalars.GraphQLString)
+                .build());
+        }
+
+        // Map return type
+        Class<?> returnType = method.getReturnType();
+        if (returnType.equals(void.class) || returnType.equals(Void.class)) {
+            builder.type(graphql.Scalars.GraphQLString); // or custom Void scalar
+        } else if (returnType.isArray()) {
+            builder.type(GraphQLList.list(getGraphQLType(returnType.getComponentType())));
+        } else if (java.util.Collection.class.isAssignableFrom(returnType)) {
+            Type genericReturnType = method.getGenericReturnType();
+            if (genericReturnType instanceof ParameterizedType) {
+                Type itemType = ((ParameterizedType) genericReturnType).getActualTypeArguments()[0];
+                if (itemType instanceof Class<?>) {
+                    builder.type(GraphQLList.list(getGraphQLType((Class<?>) itemType)));
+                } else {
+                    builder.type(GraphQLList.list(graphql.Scalars.GraphQLString));
+                }
+            } else {
+                builder.type(GraphQLList.list(graphql.Scalars.GraphQLString));
+            }
+        } else {
+            builder.type(getGraphQLType(returnType));
+        }
+        builder.dataFetcher(env -> {
+            try {
+                // Find the correct resource instance from the resources set
+                Object resourceInstance = null;
+                for (Object res : resources) {
+                    if (method.getDeclaringClass().isInstance(res)) {
+                        resourceInstance = res;
+                        break;
+                    }
+                }
+                if (resourceInstance == null) {
+                    throw new RuntimeException("No resource instance found for " + method.getDeclaringClass());
+                }
+
+                java.lang.reflect.Parameter[] params2 = method.getParameters();
+                Object[] args = new Object[params2.length];
+                args[0] = env.getGraphQlContext().get("reqParams");
+                for (int i = 1; i < params2.length; i++) {
+                    java.lang.reflect.Parameter param = params2[i];
+                    Object value = null;
+                    // Support for @QueryParam, @PathParam, @HeaderParam, @CookieParam, @FormParam, @Context, @DefaultValue
+                    if (param.isAnnotationPresent(jakarta.ws.rs.QueryParam.class)) {
+                        String name1 = param.getAnnotation(jakarta.ws.rs.QueryParam.class).value();
+                        value = env.getArgument(name1);
+                    } else if (param.isAnnotationPresent(jakarta.ws.rs.PathParam.class)) {
+                        String name = param.getAnnotation(jakarta.ws.rs.PathParam.class).value();
+                        value = env.getArgument(name);
+                    } else if (param.isAnnotationPresent(jakarta.ws.rs.HeaderParam.class)) {
+                        String name = param.getAnnotation(jakarta.ws.rs.HeaderParam.class).value();
+                        value = env.getArgument(name);
+                    } else if (param.isAnnotationPresent(jakarta.ws.rs.CookieParam.class)) {
+                        String name = param.getAnnotation(jakarta.ws.rs.CookieParam.class).value();
+                        value = env.getArgument(name);
+                    } else if (param.isAnnotationPresent(jakarta.ws.rs.FormParam.class)) {
+                        String name = param.getAnnotation(jakarta.ws.rs.FormParam.class).value();
+                        value = env.getArgument(name);
+                    } else if (param.isAnnotationPresent(jakarta.ws.rs.DefaultValue.class)) {
+                        String defaultValue = param.getAnnotation(jakarta.ws.rs.DefaultValue.class).value();
+                        value = env.getArgument(param.getName());
+                        if (value == null) value = defaultValue;
+                    } else {
+                        // Fallback: try by parameter name
+                        value = env.getArgument(param.getName());
+                    }
+                    args[i] = value;
+                }
+                Object result = method.invoke(resourceInstance, args);
+                // Unwrap InvocationTargetException to expose the real cause
+                if (result instanceof Throwable) {
+                    throw (Throwable) result;
+                }
+                // If the result has an 'attributes' field of type AttributeMap, convert it to an array of AttributeEntry
+                if (result != null) {
+                    Class<?> resultClass = result.getClass();
+                    try {
+                        // Find the 'attributes' field, including inherited fields
+                        java.lang.reflect.Field attributesField = null;
+                        Class<?> searchClass = resultClass;
+                        while (searchClass != null && attributesField == null) {
+                            try {
+                                attributesField = searchClass.getDeclaredField("attributes");
+                            } catch (NoSuchFieldException e) {
+                                searchClass = searchClass.getSuperclass();
+                            }
+                        }
+                        if (attributesField != null) {
+                            attributesField.setAccessible(true);
+                            Object attributesValue = attributesField.get(result);
+                            if (attributesValue != null && attributesValue.getClass().getSimpleName().equals("AttributeMap")) {
+                                // Use AttributeEntry.getAttributeEntryList(AttributeMap) to convert
+                                Class<?> entryClass = Class.forName("org.openremote.model.asset.AttributeEntry");
+                                java.lang.reflect.Method convertMethod = entryClass.getMethod("getAttributeEntryList", attributesValue.getClass());
+                                Object entryArray = convertMethod.invoke(null, attributesValue);
+                                // Instead of setting the field, add a new property to the result map for GraphQL
+                                // (Assume result is a POJO, so return a Map with all fields, replacing 'attributes')
+                                java.util.Map<String, Object> resultMap = new java.util.HashMap<>();
+                                for (Field f : resultClass.getFields()) {
+                                    f.setAccessible(true);
+                                    resultMap.put(f.getName(), f.get(result));
+                                }
+                                for (Field f : resultClass.getDeclaredFields()) {
+                                    f.setAccessible(true);
+                                    resultMap.put(f.getName(), f.get(result));
+                                }
+                                resultMap.put("attributes", entryArray);
+                                return resultMap;
+                            }
+                        }
+                    } catch (Exception e) { throw e; }
+                }
+                return result;
+            } catch (java.lang.reflect.InvocationTargetException e) {
+                // Unwrap and throw the real cause for better error reporting
+                Throwable cause = e.getCause();
+                if (cause != null) {
+                    throw new RuntimeException(cause);
+                } else {
+                    throw new RuntimeException(e);
+                }
+            } catch (Throwable e) {
+                throw new RuntimeException(e);
+            }
+        });
+        return builder.build();
+    }
+
+    private graphql.schema.GraphQLOutputType getGraphQLType(Class<?> clazz) {
+        // Map primitives and String
+        // Map AttributeMap to a list of AttributeEntry (key-value pairs)
+        if (clazz.getName().equals("org.openremote.model.attribute.AttributeMap")) {
+            try {
+                Class<?> entryClass = Class.forName("org.openremote.model.asset.AttributeEntry");
+                return GraphQLList.list(getGraphQLType(entryClass));
+            } catch (ClassNotFoundException e) {
+                return graphql.Scalars.GraphQLString;
+            }
+        }
+        // Map MetaMap to a list of MetaItem (if available), otherwise GraphQLString
+        if (clazz.getName().equals("org.openremote.model.attribute.MetaMap")) {
+            try {
+                Class<?> metaItemClass = Class.forName("org.openremote.model.attribute.MetaItem");
+                return GraphQLList.list(getGraphQLType(metaItemClass));
+            } catch (ClassNotFoundException e) {
+                return graphql.Scalars.GraphQLString;
+            }
+        }
+        // Map Map and Object to GraphQLString to avoid empty object types
+        if (clazz.getName().equals("java.util.Map") || clazz.getSimpleName().equals("Map") || clazz.getSimpleName().equals("Object")) {
+            return graphql.Scalars.GraphQLString;
+        }
+        // Only map to GraphQLString for true primitives, enums, and known value types
+        if (clazz.equals(Class.class)) return graphql.Scalars.GraphQLString;
+        if (clazz.equals(String.class)) return graphql.Scalars.GraphQLString;
+        if (clazz.equals(Integer.class) || clazz.equals(int.class)) return graphql.Scalars.GraphQLInt;
+        if (clazz.equals(Long.class) || clazz.equals(long.class)) return Scalars.GraphQLFloat;
+        if (clazz.equals(Boolean.class) || clazz.equals(boolean.class)) return graphql.Scalars.GraphQLBoolean;
+        if (clazz.equals(Float.class) || clazz.equals(float.class) || clazz.equals(Double.class) || clazz.equals(double.class)) return graphql.Scalars.GraphQLFloat;
+        if (clazz.equals(java.util.Date.class) || clazz.getName().equals("java.time.LocalDate") || clazz.getName().equals("java.time.Instant")) return graphql.Scalars.GraphQLString;
+        if (clazz.getSimpleName().equals("Id")) return Scalars.GraphQLID;
+        if (clazz.isEnum()) {
+            graphql.schema.GraphQLOutputType cachedEnum = typeCache.get(clazz);
+            if (cachedEnum != null) {
+                return cachedEnum;
+            }
+            // Use fully qualified class name for enum type name to ensure uniqueness and GraphQL compliance
+            String enumTypeName = clazz.getName().replace('.', '_').replace('$', '_');
+            if (!enumTypeName.matches("^[_A-Za-z].*")) {
+                enumTypeName = "_" + enumTypeName;
+            }
+            GraphQLEnumType.Builder enumBuilder = GraphQLEnumType.newEnum().name(enumTypeName);
+            Object[] enumConstants = clazz.getEnumConstants();
+            for (Object constant : enumConstants) {
+                enumBuilder.value(constant.toString(), constant);
+            }
+            GraphQLEnumType enumType = enumBuilder.build();
+            typeCache.put(clazz, enumType);
+            return enumType;
+        }
+        // Check cache first
+        graphql.schema.GraphQLOutputType cachedType = typeCache.get(clazz);
+        if (cachedType != null) {
+            // If the cached type is a type reference, return it to avoid duplicate type creation
+            return cachedType;
+        }
+        // If the type name is a built-in or common Java type, map to GraphQLString to avoid conflicts
+        String typeName = clazz.getSimpleName();
+        if (typeName.equals("Node") || typeName.equals("PageInfo") || typeName.equals("Entry")) {
+            return graphql.Scalars.GraphQLString;
+        }
+        // Phase 1: Put a type reference in the cache to break recursion
+        GraphQLTypeReference typeRef = GraphQLTypeReference.typeRef(typeName);
+        typeCache.put(clazz, typeRef);
+        GraphQLObjectType.Builder builder = GraphQLObjectType.newObject().name(typeName);
+        boolean hasFields = false;
+        for (Field field : getAllFields(clazz)) {
+            // Skip static and synthetic fields
+            if (java.lang.reflect.Modifier.isStatic(field.getModifiers()) || field.isSynthetic()) continue;
+            Class<?> fieldType = field.getType();
+            graphql.schema.GraphQLOutputType gqlType;
+            if (fieldType.isArray()) {
+                gqlType = GraphQLList.list(getGraphQLType(fieldType.getComponentType()));
+            } else if (java.util.Collection.class.isAssignableFrom(fieldType)) {
+                // Try to get generic type
+                Type genericType = field.getGenericType();
+                if (genericType instanceof ParameterizedType) {
+                    Type itemType = ((ParameterizedType) genericType).getActualTypeArguments()[0];
+                    if (itemType instanceof Class<?>) {
+                        gqlType = GraphQLList.list(getGraphQLType((Class<?>) itemType));
+                    } else {
+                        gqlType = GraphQLList.list(graphql.Scalars.GraphQLString);
+                    }
+                } else {
+                    gqlType = GraphQLList.list(graphql.Scalars.GraphQLString);
+                }
+            } else {
+                gqlType = getGraphQLType(fieldType);
+            }
+            builder.field(f -> f.name(field.getName()).type(gqlType));
+            hasFields = true;
+        }
+        // If no fields, add a dummy field to avoid empty type error
+        if (!hasFields) {
+            builder.field(f -> f.name("_dummy").type(graphql.Scalars.GraphQLString));
+        }
+        // Phase 2: Build the type and update the cache
+        GraphQLObjectType type = builder.build();
+        typeCache.put(clazz, type);
+        return type;
+    }
+
+    private Set<Class<?>> getJaxRsResources() {
+
+        Set<Class<?>> resources = new HashSet<>();
+
+        if (this.resources == null) {throw new RuntimeException("Resources not found");}
+
+        // For each resource instance, add all interfaces it implements
+        for (Object res : this.resources) {
+            for (Class<?> iface : res.getClass().getInterfaces()) {
+                resources.add(iface);
+            }
+        }
+        return resources;
     }
 
     @Override
     public void init(Container container) throws Exception {
-        container.getService(ManagerWebService.class).addApiSingleton(
-                new GraphQlResourceImpl(
-                        container.getService(TimerService.class),
-                        container.getService(ManagerIdentityService.class),
-                        this)
-        );
 
-        // Create API instances
-        AssetDatapointApi datapointApi = new AssetDatapointApi(
-            container.getService(AssetDatapointService.class),
-            container.getService(AssetStorageService.class), 
-            container.getService(ManagerIdentityService.class)
-        );
-
-        AssetApi assetApi = new AssetApi(
-            container.getService(AssetStorageService.class),
-            container.getService(ManagerIdentityService.class)
-        );
-
-        // Create a custom type info generator that handles Asset<?> properly
-        TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator() {
-            @Override
-            public String generateTypeName(AnnotatedType type, MessageBundle messageBundle) {
-                // For any type that is or contains Asset, use "Asset" as the type name
-                if (type.getType() instanceof Class<?> clazz && Asset.class.isAssignableFrom(clazz)) {
-                    return "Asset";
-                }
-                return super.generateTypeName(type, messageBundle);
-            }
-        };
-
-        // Create a custom type transformer to handle GraphQL types
-        TypeTransformer typeTransformer = new DefaultTypeTransformer(true, true) {
-            @Override
-            public AnnotatedType transform(AnnotatedType type) {
-                // For any GraphQL annotated type that involves Asset, use ThingAsset
-                if (type.getAnnotations().length > 0 && 
-                    type.getAnnotations()[0].annotationType().getName().contains("GraphQL")) {
-                    
-                    // For any type that is or contains Asset, use ThingAsset
-                    if (type.getType() instanceof Class<?> clazz) {
-                        // Handle inner classes of AssetQuery
-                        if (clazz.getDeclaringClass() != null && clazz.getDeclaringClass().equals(AssetQuery.class)) {
-                            // For inner classes of AssetQuery, ensure we use Asset<?> as type parameter if required
-                            TypeVariable<?>[] typeParams = clazz.getTypeParameters();
-                            if (typeParams.length > 0) {
-                                // Check if the type parameter has a bound of Asset<?>
-                                for (TypeVariable<?> typeParam : typeParams) {
-                                    for (Type bound : typeParam.getBounds()) {
-                                        if (bound instanceof ParameterizedType boundType && 
-                                            boundType.getRawType().equals(Asset.class)) {
-                                            // This inner class has a type parameter bound to Asset<?>
-                                            // Use Asset<?> as the type parameter
-                                            return GenericTypeReflector.annotate(
-                                                TypeFactory.parameterizedClass(
-                                                    clazz,
-                                                    new Type[] { TypeFactory.parameterizedClass(Asset.class, new Type[] { WildcardType.class }) }
-                                                )
-                                            );
-                                        }
-                                    }
-                                }
-                            }
-                            // If no Asset<?> bound found, return as is
-                            return GenericTypeReflector.annotate(clazz);
-                        }
-                        
-                        // Handle Asset types
-                        if (Asset.class.isAssignableFrom(clazz)) {
-                            return GenericTypeReflector.annotate(ThingAsset.class);
-                        }
-                    }
-                    
-                    if (type.getType() instanceof ParameterizedType parameterizedType) {
-                        Type rawType = parameterizedType.getRawType();
-                        if (rawType instanceof Class<?> rawClass) {
-                            // Handle inner classes of AssetQuery
-                            if (rawClass.getDeclaringClass() != null && rawClass.getDeclaringClass().equals(AssetQuery.class)) {
-                                // For inner classes of AssetQuery, ensure we use Asset<?> as type parameter if required
-                                TypeVariable<?>[] typeParams = rawClass.getTypeParameters();
-                                if (typeParams.length > 0) {
-                                    // Check if the type parameter has a bound of Asset<?>
-                                    for (TypeVariable<?> typeParam : typeParams) {
-                                        for (Type bound : typeParam.getBounds()) {
-                                            if (bound instanceof ParameterizedType boundType && 
-                                                boundType.getRawType().equals(Asset.class)) {
-                                                // This inner class has a type parameter bound to Asset<?>
-                                                // Use Asset<?> as the type parameter
-                                                return GenericTypeReflector.annotate(
-                                                    TypeFactory.parameterizedClass(
-                                                        rawClass,
-                                                        new Type[] { TypeFactory.parameterizedClass(Asset.class, new Type[] { WildcardType.class }) }
-                                                    )
-                                                );
-                                            }
-                                        }
-                                    }
-                                }
-                                // If no Asset<?> bound found, preserve original type parameters
-                                return GenericTypeReflector.annotate(parameterizedType);
-                            }
-                            
-                            // Handle Asset types
-                            if (Asset.class.isAssignableFrom(rawClass)) {
-                                return GenericTypeReflector.annotate(ThingAsset.class);
-                            }
-                        }
-                    }
-
-                    if (type.getType() instanceof WildcardType wildcardType) {
-                        Type[] upperBounds = wildcardType.getUpperBounds();
-                        if (upperBounds.length > 0 && upperBounds[0] instanceof ParameterizedType upperBoundType) {
-                            Type rawType = upperBoundType.getRawType();
-                            if (rawType instanceof Class<?> rawClass) {
-                                // Handle inner classes of AssetQuery
-                                if (rawClass.getDeclaringClass() != null && rawClass.getDeclaringClass().equals(AssetQuery.class)) {
-                                    // For inner classes of AssetQuery, ensure we use Asset<?> as type parameter if required
-                                    TypeVariable<?>[] typeParams = rawClass.getTypeParameters();
-                                    if (typeParams.length > 0) {
-                                        // Check if the type parameter has a bound of Asset<?>
-                                        for (TypeVariable<?> typeParam : typeParams) {
-                                            for (Type bound : typeParam.getBounds()) {
-                                                if (bound instanceof ParameterizedType boundType && 
-                                                    boundType.getRawType().equals(Asset.class)) {
-                                                    // This inner class has a type parameter bound to Asset<?>
-                                                    // Use Asset<?> as the type parameter
-                                                    return GenericTypeReflector.annotate(
-                                                        TypeFactory.parameterizedClass(
-                                                            rawClass,
-                                                            new Type[] { TypeFactory.parameterizedClass(Asset.class, new Type[] { WildcardType.class }) }
-                                                        )
-                                                    );
-                                                }
-                                            }
-                                        }
-                                    }
-                                    // If no Asset<?> bound found, preserve original type parameters
-                                    return GenericTypeReflector.annotate(upperBoundType);
-                                }
-                                
-                                // Handle Asset types
-                                if (Asset.class.isAssignableFrom(rawClass)) {
-                                    return GenericTypeReflector.annotate(ThingAsset.class);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                return super.transform(type);
-            }
-        };
-
-        // Create schema with minimal customization
-        GraphQLSchemaGenerator schema = new GraphQLSchemaGenerator()
-                .withOperationsFromSingletons(datapointApi, assetApi)
-                .withBasePackages("org.openremote")
-                .withTypeInfoGenerator(typeInfoGenerator)
-                .withTypeTransformer(typeTransformer)
-                .withResolverBuilders(new AnnotatedResolverBuilder()
-                    .withOperationInfoGenerator(new SnakeCaseOperationNameGenerator()));
-
-        graphQL = GraphQL.newGraphQL(schema.generate()).build();
     }
 
-    private RuntimeWiring buildWiring(Container container) {
-        AssetDatapointService dpService = container.getService(AssetDatapointService.class);
-        AssetStorageService storage = container.getService(AssetStorageService.class);
-        ManagerIdentityService identity = container.getService(ManagerIdentityService.class);
+    public static Object exportSchemaAsJson(GraphQLSchema schema, String filePath) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        // graphql-java does not provide a direct way to serialize schema as JSON, so we export the introspection result
+        var introspectionResult = graphql.introspection.IntrospectionQuery.INTROSPECTION_QUERY;
+        ExecutionResult executionResult = graphql.GraphQL.newGraphQL(schema).build().execute(introspectionResult);
+        return executionResult.getData();
+    }
 
-        return RuntimeWiring.newRuntimeWiring()
-                .type("Query", typeWiring -> typeWiring
-                        .dataFetcher("datapoints", env -> {
-                            String assetId = env.getArgument("assetId");
-                            String attributeName = env.getArgument("attributeName");
-                            Map<String, Object> qMap = env.getArgument("query");
-                            AssetDatapointQuery q = new AssetDatapointAllQuery(
-                                    ((Number)qMap.get("from")).longValue(),
-                                    ((Number)qMap.get("to")).longValue()
-                            );
-                            // auth checks omitted for brevity
-                            return dpService.queryDatapoints(assetId, attributeName, q);
-                        })
-                        .dataFetcher("datapointPeriod", env -> {
-                            String assetId = env.getArgument("assetId");
-                            String attributeName = env.getArgument("attributeName");
-                            return dpService.getDatapointPeriod(assetId, attributeName);
-                        })
-                )
-                .build();
+    public void exportSchemaAsSDL(GraphQLSchema schema, String filePath) throws IOException {
+        SchemaPrinter schemaPrinter = new SchemaPrinter();
+        String sdl = schemaPrinter.print(schema);
+        Files.write(Paths.get(filePath), sdl.getBytes());
+    }
+
+    public String exportSchemaAsSDLString(GraphQLSchema schema) {
+        SchemaPrinter schemaPrinter = new SchemaPrinter();
+        return schemaPrinter.print(schema);
     }
 
     @Override
     public void start(Container container) throws Exception {
+//        this.container = container;
+        LOG.log(System.Logger.Level.INFO, "Starting GraphQlService");
+        GraphQLSchema schema = generateSchemaFromApis();
+        LOG.log(System.Logger.Level.INFO, schema.toString());
+        // Export schema as JSON
+        Object schemaJson = exportSchemaAsJson(schema, "schema.json");
+        LOG.log(System.Logger.Level.INFO, ValueUtil.JSON.writeValueAsString(exportSchemaAsSDLString(schema)));
+        // Export schema as SDL
+
+        LOG.log(System.Logger.Level.INFO, "GraphQL SDL exported to schema.graphqls");
+
+        this.schema = schema;
+
+
+        this.graphQlResource.setGraphQL(GraphQL.newGraphQL(schema).build());
 
     }
 
     @Override
     public void stop(Container container) throws Exception {
-        // No-op
+
+    }
+
+    private Field[] getAllFields(Class<?> clazz) {
+        java.util.List<Field> fields = new java.util.ArrayList<>();
+        while (clazz != null && !clazz.equals(Object.class)) {
+            for (Field field : clazz.getDeclaredFields()) {
+                fields.add(field);
+            }
+            clazz = clazz.getSuperclass();
+        }
+        return fields.toArray(new Field[0]);
+    }
+
+    public void setGraphQlResource(GraphQlWebResourceImpl resourceImpl) {
+        this.graphQlResource = resourceImpl;
     }
 }
-

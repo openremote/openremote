@@ -46,7 +46,11 @@ import io.undertow.util.HttpString;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.security.IdentityService;
+import org.openremote.container.timer.TimerService;
+import org.openremote.container.web.WebResource;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.graphql.GraphQlService;
+import org.openremote.manager.graphql.GraphQlWebResourceImpl;
 import org.openremote.model.Container;
 
 import jakarta.ws.rs.WebApplicationException;
@@ -126,6 +130,9 @@ public class ManagerWebService extends WebService {
         String rootRedirectPath = getString(container.getConfig(), OR_ROOT_REDIRECT_PATH, OR_ROOT_REDIRECT_PATH_DEFAULT);
 
         addOpenApiResource();
+
+        addGraphQlResource(container);
+
 
         initialised = true;
         ResteasyDeployment resteasyDeployment = createResteasyDeployment(container, getApiClasses(), apiSingletons, true);
@@ -214,6 +221,29 @@ public class ManagerWebService extends WebService {
                         deploymentHandler
                 )
         );
+    }
+
+    private void addGraphQlResource(Container container) {
+
+        GraphQlService service = ((GraphQlService) container.getService(GraphQlService.class));
+        GraphQlWebResourceImpl resourceImpl = new GraphQlWebResourceImpl(
+                container.getService(TimerService.class),
+                service,
+                null
+        );
+
+        this.addApiSingleton(
+                resourceImpl
+        );
+
+        service.setGraphQlResource(resourceImpl);
+
+        service.setResources(
+                apiSingletons.stream()
+                        .filter(WebResource.class::isInstance)
+                        .toArray(WebResource[]::new)
+        );
+
     }
 
     private void addOpenApiResource() {
