@@ -185,10 +185,18 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
             throw new IllegalStateException("IO client for protocol should not be null");
         }
 
-        client.addConnectionStatusConsumer(this::onConnectionStatusChanged);
-        client.addMessageConsumer(this::onMessageReceived);
+        addConnectionStatusConsumer(client);
+        addMessageConsumer(client);
         this.client = client;
         return client;
+    }
+
+    protected void addConnectionStatusConsumer(W client) {
+        client.addConnectionStatusConsumer(this::onConnectionStatusChanged);
+    }
+
+    protected void addMessageConsumer(W client) {
+        client.addMessageConsumer(this::onMessageReceived);
     }
 
     /**

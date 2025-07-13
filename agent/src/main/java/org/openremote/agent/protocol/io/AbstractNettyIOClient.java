@@ -242,7 +242,9 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             Future<Void> connectFuture = doConnect();
             waitForConnectFuture(connectFuture);
             execution.recordResult(null);
-        }).whenComplete((result, ex) -> {
+        });
+
+        connectRetry.whenComplete((result, ex) -> {
             if (ex != null) {
                 // Cleanup resources
                 disconnect();
