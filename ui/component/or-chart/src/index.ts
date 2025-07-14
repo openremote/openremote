@@ -334,6 +334,8 @@ const style = css`
 @customElement("or-chart")
 export class OrChart extends translate(i18next)(LitElement) {
 
+    public static readonly DEFAULT_COLORS = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
+
     static get styles() {
         return [
             css`${unsafeCSS(tableStyle)}`,
@@ -361,7 +363,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     public dataProvider?: (startOfPeriod: number, endOfPeriod: number) => Promise<[]>
 
     @property({type: Array})
-    public colors: string[] = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
+    public colors: string[] = OrChart.DEFAULT_COLORS;
 
     @property({type: Object})
     public readonly datapointQuery!: AssetDatapointQueryUnion;

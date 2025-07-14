@@ -1,16 +1,20 @@
 import {css, html, TemplateResult } from "lit";
-import { customElement } from "lit/decorators.js";
+import { customElement, query } from "lit/decorators.js";
 import {WidgetSettings} from "../util/widget-settings";
-import "../panels/attributes-panel";
+import "../panels/attributes-chart-panel";
 import "../util/settings-panel";
 import {i18next} from "@openremote/or-translate";
+import {debounce} from "lodash";
+import {AttributesChartPanel} from "../panels/attributes-chart-panel";
 import {AttributeAction, AttributeActionEvent, AttributesSelectEvent} from "../panels/attributes-panel";
-import {Asset, Attribute, AttributeRef} from "@openremote/model";
+import {Asset, AssetDescriptor, Attribute, AttributeRef} from "@openremote/model";
 import {ChartWidgetConfig} from "../widgets/chart-widget";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {when} from "lit/directives/when.js";
+import {map} from "lit/directives/map.js";
 import moment from "moment/moment";
-import {ChartAttributeConfig} from "@openremote/or-chart";
+import {ChartAttributeConfig, OrChart} from "@openremote/or-chart";
+import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 
 const styling = css`
   .switch-container {
@@ -23,6 +27,9 @@ const styling = css`
 
 @customElement("chart-settings")
 export class ChartSettings extends WidgetSettings {
+
+    @query('attributes-chart-panel')
+    protected _attributesPanelElem?: AttributesChartPanel;
 
     protected readonly widgetConfig!: ChartWidgetConfig;
     protected timeWindowOptions: Map<string, [moment.unitOfTime.DurationConstructor, number]> = new Map<string, [moment.unitOfTime.DurationConstructor, number]>;
@@ -53,7 +60,16 @@ export class ChartSettings extends WidgetSettings {
         const min = this.widgetConfig.chartOptions.options?.scales?.y?.min;
         const max = this.widgetConfig.chartOptions.options?.scales?.y?.max;
         const isMultiAxis = (attrConfig?.rightAxisAttributes?.length || 0) > 0;
-        const samplingValue = Array.from(this.samplingOptions.entries()).find((entry => entry[1] === this.widgetConfig.datapointQuery.type))![0]
+        const samplingValue = Array.from(this.samplingOptions.entries()).find((entry => entry[1] === this.widgetConfig.datapointQuery.type))![0];
+
+        const attributeIconCallback = (asset: Asset, attribute: Attribute<any>, descriptor?: AssetDescriptor) => {
+            let color = this.widgetConfig.attributeColors.find(a => a[0].id === asset.id && a[0].name === attribute.name)?.[1]?.replace('#', '');
+            if(!color) {
+                const index = this.widgetConfig.attributeRefs.findIndex(ref => ref.id === asset.id && ref.name === attribute.name);
+                if(index >= 0) color = OrChart.DEFAULT_COLORS?.[index]?.replace('#', '');
+            }
+            return html`<span>${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, color)}</span>`;
+        };
         const attributeLabelCallback = (asset: Asset, attribute: Attribute<any>, attributeLabel: string) => {
             const isOnRightAxis = isMultiAxis && attrConfig?.rightAxisAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
             const isFaint = attrConfig?.faintAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
@@ -61,31 +77,21 @@ export class ChartSettings extends WidgetSettings {
             const isStepped = attrConfig?.steppedAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
             const isArea = attrConfig?.areaAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
             const isExtended = attrConfig?.extendedAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const strings: string[] = [];
+            if(isOnRightAxis) strings.push(i18next.t("right"));
+            if(isFaint) strings.push(i18next.t("dashboard.faint"));
+            if(isSmooth) strings.push(i18next.t("dashboard.smooth"));
+            if(isStepped) strings.push(i18next.t("dashboard.stepped"));
+            if(isArea) strings.push(i18next.t("dashboard.fill"));
+            if(isExtended) strings.push(i18next.t("dashboard.extendData"));
             return html`
                 <span>${asset.name}</span>
                 <span style="font-size:14px; color:grey;">${attributeLabel}</span>
-                ${when(isOnRightAxis, () => html`
-                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="right"></or-translate></span>   
+                ${when(strings.length > 0, () => html`
+                    <span style="font-size:14px; font-style:italic; color:grey;">${strings.join(', ')}</span>
                 `)}
-                ${when(isFaint, () => html`
-                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="dashboard.faint"></or-translate></span>
-                `)}
-                ${when(isSmooth, () => html`
-                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="dashboard.smooth"></or-translate></span>
-                `)}
-                ${when(isStepped, () => html`
-                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="dashboard.stepped"></or-translate></span>
-                `)}
-                ${when(isArea, () => html`
-                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="dashboard.fill"></or-translate></span>
-                `)}
-                ${when(isExtended, () => html`
-                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="dashboard.extendData"></or-translate></span>
-                `)}
-            `
-        }
-
-
+            `;
+        };
         const attributeActionCallback = (attributeRef: AttributeRef): AttributeAction[] => {
             return [
                 {
@@ -123,23 +129,18 @@ export class ChartSettings extends WidgetSettings {
                     icon: this.widgetConfig?.attributeConfig?.rightAxisAttributes?.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
                     tooltip: i18next.t('dashboard.toggleAxis'),
                     disabled: false
-                },
-                {
-                    icon: 'mdi-blank',
-                    tooltip: '',
-                    disabled: true
                 }
-            ]
-        }
+            ];
+        };
         return html`
             <div>
                 <!-- Attribute selection -->
                 <settings-panel displayName="attributes" expanded="${true}">
-                    <attributes-panel .attributeRefs="${this.widgetConfig.attributeRefs}" multi="${true}" onlyDataAttrs="${true}" .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
-                                      .attributeLabelCallback="${attributeLabelCallback}" .attributeActionCallback="${attributeActionCallback}"
+                    <attributes-chart-panel .attributeRefs="${this.widgetConfig.attributeRefs}" multi="${true}" onlyDataAttrs="${true}" .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
+                                      .attributeIconCallback="${attributeIconCallback}" .attributeLabelCallback="${attributeLabelCallback}" .attributeActionCallback="${attributeActionCallback}"
                                       @attribute-action="${(ev: AttributeActionEvent) => this.onAttributeAction(ev)}"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
-                    ></attributes-panel>
+                    ></attributes-chart-panel>
                 </settings-panel>
 
                 <!-- Time options -->
@@ -397,26 +398,23 @@ export class ChartSettings extends WidgetSettings {
     }
 
     protected openColorPickDialog(attributeRef: AttributeRef) {
-        const colorInput = document.createElement('input');
-        colorInput.type = 'color';
-        colorInput.style.border = 'none';
-        colorInput.style.height = '31px';
-        colorInput.style.width = '31px';
-        colorInput.style.padding = '1px 3px';
-        colorInput.style.minHeight = '22px';
-        colorInput.style.minWidth = '30px';
-        colorInput.style.cursor = 'pointer';
-        colorInput.addEventListener('change', (e: any) => {
-            const color = e.target.value;
-            const existingColor = this.widgetConfig.attributeColors.find(x => x[0] === attributeRef);
-            if(existingColor) {
-                existingColor[1] = color;
-            } else {
-                this.widgetConfig.attributeColors.push([attributeRef, color]);
-            }
-            this.notifyConfigUpdate();
-        });
-        colorInput.click();
+        const inputElem = this._attributesPanelElem?.shadowRoot?.querySelector(`#chart-color-${attributeRef.id}-${attributeRef.name}`) as HTMLInputElement | undefined;
+        if(inputElem) {
+            // Listen for changes
+            inputElem.addEventListener("input", debounce(() => {
+                const color = inputElem.value;
+                const existingColor = this.widgetConfig.attributeColors.find(x => x[0] === attributeRef);
+                if(existingColor) {
+                    existingColor[1] = color;
+                } else {
+                    this.widgetConfig.attributeColors.push([attributeRef, color]);
+                }
+                this.notifyConfigUpdate();
+            }, 200));
+
+            // Open color picker
+            inputElem.click();
+        }
     }
 
     protected onTimePreFixSelect(ev: OrInputChangedEvent) {

@@ -1,6 +1,6 @@
 import {css, CSSResult, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import {Asset, AssetModelUtil, Attribute, AttributeRef} from "@openremote/model";
+import {Asset, AssetDescriptor, AssetModelUtil, Attribute, AttributeRef} from "@openremote/model";
 import {style} from "../style";
 import {when} from "lit/directives/when.js";
 import {map} from "lit/directives/map.js";
@@ -154,6 +154,9 @@ export class AttributesPanel extends LitElement {
     protected attributeFilter?: (attribute: Attribute<any>) => boolean;
 
     @property()
+    protected attributeIconCallback?: (asset: Asset, attribute: Attribute<any>, descriptor?: AssetDescriptor) => TemplateResult;
+
+    @property()
     protected attributeLabelCallback?: (asset: Asset, attribute: Attribute<any>, attributeLabel: string) => TemplateResult;
 
     @property()
@@ -256,7 +259,10 @@ export class AttributesPanel extends LitElement {
                                     return html`
                                         <div class="attribute-list-item">
                                             <div class="attribute-list-item-icon">
-                                                <span>${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type))}</span>
+                                                ${when(!!this.attributeIconCallback,
+                                                        () => this.attributeIconCallback!(asset, attribute, AssetModelUtil.getAssetDescriptor(asset.type)),
+                                                        () => html`<span>${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type))}</span>`
+                                                )}
                                             </div>
                                             <div class="attribute-list-item-label">
                                                 ${when(!!this.attributeLabelCallback,
@@ -270,13 +276,9 @@ export class AttributesPanel extends LitElement {
                                             <div class="attribute-list-item-actions">
 
                                                 <!-- Custom actions defined by callback -->
-                                                ${when(!!this.attributeActionCallback, () => {
-                                                    return this.attributeActionCallback!(attributeRef).map((action) => html`
-                                                        <button class="button-action" .disabled="${action.disabled}" title="${action.tooltip}" @click="${() => this.onAttributeActionClick(asset, attributeRef, action)}">
-                                                            <or-icon icon="${action.icon}"></or-icon>
-                                                        </button>
-                                                    `);
-                                                })}
+                                                ${when(!!this.attributeActionCallback, () => this.attributeActionCallback!(attributeRef).map(
+                                                    action => this._getAttributeActionTemplate(action, asset, attributeRef)
+                                                ))}
                                                 <!-- Remove attribute button -->
                                                 <button class="button-action" title="${i18next.t('delete')}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
                                                     <or-icon icon="close-circle"></or-icon>
@@ -301,6 +303,14 @@ export class AttributesPanel extends LitElement {
                               @or-mwc-input-changed="${() => this.openAttributeSelector(this.attributeRefs, this.multi, this.onlyDataAttrs, this.attributeFilter)}">
                 </or-mwc-input>
             </div>
+        `;
+    }
+
+    protected _getAttributeActionTemplate(action: AttributeAction, asset: Asset, attributeRef: AttributeRef): TemplateResult {
+        return html`
+            <button class="button-action" .disabled="${action.disabled}" title="${action.tooltip}" @click="${() => this.onAttributeActionClick(asset, attributeRef, action)}">
+                <or-icon icon="${action.icon}"></or-icon>
+            </button>
         `;
     }
 
