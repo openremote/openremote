@@ -525,10 +525,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                 },
                 backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                 tooltip: {
-                    trigger: 'axis',
+                    trigger: "axis",
                     confine: true,
                     axisPointer: {
-                        type: 'cross',
+                        type: "cross",
                     },
                     formatter: (params: any) => {
                         const xTime = params[0].axisValue as number;
@@ -542,7 +542,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 },
                 toolbox: {},
                 xAxis: {
-                    type: 'time',
+                    type: "time",
                     axisLine: {
                         onZero: false,
                         lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}
@@ -554,35 +554,35 @@ export class OrChart extends translate(i18next)(LitElement) {
                         hideOverlap: true,
                         fontSize: 10,
                          formatter: {
-                             year: '{yyyy}-{MMM}',
-                             month: '{yy}-{MMM}',
-                             day: '{d}-{MMM}',
-                             hour: '{HH}:{mm}',
-                             minute: '{HH}:{mm}',
-                             second: '{HH}:{mm}:{ss}',
-                             millisecond: '{d}-{MMM} {HH}:{mm}',
+                             year: "{yyyy}-{MMM}",
+                             month: "{yy}-{MMM}",
+                             day: "{d}-{MMM}",
+                             hour: "{HH}:{mm}",
+                             minute: "{HH}:{mm}",
+                             second: "{HH}:{mm}:{ss}",
+                             millisecond: "{d}-{MMM} {HH}:{mm}",
                             // @ts-ignore
-                             none: '{MMM}-{dd} {HH}:{mm}'
+                             none: "{MMM}-{dd} {HH}:{mm}"
                         }
                     }
                 },
                 yAxis: [
                     {
-                        type: 'value',
+                        type: "value",
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
-                        boundaryGap: ['10%', '10%'],
+                        boundaryGap: ["10%", "10%"],
                         scale: true,
-                        min: this.chartOptions.options.scales.y.min ? this.chartOptions.options.scales.y.min : undefined,
-                        max: this.chartOptions.options.scales.y.max ? this.chartOptions.options.scales.y.max : undefined
+                        min: this.chartOptions.options.scales.y.min,
+                        max: this.chartOptions.options.scales.y.max
                     },
                     {
                         type: 'value',
                         show: (this.attributeConfig?.rightAxisAttributes?.length || 0) > 0,
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
-                        boundaryGap: ['10%', '10%'],
+                        boundaryGap: ["10%", "10%"],
                         scale: true,
-                        min: this.chartOptions.options.scales.y1.min ? this.chartOptions.options.scales.y1.min : undefined,
-                        max: this.chartOptions.options.scales.y1.max ? this.chartOptions.options.scales.y1.max : undefined
+                        min: this.chartOptions.options.scales.y1.min,
+                        max: this.chartOptions.options.scales.y1.max
                     }
                     ],
                 dataZoom: [
