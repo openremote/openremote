@@ -11,5 +11,10 @@ public interface GraphQlWebResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     Response postGraphQL(@BeanParam RequestParams requestParams, GraphQlWebResourceImpl.GraphQLRequest requestBody);
+
+    @GET
+    @Path("/sandbox")
+    @Produces(MediaType.TEXT_HTML)
+    public Response getGraphQLSandbox();
 }
 

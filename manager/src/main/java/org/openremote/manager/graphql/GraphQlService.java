@@ -61,6 +61,7 @@ public class GraphQlService implements ContainerService {
     public GraphQLSchema getSchema() {return schema;}
 
     private final Map<Class<?>, graphql.schema.GraphQLOutputType> typeCache = new ConcurrentHashMap<>();
+    private final Map<Class<?>, graphql.schema.GraphQLInputType> inputTypeCache = new ConcurrentHashMap<>();
 
     public GraphQLSchema generateSchemaFromApis() {
         Set<Class<?>> resourceClasses = getJaxRsResources();
@@ -86,10 +87,24 @@ public class GraphQlService implements ContainerService {
     }
 
     private GraphQLFieldDefinition buildField(Method method) {
-        // Prefix the method name with the resource (interface) name to avoid collisions
+        // Try to extract @Operation annotation for custom name/description
         String resourceName = method.getDeclaringClass().getSimpleName();
-        String methodName = resourceName + "_" + method.getName();
+        String methodName;
+        String description = null;
+        io.swagger.v3.oas.annotations.Operation operation = method.getAnnotation(io.swagger.v3.oas.annotations.Operation.class);
+        if (operation != null && !operation.operationId().isEmpty()) {
+            // Use lowercased resource name for prefix
+            methodName = resourceName.substring(0, 1).toLowerCase() + resourceName.substring(1) + "_" + operation.operationId();
+            if (!operation.summary().isEmpty()) {
+                description = operation.summary();
+            }
+        } else {
+            methodName = resourceName + "_" + method.getName();
+        }
         GraphQLFieldDefinition.Builder builder = GraphQLFieldDefinition.newFieldDefinition().name(methodName);
+        if (description != null) {
+            builder.description(description);
+        }
 
         // Add arguments for each method parameter
         java.lang.reflect.Parameter[] params = method.getParameters();
@@ -112,10 +127,17 @@ public class GraphQlService implements ContainerService {
             if ("requestParams".equals(argName)) {
                 continue;
             }
-            // Default to String type for simplicity; you can expand this to map types as needed
+            // Use input type if not a primitive/String
+            Class<?> paramType = param.getType();
+            graphql.schema.GraphQLInputType gqlInputType;
+            if (paramType.equals(String.class) || paramType.isPrimitive() || paramType.isEnum() || Number.class.isAssignableFrom(paramType) || paramType.equals(Boolean.class)) {
+                gqlInputType = Scalars.GraphQLString;
+            } else {
+                gqlInputType = getGraphQLInputType(paramType);
+            }
             builder.argument(graphql.schema.GraphQLArgument.newArgument()
                 .name(argName)
-                .type(Scalars.GraphQLString)
+                .type(gqlInputType)
                 .build());
         }
 
@@ -157,6 +179,7 @@ public class GraphQlService implements ContainerService {
                 java.lang.reflect.Parameter[] params2 = method.getParameters();
                 Object[] args = new Object[params2.length];
                 args[0] = env.getGraphQlContext().get("reqParams");
+                ObjectMapper objectMapper = new ObjectMapper();
                 for (int i = 1; i < params2.length; i++) {
                     java.lang.reflect.Parameter param = params2[i];
                     Object value = null;
@@ -184,51 +207,49 @@ public class GraphQlService implements ContainerService {
                         // Fallback: try by parameter name
                         value = env.getArgument(param.getName());
                     }
+                    // Convert Map to POJO if needed
+                    if (value != null && param.getType() != null &&
+                        !(param.getType().isPrimitive() || param.getType().equals(String.class) || param.getType().isEnum() || Number.class.isAssignableFrom(param.getType()) || param.getType().equals(Boolean.class)) &&
+                        value instanceof Map) {
+                        value = objectMapper.convertValue(value, param.getType());
+                    }
                     args[i] = value;
                 }
+                LOG.log(System.Logger.Level.WARNING, "Invoking method: {0} with args: {1}", method.toGenericString(), java.util.Arrays.toString(args));
                 Object result = method.invoke(resourceInstance, args);
                 // Unwrap InvocationTargetException to expose the real cause
                 if (result instanceof Throwable) {
                     throw (Throwable) result;
                 }
-                // If the result has an 'attributes' field of type AttributeMap, convert it to an array of AttributeEntry
+                // Convert 'attributes' field to a list for each Asset in arrays/collections
                 if (result != null) {
-                    Class<?> resultClass = result.getClass();
+                    if (result.getClass().isArray()) {
+                        Object[] arr = (Object[]) result;
+                        java.util.List<Object> newList = new java.util.ArrayList<>(arr.length);
+                        for (Object item : arr) {
+                            newList.add(convertAssetAttributesToList(item));
+                        }
+                        return newList;
+                    } else if (result instanceof java.util.Collection) {
+                        java.util.Collection<?> coll = (java.util.Collection<?>) result;
+                        java.util.List<Object> newList = new java.util.ArrayList<>();
+                        for (Object item : coll) {
+                            newList.add(convertAssetAttributesToList(item));
+                        }
+                        return newList;
+                    } else {
+                        return convertAssetAttributesToList(result);
+                    }
+                }
+                // Always convert to JSON if not primitive, String, or enum
+                Class<?> resultClass = result.getClass();
+                boolean isPrimitiveOrStringOrEnum = resultClass.isPrimitive() || resultClass.equals(String.class) || resultClass.isEnum() || Number.class.isAssignableFrom(resultClass) || resultClass.equals(Boolean.class);
+                if (!isPrimitiveOrStringOrEnum) {
                     try {
-                        // Find the 'attributes' field, including inherited fields
-                        java.lang.reflect.Field attributesField = null;
-                        Class<?> searchClass = resultClass;
-                        while (searchClass != null && attributesField == null) {
-                            try {
-                                attributesField = searchClass.getDeclaredField("attributes");
-                            } catch (NoSuchFieldException e) {
-                                searchClass = searchClass.getSuperclass();
-                            }
-                        }
-                        if (attributesField != null) {
-                            attributesField.setAccessible(true);
-                            Object attributesValue = attributesField.get(result);
-                            if (attributesValue != null && attributesValue.getClass().getSimpleName().equals("AttributeMap")) {
-                                // Use AttributeEntry.getAttributeEntryList(AttributeMap) to convert
-                                Class<?> entryClass = Class.forName("org.openremote.model.asset.AttributeEntry");
-                                java.lang.reflect.Method convertMethod = entryClass.getMethod("getAttributeEntryList", attributesValue.getClass());
-                                Object entryArray = convertMethod.invoke(null, attributesValue);
-                                // Instead of setting the field, add a new property to the result map for GraphQL
-                                // (Assume result is a POJO, so return a Map with all fields, replacing 'attributes')
-                                java.util.Map<String, Object> resultMap = new java.util.HashMap<>();
-                                for (Field f : resultClass.getFields()) {
-                                    f.setAccessible(true);
-                                    resultMap.put(f.getName(), f.get(result));
-                                }
-                                for (Field f : resultClass.getDeclaredFields()) {
-                                    f.setAccessible(true);
-                                    resultMap.put(f.getName(), f.get(result));
-                                }
-                                resultMap.put("attributes", entryArray);
-                                return resultMap;
-                            }
-                        }
-                    } catch (Exception e) { throw e; }
+                        return ValueUtil.JSON.writeValueAsString(result);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to serialize result to JSON", e);
+                    }
                 }
                 return result;
             } catch (java.lang.reflect.InvocationTargetException e) {
@@ -350,6 +371,55 @@ public class GraphQlService implements ContainerService {
         return type;
     }
 
+    private graphql.schema.GraphQLInputType getGraphQLInputType(Class<?> clazz) {
+        return getGraphQLInputType(clazz, new java.util.HashSet<>());
+    }
+
+    private graphql.schema.GraphQLInputType getGraphQLInputType(Class<?> clazz, java.util.Set<Class<?>> visited) {
+        // Handle arrays
+        if (clazz.isArray()) {
+            return graphql.schema.GraphQLList.list(getGraphQLInputType(clazz.getComponentType(), visited));
+        }
+        // Handle collections (e.g., List, Set)
+        if (java.util.Collection.class.isAssignableFrom(clazz)) {
+            return graphql.schema.GraphQLList.list(Scalars.GraphQLString);
+        }
+        if (clazz.equals(String.class) || clazz.isPrimitive() || clazz.isEnum() || Number.class.isAssignableFrom(clazz) || clazz.equals(Boolean.class)) {
+            return Scalars.GraphQLString;
+        }
+        // Exclude Java, Jakarta, Sun, and common library types from input object mapping
+        String pkg = clazz.getPackage() != null ? clazz.getPackage().getName() : "";
+        if (pkg.startsWith("java.") || pkg.startsWith("javax.") || pkg.startsWith("jakarta.") || pkg.startsWith("sun.") || pkg.startsWith("com.fasterxml.jackson.")) {
+            return Scalars.GraphQLString;
+        }
+        if (visited.contains(clazz)) {
+            // Prevent infinite recursion for cyclic/self-referential types
+            String typeName = clazz.getName().replace('.', '_').replace('$', '_') + "Input";
+            // Ensure valid GraphQL name
+            typeName = typeName.replaceAll("[^_0-9A-Za-z]", "_");
+            if (!typeName.matches("^[_A-Za-z].*")) typeName = "_" + typeName;
+            return graphql.schema.GraphQLTypeReference.typeRef(typeName);
+        }
+        graphql.schema.GraphQLInputType cached = inputTypeCache.get(clazz);
+        if (cached != null) return cached;
+        visited.add(clazz);
+        String typeName = clazz.getName().replace('.', '_').replace('$', '_') + "Input";
+        // Ensure valid GraphQL name
+        typeName = typeName.replaceAll("[^_0-9A-Za-z]", "_");
+        if (!typeName.matches("^[_A-Za-z].*")) typeName = "_" + typeName;
+        graphql.schema.GraphQLInputObjectType.Builder builder = graphql.schema.GraphQLInputObjectType.newInputObject().name(typeName);
+        for (Field field : getAllFields(clazz)) {
+            if (java.lang.reflect.Modifier.isStatic(field.getModifiers()) || field.isSynthetic()) continue;
+            Class<?> fieldType = field.getType();
+            graphql.schema.GraphQLInputType gqlType = getGraphQLInputType(fieldType, visited);
+            builder.field(graphql.schema.GraphQLInputObjectField.newInputObjectField().name(field.getName()).type(gqlType));
+        }
+        graphql.schema.GraphQLInputObjectType inputType = builder.build();
+        inputTypeCache.put(clazz, inputType);
+        visited.remove(clazz);
+        return inputType;
+    }
+
     private Set<Class<?>> getJaxRsResources() {
 
         Set<Class<?>> resources = new HashSet<>();
@@ -427,5 +497,41 @@ public class GraphQlService implements ContainerService {
 
     public void setGraphQlResource(GraphQlWebResourceImpl resourceImpl) {
         this.graphQlResource = resourceImpl;
+    }
+
+    // Helper to convert Asset 'attributes' field to a list if needed
+    private Object convertAssetAttributesToList(Object assetObj) {
+        if (assetObj == null) return null;
+        try {
+            Class<?> resultClass = assetObj.getClass();
+            java.lang.reflect.Field attributesField = null;
+            Class<?> searchClass = resultClass;
+            while (searchClass != null && attributesField == null) {
+                try {
+                    attributesField = searchClass.getDeclaredField("attributes");
+                } catch (NoSuchFieldException e) {
+                    searchClass = searchClass.getSuperclass();
+                }
+            }
+            if (attributesField != null) {
+                attributesField.setAccessible(true);
+                Object attributesValue = attributesField.get(assetObj);
+                if (attributesValue != null && attributesValue.getClass().getSimpleName().equals("AttributeMap")) {
+                    // Use AttributeEntry.getAttributeEntryList(AttributeMap) to convert
+                    Class<?> entryClass = Class.forName("org.openremote.model.asset.AttributeEntry");
+                    java.lang.reflect.Method convertMethod = entryClass.getMethod("getAttributeEntryList", attributesValue.getClass());
+                    Object entryArray = convertMethod.invoke(null, attributesValue);
+                    // Return a Map with all fields, replacing 'attributes' with the entry list
+                    java.util.Map<String, Object> resultMap = new java.util.HashMap<>();
+                    for (Field f : getAllFields(resultClass)) {
+                        f.setAccessible(true);
+                        resultMap.put(f.getName(), f.get(assetObj));
+                    }
+                    resultMap.put("attributes", entryArray);
+                    return resultMap;
+                }
+            }
+        } catch (Exception e) { /* ignore, fallback to original */ }
+        return assetObj;
     }
 }
