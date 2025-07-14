@@ -61,12 +61,12 @@ export interface ChartViewConfig {
 }
 
 export interface ChartAttributeConfig {
-    rightAxisAttributes: AttributeRef[],
-    smoothAttributes: AttributeRef[],
-    steppedAttributes: AttributeRef[],
-    areaAttributes: AttributeRef[],
-    faintAttributes: AttributeRef[],
-    extendedAttributes: AttributeRef[]
+    rightAxisAttributes?: AttributeRef[],
+    smoothAttributes?: AttributeRef[],
+    steppedAttributes?: AttributeRef[],
+    areaAttributes?: AttributeRef[],
+    faintAttributes?: AttributeRef[],
+    extendedAttributes?: AttributeRef[]
 }
 
 export interface OrChartEventDetail {
@@ -516,7 +516,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                     borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
                     left: 10,
-                    right: this.attributeConfig?.rightAxisAttributes?.length > 0 ? 50 : 20,
+                    right: (this.attributeConfig?.rightAxisAttributes?.length || 0) > 0 ? 50 : 20,
                     top: this.showToolBox ? 28 : 10,
                     bottom: this.showZoomBar ? 68 : 10,
                     containLabel: true
@@ -575,7 +575,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     },
                     {
                         type: 'value',
-                        show: this.attributeConfig.rightAxisAttributes?.length > 0,
+                        show: (this.attributeConfig?.rightAxisAttributes?.length || 0) > 0,
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ['10%', '10%'],
                         scale: true,
@@ -712,7 +712,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                         <div class="period-controls">
                                         <!-- Time prefix selection -->
                                         ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}" ?disabled="${!!this.timeframe}"></or-mwc-input>`,
+                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}"></or-mwc-input>`,
                                                 this.timePrefixOptions.map((option) => ({ value: option } as ListItem)),
                                                 this.timePrefixKey,
                                                 (value: string | string[]) => {
@@ -726,7 +726,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                         )}
                                         <!-- Time window selection -->
                                         ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.isCustomWindow ? "timeframe" : this.timeWindowKey}" ?disabled="${!!this.timeframe}"></or-mwc-input>`,
+                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.isCustomWindow ? "timeframe" : this.timeWindowKey}"></or-mwc-input>`,
                                                 Array.from(this.timeWindowOptions!.keys()).map((key) => ({ value: key } as ListItem)),
                                                 this.timeWindowKey,
                                                 (value: string | string[]) => {
@@ -742,16 +742,16 @@ export class OrChart extends translate(i18next)(LitElement) {
                                         <div class="navigate" style = "text-align: right">
                                             
                                             <!-- Scroll left button -->
-                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!),this.timeframe? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "previous")}"></or-icon>
+                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._shiftTimeframe(this.timeframe ? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeframe ? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "previous")}"></or-icon>
                                             <!-- Scroll right button -->
-                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!),this.timeframe? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "next")}"></or-icon>
+                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._shiftTimeframe(this.timeframe ? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeframe ? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "next")}"></or-icon>
                                             <!-- Button that opens custom time selection or restores to widget setting-->
                                             <or-icon class="button button-icon" ?disabled="${disabled}" icon="${this.timeframe ? 'restore' : 'calendar-clock'}" @click="${() => this.timeframe ? (this.isCustomWindow = false, this.timeframe = undefined)  : this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-icon>
                                         </div>
                                     ` : html`
                                         <div style = "display: flex; flex-direction: column; align-items: center">
-                                        <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePrefixKey}" disabled="true"></or-mwc-input>
-                                        <or-mwc-input .type="${InputType.BUTTON}" label="${this.timeWindowKey}" disabled="true"></or-mwc-input>
+                                        <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePrefixKey}" disabled></or-mwc-input>
+                                        <or-mwc-input .type="${InputType.BUTTON}" label="${this.timeWindowKey}" disabled></or-mwc-input>
                                         </div>
                                     `}
                                 ` : undefined}
@@ -1220,12 +1220,12 @@ export class OrChart extends translate(i18next)(LitElement) {
                 promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
 
                     const asset = this.assets[assetIndex];
-                    const shownOnRightAxis = !!this.attributeConfig.rightAxisAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
-                    const smooth = !!this.attributeConfig.smoothAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
-                    const stepped = !!this.attributeConfig.steppedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
-                    const area = !!this.attributeConfig.areaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
-                    const faint = !!this.attributeConfig.faintAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
-                    const extended = !!this.attributeConfig.extendedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const shownOnRightAxis = !!this.attributeConfig?.rightAxisAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const smooth = !!this.attributeConfig?.smoothAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const stepped = !!this.attributeConfig?.steppedAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const area = !!this.attributeConfig?.areaAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const faint = !!this.attributeConfig?.faintAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const extended = !!this.attributeConfig?.extendedAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const color = this.attributeColors.find(x => x[0].id === asset.id && x[0].name === attribute.name)?.[1];
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);
                     const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);

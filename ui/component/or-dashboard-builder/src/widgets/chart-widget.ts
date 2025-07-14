@@ -13,8 +13,8 @@ import "@openremote/or-chart";
 
 export interface ChartWidgetConfig extends AssetWidgetConfig {
     attributeColors: [AttributeRef, string][];
-    attributeConfig: ChartAttributeConfig,
     datapointQuery: AssetDatapointQueryUnion;
+    attributeConfig?: ChartAttributeConfig,
     chartOptions?: any;
     showTimestampControls: boolean;
     defaultTimeWindowKey: string;
@@ -60,14 +60,6 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
     return {
         attributeRefs: [],
         attributeColors: [],
-        attributeConfig: {
-            rightAxisAttributes: [],
-            smoothAttributes: [],
-            steppedAttributes: [],
-            areaAttributes: [],
-            faintAttributes: [],
-            extendedAttributes: []
-        },
         datapointQuery: {
             type: "lttb",
             fromTimestamp: startDate.toDate().getTime(),

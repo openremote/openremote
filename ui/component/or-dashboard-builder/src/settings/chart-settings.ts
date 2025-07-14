@@ -10,6 +10,7 @@ import {ChartWidgetConfig} from "../widgets/chart-widget";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {when} from "lit/directives/when.js";
 import moment from "moment/moment";
+import {ChartAttributeConfig} from "@openremote/or-chart";
 
 const styling = css`
   .switch-container {
@@ -51,15 +52,15 @@ export class ChartSettings extends WidgetSettings {
         const attrConfig = this.widgetConfig.attributeConfig;
         const min = this.widgetConfig.chartOptions.options?.scales?.y?.min;
         const max = this.widgetConfig.chartOptions.options?.scales?.y?.max;
-        const isMultiAxis = attrConfig.rightAxisAttributes?.length > 0;
+        const isMultiAxis = (attrConfig?.rightAxisAttributes?.length || 0) > 0;
         const samplingValue = Array.from(this.samplingOptions.entries()).find((entry => entry[1] === this.widgetConfig.datapointQuery.type))![0]
         const attributeLabelCallback = (asset: Asset, attribute: Attribute<any>, attributeLabel: string) => {
-            const isOnRightAxis = isMultiAxis && attrConfig.rightAxisAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isFaint = attrConfig.faintAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isSmooth = attrConfig.smoothAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isStepped = attrConfig.steppedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isArea = attrConfig.areaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isExtended = attrConfig.extendedAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isOnRightAxis = isMultiAxis && attrConfig?.rightAxisAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isFaint = attrConfig?.faintAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isSmooth = attrConfig?.smoothAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isStepped = attrConfig?.steppedAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isArea = attrConfig?.areaAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            const isExtended = attrConfig?.extendedAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
             return html`
                 <span>${asset.name}</span>
                 <span style="font-size:14px; color:grey;">${attributeLabel}</span>
@@ -119,7 +120,7 @@ export class ChartSettings extends WidgetSettings {
                 },
 
                 {
-                    icon: this.widgetConfig.attributeConfig.rightAxisAttributes.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
+                    icon: this.widgetConfig?.attributeConfig?.rightAxisAttributes?.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
                     tooltip: i18next.t('dashboard.toggleAxis'),
                     disabled: false
                 },
@@ -356,17 +357,19 @@ export class ChartSettings extends WidgetSettings {
 
     protected removeFromAttributeConfig(attributeRef: AttributeRef) {
         const config = this.widgetConfig.attributeConfig;
-        (Object.keys(config) as (keyof typeof config)[]).forEach(key => {
-            config[key] = config[key].filter((ar: AttributeRef) => ar.id !== attributeRef.id || ar.name !== attributeRef.name);
-        });
+        if(config) {
+            (Object.keys(config) as (keyof typeof config)[]).forEach(key => {
+                config[key] = config[key]?.filter((ar: AttributeRef) => ar.id !== attributeRef.id || ar.name !== attributeRef.name);
+            });
+        }
     }
 
     protected toggleAttributeSetting(
-        setting: keyof ChartWidgetConfig["attributeConfig"],
+        setting: keyof ChartAttributeConfig,
         attributeRef: AttributeRef
     ): void {
-        const attributes = this.widgetConfig.attributeConfig[setting];
-        const index = attributes.findIndex(
+        const attributes = (this.widgetConfig.attributeConfig?.[setting] ?? []) as AttributeRef[];
+        const index = attributes?.findIndex(
             (item: AttributeRef) => item.id === attributeRef.id && item.name === attributeRef.name
         );
         if (index < 0) {
