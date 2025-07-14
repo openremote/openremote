@@ -119,7 +119,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.size() == 6
         assets.get(0).id == managerTestSetup.apartment1Id
         assets.get(1).id == managerTestSetup.apartment1LivingroomId
-        assets.get(1).getAttributes().size() == 7
+        assets.get(1).getAttributes().size() == 8
         !assets.get(1).getAttribute("motionSensor").isPresent()
         !assets.get(1).getAttribute("currentTemperature").get().getValue().isPresent()
         !assets.get(1).getAttribute("currentTemperature").get().meta.isEmpty()
@@ -361,7 +361,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.find {it.id == managerTestSetup.apartment1Id} != null
         def livingroom = assets.find {it.id == managerTestSetup.apartment1LivingroomId}
         livingroom != null
-        livingroom.getAttributes().size() == 7
+        livingroom.getAttributes().size() == 8
         !livingroom.getAttribute("currentTemperature").get().getValue().isPresent()
         !livingroom.getAttribute("currentTemperature").get().meta.isEmpty()
         !livingroom.getAttribute("targetTemperature").get().getValue().isPresent()
