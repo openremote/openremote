@@ -310,34 +310,32 @@ export class ChartSettings extends WidgetSettings {
     // Check which icon was pressed and act accordingly.
     protected onAttributeAction(ev: AttributeActionEvent) {
         const {attributeRef, action } = ev.detail;
-
         switch (action.icon) {
-            case "palette":    // Change color
+            case "palette":
                 this.openColorPickDialog(attributeRef);
                 break;
             case "arrow-right-bold":
             case "arrow-left-bold":
-                this.toggleAttributeSetting("rightAxisAttributes", attributeRef);
+                this._toggleAttributeSetting("rightAxisAttributes", attributeRef);
                 break;
             case "chart-bell-curve-cumulative":
-                this.toggleAttributeSetting("smoothAttributes", attributeRef);
+                this._toggleAttributeSetting("smoothAttributes", attributeRef);
                 break;
             case "square-wave":
-                this.toggleAttributeSetting("steppedAttributes", attributeRef);
+                this._toggleAttributeSetting("steppedAttributes", attributeRef);
                 break;
             case "chart-areaspline-variant":
-                this.toggleAttributeSetting("areaAttributes", attributeRef);
+                this._toggleAttributeSetting("areaAttributes", attributeRef);
                 break;
             case "arrange-send-backward":
-                this.toggleAttributeSetting("faintAttributes", attributeRef);
+                this._toggleAttributeSetting("faintAttributes", attributeRef);
                 break;
             case "arrow-expand-right":
-                this.toggleAttributeSetting("extendedAttributes", attributeRef);
+                this._toggleAttributeSetting("extendedAttributes", attributeRef);
                 break;
             default:
-                console.warn('Unknown attribute panel action:', action);
+                console.warn("Unknown attribute panel action:", action);
         }
-        console.log("end of onAttributeAction" + JSON.stringify(this.widgetConfig.attributeConfig));
     }
 
     // When the list of attributeRefs is changed by the asset selector,
@@ -364,18 +362,32 @@ export class ChartSettings extends WidgetSettings {
         }
     }
 
-    protected toggleAttributeSetting(
-        setting: keyof ChartAttributeConfig,
-        attributeRef: AttributeRef
-    ): void {
-        const attributes = (this.widgetConfig.attributeConfig?.[setting] ?? []) as AttributeRef[];
-        const index = attributes?.findIndex(
+    /**
+     * Internal function that removes/adds an {@link AttributeRef} to a category of the {@link AttributeConfig}.
+     * For example, you can add an attribute to the array of 'rightAxisAttributes'.
+     * If the attribute is already present, it will be removed automatically.
+     *
+     * @param setting The key / category to add the attribute to. (for example, 'rightAxisAttributes')
+     * @param attributeRef The asset-attribute combination to add/remove.
+     * @protected
+     */
+    protected _toggleAttributeSetting(setting: keyof ChartAttributeConfig, attributeRef: AttributeRef) {
+        this.widgetConfig.attributeConfig ??= {};
+        this.widgetConfig.attributeConfig[setting] ??= [];
+        const attributes = this.widgetConfig.attributeConfig[setting]!;
+        const index = attributes.findIndex(
             (item: AttributeRef) => item.id === attributeRef.id && item.name === attributeRef.name
         );
         if (index < 0) {
+            // Adding the attribute setting
             attributes.push(attributeRef);
         } else {
-            attributes.splice(index, 1);
+            // Removing the attribute setting
+            if (attributes.length === 1) {
+                delete this.widgetConfig.attributeConfig[setting];
+            } else {
+                attributes.splice(index, 1);
+            }
         }
         this.notifyConfigUpdate();
     }
