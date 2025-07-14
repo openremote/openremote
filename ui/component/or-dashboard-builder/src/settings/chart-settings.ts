@@ -146,18 +146,16 @@ export class ChartSettings extends WidgetSettings {
                 <!-- Time options -->
                 <settings-panel displayName="time" expanded="${true}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
-                        <!-- Timeframe -->
-                        <div>
-                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('prefixDefault')}" style="width: 100%;"
-                                          .options="${this.timePrefixOptions}" value="${this.widgetConfig.defaultTimePrefixKey}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimePreFixSelect(ev)}"
-                            ></or-mwc-input>
-                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('timeframeDefault')}" style="width: 100%;"
-                                          .options="${Array.from(this.timeWindowOptions.keys())}" value="${this.widgetConfig.defaultTimeWindowKey}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimeWindowSelect(ev)}"
-                            ></or-mwc-input>
-                        </div>
-                        <!-- Time range selection -->
+                        <!-- This/last selection of timeframe -->
+                        <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('prefixDefault')}" style="width: 100%;"
+                                      .options="${this.timePrefixOptions}" value="${this.widgetConfig.defaultTimePrefixKey}"
+                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimePreFixSelect(ev)}"
+                        ></or-mwc-input>
+                        <!-- Select time frame -->
+                        <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('timeframeDefault')}" style="width: 100%;"
+                                      .options="${Array.from(this.timeWindowOptions.keys())}" value="${this.widgetConfig.defaultTimeWindowKey}"
+                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimeWindowSelect(ev)}"
+                        ></or-mwc-input>
 
                     </div>  
                </settings-panel>
@@ -176,21 +174,14 @@ export class ChartSettings extends WidgetSettings {
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowLegendToggle(ev)}"
                                 ></or-mwc-input>
                             </div>
-                        <!-- Datazoombar -->
+                            <!-- Datazoombar -->
                             <div class="switch-container">
                                 <span><or-translate value="dashboard.showZoomBar"></or-translate></span>
                                 <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showZoomBar}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowZoomBarToggle(ev)}"
                                 ></or-mwc-input>
                             </div>
-                        <!-- Toolbox -->
-                            <div class="switch-container">
-                                <span><or-translate value="dashboard.showToolBox"></or-translate></span>
-                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showToolBox}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowToolBoxToggle(ev)}"
-                                ></or-mwc-input>
-                            </div>
-                        <!-- Show Symbol Treshold -->    
+                            <!-- Show Symbol Treshold -->    
                             <div class="number-container">
                                 <or-mwc-input .type="${InputType.NUMBER}" .min="1" .max="200" .step="1" label="${i18next.t('dashboard.showSymbolMaxDatapoints')}" style="width: 100%;" .value="${this.widgetConfig.showSymbolMaxDatapoints}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowSymbolMaxDatapointsValueChange(ev)}"
@@ -449,11 +440,6 @@ export class ChartSettings extends WidgetSettings {
 
     protected onShowZoomBarToggle(ev: OrInputChangedEvent) {
         this.widgetConfig.showZoomBar = ev.detail.value;
-        this.notifyConfigUpdate();
-    }
-
-    protected onShowToolBoxToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.showToolBox = ev.detail.value;
         this.notifyConfigUpdate();
     }
 

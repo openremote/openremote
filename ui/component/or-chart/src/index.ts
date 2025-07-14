@@ -414,9 +414,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     public showZoomBar: boolean = true;
 
     @property()
-    public showToolBox: boolean = true;
-
-    @property()
     public showSymbolMaxDatapoints: number = 30;
 
     @property()
@@ -519,7 +516,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
                     left: 10,
                     right: (this.attributeConfig?.rightAxisAttributes?.length || 0) > 0 ? 50 : 20,
-                    top: this.showToolBox ? 28 : 10,
+                    top: 10,
                     bottom: this.showZoomBar ? 68 : 10,
                     containLabel: true
                 },
@@ -627,18 +624,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                         show: false
                     }
                 })
-            }
-
-            // Add toolbox if enabled
-            if(this.showToolBox) {
-                this._chartOptions!.toolbox! = {
-                    right: 8,
-                    top: 0,
-                    feature: {
-                        dataView: {readOnly: true},
-                        saveAsImage: {name: ['Chart Export ', this.panelName, `${moment(this._startOfPeriod).format("DD-MM-YYYY HH:mm")} - ${moment(this._endOfPeriod).format("DD-MM-YYYY HH:mm")}`].filter(Boolean).join('')}
-                    }
-                }
             }
 
             // Initialize echarts instance
