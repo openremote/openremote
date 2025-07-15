@@ -21,7 +21,6 @@ export interface ChartWidgetConfig extends AssetWidgetConfig {
     defaultTimePrefixKey: string;
     showLegend: boolean;
     showZoomBar: boolean;
-    maxConcurrentDatapoints: number;
 }
 
 function getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
@@ -47,7 +46,7 @@ function getDefaultTimePreFixOptions(): string[] {
 }
 
 function getDefaultSamplingOptions(): Map<string, string> {
-    return new Map<string, string>([["lttb", 'lttb']]); //, ["withInterval", 'interval'] interval removed because bar-chart feature instead of line-chart
+    return new Map<string, string>([["lttb", 'lttb']]);
 }
 
 function getDefaultWidgetConfig(): ChartWidgetConfig {
@@ -81,9 +80,7 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
         defaultTimeWindowKey: preset,
         defaultTimePrefixKey: "last",
         showLegend: true,
-        showZoomBar: false,
-        maxConcurrentDatapoints: 100
-
+        showZoomBar: false
     };
 }
 
@@ -212,7 +209,6 @@ export class ChartWidget extends OrAssetWidget {
                               .timePrefixKey="${this.widgetConfig?.defaultTimePrefixKey}"
                               .timeWindowKey="${this.widgetConfig?.defaultTimeWindowKey}"
                               .datapointQuery="${this.datapointQuery}" .chartOptions="${this.widgetConfig?.chartOptions}"
-                              .maxConcurrentDatapoints="${this.widgetConfig?.maxConcurrentDatapoints}"
                               style="height: 100%"
                     ></or-chart>
                 `;

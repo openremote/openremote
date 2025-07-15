@@ -410,9 +410,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     public showZoomBar: boolean = true;
 
     @property()
-    public maxConcurrentDatapoints: number = 100;
-
-    @property()
     protected _loading: boolean = false;
 
     @property()
@@ -1308,7 +1305,20 @@ export class OrChart extends translate(i18next)(LitElement) {
         if (asset.id && attribute.name && this.datapointQuery) {
             let response: GenericAxiosResponse<ValueDatapoint<any>[]>;
             const query = JSON.parse(JSON.stringify(this.datapointQuery)); // recreating object, since the changes shouldn't apply to parent components; only or-chart itself.
-            query.amountOfPoints = this.maxConcurrentDatapoints;
+            if(query.amountOfPoints) {
+                // If number of data points is set, only allow a maximum of 1 points per pixel in width
+                if(this._chartElem?.clientWidth > 0) {
+                    query.amountOfPoints = Math.min(query.amountOfPoints, this._chartElem?.clientWidth);
+                }
+            } else {
+                // Otherwise, dynamically set number of data points based on chart width (1000px = 200 data points)
+                if(this._chartElem?.clientWidth > 0) {
+                    query.amountOfPoints = Math.round(this._chartElem.clientWidth / 5);
+                } else {
+                    console.warn("Could not grab width of the Chart for estimating amount of data points. Using 100 points instead.");
+                    query.amountOfPoints = 100;
+                }
+            }
             if (!this._zoomChanged) {
                 query.fromTimestamp = this._startOfPeriod;
                 query.toTimestamp = this._endOfPeriod;

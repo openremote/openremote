@@ -263,18 +263,20 @@ export class ChartSettings extends WidgetSettings {
                 </settings-panel>
 
                 <!-- Data sampling options -->
-                <settings-panel displayName="dataSampling" expanded="${false}">
-                    <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 12px;">
-                        <div>
-                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%" .options="${Array.from(this.samplingOptions.keys())}" .value="${samplingValue}" disabled=${true}
-                                          label="${i18next.t('algorithm')}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onSamplingQueryChange(ev)}"
-                            ></or-mwc-input>
+                ${when(Array.from(this.samplingOptions.keys()).length > 1, () => html`
+                    <settings-panel displayName="dataSampling" expanded="${false}">
+                        <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 12px;">
+                            <div>
+                                <or-mwc-input .type="${InputType.SELECT}" style="width: 100%" .options="${Array.from(this.samplingOptions.keys())}" .value="${samplingValue}" disabled=${true}
+                                              label="${i18next.t('algorithm')}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onSamplingQueryChange(ev)}"
+                                ></or-mwc-input>
+                            </div>
+                            <div>
+                                ${this.getSamplingOptionsTemplate(this.widgetConfig.datapointQuery.type)}
+                            </div>
                         </div>
-                        <div>
-                            ${this.getSamplingOptionsTemplate(this.widgetConfig.datapointQuery.type)}
-                        </div>
-                    </div>
-                </settings-panel>
+                    </settings-panel>
+                `)}
             </div>
         `;
     }
@@ -282,11 +284,7 @@ export class ChartSettings extends WidgetSettings {
     protected getSamplingOptionsTemplate(type: any): TemplateResult {
         switch (type) {
             case 'lttb': {
-                return html `
-                    <or-mwc-input .type="${InputType.NUMBER}" .min="10" .max="1000" .step="1" label="${i18next.t('dashboard.maxConcurrentDatapoints')}" .value="${this.widgetConfig.maxConcurrentDatapoints}" style="width: 100%;"
-                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMaxConcurrentDatapointsValueChange(ev)}"
-                    ></or-mwc-input>
-                `;
+                return html``;
             }
             default:
                 return html``;
@@ -464,11 +462,6 @@ export class ChartSettings extends WidgetSettings {
 
     protected onSamplingQueryChange(ev: OrInputChangedEvent) {
         this.widgetConfig.datapointQuery.type = this.samplingOptions.get(ev.detail.value)! as any;
-        this.notifyConfigUpdate();
-    }
-
-    protected onMaxConcurrentDatapointsValueChange(ev: OrInputChangedEvent) {
-        this.widgetConfig.maxConcurrentDatapoints = ev.detail.value;
         this.notifyConfigUpdate();
     }
 }
