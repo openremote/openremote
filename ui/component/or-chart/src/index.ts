@@ -515,7 +515,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                     borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
                     left: 10,
-                    right: (this.attributeConfig?.rightAxisAttributes?.length || 0) > 0 ? 50 : 20,
+                    right: 20,
                     top: 10,
                     bottom: this.showZoomBar ? 68 : 10,
                     containLabel: true
@@ -581,7 +581,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                         min: this.chartOptions.options.scales.y1.min,
                         max: this.chartOptions.options.scales.y1.max
                     }
-                    ],
+                ],
                 dataZoom: [
                     {
                         type: 'inside',
@@ -1220,7 +1220,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     const colourIndex = index % this.colors.length;
                     const options = { signal: this._dataAbortController?.signal };
 
-                    //Load Historic Data
+                    // Load Historic Data
                     let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], false, smooth, stepped, area, faint, false, asset.name + " " + label, options, unit);
                     (dataset as any).assetId = asset.id;
                     (dataset as any).attrName = attribute.name;
@@ -1228,11 +1228,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                     (dataset as any).yAxisIndex = shownOnRightAxis ? '1' : '0';
                     data.push(dataset);
 
-                    //Load Predicted Data
+                    // Load Predicted Data
                     dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stepped, area, faint, false , asset.name + " " + label + " " + i18next.t("predicted"), options, unit);
                     data.push(dataset);
 
-                    //Load Extended Data
+                    // Load Extended Data
                     if (extended) {
                         dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, false, area, faint, extended, asset.name + " " + label + " " + "lastKnown", options, unit);
                         data.push(dataset);
@@ -1382,7 +1382,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _updateChartData(){
-        console.log("Data: ", this._data)
         this._chart!.setOption({
             xAxis: {
                 min: this._startOfPeriod,

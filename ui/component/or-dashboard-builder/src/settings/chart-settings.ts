@@ -63,9 +63,9 @@ export class ChartSettings extends WidgetSettings {
         const samplingValue = Array.from(this.samplingOptions.entries()).find((entry => entry[1] === this.widgetConfig.datapointQuery.type))![0];
 
         const attributeIconCallback = (asset: Asset, attribute: Attribute<any>, descriptor?: AssetDescriptor) => {
-            let color = this.widgetConfig.attributeColors.find(a => a[0].id === asset.id && a[0].name === attribute.name)?.[1]?.replace('#', '');
+            let color = this.widgetConfig.attributeColors?.find(a => a[0].id === asset.id && a[0].name === attribute.name)?.[1]?.replace('#', '');
             if(!color) {
-                const index = this.widgetConfig.attributeRefs.findIndex(ref => ref.id === asset.id && ref.name === attribute.name);
+                const index = this.widgetConfig.attributeRefs?.findIndex(ref => ref.id === asset.id && ref.name === attribute.name);
                 if(index >= 0) color = OrChart.DEFAULT_COLORS?.[index]?.replace('#', '');
             }
             return html`<span>${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, color)}</span>`;
@@ -93,6 +93,7 @@ export class ChartSettings extends WidgetSettings {
             `;
         };
         const attributeActionCallback = (attributeRef: AttributeRef): AttributeAction[] => {
+            const isOnRightAxis = this.widgetConfig?.attributeConfig?.rightAxisAttributes?.find(a => a.id === attributeRef.id && a.name === attributeRef.name) !== undefined;
             return [
                 {
                   icon: 'palette',
@@ -124,9 +125,8 @@ export class ChartSettings extends WidgetSettings {
                     tooltip: i18next.t('dashboard.extendData'),
                     disabled: false
                 },
-
                 {
-                    icon: this.widgetConfig?.attributeConfig?.rightAxisAttributes?.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
+                    icon: isOnRightAxis ? "arrow-right-bold" : "arrow-left-bold",
                     tooltip: i18next.t('dashboard.toggleAxis'),
                     disabled: false
                 }
@@ -183,7 +183,7 @@ export class ChartSettings extends WidgetSettings {
                             </div>
                             <!-- Show Symbol Treshold -->    
                             <div class="number-container">
-                                <or-mwc-input .type="${InputType.NUMBER}" .min="1" .max="200" .step="1" label="${i18next.t('dashboard.showSymbolMaxDatapoints')}" style="width: 100%;" .value="${this.widgetConfig.showSymbolMaxDatapoints}"
+                                <or-mwc-input .type="${InputType.NUMBER}" .min="1" .max="200" .step="1" label="dashboard.showSymbolMaxDatapoints" style="width: 100%;" .value="${this.widgetConfig.showSymbolMaxDatapoints}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowSymbolMaxDatapointsValueChange(ev)}"
                                 ></or-mwc-input>
                             </div>

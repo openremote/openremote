@@ -274,15 +274,17 @@ export class AttributesPanel extends LitElement {
                                                 )}
                                             </div>
                                             <div class="attribute-list-item-actions">
+                                                <!-- Remove attribute button -->
+                                                <button class="button-action" title="${i18next.t('delete')}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
+                                                    <or-icon icon="close-circle"></or-icon>
+                                                </button>
+                                            </div>
+                                            <div class="attribute-list-item-actions">
 
                                                 <!-- Custom actions defined by callback -->
                                                 ${when(!!this.attributeActionCallback, () => this.attributeActionCallback!(attributeRef).map(
                                                     action => this._getAttributeActionTemplate(action, asset, attributeRef)
                                                 ))}
-                                                <!-- Remove attribute button -->
-                                                <button class="button-action" title="${i18next.t('delete')}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
-                                                    <or-icon icon="close-circle"></or-icon>
-                                                </button>
                                             </div>
                                         </div>
                                     `;
