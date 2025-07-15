@@ -181,12 +181,6 @@ export class ChartSettings extends WidgetSettings {
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowZoomBarToggle(ev)}"
                                 ></or-mwc-input>
                             </div>
-                            <!-- Show Symbol Treshold -->    
-                            <div class="number-container">
-                                <or-mwc-input .type="${InputType.NUMBER}" .min="1" .max="200" .step="1" label="dashboard.showSymbolMaxDatapoints" style="width: 100%;" .value="${this.widgetConfig.showSymbolMaxDatapoints}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowSymbolMaxDatapointsValueChange(ev)}"
-                                ></or-mwc-input>
-                            </div>
                     </div>
                 </settings-panel>
 
@@ -475,11 +469,6 @@ export class ChartSettings extends WidgetSettings {
 
     protected onMaxConcurrentDatapointsValueChange(ev: OrInputChangedEvent) {
         this.widgetConfig.maxConcurrentDatapoints = ev.detail.value;
-        this.notifyConfigUpdate();
-    }
-
-    protected onShowSymbolMaxDatapointsValueChange(ev: OrInputChangedEvent) {
-        this.widgetConfig.showSymbolMaxDatapoints = ev.detail.value;
         this.notifyConfigUpdate();
     }
 }

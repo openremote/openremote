@@ -21,7 +21,6 @@ export interface ChartWidgetConfig extends AssetWidgetConfig {
     defaultTimePrefixKey: string;
     showLegend: boolean;
     showZoomBar: boolean;
-    showSymbolMaxDatapoints: number;
     maxConcurrentDatapoints: number;
 }
 
@@ -83,7 +82,6 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
         defaultTimePrefixKey: "last",
         showLegend: true,
         showZoomBar: false,
-        showSymbolMaxDatapoints: 30,
         maxConcurrentDatapoints: 100
 
     };
@@ -214,7 +212,6 @@ export class ChartWidget extends OrAssetWidget {
                               .timePrefixKey="${this.widgetConfig?.defaultTimePrefixKey}"
                               .timeWindowKey="${this.widgetConfig?.defaultTimeWindowKey}"
                               .datapointQuery="${this.datapointQuery}" .chartOptions="${this.widgetConfig?.chartOptions}"
-                              .showSymbolMaxDatapoints="${this.widgetConfig?.showSymbolMaxDatapoints}"
                               .maxConcurrentDatapoints="${this.widgetConfig?.maxConcurrentDatapoints}"
                               style="height: 100%"
                     ></or-chart>

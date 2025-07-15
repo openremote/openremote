@@ -410,9 +410,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     public showZoomBar: boolean = true;
 
     @property()
-    public showSymbolMaxDatapoints: number = 30;
-
-    @property()
     public maxConcurrentDatapoints: number = 100;
 
     @property()
@@ -1340,7 +1337,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                     .map(point => ({ x: point.x, y: point.y } as ValueDatapoint<any>))
 
                 dataset.data = data.map(point => [point.x, point.y]);
-                dataset.showSymbol = data.length <= this.showSymbolMaxDatapoints;
             }
 
             if (extended) {
