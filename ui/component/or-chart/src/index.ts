@@ -673,11 +673,11 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     render() {
-        const disabled = this._loading || this._latestError;
+        const disabled = this._latestError;
         return html`
             <div id="container">
-                <div id="chart-container">
-                    ${when(this._loading, () => html`
+                <div id="chart-container" style="opacity: ${this._loading ? '0.7' : '1'};">
+                    ${when(this._loading && !this._data, () => html`
                         <div style="position: absolute; height: 100%; width: 100%;">
                             <or-loading-indicator ?overlay="false"></or-loading-indicator>
                         </div>
@@ -687,7 +687,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             <or-translate .value="${this._latestError || 'errorOccurred'}"></or-translate>
                         </div>
                     `)}
-                    <div id="chart" style="visibility: ${disabled ? 'hidden' : 'visible'}"></div>
+                    <div id="chart" style="visibility: ${disabled ? 'hidden' : 'visible'};"></div>
                 </div>
                 
                 ${(this.timestampControls || this.attributeControls || this.showLegend) ? html`
@@ -1279,7 +1279,6 @@ export class OrChart extends translate(i18next)(LitElement) {
         const dataset = {
             name: label,
             type: 'line',
-            showSymbol: false,
             data: [] as [any, any][],
             sampling: 'lttb',
             lineStyle: {
@@ -1426,7 +1425,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 this._containerResizeObserver.observe(this.shadowRoot!.getElementById('container') as HTMLElement);
             }
             // Add event listener for zooming
-            this._zoomHandler = this._chart!.on('datazoom', debounce((params: any) => { this._onZoomChange(params); }, 1500));
+            this._zoomHandler = this._chart!.on('datazoom', debounce((params: any) => { this._onZoomChange(params); }, 750));
         }
         else if (!connect) {
             //Disconnect event listeners
