@@ -39,7 +39,7 @@ spec:
               service:
                 name: {{ include "manager.fullname" $ }}
                 port:
-                  number: {{ $.Values.service.port }}
+                  number: {{ $.Values.service.http.port }}
           {{- end }}
     {{- end }}
 {{- end }}
