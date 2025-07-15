@@ -21,6 +21,7 @@ export interface ChartWidgetConfig extends AssetWidgetConfig {
     defaultTimePrefixKey: string;
     showLegend: boolean;
     showZoomBar: boolean;
+    stacked: boolean;
 }
 
 function getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
@@ -80,7 +81,8 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
         defaultTimeWindowKey: preset,
         defaultTimePrefixKey: "last",
         showLegend: true,
-        showZoomBar: false
+        showZoomBar: false,
+        stacked: false
     };
 }
 
@@ -199,7 +201,7 @@ export class ChartWidget extends OrAssetWidget {
             `, () => {
                 return html`
                     <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
-                              .attributeColors="${this.widgetConfig?.attributeColors}"
+                              .attributeColors="${this.widgetConfig?.attributeColors}" ?stacked="${this.widgetConfig?.stacked}"
                               .attributeConfig="${this.widgetConfig?.attributeConfig != null ? this.widgetConfig.attributeConfig : {}}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
                               .showZoomBar="${(this.widgetConfig?.showZoomBar != null) ? this.widgetConfig?.showZoomBar : true}"

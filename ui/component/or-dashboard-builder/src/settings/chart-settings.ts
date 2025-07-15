@@ -158,29 +158,35 @@ export class ChartSettings extends WidgetSettings {
                         ></or-mwc-input>
 
                     </div>  
-               </settings-panel>
-               <!-- Display options --> 
-               <settings-panel displayName="display" expanded="${false}">
-                   <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
-                            <div class="switch-container">
-                                <span><or-translate value="dashboard.allowTimerangeSelect"></or-translate></span>
-                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${!this.widgetConfig.showTimestampControls}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimestampControlsToggle(ev)}"
-                                ></or-mwc-input>
-                            </div>
-                            <div class="switch-container">
-                                <span><or-translate value="dashboard.showLegend"></or-translate></span>
-                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showLegend}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowLegendToggle(ev)}"
-                                ></or-mwc-input>
-                            </div>
-                            <!-- Datazoombar -->
-                            <div class="switch-container">
-                                <span><or-translate value="dashboard.showZoomBar"></or-translate></span>
-                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showZoomBar}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowZoomBarToggle(ev)}"
-                                ></or-mwc-input>
-                            </div>
+                </settings-panel>
+                <!-- Display options --> 
+                <settings-panel displayName="display" expanded="${false}">
+                    <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
+                        <div class="switch-container">
+                            <span><or-translate value="dashboard.toggleStackView"></or-translate></span>
+                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.stacked}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onStackViewToggle(ev)}"
+                            ></or-mwc-input>
+                        </div>
+                        <div class="switch-container">
+                            <span><or-translate value="dashboard.allowTimerangeSelect"></or-translate></span>
+                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${!this.widgetConfig.showTimestampControls}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimestampControlsToggle(ev)}"
+                            ></or-mwc-input>
+                        </div>
+                        <div class="switch-container">
+                            <span><or-translate value="dashboard.showLegend"></or-translate></span>
+                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showLegend}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowLegendToggle(ev)}"
+                            ></or-mwc-input>
+                        </div>
+                        <!-- Datazoombar -->
+                        <div class="switch-container">
+                            <span><or-translate value="dashboard.showZoomBar"></or-translate></span>
+                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showZoomBar}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowZoomBarToggle(ev)}"
+                            ></or-mwc-input>
+                        </div>
                     </div>
                 </settings-panel>
 
@@ -417,6 +423,11 @@ export class ChartSettings extends WidgetSettings {
 
     protected onTimeWindowSelect(ev: OrInputChangedEvent) {
         this.widgetConfig.defaultTimeWindowKey = ev.detail.value.toString();
+        this.notifyConfigUpdate();
+    }
+
+    protected onStackViewToggle(ev: OrInputChangedEvent) {
+        this.widgetConfig.stacked = ev.detail.value;
         this.notifyConfigUpdate();
     }
 

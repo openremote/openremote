@@ -400,6 +400,9 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property()
     public isCustomWindow?: boolean = false;
 
+    @property({type: Boolean})
+    public stacked = false;
+
     @property()
     public showLegend: boolean = true;
 
@@ -1205,6 +1208,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     const asset = this.assets[assetIndex];
                     const shownOnRightAxis = !!this.attributeConfig?.rightAxisAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const smooth = !!this.attributeConfig?.smoothAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const stacked = this.stacked;
                     const stepped = !!this.attributeConfig?.steppedAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const area = !!this.attributeConfig?.areaAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const faint = !!this.attributeConfig?.faintAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
@@ -1217,7 +1221,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     const options = { signal: this._dataAbortController?.signal };
 
                     // Load Historic Data
-                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], false, smooth, stepped, area, faint, false, asset.name + " " + label, options, unit);
+                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], false, smooth, stacked, stepped, area, faint, false, asset.name + " " + label, options, unit);
                     (dataset as any).assetId = asset.id;
                     (dataset as any).attrName = attribute.name;
                     (dataset as any).unit = unit;
@@ -1225,12 +1229,12 @@ export class OrChart extends translate(i18next)(LitElement) {
                     data.push(dataset);
 
                     // Load Predicted Data
-                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stepped, area, faint, false , asset.name + " " + label + " " + i18next.t("predicted"), options, unit);
+                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stacked, stepped, area, faint, false , asset.name + " " + label + " " + i18next.t("predicted"), options, unit);
                     data.push(dataset);
 
                     // Load Extended Data
                     if (extended) {
-                        dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, false, area, faint, extended, asset.name + " " + label + " " + "lastKnown", options, unit);
+                        dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, stacked, false, area, faint, extended, asset.name + " " + label + " " + "lastKnown", options, unit);
                         data.push(dataset);
                     }
 
@@ -1266,7 +1270,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string, predicted: boolean, smooth: boolean, stepped: boolean, area: boolean, faint: boolean, extended: boolean, label?: string, options?: any, unit?: any) {
+    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string, predicted: boolean, smooth: boolean, stacked: boolean, stepped: boolean, area: boolean, faint: boolean, extended: boolean, label?: string, options?: any, unit?: any) {
 
         function rgba (color: string, alpha: number) {
             return `rgba(${parseInt(color.slice(-6,-4), 16)}, ${parseInt(color.slice(-4,-2), 16)}, ${parseInt(color.slice(-2), 16)}, ${alpha})`;
@@ -1286,6 +1290,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             itemStyle: {
                 color: color
             },
+            stack: stacked ? 'total' : undefined,
             smooth: smooth,
             step: stepped ? 'end' : undefined,
             extended: extended,

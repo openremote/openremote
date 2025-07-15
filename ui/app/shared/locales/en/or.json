@@ -772,6 +772,7 @@
     "deletePermanentWarning": "This will delete {{dashboard}} permanently.",
     "deleteWidgetWarning": "This will remove the widget from your board, and be permanently deleted after saving.",
     "widgetTooSmall": "Widget is too small.",
+    "toggleStackView": "Use stacked chart",
     "allowTimerangeSelect": "Allow time range selection",
     "toggleAxis": "Toggle axis",
     "showLegend": "Show legend",
