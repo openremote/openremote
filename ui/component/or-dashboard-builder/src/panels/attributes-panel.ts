@@ -90,7 +90,7 @@ const styling = css`
     }
 
     .attribute-list-item-actions {
-        flex: 1;
+        justify-content: end;
         align-items: center;
         display: none;
         gap: 8px;
@@ -272,18 +272,7 @@ export class AttributesPanel extends LitElement {
                                                         `
                                                 )}
                                             </div>
-                                            <div class="attribute-list-item-actions" style="justify-content: end;">
-                                                <!-- Remove attribute button -->
-                                                <button class="button-action" title="${i18next.t('delete')}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
-                                                    <or-icon icon="close-circle"></or-icon>
-                                                </button>
-                                            </div>
-                                            <div class="attribute-list-item-actions" style="margin-left: 18px;">
-                                                <!-- Custom actions defined by callback -->
-                                                ${when(!!this.attributeActionCallback, () => this.attributeActionCallback!(attributeRef).map(
-                                                    action => this._getAttributeActionTemplate(action, asset, attributeRef)
-                                                ))}
-                                            </div>
+                                            ${this._getAttributeActionsTemplate(asset, attributeRef)}
                                         </div>
                                     `;
                                 } else {
@@ -302,6 +291,21 @@ export class AttributesPanel extends LitElement {
                               style="margin-top: 8px;"
                               @or-mwc-input-changed="${() => this.openAttributeSelector(this.attributeRefs, this.multi, this.onlyDataAttrs, this.attributeFilter)}">
                 </or-mwc-input>
+            </div>
+        `;
+    }
+
+    protected _getAttributeActionsTemplate(asset: Asset, attributeRef: AttributeRef): TemplateResult {
+        return html`
+            <div class="attribute-list-item-actions">
+                <!-- Custom actions defined by callback -->
+                ${when(!!this.attributeActionCallback, () => this.attributeActionCallback!(attributeRef).map(
+                        action => this._getAttributeActionTemplate(action, asset, attributeRef)
+                ))}
+                <!-- Remove attribute button -->
+                <button class="button-action" title="${i18next.t('delete')}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
+                    <or-icon icon="close-circle"></or-icon>
+                </button>
             </div>
         `;
     }
