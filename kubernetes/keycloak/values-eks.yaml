@@ -1,0 +1,16 @@
+ingress:
+  enabled: true
+  hosts:
+    - paths:
+        - path: /auth
+          pathType: Prefix
+  className: "alb"
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/group.name: eric-test-ig
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:eu-west-1:463235666115:certificate/...
+  tls: {}
+
+or:
+  hostname: k8stest.openremote.app
