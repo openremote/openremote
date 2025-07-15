@@ -185,7 +185,7 @@ const style = css`
     #msg:not([hidden]) {
         display: flex;    
     }
-    .period-controls {
+    #period-controls {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -322,7 +322,7 @@ const style = css`
             min-width: 100%;
             padding-left: 0;
         }
-        .period-controls {
+        #period-controls {
             flex-direction: row;
             justify-content: left;
             align-items: center;
@@ -656,6 +656,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                 if(controls) {
                     controls.style.flexDirection = bottomLegend ? 'row' : 'column';
                 }
+                const periodControls = this.shadowRoot.getElementById('period-controls');
+                if(periodControls) {
+                    periodControls.style.flexDirection = bottomLegend ? 'row' : 'column';
+                }
                 const attributeList = this.shadowRoot.getElementById('attribute-list');
                 if(attributeList) {
                     attributeList.style.gap = bottomLegend ? '4px 12px' : '';
@@ -696,35 +700,35 @@ export class OrChart extends translate(i18next)(LitElement) {
                         <div id="controls">
                                 ${this.timePrefixKey && this.timePrefixOptions && this.timeWindowKey && this.timeWindowOptions ? html`
                                     ${this.timestampControls ? html`
-                                        <div class="period-controls">
-                                        <!-- Time prefix selection -->
-                                        ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}"></or-mwc-input>`,
-                                                this.timePrefixOptions.map((option) => ({ value: option } as ListItem)),
-                                                this.timePrefixKey,
-                                                (value: string | string[]) => {
-                                                    this.timeframe = undefined; // remove any custom start & end times
-                                                    this.timePrefixKey = value.toString();
-                                                },
-                                                undefined,
-                                                undefined,
-                                                undefined,
-                                                true
-                                        )}
-                                        <!-- Time window selection -->
-                                        ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.isCustomWindow ? "timeframe" : this.timeWindowKey}"></or-mwc-input>`,
-                                                Array.from(this.timeWindowOptions!.keys()).map((key) => ({ value: key } as ListItem)),
-                                                this.timeWindowKey,
-                                                (value: string | string[]) => {
-                                                    this.timeframe = undefined; // remove any custom start & end times
-                                                    this.timeWindowKey = value.toString();
-                                                },
-                                                undefined,
-                                                undefined,
-                                                undefined,
-                                                true
-                                        )}
+                                        <div id="period-controls">
+                                            <!-- Time prefix selection -->
+                                            ${getContentWithMenuTemplate(
+                                                    html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}"></or-mwc-input>`,
+                                                    this.timePrefixOptions.map((option) => ({ value: option } as ListItem)),
+                                                    this.timePrefixKey,
+                                                    (value: string | string[]) => {
+                                                        this.timeframe = undefined; // remove any custom start & end times
+                                                        this.timePrefixKey = value.toString();
+                                                    },
+                                                    undefined,
+                                                    undefined,
+                                                    undefined,
+                                                    true
+                                            )}
+                                            <!-- Time window selection -->
+                                            ${getContentWithMenuTemplate(
+                                                    html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.isCustomWindow ? "timeframe" : this.timeWindowKey}"></or-mwc-input>`,
+                                                    Array.from(this.timeWindowOptions!.keys()).map((key) => ({ value: key } as ListItem)),
+                                                    this.timeWindowKey,
+                                                    (value: string | string[]) => {
+                                                        this.timeframe = undefined; // remove any custom start & end times
+                                                        this.timeWindowKey = value.toString();
+                                                    },
+                                                    undefined,
+                                                    undefined,
+                                                    undefined,
+                                                    true
+                                            )}
                                         </div>
                                         <div class="navigate" style = "text-align: right">
                                             
@@ -784,7 +788,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                         <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseenter="${() => this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseleave="${()=> this.removeDatasetHighlight()}">
                                             <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
                                             <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
-                                                <div style="display: flex; justify-content: space-between;">
+                                                <div style="display: flex; justify-content: space-between; gap: 4px;">
                                                     <span style="font-size:12px; ${this.denseLegend ? 'margin-right: 8px' : undefined}">${this.assets[assetIndex].name}</span>
                                                     ${when(axisNote, () => html`<span style="font-size:12px; color:grey">(${axisNote})</span>`)}
                                                 </div>
