@@ -145,7 +145,7 @@ const style = css`
     
     .button-icon {
         align-self: center;
-        padding: 10px;
+        padding: 11px 6px;
         cursor: pointer;
     }
 
@@ -172,6 +172,7 @@ const style = css`
         min-width: 0;
         flex-direction: row;
         height: 100%;
+        gap: 8px;
     }
        
     #msg {
@@ -206,8 +207,7 @@ const style = css`
 
     #attribute-list {
         overflow: hidden auto;
-        min-height: 50px;
-        flex: 1 1 0;
+        flex: 1 1 50px;
         width: 100%;
         display: flex;
         flex-direction: column;
@@ -268,12 +268,7 @@ const style = css`
     .attribute-list-item:hover .button.delete {
         display: block;
     }
-
-    #controls > * {
-        margin-top: 5px;
-        margin-bottom: 5px;
-    }
-
+    
     .dialog-container {
         display: flex;
         flex-direction: row;
@@ -293,13 +288,14 @@ const style = css`
         flex: 1 1 0;
         position: relative;
         overflow: hidden;
+        gap: 4px;
         /*min-height: 400px;
         max-height: 550px;*/
     }
     #chart-controls {
+        padding: 0 8px;
         display: flex;
         flex-direction: column;
-        margin-top: 10px;
     }
     #chart {
         width: 100% !important;
@@ -515,7 +511,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
                     borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
                     left: 10,
-                    right: 20,
+                    right: 10,
                     top: 10,
                     bottom: this.showZoomBar ? 68 : 10,
                     containLabel: true
@@ -570,7 +566,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                         boundaryGap: ["10%", "10%"],
                         scale: true,
                         min: this.chartOptions.options.scales.y.min,
-                        max: this.chartOptions.options.scales.y.max
+                        max: this.chartOptions.options.scales.y.max,
+                        axisLabel: { hideOverlap: true }
                     },
                     {
                         type: 'value',
@@ -579,7 +576,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                         boundaryGap: ["10%", "10%"],
                         scale: true,
                         min: this.chartOptions.options.scales.y1.min,
-                        max: this.chartOptions.options.scales.y1.max
+                        max: this.chartOptions.options.scales.y1.max,
+                        axisLabel: { hideOverlap: true }
                     }
                 ],
                 dataZoom: [
@@ -669,7 +667,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 }
                 this.shadowRoot.querySelectorAll('.attribute-list-item').forEach((item: Element) => {
                     (item as HTMLElement).style.minHeight = bottomLegend ? '0px' : '44px';
-                    (item as HTMLElement).style.paddingLeft = bottomLegend ? '' : '16px';
+                    (item as HTMLElement).style.paddingLeft = bottomLegend ? '' : '0';
                     (item.children[1] as HTMLElement).style.flexDirection = bottomLegend ? 'row' : 'column';
                     (item.children[1] as HTMLElement).style.gap = bottomLegend ? '4px' : '';
                 });
@@ -730,7 +728,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                                     true
                                             )}
                                         </div>
-                                        <div class="navigate" style = "text-align: right">
+                                        <div class="navigate" style = "text-align: center">
                                             
                                             <!-- Scroll left button -->
                                             <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._shiftTimeframe(this.timeframe ? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeframe ? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "previous")}"></or-icon>
@@ -748,7 +746,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 ` : undefined}
                             
                             ${this.timeframe ? html`
-                                <div style="margin-left: 18px; font-size: 12px; display: flex; justify-content: flex-end;">
+                                <div style="font-size: 12px; display: flex; justify-content: flex-end;">
                                     <table style="text-align: right;">
                                         <thead>
                                         <tr>
@@ -788,7 +786,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                         <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseenter="${() => this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseleave="${()=> this.removeDatasetHighlight()}">
                                             <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
                                             <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
-                                                <div style="display: flex; justify-content: space-between; gap: 4px;">
+                                                <div style="display: flex; gap: 4px;">
                                                     <span style="font-size:12px; ${this.denseLegend ? 'margin-right: 8px' : undefined}">${this.assets[assetIndex].name}</span>
                                                     ${when(axisNote, () => html`<span style="font-size:12px; color:grey">(${axisNote})</span>`)}
                                                 </div>

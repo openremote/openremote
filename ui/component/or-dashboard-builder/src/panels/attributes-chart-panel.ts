@@ -1,10 +1,18 @@
-import { TemplateResult, html } from "lit";
+import { TemplateResult, css, html } from "lit";
 import {AttributeAction, AttributesPanel} from "./attributes-panel";
 import {Asset, AttributeRef} from "@openremote/model";
 import { customElement } from "lit/decorators.js";
 
 @customElement("attributes-chart-panel")
 export class AttributesChartPanel extends AttributesPanel {
+
+    static get styles() {
+        return [...super.styles, css`
+            .attribute-list-item:hover {
+                padding-bottom: 8px;
+            }
+        `];
+    }
 
     protected _getAttributeActionTemplate(action: AttributeAction, asset: Asset, attributeRef: AttributeRef): TemplateResult {
         // If 'palette', aka 'color palette', show color picker instead.
