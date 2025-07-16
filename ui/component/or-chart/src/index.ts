@@ -105,6 +105,7 @@ const style = css`
     :host {
         
         --internal-or-chart-background-color: var(--or-chart-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
+        --internal-or-chart-border-color: var(--or-chart-border-color, rgba(76, 76, 76, 0.6));
         --internal-or-chart-text-color: var(--or-chart-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
         --internal-or-chart-controls-margin: var(--or-chart-controls-margin, 0 0 20px 0);       
         --internal-or-chart-controls-margin-children: var(--or-chart-controls-margin-children, 0 auto 20px auto);            
@@ -506,7 +507,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 grid: {
                     show: true,
                     backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
-                    borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
+                    borderColor: this._style.getPropertyValue("--internal-or-chart-border-color"),
                     left: 10,
                     right: 10,
                     top: 10,
