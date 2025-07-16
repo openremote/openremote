@@ -304,7 +304,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         when: "a regular user gets their own information"
         // First get the user's ID from the authentication context
         def users = regularUserBuildingResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)))
-        def currentUser = users.find { it.username == "testuser3" }
+        def currentUser = users.find { it.username == keycloakTestSetup.testuser3.username }
         
         then: "the user should be found"
         currentUser != null
@@ -324,12 +324,23 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         
         then: "an exception should be thrown"
         thrown(ForbiddenException)
+
+        when: "an admin user tries to update another user's information"
+        currentUser.setAttribute("authorizedUpdate", "shouldNotFail")
+        adminUserResource.updateUser(null, currentUser.realm, currentUser)
+
+        then: "the update should succeed"
+        currentUser != null
+        currentUser.attributes.any { it.name == "authorizedUpdate" && it.value == "shouldNotFail" }
         
         when: "the admin verifies the user's attributes were updated"
         def verifiedUser = adminUserResource.get(null, keycloakTestSetup.realmBuilding.name, currentUser.id)
         
         then: "the self-update attribute should be present"
         verifiedUser.attributes.any { it.name == "selfUpdate" && it.value == "success" }
+
+        and: "the authorized update attribute should be present"
+        verifiedUser.attributes.any { it.name == "authorizedUpdate" && it.value == "shouldNotFail" }
     }
 
     def "Create invalid users"() {

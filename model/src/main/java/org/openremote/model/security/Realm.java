@@ -124,15 +124,6 @@ public class Realm {
     @JoinColumn(name = "REALM_ID")
     protected Set<RealmRole> realmRoles;
 
-    @Formula("(select rsc.VALUE from PUBLIC.REALM_SMTP_CONFIG rsc where rsc.REALM_ID = ID and rsc.name = 'host')")
-    protected String smtpHost;
-
-    @Formula("(select rsc.VALUE from PUBLIC.REALM_SMTP_CONFIG rsc where rsc.REALM_ID = ID and rsc.name = 'port')")
-    protected String smtpPort;
-
-    @Formula("(select rsc.VALUE from PUBLIC.REALM_SMTP_CONFIG rsc where rsc.REALM_ID = ID and rsc.name = 'user')")
-    protected String smtpUser;
-
     public Realm() {
     }
 
@@ -333,30 +324,6 @@ public class Realm {
         return this;
     }
 
-    public String getSmtpHost() {
-        return smtpHost;
-    }
-
-    public void setSmtpHost(String smtpHost) {
-        this.smtpHost = smtpHost;
-    }
-
-    public String getSmtpPort() {
-        return smtpPort;
-    }
-
-    public void setSmtpPort(String smtpPort) {
-        this.smtpPort = smtpPort;
-    }
-
-    public String getSmtpUser() {
-        return smtpUser;
-    }
-
-    public void setSmtpUser(String smtpUser) {
-        this.smtpUser = smtpUser;
-    }
-
     @Override
     public int hashCode() {
         return Objects.hashCode(name);
@@ -384,9 +351,6 @@ public class Realm {
             ", emailTheme='" + emailTheme + '\'' +
             ", accessTokenLifespan=" + accessTokenLifespan +
             ", realmRoles=" + realmRoles +
-            ", smtpHost='" + smtpHost + '\'' +
-            ", smtpPort='" + smtpPort + '\'' +
-            ", smtpUser='" + smtpUser + '\'' +
             '}';
     }
 }

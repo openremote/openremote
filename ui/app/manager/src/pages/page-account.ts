@@ -231,7 +231,6 @@ export class PageAccount extends Page<AppStateKeyed> {
     protected async _getAccountRowTemplate(user?: UserModel, readonly = true, onchange?: (user: User, dirty: boolean, invalid: boolean) => void): Promise<TemplateResult> {
         const realmResponse = await manager.rest.api.RealmResource.get(manager.displayRealm);
         const registrationEmailAsUsername = realmResponse.data.registrationEmailAsUsername;
-        const smtpConfigured = realmResponse.data.smtpUser && realmResponse.data.smtpHost && realmResponse.data.smtpPort;
         if (!user) {
             user = await this._getUser();
         }
@@ -295,7 +294,7 @@ export class PageAccount extends Page<AppStateKeyed> {
                 </div>
                 <div class="column">
                     <h5>${i18next.t("password")}</h5>
-                    ${smtpConfigured ? html`
+                    ${registrationEmailAsUsername ? html`
                         <!-- Reset password button when SMTP is configured -->
                         <or-mwc-input id="reset-password" raised
                                       .label="${i18next.t("resetPassword")}"
