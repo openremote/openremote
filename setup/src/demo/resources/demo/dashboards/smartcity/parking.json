@@ -66,7 +66,6 @@
             "fromTimestamp": 1710942863421,
             "amountOfPoints": 100
           },
-          "rightAxisAttributes": [],
           "defaultTimePresetKey": "last24Hours",
           "showTimestampControls": false
         }
