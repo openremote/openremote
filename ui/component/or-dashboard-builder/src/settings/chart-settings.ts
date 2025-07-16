@@ -132,6 +132,14 @@ export class ChartSettings extends WidgetSettings {
                 }
             ];
         };
+        // Determine the selected timeframe
+        const timePrefix = this.timePrefixOptions.find(prefix => this.widgetConfig?.defaultTimePresetKey?.startsWith(prefix)) ?? this.timePrefixOptions[0];
+        let [_, timeWindow] = this.widgetConfig?.defaultTimePresetKey?.split(timePrefix);
+        if(!timeWindow || !this.timeWindowOptions.has(timeWindow)) timeWindow = Array.from(this.timeWindowOptions.keys())[0];
+
+        // List the available timeframes to select from
+        const prefixOptions = this.timePrefixOptions.map(s => s.toLowerCase());
+        const windowOptions = Array.from(this.timeWindowOptions.keys()).map(s => [s, i18next.t(s.toLowerCase())]);
         return html`
             <div>
                 <!-- Attribute selection -->
@@ -148,15 +156,14 @@ export class ChartSettings extends WidgetSettings {
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
                         <!-- This/last selection of timeframe -->
                         <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('prefixDefault')}" style="width: 100%;"
-                                      .options="${this.timePrefixOptions}" value="${this.widgetConfig.defaultTimePrefixKey}"
-                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimePreFixSelect(ev)}"
+                                      .options="${prefixOptions}" value="${timePrefix.toLowerCase()}"
+                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimePrefixSelect(ev)}"
                         ></or-mwc-input>
                         <!-- Select time frame -->
                         <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('timeframeDefault')}" style="width: 100%;"
-                                      .options="${Array.from(this.timeWindowOptions.keys())}" value="${this.widgetConfig.defaultTimeWindowKey}"
+                                      .options="${windowOptions}" value="${timeWindow}"
                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimeWindowSelect(ev)}"
                         ></or-mwc-input>
-
                     </div>  
                 </settings-panel>
                 <!-- Display options --> 
@@ -416,13 +423,22 @@ export class ChartSettings extends WidgetSettings {
         }
     }
 
-    protected onTimePreFixSelect(ev: OrInputChangedEvent) {
-        this.widgetConfig.defaultTimePrefixKey = ev.detail.value.toString();
+    protected onTimePrefixSelect(ev: OrInputChangedEvent) {
+        let oldValue = this.widgetConfig.defaultTimePresetKey;
+        const newPrefix = ev.detail.value.toString();
+        this.timePrefixOptions.forEach(option => oldValue = oldValue.replace(option, ""));
+        this.widgetConfig.defaultTimePresetKey = newPrefix + oldValue;
+        console.debug(`Updated default time preset to ${this.widgetConfig.defaultTimePresetKey}`);
         this.notifyConfigUpdate();
     }
 
     protected onTimeWindowSelect(ev: OrInputChangedEvent) {
-        this.widgetConfig.defaultTimeWindowKey = ev.detail.value.toString();
+        let oldValue = this.widgetConfig.defaultTimePresetKey;
+        const newWindow = ev.detail.value.toString();
+        const windowOptions = Array.from(this.timeWindowOptions.keys()).sort((a, b) => b.length - a.length);
+        windowOptions.forEach(window => oldValue = oldValue.replace(window, ""));
+        this.widgetConfig.defaultTimePresetKey = oldValue + newWindow;
+        console.debug(`Updated default time preset to ${this.widgetConfig.defaultTimePresetKey}`);
         this.notifyConfigUpdate();
     }
 

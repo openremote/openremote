@@ -698,8 +698,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                                         <div id="period-controls">
                                             <!-- Time prefix selection -->
                                             ${getContentWithMenuTemplate(
-                                                    html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}"></or-mwc-input>`,
-                                                    this.timePrefixOptions.map((option) => ({ value: option } as ListItem)),
+                                                    html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey.toLowerCase()}"></or-mwc-input>`,
+                                                    this.timePrefixOptions.map(option => ({value: option, text: option.toLowerCase() } as ListItem)),
                                                     this.timePrefixKey,
                                                     (value: string | string[]) => {
                                                         this.timeframe = undefined; // remove any custom start & end times
@@ -712,8 +712,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                                             )}
                                             <!-- Time window selection -->
                                             ${getContentWithMenuTemplate(
-                                                    html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.isCustomWindow ? "timeframe" : this.timeWindowKey}"></or-mwc-input>`,
-                                                    Array.from(this.timeWindowOptions!.keys()).map((key) => ({ value: key } as ListItem)),
+                                                    html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.isCustomWindow ? "timeframe" : this.timeWindowKey.toLowerCase()}"></or-mwc-input>`,
+                                                    Array.from(this.timeWindowOptions!.keys()).map(key => ({ value: key, text: key.toLowerCase() } as ListItem)),
                                                     this.timeWindowKey,
                                                     (value: string | string[]) => {
                                                         this.timeframe = undefined; // remove any custom start & end times
@@ -862,25 +862,11 @@ export class OrChart extends translate(i18next)(LitElement) {
             this.assetAttributes = [];
         }
 
-        if (!this.realm) {
-            this.realm = manager.getRealm();
-        }
-
-        if (!this.timePrefixOptions) {
-            this.timePrefixOptions = this._getDefaultTimePrefixOptions();
-        }
-
-        if (!this.timeWindowOptions) {
-            this.timeWindowOptions = this._getDefaultTimeWindowOptions();
-        }
-
-        if (!this.timeWindowKey) {
-            this.timeWindowKey = this.timeWindowOptions.keys().next().value.toString();
-        }
-
-        if (!this.timePrefixKey) {
-            this.timePrefixKey = this.timePrefixOptions[1];
-        }
+        this.realm ??= manager.getRealm();
+        this.timePrefixOptions ??= this._getDefaultTimePrefixOptions();
+        this.timeWindowOptions ??= this._getDefaultTimeWindowOptions();
+        this.timeWindowKey ??= this.timeWindowOptions.keys().next().value.toString();
+        this.timePrefixKey ??= this.timePrefixOptions[1];
 
         if (!this.panelName) {
             return;
@@ -1109,16 +1095,16 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     protected _getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
         return new Map<string, [moment.unitOfTime.DurationConstructor, number]>([
-            ["hour", ['hours', 1]],
+            ["Hour", ['hours', 1]],
             ["6Hours", ['hours', 6]],
             ["24Hours", ['hours', 24]],
-            ["day", ['days', 1]],
+            ["Day", ['days', 1]],
             ["7Days", ['days', 7]],
-            ["week", ['weeks', 1]],
+            ["Week", ['weeks', 1]],
             ["30Days", ['days', 30]],
-            ["month", ['months', 1]],
+            ["Month", ['months', 1]],
             ["365Days", ['days', 365]],
-            ["year", ['years', 1]]
+            ["Year", ['years', 1]]
         ]);
     };
 

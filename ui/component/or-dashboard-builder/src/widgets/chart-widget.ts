@@ -17,8 +17,7 @@ export interface ChartWidgetConfig extends AssetWidgetConfig {
     attributeConfig?: ChartAttributeConfig,
     chartOptions?: any;
     showTimestampControls: boolean;
-    defaultTimeWindowKey: string;
-    defaultTimePrefixKey: string;
+    defaultTimePresetKey: string;
     showLegend: boolean;
     showZoomBar: boolean;
     stacked: boolean;
@@ -26,23 +25,23 @@ export interface ChartWidgetConfig extends AssetWidgetConfig {
 
 function getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
     return new Map<string, [moment.unitOfTime.DurationConstructor, number]>([
-        ["5Minutes", ['minutes', 5]],
-        ["20Minutes", ['minutes', 20]],
         ["60Minutes", ['minutes', 60]],
-        ["hour", ['hours', 1]],
+        ["Hour", ['hours', 1]],
         ["6Hours", ['hours', 6]],
         ["24Hours", ['hours', 24]],
-        ["day", ['days', 1]],
+        ["Day", ['days', 1]],
         ["7Days", ['days', 7]],
-        ["week", ['weeks', 1]],
+        ["Week", ['weeks', 1]],
         ["30Days", ['days', 30]],
-        ["month", ['months', 1]],
+        ["Month", ['months', 1]],
+        ["90Days", ['days', 90]],
+        ["6Months", ['months', 6]],
         ["365Days", ['days', 365]],
-        ["year", ['years', 1]]
+        ["Year", ['years', 1]]
     ]);
 }
 
-function getDefaultTimePreFixOptions(): string[] {
+function getDefaultTimePrefixOptions(): string[] {
     return ["this", "last"];
 }
 
@@ -61,7 +60,7 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
         datapointQuery: {
             type: "lttb",
             fromTimestamp: startDate.toDate().getTime(),
-            toTimestamp: endDate.toDate().getTime(),
+            toTimestamp: endDate.toDate().getTime()
         },
         chartOptions: {
             options: {
@@ -75,11 +74,10 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
                         max: undefined
                     }
                 }
-            },
+            }
         },
         showTimestampControls: false,
-        defaultTimeWindowKey: preset,
-        defaultTimePrefixKey: "last",
+        defaultTimePresetKey: getDefaultTimePrefixOptions()[0] + Array.from(getDefaultTimeWindowOptions().keys())[0],
         showLegend: true,
         showZoomBar: false,
         stacked: false
@@ -112,14 +110,14 @@ export class ChartWidget extends OrAssetWidget {
             getSettingsHtml(config: ChartWidgetConfig): WidgetSettings {
                 const settings = new ChartSettings(config);
                 settings.setTimeWindowOptions(getDefaultTimeWindowOptions());
-                settings.setTimePrefixOptions(getDefaultTimePreFixOptions());
+                settings.setTimePrefixOptions(getDefaultTimePrefixOptions());
                 settings.setSamplingOptions(getDefaultSamplingOptions());
                 return settings;
             },
             getDefaultConfig(): ChartWidgetConfig {
                 return getDefaultWidgetConfig();
             }
-        }
+        };
     }
 
     // Method called on every refresh/reload of the widget
@@ -199,6 +197,11 @@ export class ChartWidget extends OrAssetWidget {
                 </div>
                 
             `, () => {
+                const timePrefixList = getDefaultTimePrefixOptions();
+                const timePrefix = timePrefixList.find(prefix => this.widgetConfig?.defaultTimePresetKey?.startsWith(prefix)) ?? timePrefixList[0];
+                const timeWindowList = getDefaultTimeWindowOptions();
+                let [_, timeWindow] = this.widgetConfig?.defaultTimePresetKey?.split(timePrefix);
+                if(!timeWindow || !timeWindowList.has(timeWindow)) timeWindow = Array.from(timeWindowList.keys())[0];
                 return html`
                     <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
                               .attributeColors="${this.widgetConfig?.attributeColors}" ?stacked="${this.widgetConfig?.stacked}"
@@ -206,10 +209,8 @@ export class ChartWidget extends OrAssetWidget {
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
                               .showZoomBar="${(this.widgetConfig?.showZoomBar != null) ? this.widgetConfig?.showZoomBar : true}"
                               .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
-                              .timeWindowOptions="${getDefaultTimeWindowOptions()}"
-                              .timePrefixOptions="${getDefaultTimePreFixOptions()}"
-                              .timePrefixKey="${this.widgetConfig?.defaultTimePrefixKey}"
-                              .timeWindowKey="${this.widgetConfig?.defaultTimeWindowKey}"
+                              .timePrefixOptions="${timePrefixList}" .timeWindowOptions="${timeWindowList}"
+                              .timePrefixKey="${timePrefix}" .timeWindowKey="${timeWindow}"
                               .datapointQuery="${this.datapointQuery}" .chartOptions="${this.widgetConfig?.chartOptions}"
                               style="height: 100%"
                     ></or-chart>
