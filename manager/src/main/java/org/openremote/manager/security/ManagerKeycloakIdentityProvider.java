@@ -21,6 +21,7 @@ package org.openremote.manager.security;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
 import io.undertow.util.Headers;
 import jakarta.persistence.Query;
 import jakarta.validation.constraints.NotNull;
@@ -98,10 +99,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String OR_KEYCLOAK_PUBLIC_URI_DEFAULT = "/auth";
     public static final String OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT = "OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT";
     public static final List<String> BUILT_IN_REALM_ROLES = List.of(
-        "admin",
-        "create-realm",
-        "offline_access",
-        "uma_authorization"
+            "admin",
+            "create-realm",
+            "offline_access",
+            "uma_authorization"
     );
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
@@ -190,9 +191,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
         // Create a new super user for the keycloak proxy so admin user can be modified if desired
         User keycloakProxyUser = new User()
-            .setUsername(MANAGER_CLIENT_ID)
-            .setEnabled(true)
-            .setSystemAccount(true);
+                .setUsername(MANAGER_CLIENT_ID)
+                .setEnabled(true)
+                .setSystemAccount(true);
         // Make password complex enough to hopefully meet any password policy that is set in keycloak
         String password = UniqueIdentifierGenerator.generateId() + "$*#@$";
 
@@ -210,9 +211,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             grantPath.getParent().toFile().mkdirs();
 
             Files.write(grantPath, ValueUtil.asJSON(grant).orElse("null").getBytes(),
-                StandardOpenOption.CREATE,
-                StandardOpenOption.WRITE,
-                StandardOpenOption.TRUNCATE_EXISTING);
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.WRITE,
+                    StandardOpenOption.TRUNCATE_EXISTING);
 
             return grant;
         } catch (Exception e) {
@@ -297,7 +298,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             ClientRepresentation clientRepresentation;
             UserRepresentation userRepresentation;
 
-            if(existingUser != null && !allowUpdate) {
+            if (existingUser != null && !allowUpdate) {
                 String msg = "Attempt to create user but it already exists: User=" + user;
                 LOG.warning(msg);
                 throw new ForbiddenException(msg);
@@ -370,8 +371,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     clientRepresentation.setSecret(passwordSecret);
                     clientRepresentation = createUpdateClient(realm, clientRepresentation);
                     userRepresentation = realmsResource.realm(realm)
-                        .clients()
-                        .get(clientRepresentation.getId()).getServiceAccountUser();
+                            .clients()
+                            .get(clientRepresentation.getId()).getServiceAccountUser();
                     userRepresentation.setEnabled(user.getEnabled());
                     realmsResource.realm(realm).users().get(userRepresentation.getId()).update(userRepresentation);
 
@@ -386,7 +387,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                         throw new BadRequestException("Failed to create user: User=" + user);
                     }
                     String[] locationArr = location.split("/");
-                    String userId = locationArr.length > 0 ? locationArr[locationArr.length-1] : null;
+                    String userId = locationArr.length > 0 ? locationArr[locationArr.length - 1] : null;
                     userRepresentation = realmResource.users().get(userId).toRepresentation();
                 }
             }
@@ -414,12 +415,12 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             }
 
             persistenceService.publishPersistenceEvent(
-                (isUpdate ? PersistenceEvent.Cause.UPDATE : PersistenceEvent.Cause.CREATE),
-                updatedUser,
-                existingUser,
-                User.class,
-                Collections.singletonList("attributes"),
-                null);
+                    (isUpdate ? PersistenceEvent.Cause.UPDATE : PersistenceEvent.Cause.CREATE),
+                    updatedUser,
+                    existingUser,
+                    User.class,
+                    Collections.singletonList("attributes"),
+                    null);
 
             return updatedUser;
         });
@@ -454,11 +455,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         });
 
         persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.DELETE,
-            null,
-            user,
-            User.class,
-            Collections.singletonList("attributes"),
-            null);
+                null,
+                user,
+                User.class,
+                Collections.singletonList("attributes"),
+                null);
     }
 
     @Override
@@ -478,7 +479,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public void resetPassword(String realm, String userId, Credential credential) {
         getRealms(realmsResource -> {
             realmsResource.realm(realm).users().get(userId).resetPassword(
-                convert(credential, CredentialRepresentation.class)
+                    convert(credential, CredentialRepresentation.class)
             );
             return null;
         });
@@ -497,20 +498,20 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             }
 
             return withClientResource(
-                realm,
-                userRepresentation.getUsername().substring(User.SERVICE_ACCOUNT_PREFIX.length()),
-                realmsResource,
-                (clientRep, clientResource) -> {
-                    if (TextUtil.isNullOrEmpty(secret)) {
-                        CredentialRepresentation credentialRepresentation = clientResource.generateNewSecret();
-                        return credentialRepresentation.getValue();
-                    } else {
-                        clientRep.setSecret(secret);
-                        clientResource.update(clientRep);
-                        return secret;
-                    }
-                },
-                null
+                    realm,
+                    userRepresentation.getUsername().substring(User.SERVICE_ACCOUNT_PREFIX.length()),
+                    realmsResource,
+                    (clientRep, clientResource) -> {
+                        if (TextUtil.isNullOrEmpty(secret)) {
+                            CredentialRepresentation credentialRepresentation = clientResource.generateNewSecret();
+                            return credentialRepresentation.getValue();
+                        } else {
+                            clientRep.setSecret(secret);
+                            clientResource.update(clientRep);
+                            return secret;
+                        }
+                    },
+                    null
             );
         });
     }
@@ -557,8 +558,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             List<RoleRepresentation> existingRoles = new ArrayList<>(clientResource.roles().list());
 
             List<RoleRepresentation> removedRoles = existingRoles.stream()
-                .filter(existingRole -> Arrays.stream(roles).noneMatch(r -> existingRole.getId().equals(r.getId())))
-                .collect(Collectors.toList());
+                    .filter(existingRole -> Arrays.stream(roles).noneMatch(r -> existingRole.getId().equals(r.getId())))
+                    .collect(Collectors.toList());
 
             removedRoles.forEach(removedRole -> {
                 realmResource.rolesById().deleteRole(removedRole.getId());
@@ -578,9 +579,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     compositesModified = role.getCompositeRoleIds() != null && role.getCompositeRoleIds().length > 0;
                     if (compositesModified) {
                         requestedComposites.addAll(Arrays.stream(role.getCompositeRoleIds())
-                            .map(id -> existingRoles.stream().filter(er -> er.getId().equals(id)).findFirst().orElse(null))
-                            .filter(Objects::nonNull)
-                            .collect(Collectors.toSet()));
+                                .map(id -> existingRoles.stream().filter(er -> er.getId().equals(id)).findFirst().orElse(null))
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet()));
                     }
                 } else {
                     existingRole = existingRoles.stream().filter(r -> r.getId().equals(role.getId())).findFirst().orElseThrow(() -> new IllegalStateException("One or more supplied roles have an ID that doesn't exist"));
@@ -588,14 +589,14 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     boolean isComposite = role.isComposite() && role.getCompositeRoleIds() != null && role.getCompositeRoleIds().length > 0;
 
                     boolean rolePropertiesModified = !Objects.equals(existingRole.getName(), role.getName())
-                        || !Objects.equals(existingRole.getDescription(), role.getDescription());
+                            || !Objects.equals(existingRole.getDescription(), role.getDescription());
 
                     if (isComposite || existingRole.isComposite()) {
                         existingComposites.addAll(Optional.ofNullable(realmResource.rolesById().getClientRoleComposites(existingRole.getId(), clientRepresentation.getId())).orElse(new HashSet<>()));
                         requestedComposites.addAll(Arrays.stream(role.getCompositeRoleIds())
-                            .map(id -> existingRoles.stream().filter(er -> er.getId().equals(id)).findFirst().orElse(null))
-                            .filter(Objects::nonNull)
-                            .collect(Collectors.toSet()));
+                                .map(id -> existingRoles.stream().filter(er -> er.getId().equals(id)).findFirst().orElse(null))
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet()));
 
                         if (requestedComposites.size() != role.getCompositeRoleIds().length) {
                             throw new IllegalStateException("One or more composite roles contain an invalid role ID");
@@ -649,10 +650,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             RoleMappingResource roleMappingResource = realmResource.users().get(userId).roles();
 
             return withClientResource(realm, client, realmsResource, (clientRepresentation, clientResource) ->
-                roleMappingResource.clientLevel(clientRepresentation.getId()).listEffective()
-                    .stream()
-                    .map(RoleRepresentation::getName)
-                    .toArray(String[]::new), () -> new String[0]);
+                    roleMappingResource.clientLevel(clientRepresentation.getId()).listEffective()
+                            .stream()
+                            .map(RoleRepresentation::getName)
+                            .toArray(String[]::new), () -> new String[0]);
         });
     }
 
@@ -661,15 +662,15 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         return getRealms(realmsResource -> {
             RealmResource realmResource = realmsResource.realm(realm);
             RoleMappingResource roleMappingResource = realmResource.users().get(userId).roles();
-                return roleMappingResource.realmLevel().listEffective()
-                        .stream()
-                        .filter(rr -> (MASTER_REALM.equals(realm) && SUPER_USER_REALM_ROLE.equals(rr.getName())) || !isBuiltInRealmRole(rr.getName()))
-                        .map(RoleRepresentation::getName).toArray(String[]::new);
+            return roleMappingResource.realmLevel().listEffective()
+                    .stream()
+                    .filter(rr -> (MASTER_REALM.equals(realm) && SUPER_USER_REALM_ROLE.equals(rr.getName())) || !isBuiltInRealmRole(rr.getName()))
+                    .map(RoleRepresentation::getName).toArray(String[]::new);
         });
     }
 
     @Override
-    public void updateUserClientRoles(@NotNull String realm, @NotNull String userId, @NotNull String client, String...roles) {
+    public void updateUserClientRoles(@NotNull String realm, @NotNull String userId, @NotNull String client, String... roles) {
         getRealms(realmsResource -> {
             RealmResource realmResource = realmsResource.realm(realm);
             UserRepresentation user = realmResource.users().get(userId).toRepresentation();
@@ -738,30 +739,30 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
             // Delete any that are not assigned and add any that are assigned
             availableRealmRoles.stream()
-                .collect(Collectors.partitioningBy(rr -> assignedRoles.contains(rr.getName())))
-                .forEach((isAssigned, realmRoles) -> {
-                    if (isAssigned) {
-                        // Assigned roles
-                        if (!realmRoles.isEmpty()) {
-                            roleMappingResource.realmLevel().add(realmRoles.stream().map(v -> {
-                                RoleRepresentation rr = new RoleRepresentation();
-                                rr.setId(v.getId());
-                                rr.setName(v.getName());
-                                return rr;
-                            }).toList());
+                    .collect(Collectors.partitioningBy(rr -> assignedRoles.contains(rr.getName())))
+                    .forEach((isAssigned, realmRoles) -> {
+                        if (isAssigned) {
+                            // Assigned roles
+                            if (!realmRoles.isEmpty()) {
+                                roleMappingResource.realmLevel().add(realmRoles.stream().map(v -> {
+                                    RoleRepresentation rr = new RoleRepresentation();
+                                    rr.setId(v.getId());
+                                    rr.setName(v.getName());
+                                    return rr;
+                                }).toList());
+                            }
+                        } else {
+                            // Unassigned roles
+                            if (!realmRoles.isEmpty()) {
+                                roleMappingResource.realmLevel().remove(realmRoles.stream().map(v -> {
+                                    RoleRepresentation rr = new RoleRepresentation();
+                                    rr.setId(v.getId());
+                                    rr.setName(v.getName());
+                                    return rr;
+                                }).toList());
+                            }
                         }
-                    } else {
-                        // Unassigned roles
-                        if (!realmRoles.isEmpty()) {
-                            roleMappingResource.realmLevel().remove(realmRoles.stream().map(v -> {
-                                RoleRepresentation rr = new RoleRepresentation();
-                                rr.setId(v.getId());
-                                rr.setName(v.getName());
-                                return rr;
-                            }).toList());
-                        }
-                    }
-                });
+                    });
             return null;
         });
     }
@@ -769,12 +770,12 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     @Override
     public boolean isMasterRealmAdmin(String userId) {
         Optional<UserRepresentation> adminUser = getRealms(realmsResource ->
-            realmsResource.realm(MASTER_REALM)
-                .users()
-                .search(MASTER_REALM_ADMIN_USER, null, null))
-            .stream()
-            .filter(user -> user.getUsername().equals(MASTER_REALM_ADMIN_USER))
-            .findFirst();
+                realmsResource.realm(MASTER_REALM)
+                        .users()
+                        .search(MASTER_REALM_ADMIN_USER, null, null))
+                .stream()
+                .filter(user -> user.getUsername().equals(MASTER_REALM_ADMIN_USER))
+                .findFirst();
 
         if (adminUser.isEmpty()) {
             throw new IllegalStateException("Can't load master realm admin user");
@@ -796,10 +797,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     Realm realm = ManagerIdentityProvider.getRealmFromDb(persistenceService, name);
                     // Filter out built in roles
                     realm.setRealmRoles(
-                        realm.getRealmRoles()
-                                .stream()
-                                .filter(rr -> (MASTER_REALM.equals(name) && SUPER_USER_REALM_ROLE.equals(rr.getName())) || !isBuiltInRealmRole(rr.getName()))
-                                .collect(Collectors.toSet())
+                            realm.getRealmRoles()
+                                    .stream()
+                                    .filter(rr -> (MASTER_REALM.equals(name) && SUPER_USER_REALM_ROLE.equals(rr.getName())) || !isBuiltInRealmRole(rr.getName()))
+                                    .collect(Collectors.toSet())
                     );
                     return realm;
                 } catch (Exception ex) {
@@ -807,6 +808,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 }
                 return null;
             });
+        } catch (CacheLoader.InvalidCacheLoadException e) {
+            LOG.log(Level.INFO, "Failed to get realm by name: " + name, e);
+            return null;
         } catch (ExecutionException e) {
             throw new RuntimeException(e);
         }
@@ -956,21 +960,21 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
             // Delete gateway connections
             Query query = entityManager.createQuery("delete from " + GatewayConnection.class.getSimpleName() + " gc " +
-                "where gc.localRealm = ?1");
+                    "where gc.localRealm = ?1");
 
             query.setParameter(1, realmName);
             query.executeUpdate();
 
             // Delete provisioning configs
             query = entityManager.createQuery("delete from " + ProvisioningConfig.class.getSimpleName() + " pc " +
-                "where pc.realm = ?1");
+                    "where pc.realm = ?1");
 
             query.setParameter(1, realmName);
             query.executeUpdate();
 
             // Delete Rules
             query = entityManager.createQuery("delete from " + RealmRuleset.class.getSimpleName() + " rs " +
-                "where rs.realm = ?1");
+                    "where rs.realm = ?1");
             query.setParameter(1, realmName);
             query.executeUpdate();
 
@@ -1016,8 +1020,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     // TODO: Provide an implementation agnostic client
     public ClientRepresentation getClient(String realm, String client) {
         return getRealms(realmsResource ->
-            withClientResource(realm, client, realmsResource, (clientRepresentation, clientResource) ->
-                clientRepresentation, null));
+                withClientResource(realm, client, realmsResource, (clientRepresentation, clientResource) ->
+                        clientRepresentation, null));
     }
 
     // TODO: Provide an implementation agnostic client
@@ -1033,38 +1037,37 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         }
 
         return getRealms(realmsResource ->
-            withClientResource(realm, client.getClientId(), realmsResource, (clientRepresentation, clientResource) -> {
-                clientResource.update(client);
-                return client;
-            },
-        () -> {
-            ClientsResource clientsResource = realmsResource.realm(realm).clients();
-            Response response = clientsResource.create(client);
-            response.close();
-            if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
-                LOG.fine("Failed to create client response=" + response.getStatusInfo().getStatusCode() + ": " + client);
-                return null;
-            }
+                withClientResource(realm, client.getClientId(), realmsResource, (clientRepresentation, clientResource) -> {
+                            clientResource.update(client);
+                            return client;
+                        },
+                        () -> {
+                            ClientsResource clientsResource = realmsResource.realm(realm).clients();
+                            Response response = clientsResource.create(client);
+                            response.close();
+                            if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+                                LOG.fine("Failed to create client response=" + response.getStatusInfo().getStatusCode() + ": " + client);
+                                return null;
+                            }
 
-            ClientRepresentation newClient = clientsResource.findByClientId(client.getClientId()).getFirst();
-            ClientResource clientResource = clientsResource.get(newClient.getId());
-            addDefaultRoles(clientResource.roles());
-            return newClient;
-        }));
+                            ClientRepresentation newClient = clientsResource.findByClientId(client.getClientId()).getFirst();
+                            ClientResource clientResource = clientsResource.get(newClient.getId());
+                            addDefaultRoles(clientResource.roles());
+                            return newClient;
+                        }));
     }
 
     /**
      * Imports the identity provider configuration using the given import data. This simplifies configuring an OIDC or SAML
      * identity provider from which some of the configuration parameters can be imported from the identity provider itself.
      *
-     * @param realm the realm used for importing the identity provider configuration.
+     * @param realm      the realm used for importing the identity provider configuration.
      * @param importData contains the details required for importing the identity provider configuration.
-     *      E.g. the following values can be used:
-     *      <ul><li>{@code fromUrl}: The URL used for importing the configuration parameters</li>
-     *          <li>{@code providerId}: The identity provider ({@code oidc} or {@code saml}) to import the configuration for.</li></ul>
-     *
+     *                   E.g. the following values can be used:
+     *                   <ul><li>{@code fromUrl}: The URL used for importing the configuration parameters</li>
+     *                       <li>{@code providerId}: The identity provider ({@code oidc} or {@code saml}) to import the configuration for.</li></ul>
      * @return the imported configuration parameters which can be added to the {@link Map} provided to
-     *      {@link #createUpdateIdentityProvider(String, String, String, String, Map)} when creating or updating an identity provider.
+     * {@link #createUpdateIdentityProvider(String, String, String, String, Map)} when creating or updating an identity provider.
      */
     public Map<String, String> getIdentityProviderImportConfig(String realm, Map<String, Object> importData) {
         if (importData == null || importData.isEmpty()) {
@@ -1114,7 +1117,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             } else {
                 try (Response response = idpResource.addMapper(mapper)) {
                     if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
-                        throw new IllegalStateException("Failed to create identity provider mapper '" + mapperName +  "' response=" + response.getStatusInfo().getStatusCode() + ": " + response.getStatusInfo().getReasonPhrase());
+                        throw new IllegalStateException("Failed to create identity provider mapper '" + mapperName + "' response=" + response.getStatusInfo().getStatusCode() + ": " + response.getStatusInfo().getReasonPhrase());
                     }
                 }
             }
@@ -1148,7 +1151,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public void deleteClient(String realm, String clientId) {
 
         if (TextUtil.isNullOrEmpty(realm)
-            || TextUtil.isNullOrEmpty(clientId)) {
+                || TextUtil.isNullOrEmpty(clientId)) {
             throw new IllegalArgumentException("Invalid client credentials realm and client ID must be specified");
         }
 
@@ -1254,18 +1257,18 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
         String themeName = getString(container.getConfig(), realmRepresentation.getRealm().toUpperCase(Locale.ROOT) + REALM_KEYCLOAK_THEME_SUFFIX, getString(container.getConfig(), DEFAULT_REALM_KEYCLOAK_THEME, DEFAULT_REALM_KEYCLOAK_THEME_DEFAULT));
 
-        if(TextUtil.isNullOrEmpty(realmRepresentation.getLoginTheme())) {
+        if (TextUtil.isNullOrEmpty(realmRepresentation.getLoginTheme())) {
             realmRepresentation.setLoginTheme(themeName);
         }
-        if(TextUtil.isNullOrEmpty(realmRepresentation.getAccountTheme())) {
+        if (TextUtil.isNullOrEmpty(realmRepresentation.getAccountTheme())) {
             realmRepresentation.setAccountTheme(themeName);
         }
-        if(TextUtil.isNullOrEmpty(realmRepresentation.getEmailTheme())) {
+        if (TextUtil.isNullOrEmpty(realmRepresentation.getEmailTheme())) {
             realmRepresentation.setEmailTheme(themeName);
         }
 
         realmRepresentation.setDisplayNameHtml(
-            realmRepresentation.getDisplayName().replaceAll("[^A-Za-z0-9]", "")
+                realmRepresentation.getDisplayName().replaceAll("[^A-Za-z0-9]", "")
         );
         realmRepresentation.setSsoSessionIdleTimeout(sessionTimeoutSeconds);
         realmRepresentation.setSsoSessionMaxLifespan(sessionMaxSeconds);
@@ -1298,16 +1301,16 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         }
 
         if (container.isDevMode()) {
-                headers.computeIfPresent("contentSecurityPolicy", (hdrName, hdrValue) -> "frame-src *; frame-ancestors *; object-src 'none'");
+            headers.computeIfPresent("contentSecurityPolicy", (hdrName, hdrValue) -> "frame-src *; frame-ancestors *; object-src 'none'");
         } else {
             String allowedOriginsStr = String.join(" ", WebService.getAllowedOrigins(container));
             if (!TextUtil.isNullOrEmpty(allowedOriginsStr)) {
                 headers.compute("contentSecurityPolicy", (hdrName, hdrValue) ->
                         "frame-src 'self' " +
-                        allowedOriginsStr.replace(';', ' ') +
-                        "; frame-ancestors 'self' " +
-                        allowedOriginsStr.replace(';', ' ') +
-                        "; object-src 'none'");
+                                allowedOriginsStr.replace(';', ' ') +
+                                "; frame-ancestors 'self' " +
+                                allowedOriginsStr.replace(';', ' ') +
+                                "; object-src 'none'");
             }
         }
     }
@@ -1340,9 +1343,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 throw new IllegalStateException("Failed to add LDAP configuration");
             } else {
                 ComponentRepresentation newComponentRepresentation = realmResource.components()
-                    .query(componentRepresentation.getParentId(),
-                        componentRepresentation.getProviderType(),
-                        componentRepresentation.getName()).getFirst();
+                        .query(componentRepresentation.getParentId(),
+                                componentRepresentation.getProviderType(),
+                                componentRepresentation.getName()).getFirst();
                 syncUsers(newComponentRepresentation.getId(), realm, "triggerFullSync");
                 return newComponentRepresentation.getId();
             }
@@ -1359,9 +1362,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 throw new IllegalStateException("Failed to add LDAP mapper");
             } else {
                 ComponentRepresentation newComponentRepresentation = realmResource.components()
-                    .query(componentRepresentation.getParentId(),
-                        componentRepresentation.getProviderType(),
-                        componentRepresentation.getName()).getFirst();
+                        .query(componentRepresentation.getParentId(),
+                                componentRepresentation.getProviderType(),
+                                componentRepresentation.getName()).getFirst();
                 realmResource.userStorage().syncMapperData(newComponentRepresentation.getParentId(), newComponentRepresentation.getId(), "fedToKeycloak");
                 return newComponentRepresentation.getId();
             }
