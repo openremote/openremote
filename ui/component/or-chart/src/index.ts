@@ -1221,6 +1221,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     // Load Extended Data
                     if (extended) {
                         dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, stacked, false, area, faint, extended, asset.name + " " + label + " " + "lastKnown", options, unit);
+                        (dataset as any).yAxisIndex = shownOnRightAxis ? '1' : '0';
                         data.push(dataset);
                     }
 
