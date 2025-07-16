@@ -306,10 +306,10 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     static User getUserByUsernameFromDb(PersistenceService persistenceService, String realm, String username) {
         return persistenceService.doReturningTransaction(em -> {
             List<User> result =
-                    em.createQuery("select u from User u where u.realm = :realm and u.username = :username", User.class)
-                            .setParameter("realm", realm)
-                            .setParameter("username", username)
-                            .getResultList();
+                em.createQuery("select u from User u where u.realm = :realm and u.username = :username", User.class)
+                    .setParameter("realm", realm)
+                    .setParameter("username", username)
+                    .getResultList();
             return result.size() > 0 ? result.get(0) : null;
         });
     }
@@ -317,9 +317,9 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     static User getUserByIdFromDb(PersistenceService persistenceService, String userId) {
         return persistenceService.doReturningTransaction(em -> {
             List<User> result =
-                    em.createQuery("select u from User u where u.id = :userId", User.class)
-                            .setParameter("userId", userId)
-                            .getResultList();
+                em.createQuery("select u from User u where u.id = :userId", User.class)
+                    .setParameter("userId", userId)
+                    .getResultList();
             return result.size() > 0 ? result.get(0) : null;
         });
     }
@@ -329,17 +329,17 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
         return persistenceService.doReturningTransaction(em -> {
             Map<String, String> usernameIdMap = em.createQuery(
-                            "select u.username, u.id from User u join Realm r on r.id = u.realmId where u.username in :usernames and r.name = :realm", Tuple.class)
-                    .setParameter("usernames", CIUsernames)
-                    .setParameter("realm", realm)
-                    .getResultList()
-                    .stream()
-                    .collect(
-                            Collectors.toMap(
-                                    tuple -> (String) tuple.get(0),
-                                    tuple -> (String) tuple.get(1)
-                            )
-                    );
+                    "select u.username, u.id from User u join Realm r on r.id = u.realmId where u.username in :usernames and r.name = :realm", Tuple.class)
+                .setParameter("usernames", CIUsernames)
+                .setParameter("realm", realm)
+                .getResultList()
+                .stream()
+                .collect(
+                    Collectors.toMap(
+                        tuple -> (String) tuple.get(0),
+                        tuple -> (String) tuple.get(1)
+                    )
+                );
 
             return CIUsernames.stream().map(usernameIdMap::get).collect(Collectors.toList());
         });
@@ -349,10 +349,10 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     static Realm[] getRealmsFromDb(PersistenceService persistenceService) {
         return persistenceService.doReturningTransaction(entityManager -> {
             List<Realm> realms = (List<Realm>) entityManager.createNativeQuery(
-                    "select *, " +
+                "select *, " +
                     "(select ra.VALUE from PUBLIC.REALM_ATTRIBUTE ra where ra.REALM_ID = r.ID and ra.name = 'displayName') as displayName " +
                     "from public.realm r where r.not_before is null or r.not_before = 0 or r.not_before <= extract('epoch' from now())"
-                    , Realm.class).getResultList();
+                , Realm.class).getResultList();
 
             // Make sure the master realm is always on top
             realms.sort((o1, o2) -> {
@@ -369,9 +369,9 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     static Realm getRealmFromDb(PersistenceService persistenceService, String name) {
         return persistenceService.doReturningTransaction(em -> em
-                .createQuery("select r from Realm r where r.name = :realm", Realm.class)
-                .setParameter("realm", name)
-                .getSingleResult()
+            .createQuery("select r from Realm r where r.name = :realm", Realm.class)
+            .setParameter("realm", name)
+            .getSingleResult()
         );
     }
 
@@ -379,8 +379,8 @@ public interface ManagerIdentityProvider extends IdentityProvider {
         return persistenceService.doReturningTransaction(em -> {
 
             long count = (long) em.createNativeQuery(
-                    "select count(*) from public.realm r where r.name = :realm and r.enabled = true and (r.not_before is null or r.not_before = 0 or r.not_before <= extract('epoch' from now()))",
-                    Long.class).setParameter("realm", realm).getSingleResult();
+                "select count(*) from public.realm r where r.name = :realm and r.enabled = true and (r.not_before is null or r.not_before = 0 or r.not_before <= extract('epoch' from now()))",
+                Long.class).setParameter("realm", realm).getSingleResult();
 
             return count > 0;
         });

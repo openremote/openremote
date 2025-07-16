@@ -105,7 +105,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
         try {
             return identityService.getIdentityProvider().getUser(
-                    userId
+                userId
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -312,7 +312,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
         try {
             return identityService.getIdentityProvider().getUserRealmRoles(
-                    realm, userId
+                realm, userId
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -374,9 +374,9 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     public void updateClientRoles(RequestParams requestParams, String realm, Role[] roles, String clientId) {
         try {
             identityService.getIdentityProvider().updateClientRoles(
-                    realm,
-                    clientId,
-                    roles);
+                realm,
+                clientId,
+                roles);
         } catch (ClientErrorException ex) {
             ex.printStackTrace(System.out);
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());

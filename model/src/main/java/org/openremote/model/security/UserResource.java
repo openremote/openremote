@@ -132,7 +132,7 @@ public interface UserResource {
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @Operation(operationId = "resetPassword", summary = "Reset the password for a user in a realm")
     void resetUserPassword(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Credential credential);
-    
+
     @PUT
     @Path("reset-password")
     @Consumes(APPLICATION_JSON)
