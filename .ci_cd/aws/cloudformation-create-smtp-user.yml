@@ -9,7 +9,7 @@ Parameters:
   UserName:
     Description: User name for smtp user
     Type: String
-    #AllowedPattern: "^\S{4,}$"
+    # AllowedPattern: "^\S{4,}$"
 
 Resources:
   SMTPUser:
