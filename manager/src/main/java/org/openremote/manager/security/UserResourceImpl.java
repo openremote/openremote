@@ -293,7 +293,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
         try {
             return identityService.getIdentityProvider().getUserClientRoles(
-                    realm, userId, clientId
+                realm, userId, clientId
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -325,10 +325,10 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     public void updateUserClientRoles(@BeanParam RequestParams requestParams, String realm, String userId, String[] roles, String clientId) {
         try {
             identityService.getIdentityProvider().updateUserClientRoles(
-                    realm,
-                    userId,
-                    clientId,
-                    roles);
+                realm,
+                userId,
+                clientId,
+                roles);
         } catch (ClientErrorException ex) {
             ex.printStackTrace(System.out);
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -341,9 +341,9 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     public void updateUserRealmRoles(RequestParams requestParams, String realm, String userId, String[] roles) {
         try {
             identityService.getIdentityProvider().updateUserRealmRoles(
-                    realm,
-                    userId,
-                    roles);
+                realm,
+                userId,
+                roles);
         } catch (ClientErrorException ex) {
             ex.printStackTrace(System.out);
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -356,8 +356,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     public Role[] getClientRoles(RequestParams requestParams, String realm, String clientId) {
         try {
             return identityService.getIdentityProvider().getClientRoles(
-                    realm,
-                    clientId);
+                realm,
+                clientId);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -410,10 +410,10 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         }
 
         return mqttBrokerService.getUserConnections(userId).stream().map(connection -> new UserSession(
-                MQTTBrokerService.getConnectionIDString(connection),
-                connection.getSubject() != null ? KeycloakIdentityProvider.getSubjectName(connection.getSubject()) : userId,
-                connection.getCreationTime(),
-                connection.getRemoteAddress())).toArray(UserSession[]::new);
+            MQTTBrokerService.getConnectionIDString(connection),
+            connection.getSubject() != null ? KeycloakIdentityProvider.getSubjectName(connection.getSubject()) : userId,
+            connection.getCreationTime(),
+            connection.getRemoteAddress())).toArray(UserSession[]::new);
     }
 
     @Override
