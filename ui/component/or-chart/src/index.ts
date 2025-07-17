@@ -1062,47 +1062,6 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    // Currently not in use
-    //protected _deleteAttribute (index: number) {
-    //    const removed = this.assetAttributes.splice(index, 1)[0];
-    //    const assetIndex = removed[0];
-    //    this.assetAttributes = [...this.assetAttributes];
-    //    if (!this.assetAttributes.some(([index, attrRef]) => index === assetIndex)) {
-    //        // Asset no longer referenced
-    //        this.assets.splice(index, 1);
-    //        this.assetAttributes.forEach((indexRef) => {
-    //            if (indexRef[0] >= assetIndex) {
-    //                indexRef[0] -= 1;
-    //            }
-    //        });
-    //    }
-    //    this.saveSettings();
-    //}
-
-    // Currently not in use
-    //protected _getAttributeOptions(): [string, string][] | undefined {
-    //    if(!this.activeAsset || !this.activeAsset.attributes) {
-    //        return;
-    //    }
-    //
-    //    if(this.shadowRoot && this.shadowRoot.getElementById('chart-attribute-picker')) {
-    //        const elm = this.shadowRoot.getElementById('chart-attribute-picker') as HTMLInputElement;
-    //        elm.value = '';
-    //    }
-    //
-    //    const attributes = Object.values(this.activeAsset.attributes);
-    //    if (attributes && attributes.length > 0) {
-    //        return attributes
-    //            .filter((attribute) => attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) ? attribute.meta[WellknownMetaItems.STOREDATAPOINTS] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
-    //            .filter((attr) => (this.assetAttributes && !this.assetAttributes.some(([index, assetAttr]) => (assetAttr.name === attr.name) && this.assets[index].id === this.activeAsset!.id)))
-    //            .map((attr) => {
-    //                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.activeAsset!.type, attr.name, attr);
-    //                const label = Util.getAttributeLabel(attr, descriptors[0], this.activeAsset!.type, false);
-    //                return [attr.name!, label];
-    //            });
-    //    }
-    //}
-
     protected _getDefaultTimePrefixOptions(): string[] {
         return ["this", "last"];
     }
