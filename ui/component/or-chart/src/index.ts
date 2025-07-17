@@ -376,7 +376,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     public attributeConfig: ChartAttributeConfig = this._getDefaultAttributeConfig();
 
     @property()
-    public dataProvider?: (startOfPeriod: number, endOfPeriod: number) => Promise<[]>
+    public dataProvider?: (startOfPeriod: number, endOfPeriod: number) => Promise<LineChartData[]>
 
     @property({type: Array})
     public colors: string[] = OrChart.DEFAULT_COLORS;
@@ -533,6 +533,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         if (!this._chart) {
 
+            // Parse the background color from CSS variables
             let bgColor = this._style.getPropertyValue("--internal-or-chart-graph-fill-color").trim();
             const opacity = Number(this._style.getPropertyValue("--internal-or-chart-graph-fill-opacity").trim());
             if (!isNaN(opacity)) {
@@ -542,7 +543,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     bgColor = bgColor.substring(0, bgColor.length - 1) + opacity;
                 }
             }
-
+            // Define default EChart configration / options
             this.chartOptions = {
                 animation: false,
                 grid: {
@@ -564,7 +565,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     },
                     formatter: (params: any) => {
                         const xTime = params[0].axisValue as number;
-                        if (xTime != this._tooltipCache[0]) {
+                        if (xTime !== this._tooltipCache[0]) {
                             // use global var to store current time selection, avoiding replicate calculation loops
                             this._tooltipCache[0] = xTime;
                             this._tooltipCache[1] = this._getTooltipData(xTime);
@@ -593,7 +594,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                              minute: "{HH}:{mm}",
                              second: "{HH}:{mm}:{ss}",
                              millisecond: "{d}-{MMM} {HH}:{mm}",
-                            // @ts-ignore
                              none: "{MMM}-{dd} {HH}:{mm}"
                         }
                     }
@@ -609,7 +609,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                         axisLabel: { hideOverlap: true }
                     },
                     {
-                        type: 'value',
+                        type: "value",
                         show: (this.attributeConfig?.rightAxisAttributes?.length || 0) > 0,
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ["10%", "10%"],
@@ -621,7 +621,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 ],
                 dataZoom: [
                     {
-                        type: 'inside',
+                        type: "inside",
                         start: 0,
                         end: 100
                     }
@@ -660,7 +660,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     handleLabel: {
                         show: false
                     }
-                })
+                });
             }
 
             // Initialize echarts instance
@@ -675,7 +675,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._updateChartData();
         }
 
-        this.onCompleted().then(() => {
+        this.getUpdateComplete().then(() => {
             this.dispatchEvent(new OrChartEvent('rendered'));
         });
 
@@ -769,16 +769,22 @@ export class OrChart extends translate(i18next)(LitElement) {
                                         </div>
                                         <div style="text-align: center">
                                             <!-- Scroll left button -->
-                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._shiftTimeframe(this.timeframe ? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeframe ? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "previous")}"></or-icon>
+                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left"
+                                                     @click="${() => this._shiftTimeframe(this.timeframe?.[0] ?? new Date(this._startOfPeriod!), this.timeframe?.[1] ?? new Date(this._endOfPeriod!), this.timeWindowKey!, "previous")}"
+                                            ></or-icon>
                                             <!-- Scroll right button -->
-                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._shiftTimeframe(this.timeframe ? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeframe ? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "next")}"></or-icon>
+                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right"
+                                                     @click="${() => this._shiftTimeframe(this.timeframe?.[0] ?? new Date(this._startOfPeriod!), this.timeframe?.[1] ?? new Date(this._endOfPeriod!), this.timeWindowKey!, "next")}"
+                                            ></or-icon>
                                             <!-- Button that opens custom time selection or restores to widget setting-->
-                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="${this.timeframe ? 'restore' : 'calendar-clock'}" @click="${() => this.timeframe ? (this._isCustomWindow = false, this.timeframe = undefined)  : this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-icon>
+                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="${this.timeframe ? 'restore' : 'calendar-clock'}"
+                                                     @click="${() => this.timeframe ? (this._isCustomWindow = false, this.timeframe = undefined) : this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"
+                                            ></or-icon>
                                         </div>
                                     ` : html`
                                         <div style = "display: flex; flex-direction: column; align-items: center">
-                                        <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePrefixKey}" disabled></or-mwc-input>
-                                        <or-mwc-input .type="${InputType.BUTTON}" label="${this.timeWindowKey}" disabled></or-mwc-input>
+                                            <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePrefixKey}" disabled></or-mwc-input>
+                                            <or-mwc-input .type="${InputType.BUTTON}" label="${this.timeWindowKey}" disabled></or-mwc-input>
                                         </div>
                                     `}
                                 ` : undefined}
@@ -788,14 +794,14 @@ export class OrChart extends translate(i18next)(LitElement) {
                                     <table style="text-align: right;">
                                         <thead>
                                         <tr>
-                                            <th style="font-weight: normal; text-align: right;">${i18next.t('from')}:</th>
-                                            <th style="font-weight: normal; text-align: right;">${moment(this.timeframe[0]).format("lll")}</th>
+                                            <th style="font-weight: normal;">${i18next.t('from')}:</th>
+                                            <th style="font-weight: normal;">${moment(this.timeframe[0]).format("lll")}</th>
                                         </tr>
                                         </thead>
                                         <tbody>
                                         <tr>
-                                            <td style="text-align: right;">${i18next.t('to')}:</td>
-                                            <td style="text-align: right;">${moment(this.timeframe[1]).format("lll")}</td>
+                                            <td>${i18next.t('to')}:</td>
+                                            <td>${moment(this.timeframe[1]).format("lll")}</td>
                                         </tr>
                                         </tbody>
                                     </table>
@@ -819,9 +825,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset!.type, attr.name, attr);
                                     const label = Util.getAttributeLabel(attr, descriptors[0], asset!.type, true);
                                     const axisNote = (this.attributeConfig.rightAxisAttributes?.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
-                                    const bgColor = ( color ?? this.colors[colourIndex] ) || "";
+                                    const bgColor = (color ?? this.colors[colourIndex]) || "";
                                     return html`
-                                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseenter="${() => this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseleave="${()=> this.removeDatasetHighlight()}">
+                                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}"
+                                             @mouseenter="${() => this._addDatasetHighlight({id: this.assets[assetIndex]!.id, name: attr.name})}"
+                                             @mouseleave="${()=> this._removeDatasetHighlights()}">
                                             <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
                                             <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
                                                 <div style="display: flex; gap: 4px;">
@@ -861,9 +869,13 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    removeDatasetHighlight() {
-        if(this._chart){
-            let options = this._chart.getOption();
+    /**
+     * Removes all active Chart line color highlights, by reducing/increasing opacity.
+     * @protected
+     */
+    protected _removeDatasetHighlights(chart = this._chart) {
+        if(chart){
+            let options = chart.getOption();
             if (options.series && Array.isArray(options.series)) {
                 options.series.forEach(function (series) {
                     if (series.lineStyle.opacity == 0.2 || series.lineStyle.opacity == 0.99) {
@@ -873,29 +885,35 @@ export class OrChart extends translate(i18next)(LitElement) {
                     }
                 });
             }
-            this._chart.setOption(options);
+            chart.setOption(options);
         }
     }
 
-    addDatasetHighlight(assetId?:string, attrName?:string) {
-        if (this._chart) {
-            let options = this._chart.getOption();
+    /**
+     * Adds a Chart line color highlight, by reducing/increasing opacity.
+     * So the given line (represented by {@link assetId} and {@link attrName} will be emphasized, while others are less visible.
+     * @param attrRef - Asset ID and attribute name to be highlighted
+     * @param chart - ECharts instance to add the highlight to.
+     */
+    _addDatasetHighlight(attrRef: AttributeRef, chart = this._chart) {
+        if (chart) {
+            const options = chart.getOption();
             if (options.series && Array.isArray(options.series)) {
-                options.series.forEach(function (series) {
-                    if (series.assetId != assetId || series.attrName != attrName) {
-                        if (series.lineStyle.opacity == 0.31) { // 0.31 is faint setting, 1 is normal
+                options.series.forEach(series => {
+                    if (series.assetId !== attrRef.id || series.attrName !== attrRef.name) {
+                        if (series.lineStyle.opacity === 0.31) { // 0.31 is faint setting, 1 is normal
                             series.lineStyle.opacity = 0.2;
                         } else {
                             series.lineStyle.opacity = 0.3;
                         }
-                    } else if (series.lineStyle.opacity == 0.31) { // extra highlight if selected is faint
+                    } else if (series.lineStyle.opacity === 0.31) { // extra highlight if selected is faint
                         series.lineStyle.opacity = 0.99;
                     }
                 });
             }
-            this._chart.setOption(options)
+            chart.setOption(options);
         }
-    };
+    }
 
     async loadSettings(reset: boolean) {
 
@@ -1075,13 +1093,8 @@ export class OrChart extends translate(i18next)(LitElement) {
         });
     }
 
-    async onCompleted() {
-        await this.updateComplete;
-    }
-
     protected _cleanup() {
         if (this._chart) {
-            //('cleanup found _chart exists so disposing');
             this._toggleChartEventListeners(false);
             this._chart.dispose();
             this._chart = undefined;
@@ -1108,19 +1121,23 @@ export class OrChart extends translate(i18next)(LitElement) {
         ]);
     };
 
-    protected _getTimeSelectionDates(timePrefixSelected: string, timeWindowSelected: string): [Date, Date] {
+    /**
+     * Internal function for retrieving a start/end date, based on the selected time frame.
+     * Given the {@link selectedTimePrefix} (say 'last') and the {@link selectedTimeWindow} (say '6 hours'),
+     * it will return the respected JavaScript {@link Date} objects.
+     * @param selectedTimePrefix - Time prefix string, for example 'last'.
+     * @param selectedTimeWindow - Time window string, for example '6 hours'.
+     * @protected
+     */
+    protected _getTimeSelectionDates(selectedTimePrefix: string, selectedTimeWindow: string): [Date, Date] {
         let startDate = moment();
         let endDate = moment();
-
-        const timeWindow: [moment.unitOfTime.DurationConstructor, number] | undefined = this.timeWindowOptions!.get(timeWindowSelected);
-
+        const timeWindow: [moment.unitOfTime.DurationConstructor, number] | undefined = this.timeWindowOptions!.get(selectedTimeWindow);
         if (!timeWindow) {
-            throw new Error(`Unsupported time window selected: ${timeWindowSelected}`);
+            throw new Error(`Unsupported time window selected: ${selectedTimeWindow}`);
         }
-
         const [unit , value]: [moment.unitOfTime.DurationConstructor, number] = timeWindow;
-
-        switch (timePrefixSelected) {
+        switch (selectedTimePrefix) {
             case "this":
                 if (value == 1) { // For singulars like this hour
                     startDate = moment().startOf(unit);
@@ -1142,13 +1159,22 @@ export class OrChart extends translate(i18next)(LitElement) {
         return [startDate.toDate(), endDate.toDate()];
     }
 
-    protected _shiftTimeframe(currentStart: Date, currentEnd: Date, timeWindowSelected: string, direction: string) {
-        const timeWindow = this.timeWindowOptions!.get(timeWindowSelected);
-
+    /**
+     * Internal function for shifting a timeframe in a specific {@link direction}.
+     * Based on the given {@link currentStart} and {@link currentEnd} dates, it will move forward/backwards for the {@link selectedTimeWindow}.
+     * For example, when viewing '1 week' of data, and calling this function with the 'previous' direction, it will update {@link timeframe} with dates one week in advance.
+     *
+     * @param currentStart - Start date of the current viewport
+     * @param currentEnd - End date of the current viewport
+     * @param selectedTimeWindow - Time window to subtract/add from the viewport
+     * @param direction - Whether to advance or reverse the viewport (whether to add or remove time)
+     * @protected
+     */
+    protected _shiftTimeframe(currentStart: Date, currentEnd: Date, selectedTimeWindow: string, direction: "previous" | "next") {
+        const timeWindow = this.timeWindowOptions!.get(selectedTimeWindow);
         if (!timeWindow) {
-            throw new Error(`Unsupported time window selected: ${timeWindowSelected}`);
+            throw new Error(`Unsupported time window selected: ${selectedTimeWindow}`);
         }
-
         const [unit, value] = timeWindow;
         let newStart = moment(currentStart);
         direction === "previous" ? newStart.subtract(value, unit as moment.unitOfTime.DurationConstructor) : newStart.add(value, unit as moment.unitOfTime.DurationConstructor);
@@ -1184,8 +1210,8 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         try {
             if(this.dataProvider && !this._zoomChanged) {
-                await this.dataProvider(this._startOfPeriod, this._endOfPeriod).then((dataset) => {
-                    dataset.forEach((set) => { data.push(set); });
+                await this.dataProvider(this._startOfPeriod, this._endOfPeriod).then(dataset => {
+                    dataset.forEach(set => data.push(set));
                 });
             } else {
                 this._dataAbortController = new AbortController();
@@ -1218,7 +1244,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stacked, stepped, area, faint, false , asset.name + " " + label + " " + i18next.t("predicted"), options, unit);
                     data.push(dataset);
 
-                    // Load Extended Data
+                    // If necessary, load Extended Data
                     if (extended) {
                         dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, stacked, false, area, faint, extended, asset.name + " " + label + " " + "lastKnown", options, unit);
                         dataset.yAxisIndex = shownOnRightAxis ? 1 : 0;
@@ -1296,13 +1322,14 @@ export class OrChart extends translate(i18next)(LitElement) {
         if (asset.id && attribute.name && this.datapointQuery) {
             let response: GenericAxiosResponse<ValueDatapoint<any>[]>;
             const query = JSON.parse(JSON.stringify(this.datapointQuery)); // recreating object, since the changes shouldn't apply to parent components; only or-chart itself.
+
+            // If number of data points is set, only allow a maximum of 1 points per pixel in width
+            // Otherwise, dynamically set number of data points based on chart width (1000px = 200 data points)
             if(query.amountOfPoints) {
-                // If number of data points is set, only allow a maximum of 1 points per pixel in width
                 if(this._chartElem?.clientWidth > 0) {
                     query.amountOfPoints = Math.min(query.amountOfPoints, this._chartElem?.clientWidth);
                 }
             } else {
-                // Otherwise, dynamically set number of data points based on chart width (1000px = 200 data points)
                 if(this._chartElem?.clientWidth > 0) {
                     query.amountOfPoints = Math.round(this._chartElem.clientWidth / 5);
                 } else {
@@ -1310,6 +1337,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     query.amountOfPoints = 100;
                 }
             }
+            // Update start/end dates in DatapointQuery object
             if (!this._zoomChanged) {
                 query.fromTimestamp = this._startOfPeriod;
                 query.toTimestamp = this._endOfPeriod;
@@ -1318,17 +1346,17 @@ export class OrChart extends translate(i18next)(LitElement) {
                 query.toTimestamp = this._zoomEndOfPeriod;
             }
 
+            // Request data using HTTP
             if (predicted) {
                 response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(asset.id, attribute.name, query, options);
-            } else  {
-                    if (extended) {
-                        // if request is for extended dataset, we want to get the last known value only
-                        query.type = 'nearest';
-                        query.timestamp = new Date().toISOString()
-                    }
-
-                    response = await manager.rest.api.AssetDatapointResource.getDatapoints(asset.id, attribute.name, query, options);
+            } else {
+                if (extended) {
+                    // if request is for extended dataset, we want to get the last known value only
+                    query.type = 'nearest';
+                    query.timestamp = new Date().toISOString()
                 }
+                response = await manager.rest.api.AssetDatapointResource.getDatapoints(asset.id, attribute.name, query, options);
+            }
 
             let data: ValueDatapoint<any>[] = [];
 
@@ -1369,9 +1397,18 @@ export class OrChart extends translate(i18next)(LitElement) {
         return dataset;
     }
 
-    protected _onZoomChange(params: any) {
+    /**
+     * Callback event for the 'datazoom' event of ECharts.
+     * Whenever a user zooms in the chart, we update the start/end time, and refetch chart data.
+     * So, if user is zooming in from a year of data, to only view data of September, we refetch the data of September.
+     * This is also to improve data accuracy, since we're using the LTTB algorithm by default.
+     *
+     * @param event - Payload of the 'datazoom' event
+     * @protected
+     */
+    protected _onZoomChange(event: any) {
         this._zoomChanged = true;
-        const { start: zoomStartPercentage, end: zoomEndPercentage } = params.batch?.[0] ?? params; // Events triggered by scroll and zoombar return different structures
+        const { start: zoomStartPercentage, end: zoomEndPercentage } = event.batch?.[0] ?? event; // Events triggered by scroll and zoombar return different structures
 
         //Define the start and end of the period based on the zoomed area
         this._zoomStartOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomStartPercentage / 100);
@@ -1382,21 +1419,32 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     }
 
-    protected _updateChartData(){
-        this._chart!.setOption({
+    /**
+     * Updates the data in the chart. It will replace existing data.
+     * @param data - Time series data to insert
+     * @param start - Start timestamp
+     * @param end - End timestamp
+     * @protected
+     */
+    protected _updateChartData(data = this._data, start = this._startOfPeriod, end = this._endOfPeriod){
+        if(!this._chart) {
+            console.error("Could not update chart data; the chart is not initialized yet.");
+            return;
+        }
+        this._chart.setOption({
             xAxis: {
-                min: this._startOfPeriod,
-                max: this._endOfPeriod
+                min: start,
+                max: end
             },
-            series: this._data!.map(series => ({
+            series: data?.map(series => ({
                 ...series,
                 markLine: {
-                    symbol: 'none',
+                    symbol: "none",
                     silent: true,
-                    data: [{ name: '', xAxis: new Date().toISOString(), label: { formatter: '{b}' } }],
+                    data: [{ name: "", xAxis: new Date().toISOString(), label: { formatter: "{b}" } }],
                     lineStyle: {
                         color: this._style.getPropertyValue("--internal-or-chart-text-color"),
-                        type: 'solid',
+                        type: "solid",
                         width: 1,
                         opacity: 1
                     }
@@ -1405,6 +1453,13 @@ export class OrChart extends translate(i18next)(LitElement) {
         });
     }
 
+    /**
+     * Adds/removes the event listeners for the Chart element.
+     * For example, subscribing / unsubscribing from the element resize or zoom event.
+     *
+     * @param connect - Whether to connect or disconnect event listeners.
+     * @protected
+     */
     protected _toggleChartEventListeners(connect: boolean){
         if (connect) {
             // Add resize eventlisteners to make chart size responsive
@@ -1424,12 +1479,20 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    protected _getTooltipData(xTime:number) {
+    /**
+     * Internal function to retrieve a string for the time series data tooltip.
+     * Based on {@link timestamp}, it will retrieve data from the dataset, and display the correct value in a tooltip.
+     * It uses the format `{asset + attribute name}: {value} {unit}`. For example, "Light 1 brightness: 30 %"
+     *
+     * @param timestamp - Timestamp to use for generating the tooltip
+     * @protected
+     */
+    protected _getTooltipData(timestamp: number) {
         type DataPoint = { timestamp: number; value: number };
         type tooltipRow = {value: number; text: string};
         let tooltipArray: tooltipRow[] = [];
         this._data!.forEach((dataset, index) => {
-            const xTimeIsFuture: boolean = xTime > moment().toDate().getTime();
+            const xTimeIsFuture: boolean = timestamp > moment().toDate().getTime();
             // Load datasets to be shown. Show historic or predicted based on cursor location, dont show extended datasets.
             if (dataset.data && dataset.data.length > 0 && !dataset.extended && (dataset.predicted === xTimeIsFuture)) {
                 const name = dataset.name
@@ -1444,11 +1507,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                 while (left <= right) {
                     const mid = Math.floor((left + right) / 2);
                     const [timestamp, value] = dataset.data[mid] as [number, number];
-                    if (timestamp === xTime) {
+                    if (timestamp === timestamp) {
                         displayValue = value;
                         exactMatch = true;
                         break;
-                    } else if (timestamp < xTime) {
+                    } else if (timestamp < timestamp) {
                         pastDatapoint = {timestamp, value};
                         left = mid + 1;
                     } else {
@@ -1458,14 +1521,14 @@ export class OrChart extends translate(i18next)(LitElement) {
                 }
 
                 // Clear past/future if they are at dataset boundaries (ensuring they remain null if no valid data exists)
-                if (pastDatapoint && pastDatapoint.timestamp > xTime) pastDatapoint = null;
-                if (futureDatapoint && futureDatapoint.timestamp < xTime) futureDatapoint = null;
+                if (pastDatapoint && pastDatapoint.timestamp > timestamp) pastDatapoint = null;
+                if (futureDatapoint && futureDatapoint.timestamp < timestamp) futureDatapoint = null;
 
                 // Interpolate or show one of the closest datapoints.
                 if (!exactMatch) {
                     if (pastDatapoint && futureDatapoint && !dataset.step) {
                         // Interpolate between past and future datapoint if they exist, keep up to 2 decimals
-                        displayValue = parseFloat((pastDatapoint.value + ((xTime - pastDatapoint.timestamp) / (futureDatapoint.timestamp - pastDatapoint.timestamp)) * (futureDatapoint.value - pastDatapoint.value)).toFixed(2));
+                        displayValue = parseFloat((pastDatapoint.value + ((timestamp - pastDatapoint.timestamp) / (futureDatapoint.timestamp - pastDatapoint.timestamp)) * (futureDatapoint.value - pastDatapoint.value)).toFixed(2));
                     } else if (!pastDatapoint && futureDatapoint) {
                         //Show nearest future value if at start of dataset
                         displayValue = futureDatapoint.value
