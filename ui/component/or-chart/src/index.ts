@@ -18,7 +18,7 @@ import "@openremote/or-asset-tree";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {ECharts, EChartsOption, init, graphic} from "echarts";
+import {ECharts, EChartsOption, LineSeriesOption, DataZoomComponentOption, init, graphic} from "echarts";
 import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
@@ -91,6 +91,14 @@ export interface OrChartConfig {
     views: {[name: string]: {
         [panelName: string]: ChartViewConfig
     }};
+}
+
+export interface LineChartData extends LineSeriesOption {
+    assetId?: string;
+    attrName?: string;
+    unit?: string;
+    extended?: boolean;
+    predicted?: boolean;
 }
 
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
@@ -191,10 +199,6 @@ const style = css`
         display: flex;
         flex-direction: column;
         align-items: center;
-    }
-
-    .navigate {
-        flex-direction: column;
     }
     
 
@@ -350,9 +354,20 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Object})
     public assetAttributes: [number, Attribute<any>][] = [];
 
-    @property({type: Object})
+    /**
+     * The list of HEX colors representing the line color for each {@link AttributeRef}.
+     * Acts as an override, and will fall back to the {@link colors} attribute if not specified.
+     * The {@link AttributeRef} object with Asset ID and Attribute name need to be present in the Chart to work.
+     * The HEX color should be put in without '#' prefix. For example, you'd use '4d9d2a' instead of '#4d9d2a'.
+     */
+    @property({type: Array})
     public attributeColors: [AttributeRef, string][] = [];
 
+    /**
+     * Chart attribute configuration object, specifying characteristics for each Chart line.
+     * For example, what {@link AttributeRef} is aligned to the right side, or what {@link AttributeRef} is using a fill.
+     * Check for {@link ChartAttributeConfig} for specification. This HTML attribute expects JSON string input.
+     */
     @property({type: Object})
     public attributeConfig: ChartAttributeConfig = this._getDefaultAttributeConfig();
 
@@ -369,7 +384,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     public config?: OrChartConfig;
 
     @property({type: Object})
-    public chartOptions?: any
+    public chartOptions?: EChartsOption;
 
     @property({type: String})
     public realm?: string;
@@ -420,14 +435,13 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _zoomChanged: boolean = false;
 
     @property()
-    protected _data?: any[];
+    protected _data?: LineChartData[];
 
     @property()
     protected _tableTemplate?: TemplateResult;
 
     @query("#chart")
     protected _chartElem!: HTMLDivElement;
-    protected _chartOptions: EChartsOption = {};
     protected _chart?: ECharts;
     protected _style!: CSSStyleDeclaration;
     protected _startOfPeriod?: number;
@@ -502,7 +516,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 }
             }
 
-            this._chartOptions = {
+            this.chartOptions = {
                 animation: false,
                 grid: {
                     show: true,
@@ -563,8 +577,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ["10%", "10%"],
                         scale: true,
-                        min: this.chartOptions.options.scales.y.min,
-                        max: this.chartOptions.options.scales.y.max,
+                        min: (this.chartOptions?.options as any)?.scales?.y?.min,
+                        max: (this.chartOptions?.options as any)?.scales?.y?.max,
                         axisLabel: { hideOverlap: true }
                     },
                     {
@@ -573,8 +587,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ["10%", "10%"],
                         scale: true,
-                        min: this.chartOptions.options.scales.y1.min,
-                        max: this.chartOptions.options.scales.y1.max,
+                        min: (this.chartOptions?.options as any)?.scales?.y1?.min,
+                        max: (this.chartOptions?.options as any)?.scales?.y1?.max,
                         axisLabel: { hideOverlap: true }
                     }
                 ],
@@ -586,11 +600,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                     }
                 ],
                 series: [],
-            };
+            } as EChartsOption;
 
             // Add dataZoom bar if enabled
             if(this.showZoomBar) {
-                (this._chartOptions!.dataZoom! as any[]).push({
+                (this.chartOptions.dataZoom as DataZoomComponentOption[]).push({
                     start: 0,
                     end: 100,
                     backgroundColor: bgColor,
@@ -625,7 +639,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             // Initialize echarts instance
             this._chart = init(this._chartElem);
             // Set chart options to default
-            this._chart.setOption(this._chartOptions);
+            this._chart.setOption(this.chartOptions);
             this._toggleChartEventListeners(true);
         }
 
@@ -726,8 +740,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                                     true
                                             )}
                                         </div>
-                                        <div class="navigate" style = "text-align: center">
-                                            
+                                        <div style="text-align: center">
                                             <!-- Scroll left button -->
                                             <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._shiftTimeframe(this.timeframe ? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeframe ? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "previous")}"></or-icon>
                                             <!-- Scroll right button -->
@@ -1174,7 +1187,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         this._loading = true;
         const dates: [Date, Date] = this._getTimeSelectionDates(this.timePrefixKey!, this.timeWindowKey!);
-        const data: any = [];
+        const data: LineChartData[] = [];
         let promises;
 
         if(!this._zoomChanged || !this._startOfPeriod || !this._endOfPeriod) {
@@ -1209,10 +1222,10 @@ export class OrChart extends translate(i18next)(LitElement) {
 
                     // Load Historic Data
                     let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], false, smooth, stacked, stepped, area, faint, false, asset.name + " " + label, options, unit);
-                    (dataset as any).assetId = asset.id;
-                    (dataset as any).attrName = attribute.name;
-                    (dataset as any).unit = unit;
-                    (dataset as any).yAxisIndex = shownOnRightAxis ? '1' : '0';
+                    dataset.assetId = asset.id;
+                    dataset.attrName = attribute.name;
+                    dataset.unit = unit;
+                    dataset.yAxisIndex = shownOnRightAxis ? 1 : 0;
                     data.push(dataset);
 
                     // Load Predicted Data
@@ -1222,7 +1235,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     // Load Extended Data
                     if (extended) {
                         dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, stacked, false, area, faint, extended, asset.name + " " + label + " " + "lastKnown", options, unit);
-                        (dataset as any).yAxisIndex = shownOnRightAxis ? '1' : '0';
+                        dataset.yAxisIndex = shownOnRightAxis ? 1 : 0;
                         data.push(dataset);
                     }
 
@@ -1258,7 +1271,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string, predicted: boolean, smooth: boolean, stacked: boolean, stepped: boolean, area: boolean, faint: boolean, extended: boolean, label?: string, options?: any, unit?: any) {
+    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string, predicted: boolean, smooth: boolean, stacked: boolean, stepped: boolean, area: boolean, faint: boolean, extended: boolean, label?: string, options?: any, unit?: any): Promise<LineChartData> {
 
         function rgba (color: string, alpha: number) {
             return `rgba(${parseInt(color.slice(-6,-4), 16)}, ${parseInt(color.slice(-4,-2), 16)}, ${parseInt(color.slice(-2), 16)}, ${alpha})`;
@@ -1267,7 +1280,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         const dataset = {
             name: label,
             type: 'line',
-            data: [] as [any, any][],
+            data: [],
             sampling: 'lttb',
             lineStyle: {
                 color: color,
@@ -1291,8 +1304,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                         offset: 1,
                         color: rgba(color, 0)
                     }
-                ])} as any : undefined,
-        }
+                ])} : undefined,
+        } as LineChartData;
 
         if (asset.id && attribute.name && this.datapointQuery) {
             let response: GenericAxiosResponse<ValueDatapoint<any>[]>;
@@ -1342,25 +1355,27 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
 
             if (extended) {
-                if (dataset.data.length > 0) {
+                const firstPoint = dataset.data?.[0] as any[] | undefined;
+                if (firstPoint !== undefined) {
                     // Get the first datapoint's timestamp
-                    const firstPointTime = new Date(dataset.data[0][0]).getTime();
+                    const firstPointTime = new Date(firstPoint[0]).getTime();
 
                     // If the first point is earlier than startOfPeriod, use startOfPeriod as the starting timestamp
-                    const startTimestamp = firstPointTime < query.fromTimestamp! ?
-                        new Date(query.fromTimestamp!).toISOString() :
-                        dataset.data[0][0];
+                    const startTimestamp = firstPointTime < query.fromTimestamp!
+                        ? new Date(query.fromTimestamp!).toISOString()
+                        : firstPoint[0];
 
                     // Use endOfPeriod if it's earlier than now, otherwise use the current time
                     const now = new Date().getTime();
-                    const endTimestamp = query.toTimestamp! < now ?
-                        new Date(query.toTimestamp!).toISOString() :
-                        new Date().toISOString();
+                    const endTimestamp = query.toTimestamp! < now
+                        ? new Date(query.toTimestamp!).toISOString()
+                        : new Date().toISOString();
+
                     // Create a clean extended line by removing any existing points and adding just two points:
                     // One at the appropriate start time and one at the current time
                     dataset.data = [
-                        [startTimestamp, dataset.data[0][1]],
-                        [endTimestamp, dataset.data[0][1]]
+                        [startTimestamp, firstPoint[1]],
+                        [endTimestamp, firstPoint[1]]
                     ];
                 }
             }
@@ -1430,7 +1445,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         this._data!.forEach((dataset, index) => {
             const xTimeIsFuture: boolean = xTime > moment().toDate().getTime();
             // Load datasets to be shown. Show historic or predicted based on cursor location, dont show extended datasets.
-            if (dataset.data.length > 0 && !dataset.extended && (dataset.predicted === xTimeIsFuture)) {
+            if (dataset.data && dataset.data.length > 0 && !dataset.extended && (dataset.predicted === xTimeIsFuture)) {
                 const name = dataset.name
                 let left = 0;
                 let right = dataset.data.length - 1
@@ -1442,7 +1457,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 // Find closest past and future timestamps to given time
                 while (left <= right) {
                     const mid = Math.floor((left + right) / 2);
-                    const [timestamp, value] = dataset.data[mid];
+                    const [timestamp, value] = dataset.data[mid] as [number, number];
                     if (timestamp === xTime) {
                         displayValue = value;
                         exactMatch = true;
@@ -1476,7 +1491,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 if (displayValue) {
                     tooltipArray.push({
                         value: displayValue,
-                        text: `<div><span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color: ${dataset.lineStyle.color}"></span> ${name}: <b>${displayValue} ${dataset.unit}</b></div>`
+                        text: `<div><span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color: ${dataset.lineStyle?.color}"></span> ${name}: <b>${displayValue} ${dataset.unit}</b></div>`
                     })
                 }
             }
