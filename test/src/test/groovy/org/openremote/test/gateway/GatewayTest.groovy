@@ -2,6 +2,7 @@ package org.openremote.test.gateway
 
 
 import io.netty.channel.ChannelHandler
+import jakarta.ws.rs.ForbiddenException
 import org.apache.http.client.utils.URIBuilder
 import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.http.HTTPAgentLink
@@ -20,6 +21,7 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.model.Constants
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetEvent
+import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.AssetsEvent
 import org.openremote.model.asset.ReadAssetsEvent
 import org.openremote.model.asset.agent.ConnectionStatus
@@ -69,7 +71,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def assetProcessingService = container.getService(AssetProcessingService.class)
-        def executorService = container.getScheduledExecutor()
         def timerService = container.getService(TimerService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def agentService = container.getService(AgentService.class)
@@ -95,7 +96,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         and: "a set of credentials should have been created for this gateway and be stored against the gateway for easy reference"
         conditions.eventually {
             gateway = assetStorageService.find(gateway.getId(), true) as GatewayAsset
-            assert gateway.getAttribute("clientId").isPresent()
             assert !isNullOrEmpty(gateway.getClientId().orElse(""))
             assert !isNullOrEmpty(gateway.getClientSecret().orElse(""))
         }
@@ -105,6 +105,21 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert gatewayService.gatewayConnectorMap.size() == 1
             assert gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT)).gatewayId == gateway.getId()
         }
+
+        when: "the gateway service user credentials are used to try and access the asset resources"
+        def accessToken = authenticate(
+            container,
+            managerTestSetup.realmBuildingName,
+            gateway.getClientId().orElse(""),
+            gateway.getClientSecret().orElse("")
+        ).token
+        def assetResource = getClientApiTarget(serverUri(serverPort), managerTestSetup.realmBuildingName, accessToken).proxy(AssetResource.class)
+
+        and: "the realm assets are requested"
+        def realmAssets = assetResource.queryAssets(null, null)
+
+        then: "an exception should be thrown"
+        thrown(ForbiddenException.class)
 
         when: "the Gateway client is created"
         def gatewayClient = new GatewayIOClient(
