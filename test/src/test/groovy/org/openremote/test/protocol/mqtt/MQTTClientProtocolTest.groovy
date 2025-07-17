@@ -581,12 +581,12 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
         }
 
-        and: "there should be wildcard subscriptions"
+        and: "there should be wildcard topics"
         conditions.eventually {
             def protocol = (MQTTProtocol)agentService.getProtocolInstance(agent.id)
-            def client = protocol.@client
-            assert client.topicConsumerMap.containsKey(wildcardTopic1)
-            assert client.topicConsumerMap.containsKey(wildcardTopic2)
+            assert protocol.wildcardTopics.size() == 2
+            assert protocol.wildcardTopics.any {it.toString() == wildcardTopic1}
+            assert protocol.wildcardTopics.any {it.toString() == wildcardTopic2}
         }
 
         when: "an asset is created with attributes linked to the agent"
@@ -622,21 +622,19 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         and: "the asset is merged into the asset service"
         asset = assetStorageService.merge(asset)
 
-        then: "MQTT message consumers should have been created"
+        then: "there should be wildcard subscriptions and regular subscriptions"
         conditions.eventually {
-            asset = assetStorageService.find(asset.id, true)
             def protocol = (MQTTProtocol)agentService.getProtocolInstance(agent.id)
             def client = protocol.@client
-            def wildcardManager = protocol.@wildcardMessageManager
-            def wildcardTopicMap = wildcardManager.@topicConsumerMap
-            assert wildcardTopicMap.containsKey(temperatureTopic)
-            assert wildcardTopicMap.containsKey(humidityTopic)
-            assert wildcardTopicMap.containsKey(pressureTopic)
-            assert !wildcardTopicMap.containsKey(uvIndexTopic)
+            assert client.topicConsumerMap.containsKey(wildcardTopic1)
+            assert client.topicConsumerMap.containsKey(wildcardTopic2)
             assert client.topicConsumerMap.containsKey(uvIndexTopic)
-            assert !client.topicConsumerMap.containsKey(temperatureTopic)
-            assert !client.topicConsumerMap.containsKey(humidityTopic)
-            assert !client.topicConsumerMap.containsKey(pressureTopic)
+            assert protocol.wildcardTopicConsumerMap.size() == 2
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).size() == 2
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).containsKey(temperatureTopic)
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).containsKey(humidityTopic)
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).size() == 1
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).containsKey(pressureTopic)
         }
 
         when: "mqtt data is published"
