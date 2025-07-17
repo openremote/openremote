@@ -140,14 +140,14 @@ const styling = css`
 @customElement('attributes-panel')
 export class AttributesPanel extends LitElement {
 
-    @property()
-    protected attributeRefs: AttributeRef[] = [];
+    @property({type: Array})
+    public attributeRefs: AttributeRef[] = [];
 
-    @property()
-    protected multi: boolean = false;
+    @property({type: Boolean})
+    public multi = false;
 
-    @property()
-    protected onlyDataAttrs: boolean = false;
+    @property({type: Boolean})
+    public onlyDataAttrs = false;
 
     @property()
     protected attributeFilter?: (attribute: Attribute<any>) => boolean;

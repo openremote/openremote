@@ -11,7 +11,6 @@ import {Asset, AssetDescriptor, Attribute, AttributeRef} from "@openremote/model
 import {ChartWidgetConfig} from "../widgets/chart-widget";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {when} from "lit/directives/when.js";
-import {map} from "lit/directives/map.js";
 import moment from "moment/moment";
 import {ChartAttributeConfig, OrChart} from "@openremote/or-chart";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
@@ -22,13 +21,13 @@ const styling = css`
     align-items: center;
     justify-content: space-between;
   }
-`
+`;
 
 
 @customElement("chart-settings")
 export class ChartSettings extends WidgetSettings {
 
-    @query('attributes-chart-panel')
+    @query("attributes-chart-panel")
     protected _attributesPanelElem?: AttributesChartPanel;
 
     protected readonly widgetConfig!: ChartWidgetConfig;
@@ -87,47 +86,45 @@ export class ChartSettings extends WidgetSettings {
             return html`
                 <span>${asset.name}</span>
                 <span style="font-size:14px; color:grey;">${attributeLabel}</span>
-                ${when(strings.length > 0, () => html`
-                    <span style="font-size:14px; font-style:italic; color:grey;">${strings.join(', ')}</span>
-                `)}
+                ${when(strings.length > 0, () => html`<span style="font-size:14px; font-style:italic; color:grey;">${strings.join(", ")}</span>`)}
             `;
         };
         const attributeActionCallback = (attributeRef: AttributeRef): AttributeAction[] => {
             const isOnRightAxis = this.widgetConfig?.attributeConfig?.rightAxisAttributes?.find(a => a.id === attributeRef.id && a.name === attributeRef.name) !== undefined;
             return [
                 {
-                  icon: 'palette',
-                  tooltip: i18next.t('dashboard.lineColor'),
+                  icon: "palette",
+                  tooltip: i18next.t("dashboard.lineColor"),
                   disabled: false
                 },
                 {
-                    icon: 'chart-bell-curve-cumulative',
+                    icon: "chart-bell-curve-cumulative",
                     tooltip: i18next.t("dashboard.smooth"),
                     disabled: false
                 },
                 {
-                    icon: 'square-wave',
-                    tooltip: i18next.t('dashboard.stepped'),
+                    icon: "square-wave",
+                    tooltip: i18next.t("dashboard.stepped"),
                     disabled: false
                 },
                 {
-                    icon: 'chart-areaspline-variant',
-                    tooltip: i18next.t('dashboard.fill'),
+                    icon: "chart-areaspline-variant",
+                    tooltip: i18next.t("dashboard.fill"),
                     disabled: false
                 },
                 {
-                    icon: 'arrange-send-backward',
-                    tooltip: i18next.t('dashboard.faint'),
+                    icon: "arrange-send-backward",
+                    tooltip: i18next.t("dashboard.faint"),
                     disabled: false
                 },
                 {
                     icon: 'arrow-expand-right',
-                    tooltip: i18next.t('dashboard.extendData'),
+                    tooltip: i18next.t("dashboard.extendData"),
                     disabled: false
                 },
                 {
                     icon: isOnRightAxis ? "arrow-right-bold" : "arrow-left-bold",
-                    tooltip: i18next.t('dashboard.toggleAxis'),
+                    tooltip: i18next.t("dashboard.toggleAxis"),
                     disabled: false
                 }
             ];
@@ -143,8 +140,8 @@ export class ChartSettings extends WidgetSettings {
         return html`
             <div>
                 <!-- Attribute selection -->
-                <settings-panel displayName="attributes" expanded="${true}">
-                    <attributes-chart-panel .attributeRefs="${this.widgetConfig.attributeRefs}" multi="${true}" onlyDataAttrs="${true}" .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
+                <settings-panel displayName="attributes" expanded>
+                    <attributes-chart-panel .attributeRefs="${this.widgetConfig.attributeRefs}" multi onlyDataAttrs .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
                                       .attributeIconCallback="${attributeIconCallback}" .attributeLabelCallback="${attributeLabelCallback}" .attributeActionCallback="${attributeActionCallback}"
                                       @attribute-action="${(ev: AttributeActionEvent) => this.onAttributeAction(ev)}"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
@@ -152,7 +149,7 @@ export class ChartSettings extends WidgetSettings {
                 </settings-panel>
 
                 <!-- Time options -->
-                <settings-panel displayName="time" expanded="${true}">
+                <settings-panel displayName="time" expanded>
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
                         <!-- This/last selection of timeframe -->
                         <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('prefixDefault')}" style="width: 100%;"
@@ -167,7 +164,7 @@ export class ChartSettings extends WidgetSettings {
                     </div>  
                 </settings-panel>
                 <!-- Display options --> 
-                <settings-panel displayName="display" expanded="${false}">
+                <settings-panel displayName="display" expanded>
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
                         <div class="switch-container">
                             <span><or-translate value="dashboard.toggleStackView"></or-translate></span>
@@ -198,7 +195,7 @@ export class ChartSettings extends WidgetSettings {
                 </settings-panel>
 
                 <!-- Axis configuration -->
-                <settings-panel displayName="dashboard.axisConfig" expanded="${false}">
+                <settings-panel displayName="dashboard.axisConfig" expanded>
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 16px;">
 
                         <!-- Left axis configuration -->
@@ -270,7 +267,7 @@ export class ChartSettings extends WidgetSettings {
                                         ></or-mwc-input>
                                     </div>
                                 </div>
-                            `
+                            `;
                         })}
                     </div>
                 </settings-panel>
