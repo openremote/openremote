@@ -376,7 +376,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     public attributeConfig: ChartAttributeConfig = this._getDefaultAttributeConfig();
 
     @property()
-    public dataProvider?: (startOfPeriod: number, endOfPeriod: number) => Promise<LineChartData[]>
+    public dataProvider?: (startOfPeriod: number, endOfPeriod: number) => Promise<LineChartData[]>;
 
     @property({type: Array})
     public colors: string[] = OrChart.DEFAULT_COLORS;
@@ -396,14 +396,14 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property()
     public panelName?: string;
 
-    @property()
-    public attributeControls: boolean = true;
+    @property({type: Boolean})
+    public attributeControls = true;
 
     @property()
     public timeframe?: [Date, Date];
 
-    @property()
-    public timestampControls: boolean = true;
+    @property({type: Boolean})
+    public timestampControls = true;
 
     /**
      * List of 'time prefix' options like 'this' or 'last', for the user to select from.
@@ -444,17 +444,17 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Boolean})
     public stacked = false;
 
-    @property()
-    public showLegend: boolean = true;
+    @property({type: Boolean})
+    public showLegend = true;
 
-    @property()
-    public denseLegend: boolean = false;
+    @property({type: Boolean})
+    public denseLegend = false;
 
-    @property()
-    public showZoomBar: boolean = true;
+    @property({type: Boolean})
+    public showZoomBar = true;
 
     @state()
-    protected _loading: boolean = false;
+    protected _loading = false;
 
     @state()
     protected _data?: LineChartData[];
@@ -610,7 +610,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     },
                     {
                         type: "value",
-                        show: (this.attributeConfig?.rightAxisAttributes?.length || 0) > 0,
+                        show: (this.attributeConfig?.rightAxisAttributes?.length ?? 0) > 0,
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ["10%", "10%"],
                         scale: true,
@@ -626,7 +626,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                         end: 100
                     }
                 ],
-                series: [],
+                series: []
             } as EChartsOption;
 
             // Add dataZoom bar if enabled
@@ -643,7 +643,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     },
                     selectedDataBackground: {
                         areaStyle: {
-                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color"),
+                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
                         }
                     },
                     moveHandleStyle: {
@@ -676,7 +676,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         this.getUpdateComplete().then(() => {
-            this.dispatchEvent(new OrChartEvent('rendered'));
+            this.dispatchEvent(new OrChartEvent("rendered"));
         });
 
     }
@@ -685,30 +685,30 @@ export class OrChart extends translate(i18next)(LitElement) {
     // Also sorts the attribute lists horizontally when it is below the chart
     applyChartResponsiveness(): void {
         if(this.shadowRoot) {
-            const container = this.shadowRoot.getElementById('container');
+            const container = this.shadowRoot.getElementById("container");
             if(container) {
                 const bottomLegend: boolean = (container.clientWidth < 600);
-                container.style.flexDirection = bottomLegend ? 'column' : 'row';
-                const controls = this.shadowRoot.getElementById('controls');
+                container.style.flexDirection = bottomLegend ? "column" : "row";
+                const controls = this.shadowRoot.getElementById("controls");
                 if(controls) {
-                    controls.style.flexDirection = bottomLegend ? 'row' : 'column';
+                    controls.style.flexDirection = bottomLegend ? "row" : "column";
                 }
-                const periodControls = this.shadowRoot.getElementById('period-controls');
+                const periodControls = this.shadowRoot.getElementById("period-controls");
                 if(periodControls) {
-                    periodControls.style.flexDirection = bottomLegend ? 'row' : 'column';
+                    periodControls.style.flexDirection = bottomLegend ? "row" : "column";
                 }
-                const attributeList = this.shadowRoot.getElementById('attribute-list');
+                const attributeList = this.shadowRoot.getElementById("attribute-list");
                 if(attributeList) {
-                    attributeList.style.gap = bottomLegend ? '4px 12px' : '';
-                    attributeList.style.maxHeight = bottomLegend ? '90px' : '';
-                    attributeList.style.flexFlow = bottomLegend ? 'row wrap' : 'column nowrap';
-                    attributeList.style.padding = bottomLegend ? '0' : '5px 0';
+                    attributeList.style.gap = bottomLegend ? "4px 12px" : "";
+                    attributeList.style.maxHeight = bottomLegend ? "90px" : "";
+                    attributeList.style.flexFlow = bottomLegend ? "row wrap" : "column nowrap";
+                    attributeList.style.padding = bottomLegend ? "0" : "5px 0";
                 }
-                this.shadowRoot.querySelectorAll('.attribute-list-item').forEach((item: Element) => {
-                    (item as HTMLElement).style.minHeight = bottomLegend ? '0px' : '44px';
-                    (item as HTMLElement).style.paddingLeft = bottomLegend ? '' : '0';
-                    (item.children[1] as HTMLElement).style.flexDirection = bottomLegend ? 'row' : 'column';
-                    (item.children[1] as HTMLElement).style.gap = bottomLegend ? '4px' : '';
+                this.shadowRoot.querySelectorAll(".attribute-list-item").forEach((item: Element) => {
+                    (item as HTMLElement).style.minHeight = bottomLegend ? "0px" : "44px";
+                    (item as HTMLElement).style.paddingLeft = bottomLegend ? "" : "0";
+                    (item.children[1] as HTMLElement).style.flexDirection = bottomLegend ? "row" : "column";
+                    (item.children[1] as HTMLElement).style.gap = bottomLegend ? "4px" : "";
                 });
             }
         }
@@ -875,10 +875,10 @@ export class OrChart extends translate(i18next)(LitElement) {
      */
     protected _removeDatasetHighlights(chart = this._chart) {
         if(chart){
-            let options = chart.getOption();
+            const options = chart.getOption();
             if (options.series && Array.isArray(options.series)) {
                 options.series.forEach(function (series) {
-                    if (series.lineStyle.opacity == 0.2 || series.lineStyle.opacity == 0.99) {
+                    if (series.lineStyle.opacity === 0.2 || series.lineStyle.opacity === 0.99) {
                         series.lineStyle.opacity = 0.31;
                     } else {
                         series.lineStyle.opacity = 1;
@@ -917,7 +917,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     async loadSettings(reset: boolean) {
 
-        if(this.assetAttributes == undefined || reset) {
+        if(this.assetAttributes === undefined || reset) {
             this.assetAttributes = [];
         }
 
@@ -938,7 +938,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             manager.console.storeData("OrChartConfig", [allConfigs]);
         }
 
-        let config: OrChartConfig | undefined = allConfigs.find(e => e.realm === this.realm);
+        const config: OrChartConfig | undefined = allConfigs.find(e => e.realm === this.realm);
 
         if (!config) {
             return;
@@ -974,10 +974,11 @@ export class OrChart extends translate(i18next)(LitElement) {
             try {
                 const response = await manager.rest.api.AssetResource.queryAssets(query);
                 const assets = response.data || [];
-                view.attributeRefs = view.attributeRefs.filter((attrRef) => !!assets.find((asset) => asset.id === attrRef.id && asset.attributes && asset.attributes.hasOwnProperty(attrRef.name!)));
+                view.attributeRefs = view.attributeRefs.filter(attrRef =>
+                    !!assets.find(asset => asset.id === attrRef.id && asset.attributes && asset.attributes.hasOwnProperty(attrRef.name!)));
 
                 manager.console.storeData("OrChartConfig", [...allConfigs.filter(e => e.realm !== this.realm), config]);
-                this.assets = assets.filter((asset) => view.attributeRefs!.find((attrRef) => attrRef.id === asset.id));
+                this.assets = assets.filter(asset => view.attributeRefs!.find(attrRef => attrRef.id === asset.id));
             } catch (e) {
                 console.error("Failed to get assets requested in settings", e);
             }
@@ -985,11 +986,11 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._loading = false;
 
             if (this.assets && this.assets.length > 0) {
-                this.assetAttributes = view.attributeRefs.map((attrRef) => {
-                    const assetIndex = this.assets.findIndex((asset) => asset.id === attrRef.id);
+                this.assetAttributes = view.attributeRefs.map(attrRef => {
+                    const assetIndex = this.assets.findIndex(asset => asset.id === attrRef.id);
                     const asset = assetIndex >= 0 ? this.assets[assetIndex] : undefined;
                     return asset && asset.attributes ? [assetIndex!, asset.attributes[attrRef.name!]] : undefined;
-                }).filter((indexAndAttr) => !!indexAndAttr) as [number, Attribute<any>][];
+                }).filter(indexAndAttr => !!indexAndAttr) as [number, Attribute<any>][];
             }
         }
     }
@@ -1002,14 +1003,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         const viewSelector = window.location.hash;
         const allConfigs: OrChartConfig[] = await manager.console.retrieveData("OrChartConfig") || [];
         let config: OrChartConfig | undefined = allConfigs.find(e => e.realm === this.realm);
-
-        if (!config) {
-            config = {
-                realm: this.realm,
-                views: {
-                }
-            }
-        }
+        config ??= {realm: this.realm, views: {}};
 
         if (!config.views[viewSelector]) {
             config.views[viewSelector] = {};
@@ -1108,16 +1102,16 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     protected _getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
         return new Map<string, [moment.unitOfTime.DurationConstructor, number]>([
-            ["Hour", ['hours', 1]],
-            ["6Hours", ['hours', 6]],
-            ["24Hours", ['hours', 24]],
-            ["Day", ['days', 1]],
-            ["7Days", ['days', 7]],
-            ["Week", ['weeks', 1]],
-            ["30Days", ['days', 30]],
-            ["Month", ['months', 1]],
-            ["365Days", ['days', 365]],
-            ["Year", ['years', 1]]
+            ["Hour", ["hours", 1]],
+            ["6Hours", ["hours", 6]],
+            ["24Hours", ["hours", 24]],
+            ["Day", ["days", 1]],
+            ["7Days", ["days", 7]],
+            ["Week", ["weeks", 1]],
+            ["30Days", ["days", 30]],
+            ["Month", ["months", 1]],
+            ["365Days", ["days", 365]],
+            ["Year", ["years", 1]]
         ]);
     };
 
@@ -1139,7 +1133,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         const [unit , value]: [moment.unitOfTime.DurationConstructor, number] = timeWindow;
         switch (selectedTimePrefix) {
             case "this":
-                if (value == 1) { // For singulars like this hour
+                if (value === 1) { // For singulars like this hour
                     startDate = moment().startOf(unit);
                     endDate = moment().endOf(unit);
                 } else { // For multiples like this 5 min, put now in the middle
@@ -1149,7 +1143,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 break;
             case "last":
                 startDate = moment().subtract(value, unit).startOf(unit);
-                if (value == 1) { // For singulars like last hour
+                if (value === 1) { // For singulars like last hour
                     endDate = moment().startOf(unit);
                 } else { //For multiples like last 5 min
                     endDate = moment();
@@ -1233,7 +1227,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     const options = { signal: this._dataAbortController?.signal };
 
                     // Load Historic Data
-                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], false, smooth, stacked, stepped, area, faint, false, asset.name + " " + label, options, unit);
+                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], false, smooth, stacked, stepped, area, faint, false, `${asset.name} ${label}`, options, unit);
                     dataset.assetId = asset.id;
                     dataset.attrName = attribute.name;
                     dataset.unit = unit;
@@ -1241,12 +1235,12 @@ export class OrChart extends translate(i18next)(LitElement) {
                     data.push(dataset);
 
                     // Load Predicted Data
-                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stacked, stepped, area, faint, false , asset.name + " " + label + " " + i18next.t("predicted"), options, unit);
+                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stacked, stepped, area, faint, false , `${asset.name} ${label} ${i18next.t("predicted")}`, options, unit);
                     data.push(dataset);
 
                     // If necessary, load Extended Data
                     if (extended) {
-                        dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, stacked, false, area, faint, extended, asset.name + " " + label + " " + "lastKnown", options, unit);
+                        dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, stacked, false, area, faint, extended, `${asset.name} ${label} lastKnown`, options, unit);
                         dataset.yAxisIndex = shownOnRightAxis ? 1 : 0;
                         data.push(dataset);
                     }
@@ -1323,7 +1317,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             let response: GenericAxiosResponse<ValueDatapoint<any>[]>;
             const query = JSON.parse(JSON.stringify(this.datapointQuery)); // recreating object, since the changes shouldn't apply to parent components; only or-chart itself.
 
-            // If number of data points is set, only allow a maximum of 1 points per pixel in width
+            // If number of data points is set, only allow a maximum of 1 point per pixel in width
             // Otherwise, dynamically set number of data points based on chart width (1000px = 200 data points)
             if(query.amountOfPoints) {
                 if(this._chartElem?.clientWidth > 0) {
@@ -1352,8 +1346,8 @@ export class OrChart extends translate(i18next)(LitElement) {
             } else {
                 if (extended) {
                     // if request is for extended dataset, we want to get the last known value only
-                    query.type = 'nearest';
-                    query.timestamp = new Date().toISOString()
+                    query.type = "nearest";
+                    query.timestamp = new Date().toISOString();
                 }
                 response = await manager.rest.api.AssetDatapointResource.getDatapoints(asset.id, attribute.name, query, options);
             }
@@ -1363,7 +1357,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             if (response.status === 200) {
                 data = response.data
                     .filter(value => value.y !== null && value.y !== undefined)
-                    .map(point => ({ x: point.x, y: point.y } as ValueDatapoint<any>))
+                    .map(point => ({ x: point.x, y: point.y } as ValueDatapoint<any>));
 
                 dataset.data = data.map(point => [point.x, point.y]);
             }
@@ -1490,14 +1484,14 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _getTooltipData(timestamp: number) {
         type DataPoint = { timestamp: number; value: number };
         type tooltipRow = {value: number; text: string};
-        let tooltipArray: tooltipRow[] = [];
-        this._data!.forEach((dataset, index) => {
+        const tooltipArray: tooltipRow[] = [];
+        this._data?.forEach(dataset => {
             const xTimeIsFuture: boolean = timestamp > moment().toDate().getTime();
             // Load datasets to be shown. Show historic or predicted based on cursor location, dont show extended datasets.
             if (dataset.data && dataset.data.length > 0 && !dataset.extended && (dataset.predicted === xTimeIsFuture)) {
-                const name = dataset.name
+                const name = dataset.name;
                 let left = 0;
-                let right = dataset.data.length - 1
+                let right = dataset.data.length - 1;
                 let pastDatapoint: DataPoint | null = null;
                 let futureDatapoint: DataPoint | null = null;
                 let displayValue: number | null = null;
@@ -1531,20 +1525,20 @@ export class OrChart extends translate(i18next)(LitElement) {
                         displayValue = parseFloat((pastDatapoint.value + ((timestamp - pastDatapoint.timestamp) / (futureDatapoint.timestamp - pastDatapoint.timestamp)) * (futureDatapoint.value - pastDatapoint.value)).toFixed(2));
                     } else if (!pastDatapoint && futureDatapoint) {
                         //Show nearest future value if at start of dataset
-                        displayValue = futureDatapoint.value
+                        displayValue = futureDatapoint.value;
                     } else if (pastDatapoint && (!futureDatapoint || dataset.step == "end")) {
                         //Show nearest past value if: at end of dataset or the stepped setting is active
-                        displayValue = pastDatapoint.value
+                        displayValue = pastDatapoint.value;
                     }
                 }
                 if (displayValue) {
                     tooltipArray.push({
                         value: displayValue,
                         text: `<div><span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color: ${dataset.lineStyle?.color}"></span> ${name}: <b>${displayValue} ${dataset.unit}</b></div>`
-                    })
+                    });
                 }
             }
-        })
+        });
         // Sort by value for better readability
         tooltipArray.sort((a, b) => b.value - a.value);
         return tooltipArray.map(t => t.text).join('');
