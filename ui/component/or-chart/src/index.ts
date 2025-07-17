@@ -1475,18 +1475,18 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     /**
      * Internal function to retrieve a string for the time series data tooltip.
-     * Based on {@link timestamp}, it will retrieve data from the dataset, and display the correct value in a tooltip.
+     * Based on {@link xTime}, it will retrieve data from the dataset, and display the correct value in a tooltip.
      * It uses the format `{asset + attribute name}: {value} {unit}`. For example, "Light 1 brightness: 30 %"
      *
-     * @param timestamp - Timestamp to use for generating the tooltip
+     * @param xTime - Timestamp to use for generating the tooltip
      * @protected
      */
-    protected _getTooltipData(timestamp: number) {
+    protected _getTooltipData(xTime: number) {
         type DataPoint = { timestamp: number; value: number };
         type tooltipRow = {value: number; text: string};
         const tooltipArray: tooltipRow[] = [];
         this._data?.forEach(dataset => {
-            const xTimeIsFuture: boolean = timestamp > moment().toDate().getTime();
+            const xTimeIsFuture: boolean = xTime > moment().toDate().getTime();
             // Load datasets to be shown. Show historic or predicted based on cursor location, dont show extended datasets.
             if (dataset.data && dataset.data.length > 0 && !dataset.extended && (dataset.predicted === xTimeIsFuture)) {
                 const name = dataset.name;
@@ -1501,11 +1501,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                 while (left <= right) {
                     const mid = Math.floor((left + right) / 2);
                     const [timestamp, value] = dataset.data[mid] as [number, number];
-                    if (timestamp === timestamp) {
+                    if (timestamp === xTime) {
                         displayValue = value;
                         exactMatch = true;
                         break;
-                    } else if (timestamp < timestamp) {
+                    } else if (timestamp < xTime) {
                         pastDatapoint = {timestamp, value};
                         left = mid + 1;
                     } else {
@@ -1515,14 +1515,14 @@ export class OrChart extends translate(i18next)(LitElement) {
                 }
 
                 // Clear past/future if they are at dataset boundaries (ensuring they remain null if no valid data exists)
-                if (pastDatapoint && pastDatapoint.timestamp > timestamp) pastDatapoint = null;
-                if (futureDatapoint && futureDatapoint.timestamp < timestamp) futureDatapoint = null;
+                if (pastDatapoint && pastDatapoint.timestamp > xTime) pastDatapoint = null;
+                if (futureDatapoint && futureDatapoint.timestamp < xTime) futureDatapoint = null;
 
                 // Interpolate or show one of the closest datapoints.
                 if (!exactMatch) {
                     if (pastDatapoint && futureDatapoint && !dataset.step) {
                         // Interpolate between past and future datapoint if they exist, keep up to 2 decimals
-                        displayValue = parseFloat((pastDatapoint.value + ((timestamp - pastDatapoint.timestamp) / (futureDatapoint.timestamp - pastDatapoint.timestamp)) * (futureDatapoint.value - pastDatapoint.value)).toFixed(2));
+                        displayValue = parseFloat((pastDatapoint.value + ((xTime - pastDatapoint.timestamp) / (futureDatapoint.timestamp - pastDatapoint.timestamp)) * (futureDatapoint.value - pastDatapoint.value)).toFixed(2));
                     } else if (!pastDatapoint && futureDatapoint) {
                         //Show nearest future value if at start of dataset
                         displayValue = futureDatapoint.value;
