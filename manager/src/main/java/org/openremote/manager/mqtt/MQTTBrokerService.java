@@ -75,6 +75,7 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.UserAssetLink;
+import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.security.User;
 import org.openremote.model.util.Debouncer;
 import org.openremote.model.util.TextUtil;
