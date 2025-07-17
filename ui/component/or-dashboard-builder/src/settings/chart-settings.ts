@@ -14,6 +14,7 @@ import {when} from "lit/directives/when.js";
 import moment from "moment/moment";
 import {ChartAttributeConfig, OrChart} from "@openremote/or-chart";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
+import {Console} from "@openremote/core";
 
 const styling = css`
   .switch-container {
@@ -423,7 +424,12 @@ export class ChartSettings extends WidgetSettings {
     protected onTimePrefixSelect(ev: OrInputChangedEvent) {
         let oldValue = this.widgetConfig.defaultTimePresetKey;
         const newPrefix = ev.detail.value.toString();
-        this.timePrefixOptions.forEach(option => oldValue = oldValue.replace(option, ""));
+        const prefixOptions = this.timePrefixOptions;
+        if(!prefixOptions.find(o => oldValue.includes(o))) {
+            oldValue = Array.from(this.timeWindowOptions.keys())[0]; // Old value was invalid, so we replace it in full
+        } else {
+            prefixOptions.forEach(option => oldValue = oldValue.replace(option, ""));
+        }
         this.widgetConfig.defaultTimePresetKey = newPrefix + oldValue;
         console.debug(`Updated default time preset to ${this.widgetConfig.defaultTimePresetKey}`);
         this.notifyConfigUpdate();
@@ -433,7 +439,11 @@ export class ChartSettings extends WidgetSettings {
         let oldValue = this.widgetConfig.defaultTimePresetKey;
         const newWindow = ev.detail.value.toString();
         const windowOptions = Array.from(this.timeWindowOptions.keys()).sort((a, b) => b.length - a.length);
-        windowOptions.forEach(window => oldValue = oldValue.replace(window, ""));
+        if(!windowOptions.find(o => oldValue.includes(o))) {
+            oldValue = this.timePrefixOptions[0]; // Old value was invalid, so we replace it in full
+        } else {
+            windowOptions.forEach(window => oldValue = oldValue.replace(window, ""));
+        }
         this.widgetConfig.defaultTimePresetKey = oldValue + newWindow;
         console.debug(`Updated default time preset to ${this.widgetConfig.defaultTimePresetKey}`);
         this.notifyConfigUpdate();
