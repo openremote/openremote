@@ -172,4 +172,7 @@ EXPOSE 8080
 EXPOSE 1883
 
 HEALTHCHECK --interval=5s --timeout=60s --start-period=5s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
-ENTRYPOINT ["java", "-cp", "/opt/app/lib/*:/deployment/manager/extensions/*", "org.openremote.manager.Main"]
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
