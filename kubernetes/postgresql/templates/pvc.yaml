@@ -7,6 +7,6 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: {{ .Values.volumeSize }}
   volumeName: postgresql-data-pv
   storageClassName: manual
