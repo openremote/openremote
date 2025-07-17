@@ -50,10 +50,10 @@ function getDefaultSamplingOptions(): Map<string, string> {
 }
 
 function getDefaultWidgetConfig(): ChartWidgetConfig {
-    const preset = "24Hours";  // Default time preset, "last" prefix is hardcoded in startDate and endDate below.
-    const dateFunc = getDefaultTimeWindowOptions().get(preset);
-    const startDate = moment().subtract(dateFunc![1], dateFunc![0]).startOf(dateFunc![0]);
-    const endDate = dateFunc![1]== 1 ? moment().endOf(dateFunc![0]) : moment();
+    const defaultPrefix = getDefaultTimePrefixOptions()[0];
+    const [defaultWindowKey, defaultWindow] = Array.from(getDefaultTimeWindowOptions().entries())[0];
+    const startDate = moment().subtract(defaultWindow[1], defaultWindow[0]).startOf(defaultWindow[0]);
+    const endDate = defaultWindow[1] === 1 ? moment().endOf(defaultWindow[0]) : moment();
     return {
         attributeRefs: [],
         attributeColors: [],
@@ -77,7 +77,7 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
             }
         },
         showTimestampControls: false,
-        defaultTimePresetKey: getDefaultTimePrefixOptions()[0] + Array.from(getDefaultTimeWindowOptions().keys())[0],
+        defaultTimePresetKey: defaultPrefix + defaultWindowKey,
         showLegend: true,
         showZoomBar: false,
         stacked: false
@@ -86,7 +86,7 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
 
 /* --------------------------------------------------- */
 
-@customElement('chart-widget')
+@customElement("chart-widget")
 export class ChartWidget extends OrAssetWidget {
 
     @state()
