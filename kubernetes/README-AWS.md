@@ -160,11 +160,9 @@ helm install manager manager -f manager/values-haproxy-eks.yaml -f manager/value
   --set-string or.hostname=$FQDN
 ```
 
-This values file does three things:
+This values file does two things:
 - get the demo image from the private ECR
 - enable the demo setup
-- add an initial delay for the probes, given the setup code time to run (otherwise k8s kills the pod before setup code finishes)
-
 
 ## Current limitations / explorations to do
 
