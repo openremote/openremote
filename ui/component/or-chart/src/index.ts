@@ -1,5 +1,5 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+import {customElement, property, state, query} from "lit/decorators.js";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 import {
@@ -93,6 +93,10 @@ export interface OrChartConfig {
     }};
 }
 
+/**
+ * ECharts dataset object with additional optional fields for visualization purposes.
+ * For example, {@link assetId} and {@link attrName} can be specified, so their information can be shown alongside the data itself.
+ */
 export interface LineChartData extends LineSeriesOption {
     assetId?: string;
     attrName?: string;
@@ -401,21 +405,42 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property()
     public timestampControls: boolean = true;
 
-    @property()
-    protected timePrefixOptions?: string[];
+    /**
+     * List of 'time prefix' options like 'this' or 'last', for the user to select from.
+     * In combination with the {@link timeWindowOptions} attribute, it becomes a string like 'last 6 hours'.
+     * @protected
+     */
+    @property({type: Array})
+    public timePrefixOptions?: string[];
 
-    @property()
-    public timeWindowOptions?: Map<string, [moment.unitOfTime.DurationConstructor, number]>;
-
-    @property()
+    /**
+     * Selected 'time prefix' of the available {@link timePrefixOptions}.
+     * This string attribute will only accept keys of the {@link timeWindowOptions} Array.
+     */
+    @property({type: String})
     public timePrefixKey?: string;
 
-    @property()
+    /**
+     * List of timeframe options like '6 hours' for the user to select from.
+     * In combination with the {@link timePrefixKey} attribute, it becomes a string like 'last 6 hours'.
+     * Expects a JSON string input, that is formatted as an JavaScript {@link Map} object.
+     * The map is identified with a unique key, and a combination of `[duration, length]`.
+     * For example `['6hours', ['hours', 6]]`.
+     */
+    @property({type: Object})
+    public timeWindowOptions?: Map<string, [moment.unitOfTime.DurationConstructor, number]>;
+
+    /**
+     * Selected 'time window' of the available {@link timeWindowOptions}.
+     * This string attribute will only accept keys of the {@link timeWindowOptions} Map.
+     */
+    @property({type: String})
     public timeWindowKey?: string;
 
-    @property()
-    public isCustomWindow?: boolean = false;
-
+    /**
+     * Boolean attribute to enable/disable stacking the data vertically. (compound line chart)
+     * On the same axis, it will display a cumulative effect of all data series on top of each other.
+     */
     @property({type: Boolean})
     public stacked = false;
 
@@ -428,20 +453,24 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property()
     public showZoomBar: boolean = true;
 
-    @property()
+    @state()
     protected _loading: boolean = false;
 
-    @property()
-    protected _zoomChanged: boolean = false;
-
-    @property()
+    @state()
     protected _data?: LineChartData[];
 
     @property()
     protected _tableTemplate?: TemplateResult;
 
+    @state()
+    protected _zoomChanged = false;
+
+    @state()
+    protected _isCustomWindow = false;
+
     @query("#chart")
     protected _chartElem!: HTMLDivElement;
+
     protected _chart?: ECharts;
     protected _style!: CSSStyleDeclaration;
     protected _startOfPeriod?: number;
@@ -452,7 +481,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _dataAbortController?: AbortController;
     protected _zoomHandler?: any;
     protected _containerResizeObserver?: ResizeObserver;
-    protected _tooltipCache: [xTime: number, content: string] = [0,''];
+    protected _tooltipCache: [xTime: number, content: string] = [0, ""];
 
 
     constructor() {
@@ -468,7 +497,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     disconnectedCallback(): void {
         super.disconnectedCallback();
         this._cleanup();
-
     }
 
     firstUpdated() {
@@ -476,7 +504,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     updated(changedProperties: PropertyValues) {
-
         super.updated(changedProperties);
 
         if (changedProperties.has("realm")) {
@@ -727,7 +754,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                             )}
                                             <!-- Time window selection -->
                                             ${getContentWithMenuTemplate(
-                                                    html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.isCustomWindow ? "timeframe" : this.timeWindowKey.toLowerCase()}"></or-mwc-input>`,
+                                                    html`<or-mwc-input .type="${InputType.BUTTON}" label="${this._isCustomWindow ? "timeframe" : this.timeWindowKey.toLowerCase()}"></or-mwc-input>`,
                                                     Array.from(this.timeWindowOptions!.keys()).map(key => ({ value: key, text: key.toLowerCase() } as ListItem)),
                                                     this.timeWindowKey,
                                                     (value: string | string[]) => {
@@ -746,7 +773,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                             <!-- Scroll right button -->
                                             <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._shiftTimeframe(this.timeframe ? this.timeframe[0] : new Date(this._startOfPeriod!), this.timeframe ? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "next")}"></or-icon>
                                             <!-- Button that opens custom time selection or restores to widget setting-->
-                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="${this.timeframe ? 'restore' : 'calendar-clock'}" @click="${() => this.timeframe ? (this.isCustomWindow = false, this.timeframe = undefined)  : this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-icon>
+                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="${this.timeframe ? 'restore' : 'calendar-clock'}" @click="${() => this.timeframe ? (this._isCustomWindow = false, this.timeframe = undefined)  : this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-icon>
                                         </div>
                                     ` : html`
                                         <div style = "display: flex; flex-direction: column; align-items: center">
@@ -1013,7 +1040,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 content: "ok",
                 action: () => {
                     if(startRef.value?.value && endRef.value?.value) {
-                        this.isCustomWindow = true;
+                        this._isCustomWindow = true;
                         this.timeframe = [new Date(startRef.value.value), new Date(endRef.value.value)];
                     }
                 }
