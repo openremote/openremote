@@ -2,14 +2,18 @@ livenessProbe:
   httpGet:
     path: /
     port: 8080
-  initialDelaySeconds: 5
-  periodSeconds: 20
+  periodSeconds: 5
 readinessProbe:
   httpGet:
     path: /
     port: 8080
-  initialDelaySeconds: 5
-  periodSeconds: 20
+  periodSeconds: 5
+startupProbe:
+  httpGet:
+    path: /
+    port: 8080
+  failureThreshold: 30
+  periodSeconds: 5
 ingress:
   enabled: true
   hosts:
