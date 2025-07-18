@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig",
+  "compilerOptions": {
+    "outDir": "./lib",
+    "rootDir": "src",
+    "types": ["offscreencanvas"]
+  },
+  "include": [
+    "./src"
+  ],
+  "references": [
+    { "path": "../core" },
+    { "path": "../or-components" },
+    { "path": "../or-icon" },
+    { "path": "../or-asset-tree" },
+    { "path": "../or-mwc-components" },
+    { "path": "../or-attribute-picker" },
+    { "path": "../or-translate" }
+  ]
+}
