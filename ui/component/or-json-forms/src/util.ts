@@ -9,13 +9,14 @@ import {
     getData,
     getRenderers,
     getSchema,
+    getTranslator,
     hasShowRule,
     isVisible,
     JsonFormsRendererRegistryEntry,
     JsonFormsState,
     JsonFormsSubStates,
     JsonSchema,
-    JsonSchema4,
+    JsonSchema7,
     OwnPropsOfControl,
     OwnPropsOfRenderer,
     Resolve,
@@ -45,7 +46,7 @@ export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFo
     let template: TemplateResult | undefined;
 
     if (renderers && schema && uischema && state.core) {
-      const orderedRenderers: [JsonFormsRendererRegistryEntry, number][] = renderers.map(r => [r, r.tester(uischema, schema, { rootSchema: resolveSubSchemasRecursive(schema, state.core!.schema), config: state.config })] as [JsonFormsRendererRegistryEntry, number]).sort((a,b) => b[1] - a[1]);
+      const orderedRenderers: [JsonFormsRendererRegistryEntry, number][] = renderers.map(r => [r, r.tester(uischema, schema, { rootSchema: state.core!.schema, config: state.config })] as [JsonFormsRendererRegistryEntry, number]).sort((a,b) => b[1] - a[1]);
         const renderer = orderedRenderers && orderedRenderers.length > 0 ? orderedRenderers[0] : undefined;
         if (renderer && renderer[1] !== -1) {
             template = renderer[0].renderer(state, props) as TemplateResult;
@@ -60,6 +61,7 @@ export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFo
 export interface CombinatorInfo {
     title: string;
     description: string;
+    examples: string[];
     constProperty?: string;
     constValue?: any;
     defaultValueCreator: () => any;
@@ -69,20 +71,21 @@ export interface CombinatorInfo {
  * For a given anyOf schema array this will try and extract a common const property which can be used as a discriminator
  * when creating instances
  */
-export function getCombinatorInfos(schemas: JsonSchema[], rootSchema: JsonSchema): CombinatorInfo[] {
+export function getCombinatorInfos(schemas: JsonSchema7[], rootSchema: JsonSchema7, state?: JsonFormsState): CombinatorInfo[] {
 
     return schemas.map(schema => {
         let constProperty: string | undefined;
         let constValue: any | undefined;
         let creator: () => any;
-        const titleAndDescription = findSchemaTitleAndDescription(schema, rootSchema);
+        const titleAndDescription = findSchemaTitleAndDescription(schema, rootSchema, state);
+        const examples = findSchemaExamples(schema, rootSchema, state);
 
         if (schema.$ref) {
-            schema = Resolve.schema(schema, '', rootSchema);
+            schema = Resolve.schema(schema, '', rootSchema) as JsonSchema7;
         }
 
         if (Array.isArray(schema.allOf)) {
-            schema = Resolve.schema(schema, "allOf", rootSchema);
+            schema = Resolve.schema(schema, "allOf", rootSchema) as JsonSchema7;
         }
 
         if (deriveTypes(schema).every(type => type === "object")) {
@@ -112,6 +115,7 @@ export function getCombinatorInfos(schemas: JsonSchema[], rootSchema: JsonSchema
         return {
             title: titleAndDescription[0],
             description: titleAndDescription[1],
+            examples,
             defaultValueCreator: creator,
             constProperty: constProperty,
             constValue: constValue
@@ -119,7 +123,7 @@ export function getCombinatorInfos(schemas: JsonSchema[], rootSchema: JsonSchema
     });
 }
 
-export function getSchemaConst(schema: JsonSchema): any {
+export function getSchemaConst(schema: JsonSchema7): any {
     if (!schema) {
         return;
     }
@@ -133,7 +137,7 @@ export function getSchemaConst(schema: JsonSchema): any {
     }
 }
 
-export function getSchemaPicker(rootSchema: JsonSchema, resolvedSchema: JsonSchema, path: string, keyword: "anyOf" | "oneOf", label: string, selectedCallback: (selectedSchema: CombinatorInfo) => void): TemplateResult {
+export function getSchemaPicker(rootSchema: JsonSchema7, resolvedSchema: JsonSchema7, path: string, keyword: "anyOf" | "oneOf", label: string, selectedCallback: (selectedSchema: CombinatorInfo) => void): TemplateResult {
     const combinatorInfos = getCombinatorInfos(resolvedSchema[keyword]!, rootSchema);
     const options: [string, string][] = combinatorInfos.map((combinatorInfo, index) => [index+"", combinatorInfo.title || i18next.t("schema.title.indexedItem", {index: index})]);
     const pickerUpdater = (index: number) => {
@@ -146,13 +150,34 @@ export function getSchemaPicker(rootSchema: JsonSchema, resolvedSchema: JsonSche
     `;
 }
 
-// TODO: use i18n translations from jsonforms/core
-export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: JsonSchema): [string | undefined, string | undefined] {
+export function findSchemaExamples(schema: JsonSchema7, rootSchema: JsonSchema7, state?: JsonFormsState): string[] {
     let title: string | undefined;
 
     if (schema.$ref) {
+        schema = Resolve.schema(schema, '', rootSchema) as JsonSchema7;
+    }
+
+    if (schema.examples) {
+      return schema.examples
+    }
+    return []
+}
+
+export function findSchemaTitleAndDescription(schema: JsonSchema7, rootSchema: JsonSchema7, state?: JsonFormsState): [string | undefined, string | undefined] {
+    let title: string | undefined;
+
+    const ref = Boolean(schema.$ref)
+    if (schema.$ref) {
         title = getLabelFromScopeOrRef(schema.$ref);
-        schema = Resolve.schema(schema, '', rootSchema);
+        schema = Resolve.schema(schema, '', rootSchema) as JsonSchema7;
+    }
+
+    if (state && title) {
+      const t = getTranslator()(state);
+      if (ref) {
+        return [t("definitions." + title + ".label"), t("definitions." + title + ".description")];
+      }
+      return [t(title + ".label"), t(title + ".description")];
     }
 
     if (schema.title) {
@@ -161,7 +186,7 @@ export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: Js
 
     if (schema.allOf) {
         const resolvedSchema = Resolve.schema(schema, "allOf", rootSchema);
-        const titledSchema = (resolvedSchema.allOf! as JsonSchema[]).find((allOfSchema) => {
+        const titledSchema = resolvedSchema.allOf!.find((allOfSchema) => {
             return !!allOfSchema.title;
         });
         if (titledSchema) {
@@ -176,8 +201,8 @@ function getLabelFromScopeOrRef(scopeOrRef: string) {
     return scopeOrRef.substr(scopeOrRef.lastIndexOf("/")+1);
 }
 
-function getSchemaObjectProperties(schema: JsonSchema): [string, JsonSchema][] {
-    let props: [string, JsonSchema][] = [];
+function getSchemaObjectProperties(schema: JsonSchema7): [string, JsonSchema7][] {
+    let props: [string, JsonSchema7][] = [];
 
     if (schema.allOf) {
         props = schema.allOf.map(schema => schema.properties ? Object.entries(schema.properties) : []).flat();
@@ -215,7 +240,7 @@ export function mapStateToCombinatorRendererProps(
 
     const ajv = state.jsonforms.core!.ajv!;
     const schema = resolvedSchema || rootSchema;
-    const _schema = Resolve.schema(schema, keyword, rootSchema) as JsonSchema[];
+    const _schema = Resolve.schema(schema, keyword, rootSchema) as JsonSchema7[];
 
     const structuralKeywords = [
         'required',
@@ -265,7 +290,17 @@ export function mapStateToCombinatorRendererProps(
     };
 }
 
-export function getLabel(schema: JsonSchema, rootSchema: JsonSchema, uiElementLabel?: string, uiElementScope?: string): string | undefined {
+export interface EnumOption {
+    label: string,
+    description: string,
+    value: any,
+}
+
+export interface OwnPropsOfEnum {
+    options?: EnumOption[];
+}
+
+export function getLabel(schema: JsonSchema7, rootSchema: JsonSchema7, uiElementLabel?: string, uiElementScope?: string): string | undefined {
     if (uiElementLabel) {
         return uiElementLabel;
     }
@@ -284,18 +319,18 @@ export function getLabel(schema: JsonSchema, rootSchema: JsonSchema, uiElementLa
 }
 
 export function resolveSubSchemasRecursive(
-    schema: JsonSchema,
-    rootSchema: JsonSchema,
+    schema: JsonSchema7,
+    rootSchema: JsonSchema7,
     keyword?: CombinatorKeyword
-): JsonSchema {
+): JsonSchema7 {
     const combinators: string[] = keyword ? [keyword] : ["allOf", "anyOf", "oneOf"];
 
     if (schema.$ref) {
-        return resolveSubSchemasRecursive(Resolve.schema(rootSchema, schema.$ref, rootSchema), rootSchema);
+        return resolveSubSchemasRecursive(Resolve.schema(rootSchema, schema.$ref, rootSchema) as JsonSchema7, rootSchema);
     }
 
     combinators.forEach((combinator) => {
-        const schemas = (schema as any)[combinator] as JsonSchema[];
+        const schemas = (schema as any)[combinator] as JsonSchema7[];
 
         if (schemas) {
             (schema as any)[combinator] = schemas.map(subSchema =>
@@ -306,9 +341,9 @@ export function resolveSubSchemasRecursive(
 
     if (schema.items) {
         if (Array.isArray(schema.items)) {
-            schema.items = (schema.items as JsonSchema4[]).map((itemSchema) => resolveSubSchemasRecursive(itemSchema, rootSchema) as JsonSchema4);
+            schema.items = schema.items.map((itemSchema) => resolveSubSchemasRecursive(itemSchema, rootSchema));
         } else {
-            schema.items = resolveSubSchemasRecursive(schema.items as JsonSchema, rootSchema);
+            schema.items = resolveSubSchemasRecursive(schema.items, rootSchema);
         }
     }
 

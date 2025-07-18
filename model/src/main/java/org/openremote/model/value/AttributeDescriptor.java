@@ -112,7 +112,7 @@ public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T>
         return newDescriptor;
     }
 
-    public AttributeDescriptor<T> withUnits(String...units) {
+    public AttributeDescriptor<T> withUnits(Units...units) {
         AttributeDescriptor<T> newDescriptor = new AttributeDescriptor<>(name, type, meta);
         newDescriptor.format = format;
         newDescriptor.constraints = constraints;

@@ -25,13 +25,12 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.Units;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
 import java.util.Collection;
 import java.util.Optional;
-
-import static org.openremote.model.Constants.*;
 
 @Entity
 public class ElectricVehicleFleetGroupAsset extends GroupAsset {
@@ -43,7 +42,7 @@ public class ElectricVehicleFleetGroupAsset extends GroupAsset {
     public static final AttributeDescriptor<Integer> POWER_EXPORT_MAX = new AttributeDescriptor<>("powerExportMax", ValueType.POSITIVE_INTEGER);
 
     public static final AttributeDescriptor<Integer> MILEAGE_MINIMUM = new AttributeDescriptor<>("mileageMinimum", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_KILO, UNITS_METRE);
+        .withUnits(Units.KILO, Units.METRE);
 
     public static final AssetDescriptor<ElectricVehicleFleetGroupAsset> DESCRIPTOR = new AssetDescriptor<>("car-multiple", "49B0D8", ElectricVehicleFleetGroupAsset.class);
 
