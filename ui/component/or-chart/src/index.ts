@@ -1285,20 +1285,21 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         const dataset = {
             name: label,
-            type: 'line',
+            type: "line",
             data: [],
-            sampling: 'lttb',
+            sampling: "lttb",
             lineStyle: {
                 color: color,
                 type: predicted ? [2, 4] : extended ? [10, 2] : undefined,
                 opacity: faint ? 0.31 : 1,
             },
+            symbol: "circle",
             itemStyle: {
                 color: color
             },
-            stack: stacked ? 'total' : undefined,
+            stack: stacked ? "total" : undefined,
             smooth: smooth,
-            step: stepped ? 'end' : undefined,
+            step: stepped ? "end" : undefined,
             extended: extended,
             predicted: predicted,
             areaStyle: area ? {color: new graphic.LinearGradient(0, 0, 0, 1, [
