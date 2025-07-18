@@ -754,7 +754,7 @@
     "deletePermanentWarning": "Dit zal {{dashboard}} permanent verwijderen.",
     "deleteWidgetWarning": "De widget zal worden weggehaald van het bord, en zal permanent worden verwijderd als u opslaat.",
     "widgetTooSmall": "Widget is te klein.",
-    "toggleStackView": "Opgestapelde grafiek",
+    "toggleStackView": "Gestapelde grafiek",
     "allowTimerangeSelect": "Sta tijdselectie toe",
     "toggleAxis": "As wisselen",
     "showLegend": "Toon legenda",

@@ -7,7 +7,7 @@ import {i18next} from "@openremote/or-translate";
 import {debounce} from "lodash";
 import {AttributesChartPanel} from "../panels/attributes-chart-panel";
 import {AttributeAction, AttributeActionEvent, AttributesSelectEvent} from "../panels/attributes-panel";
-import {Asset, AssetDescriptor, Attribute, AttributeRef} from "@openremote/model";
+import {Asset, AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, AssetDescriptor, Attribute, AttributeRef} from "@openremote/model";
 import {ChartWidgetConfig} from "../widgets/chart-widget";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {when} from "lit/directives/when.js";
@@ -60,7 +60,6 @@ export class ChartSettings extends WidgetSettings {
         const min = this.widgetConfig.chartOptions.options?.scales?.y?.min;
         const max = this.widgetConfig.chartOptions.options?.scales?.y?.max;
         const isMultiAxis = (attrConfig?.rightAxisAttributes?.length || 0) > 0;
-        const samplingValue = Array.from(this.samplingOptions.entries()).find((entry => entry[1] === this.widgetConfig.datapointQuery.type))![0];
 
         const attributeIconCallback = (asset: Asset, attribute: Attribute<any>, descriptor?: AssetDescriptor) => {
             let color = this.widgetConfig.attributeColors?.find(a => a[0].id === asset.id && a[0].name === attribute.name)?.[1]?.replace('#', '');
@@ -274,28 +273,41 @@ export class ChartSettings extends WidgetSettings {
                 </settings-panel>
 
                 <!-- Data sampling options -->
-                ${when(Array.from(this.samplingOptions.keys()).length > 1, () => html`
-                    <settings-panel displayName="dataSampling" expanded="${false}">
-                        <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 12px;">
-                            <div>
-                                <or-mwc-input .type="${InputType.SELECT}" style="width: 100%" .options="${Array.from(this.samplingOptions.keys())}" .value="${samplingValue}" disabled=${true}
-                                              label="${i18next.t('algorithm')}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onSamplingQueryChange(ev)}"
-                                ></or-mwc-input>
+                ${when(Array.from(this.samplingOptions?.keys()).length > 1, () => {
+                    const samplingOptions = Array.from(this.samplingOptions.entries());
+                    const samplingValue = samplingOptions?.find((entry => entry[1] === this.widgetConfig.datapointQuery.type))?.[0] ?? samplingOptions[0];
+                    return html`
+                        <settings-panel displayName="dataSampling" expanded="${false}">
+                            <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 12px;">
+                                <div>
+                                    <or-mwc-input .type="${InputType.SELECT}" style="width: 100%" .options="${Array.from(this.samplingOptions.keys())}" .value="${samplingValue}"
+                                                  label="${i18next.t('algorithm')}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onSamplingQueryChange(ev)}"
+                                    ></or-mwc-input>
+                                </div>
+                                <div>
+                                    ${this.getSamplingOptionsTemplate(this.widgetConfig.datapointQuery.type)}
+                                </div>
                             </div>
-                            <div>
-                                ${this.getSamplingOptionsTemplate(this.widgetConfig.datapointQuery.type)}
-                            </div>
-                        </div>
-                    </settings-panel>
-                `)}
+                        </settings-panel>
+                    `;
+                })}
             </div>
         `;
     }
 
-    protected getSamplingOptionsTemplate(type: any): TemplateResult {
+    protected getSamplingOptionsTemplate(type: string): TemplateResult {
         switch (type) {
-            case 'lttb': {
-                return html``;
+            case "interval": {
+                const intervalQuery = this.widgetConfig.datapointQuery as AssetDatapointIntervalQuery;
+                const formulaOptions = [AssetDatapointIntervalQueryFormula.AVG, AssetDatapointIntervalQueryFormula.MIN, AssetDatapointIntervalQueryFormula.MAX];
+                return html`
+                    <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${formulaOptions}"
+                                  .value="${intervalQuery.formula}" label="${i18next.t("algorithmMethod")}" @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                      intervalQuery.formula = event.detail.value;
+                                      this.notifyConfigUpdate();
+                                  }}"
+                    ></or-mwc-input>
+                `;
             }
             default:
                 return html``;

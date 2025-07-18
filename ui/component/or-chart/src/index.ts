@@ -9,7 +9,7 @@ import {
     AssetModelUtil,
     AssetQuery,
     Attribute,
-    AttributeRef,
+    AttributeRef, DatapointInterval,
     ReadAssetEvent,
     ValueDatapoint
 } from "@openremote/model";
@@ -1177,6 +1177,27 @@ export class OrChart extends translate(i18next)(LitElement) {
         this.timeframe = [newStart.toDate(), newEnd.toDate()];
     }
 
+    protected _getInterval(diffInHours: number): [number, DatapointInterval] {
+
+        if (diffInHours <= 1) {
+            return [5, DatapointInterval.MINUTE];
+        } else if (diffInHours <= 3) {
+            return [10, DatapointInterval.MINUTE];
+        } else if (diffInHours <= 6) {
+            return [30, DatapointInterval.MINUTE];
+        } else if (diffInHours <= 24) { // one day
+            return [1, DatapointInterval.HOUR];
+        } else if (diffInHours <= 48) { // two days
+            return [3, DatapointInterval.HOUR];
+        } else if (diffInHours <= 96) {
+            return [12, DatapointInterval.HOUR];
+        } else if (diffInHours <= 744) { // one month
+            return [1, DatapointInterval.DAY];
+        } else {
+            return [1, DatapointInterval.MONTH];
+        }
+    }
+
     protected async _loadData() {
         if ((this._data && !this._zoomChanged) || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
             return;
@@ -1318,20 +1339,27 @@ export class OrChart extends translate(i18next)(LitElement) {
             let response: GenericAxiosResponse<ValueDatapoint<any>[]>;
             const query = JSON.parse(JSON.stringify(this.datapointQuery)); // recreating object, since the changes shouldn't apply to parent components; only or-chart itself.
 
-            // If number of data points is set, only allow a maximum of 1 point per pixel in width
-            // Otherwise, dynamically set number of data points based on chart width (1000px = 200 data points)
-            if(query.amountOfPoints) {
-                if(this._chartElem?.clientWidth > 0) {
-                    query.amountOfPoints = Math.min(query.amountOfPoints, this._chartElem?.clientWidth);
-                }
-            } else {
-                if(this._chartElem?.clientWidth > 0) {
-                    query.amountOfPoints = Math.round(this._chartElem.clientWidth / 5);
+            if(query.type === "lttb") {
+                // If number of data points is set, only allow a maximum of 1 point per pixel in width
+                // Otherwise, dynamically set number of data points based on chart width (1000px = 200 data points)
+                if(query.amountOfPoints) {
+                    if(this._chartElem?.clientWidth > 0) {
+                        query.amountOfPoints = Math.min(query.amountOfPoints, this._chartElem?.clientWidth);
+                    }
                 } else {
-                    console.warn("Could not grab width of the Chart for estimating amount of data points. Using 100 points instead.");
-                    query.amountOfPoints = 100;
+                    if(this._chartElem?.clientWidth > 0) {
+                        query.amountOfPoints = Math.round(this._chartElem.clientWidth / 5);
+                    } else {
+                        console.warn("Could not grab width of the Chart for estimating amount of data points. Using 100 points instead.");
+                        query.amountOfPoints = 100;
+                    }
                 }
+            } else if(query.type === "interval" && !query.interval) {
+                const diffInHours = (this.datapointQuery.toTimestamp! - this.datapointQuery.fromTimestamp!) / 1000 / 60 / 60;
+                const intervalArr = this._getInterval(diffInHours);
+                query.interval = (intervalArr[0].toString() + " " + intervalArr[1].toString()); // for example: "5 minute"
             }
+
             // Update start/end dates in DatapointQuery object
             if (!this._zoomChanged) {
                 query.fromTimestamp = this._startOfPeriod;
