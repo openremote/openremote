@@ -85,7 +85,15 @@ public interface UserResource {
     @Produces(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @Operation(operationId = "updateUser", summary = "Update a user in a realm")
-    User update(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid User user);
+    User updateUser(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid User user);
+
+    @PUT
+    @Path("update")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed(Constants.WRITE_USER_ROLE)
+    @Operation(operationId = "updateSelf", summary = "Update the currently authenticated user")
+    User update(@BeanParam RequestParams requestParams, @Valid User user);
 
     @POST
     @Path("{realm}/users")
@@ -102,12 +110,36 @@ public interface UserResource {
     void delete(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
 
     @PUT
+    @Path("{realm}/request-password-reset/{userId}")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
+    @Operation(operationId = "requestUserPasswordReset", summary = "Request a password reset for a user in a realm")
+    void requestUserPasswordReset(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
+
+    @PUT
+    @Path("request-password-reset")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed(Constants.WRITE_USER_ROLE)
+    @Operation(operationId = "requestPasswordReset", summary = "Request a password reset for the currently authenticated user")
+    void requestPasswordReset(@BeanParam RequestParams requestParams);
+
+    @PUT
     @Path("{realm}/reset-password/{userId}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @Operation(operationId = "resetPassword", summary = "Reset the password for a user in a realm")
-    void resetPassword(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Credential credential);
+    void resetUserPassword(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Credential credential);
+
+    @PUT
+    @Path("reset-password")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed(Constants.WRITE_USER_ROLE)
+    @Operation(operationId = "resetOwnPassword", summary = "Reset the password for the currently authenticated user")
+    void resetPassword(@BeanParam RequestParams requestParams, Credential credential);
 
     @GET
     @Path("{realm}/reset-secret/{userId}")
