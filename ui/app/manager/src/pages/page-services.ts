@@ -11,6 +11,7 @@ import "@openremote/or-components/or-iframe";
 import "@openremote/or-icon";
 import { OrTreeMenu, TreeNode, TreeMenuSelection, OrTreeNode } from "@openremote/or-tree-menu";
 import { Microservice, MicroserviceStatus } from "@openremote/model";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 
 export function pageServicesProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
   return {
@@ -24,15 +25,15 @@ export function pageServicesProvider(store: Store<AppStateKeyed>): PageProvider<
 }
 
 export enum MicroserviceStatusIcon {
-  available = "play",
-  unavailable = "alert-octagon",
-  unhealthy = "minus-circle",
+  AVAILABLE = "play",
+  UNAVAILABLE = "alert-octagon",
+  UNHEALTHY = "minus-circle",
 }
 
 export enum MicroserviceStatusColor {
-  available = "iconfill-gray",
-  unavailable = "iconfill-red",
-  unhealthy = "iconfill-red",
+  AVAILABLE = "iconfill-gray",
+  UNAVAILABLE = "iconfill-red",
+  UNHEALTHY = "iconfill-red",
 }
 
 export interface ServiceTreeNode extends TreeNode {
@@ -80,6 +81,14 @@ class OrServiceTree extends OrTreeMenu {
     if (changedProps.has("services")) {
       if (this.services) {
         this.nodes = this._getServiceNodes(this.services);
+
+        // Select any existing selected service
+        if (this.selectedService) {
+          const nodeToSelect = this.nodes.find((node) => node.id === this.selectedService.serviceId);
+          if (nodeToSelect) {
+            this._selectNode(nodeToSelect as unknown as OrTreeNode);
+          }
+        }
       }
     }
 
@@ -140,10 +149,16 @@ class OrServiceTree extends OrTreeMenu {
         <h3 id="tree-header-title">
           <or-translate value="services.title"></or-translate>
         </h3>
+        <or-mwc-input type=${InputType.BUTTON} icon="refresh" title="Refresh services" @or-mwc-input-changed=${this._onRefreshServices}></or-mwc-input>
       </div>
     `;
   }
+
+  protected _onRefreshServices() {
+    this.dispatchEvent(new CustomEvent("refresh-services", { detail: {} }));
+  }
 }
+
 
 const serviceStyles = css`
   :host {
@@ -215,33 +230,18 @@ export class PageServices extends Page<AppStateKeyed> {
     if (response.status === 200) {
       this.services = response.data;
       this.requestUpdate();
-    }
+    } // else error handling
 
     this._loading = false;
+  }
+
+  private async _onRefreshServices() {
+    this._loadData();
   }
 
   constructor(store: Store<AppStateKeyed>) {
     super(store);
     this.realmName = manager.displayRealm;
-
-    // TODO: Get services from backend via registry mechanism
-    const testService = {
-      label: "ML Forecast Service",
-      name: "ml-forecast",
-      url: "http://localhost:8001/",
-      multiTenancy: true,
-      status: MicroserviceStatus.AVAILABLE,
-    };
-
-    const testService2 = {
-      label: "Home Assistant",
-      name: "home-assistant",
-      url: "http://192.168.0.106:8123/lovelace/default_view",
-      multiTenancy: true,
-      status: MicroserviceStatus.UNAVAILABLE,
-    };
-
-    this.services = [testService, testService2];
   }
 
   public stateChanged(state: AppStateKeyed) {
@@ -276,6 +276,7 @@ export class PageServices extends Page<AppStateKeyed> {
     const service = e.detail.service as Microservice;
     if (service) {
       this.selectService(service);
+
     }
   }
 
@@ -311,6 +312,7 @@ export class PageServices extends Page<AppStateKeyed> {
             .services="${this.services}"
             .selectedService="${this.selectedService}"
             @service-selected="${this._onServiceSelected}"
+            @refresh-services="${this._onRefreshServices}"
           ></or-service-tree>
         </div>
         ${noSelection

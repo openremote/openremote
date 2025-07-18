@@ -204,7 +204,7 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         }
 
 
-        // Permission integration tests, a regular service user should only be able to list services and not update/register/unregister
+        // Permission integration tests, a regular user should only be able to list services and not update/register/unregister
 
         when: "the regular user tries to unregister a service"
         regularUserMicroserviceResource.unregisterService(null, weatherService)
