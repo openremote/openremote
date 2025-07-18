@@ -87,6 +87,13 @@ const styling = css`
         flex: 1 1 0;
         line-height: 16px;
         flex-direction: column;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    
+    .attribute-list-item-label > * {
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .attribute-list-item-actions {
@@ -268,7 +275,7 @@ export class AttributesPanel extends LitElement {
                                                         () => this.attributeLabelCallback!(asset, attribute, label),
                                                         () => html`
                                                             <span>${asset.name}</span>
-                                                            <span style="font-size:14px; color:grey;">${label}</span>
+                                                            <span style="color:grey;">${label}</span>
                                                         `
                                                 )}
                                             </div>
