@@ -1,6 +1,6 @@
 import {css, CSSResult, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import {Asset, AssetModelUtil, Attribute, AttributeRef} from "@openremote/model";
+import {Asset, AssetDescriptor, AssetModelUtil, Attribute, AttributeRef} from "@openremote/model";
 import {style} from "../style";
 import {when} from "lit/directives/when.js";
 import {map} from "lit/directives/map.js";
@@ -54,101 +54,113 @@ export class AttributesSelectEvent extends CustomEvent<{ assets: Asset[], attrib
 }
 
 const styling = css`
-  #attribute-list {
-    overflow: auto;
-    flex: 1 1 0;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-  }
+    #attribute-list {
+        overflow: auto;
+        flex: 1 1 0;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
 
-  .attribute-list-item {
-    position: relative;
-    cursor: pointer;
-    display: flex;
-    flex-direction: row;
-    align-items: stretch;
-    gap: 10px;
-    padding: 0;
-    min-height: 50px;
-  }
-  
-  .attribute-list-item-icon {
-    display: flex;
-    align-items: center;
-    --or-icon-width: 20px;
-  }
+    .attribute-list-item {
+        position: relative;
+        cursor: pointer;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: stretch;
+        gap: 0 10px;
+        padding: 0;
+        min-height: 50px;
+    }
 
-  .attribute-list-item-label {
-    display: flex;
-    justify-content: center;
-    flex: 1 1 0;
-    line-height: 16px;
-    flex-direction: column;
-  }
-  
-  .attribute-list-item-actions {
-    flex: 1;
-    justify-content: end;
-    align-items: center;
-    display: flex;
-    gap: 8px;
-  }
+    .attribute-list-item-icon {
+        display: flex;
+        align-items: center;
+        --or-icon-width: 20px;
+        min-height: 50px;
+    }
 
-  .attribute-list-item-bullet {
-    width: 14px;
-    height: 14px;
-    border-radius: 7px;
-    margin-right: 10px;
-  }
+    .attribute-list-item-label {
+        display: flex;
+        justify-content: center;
+        flex: 1 1 0;
+        line-height: 16px;
+        flex-direction: column;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    
+    .attribute-list-item-label > * {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
-  .attribute-list-item .button.delete {
-    display: none;
-  }
+    .attribute-list-item-actions {
+        justify-content: end;
+        align-items: center;
+        display: none;
+        gap: 8px;
+    }
 
-  .attribute-list-item:hover .button.delete {
-    display: block;
-  }
+    .attribute-list-item-bullet {
+        width: 14px;
+        height: 14px;
+        border-radius: 7px;
+        margin-right: 10px;
+    }
 
-  .button-action {
-    background: none;
-    visibility: hidden;
-    color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-    --or-icon-fill: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-    display: inline-block;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-  }
+    .attribute-list-item .button.delete {
+        display: none;
+    }
 
-  .attribute-list-item:hover .attribute-list-item-actions {
-    background: white;
-    z-index: 1;
-  }
-  
-  .attribute-list-item:hover .button-action {
-    visibility: visible;
-  }
+    .attribute-list-item:hover .button.delete {
+        display: block;
+    }
 
-  .button-action:hover {
-    --or-icon-fill: var(--or-app-color4);
-  }
+    .button-action {
+        background: none;
+        visibility: hidden;
+        color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+        --or-icon-fill: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+        display: inline-block;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+    }
+
+    .attribute-list-item:hover .attribute-list-item-actions {
+        display: flex;
+        background: white;
+        z-index: 1;
+    }
+
+    .attribute-list-item:hover .button-action {
+        visibility: visible;
+    }
+
+    .button-action:hover {
+        --or-icon-fill: var(--or-app-color4);
+    }
 `
 
 @customElement('attributes-panel')
 export class AttributesPanel extends LitElement {
 
-    @property()
-    protected attributeRefs: AttributeRef[] = [];
+    @property({type: Array})
+    public attributeRefs: AttributeRef[] = [];
 
-    @property()
-    protected multi: boolean = false;
+    @property({type: Boolean})
+    public multi = false;
 
-    @property()
-    protected onlyDataAttrs: boolean = false;
+    @property({type: Boolean})
+    public onlyDataAttrs = false;
 
     @property()
     protected attributeFilter?: (attribute: Attribute<any>) => boolean;
+
+    @property()
+    protected attributeIconCallback?: (asset: Asset, attribute: Attribute<any>, descriptor?: AssetDescriptor) => TemplateResult;
 
     @property()
     protected attributeLabelCallback?: (asset: Asset, attribute: Attribute<any>, attributeLabel: string) => TemplateResult;
@@ -253,32 +265,21 @@ export class AttributesPanel extends LitElement {
                                     return html`
                                         <div class="attribute-list-item">
                                             <div class="attribute-list-item-icon">
-                                                <span>${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type))}</span>
+                                                ${when(!!this.attributeIconCallback,
+                                                        () => this.attributeIconCallback!(asset, attribute, AssetModelUtil.getAssetDescriptor(asset.type)),
+                                                        () => html`<span>${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type))}</span>`
+                                                )}
                                             </div>
                                             <div class="attribute-list-item-label">
                                                 ${when(!!this.attributeLabelCallback,
-                                                        () => this.attributeLabelCallback!(asset, attribute, label), 
+                                                        () => this.attributeLabelCallback!(asset, attribute, label),
                                                         () => html`
                                                             <span>${asset.name}</span>
-                                                            <span style="font-size:14px; color:grey;">${label}</span>
+                                                            <span style="color:grey;">${label}</span>
                                                         `
                                                 )}
                                             </div>
-                                            <div class="attribute-list-item-actions">
-                                                
-                                                <!-- Custom actions defined by callback -->
-                                                ${when(!!this.attributeActionCallback, () => {
-                                                    return this.attributeActionCallback!(attributeRef).map((action) => html`
-                                                        <button class="button-action" .disabled="${action.disabled}" title="${action.tooltip}" @click="${() => this.onAttributeActionClick(asset, attributeRef, action)}">
-                                                            <or-icon icon="${action.icon}"></or-icon>
-                                                        </button>
-                                                    `);
-                                                })}
-                                                <!-- Remove attribute button -->
-                                                <button class="button-action" title="${i18next.t('delete')}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
-                                                    <or-icon icon="close-circle"></or-icon>
-                                                </button>
-                                            </div>
+                                            ${this._getAttributeActionsTemplate(asset, attributeRef)}
                                         </div>
                                     `;
                                 } else {
@@ -298,6 +299,29 @@ export class AttributesPanel extends LitElement {
                               @or-mwc-input-changed="${() => this.openAttributeSelector(this.attributeRefs, this.multi, this.onlyDataAttrs, this.attributeFilter)}">
                 </or-mwc-input>
             </div>
+        `;
+    }
+
+    protected _getAttributeActionsTemplate(asset: Asset, attributeRef: AttributeRef): TemplateResult {
+        return html`
+            <div class="attribute-list-item-actions">
+                <!-- Custom actions defined by callback -->
+                ${when(!!this.attributeActionCallback, () => this.attributeActionCallback!(attributeRef).map(
+                        action => this._getAttributeActionTemplate(action, asset, attributeRef)
+                ))}
+                <!-- Remove attribute button -->
+                <button class="button-action" title="${i18next.t('delete')}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
+                    <or-icon icon="close-circle"></or-icon>
+                </button>
+            </div>
+        `;
+    }
+
+    protected _getAttributeActionTemplate(action: AttributeAction, asset: Asset, attributeRef: AttributeRef): TemplateResult {
+        return html`
+            <button class="button-action" .disabled="${action.disabled}" title="${action.tooltip}" @click="${() => this.onAttributeActionClick(asset, attributeRef, action)}">
+                <or-icon icon="${action.icon}"></or-icon>
+            </button>
         `;
     }
 
