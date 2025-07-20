@@ -48,6 +48,7 @@ dependencies {
     api "org.apache.camel:camel-management:$camelVersion"
     api "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
     api "com.graphql-java:graphql-java:24.1"
+    api 'com.graphql-java:graphql-java-extended-scalars:24.0'
 }
 
 base {

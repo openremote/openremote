@@ -11,13 +11,15 @@ import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLTypeReference;
 import graphql.schema.idl.SchemaPrinter;
 import graphql.schema.GraphQLEnumType;
+import graphql.schema.GraphQLScalarType;
+import graphql.scalars.ExtendedScalars;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.IOException;
@@ -32,7 +34,6 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.openremote.model.syslog.SyslogCategory.API;
 
@@ -48,6 +49,8 @@ public class GraphQlService implements ContainerService {
 
     private List<WebResource> resources = null;
     private GraphQlWebResourceImpl graphQlResource;
+
+    private static final GraphQLScalarType JSON_SCALAR = ExtendedScalars.Json;
 
     public void setResources(WebResource[] resources) {
         this.resources = List.of(resources);
@@ -83,6 +86,8 @@ public class GraphQlService implements ContainerService {
         if (!mutation.getFieldDefinitions().isEmpty()) {
             schemaBuilder.mutation(mutation);
         }
+        // Register JSON scalar
+        schemaBuilder.additionalType(JSON_SCALAR);
         return schemaBuilder.build();
     }
 
@@ -143,6 +148,7 @@ public class GraphQlService implements ContainerService {
 
         // Map return type
         Class<?> returnType = method.getReturnType();
+        boolean useJsonScalar = false;
         if (returnType.equals(void.class) || returnType.equals(Void.class)) {
             builder.type(graphql.Scalars.GraphQLString); // or custom Void scalar
         } else if (returnType.isArray()) {
@@ -221,6 +227,28 @@ public class GraphQlService implements ContainerService {
                 if (result instanceof Throwable) {
                     throw (Throwable) result;
                 }
+                // Convert AttributeMap to List<Attribute> (discard keys, ensure real Attribute objects)
+                if (result != null && result.getClass().getName().equals("org.openremote.model.attribute.AttributeMap")) {
+                    try {
+                        AttributeMap map = (AttributeMap) result;
+                        List<Attribute<?>> list = map.values().stream().toList();
+                        return list;
+//                        java.lang.reflect.Method valuesMethod = result.getClass().getMethod("values");
+//                        Object values = valuesMethod.invoke(result);
+//                        if (values instanceof java.util.Collection) {
+//                            List<Attribute<?>> attributeList = new java.util.ArrayList<>();
+//                            for (Object value : (java.util.Collection<?>) values) {
+//                                // Only add if it's an actual Attribute object
+//                                if (value != null && value.getClass().getName().equals("org.openremote.model.attribute.Attribute")) {
+//                                    attributeList.add(value);
+//                                }
+//                            }
+//                            return attributeList;
+//                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to convert AttributeMap to List<Attribute>", e);
+                    }
+                }
                 // Convert 'attributes' field to a list for each Asset in arrays/collections
                 if (result != null) {
                     if (result.getClass().isArray()) {
@@ -267,13 +295,17 @@ public class GraphQlService implements ContainerService {
         return builder.build();
     }
 
+    private boolean isSimpleType(Class<?> clazz) {
+        return clazz.isPrimitive() || clazz.equals(String.class) || Number.class.isAssignableFrom(clazz) || clazz.equals(Boolean.class) || clazz.isEnum();
+    }
+
     private graphql.schema.GraphQLOutputType getGraphQLType(Class<?> clazz) {
         // Map primitives and String
-        // Map AttributeMap to a list of AttributeEntry (key-value pairs)
+        // Map AttributeMap to a list of Attribute (ignore keys)
         if (clazz.getName().equals("org.openremote.model.attribute.AttributeMap")) {
             try {
-                Class<?> entryClass = Class.forName("org.openremote.model.asset.AttributeEntry");
-                return GraphQLList.list(getGraphQLType(entryClass));
+                Class<?> attributeClass = Class.forName("org.openremote.model.attribute.Attribute");
+                return GraphQLList.list(getGraphQLType(attributeClass));
             } catch (ClassNotFoundException e) {
                 return graphql.Scalars.GraphQLString;
             }
@@ -499,6 +531,56 @@ public class GraphQlService implements ContainerService {
         this.graphQlResource = resourceImpl;
     }
 
+    // Helper to convert a Map to a List of values, each value including the key as a field
+    private List<Object> convertMapToListWithKey(Map<?, ?> map) {
+        if (map == null) return null;
+        List<Object> result = new java.util.ArrayList<>();
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            Object value = entry.getValue();
+            if (value instanceof Map) {
+                // Recursively convert nested maps
+                value = convertMapToListWithKey((Map<?, ?>) value);
+            }
+            if (value instanceof List) {
+                // Optionally handle lists of maps
+                List<?> list = (List<?>) value;
+                List<Object> newList = new java.util.ArrayList<>();
+                for (Object item : list) {
+                    if (item instanceof Map) {
+                        newList.add(convertMapToListWithKey((Map<?, ?>) item));
+                    } else {
+                        newList.add(item);
+                    }
+                }
+                value = newList;
+            }
+            // If value is a POJO, add the key as a field if possible
+            if (value != null && !(value instanceof Map) && !(value instanceof List) && !(value instanceof String) && !(value instanceof Number) && !(value instanceof Boolean)) {
+                try {
+                    java.lang.reflect.Field keyField = null;
+                    for (Field f : value.getClass().getDeclaredFields()) {
+                        if (f.getName().equals("key")) {
+                            keyField = f;
+                            break;
+                        }
+                    }
+                    if (keyField != null) {
+                        keyField.setAccessible(true);
+                        keyField.set(value, entry.getKey());
+                        result.add(value);
+                        continue;
+                    }
+                } catch (Exception ignore) {}
+            }
+            // Otherwise, use a Map to hold the key and value
+            Map<String, Object> entryMap = new java.util.HashMap<>();
+            entryMap.put("key", entry.getKey());
+            entryMap.put("value", value);
+            result.add(entryMap);
+        }
+        return result;
+    }
+
     // Helper to convert Asset 'attributes' field to a list if needed
     private Object convertAssetAttributesToList(Object assetObj) {
         if (assetObj == null) return null;
@@ -516,18 +598,20 @@ public class GraphQlService implements ContainerService {
             if (attributesField != null) {
                 attributesField.setAccessible(true);
                 Object attributesValue = attributesField.get(assetObj);
-                if (attributesValue != null && attributesValue.getClass().getSimpleName().equals("AttributeMap")) {
-                    // Use AttributeEntry.getAttributeEntryList(AttributeMap) to convert
-                    Class<?> entryClass = Class.forName("org.openremote.model.asset.AttributeEntry");
-                    java.lang.reflect.Method convertMethod = entryClass.getMethod("getAttributeEntryList", attributesValue.getClass());
-                    Object entryArray = convertMethod.invoke(null, attributesValue);
+                if (attributesValue instanceof Map) {
+                    // Convert the map to a list with key included
+                    List<Attribute<?>> entryList = ((AttributeMap)attributesValue).values().stream().toList();
                     // Return a Map with all fields, replacing 'attributes' with the entry list
                     java.util.Map<String, Object> resultMap = new java.util.HashMap<>();
                     for (Field f : getAllFields(resultClass)) {
                         f.setAccessible(true);
-                        resultMap.put(f.getName(), f.get(assetObj));
+                        Object value = f.get(assetObj);
+                        if ("attributes".equals(f.getName())) {
+                            resultMap.put("attributes", entryList);
+                        } else {
+                            resultMap.put(f.getName(), value);
+                        }
                     }
-                    resultMap.put("attributes", entryArray);
                     return resultMap;
                 }
             }
@@ -535,3 +619,4 @@ public class GraphQlService implements ContainerService {
         return assetObj;
     }
 }
+

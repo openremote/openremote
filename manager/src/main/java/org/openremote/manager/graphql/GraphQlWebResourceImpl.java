@@ -69,35 +69,21 @@ public class GraphQlWebResourceImpl implements GraphQlWebResource {
 
     public Response getGraphQLSandbox() {
         String graphiqlHtml = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset=\"utf-8\" />
-          <title>GraphiQL</title>
-          <link rel=\"stylesheet\" href=\"https://unpkg.com/graphiql/graphiql.min.css\" />
-        </head>
-        <body style=\"margin:0;\">
-          <div id=\"graphiql\" style=\"height: 100vh;\"></div>
-          <script crossorigin src=\"https://unpkg.com/react/umd/react.production.min.js\"></script>
-          <script crossorigin src=\"https://unpkg.com/react-dom/umd/react-dom.production.min.js\"></script>
-          <script crossorigin src=\"https://unpkg.com/graphiql/graphiql.min.js\"></script>
-          <script>
-            const graphQLFetcher = graphQLParams =>
-              fetch('/graphql', {
-                method: 'post',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(graphQLParams),
-              })
-                .then(response => response.json())
-                .catch(() => response.text());
-            ReactDOM.render(
-              React.createElement(GraphiQL, { fetcher: graphQLFetcher }),
-              document.getElementById('graphiql'),
-            );
-          </script>
-        </body>
-        </html>
+<div id="sandbox" style="position:absolute;top:0;right:0;bottom:0;left:0"></div>
+<script src="https://embeddable-sandbox.cdn.apollographql.com/_latest/embeddable-sandbox.umd.production.min.js"></script>
+<script>
+ new window.EmbeddedSandbox({
+   target: "#sandbox",
+   // Pass through your server href if you are embedding on an endpoint.
+   // Otherwise, you can pass whatever endpoint you want Sandbox to start up with here.
+   initialEndpoint: "",
+   initialState: {pollForSchemaUpdates: false;}
+   
+ 
+ });
+ // advanced options: https://www.apollographql.com/docs/studio/explorer/sandbox#embedding-sandbox
+</script>
         """;
-        return Response.ok(graphiqlHtml).build();
+        return Response.ok(graphiqlHtml).type(MediaType.TEXT_HTML_TYPE).build();
     }
 }
