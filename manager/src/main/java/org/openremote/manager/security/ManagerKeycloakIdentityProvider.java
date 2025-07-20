@@ -797,10 +797,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     Realm realm = ManagerIdentityProvider.getRealmFromDb(persistenceService, name);
                     // Filter out built in roles
                     realm.setRealmRoles(
-                        realm.getRealmRoles()
-                            .stream()
-                            .filter(rr -> (MASTER_REALM.equals(name) && SUPER_USER_REALM_ROLE.equals(rr.getName())) || !isBuiltInRealmRole(rr.getName()))
-                            .collect(Collectors.toSet())
+                            realm.getRealmRoles()
+                                    .stream()
+                                    .filter(rr -> (MASTER_REALM.equals(name) && SUPER_USER_REALM_ROLE.equals(rr.getName())) || !isBuiltInRealmRole(rr.getName()))
+                                    .collect(Collectors.toSet())
                     );
                     return realm;
                 } catch (Exception ex) {
@@ -808,10 +808,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 }
                 return null;
             });
-        } catch (CacheLoader.InvalidCacheLoadException e) {
+        } catch (Exception e) {
             LOG.log(Level.INFO, "Failed to get realm by name: " + name, e);
-            return null;
-        } catch (ExecutionException e) {
             throw new RuntimeException(e);
         }
     }
@@ -1066,6 +1064,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
      *                   E.g. the following values can be used:
      *                   <ul><li>{@code fromUrl}: The URL used for importing the configuration parameters</li>
      *                       <li>{@code providerId}: The identity provider ({@code oidc} or {@code saml}) to import the configuration for.</li></ul>
+     *
      * @return the imported configuration parameters which can be added to the {@link Map} provided to
      * {@link #createUpdateIdentityProvider(String, String, String, String, Map)} when creating or updating an identity provider.
      */

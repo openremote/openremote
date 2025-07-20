@@ -20,6 +20,9 @@
 package org.openremote.test.users
 
 import jakarta.ws.rs.BadRequestException
+import jakarta.ws.rs.NotAllowedException
+import org.openremote.manager.security.ManagerIdentityService
+import org.openremote.manager.security.ManagerKeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.Constants
 import org.openremote.model.query.UserQuery
@@ -53,13 +56,22 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
     static UserResource regularUserMasterResource
     @Shared
     static UserResource regularUserBuildingResource
-
+    @Shared
+    static UserResource adminUserBuildingResource
     @Shared
     static KeycloakTestSetup keycloakTestSetup
+    @Shared
+    static int resetPasswordRequests = 0
 
     def setupSpec() {
         def container = startContainer(defaultConfig(), defaultServices())
         keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def identityProvider = Spy(container.getService(ManagerIdentityService.class).identityProvider as ManagerKeycloakIdentityProvider)
+        container.getService(ManagerIdentityService.class).identityProvider = identityProvider
+        identityProvider.requestPasswordReset(_ as String, _ as String)  >> {
+            realm, userId ->
+                resetPasswordRequests++
+        }
 
         def accessToken = authenticate(
             container,
@@ -85,9 +97,18 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             "testuser3"
         ).token
 
+        def adminBuildingAccessToken = authenticate(
+            container,
+            keycloakTestSetup.realmBuilding.name,
+            KEYCLOAK_CLIENT_ID,
+            "testuser4",
+            "testuser4"
+        ).token
+
         adminUserResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(UserResource.class)
         regularUserMasterResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, regularMasterAccessToken).proxy(UserResource.class)
         regularUserBuildingResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, regularBuildingAccessToken).proxy(UserResource.class)
+        adminUserBuildingResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, adminBuildingAccessToken).proxy(UserResource.class)
     }
 
     def "User queries"() {
@@ -293,47 +314,37 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
 
         when: "a new attribute is added to the user"
         user.setAttribute("test", "testvalue")
-        user = adminUserResource.updateUser(null, keycloakTestSetup.realmBuilding.name, user)
+        user = adminUserResource.update(null, keycloakTestSetup.realmBuilding.name, user)
 
         then: "the update should have succeeded"
         user.attributes.size() == 2
         user.attributes.any {it.name == EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE && it.value == "true"}
         user.attributes.any {it.name == "test" && it.value == "testvalue"}
-    }
-    
-    def "Self update user with WRITE_USER role"() {
-        when: "a regular user gets their own information"
-        def currentUser = keycloakTestSetup.testuser3
-        
-        then: "the user should be found"
-        currentUser != null
-        
-        when: "the user updates their own information using the update method with WRITE_USER role"
-        currentUser.setAttribute("selfUpdate", "success")
-        def updatedUser = regularUserBuildingResource.update(null, currentUser)
+
+        when: "a user with ${Constants.WRITE_USER_ROLE} role updates their own user information"
+        keycloakTestSetup.testuser2.setAttribute("selfUpdate", "success")
+        def updatedUser = regularUserBuildingResource.updateCurrent(null, keycloakTestSetup.testuser2)
         
         then: "the update should succeed"
         updatedUser != null
         updatedUser.attributes.any { it.name == "selfUpdate" && it.value == "success" }
         
         when: "the user tries to update another user's information"
-        def otherUser = adminUserResource.get(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id)
-        otherUser.setAttribute("unauthorizedUpdate", "shouldFail")
-        regularUserBuildingResource.update(null, otherUser)
+        keycloakTestSetup.testuser2.setAttribute("unauthorizedUpdate", "shouldFail")
+        regularUserBuildingResource.updateCurrent(null, keycloakTestSetup.testuser2)
         
         then: "an exception should be thrown"
         thrown(ForbiddenException)
 
         when: "an admin user tries to update another user's information"
-        currentUser.setAttribute("authorizedUpdate", "shouldNotFail")
-        adminUserResource.updateUser(null, currentUser.realm, currentUser)
+        keycloakTestSetup.testuser3.setAttribute("authorizedUpdate", "shouldNotFail")
+        updatedUser = adminUserResource.update(null, keycloakTestSetup.testuser3.realm, keycloakTestSetup.testuser3)
 
         then: "the update should succeed"
-        currentUser != null
-        currentUser.attributes.any { it.name == "authorizedUpdate" && it.value == "shouldNotFail" }
+        updatedUser.attributes.any { it.name == "authorizedUpdate" && it.value == "shouldNotFail" }
         
         when: "the admin verifies the user's attributes were updated"
-        def verifiedUser = adminUserResource.get(null, keycloakTestSetup.realmBuilding.name, currentUser.id)
+        def verifiedUser = adminUserResource.get(null, keycloakTestSetup.testuser3.realm, keycloakTestSetup.testuser3.id)
         
         then: "the self-update attribute should be present"
         verifiedUser.attributes.any { it.name == "selfUpdate" && it.value == "success" }
@@ -341,16 +352,16 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         and: "the authorized update attribute should be present"
         verifiedUser.attributes.any { it.name == "authorizedUpdate" && it.value == "shouldNotFail" }
 
-        when: "a regular user tries to reset another user's password"
-        regularUserBuildingResource.resetUserPassword(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, new Credential("newPassword", false))
+        when: "a regular user tries to update another user's password"
+        regularUserBuildingResource.updatePassword(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, new Credential("newPassword", false))
 
         then: "an exception should be thrown"
         thrown(ForbiddenException)
 
-        when: "an admin user tries to reset another user's password"
-        adminUserResource.resetUserPassword(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, new Credential("newPassword", false))
+        when: "an admin user tries to update another user's password"
+        adminUserResource.updatePassword(null, keycloakTestSetup.testuser2.realm, keycloakTestSetup.testuser2Id, new Credential("newPassword", false))
 
-        then: "the password should have been reset"
+        then: "the password should have been updated"
         def testUser2BuildingAccessToken = authenticate(
             container,
             keycloakTestSetup.realmBuilding.name,
@@ -359,6 +370,44 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             "newPassword"
         ).token
         testUser2BuildingAccessToken != null
+    }
+
+    def "Request password reset"() {
+        when: "a user with ${Constants.WRITE_USER_ROLE} permission requests a password reset for themselves"
+        regularUserBuildingResource.requestPasswordResetCurrent(null)
+
+        then: "it should succeed"
+        resetPasswordRequests == 1
+
+        when: "the same user requests a password reset for another user in the same realm"
+        regularUserBuildingResource.requestPasswordReset(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2.id)
+
+        then: "an exception should occur"
+        thrown(ForbiddenException)
+
+        when: "the same user requests a password reset for another user in a different realm"
+        regularUserBuildingResource.requestPasswordReset(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser1.id)
+
+        then: "an exception should occur"
+        thrown(ForbiddenException)
+
+        when: "a user with ${Constants.WRITE_ADMIN_ROLE} role requests a password reset for another user in the same realm"
+        adminUserBuildingResource.requestPasswordReset(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2.id)
+
+        then: "it should succeed"
+        resetPasswordRequests == 2
+
+        when: "a user with ${Constants.WRITE_ADMIN_ROLE} role in one realm requests a password reset for another user in a different realm"
+        adminUserBuildingResource.requestPasswordReset(null, MASTER_REALM, keycloakTestSetup.testuser1.id)
+
+        then: "an exception should occur"
+        thrown(NotAllowedException)
+
+        when: "a super admin requests a password reset for another user in a different realm"
+        adminUserResource.requestPasswordReset(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2.id)
+
+        then: "it should succeed"
+        resetPasswordRequests == 3
     }
 
     def "Create invalid users"() {

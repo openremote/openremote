@@ -123,7 +123,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public User updateUser(RequestParams requestParams, String realm, User user) {
+    public User update(RequestParams requestParams, String realm, User user) {
 
         throwIfIllegalMasterAdminUserMutation(requestParams, realm, user);
         throwIfNotSameRealm(realm, user.getId());
@@ -140,7 +140,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public User update(RequestParams requestParams, User user) {
+    public User updateCurrent(RequestParams requestParams, User user) {
         try {
             Map.Entry<String, String> authInfo = getCurrentUserAuthInfo();
             String userId = authInfo.getKey();
@@ -197,7 +197,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public void requestUserPasswordReset(RequestParams requestParams, String realm, String userId) {
+    public void requestPasswordReset(RequestParams requestParams, String realm, String userId) {
         throwIfNotSameRealm(realm, userId);
 
         try {
@@ -210,7 +210,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public void requestPasswordReset(RequestParams requestParams) {
+    public void requestPasswordResetCurrent(RequestParams requestParams) {
         try {
             Map.Entry<String, String> authInfo = getCurrentUserAuthInfo();
             String userId = authInfo.getKey();
@@ -226,7 +226,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public void resetUserPassword(@BeanParam RequestParams requestParams, String realm, String userId, Credential credential) {
+    public void updatePassword(@BeanParam RequestParams requestParams, String realm, String userId, Credential credential) {
         throwIfNotSameRealm(realm, userId);
 
         try {
@@ -239,7 +239,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public void resetPassword(@BeanParam RequestParams requestParams, Credential credential) {
+    public void updatePasswordCurrent(@BeanParam RequestParams requestParams, Credential credential) {
         try {
             Map.Entry<String, String> authInfo = getCurrentUserAuthInfo();
             String userId = authInfo.getKey();
@@ -398,7 +398,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         }
 
         user.setAttribute(User.LOCALE_ATTRIBUTE, parsed);
-        updateUser(requestParams, getRequestRealmName(), user);
+        update(requestParams, getRequestRealmName(), user);
     }
 
     @Override
@@ -462,7 +462,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
             throw new NotAllowedException("Cannot mutate a user in a different realm");
         }
 
-        if (!currentUserId.equals(userId) && !hasRealmRole(Constants.WRITE_ADMIN_ROLE)) {
+        if (!currentUserId.equals(userId) && !hasResourceRole(Constants.WRITE_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)) {
             throw new NotAllowedException("Not allowed to mutate another user");
         }
     }

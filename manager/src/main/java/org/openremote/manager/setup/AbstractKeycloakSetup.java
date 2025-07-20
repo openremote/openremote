@@ -39,12 +39,12 @@ import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 
 public abstract class AbstractKeycloakSetup implements Setup {
 
-    public static final ClientRole[] PUBLIC_USER_ROLES = new ClientRole[]{
+    public static final ClientRole[] PUBLIC_USER_ROLES = new ClientRole[] {
         ClientRole.READ_ASSETS,
         ClientRole.READ_MAP,
         ClientRole.READ_INSIGHTS
     };
-    public static final ClientRole[] REGULAR_USER_ROLES = new ClientRole[]{
+    public static final ClientRole[] REGULAR_USER_ROLES = new ClientRole[] {
         ClientRole.WRITE_USER,
         ClientRole.READ_MAP,
         ClientRole.READ_ASSETS,
@@ -67,7 +67,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
     public AbstractKeycloakSetup(Container container) {
         this.container = container;
         this.identityService = container.getService(ManagerIdentityService.class);
-        this.keycloakProvider = ((ManagerKeycloakIdentityProvider) identityService.getIdentityProvider());
+        this.keycloakProvider = ((ManagerKeycloakIdentityProvider)identityService.getIdentityProvider());
         this.setupService = container.getService(SetupService.class);
     }
 
@@ -87,7 +87,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
     }
 
     public User createUser(String realm, String username, String password, String firstName, String lastName, String email, boolean enabled, ClientRole[] roles) {
-        return createUser(realm, username, password, firstName, lastName, email, enabled, false, false, roles);
+        return  createUser(realm, username, password, firstName, lastName, email, enabled, false, false, roles);
     }
 
     public User createUser(String realm, String username, String password, String firstName, String lastName, String email, boolean enabled, boolean emailNotificationsDisabled, boolean pushNotificationsDisabled, ClientRole[] roles) {

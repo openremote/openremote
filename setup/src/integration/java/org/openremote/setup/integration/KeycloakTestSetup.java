@@ -30,7 +30,9 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Realm;
 import org.openremote.model.security.User;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -57,6 +59,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
     public String testuser1Id;
     public String testuser2Id;
     public String testuser3Id;
+    public String testuser4Id;
     public String smartCityUserId;
     public String buildingUserId;
     public Realm realmMaster;
@@ -66,6 +69,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
     public User testuser1;
     public User testuser2;
     public User testuser3;
+    public User testuser4;
     public User buildingUser;
     public User smartCityUser;
     public User serviceUser;
@@ -115,6 +119,11 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         keycloakProvider.updateUserClientRoles(realmBuilding.getName(), testuser3Id, "account"); // Remove all roles for account client
         // Add realm role
         keycloakProvider.updateUserRealmRoles(realmBuilding.getName(), testuser3Id, keycloakProvider.addUserRealmRoles(realmBuilding.getName(), testuser3Id, REALM_ROLE_TEST));
+        List<ClientRole> testuser4Roles = new ArrayList<>(Arrays.asList(REGULAR_USER_ROLES));
+        testuser4Roles.add(ClientRole.WRITE_ADMIN);
+        testuser4 = createUser(realmBuilding.getName(), "testuser4", "testuser4", "DemoA4", "DemoLast", "testuser4@openremote.local", true, true, false, testuser4Roles.toArray(new ClientRole[0]));
+        this.testuser4Id = testuser4.getId();
+        keycloakProvider.updateUserClientRoles(realmBuilding.getName(), testuser4Id, "account"); // Remove all roles for account client
         buildingUser = createUser(realmBuilding.getName(), "building", "building", "Building", "User", "building@openremote.local", true, noWriteAccess);
         this.buildingUserId = buildingUser.getId();
         keycloakProvider.updateUserClientRoles(realmBuilding.getName(), buildingUserId, "account"); // Remove all roles for account client
