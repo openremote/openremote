@@ -1,6 +1,6 @@
 import { LitElement, html, css, TemplateResult } from "lit";
 import {customElement, property} from "lit/decorators.js";
-import { Node, PickerType, AttributeInternalValue, Asset, NodeDataType, AttributeRef, AssetModelUtil } from "@openremote/model";
+import { Node, PickerType, AttributeInternalValue, Asset, NodeDataType, AssetModelUtil } from "@openremote/model";
 import { nodeConverter } from "../converters/node-converter";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import rest from "@openremote/rest";
@@ -159,27 +159,10 @@ export class InternalPicker extends translate(i18next)(LitElement) {
     private get assetAttributeInput(): TemplateResult {
 
         const openDialog = () => {
-            let _selectedAttributes : AttributeRef[] = [];
-            let _selectedAssets: string[] = [];
-            let val = this.node.internals![this.internalIndex].value;
-
-            if (val){
-                _selectedAttributes = [{
-                    id: val.assetId,
-                    name: val.attributeName
-                }];
-            }
-
-            if (this.selectedAsset && this.selectedAsset.id) {
-                _selectedAssets = [ this.selectedAsset.id ];
-            }
-
             const dialog = showDialog(new OrAssetAttributePicker()
                 .setShowOnlyRuleStateAttrs(true)
                 .setShowOnlyDatapointAttrs(false)
-                .setMultiSelect(false)
-                .setSelectedAttributes(_selectedAttributes))
-                .setSelectedAssets(_selectedAssets);
+                .setMultiSelect(false));
 
             dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, async (ev: OrAssetAttributePickerPickedEvent) => {
                 const value: AttributeInternalValue = {

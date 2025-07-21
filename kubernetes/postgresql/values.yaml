@@ -38,8 +38,11 @@ podAnnotations: {}
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+# Align with uid/gid used by Openremote PostgreSQL image
+podSecurityContext:
+  runAsUser: 70
+  runAsGroup: 70
+  fsGroup: 70
 
 securityContext: {}
   # capabilities:
@@ -78,6 +81,9 @@ readinessProbe:
     command:
       - pg_isready
 
+# Size of volume requested in PVC, must be aligned with available PV
+volumeSize: "1Gi"
+
 # Additional volumes on the output Deployment definition.
 volumes: []
 # - name: foo
@@ -91,9 +97,12 @@ volumeMounts: []
 #   mountPath: "/etc/foo"
 #   readOnly: true
 
-# Should an init container run to fix the permissions on the mounted data volume ?
+# Should an init container run to fix the permissions on the mounted data volume?
 # This is not required on macOS but is on linux
 requiresPermissionsFix: false
+
+# Indicates if subpath must be used when mounting the psql data volume, required for AWS EBS volumes
+useSubPath: false
 
 nodeSelector: {}
 
