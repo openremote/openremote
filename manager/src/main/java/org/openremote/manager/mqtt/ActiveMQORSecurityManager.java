@@ -19,7 +19,9 @@
  */
 package org.openremote.manager.mqtt;
 
+import org.apache.activemq.artemis.core.config.WildcardConfiguration;
 import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
+import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
 import org.apache.activemq.artemis.core.security.CheckType;
 import org.apache.activemq.artemis.core.security.Role;
 import org.apache.activemq.artemis.core.server.ActiveMQServer;
@@ -31,6 +33,7 @@ import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.manager.security.AuthorisationService;
 import org.openremote.manager.security.MultiTenantJaasCallbackHandler;
 import org.openremote.manager.security.RemotingConnectionPrincipal;
+import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.syslog.SyslogCategory;
 
 import javax.security.auth.Subject;
@@ -72,6 +75,10 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         this.deploymentResolver = deploymentResolver;
         this.configName = configurationName;
         this.config = configuration;
+    }
+
+    protected static Topic fromAddress(String address, WildcardConfiguration wildcardConfiguration) throws IllegalArgumentException {
+        return Topic.parse(MQTTUtil.getMqttTopicFromCoreAddress(address, wildcardConfiguration));
     }
 
     @Override
@@ -155,7 +162,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
 
         try {
             // Get MQTT topic from address
-            topic = Topic.fromAddress(address, brokerService.getWildcardConfiguration());
+            topic = fromAddress(address, brokerService.getWildcardConfiguration());
         } catch (IllegalArgumentException e) {
             LOG.log(Level.FINE, "Invalid topic provided by client '" + address, e);
             return false;
