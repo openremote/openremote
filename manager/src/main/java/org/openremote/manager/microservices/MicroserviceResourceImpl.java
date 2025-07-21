@@ -44,36 +44,43 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
     }
 
     @Override
-    public boolean registerService(RequestParams requestParams,
-            @NotNull @Valid Microservice serviceDescriptor) {
+    public boolean register(RequestParams requestParams,
+            @NotNull @Valid Microservice service) {
 
         if (!isSuperUser()) {
             LOG.warning("Only super users can register services");
             throw new ForbiddenException("Only super users can register services");
         }
 
-        String providerIdentifier = getClientRemoteAddress();
-
-        return microserviceRegistry.registerService(providerIdentifier, serviceDescriptor);
+        return microserviceRegistry.register(service);
     }
 
     @Override
-    public boolean unregisterService(RequestParams requestParams,
-            @NotNull @Valid Microservice microservice) {
+    public boolean deregister(RequestParams requestParams,
+            @NotNull @Valid String serviceId) {
 
         if (!isSuperUser()) {
             LOG.warning("Only super users can unregister services");
             throw new ForbiddenException("Only super users can unregister services");
         }
 
-        String providerIdentifier = getClientRemoteAddress();
-
-        return microserviceRegistry.unregisterService(providerIdentifier, microservice);
+        return microserviceRegistry.deregister(serviceId);
     }
 
     @Override
     public Microservice[] getServices(RequestParams requestParams) {
         return microserviceRegistry.getServices();
+    }
+
+    @Override
+    public boolean heartbeat(RequestParams requestParams, String serviceId) {
+
+        if (!isSuperUser()) {
+            LOG.warning("Only super users can send heartbeats");
+            throw new ForbiddenException("Only super users can send heartbeats");
+        }
+
+        return microserviceRegistry.heartbeat(serviceId);
     }
 
 }

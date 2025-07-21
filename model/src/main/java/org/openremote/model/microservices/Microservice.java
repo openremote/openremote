@@ -22,7 +22,8 @@ package org.openremote.model.microservices;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Represents an external service's/microservice's metadata and status information
+ * Represents an external service's/microservice's metadata and status
+ * information
  */
 public class Microservice {
 
@@ -39,11 +40,17 @@ public class Microservice {
     protected String serviceId;
 
     /**
-     * The URL of the service's configuration Web UI, e.g.
-     * "https://demo.openremote.app/services/energy-service/config"
+     * The URL of the service's exposed Web UI, e.g.
+     * "https://demo.openremote.app/services/energy-service/ui"
      */
-    @JsonProperty("url")
-    protected String url;
+    @JsonProperty("webUiUrl")
+    protected String webUiUrl;
+
+    /**
+     * Indicates whether the service uses multi-tenancy for its configuration UI
+     */
+    @JsonProperty("multiTenancy")
+    protected Boolean multiTenancy;
 
     /**
      * The status of the service, e.g. "AVAILABLE"
@@ -51,18 +58,11 @@ public class Microservice {
     @JsonProperty("status")
     protected MicroserviceStatus status;
 
-    /**
-     * Indicates whether the service supports and uses multi-tenancy
-     */
-    @JsonProperty("multiTenancy")
-    protected Boolean multiTenancy;
-
- 
-
-    public Microservice(String label, String serviceId, String url, MicroserviceStatus status, Boolean multiTenancy) {
+    public Microservice(String label, String serviceId, String webUiUrl,
+                        MicroserviceStatus status, Boolean multiTenancy) {
         this.label = label;
         this.serviceId = serviceId;
-        this.url = url;
+        this.webUiUrl = webUiUrl;
         this.status = status;
         this.multiTenancy = multiTenancy;
     }
@@ -83,12 +83,12 @@ public class Microservice {
         this.serviceId = serviceId;
     }
 
-    public String getUrl() {
-        return url;
+    public String getWebUiUrl() {
+        return webUiUrl;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public void setWebUiUrl(String webUiUrl) {
+        this.webUiUrl = webUiUrl;
     }
 
     public MicroserviceStatus getStatus() {
@@ -109,10 +109,10 @@ public class Microservice {
 
     @Override
     public String toString() {
-        return "ServiceDescriptor{" +
+        return "Microservice{" +
                 "label='" + label + '\'' +
                 ", serviceId='" + serviceId + '\'' +
-                ", url='" + url + '\'' +
+                ", webUiUrl='" + webUiUrl + '\'' +
                 ", status='" + status + '\'' +
                 ", multiTenancy='" + multiTenancy + '\'' +
                 '}';
