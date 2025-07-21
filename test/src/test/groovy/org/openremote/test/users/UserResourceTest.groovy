@@ -134,10 +134,11 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         users = regularUserBuildingResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
 
         then: "only non system users of the users realm should be returned"
-        users.size() == 5
+        users.size() == 6
         users.count {it.isSystemAccount() && it.username == Constants.MANAGER_CLIENT_ID} == 0
         users.find {it.id == keycloakTestSetup.testuser2Id} != null
         users.find {it.id == keycloakTestSetup.testuser3Id} != null
+        users.find {it.id == keycloakTestSetup.testuser4Id} != null
         users.find {it.id == keycloakTestSetup.buildingUserId} != null
         users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser.id} != null
         users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser2.id} != null
@@ -146,28 +147,29 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         users = regularUserBuildingResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
 
         then: "only non system users of the users realm should be returned in username order"
-        users.size() == 5
+        users.size() == 6
         users[0].username == keycloakTestSetup.buildingUser.username
         users[1].username == keycloakTestSetup.serviceUser.username
         users[2].username == keycloakTestSetup.serviceUser2.username
         users[3].username == keycloakTestSetup.testuser2.username
         users[4].username == keycloakTestSetup.testuser3.username
+        users[5].username == keycloakTestSetup.testuser4.username
 
-        when: "a request is made for subset of users ordered by username descending"
+        when: "a request is made for subset of users ordered by username descending (with wrong realm which will be automatically changed to the users realm)"
         users = regularUserBuildingResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, true)).limit(2))
 
         then: "the correct users should be returned"
         users.size() == 2
-        users[0].username == keycloakTestSetup.testuser3.username
-        users[1].username == keycloakTestSetup.testuser2.username
+        users[0].username == keycloakTestSetup.testuser4.username
+        users[1].username == keycloakTestSetup.testuser3.username
 
-        when: "a request is made for another subset of users ordered by username descending"
+        when: "a request is made for another subset of users ordered by username descending (with wrong realm which will be automatically changed to the users realm)"
         users = regularUserBuildingResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, true)).limit(2).offset(3))
 
         then: "the correct users should be returned"
         users.size() == 2
-        users[0].username == keycloakTestSetup.serviceUser.username
-        users[1].username == keycloakTestSetup.buildingUser.username
+        users[0].username == keycloakTestSetup.serviceUser2.username
+        users[1].username == keycloakTestSetup.serviceUser.username
 
         when: "a request is made for only service users (users with a secret)"
         users = adminUserResource.query(null, new UserQuery().serviceUsers(true).realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)))
@@ -200,9 +202,10 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
                         .orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
 
         then: "only non restricted users of this realm should be returned"
-        users.size() == 2
+        users.size() == 3
         users[0].username == keycloakTestSetup.serviceUser.username
         users[1].username == keycloakTestSetup.testuser2.username
+        users[2].username == keycloakTestSetup.testuser4.username
 
         when: "a request is made based on user attributes"
         users = regularUserBuildingResource.query(null,
@@ -214,11 +217,12 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
                 ).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
 
         then: "only matching users of this realm should be returned"
-        users.size() == 4
+        users.size() == 5
         users[0].username == keycloakTestSetup.buildingUser.username
         users[1].username == keycloakTestSetup.serviceUser.username
         users[2].username == keycloakTestSetup.serviceUser2.username
         users[3].username == keycloakTestSetup.testuser2.username
+        users[4].username == keycloakTestSetup.testuser4.username
 
         when: "a request is made for users with the write:alarms client role"
         users = regularUserBuildingResource.query(null,
@@ -228,9 +232,10 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
                         .orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
 
         then: "only users of this realm with the write:alarms client role should be returned"
-        users.size() == 2
+        users.size() == 3
         users[0].username == keycloakTestSetup.buildingUser.username
         users[1].username == keycloakTestSetup.testuser3.username
+        users[2].username == keycloakTestSetup.testuser4.username
     }
 
     def "Get and update roles"() {
@@ -322,8 +327,8 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         user.attributes.any {it.name == "test" && it.value == "testvalue"}
 
         when: "a user with ${Constants.WRITE_USER_ROLE} role updates their own user information"
-        keycloakTestSetup.testuser2.setAttribute("selfUpdate", "success")
-        def updatedUser = regularUserBuildingResource.updateCurrent(null, keycloakTestSetup.testuser2)
+        keycloakTestSetup.testuser3.setAttribute("selfUpdate", "success")
+        def updatedUser = regularUserBuildingResource.updateCurrent(null, keycloakTestSetup.testuser3)
         
         then: "the update should succeed"
         updatedUser != null
