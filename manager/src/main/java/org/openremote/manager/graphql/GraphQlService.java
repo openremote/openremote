@@ -4,16 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.Scalars;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLSchema;
-import graphql.schema.GraphQLList;
-import graphql.schema.GraphQLTypeReference;
+import graphql.introspection.IntrospectionQuery;
+import graphql.schema.*;
 import graphql.schema.idl.SchemaPrinter;
-import graphql.schema.GraphQLEnumType;
-import graphql.schema.GraphQLScalarType;
 import graphql.scalars.ExtendedScalars;
-import jakarta.ws.rs.GET;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.ws.rs.*;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
@@ -23,17 +19,12 @@ import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.openremote.model.syslog.SyslogCategory.API;
 
@@ -63,8 +54,8 @@ public class GraphQlService implements ContainerService {
 
     public GraphQLSchema getSchema() {return schema;}
 
-    private final Map<Class<?>, graphql.schema.GraphQLOutputType> typeCache = new ConcurrentHashMap<>();
-    private final Map<Class<?>, graphql.schema.GraphQLInputType> inputTypeCache = new ConcurrentHashMap<>();
+    private final Map<Class<?>, GraphQLOutputType> typeCache = new ConcurrentHashMap<>();
+    private final Map<Class<?>, GraphQLInputType> inputTypeCache = new ConcurrentHashMap<>();
 
     public GraphQLSchema generateSchemaFromApis() {
         Set<Class<?>> resourceClasses = getJaxRsResources();
@@ -86,8 +77,11 @@ public class GraphQlService implements ContainerService {
         if (!mutation.getFieldDefinitions().isEmpty()) {
             schemaBuilder.mutation(mutation);
         }
+
         // Register JSON scalar
+
         schemaBuilder.additionalType(JSON_SCALAR);
+//        schemaBuilder.additionalTypes(((Set<GraphQLScalarType>) Arrays.stream(ExtendedScalars.class.getDeclaredFields()).map(x -> (GraphQLScalarType) x.get()).collect(Collectors.toSet())));
         return schemaBuilder.build();
     }
 
@@ -96,7 +90,7 @@ public class GraphQlService implements ContainerService {
         String resourceName = method.getDeclaringClass().getSimpleName();
         String methodName;
         String description = null;
-        io.swagger.v3.oas.annotations.Operation operation = method.getAnnotation(io.swagger.v3.oas.annotations.Operation.class);
+        Operation operation = method.getAnnotation(Operation.class);
         if (operation != null && !operation.operationId().isEmpty()) {
             // Use lowercased resource name for prefix
             methodName = resourceName.substring(0, 1).toLowerCase() + resourceName.substring(1) + "_" + operation.operationId();
@@ -112,35 +106,36 @@ public class GraphQlService implements ContainerService {
         }
 
         // Add arguments for each method parameter
-        java.lang.reflect.Parameter[] params = method.getParameters();
-        for (java.lang.reflect.Parameter param : params) {
+        Parameter[] params = method.getParameters();
+        for (Parameter param : params) {
             String argName = null;
-            if (param.isAnnotationPresent(jakarta.ws.rs.QueryParam.class)) {
-                argName = param.getAnnotation(jakarta.ws.rs.QueryParam.class).value();
-            } else if (param.isAnnotationPresent(jakarta.ws.rs.PathParam.class)) {
-                argName = param.getAnnotation(jakarta.ws.rs.PathParam.class).value();
-            } else if (param.isAnnotationPresent(jakarta.ws.rs.HeaderParam.class)) {
-                argName = param.getAnnotation(jakarta.ws.rs.HeaderParam.class).value();
-            } else if (param.isAnnotationPresent(jakarta.ws.rs.CookieParam.class)) {
-                argName = param.getAnnotation(jakarta.ws.rs.CookieParam.class).value();
-            } else if (param.isAnnotationPresent(jakarta.ws.rs.FormParam.class)) {
-                argName = param.getAnnotation(jakarta.ws.rs.FormParam.class).value();
+            if (param.isAnnotationPresent(QueryParam.class)) {
+                argName = param.getAnnotation(QueryParam.class).value();
+            } else if (param.isAnnotationPresent(PathParam.class)) {
+                argName = param.getAnnotation(PathParam.class).value();
+            } else if (param.isAnnotationPresent(HeaderParam.class)) {
+                argName = param.getAnnotation(HeaderParam.class).value();
+            } else if (param.isAnnotationPresent(CookieParam.class)) {
+                argName = param.getAnnotation(CookieParam.class).value();
+            } else if (param.isAnnotationPresent(FormParam.class)) {
+                argName = param.getAnnotation(FormParam.class).value();
             } else {
                 argName = param.getName();
             }
-            // Override any query input named "requestParams"; do not expose it as a user input
+            // Override any query input named "requestParams"; do not expose it as a user input.
+            // requestParams are filled in dynamically using the user's request context in the GraphQl resource.
             if ("requestParams".equals(argName)) {
                 continue;
             }
             // Use input type if not a primitive/String
             Class<?> paramType = param.getType();
-            graphql.schema.GraphQLInputType gqlInputType;
+            GraphQLInputType gqlInputType;
             if (paramType.equals(String.class) || paramType.isPrimitive() || paramType.isEnum() || Number.class.isAssignableFrom(paramType) || paramType.equals(Boolean.class)) {
                 gqlInputType = Scalars.GraphQLString;
             } else {
                 gqlInputType = getGraphQLInputType(paramType);
             }
-            builder.argument(graphql.schema.GraphQLArgument.newArgument()
+            builder.argument(GraphQLArgument.newArgument()
                 .name(argName)
                 .type(gqlInputType)
                 .build());
@@ -150,20 +145,20 @@ public class GraphQlService implements ContainerService {
         Class<?> returnType = method.getReturnType();
         boolean useJsonScalar = false;
         if (returnType.equals(void.class) || returnType.equals(Void.class)) {
-            builder.type(graphql.Scalars.GraphQLString); // or custom Void scalar
+            builder.type(Scalars.GraphQLString); // or custom Void scalar
         } else if (returnType.isArray()) {
             builder.type(GraphQLList.list(getGraphQLType(returnType.getComponentType())));
-        } else if (java.util.Collection.class.isAssignableFrom(returnType)) {
+        } else if (Collection.class.isAssignableFrom(returnType)) {
             Type genericReturnType = method.getGenericReturnType();
             if (genericReturnType instanceof ParameterizedType) {
                 Type itemType = ((ParameterizedType) genericReturnType).getActualTypeArguments()[0];
                 if (itemType instanceof Class<?>) {
                     builder.type(GraphQLList.list(getGraphQLType((Class<?>) itemType)));
                 } else {
-                    builder.type(GraphQLList.list(graphql.Scalars.GraphQLString));
+                    builder.type(GraphQLList.list(Scalars.GraphQLString));
                 }
             } else {
-                builder.type(GraphQLList.list(graphql.Scalars.GraphQLString));
+                builder.type(GraphQLList.list(Scalars.GraphQLString));
             }
         } else {
             builder.type(getGraphQLType(returnType));
@@ -182,31 +177,31 @@ public class GraphQlService implements ContainerService {
                     throw new RuntimeException("No resource instance found for " + method.getDeclaringClass());
                 }
 
-                java.lang.reflect.Parameter[] params2 = method.getParameters();
+                Parameter[] params2 = method.getParameters();
                 Object[] args = new Object[params2.length];
                 args[0] = env.getGraphQlContext().get("reqParams");
                 ObjectMapper objectMapper = new ObjectMapper();
                 for (int i = 1; i < params2.length; i++) {
-                    java.lang.reflect.Parameter param = params2[i];
+                    Parameter param = params2[i];
                     Object value = null;
                     // Support for @QueryParam, @PathParam, @HeaderParam, @CookieParam, @FormParam, @Context, @DefaultValue
-                    if (param.isAnnotationPresent(jakarta.ws.rs.QueryParam.class)) {
-                        String name1 = param.getAnnotation(jakarta.ws.rs.QueryParam.class).value();
+                    if (param.isAnnotationPresent(QueryParam.class)) {
+                        String name1 = param.getAnnotation(QueryParam.class).value();
                         value = env.getArgument(name1);
-                    } else if (param.isAnnotationPresent(jakarta.ws.rs.PathParam.class)) {
-                        String name = param.getAnnotation(jakarta.ws.rs.PathParam.class).value();
+                    } else if (param.isAnnotationPresent(PathParam.class)) {
+                        String name = param.getAnnotation(PathParam.class).value();
                         value = env.getArgument(name);
-                    } else if (param.isAnnotationPresent(jakarta.ws.rs.HeaderParam.class)) {
-                        String name = param.getAnnotation(jakarta.ws.rs.HeaderParam.class).value();
+                    } else if (param.isAnnotationPresent(HeaderParam.class)) {
+                        String name = param.getAnnotation(HeaderParam.class).value();
                         value = env.getArgument(name);
-                    } else if (param.isAnnotationPresent(jakarta.ws.rs.CookieParam.class)) {
-                        String name = param.getAnnotation(jakarta.ws.rs.CookieParam.class).value();
+                    } else if (param.isAnnotationPresent(CookieParam.class)) {
+                        String name = param.getAnnotation(CookieParam.class).value();
                         value = env.getArgument(name);
-                    } else if (param.isAnnotationPresent(jakarta.ws.rs.FormParam.class)) {
-                        String name = param.getAnnotation(jakarta.ws.rs.FormParam.class).value();
+                    } else if (param.isAnnotationPresent(FormParam.class)) {
+                        String name = param.getAnnotation(FormParam.class).value();
                         value = env.getArgument(name);
-                    } else if (param.isAnnotationPresent(jakarta.ws.rs.DefaultValue.class)) {
-                        String defaultValue = param.getAnnotation(jakarta.ws.rs.DefaultValue.class).value();
+                    } else if (param.isAnnotationPresent(DefaultValue.class)) {
+                        String defaultValue = param.getAnnotation(DefaultValue.class).value();
                         value = env.getArgument(param.getName());
                         if (value == null) value = defaultValue;
                     } else {
@@ -221,7 +216,7 @@ public class GraphQlService implements ContainerService {
                     }
                     args[i] = value;
                 }
-                LOG.log(System.Logger.Level.WARNING, "Invoking method: {0} with args: {1}", method.toGenericString(), java.util.Arrays.toString(args));
+                LOG.log(System.Logger.Level.WARNING, "Invoking method: {0} with args: {1}", method.toGenericString(), Arrays.toString(args));
                 Object result = method.invoke(resourceInstance, args);
                 // Unwrap InvocationTargetException to expose the real cause
                 if (result instanceof Throwable) {
@@ -253,14 +248,14 @@ public class GraphQlService implements ContainerService {
                 if (result != null) {
                     if (result.getClass().isArray()) {
                         Object[] arr = (Object[]) result;
-                        java.util.List<Object> newList = new java.util.ArrayList<>(arr.length);
+                        List<Object> newList = new ArrayList<>(arr.length);
                         for (Object item : arr) {
                             newList.add(convertAssetAttributesToList(item));
                         }
                         return newList;
-                    } else if (result instanceof java.util.Collection) {
-                        java.util.Collection<?> coll = (java.util.Collection<?>) result;
-                        java.util.List<Object> newList = new java.util.ArrayList<>();
+                    } else if (result instanceof Collection) {
+                        Collection<?> coll = (Collection<?>) result;
+                        List<Object> newList = new ArrayList<>();
                         for (Object item : coll) {
                             newList.add(convertAssetAttributesToList(item));
                         }
@@ -280,7 +275,7 @@ public class GraphQlService implements ContainerService {
                     }
                 }
                 return result;
-            } catch (java.lang.reflect.InvocationTargetException e) {
+            } catch (InvocationTargetException e) {
                 // Unwrap and throw the real cause for better error reporting
                 Throwable cause = e.getCause();
                 if (cause != null) {
@@ -299,16 +294,15 @@ public class GraphQlService implements ContainerService {
         return clazz.isPrimitive() || clazz.equals(String.class) || Number.class.isAssignableFrom(clazz) || clazz.equals(Boolean.class) || clazz.isEnum();
     }
 
-    private graphql.schema.GraphQLOutputType getGraphQLType(Class<?> clazz) {
+    private GraphQLOutputType getGraphQLType(Class<?> clazz) {
         // Map primitives and String
         // Map AttributeMap to a list of Attribute (ignore keys)
+
+        if(typeCache.containsKey(clazz)) {return typeCache.get(clazz);}
+
         if (clazz.getName().equals("org.openremote.model.attribute.AttributeMap")) {
-            try {
-                Class<?> attributeClass = Class.forName("org.openremote.model.attribute.Attribute");
-                return GraphQLList.list(getGraphQLType(attributeClass));
-            } catch (ClassNotFoundException e) {
-                return graphql.Scalars.GraphQLString;
-            }
+            Class<?> attributeClass = Attribute.class;
+            return GraphQLList.list(getGraphQLType(attributeClass));
         }
         // Map MetaMap to a list of MetaItem (if available), otherwise GraphQLString
         if (clazz.getName().equals("org.openremote.model.attribute.MetaMap")) {
@@ -316,24 +310,27 @@ public class GraphQlService implements ContainerService {
                 Class<?> metaItemClass = Class.forName("org.openremote.model.attribute.MetaItem");
                 return GraphQLList.list(getGraphQLType(metaItemClass));
             } catch (ClassNotFoundException e) {
-                return graphql.Scalars.GraphQLString;
+                return ExtendedScalars.Json;
             }
         }
+        if(clazz.getSimpleName().equals("Object")) {
+            return ExtendedScalars.Object;
+        }
         // Map Map and Object to GraphQLString to avoid empty object types
-        if (clazz.getName().equals("java.util.Map") || clazz.getSimpleName().equals("Map") || clazz.getSimpleName().equals("Object")) {
-            return graphql.Scalars.GraphQLString;
+        if (clazz.getName().equals("java.util.Map") || clazz.getSimpleName().equals("Map")) {
+            return ExtendedScalars.Object;
         }
         // Only map to GraphQLString for true primitives, enums, and known value types
-        if (clazz.equals(Class.class)) return graphql.Scalars.GraphQLString;
-        if (clazz.equals(String.class)) return graphql.Scalars.GraphQLString;
-        if (clazz.equals(Integer.class) || clazz.equals(int.class)) return graphql.Scalars.GraphQLInt;
+        if (clazz.equals(Class.class)) return Scalars.GraphQLString;
+        if (clazz.equals(String.class)) return Scalars.GraphQLString;
+        if (clazz.equals(Integer.class) || clazz.equals(int.class)) return Scalars.GraphQLInt;
         if (clazz.equals(Long.class) || clazz.equals(long.class)) return Scalars.GraphQLFloat;
-        if (clazz.equals(Boolean.class) || clazz.equals(boolean.class)) return graphql.Scalars.GraphQLBoolean;
-        if (clazz.equals(Float.class) || clazz.equals(float.class) || clazz.equals(Double.class) || clazz.equals(double.class)) return graphql.Scalars.GraphQLFloat;
-        if (clazz.equals(java.util.Date.class) || clazz.getName().equals("java.time.LocalDate") || clazz.getName().equals("java.time.Instant")) return graphql.Scalars.GraphQLString;
-        if (clazz.getSimpleName().equals("Id")) return Scalars.GraphQLID;
+        if (clazz.equals(Boolean.class) || clazz.equals(boolean.class)) return Scalars.GraphQLBoolean;
+        if (clazz.equals(Float.class) || clazz.equals(float.class) || clazz.equals(Double.class) || clazz.equals(double.class)) return ExtendedScalars.GraphQLLong;
+        if (clazz.equals(Date.class) || clazz.getName().equals("java.time.LocalDate") || clazz.getName().equals("java.time.Instant")) return ExtendedScalars.Date;
+        if (clazz.getSimpleName().equals("Id")) return ExtendedScalars.UUID;
         if (clazz.isEnum()) {
-            graphql.schema.GraphQLOutputType cachedEnum = typeCache.get(clazz);
+            GraphQLOutputType cachedEnum = typeCache.get(clazz);
             if (cachedEnum != null) {
                 return cachedEnum;
             }
@@ -352,7 +349,7 @@ public class GraphQlService implements ContainerService {
             return enumType;
         }
         // Check cache first
-        graphql.schema.GraphQLOutputType cachedType = typeCache.get(clazz);
+        GraphQLOutputType cachedType = typeCache.get(clazz);
         if (cachedType != null) {
             // If the cached type is a type reference, return it to avoid duplicate type creation
             return cachedType;
@@ -360,7 +357,7 @@ public class GraphQlService implements ContainerService {
         // If the type name is a built-in or common Java type, map to GraphQLString to avoid conflicts
         String typeName = clazz.getSimpleName();
         if (typeName.equals("Node") || typeName.equals("PageInfo") || typeName.equals("Entry")) {
-            return graphql.Scalars.GraphQLString;
+            return Scalars.GraphQLString;
         }
         // Phase 1: Put a type reference in the cache to break recursion
         GraphQLTypeReference typeRef = GraphQLTypeReference.typeRef(typeName);
@@ -369,12 +366,12 @@ public class GraphQlService implements ContainerService {
         boolean hasFields = false;
         for (Field field : getAllFields(clazz)) {
             // Skip static and synthetic fields
-            if (java.lang.reflect.Modifier.isStatic(field.getModifiers()) || field.isSynthetic()) continue;
+            if (Modifier.isStatic(field.getModifiers()) || field.isSynthetic()) continue;
             Class<?> fieldType = field.getType();
-            graphql.schema.GraphQLOutputType gqlType;
+            GraphQLOutputType gqlType;
             if (fieldType.isArray()) {
                 gqlType = GraphQLList.list(getGraphQLType(fieldType.getComponentType()));
-            } else if (java.util.Collection.class.isAssignableFrom(fieldType)) {
+            } else if (Collection.class.isAssignableFrom(fieldType)) {
                 // Try to get generic type
                 Type genericType = field.getGenericType();
                 if (genericType instanceof ParameterizedType) {
@@ -382,10 +379,10 @@ public class GraphQlService implements ContainerService {
                     if (itemType instanceof Class<?>) {
                         gqlType = GraphQLList.list(getGraphQLType((Class<?>) itemType));
                     } else {
-                        gqlType = GraphQLList.list(graphql.Scalars.GraphQLString);
+                        gqlType = GraphQLList.list(Scalars.GraphQLString);
                     }
                 } else {
-                    gqlType = GraphQLList.list(graphql.Scalars.GraphQLString);
+                    gqlType = GraphQLList.list(Scalars.GraphQLString);
                 }
             } else {
                 gqlType = getGraphQLType(fieldType);
@@ -395,7 +392,7 @@ public class GraphQlService implements ContainerService {
         }
         // If no fields, add a dummy field to avoid empty type error
         if (!hasFields) {
-            builder.field(f -> f.name("_dummy").type(graphql.Scalars.GraphQLString));
+            builder.field(f -> f.name("_dummy").type(Scalars.GraphQLString));
         }
         // Phase 2: Build the type and update the cache
         GraphQLObjectType type = builder.build();
@@ -403,18 +400,18 @@ public class GraphQlService implements ContainerService {
         return type;
     }
 
-    private graphql.schema.GraphQLInputType getGraphQLInputType(Class<?> clazz) {
-        return getGraphQLInputType(clazz, new java.util.HashSet<>());
+    private GraphQLInputType getGraphQLInputType(Class<?> clazz) {
+        return getGraphQLInputType(clazz, new HashSet<>());
     }
 
-    private graphql.schema.GraphQLInputType getGraphQLInputType(Class<?> clazz, java.util.Set<Class<?>> visited) {
+    private GraphQLInputType getGraphQLInputType(Class<?> clazz, Set<Class<?>> visited) {
         // Handle arrays
         if (clazz.isArray()) {
-            return graphql.schema.GraphQLList.list(getGraphQLInputType(clazz.getComponentType(), visited));
+            return GraphQLList.list(getGraphQLInputType(clazz.getComponentType(), visited));
         }
         // Handle collections (e.g., List, Set)
-        if (java.util.Collection.class.isAssignableFrom(clazz)) {
-            return graphql.schema.GraphQLList.list(Scalars.GraphQLString);
+        if (Collection.class.isAssignableFrom(clazz)) {
+            return GraphQLList.list(Scalars.GraphQLString);
         }
         if (clazz.equals(String.class) || clazz.isPrimitive() || clazz.isEnum() || Number.class.isAssignableFrom(clazz) || clazz.equals(Boolean.class)) {
             return Scalars.GraphQLString;
@@ -430,23 +427,23 @@ public class GraphQlService implements ContainerService {
             // Ensure valid GraphQL name
             typeName = typeName.replaceAll("[^_0-9A-Za-z]", "_");
             if (!typeName.matches("^[_A-Za-z].*")) typeName = "_" + typeName;
-            return graphql.schema.GraphQLTypeReference.typeRef(typeName);
+            return GraphQLTypeReference.typeRef(typeName);
         }
-        graphql.schema.GraphQLInputType cached = inputTypeCache.get(clazz);
+        GraphQLInputType cached = inputTypeCache.get(clazz);
         if (cached != null) return cached;
         visited.add(clazz);
         String typeName = clazz.getName().replace('.', '_').replace('$', '_') + "Input";
         // Ensure valid GraphQL name
         typeName = typeName.replaceAll("[^_0-9A-Za-z]", "_");
         if (!typeName.matches("^[_A-Za-z].*")) typeName = "_" + typeName;
-        graphql.schema.GraphQLInputObjectType.Builder builder = graphql.schema.GraphQLInputObjectType.newInputObject().name(typeName);
+        GraphQLInputObjectType.Builder builder = GraphQLInputObjectType.newInputObject().name(typeName);
         for (Field field : getAllFields(clazz)) {
-            if (java.lang.reflect.Modifier.isStatic(field.getModifiers()) || field.isSynthetic()) continue;
+            if (Modifier.isStatic(field.getModifiers()) || field.isSynthetic()) continue;
             Class<?> fieldType = field.getType();
-            graphql.schema.GraphQLInputType gqlType = getGraphQLInputType(fieldType, visited);
-            builder.field(graphql.schema.GraphQLInputObjectField.newInputObjectField().name(field.getName()).type(gqlType));
+            GraphQLInputType gqlType = getGraphQLInputType(fieldType, visited);
+            builder.field(GraphQLInputObjectField.newInputObjectField().name(field.getName()).type(gqlType));
         }
-        graphql.schema.GraphQLInputObjectType inputType = builder.build();
+        GraphQLInputObjectType inputType = builder.build();
         inputTypeCache.put(clazz, inputType);
         visited.remove(clazz);
         return inputType;
@@ -475,8 +472,8 @@ public class GraphQlService implements ContainerService {
     public static Object exportSchemaAsJson(GraphQLSchema schema, String filePath) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         // graphql-java does not provide a direct way to serialize schema as JSON, so we export the introspection result
-        var introspectionResult = graphql.introspection.IntrospectionQuery.INTROSPECTION_QUERY;
-        ExecutionResult executionResult = graphql.GraphQL.newGraphQL(schema).build().execute(introspectionResult);
+        var introspectionResult = IntrospectionQuery.INTROSPECTION_QUERY;
+        ExecutionResult executionResult = GraphQL.newGraphQL(schema).build().execute(introspectionResult);
         return executionResult.getData();
     }
 
@@ -517,7 +514,7 @@ public class GraphQlService implements ContainerService {
     }
 
     private Field[] getAllFields(Class<?> clazz) {
-        java.util.List<Field> fields = new java.util.ArrayList<>();
+        List<Field> fields = new ArrayList<>();
         while (clazz != null && !clazz.equals(Object.class)) {
             for (Field field : clazz.getDeclaredFields()) {
                 fields.add(field);
@@ -534,7 +531,7 @@ public class GraphQlService implements ContainerService {
     // Helper to convert a Map to a List of values, each value including the key as a field
     private List<Object> convertMapToListWithKey(Map<?, ?> map) {
         if (map == null) return null;
-        List<Object> result = new java.util.ArrayList<>();
+        List<Object> result = new ArrayList<>();
         for (Map.Entry<?, ?> entry : map.entrySet()) {
             Object value = entry.getValue();
             if (value instanceof Map) {
@@ -544,7 +541,7 @@ public class GraphQlService implements ContainerService {
             if (value instanceof List) {
                 // Optionally handle lists of maps
                 List<?> list = (List<?>) value;
-                List<Object> newList = new java.util.ArrayList<>();
+                List<Object> newList = new ArrayList<>();
                 for (Object item : list) {
                     if (item instanceof Map) {
                         newList.add(convertMapToListWithKey((Map<?, ?>) item));
@@ -557,7 +554,7 @@ public class GraphQlService implements ContainerService {
             // If value is a POJO, add the key as a field if possible
             if (value != null && !(value instanceof Map) && !(value instanceof List) && !(value instanceof String) && !(value instanceof Number) && !(value instanceof Boolean)) {
                 try {
-                    java.lang.reflect.Field keyField = null;
+                    Field keyField = null;
                     for (Field f : value.getClass().getDeclaredFields()) {
                         if (f.getName().equals("key")) {
                             keyField = f;
@@ -573,7 +570,7 @@ public class GraphQlService implements ContainerService {
                 } catch (Exception ignore) {}
             }
             // Otherwise, use a Map to hold the key and value
-            Map<String, Object> entryMap = new java.util.HashMap<>();
+            Map<String, Object> entryMap = new HashMap<>();
             entryMap.put("key", entry.getKey());
             entryMap.put("value", value);
             result.add(entryMap);
@@ -586,7 +583,7 @@ public class GraphQlService implements ContainerService {
         if (assetObj == null) return null;
         try {
             Class<?> resultClass = assetObj.getClass();
-            java.lang.reflect.Field attributesField = null;
+            Field attributesField = null;
             Class<?> searchClass = resultClass;
             while (searchClass != null && attributesField == null) {
                 try {
@@ -602,7 +599,7 @@ public class GraphQlService implements ContainerService {
                     // Convert the map to a list with key included
                     List<Attribute<?>> entryList = ((AttributeMap)attributesValue).values().stream().toList();
                     // Return a Map with all fields, replacing 'attributes' with the entry list
-                    java.util.Map<String, Object> resultMap = new java.util.HashMap<>();
+                    Map<String, Object> resultMap = new HashMap<>();
                     for (Field f : getAllFields(resultClass)) {
                         f.setAccessible(true);
                         Object value = f.get(assetObj);
