@@ -1341,14 +1341,14 @@ export class OrChart extends translate(i18next)(LitElement) {
 
             if(query.type === "lttb") {
                 // If number of data points is set, only allow a maximum of 1 point per pixel in width
-                // Otherwise, dynamically set number of data points based on chart width (1000px = 200 data points)
+                // Otherwise, dynamically set number of data points based on chart width (1000px = 100 data points)
                 if(query.amountOfPoints) {
                     if(this._chartElem?.clientWidth > 0) {
                         query.amountOfPoints = Math.min(query.amountOfPoints, this._chartElem?.clientWidth);
                     }
                 } else {
                     if(this._chartElem?.clientWidth > 0) {
-                        query.amountOfPoints = Math.round(this._chartElem.clientWidth / 5);
+                        query.amountOfPoints = Math.round(this._chartElem.clientWidth / 10);
                     } else {
                         console.warn("Could not grab width of the Chart for estimating amount of data points. Using 100 points instead.");
                         query.amountOfPoints = 100;
