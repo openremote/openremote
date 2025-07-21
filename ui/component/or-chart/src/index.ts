@@ -1318,7 +1318,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             itemStyle: {
                 color: color
             },
-            stack: stacked ? "total" : undefined,
+            stack: stacked ? (extended ? "extended" : "total") : undefined,
             smooth: smooth,
             step: stepped ? "end" : undefined,
             extended: extended,
