@@ -808,10 +808,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 }
                 return null;
             });
+        } catch (CacheLoader.InvalidCacheLoadException ignored) {
         } catch (Exception e) {
             LOG.log(Level.INFO, "Failed to get realm by name: " + name, e);
-            throw new RuntimeException(e);
         }
+        return null;
     }
 
     @Override

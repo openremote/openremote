@@ -121,7 +121,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         keycloakProvider.updateUserRealmRoles(realmBuilding.getName(), testuser3Id, keycloakProvider.addUserRealmRoles(realmBuilding.getName(), testuser3Id, REALM_ROLE_TEST));
         List<ClientRole> testuser4Roles = new ArrayList<>(Arrays.asList(REGULAR_USER_ROLES));
         testuser4Roles.add(ClientRole.WRITE_ADMIN);
-        testuser4 = createUser(realmBuilding.getName(), "testuser4", "testuser4", "DemoA4", "DemoLast", "testuser4@openremote.local", true, true, false, testuser4Roles.toArray(new ClientRole[0]));
+        testuser4 = createUser(realmBuilding.getName(), "testuser4", "testuser4", "DemoA4", "DemoLast", null, true, false, true, testuser4Roles.toArray(new ClientRole[0]));
         this.testuser4Id = testuser4.getId();
         keycloakProvider.updateUserClientRoles(realmBuilding.getName(), testuser4Id, "account"); // Remove all roles for account client
         buildingUser = createUser(realmBuilding.getName(), "building", "building", "Building", "User", "building@openremote.local", true, noWriteAccess);
