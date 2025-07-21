@@ -99,7 +99,9 @@ const styling = css`
     .attribute-list-item-actions {
         justify-content: end;
         align-items: center;
-        display: none;
+        display: flex;
+        position: absolute;
+        visibility: hidden;
         gap: 8px;
     }
 
@@ -130,7 +132,8 @@ const styling = css`
     }
 
     .attribute-list-item:hover .attribute-list-item-actions {
-        display: flex;
+        visibility: visible;
+        position: unset;
         background: white;
         z-index: 1;
     }

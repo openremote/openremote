@@ -37,8 +37,10 @@ export class AttributesChartPanel extends AttributesPanel {
         // If 'palette', aka 'color palette', show color picker instead.
         if(action.icon === "palette") {
             return html`
-                <input id="chart-color-${attributeRef.id}-${attributeRef.name}" type="color" style="visibility: hidden; width: 0; padding: 0;" />
-                ${super._getAttributeActionTemplate(action, asset, attributeRef)}
+                <div style="position: relative;">
+                    <input id="chart-color-${attributeRef.id}-${attributeRef.name}" type="color" style="position: absolute; visibility: hidden; height: 24px; width: 24px; padding: 0;" />
+                    ${super._getAttributeActionTemplate(action, asset, attributeRef)}
+                </div>
             `;
         } else {
             return super._getAttributeActionTemplate(action, asset, attributeRef);
