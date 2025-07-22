@@ -880,8 +880,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                 options.series.forEach(function (series) {
                     if (series.lineStyle.opacity === 0.2 || series.lineStyle.opacity === 0.99) {
                         series.lineStyle.opacity = 0.31;
+                        series.showSymbol = false;
                     } else {
                         series.lineStyle.opacity = 1;
+                        series.showSymbol = true;
                     }
                 });
             }
@@ -905,9 +907,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                             series.lineStyle.opacity = 0.2;
                         } else {
                             series.lineStyle.opacity = 0.3;
+                            series.showSymbol = false;
                         }
                     } else if (series.lineStyle.opacity === 0.31) { // extra highlight if selected is faint
                         series.lineStyle.opacity = 0.99;
+                        series.showSymbol = true;
                     }
                 });
             }
@@ -1315,6 +1319,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 opacity: faint ? 0.31 : 1,
             },
             symbol: "circle",
+            showSymbol: !faint,
             itemStyle: {
                 color: color
             },
