@@ -34,6 +34,7 @@
     "fork-ts-checker-notifier-webpack-plugin": "^9.0.0",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
     "html-webpack-plugin": "^5.5.0",
+    "json-schema-traverse": "0.4.1",
     "prettier": "^2.5.1",
     "querystring-es3": "^0.2.1",
     "shx": "^0.3.3",
