@@ -101,8 +101,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 fill: ${unsafeCSS(DefaultColor3)};
                 font-size: 14px;
 
-                height: 100vh;
-                height: 100dvh;
+                height: 100vh; /* Fallback */
+                height: 100dvh; /* Stretch to dynamic viewport height */
                 display: flex;
                 flex: 1;
                 flex-direction: column;
