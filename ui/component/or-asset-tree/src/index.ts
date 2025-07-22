@@ -1170,6 +1170,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         let assetCond: StringPredicate[] | undefined = undefined;
         let attributeCond: LogicGroup<AttributePredicate> | undefined = undefined;
         let assetTypeCond: string[] | undefined = undefined;
+        console.debug("Filter", this._filter);
 
         if (this._filter.asset) {
             assetCond = [{
@@ -1242,15 +1243,15 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 let matchingAsset: Asset | undefined = response.data.find((a: Asset) => a.id === asset.id );
 
                 if (matchingAsset && matchingAsset.attributes) {
-                    for (let attributeValIndex = 0; attributeValIndex < attributeVal.length; attributeValIndex++ ) {
-                        let currentAttributeVal = attributeVal[attributeValIndex];
+                    for (const element of attributeVal) {
+                        let currentAttributeVal = element;
 
                         let atLeastOneAttributeMatchValue: boolean = false;
                         Object.keys(matchingAsset.attributes).forEach((key: string) => {
                             let attr: Attribute<any> = matchingAsset!.attributes![key];
 
                             // attr.value check to avoid to compare with empty/non existing value
-                            if (attr.name!.toLowerCase() === currentAttributeVal[0].toLowerCase() && attr.value) {
+                            if (attr.name!.toLowerCase() === currentAttributeVal[0].toLowerCase() && attr.value !== undefined) {
                                 switch (attr.type!) {
                                     case "number":
                                     case "integer":
@@ -1260,7 +1261,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                     case "positiveInteger":
                                     case "negativeInteger":
                                     case "positiveNumber":
-                                    case "negativeNumber":
+                                    case "negativeNumber": {
                                         let value: string = currentAttributeVal[1];
                                         if (currentAttributeVal[1].startsWith('=') && currentAttributeVal[1][1] !== '=') {
                                             value = '=' + value;
@@ -1276,6 +1277,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                             atLeastOneAttributeMatchValue = true;
                                         }
                                         break;
+                                    }
+                                    case "boolean": {
+                                        let value: string = currentAttributeVal[1];
+                                        if((value === "false" || value === "true") && value === attr.value.toString()) {
+                                            atLeastOneAttributeMatchValue = true;
+                                        }
+                                        break;
+                                    }
                                     case "text":
                                         if (attr.value) {
                                             let unparsedValue: string = currentAttributeVal[1];
