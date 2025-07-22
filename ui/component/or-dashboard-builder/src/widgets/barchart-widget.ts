@@ -78,7 +78,7 @@ function getDefaultIntervalOptions(): Map<string, IntervalConfig> {
         ["day", {intervalName:"day", steps:1, orFormat:DatapointInterval.DAY,momentFormat:"days", millis: 86400000}],
         ["week", {intervalName:"week", steps:1, orFormat:DatapointInterval.WEEK,momentFormat:"weeks", millis: 604800000}],
         ["month", {intervalName:"month", steps:1, orFormat:DatapointInterval.MONTH,momentFormat:"months", millis: 2592000000}],
-        ["year", {intervalName:"year", steps:1, orFormat:DatapointInterval.MINUTE,momentFormat:"years", millis: 31536000000}]
+        ["year", {intervalName:"year", steps:1, orFormat:DatapointInterval.YEAR,momentFormat:"years", millis: 31536000000}]
     ]);
 }
 
