@@ -1170,7 +1170,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         let assetCond: StringPredicate[] | undefined = undefined;
         let attributeCond: LogicGroup<AttributePredicate> | undefined = undefined;
         let assetTypeCond: string[] | undefined = undefined;
-        console.debug("Filter", this._filter);
 
         if (this._filter.asset) {
             assetCond = [{
@@ -1243,8 +1242,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 let matchingAsset: Asset | undefined = response.data.find((a: Asset) => a.id === asset.id );
 
                 if (matchingAsset && matchingAsset.attributes) {
-                    for (const element of attributeVal) {
-                        let currentAttributeVal = element;
+                    for (let attributeValIndex = 0; attributeValIndex < attributeVal.length; attributeValIndex++ ) {
+                        let currentAttributeVal = attributeVal[attributeValIndex];
 
                         let atLeastOneAttributeMatchValue: boolean = false;
                         Object.keys(matchingAsset.attributes).forEach((key: string) => {
