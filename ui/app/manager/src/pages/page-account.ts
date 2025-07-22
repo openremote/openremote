@@ -13,7 +13,6 @@ import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {ClientRole, Credential, Role, User, UserAssetLink, UserQuery} from "@openremote/model";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 export function pageAccountProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -147,13 +146,19 @@ export class PageAccount extends Page<AppStateKeyed> {
     protected _user?: UserModel;
 
     @state()
-    protected _passwordPolicy: string[] = [];
-
-    @state()
     protected _dirty = false;
 
     @state()
     protected _invalid = false;
+
+    @state()
+    protected _passwordPolicy: string[] = [];
+
+    @query("#new-password")
+    protected _passwordElem?: OrMwcInput;
+
+    @query("#new-repeatPassword")
+    protected _repeatPasswordElem?: OrMwcInput;
 
     static get styles() {
         return this._getStyle();
@@ -164,6 +169,11 @@ export class PageAccount extends Page<AppStateKeyed> {
     }
 
     public stateChanged(_state: AppStateKeyed) {
+    }
+
+    public connectedCallback() {
+        super.connectedCallback();
+        this._getPasswordPolicy();
     }
 
     protected render(): TemplateResult | void {
@@ -244,7 +254,7 @@ export class PageAccount extends Page<AppStateKeyed> {
                                   .type="${InputType.TEXT}"
                                   ?required="${!registrationEmailAsUsername}"
                                   .disabled="${true}"
-                                  minLength="3" maxLength="255" pattern="[A-Za-z0-9\-_+@.ßçʊ]+"
+                                  minLength="3" maxLength="255" pattern="[A-Za-z0-9\\-_+@\\.ßçʊÇʊ]+"
                                   .validationMessage="${i18next.t("invalidUsername")}"
                                   .value="${user?.username}" autocomplete="false"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
@@ -295,7 +305,7 @@ export class PageAccount extends Page<AppStateKeyed> {
                 <div class="column">
                     <h5>${i18next.t("password")}</h5>
                     ${registrationEmailAsUsername ? html`
-                        <!-- Reset password button when SMTP is configured -->
+                        <!-- Reset password button when email as username is configured -->
                         <or-mwc-input id="reset-password" raised
                                       .label="${i18next.t("resetPassword")}"
                                       .type="${InputType.BUTTON}"
@@ -303,7 +313,7 @@ export class PageAccount extends Page<AppStateKeyed> {
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onResetPasswordBtnClick(e)}"
                         ></or-mwc-input>
                     ` : html`
-                        <!-- Direct password input fields when SMTP is not configured -->
+                        <!-- Direct password input fields when email as username not configured -->
                         <or-mwc-input id="new-password" class="validate"
                                       .label="${i18next.t("password")}"
                                       .type="${InputType.PASSWORD}"
@@ -354,6 +364,32 @@ export class PageAccount extends Page<AppStateKeyed> {
     }
 
     /**
+     * HTML callback function when any of the password input fields change.
+     * Checks whether {@link _passwordElem} and {@link _repeatPasswordElem} are the same,
+     * and updates the {@link user} object with the new password.
+     */
+    protected _onPasswordChanged(user: UserModel): boolean {
+        const password = this._passwordElem?.nativeValue;
+        const repeatPassword = this._repeatPasswordElem?.nativeValue;
+        if(password && repeatPassword) {
+
+            if(password !== repeatPassword) {
+                const error = i18next.t("passwordMismatch");
+                this._repeatPasswordElem?.setCustomValidity(error);
+                user.password = "";
+
+            } else {
+                this._repeatPasswordElem?.setCustomValidity(undefined);
+                user.password = password;
+                return true;
+            }
+        } else {
+            console.warn("Could not update password; some fields are empty;", password, repeatPassword);
+        }
+        return false;
+    }
+
+    /**
      * HTML callback function for when the 'Save' button is clicked.
      * Checks if the input fields are valid, and calls the {@link _updateUser} function.
      */
@@ -371,30 +407,10 @@ export class PageAccount extends Page<AppStateKeyed> {
      */
     protected _onResetPasswordBtnClick(_e: OrInputChangedEvent) {
         if (this._user && !this._isInvalid()) {
-            this._requestPasswordReset()
-            showDialog(new OrMwcDialog()
-                .setHeading(i18next.t("resetPassword"))
-                .setContent(html`
-                    ${i18next.t("resetPasswordConfirmation")}
-                `)
-                .setActions([{
-                    actionName: "ok",
-                    content: i18next.t("ok")
-                }] as DialogAction[])
-                .setStyles(html`
-                    <style>
-                        .mdc-dialog__surface {
-                            padding: 4px 8px;
-                        }
 
-                        #dialog-content {
-                            padding: 24px;
-                        }
-                    </style>
-                `)
-                .setDismissAction({
-                    actionName: "ok",
-                }));
+            manager.rest.api.UserResource.requestPasswordResetCurrent()
+                .then(() => showSnackbar(undefined, i18next.t("resetPasswordConfirmation")))
+                .catch((reason) => showSnackbar(undefined, i18next.t("errorOccurred")));
         }
     }
 
@@ -423,19 +439,15 @@ export class PageAccount extends Page<AppStateKeyed> {
     protected async _getUser(): Promise<UserModel> {
         if (!this._user) {
             try {
-                const usersResponse = await manager.rest.api.UserResource.query({
-                    realmPredicate: {name: manager.getRealm()},
-                    usernames: [{predicateType: "string", value: manager.username}],
-                    limit: 1
-                } as UserQuery);
+                const usersResponse = await manager.rest.api.UserResource.getCurrent();
 
                 if (usersResponse.status < 200 || usersResponse.status > 299) {
                     throw new Error(usersResponse.statusText);
                 }
-                if (!usersResponse.data || usersResponse.data.length === 0) {
+                if (!usersResponse.data) {
                     throw new Error("No user could be found.");
                 }
-                this._user = usersResponse.data[0];
+                this._user = usersResponse.data;
 
             } catch (e) {
                 console.error(e);
@@ -451,12 +463,12 @@ export class PageAccount extends Page<AppStateKeyed> {
      */
     protected async _updateUser(user: UserModel): Promise<void> {
         try {
-            await manager.rest.api.UserResource.update(user);
+            await manager.rest.api.UserResource.updateCurrent(user);
             
             if (user.password) {
                 const credentials = {value: user.password} as Credential;
                 try {
-                    await manager.rest.api.UserResource.resetPassword(credentials);
+                    await manager.rest.api.UserResource.updatePasswordCurrent(credentials);
                     showSnackbar(undefined, "saveUserSucceeded");
                 } catch (e) {
                     showSnackbar(undefined, "saveUserFailed");
@@ -469,44 +481,20 @@ export class PageAccount extends Page<AppStateKeyed> {
             // Update the stored user with the saved version and reset dirty flag
             this._user = {...user};
             this._dirty = false;
-            
-            // Force re-render to update UI elements (like the reset password button)
-            this.requestUpdate();
         } catch (e) {
             console.error("Failed to update user:", e);
             showSnackbar(undefined, "saveUserFailed");
         }
     }
 
-    protected async _requestPasswordReset() {
-        await manager.rest.api.UserResource.requestPasswordReset();
-    }
-
     /**
-     * HTML callback function when any of the password input fields change.
-     * Checks whether {@link _passwordElem} and {@link _repeatPasswordElem} are the same,
-     * and updates the {@link user} object with the new password.
+     * Function that formats the password policy from the currently authenticated realm.
      */
-    protected _onPasswordChanged(user: UserModel): boolean {
-        const password = this.shadowRoot?.querySelector("#new-password") as OrMwcInput;
-        const repeatPassword = this.shadowRoot?.querySelector("#new-repeatPassword") as OrMwcInput;
-        if (password && repeatPassword) {
-
-            if (password.value !== repeatPassword.value) {
-                const error = i18next.t("passwordMismatch");
-                repeatPassword.setCustomValidity(error);
-                user.password = "";
-
-            } else {
-                repeatPassword.setCustomValidity(undefined);
-                user.password = password.value as string;
-                return true;
-            }
-        } else {
-            console.warn("Could not update password; some fields are empty;", password, repeatPassword);
+    protected async _getPasswordPolicy(): Promise<void> {
+        await manager.rest.api.RealmResource.get(manager.getRealm()).then((response) => {
+            this._passwordPolicy = response.data.passwordPolicy ?? this._passwordPolicy;
+            })
         }
-        return false;
-    }
 
     /**
      * Function that formats the password policy into a displayable html format.

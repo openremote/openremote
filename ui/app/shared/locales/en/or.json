@@ -326,7 +326,7 @@
   "resetPasswordAllowed": "Password reset allowed",
   "resetPassword": "Reset Password",
   "resetPasswordConfirmation": "An email has been sent to reset your password.",
-  "rememberMe": "Remember me",
+ "rememberMe": "Remember me",
   "deleteRealmConfirm":"Are you sure you want to delete this Realm?",
   "serviceUser": "Service user",
   "user_plural": "Users",

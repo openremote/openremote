@@ -115,7 +115,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     protected List<String> validRedirectUris;
     protected Cache<String, Realm> realmCache = CacheBuilder.newBuilder()
         .maximumSize(100)
-        .expireAfterWrite(Duration.ofMinutes(1))
+        .expireAfterWrite(Duration.ofMinutes(container.isDevMode() ? 0 : 10))
         .build();
 
     @Override
