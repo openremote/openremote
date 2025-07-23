@@ -283,6 +283,8 @@
   "sending": "Envoi en cours",
   "submit": "Soumettre",
   "password": "Mot de passe",
+  "resetPassword": "Réinitialiser le mot de passe",
+  "resetPasswordConfirmation": "Un e-mail a été envoyé pour réinitialiser votre mot de passe.",
   "repeatPassword": "Répéter le mot de passe",
   "details": "Des détails",
   "permissions":"Autorisations",
