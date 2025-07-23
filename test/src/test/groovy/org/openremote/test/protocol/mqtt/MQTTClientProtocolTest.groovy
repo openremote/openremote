@@ -637,9 +637,12 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert protocol.wildcardTopicConsumerMap.size() == 2
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).size() == 2
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).containsKey(temperatureTopic)
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).get(temperatureTopic).size() == 1
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).containsKey(humidityTopic)
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).get(humidityTopic).size() == 2
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).size() == 1
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).containsKey(pressureTopic)
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).get(pressureTopic).size() == 1
         }
 
         when: "mqtt data is published"
@@ -662,6 +665,28 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert asset.getAttribute("humidity2").flatMap { it.value }.map { it == 85 }.orElse(false)
             assert asset.getAttribute("pressure").flatMap { it.value }.map { it == 1013.25 }.orElse(false)
             assert asset.getAttribute("uvIndex").flatMap { it.value }.map { it == 3.0 }.orElse(false)
+        }
+
+        when: "an attribute is removed that uses the wildcard subscription"
+        asset.attributes.remove("humidity2")
+        asset = assetStorageService.merge(asset)
+
+        then: "the wildcard subscription should still exist as another attribute still matches it"
+        conditions.eventually {
+            def protocol = (MQTTProtocol)agentService.getProtocolInstance(agent.id)
+            def client = protocol.@client
+            assert client.topicConsumerMap.containsKey(wildcardTopic1)
+            assert client.topicConsumerMap.containsKey(wildcardTopic2)
+            assert client.topicConsumerMap.containsKey(uvIndexTopic)
+            assert protocol.wildcardTopicConsumerMap.size() == 2
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).size() == 2
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).containsKey(temperatureTopic)
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).get(temperatureTopic).size() == 1
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).containsKey(humidityTopic)
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).get(humidityTopic).size() == 1
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).size() == 1
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).containsKey(pressureTopic)
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).get(pressureTopic).size() == 1
         }
     }
 

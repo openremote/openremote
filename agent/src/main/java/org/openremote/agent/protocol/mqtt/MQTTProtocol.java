@@ -38,7 +38,6 @@ import javax.net.ssl.TrustManagerFactory;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -49,7 +48,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, MQTTProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "MQTT Client";
     protected final Map<AttributeRef, Consumer<MQTTMessage<String>>> protocolMessageConsumers = new HashMap<>();
-    protected final Map<String, Map<String, List<Consumer<MQTTMessage<String>>>>> wildcardTopicConsumerMap = new HashMap<>();
+    protected final Map<String, Map<String, Map<AttributeRef, Consumer<MQTTMessage<String>>>>> wildcardTopicConsumerMap = new HashMap<>();
     protected final Set<Topic> wildcardTopics = new HashSet<>();
     protected KeyStoreService keyStoreService;
 
@@ -61,6 +60,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, MQTTAgentLink agentLink) throws RuntimeException {
         agentLink.getSubscriptionTopic().ifPresent(topicStr -> {
 
+            AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
             Topic topic = Topic.parse(topicStr);
             Topic matchedWildcardTopic = findMatchingWildcardTopic(topic);
 
@@ -76,7 +76,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
             };
 
             if (matchedWildcardTopic != null) {
-                addWildcardMessageConsumer(matchedWildcardTopic.toString(), topicStr, Optional.of(agentLink.getQos().orElse(agent.getSubscribeQoS().orElse(0))).map(qos -> qos > 2 || qos < 0 ? null : qos).map(MqttQos::fromCode).orElse(MqttQos.AT_MOST_ONCE), messageConsumer);
+                addWildcardMessageConsumer(matchedWildcardTopic.toString(), topicStr, attributeRef, Optional.of(agentLink.getQos().orElse(agent.getSubscribeQoS().orElse(0))).map(qos -> qos > 2 || qos < 0 ? null : qos).map(MqttQos::fromCode).orElse(MqttQos.AT_MOST_ONCE), messageConsumer);
             } else {
                 client.addMessageConsumer(topicStr, Optional.of(agentLink.getQos().orElse(agent.getSubscribeQoS().orElse(0))).map(qos -> qos > 2 || qos < 0 ? null : qos).map(MqttQos::fromCode).orElse(MqttQos.AT_MOST_ONCE), messageConsumer);
                 protocolMessageConsumers.put(new AttributeRef(assetId, attribute.getName()), messageConsumer);
@@ -117,7 +117,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
             } else {
                 Topic topic = Topic.parse(topicStr);
                 Optional.ofNullable(findMatchingWildcardTopic(topic)).ifPresent(wildcardTopic ->
-                    removeWildcardMessageConsumer(wildcardTopic.toString(), topicStr)
+                    removeWildcardMessageConsumer(wildcardTopic.toString(), topicStr, attributeRef)
                 );
             }
         });
@@ -198,8 +198,8 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
         return "MQTT Client";
     }
 
-    protected void addWildcardMessageConsumer(String wildcardTopic, String topic, MqttQos qos, Consumer<MQTTMessage<String>> messageConsumer) {
-        LOG.fine("Adding wildcard message consumer uri=" + client.getClientUri() + ", topic=" + wildcardTopic);
+    protected void addWildcardMessageConsumer(String wildcardTopic, String topic, AttributeRef attributeRef, MqttQos qos, Consumer<MQTTMessage<String>> messageConsumer) {
+        LOG.fine("Adding wildcard message consumer uri=" + client.getClientUri() + ", wildcardTopic=" + wildcardTopic + ", topic=" + topic + ", " + attributeRef);
 
         synchronized (wildcardTopicConsumerMap) {
             wildcardTopicConsumerMap.compute(
@@ -207,29 +207,34 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
                     (wt, subConsumers) -> {
                         if (subConsumers == null) {
                             subConsumers = new ConcurrentHashMap<>();
-                            Map<String, List<Consumer<MQTTMessage<String>>>> finalSubConsumers = subConsumers;
+                            Map<String, Map<AttributeRef, Consumer<MQTTMessage<String>>>> finalSubConsumers = subConsumers;
                             client.addMessageConsumer(wildcardTopic, qos, msg ->
                                     Optional.ofNullable(finalSubConsumers.get(msg.getTopic()))
-                                            .ifPresent(consumers -> consumers.forEach(consumer -> consumer.accept(msg))));
+                                            .ifPresent(consumers -> consumers.values().forEach(consumer -> consumer.accept(msg))));
                         }
-                        subConsumers.computeIfAbsent(topic, t -> new CopyOnWriteArrayList<>()).add(messageConsumer);
+                        subConsumers.computeIfAbsent(topic, t -> new ConcurrentHashMap<>()).put(attributeRef, messageConsumer);
                         return subConsumers;
                     });
         }
     }
 
-    protected void removeWildcardMessageConsumer(String wildcardTopic, String topic) {
-        LOG.fine("Removing wildcard message consumer uri=" + client.getClientUri() + ", topic=" + wildcardTopic);
+    protected void removeWildcardMessageConsumer(String wildcardTopic, String topic, AttributeRef attributeRef) {
+        LOG.fine("Removing wildcard message consumer uri=" + client.getClientUri() + ", wildcardTopic=" + wildcardTopic + ", topic=" + topic + ", " + attributeRef);
 
         synchronized (wildcardTopicConsumerMap) {
             wildcardTopicConsumerMap.computeIfPresent(
                 wildcardTopic,
-                (t, subConsumers) -> {
-                    if (subConsumers.remove(topic) != null && subConsumers.isEmpty()) {
-                        client.removeMessageConsumers(wildcardTopic);
+                (wt, wildcardTopicConsumers) -> {
+                    wildcardTopicConsumers.computeIfPresent(topic, (t, attributeRefConsumerMap) -> {
+                        attributeRefConsumerMap.remove(attributeRef);
+                        return attributeRefConsumerMap.isEmpty() ? null : attributeRefConsumerMap;
+                    });
+                    if (wildcardTopicConsumers.isEmpty()) {
+                        // No more consumers for the wildcard topic
+                        client.removeMessageConsumers(wt);
                         return null;
                     }
-                    return subConsumers;
+                    return wildcardTopicConsumers;
                 });
         }
     }
