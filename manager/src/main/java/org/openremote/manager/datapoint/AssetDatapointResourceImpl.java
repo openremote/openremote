@@ -174,7 +174,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
     }
 
     @Override
-    public void getDatapointExport(AsyncResponse asyncResponse, String attributeRefsString, long fromTimestamp, long toTimestamp) {
+    public void getDatapointExport(AsyncResponse asyncResponse, String attributeRefsString, long fromTimestamp, long toTimestamp, String format) {
         try {
             AttributeRef[] attributeRefs = JSON.readValue(attributeRefsString, AttributeRef[].class);
 
@@ -201,7 +201,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
 
             DATA_EXPORT_LOG.info("User '" + getUsername() +  "' started data export for " + attributeRefsString + " from " + fromTimestamp + " to " + toTimestamp);
 
-            ScheduledFuture<File> exportFuture = assetDatapointService.exportDatapoints(attributeRefs, fromTimestamp, toTimestamp);
+            ScheduledFuture<File> exportFuture = assetDatapointService.exportDatapoints(attributeRefs, fromTimestamp, toTimestamp, format);
 
             asyncResponse.register((ConnectionCallback) disconnected -> exportFuture.cancel(true));
 

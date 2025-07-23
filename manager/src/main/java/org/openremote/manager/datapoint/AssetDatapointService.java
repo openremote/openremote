@@ -37,6 +37,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.HashSet;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.stream.Collectors.groupingBy;
@@ -251,13 +253,14 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
      */
     public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs,
                                                   long fromTimestamp,
-                                                  long toTimestamp) {
+                                                  long toTimestamp,
+                                                  String format) {
         try {
             String query = getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp);
 
             // Verify the query is 'legal' and can be executed
             if(canQueryDatapoints(query, null, datapointExportLimit)) {
-                return doExportDatapoints(attributeRefs, fromTimestamp, toTimestamp);
+                return doExportDatapoints(attributeRefs, fromTimestamp, toTimestamp, format);
             }
             throw new RuntimeException("Could not export datapoints.");
 
@@ -270,23 +273,65 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
     protected ScheduledFuture<File> doExportDatapoints(AttributeRef[] attributeRefs,
                                                        long fromTimestamp,
-                                                       long toTimestamp) {
+                                                       long toTimestamp,
+                                                       String format) {
 
         return scheduledExecutorService.schedule(() -> {
             String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
-            StringBuilder sb = new StringBuilder("copy (")
-                    .append(getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp))
-                    .append(") to '/storage/")
-                    .append(EXPORT_STORAGE_DIR_NAME)
-                    .append("/")
-                    .append(fileName)
-                    .append("' delimiter ',' CSV HEADER;");
+            if (format.equals("Column per attribute")) {
+                StringBuilder sb = new StringBuilder(String.format(
+                        "copy (select * from crosstab( " +
+                                "'select ad.timestamp, a.name || '' \\: '' || ad.attribute_name as header, ad.value " +
+                                "from asset_datapoint ad " +
+                                "join asset a on ad.entity_id = a.id " +
+                                "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                                "order by ad.timestamp, header', " +
+                                "'select distinct a.name || '' \\: '' || ad.attribute_name as header " +
+                                "from asset_datapoint ad " +
+                                "join asset a on ad.entity_id = a.id " +
+                                "order by header') " +
+                                "as ct(timestamp timestamp, %s) " +
+                                ") to '/storage/" + EXPORT_STORAGE_DIR_NAME + "/" + fileName + "' delimiter ',' CSV HEADER;",
+                        fromTimestamp / 1000, toTimestamp / 1000, getAttributeColumns(attributeRefs)
+                ));
+                persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
+            } else {
+                StringBuilder sb = new StringBuilder("copy (")
+                        .append(getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp))
+                        .append(") to '/storage/")
+                        .append(EXPORT_STORAGE_DIR_NAME)
+                        .append("/")
+                        .append(fileName)
+                        .append("' delimiter ',' CSV HEADER;");
+                persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
+            }
 
-            persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
+
 
             // The same path must resolve in both the postgresql container and the manager container
             return exportPath.resolve(fileName).toFile();
         }, 0, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Function for building CSV attribute headers when format will make
+     * a separate column per attribute.
+     */
+    private String getAttributeColumns(AttributeRef[] attributeRefs) {
+        // Create a set to keep track of unique headers
+        Set<String> headers = new HashSet<>();
+
+        // Build unique headers in the format "AssetName: AttributeName"
+        Arrays.stream(attributeRefs).forEach(attr -> {
+            String assetName = assetStorageService.findNames(attr.getId()).toString().replaceAll("(^\\[|\\]$)", "");
+            String attributeName = attr.getName();
+            headers.add(assetName + ": " + attributeName);
+        });
+
+        // Return as a single string with the assembled header.
+        return headers.stream()
+                .map(header -> "\"" + header + "\" text")
+                .collect(Collectors.joining(", "));
     }
 
     /**
