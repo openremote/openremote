@@ -142,6 +142,11 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
+    public void requestPasswordReset(String realm, String userId) {
+        throw new UnsupportedOperationException("This provider does not support password reset");
+    }
+
+    @Override
     public void resetPassword(String realm, String userId, Credential credential) {
         throw new UnsupportedOperationException("This provider does not support password reset");
     }

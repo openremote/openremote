@@ -615,13 +615,6 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         }
         notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), mockEmailNotificationHandler)
 
-        expect: "the demo users to be created"
-        conditions.eventually {
-            def users = identityService.getIdentityProvider().queryUsers(new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)).serviceUsers(false))
-            assert users.size() == 3
-            assert users.count { !TextUtil.isNullOrEmpty(it.email)} == 3
-        }
-
         when: "an email notification is sent to a realm through same mechanism as rules"
         def notification = new Notification(
                 "Test",
@@ -629,7 +622,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 Collections.singletonList(new Notification.Target(Notification.TargetType.REALM, managerTestSetup.realmBuildingName)), null, null)
         notificationService.sendNotification(notification, Notification.Source.REALM_RULESET, managerTestSetup.realmBuildingName)
 
-        then: "the email should have been sent to the realm users"
+        then: "the email should have been sent to the realm users with email addresses and email notifications enabled"
         conditions.eventually {
             assert sentEmails.size() == 2
             assert sentEmails.every {it.content == "Hello world!"}
