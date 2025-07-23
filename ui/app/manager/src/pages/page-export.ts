@@ -179,6 +179,9 @@ export class PageExport extends Page<AppStateKeyed> {
                     margin-bottom: 2em
                 }
                 
+                .format-wrapper {
+                    margin-bottom: 2em
+                }
                 .export-btn-wrapper {
                     display: flex;
                     justify-content: space-between;
@@ -203,6 +206,11 @@ export class PageExport extends Page<AppStateKeyed> {
 
     @property()
     protected _loading: boolean = false;
+
+    protected _exportFormats: String[] = ["Default", "Column per attribute"];
+
+    @property()
+    private selectedFormat: String = "Default";
 
     private config?: OrExportConfig;
     private realm: string;
@@ -275,6 +283,10 @@ export class PageExport extends Page<AppStateKeyed> {
                     <div class="timerange-wrapper">
                         <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("exportFrom"))}" .value="${moment(this.oldestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.oldestTimestamp = evt.detail.value}"></or-mwc-input>
                         <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("to"))}" .value="${moment(this.latestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.latestTimestamp = evt.detail.value}"></or-mwc-input>
+                        
+                    </div>
+                    <div class="format-wrapper">
+                        <or-mwc-input .type="${InputType.SELECT}"   label="${i18next.t('CSV Format')}" .value="${this.selectedFormat}" style="min-width: 230px;" .options="${this._exportFormats}"  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.selectedFormat = ev.detail.value}"></or-mwc-input>
                     </div>
                     <div class="export-btn-wrapper">
                         <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="clearTable" @click="${() => this.clearSelection()}"></or-mwc-input>
