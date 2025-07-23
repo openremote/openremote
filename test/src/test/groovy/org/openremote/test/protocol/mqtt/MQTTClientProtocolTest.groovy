@@ -688,6 +688,27 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).containsKey(pressureTopic)
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).get(pressureTopic).size() == 1
         }
+
+        when: "mqtt data is published"
+        attributeEvent = new AttributeEvent(testThing1.id, "temperature", 20.5)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+        attributeEvent = new AttributeEvent(testThing1.id, "humidity", 90.0)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        attributeEvent = new AttributeEvent(testThing2.id, "pressure", 1000)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        attributeEvent = new AttributeEvent(testThing3.id, "uvIndex", 4.0)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        then: "asset attribute values should be updated"
+        conditions.eventually {
+            asset = assetStorageService.find(asset.id, true)
+            assert asset.getAttribute("temperature").flatMap { it.value }.map { it == 20.5 }.orElse(false)
+            assert asset.getAttribute("humidity").flatMap { it.value }.map { it == 90 }.orElse(false)
+            assert asset.getAttribute("pressure").flatMap { it.value }.map { it == 1000 }.orElse(false)
+            assert asset.getAttribute("uvIndex").flatMap { it.value }.map { it == 4.0 }.orElse(false)
+        }
     }
 
     /**
