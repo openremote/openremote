@@ -23,7 +23,7 @@
     "@openremote/or-attribute-picker": "workspace:*",
     "@openremote/or-chart": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
-    "lit": "^2.0.2",
+    "lit": "^3.3.1",
     "moment": "^2.29.4"
   },
   "devDependencies": {
