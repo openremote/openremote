@@ -97,6 +97,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String OR_KEYCLOAK_PUBLIC_URI = "OR_KEYCLOAK_PUBLIC_URI";
     public static final String OR_KEYCLOAK_PUBLIC_URI_DEFAULT = "/auth";
     public static final String OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT = "OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT";
+    public static final int REALM_CACHE_EXPIRY_MINS = 10;
     public static final List<String> BUILT_IN_REALM_ROLES = List.of(
         "admin",
         "create-realm",
@@ -113,15 +114,17 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     protected Container container;
     protected String frontendURI;
     protected List<String> validRedirectUris;
-    protected Cache<String, Realm> realmCache = CacheBuilder.newBuilder()
-        .maximumSize(100)
-        .expireAfterWrite(Duration.ofMinutes(container.isDevMode() ? 0 : 10))
-        .build();
+    protected Cache<String, Realm> realmCache;
 
     @Override
     public void init(Container container) {
         super.init(container);
         this.container = container;
+
+        realmCache = CacheBuilder.newBuilder()
+            .maximumSize(100)
+            .expireAfterWrite(Duration.ofMinutes(container.isDevMode() ? 0 : REALM_CACHE_EXPIRY_MINS))
+            .build();
 
         String keycloakPublicUri = getString(container.getConfig(), OR_KEYCLOAK_PUBLIC_URI, OR_KEYCLOAK_PUBLIC_URI_DEFAULT);
         try {
