@@ -607,6 +607,11 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                         new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
                             .setSubscriptionTopic(humidityTopic)
                         )),
+                new Attribute<>("humidity2", NUMBER)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
+                            .setSubscriptionTopic(humidityTopic)
+                        )),
                 new Attribute<>("pressure", NUMBER)
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
@@ -654,6 +659,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             asset = assetStorageService.find(asset.id, true)
             assert asset.getAttribute("temperature").flatMap { it.value }.map { it == 19.5 }.orElse(false)
             assert asset.getAttribute("humidity").flatMap { it.value }.map { it == 85 }.orElse(false)
+            assert asset.getAttribute("humidity2").flatMap { it.value }.map { it == 85 }.orElse(false)
             assert asset.getAttribute("pressure").flatMap { it.value }.map { it == 1013.25 }.orElse(false)
             assert asset.getAttribute("uvIndex").flatMap { it.value }.map { it == 3.0 }.orElse(false)
         }

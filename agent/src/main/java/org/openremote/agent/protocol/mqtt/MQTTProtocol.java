@@ -38,6 +38,7 @@ import javax.net.ssl.TrustManagerFactory;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -48,7 +49,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, MQTTProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "MQTT Client";
     protected final Map<AttributeRef, Consumer<MQTTMessage<String>>> protocolMessageConsumers = new HashMap<>();
-    protected final Map<String, Map<String, Consumer<MQTTMessage<String>>>> wildcardTopicConsumerMap = new HashMap<>();
+    protected final Map<String, Map<String, List<Consumer<MQTTMessage<String>>>>> wildcardTopicConsumerMap = new HashMap<>();
     protected final Set<Topic> wildcardTopics = new HashSet<>();
     protected KeyStoreService keyStoreService;
 
@@ -203,15 +204,15 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
         synchronized (wildcardTopicConsumerMap) {
             wildcardTopicConsumerMap.compute(
                     wildcardTopic,
-                    (t, subConsumers) -> {
+                    (wt, subConsumers) -> {
                         if (subConsumers == null) {
                             subConsumers = new ConcurrentHashMap<>();
-                            Map<String, Consumer<MQTTMessage<String>>> finalSubConsumers = subConsumers;
+                            Map<String, List<Consumer<MQTTMessage<String>>>> finalSubConsumers = subConsumers;
                             client.addMessageConsumer(wildcardTopic, qos, msg ->
                                     Optional.ofNullable(finalSubConsumers.get(msg.getTopic()))
-                                            .ifPresent(consumer -> consumer.accept(msg)));
+                                            .ifPresent(consumers -> consumers.forEach(consumer -> consumer.accept(msg))));
                         }
-                        subConsumers.put(topic, messageConsumer);
+                        subConsumers.computeIfAbsent(topic, t -> new CopyOnWriteArrayList<>()).add(messageConsumer);
                         return subConsumers;
                     });
         }
