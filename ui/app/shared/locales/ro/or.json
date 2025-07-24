@@ -343,6 +343,8 @@
   "sending": "Se trimite",
   "submit": "Trimite",
   "password": "Parola",
+  "resetPassword": "Resetare parolă",
+  "resetPasswordConfirmation": "Un e-mail a fost trimis pentru a vă reseta parola.",
   "repeatPassword": "Repeta parola",
   "details": "Detalii",
   "permissions":"Permisiuni",
