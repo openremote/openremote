@@ -1263,7 +1263,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                     case "negativeNumber": {
                                         let normalizedValue: string = currentAttributeVal[1]?.replace(",", ".");
                                         if (!isNaN(Number(normalizedValue))) {
-                                            if ((attr.value || 0) === Number(normalizedValue)) {
+                                            if ((attr.value ?? 0) === Number(normalizedValue)) {
                                                 atLeastOneAttributeMatchValue = true;
                                             }
                                         }
