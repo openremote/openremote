@@ -369,6 +369,8 @@
   "sending": "Надсилання",
   "submit": "Надіслати",
   "password": "Пароль",
+  "resetPassword": "Скинути пароль",
+  "resetPasswordConfirmation": "На вашу електронну пошту надіслано лист для скидання пароля.",
   "repeatPassword": "Повторіть пароль",
   "details": "Деталі",
   "permissions": "Дозволи",
