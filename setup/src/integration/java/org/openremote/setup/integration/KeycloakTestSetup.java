@@ -136,7 +136,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
             realmBuilding.getName(),
             serviceUser.getId(),
             Constants.KEYCLOAK_CLIENT_ID,
-            Stream.of(ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES).map(ClientRole::getValue).toArray(String[]::new)
+            Stream.of(ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES, ClientRole.WRITE_SERVICES, ClientRole.READ_SERVICES).map(ClientRole::getValue).toArray(String[]::new)
         );
         serviceUser2 = new User()
             .setServiceAccount(true)

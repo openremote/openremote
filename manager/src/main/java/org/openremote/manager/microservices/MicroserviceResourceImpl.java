@@ -59,13 +59,6 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
     }
 
 
-    @Override
-    public MicroserviceInfo[] getServices(RequestParams requestParams) {
-        Microservice[] services = microserviceRegistry.getServices();
-        return Arrays.stream(services)
-                .map(MicroserviceInfo::fromMicroservice)
-                .toArray(MicroserviceInfo[]::new);
-    }
 
     @Override
     public boolean deregisterService(RequestParams requestParams, String serviceId) {
@@ -87,6 +80,14 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
 
         String providerIdentifier = getClientRemoteAddress();
         return microserviceRegistry.sendHeartbeat(providerIdentifier, serviceId);
+    }
+
+    @Override
+    public MicroserviceInfo[] getServices(RequestParams requestParams) {
+        Microservice[] services = microserviceRegistry.getServices();
+        return Arrays.stream(services)
+                .map(MicroserviceInfo::fromMicroservice)
+                .toArray(MicroserviceInfo[]::new);
     }
 
 }

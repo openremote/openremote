@@ -8,6 +8,8 @@ import org.openremote.model.microservices.MicroserviceStatus
 import org.openremote.setup.integration.KeycloakTestSetup
 
 import jakarta.ws.rs.ForbiddenException
+import jakarta.ws.rs.NotAuthorizedException
+
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.container.util.MapAccess.getString
@@ -26,11 +28,12 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
         def microserviceRegistryService = container.getService(MicroserviceRegistryService.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         when: "the users are authenticated"
 
-        // regular user for non-super-user testing
+        // regular user for non-service-user testing
         def regularUserAccessToken = authenticate(
                 container,
                 MASTER_REALM,
@@ -39,26 +42,25 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
                 "testuser1"
         ).token
 
-        // super user, for all operations
-        def accessToken = authenticate(
+        // service user for all operations
+        def serviceUserAccessToken = authenticate(
                 container,
-                MASTER_REALM,
-                KEYCLOAK_CLIENT_ID,
-                MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+                keycloakTestSetup.realmBuilding.getName(),
+                keycloakTestSetup.serviceUser.username,
+                keycloakTestSetup.serviceUser.secret
         ).token
 
 
         then: "the users have been authenticated and the tokens are retrieved"
         conditions.eventually {
-            assert accessToken != null
+            assert serviceUserAccessToken != null
             assert regularUserAccessToken != null
         }
 
         when: "the microservice resource is set up"
         def serverUri = serverUri(serverPort)
-        def microserviceResource = getClientApiTarget(serverUri, MASTER_REALM, accessToken).proxy(MicroserviceResource)
-        def regularUserMicroserviceResource = getClientApiTarget(serverUri, MASTER_REALM, regularUserAccessToken).proxy(MicroserviceResource)
+        def microserviceResource = getClientApiTarget(serverUri,  keycloakTestSetup.realmBuilding.getName(), serviceUserAccessToken).proxy(MicroserviceResource)
+        def regularUserMicroserviceResource = getClientApiTarget(serverUri,  keycloakTestSetup.realmBuilding.getName(), regularUserAccessToken).proxy(MicroserviceResource)
 
         and: "test microservice objects are created"
         def energyService = new Microservice(
@@ -187,7 +189,7 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         then: "the service should be marked as available"
         conditions.eventually {
             def servicesAfterHeartbeat = microserviceResource.getServices(null)
-            def energyServiceInfo = servicesAfterHeartbeat.find { it.serviceId == "energy-service" }
+            energyServiceInfo = servicesAfterHeartbeat.find { it.serviceId == "energy-service" }
             assert energyServiceInfo != null
             assert energyServiceInfo.status == MicroserviceStatus.AVAILABLE
         }
@@ -210,36 +212,33 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         and: "the energy service should no longer appear in the registry"
         conditions.eventually {
             def servicesAfterDeregister = microserviceResource.getServices(null)
-            def energyServiceInfo = servicesAfterDeregister.find { it.serviceId == "energy-service" }
+            energyServiceInfo = servicesAfterDeregister.find { it.serviceId == "energy-service" }
             def weatherServiceInfo = servicesAfterDeregister.find { it.serviceId == "weather-service" }
             assert energyServiceInfo == null
             assert weatherServiceInfo != null
         }
 
 
-        // Permission integration tests, a regular user should only be able to list services and not update/register/deregister
-        when: "the regular user tries to deregister the weather service"
+        when: "a regular user tries to register the weather service"
+        regularUserMicroserviceResource.registerService(null, weatherService)
+        
+        then: "the weather service should not be registered"
+        thrown(NotAuthorizedException)
+
+        when: "a regular user tries to deregister the weather service"
         regularUserMicroserviceResource.deregisterService(null, weatherService.serviceId)
 
-        then: "the weather service should not be deregistered as the user is not a service user"
-        thrown(ForbiddenException)
+        then: "the weather service should not be deregistered"
+        thrown(NotAuthorizedException)
+
         def servicesAfterDeregisterAttempt = microserviceRegistryService.getServices()
         assert servicesAfterDeregisterAttempt.length == 1
         assert servicesAfterDeregisterAttempt.find { it.serviceId == "weather-service" } != null
 
-        when: "the regular user tries to send a heartbeat for the weather service"
+        when: "a regular user tries to send a heartbeat for the weather service"
         regularUserMicroserviceResource.sendHeartbeat(null, weatherService.serviceId)
 
-        then: "the weather service registration should not be updated as the user is not a service user"
-        thrown(ForbiddenException)
-
-        when: "the regular user tries to get services for listing purposes"
-        def regularUserServices = regularUserMicroserviceResource.getServices(null)
-
-        then: "the registered services should be returned and should only contain the weather service"
-        assert regularUserServices != null
-        assert regularUserServices.length == 1
-        assert regularUserServices.find { it.serviceId == "weather-service" } != null
-        assert regularUserServices.find { it.serviceId == "energy-service" } == null
+        then: "the weather service registration should not be updated"
+        thrown(NotAuthorizedException)
     }
 }
