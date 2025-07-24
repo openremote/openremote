@@ -295,7 +295,30 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                         fromTimestamp / 1000, toTimestamp / 1000, getAttributeColumns(attributeRefs)
                 ));
                 persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
-            } else {
+            } else if (format.equals("Column per attribute, 30 second average CSV")) {
+                String bucketInterval = "30 seconds"; // Bucket interval
+                StringBuilder sb = new StringBuilder(String.format(
+                        "copy (select * from crosstab( " +
+                                "'select public.time_bucket(''%s'', ad.timestamp) as bucket_timestamp, " +
+                                "a.name || '' \\: '' || ad.attribute_name as header, " +
+                                "round(avg(ad.value::numeric), 3) as value " + // Using avg() with rounding to 3 decimal places
+                                "from asset_datapoint ad " +
+                                "join asset a on ad.entity_id = a.id " +
+                                "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                                "group by bucket_timestamp, header " +
+                                "order by bucket_timestamp, header', " +
+                                "'select distinct a.name || '' \\: '' || ad.attribute_name as header " +
+                                "from asset_datapoint ad " +
+                                "join asset a on ad.entity_id = a.id " +
+                                "order by header') " +
+                                "as ct(timestamp timestamp, %s) " +
+                                ") to '/storage/" + EXPORT_STORAGE_DIR_NAME + "/" + fileName + "' delimiter ',' CSV HEADER;",
+                        bucketInterval, fromTimestamp / 1000, toTimestamp / 1000, getAttributeColumns(attributeRefs)
+                ));
+
+                persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
+            }
+            else {
                 StringBuilder sb = new StringBuilder("copy (")
                         .append(getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp))
                         .append(") to '/storage/")
