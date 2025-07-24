@@ -1242,7 +1242,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 let matchingAsset: Asset | undefined = response.data.find((a: Asset) => a.id === asset.id );
 
                 if (matchingAsset && matchingAsset.attributes) {
-                    for (let attributeValIndex = 0; attributeValIndex < attributeVal.length; attributeValIndex++ ) {
+                    for (let attributeValIndex = 0; attributeValIndex < attributeVal.length; attributeValIndex++) {
                         let currentAttributeVal = attributeVal[attributeValIndex];
 
                         let atLeastOneAttributeMatchValue: boolean = false;
@@ -1261,19 +1261,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                     case "negativeInteger":
                                     case "positiveNumber":
                                     case "negativeNumber": {
-                                        let value: string = currentAttributeVal[1];
-                                        if (currentAttributeVal[1].startsWith('=') && currentAttributeVal[1][1] !== '=') {
-                                            value = '=' + value;
-                                        }
-
-                                        if (/^[0-9]+$/.test(currentAttributeVal[1])) {
-                                            value = '==' + value;
-                                        }
-
-                                        const resultNumberEval: boolean = eval(attr.value + value);
-
-                                        if (resultNumberEval) {
-                                            atLeastOneAttributeMatchValue = true;
+                                        let normalizedValue: string = currentAttributeVal[1]?.replace(",", ".");
+                                        if (!isNaN(Number(normalizedValue))) {
+                                            if ((attr.value || 0) === Number(normalizedValue)) {
+                                                atLeastOneAttributeMatchValue = true;
+                                            }
                                         }
                                         break;
                                     }
@@ -1284,13 +1276,13 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                         }
                                         break;
                                     }
-                                    case "text":
+                                    case "text": {
                                         if (attr.value) {
                                             let unparsedValue: string = currentAttributeVal[1];
                                             const multicharString: string = '*';
 
                                             let parsedValue: string = unparsedValue.replace(multicharString, '.*');
-                                            parsedValue = parsedValue.replace(/"/g,'');
+                                            parsedValue = parsedValue.replace(/"/g, '');
 
                                             let valueFromAttribute: string = attr.value as string;
 
@@ -1299,6 +1291,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                             }
                                         }
                                         break;
+                                    }
                                 }
                             }
                         });
