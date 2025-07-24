@@ -29,10 +29,14 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.microservices.Microservice;
 import org.openremote.model.microservices.MicroserviceInfo;
 import org.openremote.model.microservices.MicroserviceResource;
+import org.openremote.model.util.UniqueIdentifierGenerator;
+import org.openremote.model.microservices.MicroserviceRegistrationResponse;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.core.Response;
 
 public class MicroserviceResourceImpl extends ManagerWebResource implements MicroserviceResource {
 
@@ -46,40 +50,25 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
     }
 
     @Override
-    public boolean registerService(RequestParams requestParams,
-            @NotNull @Valid Microservice serviceDescriptor) {
+    public MicroserviceRegistrationResponse registerService(RequestParams requestParams,
+            @NotNull @Valid Microservice microservice) {
 
         if (!isServiceAccount()) {
             LOG.warning("Only service accounts can register services");
             throw new ForbiddenException("Only service accounts can register services");
         }
 
-        String providerIdentifier = getClientRemoteAddress();
-        return microserviceRegistry.registerService(providerIdentifier, serviceDescriptor);
-    }
+        // Generate a unique instanceId for the microservice
+        String instanceId = UniqueIdentifierGenerator.generateId();
 
-
-
-    @Override
-    public boolean deregisterService(RequestParams requestParams, String serviceId) {
-        if (!isServiceAccount()) {
-            LOG.warning("Only service accounts can deregister services");
-            throw new ForbiddenException("Only service accounts can deregister services");
+        try {
+            microserviceRegistry.registerService(microservice, instanceId);
+            return new MicroserviceRegistrationResponse(microservice.getServiceId(), instanceId);
+        } catch (Exception e) {
+            LOG.warning("Failed to register microservice: " + e.getMessage());
+            throw new InternalServerErrorException("Failed to register microservice");
         }
 
-        String providerIdentifier = getClientRemoteAddress();
-        return microserviceRegistry.deregisterService(providerIdentifier, serviceId);
-    }
-
-    @Override
-    public boolean sendHeartbeat(RequestParams requestParams, String serviceId) {
-        if (!isServiceAccount()) {
-            LOG.warning("Only service accounts can send heartbeats");
-            throw new ForbiddenException("Only service accounts can send heartbeats");
-        }
-
-        String providerIdentifier = getClientRemoteAddress();
-        return microserviceRegistry.sendHeartbeat(providerIdentifier, serviceId);
     }
 
     @Override
@@ -88,6 +77,37 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
         return Arrays.stream(services)
                 .map(MicroserviceInfo::fromMicroservice)
                 .toArray(MicroserviceInfo[]::new);
+    }
+
+    @Override
+    public Response sendHeartbeat(RequestParams requestParams, String serviceId, String instanceId) {
+        if (!isServiceAccount()) {
+            LOG.warning("Only service accounts can send heartbeats");
+            throw new ForbiddenException("Only service accounts can send heartbeats");
+        }
+
+        try {
+            microserviceRegistry.sendHeartbeat(serviceId, instanceId);
+            return Response.ok().build();
+        } catch (Exception e) {
+            LOG.warning("Failed to send heartbeat to microservice: " + e.getMessage());
+            throw new InternalServerErrorException("Failed to send heartbeat to microservice");
+        }
+    }
+
+    @Override
+    public Response deregisterService(RequestParams requestParams, String serviceId, String instanceId) {
+        if (!isServiceAccount()) {
+            LOG.warning("Only service accounts can deregister services");
+            throw new ForbiddenException("Only service accounts can deregister services");
+        }
+        try {
+            microserviceRegistry.deregisterService(serviceId, instanceId);
+            return Response.ok().build();
+        } catch (Exception e) {
+            LOG.warning("Failed to deregister microservice: " + e.getMessage());
+            throw new InternalServerErrorException("Failed to deregister microservice");
+        }
     }
 
 }

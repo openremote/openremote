@@ -29,23 +29,11 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Response;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-/**
- * Microservice resource, this resource is used by external microservices/services to
- * register themselves with the {@link MicroserviceRegistryService}.
- * 
- * <li>The client is responsible for periodically sending the
- * {@link Microservice} object to the {@link MicroserviceRegistryService}.</li>
- * 
- * <li>The {@link MicroserviceRegistryService} will store the registration in
- * memory, and will set the status to available. The client should update the
- * registration with the latest status and details.</li>
- * 
- * <li>The {@link MicroserviceRegistryService} will also handle the expiration of
- * registrations.
- */
+
 @Tag(name = "Microservice", description = "Registration and management of microservices")
 @Path("microservice")
 public interface MicroserviceResource {
@@ -55,15 +43,14 @@ public interface MicroserviceResource {
      * 
      * @param requestParams The request parameters
      * @param microservice The microservice to register and/or update
-     * @return True if the microservice was registered or updated successfully
+     * @return a response containing the serviceId and instanceId of the registered microservice
      */
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
     @Operation(operationId = "registerService", summary = "Register a external service/microservice")
-    boolean registerService(@BeanParam RequestParams requestParams, @NotNull @Valid Microservice microservice);
-
+    MicroserviceRegistrationResponse registerService(@BeanParam RequestParams requestParams, @NotNull @Valid Microservice microservice);
 
     /**
      * Lists all currently registered microservices with their details and status.
@@ -78,21 +65,21 @@ public interface MicroserviceResource {
     MicroserviceInfo[] getServices(@BeanParam RequestParams requestParams);
 
 
-
     /**
      * Send a heartbeat to update the active registration TTL for the specified microservice.
      * This is used to indicate that the microservice is still running and available.
      * 
      * @param requestParams The request parameters
      * @param serviceId The serviceId of the microservice to send the heartbeat to
-     * @return True if the heartbeat was sent successfully
+     * @param instanceId The instanceId of the microservice to send the heartbeat to
+     * @return HTTP 200 OK if the heartbeat was sent successfully, otherwise an error response
      */
     @PUT
-    @Path("{serviceId}")
+    @Path("{serviceId}/{instanceId}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
     @Operation(operationId = "sendHeartbeat", summary = "Update the active registration TTL for the specified microservice")
-    boolean sendHeartbeat(@BeanParam RequestParams requestParams, @PathParam("serviceId") String serviceId);
+    Response sendHeartbeat(@BeanParam RequestParams requestParams, @PathParam("serviceId") String serviceId, @PathParam("instanceId") String instanceId);
 
     /**
      * Deregisters the active registration for the specified microservice. This
@@ -101,14 +88,15 @@ public interface MicroserviceResource {
      * 
      * @param requestParams The request parameters
      * @param serviceId The serviceId of the microservice to deregister
-     * @return True if the microservice was deregistered successfully
+     * @param instanceId The instanceId of the microservice to deregister
+     * @return HTTP 200 OK if the microservice was deregistered successfully, otherwise an error response
      */
     @DELETE
-    @Path("{serviceId}")
+    @Path("{serviceId}/{instanceId}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
     @Operation(operationId = "deregisterService", summary = "Deregister a external service/microservice")
-    boolean deregisterService(@BeanParam RequestParams requestParams, @PathParam("serviceId") String serviceId);
+    Response deregisterService(@BeanParam RequestParams requestParams, @PathParam("serviceId") String serviceId, @PathParam("instanceId") String instanceId);
 
 
 }

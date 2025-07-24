@@ -61,9 +61,9 @@ public class MicroserviceRegistryService implements ContainerService {
     protected record RegistrationEntry(Microservice service, long expirationTime, boolean ignoreTTL) {
     }
 
-    // Map of registrations, uses a composite key of service id and the given
-    // identifier e.g. an IP address
-    protected ConcurrentHashMap<String, RegistrationEntry> registrationMap;
+    // Map of registrations
+    // <serviceId, <instanceId, RegistrationEntry>>
+    protected ConcurrentHashMap<String, ConcurrentHashMap<String, RegistrationEntry>> registrationMap;
 
     // Scheduled future for the expiration check task
     protected ScheduledFuture<?> expirationCheckFuture;
@@ -74,7 +74,7 @@ public class MicroserviceRegistryService implements ContainerService {
         this.scheduledExecutorService = container.getScheduledExecutor();
         this.identityService = container.getService(ManagerIdentityService.class);
 
-        // Register the microservice resource
+        // Register the microservice REST resource
         container.getService(ManagerWebService.class).addApiSingleton(
                 new MicroserviceResourceImpl(timerService, identityService, this));
 
@@ -83,30 +83,25 @@ public class MicroserviceRegistryService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
-        // Start the expiration check task
-        expirationCheckFuture = scheduledExecutorService.scheduleAtFixedRate(this::expirationCheck, 0,
+        expirationCheckFuture = scheduledExecutorService.scheduleAtFixedRate(this::runExpirationCheck, 0,
                 DEFAULT_TTL_MS / 2, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void stop(Container container) throws Exception {
-        // Cancel the expiration check task
         if (expirationCheckFuture != null) {
             expirationCheckFuture.cancel(true);
         }
         registrationMap.clear();
     }
 
-    protected String getRegistrationKey(String serviceId, String identifier) {
-        return serviceId + ":" + identifier;
-    }
-
     /**
      * Check for expired registrations and set their status to unavailable if the
      * TTL has expired and the TTL is not ignored
      */
-    public void expirationCheck() {
+    public void runExpirationCheck() {
         registrationMap.values().stream()
+                .flatMap(map -> map.values().stream())
                 .filter(entry -> !entry.ignoreTTL)
                 .filter(entry -> entry.expirationTime < timerService.getCurrentTimeMillis())
                 .forEach(entry -> {
@@ -117,36 +112,32 @@ public class MicroserviceRegistryService implements ContainerService {
     /**
      * Register or update a registration for a microservice with a given identifier.
      * 
-     * @param identifier   The given identifier (e.g. client remote address)
      * @param microservice The microservice to register
-     * @return True if the microservice was registered/updated successfully
+     * @param instanceId   The instanceId of the microservice to register
      */
-    public boolean registerService(String identifier, Microservice microservice) {
-        return registerService(identifier, microservice, false);
+    public void registerService(Microservice microservice, String instanceId) {
+        registerService(microservice, instanceId, false);
     }
 
     /**
      * Register or update a registration for a microservice with a given identifier
      * 
-     * @param identifier   The given identifier (e.g. client remote address)
      * @param microservice The microservice to register
+     * @param instanceId   The instanceId of the microservice to register
      * @param ignoreTTL    If true, the TTL will be ignored and the registration
      *                     will not expire
-     * @return True if the microservice was registered/updated successfully
      */
-    public boolean registerService(String identifier, Microservice microservice, boolean ignoreTTL) {
+    public void registerService(Microservice microservice, String instanceId, boolean ignoreTTL) {
         try {
-            String compositeKey = getRegistrationKey(microservice.getServiceId(), identifier);
-            LOG.fine("Registering microservice: " + compositeKey + ", ignoreTTL: " + ignoreTTL);
+            LOG.fine("Registering microservice: " + microservice.getServiceId() + ", instanceId: " + instanceId
+                    + ", ignoreTTL: " + ignoreTTL);
+            registrationMap.computeIfAbsent(microservice.getServiceId(), k -> new ConcurrentHashMap<>())
+                    .put(instanceId,
+                            new RegistrationEntry(microservice, timerService.getCurrentTimeMillis() + DEFAULT_TTL_MS,
+                                    ignoreTTL));
 
-            registrationMap.put(compositeKey,
-                    new RegistrationEntry(microservice, timerService.getCurrentTimeMillis() + DEFAULT_TTL_MS,
-                            ignoreTTL));
-
-            return true;
         } catch (Exception e) {
             LOG.warning("Failed to register microservice: " + e.getMessage());
-            return false;
         }
     }
 
@@ -156,42 +147,47 @@ public class MicroserviceRegistryService implements ContainerService {
      * This is used to indicate that the microservice is still running and
      * available.
      * 
-     * @param identifier The given identifier (e.g. client remote address)
      * @param serviceId  The serviceId of the microservice to send the heartbeat to
-     * @return True if the heartbeat was sent successfully
+     * @param instanceId The instanceId of the microservice to send the heartbeat to
      */
-    public boolean sendHeartbeat(String identifier, String serviceId) {
-        String compositeKey = getRegistrationKey(serviceId, identifier);
-        RegistrationEntry entry = registrationMap.get(compositeKey);
+    public void sendHeartbeat(String serviceId, String instanceId) {
+        ConcurrentHashMap<String, RegistrationEntry> instances = registrationMap.get(serviceId);
+        if (instances == null) {
+            LOG.warning("Failed to send heartbeat to microservice: " + serviceId + ", instanceId: " + instanceId
+                    + " - service not found");
+            return;
+        }
+        RegistrationEntry entry = instances.get(instanceId);
         if (entry != null) {
-
-            // Update the registration with a new TTL
-            registrationMap.put(compositeKey,
+            // Refresh the TTL expiration time
+            instances.put(instanceId,
                     new RegistrationEntry(entry.service, timerService.getCurrentTimeMillis() + DEFAULT_TTL_MS,
                             entry.ignoreTTL));
 
-            // Update the status to available
+            // Set the status to available
             entry.service.setStatus(MicroserviceStatus.AVAILABLE);
 
-            return true;
+        } else {
+            LOG.warning("Failed to send heartbeat to microservice: " + serviceId + ", instanceId: " + instanceId
+                    + " - instance not found");
         }
-        return false;
     }
 
     /**
-     * Deregister a microservice with a given identifier
+     * Deregister a microservice
      * 
-     * @param identifier The given identifier (e.g. client remote address)
      * @param serviceId  The serviceId of the microservice to deregister
-     * @return True if the microservice was deregistered successfully
+     * @param instanceId The instanceId of the microservice to deregister
      */
-    public boolean deregisterService(String identifier, String serviceId) {
+    public void deregisterService(String serviceId, String instanceId) {
         try {
-            String compositeKey = getRegistrationKey(serviceId, identifier);
-            RegistrationEntry removed = registrationMap.remove(compositeKey);
-            return removed != null;
+            ConcurrentHashMap<String, RegistrationEntry> instances = registrationMap.get(serviceId);
+            if (instances == null) {
+                return;
+            }
+            instances.remove(instanceId);
         } catch (Exception e) {
-            return false;
+            LOG.warning("Failed to deregister microservice: " + e.getMessage());
         }
     }
 
@@ -201,7 +197,13 @@ public class MicroserviceRegistryService implements ContainerService {
      * @return An array of microservices
      */
     public Microservice[] getServices() {
+        // Ensure that the expiration check is run before returning the services
+        // This is to ensure that the services are up to date and that the TTL is
+        // respected
+        runExpirationCheck();
+
         return registrationMap.values().stream()
+                .flatMap(map -> map.values().stream())
                 .map(RegistrationEntry::service)
                 .toArray(Microservice[]::new);
     }
