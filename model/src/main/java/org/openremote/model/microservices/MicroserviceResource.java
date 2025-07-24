@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2025, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -76,7 +76,6 @@ public interface MicroserviceResource {
      */
     @PUT
     @Path("{serviceId}/{instanceId}")
-    @Produces(APPLICATION_JSON)
     @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
     @Operation(operationId = "sendHeartbeat", summary = "Update the active registration TTL for the specified microservice")
     Response sendHeartbeat(@BeanParam RequestParams requestParams, @PathParam("serviceId") String serviceId, @PathParam("instanceId") String instanceId);
@@ -93,7 +92,6 @@ public interface MicroserviceResource {
      */
     @DELETE
     @Path("{serviceId}/{instanceId}")
-    @Produces(APPLICATION_JSON)
     @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
     @Operation(operationId = "deregisterService", summary = "Deregister a external service/microservice")
     Response deregisterService(@BeanParam RequestParams requestParams, @PathParam("serviceId") String serviceId, @PathParam("instanceId") String instanceId);

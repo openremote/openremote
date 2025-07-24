@@ -155,7 +155,7 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         def heartbeatResponse = microserviceResource.sendHeartbeat(null, weatherService.serviceId, weatherInstanceId)
 
         then: "the service should be marked as available"
-        assert heartbeatResponse.status == Response.Status.OK.getStatusCode()
+        assert heartbeatResponse.status == Response.Status.NO_CONTENT.getStatusCode()
         conditions.eventually {
             def servicesAfterHeartbeat = microserviceResource.getServices(null)
             def weatherServiceInfo = servicesAfterHeartbeat.find { it.serviceId == "weather-service" }
@@ -183,7 +183,7 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         def energyHeartbeatResponse = microserviceResource.sendHeartbeat(null, energyService.serviceId, energyInstanceId)
 
         then: "the service should be marked as available"
-        assert energyHeartbeatResponse.status == Response.Status.OK.getStatusCode()
+        assert energyHeartbeatResponse.status == Response.Status.NO_CONTENT.getStatusCode()
         conditions.eventually {
             def servicesAfterHeartbeat = microserviceResource.getServices(null)
             energyServiceInfo = servicesAfterHeartbeat.find { it.serviceId == "energy-service" }
@@ -203,7 +203,7 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         def deregisterResponse = microserviceResource.deregisterService(null, energyService.serviceId, energyInstanceId)
 
         then: "the energy service should be deregistered successfully"
-        assert deregisterResponse.status == Response.Status.OK.getStatusCode()
+        assert deregisterResponse.status == Response.Status.NO_CONTENT.getStatusCode()
 
         and: "the energy service should no longer appear in the registry"
         conditions.eventually {

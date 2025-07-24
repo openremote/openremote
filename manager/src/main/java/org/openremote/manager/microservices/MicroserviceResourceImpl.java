@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2025, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -88,7 +88,7 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
 
         try {
             microserviceRegistry.sendHeartbeat(serviceId, instanceId);
-            return Response.ok().build();
+            return Response.noContent().build();
         } catch (Exception e) {
             LOG.warning("Failed to send heartbeat to microservice: " + e.getMessage());
             throw new InternalServerErrorException("Failed to send heartbeat to microservice");
@@ -103,7 +103,7 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
         }
         try {
             microserviceRegistry.deregisterService(serviceId, instanceId);
-            return Response.ok().build();
+            return Response.noContent().build();
         } catch (Exception e) {
             LOG.warning("Failed to deregister microservice: " + e.getMessage());
             throw new InternalServerErrorException("Failed to deregister microservice");

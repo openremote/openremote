@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2025, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -34,18 +34,24 @@ import org.openremote.model.microservices.Microservice;
 import org.openremote.model.microservices.MicroserviceStatus;
 
 /**
- * {@link MicroserviceRegistryService} is responsible for registering and
- * managing microservice registrations.
+ * Service for registering and managing microservice lifecycle with TTL-based
+ * expiration.
+ * 
+ * <p>
+ * Provides centralized registry functionality including registration, heartbeat
+ * management,
+ * deregistration, and status tracking. Services are marked unavailable when TTL
+ * expires.
+ * </p>
  * 
  * <ul>
- * <li>Callers can create a registration with a given identifier, and the
- * registration will be stored in the registry. The registration will be set to
- * available by default when created or updated.</li>
- * 
- * <li>The registry will handle the expiration of registrations when the TTL has
- * expired, and set the status to unavailable. TTL check can be disabled by
- * setting the ignoreTTL flag to true when registering.</li>
+ * <li>TTL-based registration with automatic expiration (default: 90s)</li>
+ * <li>Heartbeat mechanism for TTL renewal</li>
+ * <li>Thread-safe concurrent operations</li>
+ * <li>REST API via {@link MicroserviceResource}</li>
  * </ul>
+ * 
+ * @see MicroserviceResource
  */
 public class MicroserviceRegistryService implements ContainerService {
 
@@ -57,11 +63,10 @@ public class MicroserviceRegistryService implements ContainerService {
     protected ScheduledExecutorService scheduledExecutorService;
     protected ManagerIdentityService identityService;
 
-    // Registration entry record for the in-memory cache
+    // Registration record
     protected record RegistrationEntry(Microservice service, long expirationTime, boolean ignoreTTL) {
     }
 
-    // Map of registrations
     // <serviceId, <instanceId, RegistrationEntry>>
     protected ConcurrentHashMap<String, ConcurrentHashMap<String, RegistrationEntry>> registrationMap;
 
