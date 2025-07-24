@@ -414,7 +414,7 @@ export class ChartSettings extends WidgetSettings {
         if(inputElem) {
             let oldColor = this.widgetConfig.attributeColors?.find(x => x[0] === attributeRef)?.[1];
             if(!oldColor) {
-                const index = this.widgetConfig.attributeRefs.indexOf(attributeRef);
+                const index = this.widgetConfig.attributeRefs?.indexOf(attributeRef);
                 if(index >= 0) {
                     oldColor = OrChart.DEFAULT_COLORS?.[index];
                 }
@@ -425,6 +425,7 @@ export class ChartSettings extends WidgetSettings {
             // Listen for changes
             inputElem.addEventListener("input", debounce(() => {
                 const color = inputElem.value;
+                this.widgetConfig.attributeColors ??= [];
                 const existingColor = this.widgetConfig.attributeColors.find(x => x[0] === attributeRef);
                 if(existingColor) {
                     existingColor[1] = color;
