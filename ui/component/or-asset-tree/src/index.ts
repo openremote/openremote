@@ -1271,7 +1271,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                     }
                                     case "boolean": {
                                         let value: string = currentAttributeVal[1];
-                                        if ((value === "false" || value === "true") && value === (attr.value || false).toString()) {
+                                        if ((value === "false" || value === "true") && value === (attr.value ?? false).toString()) {
                                             atLeastOneAttributeMatchValue = true;
                                         }
                                         break;
