@@ -174,7 +174,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
     }
 
     @Override
-    public void getDatapointExport(AsyncResponse asyncResponse, String attributeRefsString, long fromTimestamp, long toTimestamp, String format) {
+    public void getDatapointExport(AsyncResponse asyncResponse, String attributeRefsString, long fromTimestamp, long toTimestamp, int format) {
         try {
             AttributeRef[] attributeRefs = JSON.readValue(attributeRefsString, AttributeRef[].class);
 
@@ -187,6 +187,10 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
 
                 if (asset == null) {
                     throw new WebApplicationException(Response.Status.NOT_FOUND);
+                }
+
+                if (format > 3 || format < 1){
+                    throw new WebApplicationException(Response.Status.BAD_REQUEST);
                 }
 
                 if (!isRealmActiveAndAccessible(asset.getRealm())) {

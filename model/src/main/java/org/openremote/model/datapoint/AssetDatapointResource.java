@@ -70,6 +70,6 @@ public interface AssetDatapointResource {
                             @QueryParam("attributeRefs") String attributeRefsString,
                             @QueryParam("fromTimestamp") long fromTimestamp,
                             @QueryParam("toTimestamp") long toTimestamp,
-                            @QueryParam("format") @DefaultValue("Default CSV") String format);
+                            @QueryParam("format") @DefaultValue("1") int format);
 
 }

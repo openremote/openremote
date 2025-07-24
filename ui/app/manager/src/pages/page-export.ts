@@ -207,10 +207,10 @@ export class PageExport extends Page<AppStateKeyed> {
     @property()
     protected _loading: boolean = false;
 
-    protected _exportFormats: string[] = ["Default CSV", "Column per attribute CSV", "Column per attribute CSV - 1 minute averages"];
+    protected _exportFormats: {[key: number]: string} = {1: 'Default .csv', 2: "Column per attribute .csv", 3: "Column per attributes .csv with 1 minute averages"};
 
     @property()
-    private selectedFormat: string = "Default CSV";
+    private selectedFormat: number = 1;
 
     private config?: OrExportConfig;
     private realm: string;
@@ -286,7 +286,7 @@ export class PageExport extends Page<AppStateKeyed> {
                             <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("to"))}" .value="${moment(this.latestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.latestTimestamp = evt.detail.value}"></or-mwc-input>
                         </div>
                         <div>
-                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('exportFormat')}" .value="${this.selectedFormat}" style="width: 100%;" .options="${this._exportFormats}"  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.selectedFormat = ev.detail.value}"></or-mwc-input>
+                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('exportFormat')}" .value="${this._exportFormats[this.selectedFormat]}" style="width: 100%;" .options="${Object.values(this._exportFormats)}"  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.selectedFormat = +Object.keys(this._exportFormats).find(k => this._exportFormats[+k] === ev.detail.value)}"></or-mwc-input>
                         </div>
                     </div>
                     <div class="export-btn-wrapper">

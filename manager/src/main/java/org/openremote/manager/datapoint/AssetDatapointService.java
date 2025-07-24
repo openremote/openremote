@@ -254,7 +254,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs,
                                                   long fromTimestamp,
                                                   long toTimestamp,
-                                                  String format) {
+                                                  int format) {
         try {
             String query = getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp);
 
@@ -274,11 +274,11 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     protected ScheduledFuture<File> doExportDatapoints(AttributeRef[] attributeRefs,
                                                        long fromTimestamp,
                                                        long toTimestamp,
-                                                       String format) {
+                                                       int format) {
 
         return scheduledExecutorService.schedule(() -> {
             String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
-            if ("Column per attribute CSV".equals(format)) {
+            if (format==2) {
                 StringBuilder sb = new StringBuilder(String.format(
                         "copy (select * from crosstab( " +
                                 "'select ad.timestamp, a.name || '' \\: '' || ad.attribute_name as header, ad.value " +
@@ -295,7 +295,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                         fromTimestamp / 1000, toTimestamp / 1000, getAttributeColumns(attributeRefs)
                 ));
                 persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
-            } else if ("Column per attribute CSV - 1 minute averages".equals(format)) {
+            } else if (format==3) {
                 StringBuilder sb = new StringBuilder(String.format(
                         "copy (select * from crosstab( " +
                                 "'select public.time_bucket(''%s'', ad.timestamp) as bucket_timestamp, " +
