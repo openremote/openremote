@@ -278,7 +278,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
         return scheduledExecutorService.schedule(() -> {
             String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
-            if (format.equals("Column per attribute CSV")) {
+            if ("Column per attribute CSV".equals(format)) {
                 StringBuilder sb = new StringBuilder(String.format(
                         "copy (select * from crosstab( " +
                                 "'select ad.timestamp, a.name || '' \\: '' || ad.attribute_name as header, ad.value " +
@@ -295,8 +295,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                         fromTimestamp / 1000, toTimestamp / 1000, getAttributeColumns(attributeRefs)
                 ));
                 persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
-            } else if (format.equals("Column per attribute, 30 second average CSV")) {
-                String bucketInterval = "30 seconds"; // Bucket interval
+            } else if ("Column per attribute CSV - 1 minute averages".equals(format)) {
                 StringBuilder sb = new StringBuilder(String.format(
                         "copy (select * from crosstab( " +
                                 "'select public.time_bucket(''%s'', ad.timestamp) as bucket_timestamp, " +
@@ -313,7 +312,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                                 "order by header') " +
                                 "as ct(timestamp timestamp, %s) " +
                                 ") to '/storage/" + EXPORT_STORAGE_DIR_NAME + "/" + fileName + "' delimiter ',' CSV HEADER;",
-                        bucketInterval, fromTimestamp / 1000, toTimestamp / 1000, getAttributeColumns(attributeRefs)
+                        "1 minute", fromTimestamp / 1000, toTimestamp / 1000, getAttributeColumns(attributeRefs)
                 ));
 
                 persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());

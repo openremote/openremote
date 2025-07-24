@@ -207,7 +207,7 @@ export class PageExport extends Page<AppStateKeyed> {
     @property()
     protected _loading: boolean = false;
 
-    protected _exportFormats: string[] = ["Default CSV", "Column per attribute CSV", "Column per attribute, 30 second average CSV"];
+    protected _exportFormats: string[] = ["Default CSV", "Column per attribute CSV", "Column per attribute CSV - 1 minute averages"];
 
     @property()
     private selectedFormat: string = "Default CSV";

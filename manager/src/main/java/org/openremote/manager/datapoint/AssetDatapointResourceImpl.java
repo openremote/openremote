@@ -210,14 +210,14 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             try {
                 exportFile = exportFuture.get();
 
-                ZipOutputStream zipOut = new ZipOutputStream(response.getOutputStream());
-                FileInputStream fin = new FileInputStream(exportFile);
-                ZipEntry zipEntry = new ZipEntry(exportFile.getName());
-                zipOut.putNextEntry(zipEntry);
-                IOUtils.copy(fin, zipOut);
-                zipOut.closeEntry();
-                zipOut.close();
-                fin.close();
+                try (FileInputStream fin = new FileInputStream(exportFile);
+                     ZipOutputStream zipOut = new ZipOutputStream(response.getOutputStream())) {
+
+                    ZipEntry zipEntry = new ZipEntry(exportFile.getName());
+                    zipOut.putNextEntry(zipEntry);
+                    IOUtils.copy(fin, zipOut);
+                    zipOut.closeEntry();
+                }
 
                 response.setContentType("application/zip");
                 response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"dataexport.zip\"");
