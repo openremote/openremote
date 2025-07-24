@@ -73,14 +73,14 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
     private ExecutorService executorService;
     private ProtocolAssetService assetService;
     private MQTTProtocol mqttProtocol;
+    private MQTTAgent mqttAgent;
     private T agent;
     protected Container container;
     private Map<String, Class<?>> nameToClassMap = new HashMap<>();
 
     public AbstractLoRaWANProtocol(T agent) {
         this.agent = agent;
-
-        MQTTAgent mqttAgent = new MQTTAgent(agent.getName());
+        this.mqttAgent = new MQTTAgent(agent.getName());
 
         mqttAgent.setId(agent.getId());
         agent.getHost().ifPresent(host -> mqttAgent.setHost(host));
@@ -98,6 +98,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         agent.getLastWillPayload().ifPresent(lastWillPayload -> mqttAgent.setLastWillPayload(lastWillPayload));
         agent.isLastWillRetain().ifPresent(lastWillRetain -> mqttAgent.setLastWillRetain(lastWillRetain));
         agent.getUsernamePassword().ifPresent(usernamePassword -> mqttAgent.setUsernamePassword(usernamePassword));
+        mqttAgent.setWildcardSubscriptionTopics(createWildcardSubscriptionTopicList().toArray(new String[0]));
 
         this.mqttProtocol = new LoRaWANMQTTProtocol(mqttAgent);
     }
@@ -157,6 +158,9 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
 
     @Override
     public boolean onAgentAttributeChanged(AttributeEvent event) {
+        if (APPLICATION_ID.getName().equals(event.getName())) {
+            return true;
+        }
         return mqttProtocol.onAgentAttributeChanged(event);
     }
 
@@ -208,6 +212,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         return isOk;
     }
 
+    protected abstract List<String> createWildcardSubscriptionTopicList();
     protected abstract boolean configureMQTTSubscriptionTopic(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord);
     protected abstract boolean configureMQTTPublishTopic(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord);
     protected abstract boolean configureMQTTMessageMatchFilterAndPredicate(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord);

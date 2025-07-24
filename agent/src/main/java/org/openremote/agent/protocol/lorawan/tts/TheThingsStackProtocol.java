@@ -26,6 +26,7 @@ import org.openremote.agent.protocol.lorawan.AbstractLoRaWANProtocol;
 import org.openremote.agent.protocol.lorawan.CsvRecord;
 import org.openremote.agent.protocol.mqtt.MQTTAgentLink;
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.query.filter.NumberPredicate;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.AttributeDescriptor;
@@ -78,6 +79,14 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
     }
 
     @Override
+    public boolean onAgentAttributeChanged(AttributeEvent event) {
+        if (TENANT_ID.getName().equals(event.getName())) {
+            return true;
+        }
+        return super.onAgentAttributeChanged(event);
+    }
+
+    @Override
     protected boolean checkCSVImportPrerequisites() {
         boolean isOk = super.checkCSVImportPrerequisites();
 
@@ -99,6 +108,16 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
         }
 
         return isOk;
+    }
+
+    @Override
+    protected List<String> createWildcardSubscriptionTopicList() {
+        Optional<String> tenantId = getAgent().getTenantId().map(id -> id.trim());
+        Optional<String> applicationId = getAgent().getApplicationId().map(id -> id.trim());
+        return applicationId
+            .map(id -> Collections.singletonList(
+                "v3/" + (tenantId.isPresent() ? (applicationId.get() + "@" + tenantId.get()) : applicationId.get()) + "/devices/+/up"))
+            .orElse(new ArrayList<>());
     }
 
     @Override

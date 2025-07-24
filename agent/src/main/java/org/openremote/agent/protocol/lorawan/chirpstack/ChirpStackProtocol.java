@@ -27,6 +27,9 @@ import org.openremote.model.query.filter.NumberPredicate;
 import org.openremote.model.value.JsonPathFilter;
 import org.openremote.model.value.ValueFilter;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtocol, ChirpStackAgent> {
@@ -46,6 +49,13 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
     public String getProtocolInstanceUri() {
         return "chirpstack://" + getAgent().getHost().orElse("-") + ":"
                                + getAgent().getMqttPort().map(p -> p.toString()).orElse("-");
+    }
+
+    @Override
+    protected List<String> createWildcardSubscriptionTopicList() {
+        return getAgent().getApplicationId()
+            .map(applicationId -> Collections.singletonList("application/" + applicationId + "/device/+/event/up"))
+            .orElse(new ArrayList<>());
     }
 
     @Override
