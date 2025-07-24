@@ -607,6 +607,11 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                         new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
                             .setSubscriptionTopic(humidityTopic)
                         )),
+                new Attribute<>("humidity2", NUMBER)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
+                            .setSubscriptionTopic(humidityTopic)
+                        )),
                 new Attribute<>("pressure", NUMBER)
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
@@ -632,9 +637,12 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert protocol.wildcardTopicConsumerMap.size() == 2
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).size() == 2
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).containsKey(temperatureTopic)
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).get(temperatureTopic).size() == 1
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).containsKey(humidityTopic)
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).get(humidityTopic).size() == 2
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).size() == 1
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).containsKey(pressureTopic)
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).get(pressureTopic).size() == 1
         }
 
         when: "mqtt data is published"
@@ -654,8 +662,52 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             asset = assetStorageService.find(asset.id, true)
             assert asset.getAttribute("temperature").flatMap { it.value }.map { it == 19.5 }.orElse(false)
             assert asset.getAttribute("humidity").flatMap { it.value }.map { it == 85 }.orElse(false)
+            assert asset.getAttribute("humidity2").flatMap { it.value }.map { it == 85 }.orElse(false)
             assert asset.getAttribute("pressure").flatMap { it.value }.map { it == 1013.25 }.orElse(false)
             assert asset.getAttribute("uvIndex").flatMap { it.value }.map { it == 3.0 }.orElse(false)
+        }
+
+        when: "an attribute is removed that uses the wildcard subscription"
+        asset.attributes.remove("humidity2")
+        asset = assetStorageService.merge(asset)
+
+        then: "the wildcard subscription should still exist as another attribute still matches it"
+        conditions.eventually {
+            def protocol = (MQTTProtocol)agentService.getProtocolInstance(agent.id)
+            def client = protocol.@client
+            assert client.topicConsumerMap.containsKey(wildcardTopic1)
+            assert client.topicConsumerMap.containsKey(wildcardTopic2)
+            assert client.topicConsumerMap.containsKey(uvIndexTopic)
+            assert protocol.wildcardTopicConsumerMap.size() == 2
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).size() == 2
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).containsKey(temperatureTopic)
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).get(temperatureTopic).size() == 1
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).containsKey(humidityTopic)
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic1).get(humidityTopic).size() == 1
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).size() == 1
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).containsKey(pressureTopic)
+            assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).get(pressureTopic).size() == 1
+        }
+
+        when: "mqtt data is published"
+        attributeEvent = new AttributeEvent(testThing1.id, "temperature", 20.5)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+        attributeEvent = new AttributeEvent(testThing1.id, "humidity", 90.0)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        attributeEvent = new AttributeEvent(testThing2.id, "pressure", 1000)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        attributeEvent = new AttributeEvent(testThing3.id, "uvIndex", 4.0)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        then: "asset attribute values should be updated"
+        conditions.eventually {
+            asset = assetStorageService.find(asset.id, true)
+            assert asset.getAttribute("temperature").flatMap { it.value }.map { it == 20.5 }.orElse(false)
+            assert asset.getAttribute("humidity").flatMap { it.value }.map { it == 90 }.orElse(false)
+            assert asset.getAttribute("pressure").flatMap { it.value }.map { it == 1000 }.orElse(false)
+            assert asset.getAttribute("uvIndex").flatMap { it.value }.map { it == 4.0 }.orElse(false)
         }
     }
 
