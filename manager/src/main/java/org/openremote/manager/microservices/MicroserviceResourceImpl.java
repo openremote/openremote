@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.microservices;
 
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 import org.openremote.container.timer.TimerService;
@@ -26,6 +27,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.microservices.Microservice;
+import org.openremote.model.microservices.MicroserviceInfo;
 import org.openremote.model.microservices.MicroserviceResource;
 
 import jakarta.validation.Valid;
@@ -47,33 +49,44 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
     public boolean registerService(RequestParams requestParams,
             @NotNull @Valid Microservice serviceDescriptor) {
 
-        if (!isSuperUser()) {
-            LOG.warning("Only super users can register services");
-            throw new ForbiddenException("Only super users can register services");
+        if (!isServiceAccount()) {
+            LOG.warning("Only service accounts can register services");
+            throw new ForbiddenException("Only service accounts can register services");
         }
 
         String providerIdentifier = getClientRemoteAddress();
-
         return microserviceRegistry.registerService(providerIdentifier, serviceDescriptor);
     }
 
+
     @Override
-    public boolean unregisterService(RequestParams requestParams,
-            @NotNull @Valid Microservice microservice) {
-
-        if (!isSuperUser()) {
-            LOG.warning("Only super users can unregister services");
-            throw new ForbiddenException("Only super users can unregister services");
-        }
-
-        String providerIdentifier = getClientRemoteAddress();
-
-        return microserviceRegistry.unregisterService(providerIdentifier, microservice);
+    public MicroserviceInfo[] getServices(RequestParams requestParams) {
+        Microservice[] services = microserviceRegistry.getServices();
+        return Arrays.stream(services)
+                .map(MicroserviceInfo::fromMicroservice)
+                .toArray(MicroserviceInfo[]::new);
     }
 
     @Override
-    public Microservice[] getServices(RequestParams requestParams) {
-        return microserviceRegistry.getServices();
+    public boolean deregisterService(RequestParams requestParams, String serviceId) {
+        if (!isServiceAccount()) {
+            LOG.warning("Only service accounts can deregister services");
+            throw new ForbiddenException("Only service accounts can deregister services");
+        }
+
+        String providerIdentifier = getClientRemoteAddress();
+        return microserviceRegistry.deregisterService(providerIdentifier, serviceId);
+    }
+
+    @Override
+    public boolean sendHeartbeat(RequestParams requestParams, String serviceId) {
+        if (!isServiceAccount()) {
+            LOG.warning("Only service accounts can send heartbeats");
+            throw new ForbiddenException("Only service accounts can send heartbeats");
+        }
+
+        String providerIdentifier = getClientRemoteAddress();
+        return microserviceRegistry.sendHeartbeat(providerIdentifier, serviceId);
     }
 
 }

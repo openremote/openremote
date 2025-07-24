@@ -22,7 +22,8 @@ package org.openremote.model.microservices;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Represents an external service's/microservice's metadata and status information
+ * Holds detailed information about a microservice/external service
+ * Used for registering and deregistering services and tracking their status
  */
 public class Microservice {
 
@@ -39,17 +40,23 @@ public class Microservice {
     protected String serviceId;
 
     /**
-     * The URL of the service's configuration Web UI, e.g.
-     * "https://demo.openremote.app/services/energy-service/config"
+     * The IP address of the service, e.g. "192.168.1.100"
      */
-    @JsonProperty("url")
-    protected String url;
+    @JsonProperty("ipAddress")
+    protected String ipAddress;
 
     /**
-     * The status of the service, e.g. "AVAILABLE"
+     * The port of the service, e.g. "8080"
      */
-    @JsonProperty("status")
-    protected MicroserviceStatus status;
+    @JsonProperty("port")
+    protected Integer port;
+
+    /**
+     * The URL of the service's homepage which provides the user interface, e.g.
+     * "https://demo.openremote.app/services/energy-service/ui"
+     */
+    @JsonProperty("homepageUrl")
+    protected String homepageUrl;
 
     /**
      * Indicates whether the service supports and uses multi-tenancy
@@ -57,12 +64,17 @@ public class Microservice {
     @JsonProperty("multiTenancy")
     protected Boolean multiTenancy;
 
- 
+    /**
+     * The status of the service, e.g. "AVAILABLE"
+     */
+    @JsonProperty("status")
+    protected MicroserviceStatus status;
 
-    public Microservice(String label, String serviceId, String url, MicroserviceStatus status, Boolean multiTenancy) {
+    public Microservice(String label, String serviceId, String homepageUrl, MicroserviceStatus status,
+            Boolean multiTenancy) {
         this.label = label;
         this.serviceId = serviceId;
-        this.url = url;
+        this.homepageUrl = homepageUrl;
         this.status = status;
         this.multiTenancy = multiTenancy;
     }
@@ -83,12 +95,12 @@ public class Microservice {
         this.serviceId = serviceId;
     }
 
-    public String getUrl() {
-        return url;
+    public String getHomepageUrl() {
+        return homepageUrl;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public void setHomepageUrl(String homepageUrl) {
+        this.homepageUrl = homepageUrl;
     }
 
     public MicroserviceStatus getStatus() {
@@ -107,12 +119,31 @@ public class Microservice {
         this.multiTenancy = multiTenancy;
     }
 
+    public String getIpAddress() {
+        return ipAddress;
+    }
+
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+    }
+
+    public Integer getPort() {
+        return port;
+    }
+
+    public void setPort(Integer port) {
+        this.port = port;
+    }
+
+
     @Override
     public String toString() {
         return "ServiceDescriptor{" +
                 "label='" + label + '\'' +
                 ", serviceId='" + serviceId + '\'' +
-                ", url='" + url + '\'' +
+                ", ipAddress='" + ipAddress + '\'' +
+                ", port='" + port + '\'' +
+                ", homepageUrl='" + homepageUrl + '\'' +
                 ", status='" + status + '\'' +
                 ", multiTenancy='" + multiTenancy + '\'' +
                 '}';

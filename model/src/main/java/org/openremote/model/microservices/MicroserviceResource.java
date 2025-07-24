@@ -58,27 +58,12 @@ public interface MicroserviceResource {
      * @return True if the microservice was registered or updated successfully
      */
     @POST
-    @Path("register")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "registerService", summary = "Create/update the registration for a service/microservice")
+    @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
+    @Operation(operationId = "registerService", summary = "Register a external service/microservice")
     boolean registerService(@BeanParam RequestParams requestParams, @NotNull @Valid Microservice microservice);
 
-    /**
-     * Unregisters the active registration for the specified microservice. This
-     * causes the service to no longer be listed, when requesting the list of
-     * services.
-     * 
-     * @param requestParams The request parameters
-     * @param microservice The microservice to unregister
-     * @return True if the microservice was unregistered successfully
-     */
-    @POST
-    @Path("unregister")
-    @Consumes(APPLICATION_JSON)
-    @Produces(APPLICATION_JSON)
-    @Operation(operationId = "unregisterService", summary = "Directly remove the registration for a service/microservice, this causes the service to no longer be listed")
-    boolean unregisterService(@BeanParam RequestParams requestParams, @NotNull @Valid Microservice microservice);
 
     /**
      * Lists all currently registered microservices with their details and status.
@@ -87,10 +72,43 @@ public interface MicroserviceResource {
      * @return An array of microservices objects
      */
     @GET
-    @Path("")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({ Constants.READ_SERVICES_ROLE })
-    @Operation(operationId = "getServices", summary = "List all registered microservices with their details and status")
-    Microservice[] getServices(@BeanParam RequestParams requestParams);
+    @Operation(operationId = "getServices", summary = "List all registered external services/microservices with their details and current status")
+    MicroserviceInfo[] getServices(@BeanParam RequestParams requestParams);
+
+
+
+    /**
+     * Send a heartbeat to update the active registration TTL for the specified microservice.
+     * This is used to indicate that the microservice is still running and available.
+     * 
+     * @param requestParams The request parameters
+     * @param serviceId The serviceId of the microservice to send the heartbeat to
+     * @return True if the heartbeat was sent successfully
+     */
+    @PUT
+    @Path("{serviceId}")
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
+    @Operation(operationId = "sendHeartbeat", summary = "Update the active registration TTL for the specified microservice")
+    boolean sendHeartbeat(@BeanParam RequestParams requestParams, @PathParam("serviceId") String serviceId);
+
+    /**
+     * Deregisters the active registration for the specified microservice. This
+     * causes the service to no longer be listed, when requesting the list of
+     * services.
+     * 
+     * @param requestParams The request parameters
+     * @param serviceId The serviceId of the microservice to deregister
+     * @return True if the microservice was deregistered successfully
+     */
+    @DELETE
+    @Path("{serviceId}")
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
+    @Operation(operationId = "deregisterService", summary = "Deregister a external service/microservice")
+    boolean deregisterService(@BeanParam RequestParams requestParams, @PathParam("serviceId") String serviceId);
+
 
 }

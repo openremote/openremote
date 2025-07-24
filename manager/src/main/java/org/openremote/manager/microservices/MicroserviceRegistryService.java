@@ -25,7 +25,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
@@ -52,8 +51,7 @@ public class MicroserviceRegistryService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(MicroserviceRegistryService.class.getName());
 
-    protected static final long DEFAULT_TTL_MS = 60000; // 1 minute
-    protected static final long CLEANUP_INTERVAL_MS = 30000; // 30 seconds
+    protected static final long DEFAULT_TTL_MS = 90000; // 90 seconds till a service is marked as unavailable
 
     protected TimerService timerService;
     protected ScheduledExecutorService scheduledExecutorService;
@@ -63,7 +61,8 @@ public class MicroserviceRegistryService implements ContainerService {
     protected record RegistrationEntry(Microservice service, long expirationTime, boolean ignoreTTL) {
     }
 
-    // Map of registrations, uses a composite key of service id and the given identifier
+    // Map of registrations, uses a composite key of service id and the given
+    // identifier e.g. an IP address
     protected ConcurrentHashMap<String, RegistrationEntry> registrationMap;
 
     // Scheduled future for the expiration check task
@@ -86,7 +85,7 @@ public class MicroserviceRegistryService implements ContainerService {
     public void start(Container container) throws Exception {
         // Start the expiration check task
         expirationCheckFuture = scheduledExecutorService.scheduleAtFixedRate(this::expirationCheck, 0,
-                CLEANUP_INTERVAL_MS, TimeUnit.MILLISECONDS);
+                DEFAULT_TTL_MS / 2, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -131,16 +130,18 @@ public class MicroserviceRegistryService implements ContainerService {
      * 
      * @param identifier   The given identifier (e.g. client remote address)
      * @param microservice The microservice to register
-     * @param ignoreTTL    If true, the TTL will be ignored and the registration will not expire
+     * @param ignoreTTL    If true, the TTL will be ignored and the registration
+     *                     will not expire
      * @return True if the microservice was registered/updated successfully
      */
     public boolean registerService(String identifier, Microservice microservice, boolean ignoreTTL) {
         try {
             String compositeKey = getRegistrationKey(microservice.getServiceId(), identifier);
             LOG.fine("Registering microservice: " + compositeKey + ", ignoreTTL: " + ignoreTTL);
-            
+
             registrationMap.put(compositeKey,
-                    new RegistrationEntry(microservice, timerService.getCurrentTimeMillis() + DEFAULT_TTL_MS, ignoreTTL));
+                    new RegistrationEntry(microservice, timerService.getCurrentTimeMillis() + DEFAULT_TTL_MS,
+                            ignoreTTL));
 
             return true;
         } catch (Exception e) {
@@ -150,20 +151,46 @@ public class MicroserviceRegistryService implements ContainerService {
     }
 
     /**
-     * Unregister a microservice with a given identifier
+     * Send a heartbeat to update the active registration TTL for the specified
+     * microservice.
+     * This is used to indicate that the microservice is still running and
+     * available.
      * 
      * @param identifier The given identifier (e.g. client remote address)
-     * @param microservice The microservice to unregister
-     * @return True if the microservice was unregistered successfully
+     * @param serviceId  The serviceId of the microservice to send the heartbeat to
+     * @return True if the heartbeat was sent successfully
      */
-    public boolean unregisterService(String identifier, Microservice microservice) {
+    public boolean sendHeartbeat(String identifier, String serviceId) {
+        String compositeKey = getRegistrationKey(serviceId, identifier);
+        RegistrationEntry entry = registrationMap.get(compositeKey);
+        if (entry != null) {
+
+            // Update the registration with a new TTL
+            registrationMap.put(compositeKey,
+                    new RegistrationEntry(entry.service, timerService.getCurrentTimeMillis() + DEFAULT_TTL_MS,
+                            entry.ignoreTTL));
+
+            // Update the status to available
+            entry.service.setStatus(MicroserviceStatus.AVAILABLE);
+
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Deregister a microservice with a given identifier
+     * 
+     * @param identifier The given identifier (e.g. client remote address)
+     * @param serviceId  The serviceId of the microservice to deregister
+     * @return True if the microservice was deregistered successfully
+     */
+    public boolean deregisterService(String identifier, String serviceId) {
         try {
-            String compositeKey = getRegistrationKey(microservice.getServiceId(), identifier);
-            LOG.fine("Unregistering microservice: " + compositeKey);
+            String compositeKey = getRegistrationKey(serviceId, identifier);
             RegistrationEntry removed = registrationMap.remove(compositeKey);
             return removed != null;
         } catch (Exception e) {
-            LOG.warning("Failed to unregister microservice: " + e.getMessage());
             return false;
         }
     }

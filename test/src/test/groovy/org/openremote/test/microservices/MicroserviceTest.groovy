@@ -25,7 +25,6 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
 
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
-        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def microserviceRegistryService = container.getService(MicroserviceRegistryService.class)
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
@@ -81,16 +80,16 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         assert microserviceResource != null
         assert regularUserMicroserviceResource != null
 
-        when: "a service is registered"
+        when: "the energy service is registered"
         def registrationResult = microserviceResource.registerService(null, energyService)
 
-        then: "the service should be registered successfully"
+        then: "the energy service should be registered successfully"
         assert registrationResult
 
-        when: "the service is retrieved"
+        when: "all services are retrieved"
         def services = microserviceResource.getServices(null)
 
-        then: "the registered service should be available"
+        then: "the returned services should contain the energy service"
         conditions.eventually {
             assert services != null
             assert services.length >= 1
@@ -101,29 +100,13 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
             assert service.multiTenancy == true
         }
 
-        when: "the service registration is updated"
-        energyService.setLabel("Updated Energy Service")
-        def updateResult = microserviceResource.registerService(null, energyService)
-
-        then: "the service should be updated successfully"
-        assert updateResult
-
-        and: "the updated service should be reflected in the registry"
-        conditions.eventually {
-            def updatedServices = microserviceResource.getServices(null)
-            def service = updatedServices.find { it.serviceId == "energy-service" }
-            assert service != null
-            assert service.label == "Updated Energy Service"
-            assert service.url == "https://demo.openremote.app/services/energy-service/ui"
-        }
-
-        when: "time advances by 70 seconds (more than the 60 second TTL)"
-        advancePseudoClock(70, TimeUnit.SECONDS, container)
+        when: "time advances by 100 seconds (more than the 90 second TTL)"
+        advancePseudoClock(100, TimeUnit.SECONDS, container)
 
         and: "the expiration check runs"
         microserviceRegistryService.expirationCheck()
 
-        then: "the service should go unavailable due to TTL expiration"
+        then: "the energy service should go unavailable due to TTL expiration"
         conditions.eventually {
             def servicesAfterTTL = microserviceResource.getServices(null)
             def service = servicesAfterTTL.find { it.serviceId == "energy-service" }
@@ -131,48 +114,28 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
             assert service.status == MicroserviceStatus.UNAVAILABLE
         }
 
-        when: "another service is registered"
+        when: "the weather service is registered"
         def weatherRegistrationResult = microserviceResource.registerService(null, weatherService)
 
-        then: "the second service should be registered successfully"
+        then: "the weather service should be registered successfully"
         assert weatherRegistrationResult
 
         when: "all services are retrieved"
         def allServices = microserviceResource.getServices(null)
 
-        then: "there should be 2 services, with one unavailable and one available"
+        then: "the returned services should contain the energy service as unavailable and the weather service as available"
         conditions.eventually {
             assert allServices.length >= 2
-            energyService = allServices.find { it.serviceId == "energy-service" }
-            weatherService = allServices.find { it.serviceId == "weather-service" }
-            assert energyService != null
-            assert energyService.status == MicroserviceStatus.UNAVAILABLE
-            assert weatherService != null
-            assert weatherService.status == MicroserviceStatus.AVAILABLE
+            def energyServiceInfo = allServices.find { it.serviceId == "energy-service" }
+            def weatherServiceInfo = allServices.find { it.serviceId == "weather-service" }
+            assert energyServiceInfo != null
+            assert energyServiceInfo.status == MicroserviceStatus.UNAVAILABLE
+            assert weatherServiceInfo != null
+            assert weatherServiceInfo.status == MicroserviceStatus.AVAILABLE
         }
 
-        when: "both services are updated"
-        energyService.setStatus(MicroserviceStatus.AVAILABLE)
-        def energyUpdateResult = microserviceResource.registerService(null, energyService)
-        def weatherUpdateResult = microserviceResource.registerService(null, weatherService)
-
-        then: "both services should be updated successfully"
-        assert energyUpdateResult
-        assert weatherUpdateResult
-
-        and: "both services should be available"
-        conditions.eventually {
-            def bothServicesUpdated = microserviceResource.getServices(null)
-            energyService = bothServicesUpdated.find { it.serviceId == "energy-service" }
-            weatherService = bothServicesUpdated.find { it.serviceId == "weather-service" }
-            assert energyService != null
-            assert energyService.status == MicroserviceStatus.AVAILABLE
-            assert weatherService != null
-            assert weatherService.status == MicroserviceStatus.AVAILABLE
-        }
-
-        when: "time advances by 70 seconds again without updating services"
-        advancePseudoClock(70, TimeUnit.SECONDS, container)
+        when: "time advances by 100 seconds again without sending a heartbeat for any service"
+        advancePseudoClock(100, TimeUnit.SECONDS, container)
 
         and: "the expiration check runs"
         microserviceRegistryService.expirationCheck()
@@ -180,52 +143,103 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         then: "both services should eventually go unavailable due to TTL expiration"
         conditions.eventually {
             def servicesAfterSecondTTL = microserviceResource.getServices(null)
-            energyService = servicesAfterSecondTTL.find { it.serviceId == "energy-service" }
-            weatherService = servicesAfterSecondTTL.find { it.serviceId == "weather-service" }
-            assert energyService != null
-            assert energyService.status == MicroserviceStatus.UNAVAILABLE
-            assert weatherService != null
-            assert weatherService.status == MicroserviceStatus.UNAVAILABLE
+            def energyServiceInfo = servicesAfterSecondTTL.find { it.serviceId == "energy-service" }
+            def weatherServiceInfo = servicesAfterSecondTTL.find { it.serviceId == "weather-service" }
+            assert energyServiceInfo != null
+            assert energyServiceInfo.status == MicroserviceStatus.UNAVAILABLE
+            assert weatherServiceInfo != null
+            assert weatherServiceInfo.status == MicroserviceStatus.UNAVAILABLE
         }
 
-        when: "a service is unregistered"
-        def unregisterResult = microserviceResource.unregisterService(null, energyService)
+        when: "a heartbeat is sent for the weather service"
+        microserviceResource.sendHeartbeat(null, weatherService.serviceId)
 
-        then: "the service should be unregistered successfully"
-        assert unregisterResult
-
-        and: "the service should no longer appear in the registry"
+        then: "the service should be marked as available"
         conditions.eventually {
-            def servicesAfterUnregister = microserviceResource.getServices(null)
-            energyService = servicesAfterUnregister.find { it.serviceId == "energy-service" }
-            weatherService = servicesAfterUnregister.find { it.serviceId == "weather-service" }
-            assert energyService == null
-            assert weatherService != null
+            def servicesAfterHeartbeat = microserviceResource.getServices(null)
+            def weatherServiceInfo = servicesAfterHeartbeat.find { it.serviceId == "weather-service" }
+            assert weatherServiceInfo != null
+            assert weatherServiceInfo.status == MicroserviceStatus.AVAILABLE
+        }
+
+        and: "the energy service should still be unavailable"
+        def energyServiceInfo = microserviceResource.getServices(null).find { it.serviceId == "energy-service" }
+        assert energyServiceInfo != null
+        assert energyServiceInfo.status == MicroserviceStatus.UNAVAILABLE
+
+        when: "time advances by 60 seconds (less than the 90 second TTL)"
+        advancePseudoClock(60, TimeUnit.SECONDS, container)
+
+        and: "the expiration check runs"
+        microserviceRegistryService.expirationCheck()
+
+        then: "the weather service should still be available"
+        conditions.eventually {
+            def servicesAfter60Seconds = microserviceResource.getServices(null)
+            def weatherServiceInfo = servicesAfter60Seconds.find { it.serviceId == "weather-service" }
+            assert weatherServiceInfo != null
+            assert weatherServiceInfo.status == MicroserviceStatus.AVAILABLE
+        }
+
+        when: "a heartbeat is sent for the energy service"
+        microserviceResource.sendHeartbeat(null, energyService.serviceId)
+
+        then: "the service should be marked as available"
+        conditions.eventually {
+            def servicesAfterHeartbeat = microserviceResource.getServices(null)
+            def energyServiceInfo = servicesAfterHeartbeat.find { it.serviceId == "energy-service" }
+            assert energyServiceInfo != null
+            assert energyServiceInfo.status == MicroserviceStatus.AVAILABLE
+        }
+
+        and: "the weather service should also still be available"
+        conditions.eventually {
+            def servicesAfterHeartbeat = microserviceResource.getServices(null)
+            def weatherServiceInfo = servicesAfterHeartbeat.find { it.serviceId == "weather-service" }
+            assert weatherServiceInfo != null
+            assert weatherServiceInfo.status == MicroserviceStatus.AVAILABLE
         }
 
 
-        // Permission integration tests, a regular user should only be able to list services and not update/register/unregister
+        when: "the energy service is deregistered"
+        def deregisterResult = microserviceResource.deregisterService(null, energyService.serviceId)
 
-        when: "the regular user tries to unregister a service"
-        regularUserMicroserviceResource.unregisterService(null, weatherService)
+        then: "the energy service should be deregistered successfully"
+        assert deregisterResult
 
-        then: "the service should not be unregistered as the user is not a super user"
+        and: "the energy service should no longer appear in the registry"
+        conditions.eventually {
+            def servicesAfterDeregister = microserviceResource.getServices(null)
+            def energyServiceInfo = servicesAfterDeregister.find { it.serviceId == "energy-service" }
+            def weatherServiceInfo = servicesAfterDeregister.find { it.serviceId == "weather-service" }
+            assert energyServiceInfo == null
+            assert weatherServiceInfo != null
+        }
+
+
+        // Permission integration tests, a regular user should only be able to list services and not update/register/deregister
+        when: "the regular user tries to deregister the weather service"
+        regularUserMicroserviceResource.deregisterService(null, weatherService.serviceId)
+
+        then: "the weather service should not be deregistered as the user is not a service user"
         thrown(ForbiddenException)
-        def servicesAfterUnregisterAttempt = microserviceRegistryService.getServices()
-        assert servicesAfterUnregisterAttempt.length == 1
-        assert servicesAfterUnregisterAttempt.find { it.serviceId == "weather-service" } != null
+        def servicesAfterDeregisterAttempt = microserviceRegistryService.getServices()
+        assert servicesAfterDeregisterAttempt.length == 1
+        assert servicesAfterDeregisterAttempt.find { it.serviceId == "weather-service" } != null
 
-        when: "the regular user tries to update a service"
-        regularUserMicroserviceResource.registerService(null, weatherService)
+        when: "the regular user tries to send a heartbeat for the weather service"
+        regularUserMicroserviceResource.sendHeartbeat(null, weatherService.serviceId)
 
-        then: "the service should not be updated as the user is not a super user"
+        then: "the weather service registration should not be updated as the user is not a service user"
         thrown(ForbiddenException)
 
         when: "the regular user tries to get services for listing purposes"
         def regularUserServices = regularUserMicroserviceResource.getServices(null)
 
-        then: "the registered services should be returned"
+        then: "the registered services should be returned and should only contain the weather service"
         assert regularUserServices != null
         assert regularUserServices.length == 1
+        assert regularUserServices.find { it.serviceId == "weather-service" } != null
+        assert regularUserServices.find { it.serviceId == "energy-service" } == null
     }
 }
