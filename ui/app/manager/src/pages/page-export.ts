@@ -176,10 +176,10 @@ export class PageExport extends Page<AppStateKeyed> {
                 }
                 
                 .timerange-wrapper {
-                    margin-bottom: 2em
+                    margin-bottom: 1em
                 }
-                
-                .format-wrapper {
+                .options {
+                    width: fit-content;
                     margin-bottom: 2em
                 }
                 .export-btn-wrapper {
@@ -280,13 +280,14 @@ export class PageExport extends Page<AppStateKeyed> {
                             </tbody>
                         </table>
                     </div>
-                    <div class="timerange-wrapper">
-                        <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("exportFrom"))}" .value="${moment(this.oldestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.oldestTimestamp = evt.detail.value}"></or-mwc-input>
-                        <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("to"))}" .value="${moment(this.latestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.latestTimestamp = evt.detail.value}"></or-mwc-input>
-                        
-                    </div>
-                    <div class="format-wrapper">
-                        <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('exportFormat')}" .value="${this.selectedFormat}" style="min-width: 230px;" .options="${this._exportFormats}"  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.selectedFormat = ev.detail.value}"></or-mwc-input>
+                    <div class="options">
+                        <div class="timerange-wrapper">
+                            <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("exportFrom"))}" .value="${moment(this.oldestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.oldestTimestamp = evt.detail.value}"></or-mwc-input>
+                            <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("to"))}" .value="${moment(this.latestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.latestTimestamp = evt.detail.value}"></or-mwc-input>
+                        </div>
+                        <div>
+                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('exportFormat')}" .value="${this.selectedFormat}" style="width: 100%;" .options="${this._exportFormats}"  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.selectedFormat = ev.detail.value}"></or-mwc-input>
+                        </div>
                     </div>
                     <div class="export-btn-wrapper">
                         <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="clearTable" @click="${() => this.clearSelection()}"></or-mwc-input>
