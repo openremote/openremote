@@ -14,7 +14,6 @@ import {when} from "lit/directives/when.js";
 import moment from "moment/moment";
 import {ChartAttributeConfig, OrChart} from "@openremote/or-chart";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
-import {Console} from "@openremote/core";
 
 const styling = css`
   .switch-container {
@@ -69,62 +68,69 @@ export class ChartSettings extends WidgetSettings {
             }
             return html`<span>${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, color)}</span>`;
         };
-        const attributeLabelCallback = (asset: Asset, attribute: Attribute<any>, attributeLabel: string) => {
-            const isOnRightAxis = isMultiAxis && attrConfig?.rightAxisAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isFaint = attrConfig?.faintAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isSmooth = attrConfig?.smoothAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isStepped = attrConfig?.steppedAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isArea = attrConfig?.areaAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const isExtended = attrConfig?.extendedAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            const strings: string[] = [];
-            if(isOnRightAxis) strings.push(i18next.t("right"));
-            if(isFaint) strings.push(i18next.t("dashboard.faint"));
-            if(isSmooth) strings.push(i18next.t("dashboard.smooth"));
-            if(isStepped) strings.push(i18next.t("dashboard.stepped"));
-            if(isArea) strings.push(i18next.t("dashboard.fill"));
-            if(isExtended) strings.push(i18next.t("dashboard.extendData"));
-            return html`
-                <span>${asset.name}</span>
-                <span style="font-size:14px; color:grey;">${attributeLabel}</span>
-                ${when(strings.length > 0, () => html`<span style="font-size:14px; font-style:italic; color:grey;">${strings.join(", ")}</span>`)}
-            `;
-        };
         const attributeActionCallback = (attributeRef: AttributeRef): AttributeAction[] => {
             const isOnRightAxis = this.widgetConfig?.attributeConfig?.rightAxisAttributes?.find(a => a.id === attributeRef.id && a.name === attributeRef.name) !== undefined;
+            const isFaint = attrConfig?.faintAttributes?.find(ar => ar.id === attributeRef.id && ar.name === attributeRef.name) !== undefined;
+            const isSmooth = attrConfig?.smoothAttributes?.find(ar => ar.id === attributeRef.id && ar.name === attributeRef.name) !== undefined;
+            const isStepped = attrConfig?.steppedAttributes?.find(ar => ar.id === attributeRef.id && ar.name === attributeRef.name) !== undefined;
+            const isArea = attrConfig?.areaAttributes?.find(ar => ar.id === attributeRef.id && ar.name === attributeRef.name) !== undefined;
+            const isExtended = attrConfig?.extendedAttributes?.find(ar => ar.id === attributeRef.id && ar.name === attributeRef.name) !== undefined;
+            let color = this.widgetConfig?.attributeColors?.find(a => a[0].id === attributeRef.id && a[0].name === attributeRef.name)?.[1];
+            let customColor = false;
+            if (!color) {
+                const index = this.widgetConfig?.attributeRefs?.findIndex(ref => ref.id === attributeRef.id && ref.name === attributeRef.name);
+                if (index >= 0) color = OrChart.DEFAULT_COLORS?.[index];
+            } else {
+                customColor = true;
+            }
             return [
                 {
-                  icon: "palette",
-                  tooltip: i18next.t("dashboard.lineColor"),
-                  disabled: false
+                    icon: "palette",
+                    tooltip: i18next.t("dashboard.lineColor"),
+                    active: customColor,
+                    color: color,
+                    disabled: false
                 },
                 {
                     icon: "chart-bell-curve-cumulative",
                     tooltip: i18next.t("dashboard.smooth"),
+                    active: isSmooth,
+                    color: color,
                     disabled: false
                 },
                 {
                     icon: "square-wave",
                     tooltip: i18next.t("dashboard.stepped"),
+                    active: isStepped,
+                    color: color,
                     disabled: false
                 },
                 {
                     icon: "chart-areaspline-variant",
                     tooltip: i18next.t("dashboard.fill"),
+                    active: isArea,
+                    color: color,
                     disabled: false
                 },
                 {
                     icon: "arrange-send-backward",
                     tooltip: i18next.t("dashboard.faint"),
+                    active: isFaint,
+                    color: color,
                     disabled: false
                 },
                 {
                     icon: 'arrow-expand-right',
                     tooltip: i18next.t("dashboard.extendData"),
+                    active: isExtended,
+                    color: color,
                     disabled: false
                 },
                 {
                     icon: isOnRightAxis ? "arrow-right-bold" : "arrow-left-bold",
                     tooltip: i18next.t("dashboard.toggleAxis"),
+                    active: isOnRightAxis,
+                    color: color,
                     disabled: false
                 }
             ];
@@ -142,7 +148,7 @@ export class ChartSettings extends WidgetSettings {
                 <!-- Attribute selection -->
                 <settings-panel displayName="attributes" expanded>
                     <attributes-chart-panel .attributeRefs="${this.widgetConfig.attributeRefs}" multi onlyDataAttrs .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
-                                      .attributeIconCallback="${attributeIconCallback}" .attributeLabelCallback="${attributeLabelCallback}" .attributeActionCallback="${attributeActionCallback}"
+                                      .attributeIconCallback="${attributeIconCallback}" .attributeActionCallback="${attributeActionCallback}"
                                       @attribute-action="${(ev: AttributeActionEvent) => this.onAttributeAction(ev)}"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
                     ></attributes-chart-panel>

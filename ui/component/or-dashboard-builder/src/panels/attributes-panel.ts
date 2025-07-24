@@ -5,6 +5,7 @@ import {style} from "../style";
 import {when} from "lit/directives/when.js";
 import {map} from "lit/directives/map.js";
 import {guard} from "lit/directives/guard.js";
+import {styleMap} from "lit/directives/style-map.js";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-translate";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
@@ -17,7 +18,9 @@ import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 export interface AttributeAction {
     icon: string,
     tooltip: string,
-    disabled: boolean
+    active: boolean,
+    disabled: boolean,
+    color?: string
 }
 
 export class AttributeActionEvent extends CustomEvent<{ asset: Asset, attributeRef: AttributeRef, action: AttributeAction }> {
@@ -143,7 +146,7 @@ const styling = css`
     }
 
     .button-action:hover {
-        --or-icon-fill: var(--or-app-color4);
+        --or-icon-fill: var(--or-icon-fill--hover, var(--or-app-color4));
     }
 `
 
@@ -321,8 +324,13 @@ export class AttributesPanel extends LitElement {
     }
 
     protected _getAttributeActionTemplate(action: AttributeAction, asset: Asset, attributeRef: AttributeRef): TemplateResult {
+        const styles = styleMap({
+            "--or-icon-fill": action.active ? action?.color || "inherit" : "inherit",
+            "--or-icon-fill--hover": action?.color ?? "unset"
+        });
         return html`
-            <button class="button-action" .disabled="${action.disabled}" title="${action.tooltip}" @click="${() => this.onAttributeActionClick(asset, attributeRef, action)}">
+            <button class="button-action" .disabled="${action.disabled}" title="${action.tooltip}" style=${styles}
+                    @click="${() => this.onAttributeActionClick(asset, attributeRef, action)}">
                 <or-icon icon="${action.icon}"></or-icon>
             </button>
         `;
