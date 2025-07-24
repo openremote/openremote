@@ -1250,7 +1250,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                             let attr: Attribute<any> = matchingAsset!.attributes![key];
 
                             // attr.value check to avoid to compare with empty/non existing value
-                            if (attr.name!.toLowerCase() === currentAttributeVal[0].toLowerCase() && attr.value !== undefined) {
+                            if (attr.name!.toLowerCase() === currentAttributeVal[0].toLowerCase()) {
                                 switch (attr.type!) {
                                     case "number":
                                     case "integer":
