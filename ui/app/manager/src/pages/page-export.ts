@@ -207,10 +207,10 @@ export class PageExport extends Page<AppStateKeyed> {
     @property()
     protected _loading: boolean = false;
 
-    protected _exportFormats: String[] = ["Default", "Column per attribute"];
+    protected _exportFormats: string[] = ["Default", "Column per attribute"];
 
     @property()
-    private selectedFormat: String = "Default";
+    private selectedFormat: string = "Default";
 
     private config?: OrExportConfig;
     private realm: string;
@@ -404,7 +404,8 @@ export class PageExport extends Page<AppStateKeyed> {
         manager.rest.api.AssetDatapointResource.getDatapointExport({
             attributeRefs: JSON.stringify(this.tableRows.map(attr => ({id: attr.assetId, name: attr.attributeName}))),
             fromTimestamp: this.oldestTimestamp,
-            toTimestamp: this.latestTimestamp
+            toTimestamp: this.latestTimestamp,
+            format: this.selectedFormat
         }, {
             responseType: "blob",
             
