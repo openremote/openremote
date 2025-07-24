@@ -32,7 +32,7 @@
     "@openremote/or-survey-results": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "@openremote/rest": "workspace:*",
-    "lit": "^2.0.2"
+    "lit": "^3.3.1"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*"

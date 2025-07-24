@@ -18,7 +18,7 @@
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "i18next": "^21.5.3",
-    "lit": "^2.0.2"
+    "lit": "^3.3.1"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",
