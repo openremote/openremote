@@ -207,10 +207,10 @@ export class PageExport extends Page<AppStateKeyed> {
     @property()
     protected _loading: boolean = false;
 
-    protected _exportFormats: string[] = ["Default", "Column per attribute"];
+    protected _exportFormats: string[] = ["Default CSV", "Column per attribute CSV"];
 
     @property()
-    private selectedFormat: string = "Default";
+    private selectedFormat: string = "Default CSV";
 
     private config?: OrExportConfig;
     private realm: string;
@@ -286,7 +286,7 @@ export class PageExport extends Page<AppStateKeyed> {
                         
                     </div>
                     <div class="format-wrapper">
-                        <or-mwc-input .type="${InputType.SELECT}"   label="${i18next.t('CSV Format')}" .value="${this.selectedFormat}" style="min-width: 230px;" .options="${this._exportFormats}"  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.selectedFormat = ev.detail.value}"></or-mwc-input>
+                        <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('exportFormat')}" .value="${this.selectedFormat}" style="min-width: 230px;" .options="${this._exportFormats}"  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.selectedFormat = ev.detail.value}"></or-mwc-input>
                     </div>
                     <div class="export-btn-wrapper">
                         <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="clearTable" @click="${() => this.clearSelection()}"></or-mwc-input>

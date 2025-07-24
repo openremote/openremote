@@ -199,7 +199,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 );
             }
 
-            DATA_EXPORT_LOG.info("User '" + getUsername() +  "' started data export for " + attributeRefsString + " from " + fromTimestamp + " to " + toTimestamp);
+            DATA_EXPORT_LOG.info("User '" + getUsername() +  "' started data export for " + attributeRefsString + " from " + fromTimestamp + " to " + toTimestamp + " in format " + format);
 
             ScheduledFuture<File> exportFuture = assetDatapointService.exportDatapoints(attributeRefs, fromTimestamp, toTimestamp, format);
 
