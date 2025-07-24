@@ -25,6 +25,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
@@ -51,19 +52,18 @@ public class MicroserviceRegistryService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(MicroserviceRegistryService.class.getName());
 
-    // Default TTL for a registration, 90 seconds
-    protected static final long DEFAULT_TTL_MS = 90000;
+    protected static final long DEFAULT_TTL_MS = 60000; // 1 minute
+    protected static final long CLEANUP_INTERVAL_MS = 30000; // 30 seconds
 
     protected TimerService timerService;
     protected ScheduledExecutorService scheduledExecutorService;
     protected ManagerIdentityService identityService;
 
-    // Registration wrapper record for the in-memory cache
+    // Registration entry record for the in-memory cache
     protected record RegistrationEntry(Microservice service, long expirationTime, boolean ignoreTTL) {
     }
 
-    // Map of registrations, uses the serviceId as the key
-    // E.g. "energy-service"
+    // Map of registrations, uses a composite key of service id and the given identifier
     protected ConcurrentHashMap<String, RegistrationEntry> registrationMap;
 
     // Scheduled future for the expiration check task
@@ -84,107 +84,86 @@ public class MicroserviceRegistryService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
+        // Start the expiration check task
         expirationCheckFuture = scheduledExecutorService.scheduleAtFixedRate(this::expirationCheck, 0,
-                DEFAULT_TTL_MS, TimeUnit.MILLISECONDS);
+                CLEANUP_INTERVAL_MS, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void stop(Container container) throws Exception {
+        // Cancel the expiration check task
         if (expirationCheckFuture != null) {
             expirationCheckFuture.cancel(true);
         }
         registrationMap.clear();
     }
 
+    protected String getRegistrationKey(String serviceId, String identifier) {
+        return serviceId + ":" + identifier;
+    }
 
     /**
      * Check for expired registrations and set their status to unavailable if the
      * TTL has expired and the TTL is not ignored
      */
     public void expirationCheck() {
-        long now = timerService.getCurrentTimeMillis();
-        registrationMap.entrySet().stream()
-                .filter(entry -> !entry.getValue().ignoreTTL())
-                .filter(entry -> entry.getValue().expirationTime() < now)
-                .forEach(entry -> registrationMap.computeIfPresent(entry.getKey(), (k, registration) -> {
-                    // Copy with new status to avoid side effects
-                    Microservice service = new Microservice(registration.service().getLabel(),
-                            registration.service().getServiceId(),
-                            registration.service().getWebUiUrl(),
-                            MicroserviceStatus.UNAVAILABLE,
-                            registration.service().getMultiTenancy());
-
-                    service.setStatus(MicroserviceStatus.UNAVAILABLE);
-                    return new RegistrationEntry(service, registration.expirationTime(), registration.ignoreTTL());
-                }));
+        registrationMap.values().stream()
+                .filter(entry -> !entry.ignoreTTL)
+                .filter(entry -> entry.expirationTime < timerService.getCurrentTimeMillis())
+                .forEach(entry -> {
+                    entry.service.setStatus(MicroserviceStatus.UNAVAILABLE);
+                });
     }
 
     /**
-     * Register a microservice
-     *
+     * Register or update a registration for a microservice with a given identifier.
+     * 
+     * @param identifier   The given identifier (e.g. client remote address)
      * @param microservice The microservice to register
-     * @return True if the microservice was registered successfully
-     */
-    public boolean register(Microservice microservice) {
-        return register(microservice, false);
-    }
-
-    /**
-     * Refresh the TTL for a microservice
-     *
-     * @param serviceId  The ID of the microservice to refresh the TTL for
-     * @return True if the TTL was refreshed successfully
-     */
-    public boolean heartbeat(String serviceId) {
-        try {
-            RegistrationEntry entry = registrationMap.get(serviceId);
-            if (entry != null) {
-                registrationMap.put(serviceId, new RegistrationEntry(
-                        entry.service(),
-                        timerService.getCurrentTimeMillis() + DEFAULT_TTL_MS,
-                        entry.ignoreTTL()));
-                return true;
-            }
-            return false;
-        } catch (Exception e) {
-            LOG.warning("Failed to refresh TTL for serviceId: " + serviceId + " - " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Register a microservice
-     *
-     * @param microservice The microservice to register
-     * @param ignoreTTL    If true, the TTL will be ignored and the registration
-     *                     will not expire
      * @return True if the microservice was registered/updated successfully
      */
-    public boolean register(Microservice microservice, boolean ignoreTTL) {
+    public boolean registerService(String identifier, Microservice microservice) {
+        return registerService(identifier, microservice, false);
+    }
+
+    /**
+     * Register or update a registration for a microservice with a given identifier
+     * 
+     * @param identifier   The given identifier (e.g. client remote address)
+     * @param microservice The microservice to register
+     * @param ignoreTTL    If true, the TTL will be ignored and the registration will not expire
+     * @return True if the microservice was registered/updated successfully
+     */
+    public boolean registerService(String identifier, Microservice microservice, boolean ignoreTTL) {
         try {
-            registrationMap.put(microservice.getServiceId(),
-                    new RegistrationEntry(microservice, timerService.getCurrentTimeMillis() + DEFAULT_TTL_MS,
-                            ignoreTTL));
+            String compositeKey = getRegistrationKey(microservice.getServiceId(), identifier);
+            LOG.fine("Registering microservice: " + compositeKey + ", ignoreTTL: " + ignoreTTL);
+            
+            registrationMap.put(compositeKey,
+                    new RegistrationEntry(microservice, timerService.getCurrentTimeMillis() + DEFAULT_TTL_MS, ignoreTTL));
 
             return true;
         } catch (Exception e) {
-            LOG.warning("Failed to register serviceId: " + microservice.getServiceId() + " - " + e.getMessage());
+            LOG.warning("Failed to register microservice: " + e.getMessage());
             return false;
         }
     }
 
     /**
-     * Deregister a microservice
-     *
-     * @param serviceId  The ID of the microservice to unregister
+     * Unregister a microservice with a given identifier
+     * 
+     * @param identifier The given identifier (e.g. client remote address)
+     * @param microservice The microservice to unregister
      * @return True if the microservice was unregistered successfully
      */
-    public boolean deregister(String serviceId) {
+    public boolean unregisterService(String identifier, Microservice microservice) {
         try {
-            RegistrationEntry removed = registrationMap.remove(serviceId);
+            String compositeKey = getRegistrationKey(microservice.getServiceId(), identifier);
+            LOG.fine("Unregistering microservice: " + compositeKey);
+            RegistrationEntry removed = registrationMap.remove(compositeKey);
             return removed != null;
         } catch (Exception e) {
-            LOG.warning("Failed to deregister serviceId: " + serviceId + " - " + e.getMessage());
+            LOG.warning("Failed to unregister microservice: " + e.getMessage());
             return false;
         }
     }
