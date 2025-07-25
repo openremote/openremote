@@ -278,7 +278,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
         return scheduledExecutorService.schedule(() -> {
             String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
-            if (format==2) {
+            if (format == 2) {
                 StringBuilder sb = new StringBuilder(String.format(
                         "copy (select * from crosstab( " +
                                 "'select ad.timestamp, a.name || '' \\: '' || ad.attribute_name as header, ad.value " +
