@@ -295,7 +295,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                         fromTimestamp / 1000, toTimestamp / 1000, getAttributeColumns(attributeRefs)
                 ));
                 persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
-            } else if (format==3) {
+            } else if (format == 3) {
                 StringBuilder sb = new StringBuilder(String.format(
                         "copy (select * from crosstab( " +
                                 "'select public.time_bucket(''%s'', ad.timestamp) as bucket_timestamp, " +
