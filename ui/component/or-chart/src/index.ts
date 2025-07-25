@@ -18,7 +18,11 @@ import "@openremote/or-asset-tree";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {ECharts, EChartsOption, LineSeriesOption, DataZoomComponentOption, init, graphic} from "echarts";
+import * as echarts from "echarts/core";
+import {DatasetComponentOption, DataZoomComponent, DataZoomComponentOption, GridComponent, GridComponentOption, TooltipComponent, TooltipComponentOption} from "echarts/components";
+import {LineChart, LineSeriesOption} from "echarts/charts";
+import {CanvasRenderer} from "echarts/renderers";
+import {UniversalTransition} from "echarts/features";
 import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
@@ -33,6 +37,16 @@ import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-m
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import { when } from "lit/directives/when.js";
 import {createRef, Ref, ref } from "lit/directives/ref.js";
+
+echarts.use([GridComponent, TooltipComponent, DataZoomComponent, LineChart, CanvasRenderer, UniversalTransition]);
+
+export type ECChartOption = echarts.ComposeOption<
+    | LineSeriesOption
+    | TooltipComponentOption
+    | GridComponentOption
+    | DatasetComponentOption
+    | DataZoomComponentOption
+>;
 
 export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
 
@@ -388,7 +402,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     public config?: OrChartConfig;
 
     @property({type: Object})
-    public chartOptions?: EChartsOption;
+    public chartOptions?: ECChartOption;
 
     @property({type: String})
     public realm?: string;
@@ -471,7 +485,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     @query("#chart")
     protected _chartElem!: HTMLDivElement;
 
-    protected _chart?: ECharts;
+    protected _chart?: echarts.ECharts;
     protected _style!: CSSStyleDeclaration;
     protected _startOfPeriod?: number;
     protected _endOfPeriod?: number;
@@ -627,7 +641,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     }
                 ],
                 series: []
-            } as EChartsOption;
+            } as ECChartOption;
 
             // Add dataZoom bar if enabled
             if(this.showZoomBar) {
@@ -664,7 +678,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
 
             // Initialize echarts instance
-            this._chart = init(this._chartElem);
+            this._chart = echarts.init(this._chartElem);
             // Set chart options to default
             this._chart.setOption(this.chartOptions);
             this._toggleChartEventListeners(true);
@@ -928,7 +942,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         this.realm ??= manager.getRealm();
         this.timePrefixOptions ??= this._getDefaultTimePrefixOptions();
         this.timeWindowOptions ??= this._getDefaultTimeWindowOptions();
-        this.timeWindowKey ??= this.timeWindowOptions.keys().next().value.toString();
+        this.timeWindowKey ??= this.timeWindowOptions.keys().next().value!.toString();
         this.timePrefixKey ??= this.timePrefixOptions[1];
 
         if (!this.panelName) {
@@ -1328,7 +1342,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             step: stepped ? "end" : undefined,
             extended: extended,
             predicted: predicted,
-            areaStyle: area ? {color: new graphic.LinearGradient(0, 0, 0, 1, [
+            areaStyle: area ? {color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                     {
                         offset: 0,
                         color: rgba(color, faint ? 0.1 : 0.5)

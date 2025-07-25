@@ -27,7 +27,7 @@
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "echarts": "^5.6.0",
+    "echarts": "~5.6.0",
     "lit": "^2.0.2",
     "moment": "^2.29.4"
   },
