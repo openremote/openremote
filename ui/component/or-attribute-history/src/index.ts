@@ -1,8 +1,8 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 declare function require(name: string): any;
 import * as echarts from "echarts/core";
-import {TooltipComponent, GridComponent, DataZoomComponent} from "echarts/components";
-import {LineChart} from "echarts/charts";
+import {GridComponent, GridComponentOption, DataZoomComponent, DataZoomComponentOption, TooltipComponent, TooltipComponentOption, DatasetComponentOption} from "echarts/components";
+import {LineChart, LineSeriesOption} from "echarts/charts";
 import {UniversalTransition} from "echarts/features";
 import {CanvasRenderer} from "echarts/renderers";
 import {debounce} from "lodash";
@@ -103,6 +103,14 @@ export interface HistoryConfig {
     table?: TableConfig;
     chart?: ChartConfig;
 }
+
+export type ECAttributeHistoryOption = echarts.ComposeOption<
+    | LineSeriesOption
+    | TooltipComponentOption
+    | GridComponentOption
+    | DatasetComponentOption
+    | DataZoomComponentOption
+>;
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
@@ -266,7 +274,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
     @query("#chart")
     protected _chartElem!: HTMLDivElement;
-    protected _chartOptions: echarts.EChartsCoreOption = {};
+    protected _chartOptions: ECAttributeHistoryOption = {};
     @query("#table")
     protected _tableElem!: HTMLDivElement;
     protected _table?: MDCDataTable;
