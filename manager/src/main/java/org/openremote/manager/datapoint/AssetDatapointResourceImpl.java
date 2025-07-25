@@ -189,7 +189,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                     throw new WebApplicationException(Response.Status.NOT_FOUND);
                 }
 
-                if (format > 3 || format < 1){
+                if (format > 3 || format < 1) {
                     throw new WebApplicationException(Response.Status.BAD_REQUEST);
                 }
 
