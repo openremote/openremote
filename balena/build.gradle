@@ -1,0 +1,156 @@
+// build.gradle (Groovy DSL, at your project root)
+plugins {
+    id 'base'
+    id 'application'   // brings in clean & installDist
+}
+apply from: "${layout.getProjectDirectory().asFile}/properties.gradle"
+
+
+
+// ------------- TASK: CHECK DOCKER SOCKET -------------
+tasks.register("checkDockerSocket") {
+    group = 'deployment'
+    description = 'Checks that Docker is installed and determines Docker socket path and host architecture'
+
+    doLast {
+        def os = org.gradle.internal.os.OperatingSystem.current()
+        def socketPath = null
+
+        // Detect Docker
+        def dockerCmd = os.isWindows() ? "docker.exe" : "docker"
+        def dockerWhich = os.isWindows() ? "where" : "which"
+        def proc = [dockerWhich, dockerCmd].execute()
+        proc.waitFor()
+        if (proc.exitValue() != 0) {
+            throw new GradleException("Docker is not installed or not in PATH")
+        }
+
+        // Detect socket
+        if (os.isWindows()) {
+            socketPath = '//./pipe/docker_engine'
+        } else {
+            def unixSock = new File('/var/run/docker.sock')
+            if (unixSock.exists()) {
+                socketPath = unixSock.absolutePath
+            } else {
+                def dockerHostEnv = System.getenv("DOCKER_HOST")
+                if (dockerHostEnv) {
+                    socketPath = dockerHostEnv
+                } else {
+                    throw new GradleException("Could not find Docker socket. Is Docker running?")
+                }
+            }
+        }
+        project.ext.dockerSocketPath = socketPath
+        println "Docker socket detected at: $socketPath"
+
+        // Detect host architecture
+        def rawArch = System.getProperty("os.arch")
+        def hostArch
+        if (rawArch.contains("aarch") || rawArch.contains("arm64")) {
+            hostArch = "arm64"
+        } else if (rawArch.contains("64")) {
+            hostArch = "x64"
+        } else if (rawArch.contains("86")) {
+            hostArch = "x86"
+        } else if (rawArch.toLowerCase().contains("arm")) {
+            hostArch = "arm"
+        } else {
+            hostArch = rawArch // fallback to raw string
+        }
+        project.ext.hostArch = hostArch
+        println "Host architecture detected as: $hostArch"
+    }
+}// ------------- TASK: DOWNLOAD & EXTRACT STANDALONE CLI -------------
+tasks.register('downloadBalenaCli') {
+    group = 'deployment'
+    description = 'Download and extract standalone balena-cli to build/tools'
+    // Declare task output
+    outputs.dir new File(layout.buildDirectory.get().asFile, "tools/balena-cli")
+
+    // ---- CACHE KEY DECLARATIONS ----
+    // Inputs that affect the download:
+    def os = org.gradle.internal.os.OperatingSystem.current()
+    def arch = System.getProperty("os.arch").contains("aarch") ? "arm64" : "x64"
+    inputs.property("balenaCliVersion", balenaCliVersion)
+    inputs.property("hostArch", arch)
+    inputs.property("osFamily", os.familyName ?: os.toString())
+
+    doLast {
+        def classifier = os.isWindows() ? "windows-${arch}" :
+                os.isMacOsX() ? "macOS-${arch}" :
+                        "linux-${arch}"
+        def version = balenaCliVersion
+        def zipName = "balena-cli-v${version}-${classifier}-standalone.zip"
+        def downloadUrl = "https://github.com/balena-io/balena-cli/releases/download/v${version}/${zipName}"
+        def downloadFile = new File(layout.buildDirectory.get().asFile, "tools/${zipName}")
+
+        println "Downloading balena-cli from: $downloadUrl"
+        ant.get(src: downloadUrl, dest: downloadFile)
+
+        def extractDir = new File(layout.buildDirectory.get().asFile, "tools/balena-cli")
+        println "Extracting balena-cli to: $extractDir"
+        copy {
+            from zipTree(downloadFile)
+            into extractDir
+        }
+        downloadFile.delete()
+    }
+}
+// Helper to get the extracted balena executable path
+ext.balenaExecutable = { ->
+    def binDir = new File(layout.buildDirectory.get().asFile, "tools/balena-cli/balena-cli")
+    def exeName = org.gradle.internal.os.OperatingSystem.current().isWindows() ? 'balena.exe' : 'balena'
+    return new File(binDir, exeName).absolutePath
+}
+
+// ------------- TASK: COPY DOCKER ASSETS -------------
+tasks.register('copyOpenRemoteDocker', Copy) {
+    group = 'deployment'
+    description = 'Copy Dockerfile + scripts into build/docker'
+    dependsOn project(":manager").tasks.named("installDist")
+
+    // Copy all files except Dockerfile from manager install
+    from(project(":manager").layout.buildDirectory.dir("install/manager")) {
+        include '**/*'
+        exclude "**/*.Dockerfile"
+    }
+
+    // Copy Dockerfile and docker-compose.yml from THIS project dir (balena)
+    from(layout.projectDirectory) {
+        include 'docker-compose.yml'
+    }
+
+    // Only one into!
+    into layout.buildDirectory.dir("docker").get().asFile
+}
+
+// ------------- TASK: RUN BALENA BUILD SCRIPT -------------
+tasks.register('runOpenRemoteBalenaBuild', Exec) {
+    group = 'deployment'
+    description = 'Run Balena build on the copied assets'
+    dependsOn downloadBalenaCli, copyOpenRemoteDocker, checkDockerSocket
+
+    doFirst {
+        commandLine balenaExecutable(), 'build', layout.buildDirectory.dir("docker").get().asFile.toString(),
+                "-A", project.ext.hostArch,
+                "--deviceType", project.ext.deviceType,
+                "--docker", project.ext.dockerSocketPath
+    }
+}
+// ------------- TASK: PUSH TO BALENA -------------
+tasks.register('pushOpenRemoteToBalena', Exec) {
+    group = 'deployment'
+    description = 'Package and push the app to Balena'
+    dependsOn clean, installDist, runOpenRemoteBalenaBuild
+
+    doFirst {
+        workingDir layout.buildDirectory.dir("docker").get()
+        if (!balenaSlug) {
+            throw new GradleException("Please set ext.balenaSlug in properties.gradle")
+        }
+        println "👉 Pushing to Balena with slug: $balenaSlug"
+        commandLine balenaExecutable(), 'login --token', project.ext.balenaApiToken
+        commandLine balenaExecutable(), 'push', balenaSlug
+    }
+}
