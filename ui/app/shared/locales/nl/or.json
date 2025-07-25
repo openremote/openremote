@@ -606,6 +606,7 @@
   "writePermissions": "Schrijfrechten",
   "valueType": "Waarde type",
   "dataExport": "Data export",
+  "exportFormat": "Export format",
   "dataSelection": "Data selectie",
   "exportFrom": "Exporteer vanaf",
   "assetName": "Asset naam",

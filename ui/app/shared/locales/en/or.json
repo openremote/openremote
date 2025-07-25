@@ -607,6 +607,7 @@
   "writePermissions": "Write permissions",
   "valueType": "Value type",
   "dataExport": "Data export",
+  "exportFormat": "Export format",
   "dataSelection": "Data selection",
   "exportFrom": "Export from",
   "assetName": "Asset name",
