@@ -103,6 +103,6 @@ export class Shared {
    * @param url The icoming request URL to resolve
    */
   private urlPathToFsPath(url: string) {
-    return path.resolve(__dirname, global.decodeURI(`../../app${new URL(url).pathname}`));
+    return path.resolve(__dirname, decodeURI(`../../app${new URL(url).pathname}`));
   }
 }
