@@ -358,6 +358,7 @@ export class MapWidget {
 
             // Firefox headless mode does not support webgl, see https://bugzilla.mozilla.org/show_bug.cgi?id=1375585
             if (!this.isWebglSupported()) {
+              console.warn("WebGL is not supported in this environment. The map cannot be initialized.");
               return;
             }
 
