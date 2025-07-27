@@ -27,12 +27,10 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.microservices.Microservice;
-import org.openremote.model.microservices.MicroserviceInfo;
 import org.openremote.model.microservices.MicroserviceNotFoundException;
 import org.openremote.model.microservices.MicroserviceRegistrationResponse;
 import org.openremote.model.microservices.MicroserviceResource;
 import org.openremote.model.util.UniqueIdentifierGenerator;
-
 
 import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.NotAuthorizedException;
@@ -57,25 +55,31 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
             throw new NotAuthorizedException("Only service users can register services");
         }
 
-        // Generate a unique instanceId
-        String instanceId = UniqueIdentifierGenerator.generateId();
+        // Provide a instanceId if not set
+        if (microservice.getInstanceId() == null) {
+            String instanceId = UniqueIdentifierGenerator.generateId();
+            microservice.setInstanceId(instanceId);
+        }
 
         try {
-            microserviceRegistry.registerService(microservice, instanceId);
-            return new MicroserviceRegistrationResponse(instanceId);
+            microserviceRegistry.registerService(microservice);
+            LOG.fine("Successfully registered microservice: " + microservice.getServiceId() + " with instanceId: "
+                    + microservice.getInstanceId());
+            return new MicroserviceRegistrationResponse(microservice.getInstanceId());
 
         } catch (Exception e) {
             LOG.warning("Failed to register microservice: " + e.getMessage());
-            throw new InternalServerErrorException("Failed to register microservice");
+            throw new InternalServerErrorException("Failed to register microservice", e);
         }
     }
 
     @Override
-    public MicroserviceInfo[] getServices(RequestParams requestParams) {
+    public Microservice[] getServices(RequestParams requestParams) {
         Microservice[] services = microserviceRegistry.getServices();
+
+        // Map services to the representation model
         return Arrays.stream(services)
-                .map(MicroserviceInfo::fromMicroservice)
-                .toArray(MicroserviceInfo[]::new);
+                .toArray(Microservice[]::new);
     }
 
     @Override
@@ -87,6 +91,7 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
 
         try {
             microserviceRegistry.heartbeat(serviceId, instanceId);
+            LOG.fine("Successfully sent heartbeat for microservice: " + serviceId + " instance: " + instanceId);
             return Response.noContent().build();
         } catch (MicroserviceNotFoundException e) {
             LOG.warning("Failed heartbeat for microservice " + serviceId + " instance " + instanceId + ": "
@@ -95,7 +100,7 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
         } catch (Exception e) {
             LOG.warning("Failed heartbeat for microservice " + serviceId + " instance " + instanceId + ": "
                     + e.getMessage());
-            throw new InternalServerErrorException("Failed to send heartbeat for microservice");
+            throw new InternalServerErrorException("Failed to send heartbeat for microservice", e);
         }
     }
 
@@ -105,8 +110,10 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
             LOG.warning("Only service users can deregister services");
             throw new NotAuthorizedException("Only service users can deregister services");
         }
+
         try {
             microserviceRegistry.deregisterService(serviceId, instanceId);
+            LOG.fine("Successfully deregistered microservice: " + serviceId + " instance: " + instanceId);
             return Response.noContent().build();
         } catch (MicroserviceNotFoundException e) {
             LOG.warning("Failed to deregister microservice " + serviceId + " instance " + instanceId + ": "
@@ -115,7 +122,7 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
         } catch (Exception e) {
             LOG.warning("Failed to deregister microservice " + serviceId + " instance " + instanceId + ": "
                     + e.getMessage());
-            throw new InternalServerErrorException("Failed to deregister microservice");
+            throw new InternalServerErrorException("Failed to deregister microservice", e);
         }
     }
 

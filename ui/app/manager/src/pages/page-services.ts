@@ -140,7 +140,11 @@ class OrServiceTree extends OrTreeMenu {
     return html`
       <or-icon class="service-icon" slot="prefix" icon="puzzle"></or-icon>
       <span>${node.label}</span>
-      <or-icon slot="suffix" icon="${MicroserviceStatusIcon[service.status]}" class="${MicroserviceStatusColor[service.status]}">
+      <or-icon
+        slot="suffix"
+        icon="${MicroserviceStatusIcon[service.status]}"
+        class="${MicroserviceStatusColor[service.status]}"
+      >
       </or-icon>
     `;
   }
@@ -151,7 +155,12 @@ class OrServiceTree extends OrTreeMenu {
         <h3 id="tree-header-title">
           <or-translate value="services.title"></or-translate>
         </h3>
-        <or-mwc-input type=${InputType.BUTTON} icon="refresh" title="Refresh services" @or-mwc-input-changed=${this._onRefreshServices}></or-mwc-input>
+        <or-mwc-input
+          type=${InputType.BUTTON}
+          icon="refresh"
+          title="Refresh services"
+          @or-mwc-input-changed=${this._onRefreshServices}
+        ></or-mwc-input>
       </div>
     `;
   }
@@ -234,8 +243,16 @@ export class PageServices extends Page<AppStateKeyed> {
     try {
       const response = await manager.rest.api.MicroserviceResource.getServices();
       if (response.status === 200) {
-        this.services = response.data;
+        this.services = this.consolidateServices(response.data);
         this.requestUpdate();
+
+        // Re-select service if necessary after loading services
+        if (this.serviceName && !this.selectedService) {
+          const service = this.services.find((service) => service.serviceId === this.serviceName);
+          if (service) {
+            this.selectService(service);
+          }
+        }
       }
     } catch (error) {
       console.error("Failed to load services:", error);
@@ -261,7 +278,6 @@ export class PageServices extends Page<AppStateKeyed> {
         this.selectService(service);
       }
     } else {
-      // If no service name is provided, clear the selected service
       this.selectedService = null;
     }
   }
@@ -276,6 +292,23 @@ export class PageServices extends Page<AppStateKeyed> {
   protected getRealmState = createSelector([this.realmSelector], (realm: string) => {
     this.realmName = realm;
   });
+
+  /**
+   * Consolidate services by serviceId, preferring AVAILABLE over UNAVAILABLE
+   * @param services - Array of services to consolidate
+   * @returns Consolidated array with unique serviceIds
+   */
+  protected consolidateServices(services: Microservice[]): Microservice[] {
+    return Object.values(
+      services.reduce((acc, service) => {
+        const existing = acc[service.serviceId];
+        if (!existing || (service.status === MicroserviceStatus.AVAILABLE && existing.status !== MicroserviceStatus.AVAILABLE)) {
+          acc[service.serviceId] = service;
+        }
+        return acc;
+      }, {} as Record<string, Microservice>)
+    );
+  }
 
   protected _onServiceSelected(e: CustomEvent): void {
     const service = e.detail.service as Microservice;

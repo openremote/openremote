@@ -65,17 +65,13 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
                 "Energy Service",
                 "energy-service",
                 "https://demo.openremote.app/services/energy-service/ui",
-                MicroserviceStatus.AVAILABLE,
-                "192.168.1.100",
-                8080
+                MicroserviceStatus.AVAILABLE
         )
         def weatherService = new Microservice(
                 "Weather Service",
                 "weather-service",
                 "https://demo.openremote.app/services/weather-service/ui",
-                MicroserviceStatus.AVAILABLE,
-                "192.168.1.101",
-                8081
+                MicroserviceStatus.AVAILABLE
         )
 
         then: "the microservice resources should be accessible"

@@ -41,18 +41,6 @@ public class Microservice {
     protected String serviceId;
 
     /**
-     * The IP address of the service, e.g. "192.168.1.100"
-     */
-    @JsonProperty("ipAddress")
-    protected String ipAddress;
-
-    /**
-     * The port of the service, e.g. "8080"
-     */
-    @JsonProperty("port")
-    protected Integer port;
-
-    /**
      * The URL of the service's homepage which provides the user interface, e.g.
      * "https://openremote.app/services/energy-service/ui"
      */
@@ -65,14 +53,28 @@ public class Microservice {
     @JsonProperty("status")
     protected MicroserviceStatus status;
 
-    public Microservice(String label, String serviceId, String homepageUrl, MicroserviceStatus status, String ipAddress,
-            Integer port) {
+    /**
+     * The instanceId of the service
+     */
+    @JsonProperty(value = "instanceId")
+    protected String instanceId;
+
+    /**
+     * Default constructor for Jackson deserialization
+     */
+    public Microservice() {
+    }
+
+    public Microservice(String label, String serviceId, String homepageUrl, MicroserviceStatus status) {
         this.label = label;
         this.serviceId = serviceId;
         this.homepageUrl = homepageUrl;
-        this.ipAddress = ipAddress;
-        this.port = port;
         this.status = status;
+    }
+
+    public Microservice(String label, String serviceId, String homepageUrl, MicroserviceStatus status, String instanceId) {
+        this(label, serviceId, homepageUrl, status);
+        this.instanceId = instanceId;
     }
 
     public String getLabel() {
@@ -91,6 +93,14 @@ public class Microservice {
         this.serviceId = serviceId;
     }
 
+    public String getInstanceId() {
+        return instanceId;
+    }
+
+    public void setInstanceId(String instanceId) {
+        this.instanceId = instanceId;
+    }
+
     public String getHomepageUrl() {
         return homepageUrl;
     }
@@ -107,29 +117,14 @@ public class Microservice {
         this.status = status;
     }
 
-    public String getIpAddress() {
-        return ipAddress;
-    }
 
-    public void setIpAddress(String ipAddress) {
-        this.ipAddress = ipAddress;
-    }
-
-    public Integer getPort() {
-        return port;
-    }
-
-    public void setPort(Integer port) {
-        this.port = port;
-    }
 
     @Override
     public String toString() {
         return "Microservice{" +
                 "label='" + label + '\'' +
                 ", serviceId='" + serviceId + '\'' +
-                ", ipAddress='" + ipAddress + '\'' +
-                ", port='" + port + '\'' +
+                ", instanceId='" + instanceId + '\'' +
                 ", homepageUrl='" + homepageUrl + '\'' +
                 ", status='" + status + '\'' +
                 '}';

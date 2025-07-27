@@ -42,7 +42,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
  * registrations within the OpenRemote manager
  */
 @Tag(name = "Services", description = "Registration and management of microservices/external services")
-@Path("services")
+@Path("service")
 public interface MicroserviceResource {
 
     /**
@@ -69,9 +69,10 @@ public interface MicroserviceResource {
     @Produces(APPLICATION_JSON)
     @RolesAllowed({ Constants.READ_SERVICES_ROLE })
     @Operation(operationId = "getServices", summary = "List all registered external services/microservices with their details and current status", responses = {
-            @ApiResponse(responseCode = "200", description = "List of registered microservices", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MicroserviceInfo[].class))),
+            @ApiResponse(responseCode = "200", description = "List of registered microservices", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Microservice[].class))),
     })
-    MicroserviceInfo[] getServices(@BeanParam RequestParams requestParams);
+    Microservice[] getServices(@BeanParam RequestParams requestParams);
+
 
     /**
      * Send a heartbeat to update the active registration TTL for the specified

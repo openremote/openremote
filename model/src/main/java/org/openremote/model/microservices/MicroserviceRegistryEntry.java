@@ -26,45 +26,31 @@ package org.openremote.model.microservices;
 public class MicroserviceRegistryEntry {
 
     private final Microservice microservice;
-    private final String instanceId;
     private long expirationTime;
-    private final boolean ignoreTTL;
 
-    public MicroserviceRegistryEntry(Microservice microservice, String instanceId, long expirationTime,
-            boolean ignoreTTL) {
+    public MicroserviceRegistryEntry(Microservice microservice, long expirationTime) {
         this.microservice = microservice;
-        this.instanceId = instanceId;
         this.expirationTime = expirationTime;
-        this.ignoreTTL = ignoreTTL;
     }
 
     public Microservice getMicroservice() {
         return microservice;
     }
 
-    public String getInstanceId() {
-        return instanceId;
-    }
-
     public void setExpirationTime(long expirationTime) {
         this.expirationTime = expirationTime;
     }
 
-    public boolean isIgnoreTTL() {
-        return ignoreTTL;
+    public long getExpirationTime() {
+        return expirationTime;
     }
 
-    public boolean isExpired(long currentTime) {
-        return !ignoreTTL && expirationTime < currentTime;
-    }
 
     @Override
     public String toString() {
         return "MicroserviceRegistryEntry{" +
                 "microservice=" + microservice +
-                ", instanceId='" + instanceId + '\'' +
                 ", expirationTime=" + expirationTime +
-                ", ignoreTTL=" + ignoreTTL +
                 '}';
     }
 }
