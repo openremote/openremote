@@ -24,6 +24,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * A view model representation of a {@link Microservice}
  * Excluding any internal details such as IP address, port, etc.
+ * This object is used to represent a microservice returned by the
+ * {@link MicroserviceResource} in the UI and API.
  */
 public class MicroserviceInfo {
 
@@ -39,15 +41,11 @@ public class MicroserviceInfo {
     @JsonProperty("status")
     private final MicroserviceStatus status;
 
-    @JsonProperty("multiTenancy")
-    private final Boolean multiTenancy;
-
-    public MicroserviceInfo(String serviceId, String label, String homepageUrl, MicroserviceStatus status, Boolean multiTenancy) {
+    public MicroserviceInfo(String serviceId, String label, String homepageUrl, MicroserviceStatus status) {
         this.serviceId = serviceId;
         this.label = label;
         this.homepageUrl = homepageUrl;
         this.status = status;
-        this.multiTenancy = multiTenancy;
     }
 
     public String getServiceId() {
@@ -66,18 +64,12 @@ public class MicroserviceInfo {
         return status;
     }
 
-    public Boolean getMultiTenancy() {
-        return multiTenancy;
-    }
-
     public static MicroserviceInfo fromMicroservice(Microservice microservice) {
         return new MicroserviceInfo(
                 microservice.getServiceId(),
                 microservice.getLabel(),
                 microservice.getHomepageUrl(),
-                microservice.getStatus(),
-                microservice.getMultiTenancy()
-        );
+                microservice.getStatus());
     }
 
     @Override
@@ -87,7 +79,6 @@ public class MicroserviceInfo {
                 ", label='" + label + '\'' +
                 ", homepageUrl='" + homepageUrl + '\'' +
                 ", status=" + status +
-                ", multiTenancy=" + multiTenancy +
                 '}';
     }
 }

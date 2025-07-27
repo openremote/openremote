@@ -20,6 +20,9 @@
 package org.openremote.model.microservices;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import org.openremote.model.Constants;
@@ -28,73 +31,83 @@ import org.openremote.model.http.RequestParams;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-
+/**
+ * The microservice resource is used to manage microservice/external service
+ * registrations within the OpenRemote manager
+ */
 @Tag(name = "Microservice", description = "Registration and management of microservices")
 @Path("microservice")
 public interface MicroserviceResource {
 
     /**
-     * Creates or updates the active registration for the specified microservice.
+     * Create a new registration for the specified microservice and return the
+     * instanceId of the registered microservice.
      * 
-     * @param requestParams The request parameters
-     * @param microservice The microservice to register and/or update
-     * @return a response containing the serviceId and instanceId of the registered microservice
+     * @param microservice The microservice to register
      */
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
-    @Operation(operationId = "registerService", summary = "Register a external service/microservice")
-    MicroserviceRegistrationResponse registerService(@BeanParam RequestParams requestParams, @NotNull @Valid Microservice microservice);
+    @Operation(operationId = "registerService", summary = "Register an external service/microservice", responses = {
+            @ApiResponse(responseCode = "201", description = "Service registered successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MicroserviceRegisterResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid microservice object"),
+    })
+    MicroserviceRegisterResponse registerService(@BeanParam RequestParams requestParams,
+            @NotNull @Valid Microservice microservice);
 
     /**
      * Lists all currently registered microservices with their details and status.
-     * 
-     * @param requestParams The request parameters
-     * @return An array of microservices objects
      */
     @GET
     @Produces(APPLICATION_JSON)
     @RolesAllowed({ Constants.READ_SERVICES_ROLE })
-    @Operation(operationId = "getServices", summary = "List all registered external services/microservices with their details and current status")
+    @Operation(operationId = "getServices", summary = "List all registered external services/microservices with their details and current status", responses = {
+            @ApiResponse(responseCode = "200", description = "List of registered microservices", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MicroserviceInfo[].class))),
+    })
     MicroserviceInfo[] getServices(@BeanParam RequestParams requestParams);
 
-
     /**
-     * Send a heartbeat to update the active registration TTL for the specified microservice.
-     * This is used to indicate that the microservice is still running and available.
+     * Send a heartbeat to update the active registration TTL for the specified
+     * microservice.
+     * This is used to indicate that the microservice is still running and
+     * available.
      * 
-     * @param requestParams The request parameters
-     * @param serviceId The serviceId of the microservice to send the heartbeat to
+     * @param serviceId  The serviceId of the microservice to send the heartbeat to
      * @param instanceId The instanceId of the microservice to send the heartbeat to
-     * @return HTTP 200 OK if the heartbeat was sent successfully, otherwise an error response
      */
     @PUT
     @Path("{serviceId}/{instanceId}")
     @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
-    @Operation(operationId = "sendHeartbeat", summary = "Update the active registration TTL for the specified microservice")
-    Response sendHeartbeat(@BeanParam RequestParams requestParams, @PathParam("serviceId") String serviceId, @PathParam("instanceId") String instanceId);
+    @Operation(operationId = "heartbeat", summary = "Update the active registration TTL for the specified microservice", responses = {
+            @ApiResponse(responseCode = "200", description = "Heartbeat sent successfully"),
+            @ApiResponse(responseCode = "404", description = "Service not found"),
+    })
+    Response heartbeat(@BeanParam RequestParams requestParams,
+            @PathParam("serviceId") @NotNull @Size(min = 1) String serviceId,
+            @PathParam("instanceId") @NotNull @Size(min = 1) String instanceId);
 
     /**
-     * Deregisters the active registration for the specified microservice. This
-     * causes the service to no longer be listed, when requesting the list of
-     * services.
+     * Deregister the active registration for the specified microservice. This
+     * causes the service to no longer be registered with the microservice registry.
      * 
-     * @param requestParams The request parameters
-     * @param serviceId The serviceId of the microservice to deregister
+     * @param serviceId  The serviceId of the microservice to deregister
      * @param instanceId The instanceId of the microservice to deregister
-     * @return HTTP 200 OK if the microservice was deregistered successfully, otherwise an error response
      */
     @DELETE
     @Path("{serviceId}/{instanceId}")
     @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
-    @Operation(operationId = "deregisterService", summary = "Deregister a external service/microservice")
-    Response deregisterService(@BeanParam RequestParams requestParams, @PathParam("serviceId") String serviceId, @PathParam("instanceId") String instanceId);
-
+    @Operation(operationId = "deregisterService", summary = "Deregister an external service/microservice", responses = {
+            @ApiResponse(responseCode = "200", description = "Service deregistered successfully"),
+            @ApiResponse(responseCode = "404", description = "Service not found"),
+    })
+    Response deregisterService(@BeanParam RequestParams requestParams, @PathParam("serviceId") String serviceId,
+            @PathParam("instanceId") String instanceId);
 
 }

@@ -66,31 +66,42 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
                 "energy-service",
                 "https://demo.openremote.app/services/energy-service/ui",
                 MicroserviceStatus.AVAILABLE,
-                true
+                "192.168.1.100",
+                8080
         )
         def weatherService = new Microservice(
                 "Weather Service",
                 "weather-service",
                 "https://demo.openremote.app/services/weather-service/ui",
                 MicroserviceStatus.AVAILABLE,
-                false
+                "192.168.1.101",
+                8081
         )
 
         then: "the microservice resources should be accessible"
         assert microserviceResource != null
         assert regularUserMicroserviceResource != null
 
-        when: "the energy service is registered"
-        def registrationResponse = microserviceResource.registerService(null, energyService)
-        def energyInstanceId = registrationResponse.instanceId
-
-        then: "the energy service should be registered successfully"
-        assert registrationResponse != null
-        assert registrationResponse.serviceId == "energy-service"
-        assert energyInstanceId != null
 
         when: "all services are retrieved"
         def services = microserviceResource.getServices(null)
+
+        then: "the returned services should be empty"
+        conditions.eventually {
+            assert services != null
+            assert services.length == 0
+        }
+
+        when: "the energy service is registered"
+        def registrationResponse = microserviceResource.registerService(null, energyService)
+        def energyInstanceId = registrationResponse.getInstanceId()
+
+        then: "the energy service should be registered successfully"
+        assert registrationResponse != null
+        assert energyInstanceId != null
+
+        when: "all services are retrieved"
+        services = microserviceResource.getServices(null)
 
         then: "the returned services should contain the energy service"
         conditions.eventually {
@@ -100,7 +111,6 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
             assert service != null
             assert service.status == MicroserviceStatus.AVAILABLE
             assert service.label == "Energy Service"
-            assert service.multiTenancy == true
         }
 
         when: "time advances by 100 seconds (more than the 90 second TTL)"
@@ -120,7 +130,6 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
 
         then: "the weather service should be registered successfully"
         assert weatherRegistrationResponse != null
-        assert weatherRegistrationResponse.serviceId == "weather-service"
         assert weatherInstanceId != null
 
         when: "all services are retrieved"
@@ -152,7 +161,7 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a heartbeat is sent for the weather service"
-        def heartbeatResponse = microserviceResource.sendHeartbeat(null, weatherService.serviceId, weatherInstanceId)
+        def heartbeatResponse = microserviceResource.heartbeat(null, weatherService.serviceId, weatherInstanceId)
 
         then: "the service should be marked as available"
         assert heartbeatResponse.status == Response.Status.NO_CONTENT.getStatusCode()
@@ -180,7 +189,7 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a heartbeat is sent for the energy service"
-        def energyHeartbeatResponse = microserviceResource.sendHeartbeat(null, energyService.serviceId, energyInstanceId)
+        def energyHeartbeatResponse = microserviceResource.heartbeat(null, energyService.serviceId, energyInstanceId)
 
         then: "the service should be marked as available"
         assert energyHeartbeatResponse.status == Response.Status.NO_CONTENT.getStatusCode()
@@ -214,14 +223,26 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
             assert weatherServiceInfo != null
         }
 
-        when: "a regular user tries to register the weather service"
-        regularUserMicroserviceResource.registerService(null, weatherService)
+        when: "a heartbeat is sent for the now deregistered energy service"
+        def heartbeatResp = microserviceResource.heartbeat(null, energyService.serviceId, energyInstanceId)
         
-        then: "the weather service should not be registered"
+        then: "the heartbeat should fail with a not found error"
+        assert heartbeatResp.status == Response.Status.NOT_FOUND.getStatusCode()
+
+        when: "another deregister attempt is made for the energy service"
+        def deregisterResp = microserviceResource.deregisterService(null, energyService.serviceId, energyInstanceId)
+        
+        then: "the deregister should fail with a not found error"
+        assert deregisterResp.status == Response.Status.NOT_FOUND.getStatusCode()
+
+        when: "a regular user tries to register the energy service"
+        regularUserMicroserviceResource.registerService(null, energyService)
+        
+        then: "the energy service should not be registered"
         thrown(NotAuthorizedException)
 
         when: "a regular user tries to deregister the weather service"
-        def deregisterResp = regularUserMicroserviceResource.deregisterService(null, weatherService.serviceId, weatherInstanceId)
+        deregisterResp = regularUserMicroserviceResource.deregisterService(null, weatherService.serviceId, weatherInstanceId)
 
         then: "the weather service should not be deregistered"
         assert deregisterResp.status == Response.Status.UNAUTHORIZED.getStatusCode()
@@ -231,9 +252,9 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         assert servicesAfterDeregisterAttempt.find { it.serviceId == "weather-service" } != null
 
         when: "a regular user tries to send a heartbeat for the weather service"
-        def heartbeatResp = regularUserMicroserviceResource.sendHeartbeat(null, weatherService.serviceId, weatherInstanceId)
+        heartbeatResp = regularUserMicroserviceResource.heartbeat(null, weatherService.serviceId, weatherInstanceId)
 
-        then: "the weather service registration should not be updated"
+        then: "the heartbeat should fail with a not authorized error"
         assert heartbeatResp.status == Response.Status.UNAUTHORIZED.getStatusCode()
     }
 }

@@ -20,18 +20,10 @@
 package org.openremote.model.microservices;
 
 /**
- * The status of a registered microservice.
- * 
- * <ul>
- * <li>AVAILABLE: The microservice is available and can be used</li>
- * <li>UNAVAILABLE: The microservice is unavailable</li>
- * <li>ERROR: The microservice is in an error state</li>
- * <li>UNKNOWN: The microservice status is unknown</li>
- * </ul>
+ * Custom exception for when a given microservice could not be found
  */
-public enum MicroserviceStatus {
-    AVAILABLE,
-    UNAVAILABLE,
-    ERROR,
-    UNKNOWN
+public class MicroserviceNotFoundException extends RuntimeException {
+    public MicroserviceNotFoundException(String message) {
+        super(message);
+    }
 }

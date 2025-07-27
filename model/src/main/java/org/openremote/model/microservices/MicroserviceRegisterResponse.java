@@ -22,39 +22,27 @@ package org.openremote.model.microservices;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * A response containing the serviceId and instanceId of a newly registered microservice
+ * Response object for the microservice register operation.
+ * Used by the {@link MicroserviceResource} to return the instanceId of the
+ * registered microservice.
  */
-public class MicroserviceRegistrationResponse {
-
-    @JsonProperty("serviceId")
-    private String serviceId;
+public class MicroserviceRegisterResponse {
 
     @JsonProperty("instanceId")
-    private String instanceId;
+    private final String instanceId;
 
     public String getInstanceId() {
         return instanceId;
     }
 
-    public void setInstanceId(String instanceId) {
-        this.instanceId = instanceId;
-    }
-
-    public String getServiceId() {
-        return serviceId;
-    }
-
-    public void setServiceId(String serviceId) {
-        this.serviceId = serviceId;
-    }
-
-    public MicroserviceRegistrationResponse(String serviceId, String instanceId) {
-        this.serviceId = serviceId;
+    public MicroserviceRegisterResponse(String instanceId) {
         this.instanceId = instanceId;
     }
 
     @Override
     public String toString() {
-        return "MicroserviceRegistrationResponse [instanceId=" + instanceId + "]";
+        return "MicroserviceRegisterMessage{" +
+                "instanceId='" + instanceId + '\'' +
+                '}';
     }
 }

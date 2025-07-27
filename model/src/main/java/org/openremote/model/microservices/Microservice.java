@@ -22,8 +22,9 @@ package org.openremote.model.microservices;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Holds detailed information about a microservice/external service
- * Used for registering and deregistering services and tracking their status
+ * Holds comprehensive details about a microservice/external service
+ * This object is used by the {@link MicroserviceResource} to register,
+ * deregister services
  */
 public class Microservice {
 
@@ -53,16 +54,10 @@ public class Microservice {
 
     /**
      * The URL of the service's homepage which provides the user interface, e.g.
-     * "https://demo.openremote.app/services/energy-service/ui"
+     * "https://openremote.app/services/energy-service/ui"
      */
     @JsonProperty("homepageUrl")
     protected String homepageUrl;
-
-    /**
-     * Indicates whether the service supports and uses multi-tenancy
-     */
-    @JsonProperty("multiTenancy")
-    protected Boolean multiTenancy;
 
     /**
      * The status of the service, e.g. "AVAILABLE"
@@ -70,13 +65,14 @@ public class Microservice {
     @JsonProperty("status")
     protected MicroserviceStatus status;
 
-    public Microservice(String label, String serviceId, String homepageUrl, MicroserviceStatus status,
-            Boolean multiTenancy) {
+    public Microservice(String label, String serviceId, String homepageUrl, MicroserviceStatus status, String ipAddress,
+            Integer port) {
         this.label = label;
         this.serviceId = serviceId;
         this.homepageUrl = homepageUrl;
+        this.ipAddress = ipAddress;
+        this.port = port;
         this.status = status;
-        this.multiTenancy = multiTenancy;
     }
 
     public String getLabel() {
@@ -111,14 +107,6 @@ public class Microservice {
         this.status = status;
     }
 
-    public Boolean getMultiTenancy() {
-        return multiTenancy;
-    }
-
-    public void setMultiTenancy(Boolean multiTenancy) {
-        this.multiTenancy = multiTenancy;
-    }
-
     public String getIpAddress() {
         return ipAddress;
     }
@@ -135,17 +123,15 @@ public class Microservice {
         this.port = port;
     }
 
-
     @Override
     public String toString() {
-        return "ServiceDescriptor{" +
+        return "Microservice{" +
                 "label='" + label + '\'' +
                 ", serviceId='" + serviceId + '\'' +
                 ", ipAddress='" + ipAddress + '\'' +
                 ", port='" + port + '\'' +
                 ", homepageUrl='" + homepageUrl + '\'' +
                 ", status='" + status + '\'' +
-                ", multiTenancy='" + multiTenancy + '\'' +
                 '}';
     }
 }
