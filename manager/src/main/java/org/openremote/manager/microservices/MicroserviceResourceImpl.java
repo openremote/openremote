@@ -29,7 +29,7 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.microservices.Microservice;
 import org.openremote.model.microservices.MicroserviceInfo;
 import org.openremote.model.microservices.MicroserviceNotFoundException;
-import org.openremote.model.microservices.MicroserviceRegisterResponse;
+import org.openremote.model.microservices.MicroserviceRegistrationResponse;
 import org.openremote.model.microservices.MicroserviceResource;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 
@@ -51,7 +51,7 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
     }
 
     @Override
-    public MicroserviceRegisterResponse registerService(RequestParams requestParams, Microservice microservice) {
+    public MicroserviceRegistrationResponse registerService(RequestParams requestParams, Microservice microservice) {
         if (!isServiceAccount()) {
             LOG.warning("Only service users can register services");
             throw new NotAuthorizedException("Only service users can register services");
@@ -62,7 +62,7 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
 
         try {
             microserviceRegistry.registerService(microservice, instanceId);
-            return new MicroserviceRegisterResponse(instanceId);
+            return new MicroserviceRegistrationResponse(instanceId);
 
         } catch (Exception e) {
             LOG.warning("Failed to register microservice: " + e.getMessage());

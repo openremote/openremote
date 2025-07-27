@@ -41,8 +41,8 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
  * The microservice resource is used to manage microservice/external service
  * registrations within the OpenRemote manager
  */
-@Tag(name = "Microservice", description = "Registration and management of microservices")
-@Path("microservice")
+@Tag(name = "Services", description = "Registration and management of microservices/external services")
+@Path("services")
 public interface MicroserviceResource {
 
     /**
@@ -56,10 +56,10 @@ public interface MicroserviceResource {
     @Produces(APPLICATION_JSON)
     @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
     @Operation(operationId = "registerService", summary = "Register an external service/microservice", responses = {
-            @ApiResponse(responseCode = "201", description = "Service registered successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MicroserviceRegisterResponse.class))),
+            @ApiResponse(responseCode = "201", description = "Service registered successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MicroserviceRegistrationResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid microservice object"),
     })
-    MicroserviceRegisterResponse registerService(@BeanParam RequestParams requestParams,
+    MicroserviceRegistrationResponse registerService(@BeanParam RequestParams requestParams,
             @NotNull @Valid Microservice microservice);
 
     /**

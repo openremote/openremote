@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * Used by the {@link MicroserviceResource} to return the instanceId of the
  * registered microservice.
  */
-public class MicroserviceRegisterResponse {
+public class MicroserviceRegistrationResponse {
 
     @JsonProperty("instanceId")
     private final String instanceId;
@@ -35,13 +35,13 @@ public class MicroserviceRegisterResponse {
         return instanceId;
     }
 
-    public MicroserviceRegisterResponse(String instanceId) {
+    public MicroserviceRegistrationResponse(String instanceId) {
         this.instanceId = instanceId;
     }
 
     @Override
     public String toString() {
-        return "MicroserviceRegisterMessage{" +
+        return "MicroserviceRegistrationResponse{" +
                 "instanceId='" + instanceId + '\'' +
                 '}';
     }
