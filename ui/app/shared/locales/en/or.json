@@ -924,6 +924,7 @@
   "collapseAll": "Collapse all",
   "services": {
     "noServiceSelected": "Please select a service on the left",
-    "title": "Services"
+    "title": "Services",
+    "loadServicesFailed": "Something went wrong while retrieving the services."
   }
 }

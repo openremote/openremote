@@ -1,17 +1,19 @@
 /* eslint-disable import/no-duplicates */
-import { css, html, unsafeCSS, TemplateResult, PropertyValues, CSSResult } from "lit";
+import { css, html, unsafeCSS, TemplateResult, PropertyValues } from "lit";
 import { customElement, state, property } from "lit/decorators.js";
 import "@openremote/or-log-viewer";
 import { Page, PageProvider, router } from "@openremote/or-app";
 import { AppStateKeyed } from "@openremote/or-app";
 import { createSelector, Store } from "@reduxjs/toolkit";
-import { DefaultColor3, DefaultColor4, DefaultColor5, DefaultColor6, manager } from "@openremote/core";
+import { DefaultColor3, DefaultColor5, DefaultColor6, manager } from "@openremote/core";
 import { style as OrAssetTreeStyle } from "@openremote/or-asset-tree";
 import "@openremote/or-components/or-iframe";
 import "@openremote/or-icon";
 import { OrTreeMenu, TreeNode, TreeMenuSelection, OrTreeNode } from "@openremote/or-tree-menu";
 import { Microservice, MicroserviceStatus } from "@openremote/model";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { i18next } from "@openremote/or-translate";
 
 export function pageServicesProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
   return {
@@ -67,7 +69,7 @@ class OrServiceTree extends OrTreeMenu {
   @property({ type: Array })
   public services?: Microservice[];
 
-  @property({ type: String })
+  @property({ type: Object })
   public selectedService?: Microservice;
 
   @property({ type: Boolean })
@@ -77,14 +79,14 @@ class OrServiceTree extends OrTreeMenu {
   selection = TreeMenuSelection.SINGLE;
   menuTitle = "services";
 
-  protected willUpdate(changedProps: PropertyValues) {
+  protected willUpdate(changedProps: PropertyValues): void {
     if (changedProps.has("services")) {
       if (this.services) {
         this.nodes = this._getServiceNodes(this.services);
 
         // Select any existing selected service
         if (this.selectedService) {
-          const nodeToSelect = this.nodes.find((node) => node.id === this.selectedService.serviceId);
+          const nodeToSelect = this.nodes.find((node) => node.id === this.selectedService?.serviceId);
           if (nodeToSelect) {
             this._selectNode(nodeToSelect as unknown as OrTreeNode);
           }
@@ -95,7 +97,7 @@ class OrServiceTree extends OrTreeMenu {
     // Handle select change from parent
     if (changedProps.has("selectedService")) {
       if (this.selectedService) {
-        const nodeToSelect = this.nodes.find((node) => node.id === this.selectedService.serviceId);
+        const nodeToSelect = this.nodes.find((node) => node.id === this.selectedService?.serviceId);
         if (nodeToSelect) {
           this._selectNode(nodeToSelect as unknown as OrTreeNode);
         }
@@ -104,7 +106,7 @@ class OrServiceTree extends OrTreeMenu {
       }
     }
 
-    return super.willUpdate(changedProps);
+    super.willUpdate(changedProps);
   }
 
   protected _dispatchSelectEvent(nodes?: ServiceTreeNode[]): boolean {
@@ -128,7 +130,7 @@ class OrServiceTree extends OrTreeMenu {
     return services.map((service) => ({
       id: service.serviceId,
       label: service.label,
-      service: service,
+      service,
       disabled: service.status === MicroserviceStatus.UNAVAILABLE,
     }));
   }
@@ -154,11 +156,10 @@ class OrServiceTree extends OrTreeMenu {
     `;
   }
 
-  protected _onRefreshServices() {
+  protected _onRefreshServices(): void {
     this.dispatchEvent(new CustomEvent("refresh-services", { detail: {} }));
   }
 }
-
 
 const serviceStyles = css`
   :host {
@@ -212,39 +213,43 @@ export class PageServices extends Page<AppStateKeyed> {
   private serviceName: string | null = null;
 
   @state()
-  protected realmName: string;
-
+  protected realmName: string = "";
 
   @state()
   protected _loading = false;
-
-  connectedCallback() {
-    super.connectedCallback();
-    this._loadData();
-  }
-
-  private async _loadData() {
-    this._loading = true;
-
-    const response = await manager.rest.api.MicroserviceResource.getServices();
-    if (response.status === 200) {
-      this.services = response.data;
-      this.requestUpdate();
-    } // else error handling
-
-    this._loading = false;
-  }
-
-  private async _onRefreshServices() {
-    this._loadData();
-  }
 
   constructor(store: Store<AppStateKeyed>) {
     super(store);
     this.realmName = manager.displayRealm;
   }
 
-  public stateChanged(state: AppStateKeyed) {
+  connectedCallback(): void {
+    super.connectedCallback();
+    this._loadData();
+  }
+
+  private async _loadData(): Promise<void> {
+    this._loading = true;
+
+    try {
+      const response = await manager.rest.api.MicroserviceResource.getServices();
+      if (response.status === 200) {
+        this.services = response.data;
+        this.requestUpdate();
+      }
+    } catch (error) {
+      console.error("Failed to load services:", error);
+      showSnackbar(undefined, i18next.t("services.loadServicesFailed"));
+    } finally {
+      this._loading = false;
+    }
+  }
+
+  private async _onRefreshServices(): Promise<void> {
+    await this._loadData();
+  }
+
+  public stateChanged(state: AppStateKeyed): void {
     this.getRealmState(state);
 
     // If a service name is provided, try and find the service and select it
@@ -257,26 +262,25 @@ export class PageServices extends Page<AppStateKeyed> {
       }
     } else {
       // If no service name is provided, clear the selected service
-      this.selectedService = undefined;
+      this.selectedService = null;
     }
   }
 
-  protected selectService(service: Microservice) {
+  protected selectService(service: Microservice): void {
     this.selectedService = service;
     router.navigate(`/services/${service.serviceId}`);
   }
 
   protected realmSelector = (state: AppStateKeyed) => state.app.realm || manager.config.realm;
 
-  protected getRealmState = createSelector([this.realmSelector], async (realm) => {
+  protected getRealmState = createSelector([this.realmSelector], (realm: string) => {
     this.realmName = realm;
   });
 
-  protected _onServiceSelected(e: CustomEvent) {
+  protected _onServiceSelected(e: CustomEvent): void {
     const service = e.detail.service as Microservice;
     if (service) {
       this.selectService(service);
-
     }
   }
 
@@ -285,24 +289,14 @@ export class PageServices extends Page<AppStateKeyed> {
    * @param service - The service to get the iframe path for
    * @returns The iframe path
    */
-  protected getServiceUrlPath(service: Microservice) {
+  protected getServiceUrlPath(service: Microservice): string {
     const isSuperUser = manager.isSuperUser();
 
-    // If the service is not multi-tenancy, we can just use the iframe_url
-    if (!service.multiTenancy) {
-      return service.url;
-    }
-
-    // If the user is super user, we can just use the iframe_url with the realm name
-    if (isSuperUser) {
-      return `${service.url}/${this.realmName}`;
-    }
-
-    // Otherwise we need to add the realm name to the iframe_url as a query param
-    return `${service.url}?realm=${this.realmName}`;
+    // Replace {realm} param if provided, uses query param if not super user
+    return service.homepageUrl.replace("{realm}", isSuperUser ? this.realmName : `?realm=${this.realmName}`);
   }
 
-  protected render() {
+  protected render(): TemplateResult {
     const noSelection = !this.selectedService;
 
     return html`

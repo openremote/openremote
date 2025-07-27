@@ -923,6 +923,7 @@
   "collapseAll": "Alles inklappen",
   "services": {
     "noServiceSelected": "Selecteer een service aan de linkerkant",
-    "title": "Services"
+    "title": "Services",
+    "loadServicesFailed": "Er is iets misgegaan bij het ophalen van de services."
   }
 }
