@@ -33,8 +33,9 @@ import org.openremote.model.microservices.MicroserviceRegisterResponse;
 import org.openremote.model.microservices.MicroserviceResource;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 
-import jakarta.ws.rs.ForbiddenException;
+
 import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 
@@ -53,7 +54,7 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
     public MicroserviceRegisterResponse registerService(RequestParams requestParams, Microservice microservice) {
         if (!isServiceAccount()) {
             LOG.warning("Only service users can register services");
-            throw new ForbiddenException("Only service users can register services");
+            throw new NotAuthorizedException("Only service users can register services");
         }
 
         // Generate a unique instanceId
@@ -81,7 +82,7 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
     public Response heartbeat(RequestParams requestParams, String serviceId, String instanceId) {
         if (!isServiceAccount()) {
             LOG.warning("Only service users can send heartbeats");
-            throw new ForbiddenException("Only service users can send heartbeats");
+            throw new NotAuthorizedException("Only service users can send heartbeats");
         }
 
         try {
@@ -102,7 +103,7 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
     public Response deregisterService(RequestParams requestParams, String serviceId, String instanceId) {
         if (!isServiceAccount()) {
             LOG.warning("Only service users can deregister services");
-            throw new ForbiddenException("Only service users can deregister services");
+            throw new NotAuthorizedException("Only service users can deregister services");
         }
         try {
             microserviceRegistry.deregisterService(serviceId, instanceId);
