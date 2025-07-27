@@ -58,6 +58,14 @@ export class OrIframe extends LitElement {
   @query('#or-iframe')
   private iframe!: HTMLIFrameElement;
 
+  private handleLoadEvent = (event: Event): void => {
+    this.handleIframeEvent(OrIFrameEventType.LOADED, event);
+  };
+
+  private handleErrorEvent = (event: Event): void => {
+    this.handleIframeEvent(OrIFrameEventType.ERROR, event);
+  };
+
   private handleIframeEvent = (type: OrIFrameEventType, event: Event): void => {
     console.info("Handling iframe event: ", type, event);
 
@@ -90,13 +98,13 @@ export class OrIframe extends LitElement {
   }
 
   firstUpdated(): void {
-    this.iframe.addEventListener('load', (e) => this.handleIframeEvent(OrIFrameEventType.LOADED, e));
-    this.iframe.addEventListener('error', (e) => this.handleIframeEvent(OrIFrameEventType.ERROR, e));
+    this.iframe.addEventListener('load', this.handleLoadEvent);
+    this.iframe.addEventListener('error', this.handleErrorEvent);
   }
 
   disconnectedCallback(): void {
-    this.iframe.removeEventListener('load', (e) => this.handleIframeEvent(OrIFrameEventType.LOADED, e));
-    this.iframe.removeEventListener('error', (e) => this.handleIframeEvent(OrIFrameEventType.ERROR, e));
+    this.iframe.removeEventListener('load', this.handleLoadEvent);
+    this.iframe.removeEventListener('error', this.handleErrorEvent);
   }
 
   render() {
