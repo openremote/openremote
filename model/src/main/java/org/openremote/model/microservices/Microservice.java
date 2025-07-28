@@ -19,20 +19,20 @@
  */
 package org.openremote.model.microservices;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Holds comprehensive details about a microservice/external service
- * This object is used by the {@link MicroserviceResource} to register,
- * deregister services
+ * A microservice in the context of OpenRemote is an external service that is
+ * managed by the microservice registry.
+ * 
+ * It is used to register, deregister and manage the lifecycle of the service.
+ * 
+ * The microservice registry is used to keep track of the microservices and
+ * their
+ * instances.
  */
 public class Microservice {
-
-    /**
-     * The label of the service, e.g. "Energy Service"
-     */
-    @JsonProperty("label")
-    protected String label;
 
     /**
      * The unique identifier of the service, e.g. "energy-service"
@@ -41,27 +41,37 @@ public class Microservice {
     protected String serviceId;
 
     /**
-     * The URL of the service's homepage which provides the user interface, e.g.
+     * Unique identifier of the instance, in scope of the serviceId
+     */
+    @JsonProperty(value = "instanceId")
+    protected String instanceId;
+
+    /**
+     * The label of the service, e.g. "Energy Service" for display purposes
+     */
+    @JsonProperty("label")
+    protected String label;
+
+    /**
+     * The URL of the service's configuration page/UI, e.g.
      * "https://openremote.app/services/energy-service/ui"
      */
     @JsonProperty("homepageUrl")
     protected String homepageUrl;
 
     /**
-     * The status of the service, e.g. "AVAILABLE"
+     * The active status of the service, e.g. "AVAILABLE"
      */
     @JsonProperty("status")
     protected MicroserviceStatus status;
 
     /**
-     * The instanceId of the service
+     * The lease info of the service, contains timestamps for lease expiration,
+     * registration and renewal. Used internally by the microservice registry.
      */
-    @JsonProperty(value = "instanceId")
-    protected String instanceId;
+    @JsonIgnore
+    protected MicroserviceLeaseInfo leaseInfo;
 
-    /**
-     * Default constructor for Jackson deserialization
-     */
     public Microservice() {
     }
 
@@ -70,11 +80,6 @@ public class Microservice {
         this.serviceId = serviceId;
         this.homepageUrl = homepageUrl;
         this.status = status;
-    }
-
-    public Microservice(String label, String serviceId, String homepageUrl, MicroserviceStatus status, String instanceId) {
-        this(label, serviceId, homepageUrl, status);
-        this.instanceId = instanceId;
     }
 
     public String getLabel() {
@@ -117,7 +122,13 @@ public class Microservice {
         this.status = status;
     }
 
+    public MicroserviceLeaseInfo getLeaseInfo() {
+        return leaseInfo;
+    }
 
+    public void setLeaseInfo(MicroserviceLeaseInfo leaseInfo) {
+        this.leaseInfo = leaseInfo;
+    }
 
     @Override
     public String toString() {

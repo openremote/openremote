@@ -21,12 +21,12 @@ package org.openremote.manager.microservices;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -34,24 +34,22 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.microservices.Microservice;
-import org.openremote.model.microservices.MicroserviceNotFoundException;
 import org.openremote.model.microservices.MicroserviceStatus;
-import org.openremote.model.microservices.MicroserviceRegistryEntry;
+import org.openremote.model.microservices.MicroserviceLeaseInfo;
 
 /**
- * Service for registering and managing microservice lifecycle with TTL-based
- * expiration.
+ * Service discovery and registration for microservices/external services.
  *
  * <p>
  * Provides centralized registry functionality including registration
- * management, heartbeat
- * management, and status tracking. Services are marked unavailable when TTL
- * expires.
+ * management,
+ * heartbeat management, and status tracking. Services are marked unavailable
+ * when their lease expires.
  * </p>
  *
  * <ul>
- * <li>TTL-based registration with automatic expiration (default: 90s)</li>
- * <li>Heartbeat mechanism for TTL renewal</li>
+ * <li>Lease-based registration with automatic expiration (default: 90s)</li>
+ * <li>Heartbeat mechanism for lease renewal</li>
  * <li>Purge unavailable instances after 24 hours</li>
  * </ul>
  */
@@ -60,19 +58,19 @@ public class MicroserviceRegistryService implements ContainerService {
     private static final Logger LOG = Logger.getLogger(MicroserviceRegistryService.class.getName());
 
     // 90 seconds till a service is marked as unavailable
-    protected static final long DEFAULT_TTL_MS = 90000;
+    protected static final long DEFAULT_LEASE_DURATION_MS = 90000;
 
     // 24 hours after an instance is marked as unavailable, it is purged
-    protected static final long PURGE_UNAVAILABLE_MS = 1000 * 60 * 60 * 24;
+    protected static final long DEFAULT_PURGE_UNAVAILABLE_MS = 1000 * 60 * 60 * 24;
 
     protected TimerService timerService;
     protected ScheduledExecutorService scheduledExecutorService;
     protected ManagerIdentityService identityService;
 
-    // serviceId -> list of registered instances
-    protected ConcurrentHashMap<String, List<MicroserviceRegistryEntry>> registry;
+    // serviceId -> list of registered microservices/services
+    protected ConcurrentHashMap<String, List<Microservice>> registry;
 
-    // Scheduled future for the TTL check task
+    // Scheduled future for the lease check task
     protected ScheduledFuture<?> markExpiredInstancesAsUnavailableFuture;
 
     // Scheduled future for the purge task
@@ -97,17 +95,16 @@ public class MicroserviceRegistryService implements ContainerService {
         // Periodically check for expired instances
         markExpiredInstancesAsUnavailableFuture = scheduledExecutorService.scheduleAtFixedRate(
                 this::markExpiredInstancesAsUnavailable, 0,
-                DEFAULT_TTL_MS / 2, TimeUnit.MILLISECONDS);
+                DEFAULT_LEASE_DURATION_MS / 2, TimeUnit.MILLISECONDS);
 
         // Periodically cleanup expired unavailable instances
         cleanupExpiredUnavailableInstancesFuture = scheduledExecutorService.scheduleAtFixedRate(
                 this::cleanupExpiredUnavailableInstances, 0,
-                PURGE_UNAVAILABLE_MS, TimeUnit.MILLISECONDS);
+                DEFAULT_PURGE_UNAVAILABLE_MS, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void stop(Container container) throws Exception {
-        // ensure the TTL check task is cancelled
         if (markExpiredInstancesAsUnavailableFuture != null) {
             markExpiredInstancesAsUnavailableFuture.cancel(true);
         }
@@ -122,96 +119,106 @@ public class MicroserviceRegistryService implements ContainerService {
      *
      * @param microservice The microservice to register
      */
-    public void registerService(Microservice microservice) {
-        try {
-            LOG.fine("Registering microservice: " + microservice.getServiceId() + ", instanceId: "
-                    + microservice.getInstanceId());
+    public Microservice registerService(Microservice microservice) {
 
-            List<MicroserviceRegistryEntry> instances = registry.computeIfAbsent(microservice.getServiceId(),
-                    k -> new ArrayList<>());
+        LOG.fine("Registering microservice: " + microservice.getServiceId() + ", instanceId: "
+                + microservice.getInstanceId());
 
-            // Check if the given instance already exists
-            MicroserviceRegistryEntry existingEntry = instances.stream()
-                    .filter(e -> e.getMicroservice().getInstanceId().equals(microservice.getInstanceId()))
-                    .findFirst()
-                    .orElse(null);
+        List<Microservice> instances = registry.computeIfAbsent(microservice.getServiceId(),
+                k -> new ArrayList<>());
 
-            if (existingEntry != null) {
-                LOG.warning("Microservice instance already registered: " + microservice.getServiceId()
-                        + ", instanceId: " + microservice.getInstanceId());
-                throw new IllegalStateException("Microservice instance already registered");
-            }
+        // Check if the given instance already exists in the registry
+        Microservice existingEntry = instances.stream()
+                .filter(e -> e.getInstanceId().equals(microservice.getInstanceId()))
+                .findFirst()
+                .orElse(null);
 
-            // Add new entry
-            instances.add(
-                    new MicroserviceRegistryEntry(microservice, timerService.getCurrentTimeMillis() + DEFAULT_TTL_MS));
-
-        } catch (Exception e) {
-            LOG.warning("Failed to register microservice: " + e.getMessage());
-            throw new RuntimeException("Failed to register microservice", e);
+        if (existingEntry != null) {
+            LOG.warning("Microservice instance already registered: " + microservice.getServiceId()
+                    + ", instanceId: " + microservice.getInstanceId());
+            throw new IllegalStateException("Microservice instance already registered");
         }
+
+        // Set the lease info for the new instance
+        long registrationTimestamp = timerService.getCurrentTimeMillis();
+        long renewalTimestamp = timerService.getCurrentTimeMillis();
+        long expirationTimestamp = registrationTimestamp + DEFAULT_LEASE_DURATION_MS;
+
+        microservice.setLeaseInfo(new MicroserviceLeaseInfo(expirationTimestamp,
+                registrationTimestamp, renewalTimestamp));
+
+        // Add the instance to the registry
+        instances.add(microservice);
+
+        LOG.fine("Successfully registered microservice: " + microservice.getServiceId() + ", instanceId: "
+                + microservice.getInstanceId());
+
+        return microservice;
     }
 
     /**
-     * Update the active registration TTL for the specified microservice.
+     * Update the active registration lease info for the specified microservice.
      * This is used to indicate that the microservice is still running and
      * available.
-     * 
-     * If the microservice is not found, a {@link MicroserviceNotFoundException}
-     * is thrown.
+     * If the microservice is not found, a {@link NoSuchElementException} is
+     * thrown.
      *
      * @param serviceId  The serviceId of the microservice to send the heartbeat to
      * @param instanceId The instanceId of the microservice to send the heartbeat to
      */
     public void heartbeat(String serviceId, String instanceId) {
-        List<MicroserviceRegistryEntry> instances = registry.get(serviceId);
+        List<Microservice> instances = registry.get(serviceId);
 
         if (instances == null) {
-            LOG.warning("Failed to refresh TTL for microservice: " + serviceId + ", instanceId: " + instanceId
+            LOG.warning("Failed to refresh lease info for microservice: " + serviceId + ", instanceId: " + instanceId
                     + " - service not found");
-            throw new MicroserviceNotFoundException("Specified service could not be found");
+            throw new NoSuchElementException("Specified service could not be found");
         }
 
-        MicroserviceRegistryEntry entry = instances.stream()
-                .filter(e -> e.getMicroservice().getInstanceId().equals(instanceId))
+        Microservice entry = instances.stream()
+                .filter(e -> e.getInstanceId().equals(instanceId))
                 .findFirst()
                 .orElse(null);
 
         if (entry != null) {
-            // Update the expiration time and set the status to available
-            entry.setExpirationTime(timerService.getCurrentTimeMillis() + DEFAULT_TTL_MS);
-            entry.getMicroservice().setStatus(MicroserviceStatus.AVAILABLE);
+            long renewalTimestamp = timerService.getCurrentTimeMillis();
+            long expirationTimestamp = renewalTimestamp + DEFAULT_LEASE_DURATION_MS;
+
+            // Update the lease info and set the instance status to available
+            entry.getLeaseInfo().setRenewalTimestamp(renewalTimestamp);
+            entry.getLeaseInfo().setExpirationTimestamp(expirationTimestamp);
+            entry.setStatus(MicroserviceStatus.AVAILABLE);
 
         } else {
-            LOG.warning("Failed to refresh TTL for microservice: " + serviceId + ", instanceId: " + instanceId
+            LOG.warning("Failed to refresh lease info for microservice: " + serviceId + ", instanceId: " + instanceId
                     + " - instance not found");
-            throw new MicroserviceNotFoundException("Specified instance of service could not be found");
+            throw new NoSuchElementException("Specified instance of service could not be found");
         }
     }
 
     /**
      * Deregister a microservice instance
      * 
-     * If the microservice is not found, a {@link MicroserviceNotFoundException}
-     * is thrown.
+     * If the microservice is not found, a {@link NoSuchElementException} is
+     * thrown.
      *
      * @param serviceId  The serviceId of the microservice to deregister
      * @param instanceId The instanceId of the microservice to deregister
      */
     public void deregisterService(String serviceId, String instanceId) {
 
-        List<MicroserviceRegistryEntry> instances = registry.get(serviceId);
+        List<Microservice> instances = registry.get(serviceId);
         if (instances == null) {
-            throw new MicroserviceNotFoundException("Specified service could not be found");
+            throw new NoSuchElementException("The given serviceId does not exist in the registry");
         }
 
-        MicroserviceRegistryEntry entry = instances.stream()
-                .filter(e -> e.getMicroservice().getInstanceId().equals(instanceId))
+        Microservice entry = instances.stream()
+                .filter(e -> e.getInstanceId().equals(instanceId))
                 .findFirst()
                 .orElse(null);
 
         if (entry == null) {
-            throw new MicroserviceNotFoundException("Specified instance of service could not be found");
+            throw new NoSuchElementException("The given instanceId does not exist in the registry");
         }
 
         instances.remove(entry);
@@ -230,40 +237,35 @@ public class MicroserviceRegistryService implements ContainerService {
     public Microservice[] getServices() {
         markExpiredInstancesAsUnavailable();
 
-        return registry.values().stream()
-                .flatMap(List::stream)
-                .map(MicroserviceRegistryEntry::getMicroservice)
-                .toArray(Microservice[]::new);
+        return registry.values().stream().flatMap(List::stream).toArray(Microservice[]::new);
     }
 
     /**
      * Check for expired registrations and mark them as unavailable if the
-     * TTL has expired.
+     * instance lease has expired.
      */
     protected void markExpiredInstancesAsUnavailable() {
         long currentTime = timerService.getCurrentTimeMillis();
 
         registry.values().stream()
                 .flatMap(List::stream)
-                .filter(entry -> entry.getExpirationTime() < currentTime
-                        && entry.getMicroservice().getStatus() == MicroserviceStatus.AVAILABLE)
-                .forEach(entry -> entry.getMicroservice().setStatus(MicroserviceStatus.UNAVAILABLE));
+                .filter(entry -> entry.getLeaseInfo().isExpired(currentTime)
+                        && entry.getStatus() == MicroserviceStatus.AVAILABLE)
+                .forEach(entry -> entry.setStatus(MicroserviceStatus.UNAVAILABLE));
     }
 
     protected void cleanupExpiredUnavailableInstances() {
         long currentTime = timerService.getCurrentTimeMillis();
-        long purgeThreshold = currentTime + PURGE_UNAVAILABLE_MS;
+        long purgeThreshold = currentTime + DEFAULT_PURGE_UNAVAILABLE_MS;
 
-        List<MicroserviceRegistryEntry> toRemove = registry.values().stream()
+        List<Microservice> toRemove = registry.values().stream()
                 .flatMap(List::stream)
-                .filter(entry -> entry.getMicroservice().getStatus() == MicroserviceStatus.UNAVAILABLE
-                        && entry.getExpirationTime() < purgeThreshold)
-                .collect(Collectors.toList());
+                .filter(entry -> entry.getStatus() == MicroserviceStatus.UNAVAILABLE
+                        && entry.getLeaseInfo().getExpirationTimestamp() < purgeThreshold)
+                .toList();
 
-        // Remove the collected entries
-        toRemove.forEach(entry -> {
-            deregisterService(entry.getMicroservice().getServiceId(), entry.getMicroservice().getInstanceId());
-        });
+        // Deregister long expired microservices
+        toRemove.forEach(entry -> deregisterService(entry.getServiceId(), entry.getInstanceId()));
 
     }
 

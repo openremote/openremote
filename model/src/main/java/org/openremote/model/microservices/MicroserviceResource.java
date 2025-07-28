@@ -38,8 +38,13 @@ import jakarta.ws.rs.core.Response;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
- * The microservice resource is used to manage microservice/external service
- * registrations within the OpenRemote manager
+ * REST resource for managing microservices/external services.
+ * 
+ * It is used to register, deregister and manage the lifecycle of the service.
+ * 
+ * The microservice registry is used to keep track of the microservices and
+ * their
+ * instances.
  */
 @Tag(name = "Services", description = "Registration and management of microservices/external services")
 @Path("service")
@@ -47,7 +52,7 @@ public interface MicroserviceResource {
 
     /**
      * Create a new registration for the specified microservice and return the
-     * instanceId of the registered microservice.
+     * registered microservice with its instanceId and status.
      * 
      * @param microservice The microservice to register
      */
@@ -56,10 +61,11 @@ public interface MicroserviceResource {
     @Produces(APPLICATION_JSON)
     @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
     @Operation(operationId = "registerService", summary = "Register an external service/microservice", responses = {
-            @ApiResponse(responseCode = "201", description = "Service registered successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MicroserviceRegistrationResponse.class))),
+            @ApiResponse(responseCode = "200", description = "Service registered successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Microservice.class))),
             @ApiResponse(responseCode = "400", description = "Invalid microservice object"),
+            @ApiResponse(responseCode = "409", description = "Microservice instance already registered"),
     })
-    MicroserviceRegistrationResponse registerService(@BeanParam RequestParams requestParams,
+    Microservice registerService(@BeanParam RequestParams requestParams,
             @NotNull @Valid Microservice microservice);
 
     /**
@@ -73,10 +79,9 @@ public interface MicroserviceResource {
     })
     Microservice[] getServices(@BeanParam RequestParams requestParams);
 
-
     /**
-     * Send a heartbeat to update the active registration TTL for the specified
-     * microservice.
+     * Send a heartbeat to refresh the active registration lease for the
+     * specified microservice.
      * This is used to indicate that the microservice is still running and
      * available.
      * 
@@ -86,11 +91,11 @@ public interface MicroserviceResource {
     @PUT
     @Path("{serviceId}/{instanceId}")
     @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
-    @Operation(operationId = "heartbeat", summary = "Update the active registration TTL for the specified microservice", responses = {
+    @Operation(operationId = "heartbeat", summary = "Update the active registration lease for the specified microservice", responses = {
             @ApiResponse(responseCode = "200", description = "Heartbeat sent successfully"),
             @ApiResponse(responseCode = "404", description = "Service not found"),
     })
-    Response heartbeat(@BeanParam RequestParams requestParams,
+    void heartbeat(@BeanParam RequestParams requestParams,
             @PathParam("serviceId") @NotNull @Size(min = 1) String serviceId,
             @PathParam("instanceId") @NotNull @Size(min = 1) String instanceId);
 
@@ -108,7 +113,7 @@ public interface MicroserviceResource {
             @ApiResponse(responseCode = "200", description = "Service deregistered successfully"),
             @ApiResponse(responseCode = "404", description = "Service not found"),
     })
-    Response deregisterService(@BeanParam RequestParams requestParams, @PathParam("serviceId") String serviceId,
+    void deregisterService(@BeanParam RequestParams requestParams, @PathParam("serviceId") String serviceId,
             @PathParam("instanceId") String instanceId);
 
 }

@@ -20,6 +20,7 @@
 package org.openremote.manager.microservices;
 
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.logging.Logger;
 
 import org.openremote.container.timer.TimerService;
@@ -27,14 +28,10 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.microservices.Microservice;
-import org.openremote.model.microservices.MicroserviceNotFoundException;
-import org.openremote.model.microservices.MicroserviceRegistrationResponse;
 import org.openremote.model.microservices.MicroserviceResource;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 
-import jakarta.ws.rs.InternalServerErrorException;
-import jakarta.ws.rs.NotAuthorizedException;
-import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
 public class MicroserviceResourceImpl extends ManagerWebResource implements MicroserviceResource {
@@ -49,28 +46,36 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
     }
 
     @Override
-    public MicroserviceRegistrationResponse registerService(RequestParams requestParams, Microservice microservice) {
+    public Microservice registerService(RequestParams requestParams, Microservice microservice) {
         if (!isServiceAccount()) {
-            LOG.warning("Only service users can register services");
-            throw new NotAuthorizedException("Only service users can register services");
+            LOG.warning("Service registration not allowed for non-service users");
+            throw new WebApplicationException("Service registration not allowed for non-service users",
+                    Response.Status.FORBIDDEN);
         }
 
-        // Provide a instanceId if not set
+        // Generate a instanceId if not provided
         if (microservice.getInstanceId() == null) {
             String instanceId = UniqueIdentifierGenerator.generateId();
             microservice.setInstanceId(instanceId);
         }
 
         try {
-            microserviceRegistry.registerService(microservice);
-            LOG.fine("Successfully registered microservice: " + microservice.getServiceId() + " with instanceId: "
-                    + microservice.getInstanceId());
-            return new MicroserviceRegistrationResponse(microservice.getInstanceId());
+            Microservice registeredMicroservice = microserviceRegistry.registerService(microservice);
 
-        } catch (Exception e) {
-            LOG.warning("Failed to register microservice: " + e.getMessage());
-            throw new InternalServerErrorException("Failed to register microservice", e);
+            if (registeredMicroservice == null) {
+                LOG.warning("Failed to register microservice: " + microservice.getServiceId() + " with instanceId: "
+                        + microservice.getInstanceId());
+                throw new WebApplicationException("Failed to register microservice",
+                        Response.Status.INTERNAL_SERVER_ERROR);
+            }
+
+            return registeredMicroservice;
+        } catch (IllegalStateException e) {
+            LOG.warning("Failed to register microservice: " + microservice.getServiceId() + " with instanceId: "
+                    + microservice.getInstanceId() + ": " + e.getMessage());
+            throw new WebApplicationException(e.getMessage(), Response.Status.CONFLICT);
         }
+
     }
 
     @Override
@@ -83,46 +88,37 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
     }
 
     @Override
-    public Response heartbeat(RequestParams requestParams, String serviceId, String instanceId) {
+    public void heartbeat(RequestParams requestParams, String serviceId, String instanceId) {
         if (!isServiceAccount()) {
-            LOG.warning("Only service users can send heartbeats");
-            throw new NotAuthorizedException("Only service users can send heartbeats");
+            LOG.warning("Service heartbeat not allowed for non-service users");
+            throw new WebApplicationException("Service heartbeat not allowed for non-service users",
+                    Response.Status.FORBIDDEN);
         }
 
         try {
             microserviceRegistry.heartbeat(serviceId, instanceId);
-            LOG.fine("Successfully sent heartbeat for microservice: " + serviceId + " instance: " + instanceId);
-            return Response.noContent().build();
-        } catch (MicroserviceNotFoundException e) {
+        } catch (NoSuchElementException e) {
             LOG.warning("Failed heartbeat for microservice " + serviceId + " instance " + instanceId + ": "
                     + e.getMessage());
-            throw new NotFoundException(e.getMessage());
-        } catch (Exception e) {
-            LOG.warning("Failed heartbeat for microservice " + serviceId + " instance " + instanceId + ": "
-                    + e.getMessage());
-            throw new InternalServerErrorException("Failed to send heartbeat for microservice", e);
+            throw new WebApplicationException(e.getMessage(), Response.Status.NOT_FOUND);
         }
     }
 
     @Override
-    public Response deregisterService(RequestParams requestParams, String serviceId, String instanceId) {
+    public void deregisterService(RequestParams requestParams, String serviceId, String instanceId) {
         if (!isServiceAccount()) {
-            LOG.warning("Only service users can deregister services");
-            throw new NotAuthorizedException("Only service users can deregister services");
+            LOG.warning("Service deregistration not allowed for non-service users");
+            throw new WebApplicationException("Service deregistration not allowed for non-service users",
+                    Response.Status.FORBIDDEN);
         }
 
         try {
             microserviceRegistry.deregisterService(serviceId, instanceId);
             LOG.fine("Successfully deregistered microservice: " + serviceId + " instance: " + instanceId);
-            return Response.noContent().build();
-        } catch (MicroserviceNotFoundException e) {
+        } catch (NoSuchElementException e) {
             LOG.warning("Failed to deregister microservice " + serviceId + " instance " + instanceId + ": "
                     + e.getMessage());
-            throw new NotFoundException(e.getMessage());
-        } catch (Exception e) {
-            LOG.warning("Failed to deregister microservice " + serviceId + " instance " + instanceId + ": "
-                    + e.getMessage());
-            throw new InternalServerErrorException("Failed to deregister microservice", e);
+            throw new WebApplicationException(e.getMessage(), Response.Status.NOT_FOUND);
         }
     }
 
