@@ -117,7 +117,7 @@ services:
     <<: *awslogs
 
   ml-forecast:
-    image: dkleeven/service-ml-forecast:latest
+    image: dkleeven/service-ml-forecast:develop
     restart: always
     environment:
       ML_LOG_LEVEL: INFO
@@ -127,6 +127,7 @@ services:
       ML_OR_KEYCLOAK_URL: https://${OR_HOSTNAME:-localhost}/auth
       ML_OR_SERVICE_USER: mlserviceuser
       ML_OR_SERVICE_USER_SECRET: ${ML_OR_SERVICE_USER_SECRET:-secret}
+      ML_OR_SERVICE_HOSTNAME: https://${OR_HOSTNAME:-localhost}
     volumes:
       - service-ml-forecast-data:/app/deployment/data
     <<: *awslogs
