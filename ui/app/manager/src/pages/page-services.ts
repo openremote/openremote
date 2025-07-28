@@ -8,6 +8,7 @@ import { createSelector, Store } from "@reduxjs/toolkit";
 import { DefaultColor3, DefaultColor5, DefaultColor6, manager } from "@openremote/core";
 import { style as OrAssetTreeStyle } from "@openremote/or-asset-tree";
 import "@openremote/or-components/or-iframe";
+import { OrIFrameEventType, OrIFrameEventDetail } from "@openremote/or-components/or-iframe";
 import "@openremote/or-icon";
 import { OrTreeMenu, TreeNode, TreeMenuSelection, OrTreeNode } from "@openremote/or-tree-menu";
 import { Microservice, MicroserviceStatus } from "@openremote/model";
@@ -256,7 +257,7 @@ export class PageServices extends Page<AppStateKeyed> {
       }
     } catch (error) {
       console.error("Failed to load services:", error);
-      showSnackbar(undefined, i18next.t("services.loadServicesFailed"));
+      showSnackbar(undefined, i18next.t("services.servicesLoadError"));
     } finally {
       this._loading = false;
     }
@@ -317,6 +318,18 @@ export class PageServices extends Page<AppStateKeyed> {
     }
   }
 
+  protected _onIframeEvent(e: CustomEvent): void {
+    const detail = e.detail as OrIFrameEventDetail;
+    console.info("Iframe event received:", detail);
+    
+    // Handle iframe events here if needed
+    // For example, show notifications, log errors, etc.
+    if (detail.type === OrIFrameEventType.ERROR || detail.type === OrIFrameEventType.TIMEOUT) {
+      console.error("Iframe error:", detail.error);
+      // Could show a snackbar notification here if desired
+    }
+  }
+
   /**
    * Get the iframe path for a given service
    * @param service - The service to get the iframe path for
@@ -344,7 +357,11 @@ export class PageServices extends Page<AppStateKeyed> {
         </div>
         ${noSelection
           ? html`<div class="msg"><or-translate value="services.noServiceSelected"></or-translate></div>`
-          : html`<or-iframe .src="${this.getServiceUrlPath(this.selectedService)}"></or-iframe>`}
+          : html`<or-iframe 
+              .src="${this.getServiceUrlPath(this.selectedService)}"
+              .loadErrorMessage="${i18next.t("services.iframeLoadError")}"
+              @or-iframe-event="${this._onIframeEvent}"
+            ></or-iframe>`}
       </div>
     `;
   }
