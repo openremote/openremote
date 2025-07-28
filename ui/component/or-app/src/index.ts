@@ -270,7 +270,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     this._activeMenu = activeMenu;
                 };
                 router.hooks({
-                    before(done, match) {
+                    before: (done, match) => {
                         headerUpdater(match ? match.url.split('/')[0] : undefined);
                         done();
                     }
