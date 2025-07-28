@@ -106,9 +106,7 @@ export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(
         value: "account",
         href: "account",
         text: "account",
-        roles: {
-            account: ["manage-account"]
-        }
+        roles: ["write:user"]
     };
 }
 export function headerItemUsers<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {

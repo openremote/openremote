@@ -397,6 +397,14 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         }
     }
 
+    public void removeMessageConsumers(String topic) {
+        synchronized (topicConsumerMap) {
+            Optional.ofNullable(topicConsumerMap.remove(topic)).ifPresent(topicConsumer -> {
+                doUnsubscribe(topic);
+            });
+        }
+    }
+
     @Override
     public void removeAllMessageConsumers() {
         Set<String> topics = new HashSet<>(topicConsumerMap.keySet());
