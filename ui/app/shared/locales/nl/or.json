@@ -924,6 +924,8 @@
   "services": {
     "noServiceSelected": "Selecteer een service aan de linkerkant",
     "title": "Services",
-    "loadServicesFailed": "Er is iets misgegaan bij het ophalen van de services."
+    "servicesLoadError": "Er is iets misgegaan bij het ophalen van de services",
+    "iframeLoadError": "De geselecteerde service kon niet worden geladen",
+    "serviceUnavailable": "Service is niet beschikbaar"
   }
 }

@@ -925,6 +925,8 @@
   "services": {
     "noServiceSelected": "Please select a service on the left",
     "title": "Services",
-    "loadServicesFailed": "Something went wrong while retrieving the services."
+    "servicesLoadError": "Something went wrong while retrieving the services",
+    "iframeLoadError": "The selected service could not be loaded",
+    "serviceUnavailable": "Service is unavailable"
   }
 }
