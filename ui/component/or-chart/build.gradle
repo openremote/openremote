@@ -3,6 +3,7 @@ buildDir = "dist"
 task clean() {
     doLast {
         delete "dist"
+        delete "lib"
     }
 }
 
