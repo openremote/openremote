@@ -1386,6 +1386,8 @@ __metadata:
     "@openremote/or-chart": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/util": "workspace:*"
+    chart.js: "npm:^3.6.0"
+    chartjs-adapter-moment: "npm:^1.0.0"
     lit: "npm:^2.0.2"
     moment: "npm:^2.29.4"
   languageName: unknown
@@ -1461,10 +1463,7 @@ __metadata:
     "@openremote/util": "workspace:*"
     "@types/chart.js": "npm:^2.9.34"
     "@types/offscreencanvas": "npm:^2019.6.4"
-    chart.js: "npm:^3.6.0"
-    chartjs-adapter-moment: "npm:^1.0.0"
-    chartjs-plugin-annotation: "npm:^1.1.0"
-    jsonpath-plus: "npm:^6.0.1"
+    echarts: "npm:~5.6.0"
     lit: "npm:^2.0.2"
     moment: "npm:^2.29.4"
   languageName: unknown
@@ -3502,15 +3501,6 @@ __metadata:
     chart.js: ">=3.0.0"
     moment: ^2.10.2
   checksum: 10c0/9c7ddc6ebf5741c334464bb6a72629afce7b1fa1480e39d926f836bc03f9bb21cd99edc74acb6a8a7faeb3ea06afa8904af95d2f571912ce65f35c5c014b5b03
-  languageName: node
-  linkType: hard
-
-"chartjs-plugin-annotation@npm:^1.1.0":
-  version: 1.4.0
-  resolution: "chartjs-plugin-annotation@npm:1.4.0"
-  peerDependencies:
-    chart.js: ^3.1.0
-  checksum: 10c0/dfbdcdec2f12dc893e21c9b0a868032e4cd8b8527604e2754d4afc4cdcba8f71c7b7888b35e32ef3751ceb4b0a18aa136987bc1c4e9686f8f248f33d8ecd703b
   languageName: node
   linkType: hard
 
