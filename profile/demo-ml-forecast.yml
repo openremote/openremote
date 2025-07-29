@@ -123,11 +123,11 @@ services:
       ML_LOG_LEVEL: INFO
       ML_ENVIRONMENT: production
       ML_WEBSERVER_ORIGINS: '["https://${OR_HOSTNAME:-localhost}"]'
+      ML_SERVICE_HOSTNAME: https://${OR_HOSTNAME:-localhost}
       ML_OR_URL: https://${OR_HOSTNAME:-localhost}
       ML_OR_KEYCLOAK_URL: https://${OR_HOSTNAME:-localhost}/auth
       ML_OR_SERVICE_USER: mlserviceuser
       ML_OR_SERVICE_USER_SECRET: ${ML_OR_SERVICE_USER_SECRET:-secret}
-      ML_OR_SERVICE_HOSTNAME: https://${OR_HOSTNAME:-localhost}
     volumes:
       - service-ml-forecast-data:/app/deployment/data
     <<: *awslogs
