@@ -1267,7 +1267,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                                 atLeastOneAttributeMatchValue = true;
                                             }
                                         } else if (/\d/.test(normalizedValue)) {
-                                            if(normalizedValue.endsWith("%")) {
+                                            if (normalizedValue.endsWith("%")) {
                                                 normalizedValue = normalizedValue?.replace("%", "");
                                             }
                                             // If filter starts with a number, append '==' in front of it.
