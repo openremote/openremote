@@ -892,7 +892,7 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
         }
 
         if (!this.interval) {
-            this.interval = this.intervalOptions.keys().next().value.toString();
+            this.interval = this.intervalOptions.keys().next().value!.toString();
         }
 
         if (!this._intervalConfig) {
@@ -900,7 +900,7 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
         }
 
         if (!this.timeWindowKey) {
-            this.timeWindowKey = this.timeWindowOptions.keys().next().value.toString();
+            this.timeWindowKey = this.timeWindowOptions.keys().next().value!.toString();
         }
 
         if (!this.timePrefixKey) {

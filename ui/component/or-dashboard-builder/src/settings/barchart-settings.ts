@@ -1,5 +1,5 @@
-import {css, html, TemplateResult } from "lit";
-import { customElement } from "lit/decorators.js";
+import {css, html, TemplateResult} from "lit";
+import {customElement} from "lit/decorators.js";
 import {WidgetSettings} from "../util/widget-settings";
 import "../panels/attributes-panel";
 import "../util/settings-panel";
@@ -15,11 +15,11 @@ import {showDialog, OrMwcDialog, DialogAction} from "@openremote/or-mwc-componen
 import {IntervalConfig} from "@openremote/or-attribute-barchart";
 
 const styling = css`
-  .switch-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
+    .switch-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
 `
 
 
@@ -27,8 +27,6 @@ const styling = css`
 export class BarChartSettings extends WidgetSettings {
 
     protected readonly widgetConfig!: BarChartWidgetConfig;
-
-
 
     protected timeWindowOptions: Map<string, [moment.unitOfTime.DurationConstructor, number]> = new Map<string, [moment.unitOfTime.DurationConstructor, number]>;
     protected timePrefixOptions: string[] = [];
@@ -78,7 +76,7 @@ export class BarChartSettings extends WidgetSettings {
                 <span>${asset.name}</span>
                 <span style="font-size:14px; color:grey;">${attributeLabel}</span>
                 ${when(isOnRightAxis, () => html`
-                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="right"></or-translate></span>   
+                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="right"></or-translate></span>
                 `)}
                 <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value=${methodList.length > 0 ? methodList : "selectMethod".toUpperCase()}></or-translate></span>
             `
@@ -90,20 +88,24 @@ export class BarChartSettings extends WidgetSettings {
                 {
                     icon: 'calculator-variant-outline',
                     tooltip: i18next.t('algorithmMethod'),
+                    active: false,
                     disabled: false
                 },
                 {
-                  icon: 'palette',
-                  tooltip: i18next.t('dashboard.lineColor'),
-                  disabled: false
+                    icon: 'palette',
+                    tooltip: i18next.t('dashboard.lineColor'),
+                    active: false,
+                    disabled: false
                 },
                 {
                     icon: this.widgetConfig.attributeSettings.rightAxisAttributes.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
                     tooltip: i18next.t('dashboard.toggleAxis'),
+                    active: false,
                     disabled: false
                 },
                 {
                     icon: 'mdi-blank',
+                    active: false,
                     tooltip: '',
                     disabled: true
                 }
@@ -133,7 +135,7 @@ export class BarChartSettings extends WidgetSettings {
                                           .options="${Array.from(this.timeWindowOptions.keys())}" value="${this.widgetConfig.defaultTimeWindowKey}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimeWindowSelect(ev)}"
                             ></or-mwc-input>
-                           <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('dashboard.withInterval')}" style="width: 100%;"
+                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('dashboard.withInterval')}" style="width: 100%;"
                                           .options="${Array.from(this.intervalOptions.keys())}" value="${this.widgetConfig.defaultInterval}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onIntervalSelect(ev)}"
                             ></or-mwc-input>
@@ -147,33 +149,33 @@ export class BarChartSettings extends WidgetSettings {
                                 ></or-mwc-input>
                             </div>
                         </div>
-                    </div>  
-               </settings-panel>
-               <!-- Display options --> 
-               <settings-panel displayName="display" expanded="${false}">
-                   <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 16px;">
-                            <div class="switch-container">
-                                <span><or-translate value="dashboard.showLegend"></or-translate></span>
-                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.chartSettings.showLegend}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowLegendToggle(ev)}"
-                                ></or-mwc-input>
-                            </div>
+                    </div>
+                </settings-panel>
+                <!-- Display options -->
+                <settings-panel displayName="display" expanded="${false}">
+                    <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 16px;">
+                        <div class="switch-container">
+                            <span><or-translate value="dashboard.showLegend"></or-translate></span>
+                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.chartSettings.showLegend}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowLegendToggle(ev)}"
+                            ></or-mwc-input>
+                        </div>
                         <!-- Toolbox -->
-                            <div class="switch-container">
-                                <span><or-translate value="dashboard.showToolBox"></or-translate></span>
-                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.chartSettings.showToolBox}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowToolBoxToggle(ev)}"
-                                ></or-mwc-input>
-                            </div>
-                       <!-- Stacked -->
-                       <div class="switch-container">
-                           <span><or-translate value="dashboard.defaultStacked"></or-translate></span>
-                           <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.chartSettings.defaultStacked}"
-                                         @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onDefaultStackedToggle(ev)}"
-                           ></or-mwc-input>
-                       </div>
-                       <!-- Decimal places -->
-                       <div>
+                        <div class="switch-container">
+                            <span><or-translate value="dashboard.showToolBox"></or-translate></span>
+                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.chartSettings.showToolBox}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowToolBoxToggle(ev)}"
+                            ></or-mwc-input>
+                        </div>
+                        <!-- Stacked -->
+                        <div class="switch-container">
+                            <span><or-translate value="dashboard.defaultStacked"></or-translate></span>
+                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.chartSettings.defaultStacked}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onDefaultStackedToggle(ev)}"
+                            ></or-mwc-input>
+                        </div>
+                        <!-- Decimal places -->
+                        <div>
                             <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${this.widgetConfig.decimals}" label="${i18next.t('decimals')}" .min="${0}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onDecimalsChange(ev)}"
                             ></or-mwc-input>
@@ -184,7 +186,7 @@ export class BarChartSettings extends WidgetSettings {
                 <!-- Axis configuration -->
                 <settings-panel displayName="dashboard.axisConfig" expanded="${false}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 16px;">
-        
+
                         <!-- Left axis configuration -->
                         <div>
                             ${when(isMultiAxis, () => html`
@@ -217,12 +219,12 @@ export class BarChartSettings extends WidgetSettings {
                                 ></or-mwc-input>
                             </div>
                         </div>
-        
+
                         <!-- Right axis configuration -->
-                                       ${when(isMultiAxis, () => {
-                       const rightMin = this.widgetConfig.chartOptions.options?.scales?.y1?.min;
-                       const rightMax = this.widgetConfig.chartOptions.options?.scales?.y1?.max;
-                       return html`
+                        ${when(isMultiAxis, () => {
+                            const rightMin = this.widgetConfig.chartOptions.options?.scales?.y1?.min;
+                            const rightMax = this.widgetConfig.chartOptions.options?.scales?.y1?.max;
+                            return html`
                                 <div>
                                     <div style="margin-bottom: 8px;">
                                         <span><or-translate value="dashboard.rightAxis"></or-translate></span>
@@ -255,7 +257,7 @@ export class BarChartSettings extends WidgetSettings {
                                     </div>
                                 </div>
                             `
-                   })        }
+                        })}
                     </div>
                 </settings-panel>
             </div>
@@ -264,7 +266,7 @@ export class BarChartSettings extends WidgetSettings {
 
     // Check which icon was pressed and act accordingly.
     protected onAttributeAction(ev: AttributeActionEvent) {
-        const { asset ,attributeRef, action } = ev.detail;
+        const {asset, attributeRef, action} = ev.detail;
 
         const findAttributeIndex = (array: AttributeRef[], ref: AttributeRef) => {
             return array.findIndex(item => item.id === ref.id && item.name === ref.name);
@@ -341,13 +343,12 @@ export class BarChartSettings extends WidgetSettings {
             if (existingIndex >= 0) {
                 this.widgetConfig.colorPickedAttributes[existingIndex].color = color;
             } else {
-                this.widgetConfig.colorPickedAttributes.push({ attributeRef, color });
+                this.widgetConfig.colorPickedAttributes.push({attributeRef, color});
             }
             this.notifyConfigUpdate();
         });
         colorInput.click();
     }
-
 
 
     protected removeFromColorPickedAttributes(attributeRef: AttributeRef) {
@@ -379,10 +380,11 @@ export class BarChartSettings extends WidgetSettings {
         showDialog(new OrMwcDialog()
             .setContent(html`
                 <div id="method-creator">
-                    <or-mwc-list id="method-creator-list" .type="${ListType.MULTI_CHECKBOX}" 
-                                 .listItems="${methodList}" 
+                    <or-mwc-list id="method-creator-list" .type="${ListType.MULTI_CHECKBOX}"
+                                 .listItems="${methodList}"
                                  .values="${methodList.map(item => item.data)}"
-                                 @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => {selected = Array.from(ev.detail.values());
+                                 @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => {
+                                     selected = Array.from(ev.detail.values());
                                      selected = selected.map(item => ({...item, data: item.text}));
                                  }}"
                     ></or-mwc-list>
@@ -457,14 +459,14 @@ export class BarChartSettings extends WidgetSettings {
     }
 
     protected setAxisMinMaxValue(axis: 'left' | 'right', type: 'min' | 'max', value?: number) {
-        if(axis === 'left') {
-            if(type === 'min') {
+        if (axis === 'left') {
+            if (type === 'min') {
                 this.widgetConfig.chartOptions.options.scales.y.min = value;
             } else {
                 this.widgetConfig.chartOptions.options.scales.y.max = value;
             }
         } else {
-            if(type === 'min') {
+            if (type === 'min') {
                 this.widgetConfig.chartOptions.options.scales.y1.min = value;
             } else {
                 this.widgetConfig.chartOptions.options.scales.y1.max = value;

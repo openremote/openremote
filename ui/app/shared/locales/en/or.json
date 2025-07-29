@@ -788,7 +788,7 @@
     "imageUrl": "Image URL",
     "noImageSelected": "No image selected",
     "noData": "No data",
-    "selectMethod": "Select aggregation method"
+    "selectMethod": "Select aggregation method",
     "faint": "Faint",
     "smooth": "Smooth",
     "stepped": "Stepped",
