@@ -1267,9 +1267,23 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                                 atLeastOneAttributeMatchValue = true;
                                             }
                                         } else if (/\d/.test(normalizedValue)) {
-                                            const resultNumberEval: boolean = eval(attr.value + normalizedValue);
-                                            if (resultNumberEval) {
-                                                atLeastOneAttributeMatchValue = true;
+                                            if(normalizedValue.endsWith("%")) {
+                                                normalizedValue = normalizedValue?.replace("%", "");
+                                            }
+                                            // If filter starts with a number, append '==' in front of it.
+                                            if (/^[0-9]/.test(normalizedValue)) {
+                                                normalizedValue = "==" + normalizedValue;
+                                            }
+                                            const func = attr.value + normalizedValue.replace(/[a-z]/gi, "");
+
+                                            // Execute the function
+                                            try {
+                                                const resultNumberEval: boolean = eval(func);
+                                                if (resultNumberEval) {
+                                                    atLeastOneAttributeMatchValue = true;
+                                                }
+                                            } catch (_ignored) {
+                                                console.warn("Could not process filter on attribute number value;", func);
                                             }
                                         }
                                         break;
