@@ -93,7 +93,7 @@ distributions {
     main {
         contents {
             from(project.projectDir) {
-                include("*Dockerfile")
+                include("*Dockerfile", "entrypoint.sh")
             }
             into ("web") {
                 from("${rootDir}/LICENSE.txt")

@@ -25,6 +25,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.channel.ChannelId;
 import org.apache.activemq.artemis.api.core.ActiveMQException;
 import org.apache.activemq.artemis.api.core.ActiveMQExceptionType;
+import org.apache.activemq.artemis.api.core.QueueConfiguration;
 import org.apache.activemq.artemis.api.core.SimpleString;
 import org.apache.activemq.artemis.api.core.client.ActiveMQClient;
 import org.apache.activemq.artemis.api.core.client.ClientSession;
@@ -38,6 +39,7 @@ import org.apache.activemq.artemis.core.config.MetricsConfiguration;
 import org.apache.activemq.artemis.core.config.WildcardConfiguration;
 import org.apache.activemq.artemis.core.config.impl.ConfigurationImpl;
 import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
+import org.apache.activemq.artemis.core.protocol.mqtt.MQTTStateManager;
 import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
 import org.apache.activemq.artemis.core.remoting.FailureListener;
 import org.apache.activemq.artemis.core.remoting.impl.invm.InVMConnection;
@@ -73,6 +75,7 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.UserAssetLink;
+import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.security.User;
 import org.openremote.model.util.Debouncer;
 import org.openremote.model.util.TextUtil;
@@ -105,6 +108,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
     public static final String MQTT_SERVER_LISTEN_PORT = "MQTT_SERVER_LISTEN_PORT";
     public static final String ANONYMOUS_USERNAME = "anonymous";
+    // Allow 5 min durable session but this will not enable retained topics etc. as we delete queues aggressively for now
+    public static final int DEFAULT_SESSION_EXPIRY_MILLIS = 300000;
     protected final WildcardConfiguration wildcardConfiguration = new WildcardConfiguration();
     protected static final System.Logger LOG = System.getLogger(MQTTBrokerService.class.getName() + "." + API.name());
 
@@ -169,11 +174,12 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         // Create server config
         serverConfiguration = new ConfigurationImpl();
+        serverConfiguration.setMqttSessionScanInterval(10000);
         serverConfiguration.addAcceptorConfiguration("in-vm", "vm://0?protocols=core");
         String serverURI = new URIBuilder().setScheme("tcp").setHost(host).setPort(port)
             .setParameter("protocols", "MQTT")
-            .setParameter("allowLinkStealing", "true")
-            .setParameter("defaultMqttSessionExpiryInterval", "0") // Don't support retained sessions
+            .setParameter("allowLinkStealing", "false") // Preventing this ensures previous connection/session is properly cleaned up before a reconnect
+            .setParameter("defaultMqttSessionExpiryInterval", Integer.toString(DEFAULT_SESSION_EXPIRY_MILLIS))
             .build().toString();
         serverConfiguration.addAcceptorConfiguration("tcp", serverURI);
         serverConfiguration.registerBrokerPlugin(this);
@@ -188,7 +194,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         serverConfiguration.setWildCardConfiguration(wildcardConfiguration);
         serverConfiguration.setLiteralMatchMarkers("()");
 
-        // Configure global address settings - aggressively cleanup queues (don't support resumable sessions)
+        // Configure global address settings - aggressively cleanup queues (don't support retained messages)
+        serverConfiguration.addQueueConfiguration(QueueConfiguration.of(wildcardConfiguration.getAnyWordsString()).setDurable(false));
         serverConfiguration.addAddressSetting(wildcardConfiguration.getAnyWordsString(),
             new AddressSettings()
                 .setDeadLetterAddress(SimpleString.of("ActiveMQ.DLQ"))
@@ -381,8 +388,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
             @Override
             public void connectionFailed(ActiveMQException exception, boolean failedOver, String scaleDownTargetNodeID) {
-                // TODO: Force delete session (don't allow retained/durable sessions)
-
                 connectionIDConnectionMap.remove(getConnectionIDString(connection));
 
                 if (connection.getClientID() != null) {
@@ -502,8 +507,16 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     }
 
     protected void doForceDisconnect(RemotingConnection connection) {
-        LOG.log(DEBUG, "Force disconnecting client connection: " + connectionToString(connection));
+        LOG.log(DEBUG, () -> "Force disconnecting client connection: " + connectionToString(connection));
         connection.disconnect(false);
+        // Destroy session for force disconnects
+        try {
+            if (MQTTStateManager.getInstance(server.getActiveMQServer()).removeSessionState(connection.getClientID()) != null) {
+                LOG.log(TRACE, () -> "Removed session state for client connection: " + connectionToString(connection));
+            }
+        } catch (Exception e) {
+            LOG.log(INFO, () -> "Failed to get server instance to clear session for client connection: " + connectionToString(connection));
+        }
         ((SecurityStoreImpl)server.getActiveMQServer().getSecurityStore()).invalidateAuthorizationCache();
     }
 

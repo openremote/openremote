@@ -22,70 +22,120 @@ package org.openremote.agent.protocol.mqtt;
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.MqttClientSslConfig;
 import com.hivemq.client.mqtt.MqttClientSslConfigBuilder;
-import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.exceptions.ConnectionClosedException;
 import com.hivemq.client.mqtt.exceptions.ConnectionFailedException;
-import com.hivemq.client.mqtt.lifecycle.MqttDisconnectSource;
+import com.hivemq.client.mqtt.exceptions.MqttClientStateException;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3ClientBuilder;
 import com.hivemq.client.mqtt.mqtt3.exceptions.Mqtt3ConnAckException;
 import com.hivemq.client.mqtt.mqtt3.exceptions.Mqtt3DisconnectException;
-import com.hivemq.client.mqtt.mqtt3.lifecycle.Mqtt3ClientDisconnectedContext;
 import com.hivemq.client.mqtt.mqtt3.message.connect.Mqtt3ConnectBuilder;
 import com.hivemq.client.mqtt.mqtt3.message.connect.connack.Mqtt3ConnAck;
-import com.hivemq.client.mqtt.mqtt3.message.subscribe.Mqtt3Subscribe;
 import com.hivemq.client.mqtt.mqtt3.message.subscribe.suback.Mqtt3SubAck;
 import com.hivemq.client.mqtt.mqtt3.message.subscribe.suback.Mqtt3SubAckReturnCode;
+import dev.failsafe.Failsafe;
+import dev.failsafe.RetryPolicy;
+import jakarta.validation.constraints.NotNull;
 import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.container.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.Pair;
-import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.util.ValueUtil;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 import java.net.URI;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.time.Duration;
+import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.agent.protocol.io.AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS;
-import static org.openremote.agent.protocol.io.AbstractNettyIOClient.RECONNECT_DELAY_MAX_MILLIS;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
+/**
+ * HiveMQ client re-subscribing has no callback mechanism so we cannot track which subscriptions fail on re-connect
+ * so we have to manually handle reconnect and re-subscribe until this issue is resolved, if this is ever implemented
+ * then automaticReconnect could be reinstated - see version history if/when needed
+ * (see <a href="https://github.com/hivemq/hivemq-mqtt-client/issues/510"></a>)
+ */
 public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S>> {
 
+    protected static final class TopicSubscriptionInfo<S> {
+        MqttQos qos;
+        CompletableFuture<Boolean> subAckFuture;
+        Set<Consumer<MQTTMessage<S>>> consumers = new HashSet<>();
+
+        TopicSubscriptionInfo(CompletableFuture<Boolean> subAckFuture, MqttQos qos, Consumer<MQTTMessage<S>> consumer) {
+            this.subAckFuture = subAckFuture;
+            this.qos = qos;
+            this.consumers.add(consumer);
+        }
+
+        /**
+         * Add a consumer for this topic
+         */
+        void addConsumer(Consumer<MQTTMessage<S>> consumer) {
+            synchronized (this) {
+                consumers.add(consumer);
+            }
+        }
+
+        /**
+         * Remove a consumer
+         * @return true if no consumers remaining
+         */
+        boolean removeConsumer(Consumer<MQTTMessage<S>> consumer) {
+            synchronized (this) {
+                return consumers.remove(consumer) && consumers.isEmpty();
+            }
+        }
+
+        void consume(MQTTMessage<S> message) {
+            synchronized (this) {
+                consumers.forEach(consumer -> consumer.accept(message));
+            }
+        }
+
+        boolean isSubFailed() {
+            return !subAckFuture.getNow(false);
+        }
+
+        boolean isSubDone() {
+            return subAckFuture.isDone();
+        }
+
+        void updateSubAck(@NotNull CompletableFuture<Boolean> subAckFuture) {
+            this.subAckFuture = subAckFuture;
+        }
+    }
+
     public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractMQTT_IOClient.class);
+    public static long RECONNECT_DELAY_INITIAL_MILLIS = 1000L;
+    public static long RECONNECT_DELAY_MAX_MILLIS = 5*60000L;
+    protected CompletableFuture<Void> connectRetry;
+    protected int connectTimeout = 5000;
+    protected ConnectionStatus connectionStatus = ConnectionStatus.DISCONNECTED;
     protected String clientId;
     protected String host;
     protected int port;
     protected boolean secure;
     protected boolean cleanSession;
+    protected boolean resubscribeIfSessionPresent;
+    protected boolean removeConsumersOnSubscriptionFailure;
+    protected boolean retrySubscriptionFailuresOnReconnect = true;
     protected UsernamePassword usernamePassword;
     protected URI websocketURI;
     protected Mqtt3AsyncClient client;
     protected final Set<Consumer<ConnectionStatus>> connectionStatusConsumers = new CopyOnWriteArraySet<>();
-    protected final ConcurrentMap<String, Pair<MqttQos, Set<Consumer<MQTTMessage<S>>>>> topicConsumerMap = new ConcurrentHashMap<>();
-    protected ScheduledExecutorService executorService;
-    protected boolean disconnected = true; // Need to use this flag to cancel client reconnect task
-    protected final AtomicBoolean connected = new AtomicBoolean(false); // Used for subscriptions
+    protected final Map<String, TopicSubscriptionInfo<S>> topicConsumerMap = new HashMap<>();
     protected Consumer<String> topicSubscribeFailureConsumer;
-    protected ConnectionStatus currentStatus;
-    protected MqttQos publishQos = MqttQos.AT_LEAST_ONCE;
-    protected MqttQos subscribeQos = MqttQos.AT_LEAST_ONCE;
-
-    protected AbstractMQTT_IOClient(String host, int port, boolean secure, boolean cleanSession, UsernamePassword usernamePassword, URI websocketURI, MQTTLastWill lastWill, KeyManagerFactory keyManagerFactory, TrustManagerFactory trustManagerFactory) {
-        this(UniqueIdentifierGenerator.generateId(), host, port, secure, cleanSession, usernamePassword, websocketURI, lastWill, keyManagerFactory, trustManagerFactory);
-    }
+    protected MqttQos publishQos = MqttQos.AT_MOST_ONCE;
+    protected MqttQos subscribeQos = MqttQos.AT_MOST_ONCE;
+    protected String clientUri;
 
     protected AbstractMQTT_IOClient(String clientId, String host, int port, boolean secure, boolean cleanSession, UsernamePassword usernamePassword, URI websocketURI, MQTTLastWill lastWill, KeyManagerFactory keyManagerFactory, TrustManagerFactory trustManagerFactory) {
         this.clientId = clientId;
@@ -95,41 +145,41 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         this.cleanSession = cleanSession;
         this.usernamePassword = usernamePassword;
         this.websocketURI = websocketURI;
-        this.executorService = Container.SCHEDULED_EXECUTOR;
+
+        if (websocketURI != null) {
+            clientUri = "mqtt_" + websocketURI + "?clientId=" + clientId;
+        } else {
+            clientUri = "mqtt" + (secure ? "s://" : "://") + host + ":" + port + "/?clientId=" + clientId;
+        }
 
         Mqtt3ClientBuilder builder = MqttClient.builder()
             .useMqttVersion3()
             .identifier(clientId)
-            .addConnectedListener(context -> onConnectionStatusChanged(null))
             .addDisconnectedListener(context -> {
-                boolean userClosed = context.getSource() == MqttDisconnectSource.USER;
-                if (disconnected) {
-                    context.getReconnector().reconnect(false);
-                } else {
-                    if (this.usernamePassword != null) {
-                        ((Mqtt3ClientDisconnectedContext) context).getReconnector().connectWith()
-                            .simpleAuth()
-                            .username(usernamePassword.getUsername())
-                            .password(usernamePassword.getPassword().getBytes())
-                            .applySimpleAuth()
-                            .applyConnect();
+                // Remove all subscriptions so we can add them again on connect and get a completable future for them
+                // this allows us to track any failed subscriptions on reconnect
+                boolean reconnect = false;
+
+                synchronized (this) {
+                    if (connectionStatus == ConnectionStatus.CONNECTED) {
+                        onConnectionStatusChanged(ConnectionStatus.CONNECTING);
+                        reconnect = true;
                     }
                 }
-                if (context.getCause() instanceof Mqtt3DisconnectException) {
-                    LOG.info("Client disconnect '" + getClientUri() + "': initiator=" + context.getSource());
-                } else if (context.getCause() instanceof Mqtt3ConnAckException) {
-                    LOG.info("Connection rejected by the broker '" + getClientUri() + "': reasonCode=" + ((Mqtt3ConnAckException)context.getCause()).getMqttMessage().getReturnCode() + ", initiator=" + context.getSource());
-                } else if (context.getCause() instanceof ConnectionClosedException) {
-                    LOG.info("Connection closed by " + context.getSource() + " '" + getClientUri() + "': initiator=" + context.getSource());
-                } else if (context.getCause() instanceof ConnectionFailedException) {
-                    LOG.log(Level.INFO, "Connection failed '" + getClientUri() + "': initiator=" + context.getSource(), context.getCause());
+
+                if (reconnect) {
+                    if (context.getCause() instanceof Mqtt3DisconnectException) {
+                        LOG.info("Connection error uri=" + getClientUri() + ", initiator=" + context.getSource());
+                    } else if (context.getCause() instanceof Mqtt3ConnAckException) {
+                        LOG.info("Connection rejected uri=" + getClientUri() + ", reasonCode=" + ((Mqtt3ConnAckException)context.getCause()).getMqttMessage().getReturnCode());
+                    } else if (context.getCause() instanceof ConnectionClosedException) {
+                        LOG.info("Connection closed uri=" + getClientUri() + ", initiator=" + context.getSource());
+                    } else if (context.getCause() instanceof ConnectionFailedException) {
+                        LOG.info("Connection failed uri=" + getClientUri() + ", initiator=" + context.getSource() + ", message=" + context.getCause().getMessage());
+                    }
+                    doReconnect();
                 }
-                onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
-            })
-            .automaticReconnect()
-            .initialDelay(RECONNECT_DELAY_INITIAL_MILLIS, TimeUnit.MILLISECONDS)
-            .maxDelay(RECONNECT_DELAY_MAX_MILLIS, TimeUnit.MILLISECONDS)
-            .applyAutomaticReconnect();
+            });
 
         if (secure) {
             MqttClientSslConfigBuilder sslBuilder = MqttClientSslConfig.builder();
@@ -166,8 +216,9 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         try {
             client = builder.buildAsync();
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Invalid MQTT client config for client '" + getClientUri() + "'", e);
+            LOG.log(Level.WARNING, "Invalid config uri=" + getClientUri(), e);
             client = null;
+            connectionStatus = ConnectionStatus.ERROR;
         }
     }
 
@@ -181,28 +232,50 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         return this;
     }
 
+    public boolean isResubscribeIfSessionPresent() {
+        return resubscribeIfSessionPresent;
+    }
+
+    public AbstractMQTT_IOClient<S> setResubscribeIfSessionPresent(boolean resubscribeIfSessionPresent) {
+        this.resubscribeIfSessionPresent = resubscribeIfSessionPresent;
+        return this;
+    }
+
+    public boolean isRemoveConsumersOnSubscriptionFailure() {
+        return removeConsumersOnSubscriptionFailure;
+    }
+
+    public AbstractMQTT_IOClient<S> setRemoveConsumersOnSubscriptionFailure(boolean removeConsumersOnSubscriptionFailure) {
+        this.removeConsumersOnSubscriptionFailure = removeConsumersOnSubscriptionFailure;
+        return this;
+    }
+
+    public boolean isRetrySubscriptionFailuresOnReconnect() {
+        return retrySubscriptionFailuresOnReconnect;
+    }
+
+    public AbstractMQTT_IOClient<S> setRetrySubscriptionFailuresOnReconnect(boolean retrySubscriptionFailuresOnReconnect) {
+        this.retrySubscriptionFailuresOnReconnect = retrySubscriptionFailuresOnReconnect;
+        return this;
+    }
+
     @Override
     public void sendMessage(MQTTMessage<S> message) {
         if (client == null) {
-            LOG.info("Cannot send message as client is invalid: " + getClientUri());
+            LOG.info("Cannot send message as client is not valid, uri=" + getClientUri());
             return;
         }
 
-        if (getConnectionStatus() != ConnectionStatus.CONNECTED) {
-            LOG.info("Cannot send message as client is not connected: " + getClientUri());
-            return;
-        }
-
-        // TODO: Might need to put some timeout logic here as this call can block if client becomes disconnected see (https://github.com/hivemq/hivemq-mqtt-client/issues/554)
         client.publishWith()
             .topic(message.getTopic())
             .payload(messageToBytes(message.getPayload()))
-            .qos(Optional.ofNullable(message.getQos()).map(qos -> qos > 2 || qos < 0 ? null : qos).map(MqttQos::fromCode).orElse(MqttQos.AT_LEAST_ONCE))
+            .qos(Optional.ofNullable(message.getQos()).map(qos -> qos > 2 || qos < 0 ? null : qos).map(MqttQos::fromCode).orElse(publishQos))
             .send()
+            .orTimeout(5000, TimeUnit.MILLISECONDS)
             .whenComplete((publish, throwable) -> {
                 if (throwable != null) {
                     // Failure
-                    LOG.log(Level.INFO, "Failed to publish to MQTT broker '" + getClientUri() + "'", throwable);
+                    LOG.log(Level.INFO, "Failed to publish uri=" + getClientUri() + ", topic=" + message.getTopic(), throwable);
                 } else {
                     // Success
                     LOG.finest("Published message to MQTT broker '" + getClientUri() + "'");
@@ -215,29 +288,28 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         addMessageConsumer("#", null, messageConsumer);
     }
 
-    public boolean addMessageConsumer(String topic, Consumer<MQTTMessage<S>> messageConsumer) {
-        return addMessageConsumer(topic, null, messageConsumer);
+    public void addMessageConsumer(String topic, Consumer<MQTTMessage<S>> messageConsumer) {
+        addMessageConsumer(topic, subscribeQos, messageConsumer);
     }
 
-    public boolean addMessageConsumer(String topic, MqttQos qos, Consumer<MQTTMessage<S>> messageConsumer) {
+    public void addMessageConsumer(String topic, MqttQos qos, Consumer<MQTTMessage<S>> messageConsumer) {
         if (client == null) {
-            return false;
+            return;
         }
 
-        Pair<MqttQos, Set<Consumer<MQTTMessage<S>>>> consumers = topicConsumerMap.computeIfAbsent(topic, t ->
-                new Pair<>(qos != null ? qos : MqttQos.AT_LEAST_ONCE, new HashSet<>()));
+        LOG.fine("Adding message consumer uri=" + getClientUri() + ", topic=" + topic);
 
-        if (consumers.getValue().isEmpty()) {
-            // Create the subscription on the client
-            if (doClientSubscription(topic)) {
-                consumers.getValue().add(messageConsumer);
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            consumers.getValue().add(messageConsumer);
-            return true;
+        synchronized (topicConsumerMap) {
+             topicConsumerMap.compute(
+                    topic,
+                    (t, subInfo) -> {
+                        if (subInfo == null) {
+                            subInfo = new TopicSubscriptionInfo<>(doSubscribe(qos, topic), qos, messageConsumer);
+                        } else {
+                            subInfo.addConsumer(messageConsumer);
+                        }
+                        return subInfo;
+                    });
         }
     }
 
@@ -246,60 +318,66 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     }
 
     protected void onSubscribeFailed(String topic) {
+        if (removeConsumersOnSubscriptionFailure) {
+            LOG.fine("Removing subscription consumers uri=" + getClientUri() + ", topic=" + topic);
+            synchronized (topicConsumerMap) {
+                this.topicConsumerMap.remove(topic);
+            }
+        }
         if (this.topicSubscribeFailureConsumer != null) {
             this.topicSubscribeFailureConsumer.accept(topic);
         }
     }
 
-    protected boolean doClientSubscription(String topic) {
-        synchronized (connected) {
-            if (!connected.get()) {
-                // Just return true and let connection logic sort out actual subscription
-                return true;
-            }
-        }
-
-        Consumer<MQTTMessage<S>> messageConsumer = message -> {
-            Pair<MqttQos, Set<Consumer<MQTTMessage<S>>>> topicConsumers = topicConsumerMap.get(topic);
-            if (topicConsumers != null) {
-                topicConsumers.getValue().forEach(consumer -> {
+    protected CompletableFuture<Boolean> doSubscribe(MqttQos qos, String topic) {
+        CompletableFuture<Mqtt3SubAck> subAckFuture = client.subscribeWith().topicFilter(topic).qos(qos).callback(
+                publish -> {
                     try {
-                        consumer.accept(message);
+                        TopicSubscriptionInfo<S> subscriptionInfo = topicConsumerMap.get(topic);
+                        if (subscriptionInfo != null) {
+                            String topicStr = publish.getTopic().toString();
+                            S payload = messageFromBytes(publish.getPayloadAsBytes());
+                            MQTTMessage<S> message = new MQTTMessage<>(topicStr, payload);
+                            subscriptionInfo.consume(message);
+                        }
                     } catch (Exception e) {
-                        LOG.log(Level.WARNING, "Message consumer threw an exception", e);
+                        LOG.log(Level.WARNING, "Failed to process incoming message uri=" + getClientUri() + ", topic=" + topic, e);
+                    }
+                }
+            ).executor(Container.EXECUTOR)
+            .send();
+
+        return subAckFuture.handle((subAck, throwable) -> {
+            if (throwable != null) {
+                LOG.log(Level.SEVERE, "Subscribe failed uri=" + getClientUri() + ", topic=" + topic + ", error=" + throwable.getMessage());
+                Container.EXECUTOR.execute(() -> onSubscribeFailed(topic));
+                if (throwable instanceof CancellationException) {
+                    subAckFuture.cancel(true);
+                }
+                return false;
+            }
+            if (subAck.getReturnCodes().contains(Mqtt3SubAckReturnCode.FAILURE)) {
+                LOG.log(Level.WARNING, "Subscribe rejected by server uri=" + getClientUri() + ", topic=" + topic);
+                Container.EXECUTOR.execute(() -> onSubscribeFailed(topic));
+                return false;
+            }
+            LOG.log(Level.FINE, "Subscribe success uri=" + getClientUri() + ", topic=" + topic);
+            return true;
+        });
+    }
+
+    protected void doUnsubscribe(String topic) {
+        LOG.finest("Unsubscribing uri=" + getClientUri() + ", topic=" + topic);
+        client.unsubscribeWith()
+                .topicFilter(topic)
+                .send()
+                .whenComplete((subAck, throwable) -> {
+                    if (throwable != null) {
+                        LOG.log(Level.WARNING, "Unsubscribe failed uri=" + getClientUri() + ", topic=" + topic, throwable);
+                    } else {
+                        LOG.fine("Unsubscribe success uri=" + getClientUri() + ", topic=" + topic);
                     }
                 });
-            }
-        };
-
-        Pair<MqttQos, Set<Consumer<MQTTMessage<S>>>> topicConsumers = topicConsumerMap.get(topic);
-        try {
-            Mqtt3Subscribe subscribeMessage = Mqtt3Subscribe.builder()
-                    .topicFilter(topic)
-                    .qos(topicConsumers.getKey())
-                    .build();
-
-            Mqtt3SubAck subAck = client.subscribe(subscribeMessage, publish -> {
-                try {
-                    String topicStr = publish.getTopic().toString();
-                    S payload = messageFromBytes(publish.getPayloadAsBytes());
-                    MQTTMessage<S> message = new MQTTMessage<>(topicStr, payload);
-                    messageConsumer.accept(message);
-                } catch (Exception e) {
-                    LOG.log(Level.WARNING, "Failed to process published message on client '" + getClientUri() + "'", e);
-                }
-            }).get();
-            if (subAck.getReturnCodes().contains(Mqtt3SubAckReturnCode.FAILURE)) {
-                throw new Exception("Server returned failure code for subscription");
-            }
-            LOG.fine("Subscribed to topic '" + topic + "' on client '" + getClientUri() + "'");
-            return true;
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to subscribe to topic '" + topic + "' on client '" + getClientUri() + "': " + e.getMessage());
-            executorService.execute(() -> onSubscribeFailed(topic));
-        }
-        topicConsumerMap.remove(topic);
-        return false;
     }
 
     @Override
@@ -308,35 +386,30 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     }
 
     public void removeMessageConsumer(String topic, Consumer<MQTTMessage<S>> messageConsumer) {
-        topicConsumerMap.computeIfPresent(topic, (t, consumers) -> {
-            if (consumers.getValue().remove(messageConsumer) && consumers.getValue().isEmpty()) {
-                removeSubscription(topic);
-                return null;
-            }
-            return consumers;
-        });
+        synchronized (topicConsumerMap) {
+            topicConsumerMap.computeIfPresent(topic, (t, subscriptionInfo) -> {
+                if (subscriptionInfo.removeConsumer(messageConsumer)) {
+                    doUnsubscribe(topic);
+                    return null;
+                }
+                return subscriptionInfo;
+            });
+        }
+    }
+
+    public void removeMessageConsumers(String topic) {
+        synchronized (topicConsumerMap) {
+            Optional.ofNullable(topicConsumerMap.remove(topic)).ifPresent(topicConsumer -> {
+                doUnsubscribe(topic);
+            });
+        }
     }
 
     @Override
     public void removeAllMessageConsumers() {
         Set<String> topics = new HashSet<>(topicConsumerMap.keySet());
         topicConsumerMap.clear();
-        topics.forEach(this::removeSubscription);
-    }
-
-    protected void removeSubscription(String topic) {
-        if (client != null) {
-            client.unsubscribeWith()
-                .topicFilter(topic)
-                .send()
-                .whenComplete((subAck, throwable) -> {
-                    if (throwable != null) {
-                        LOG.log(Level.WARNING, "Failed to unsubscribe to topic '" + topic + "' on client '" + getClientUri() + "'", throwable);
-                    } else {
-                        LOG.fine("Unsubscribed from topic '" + topic + "' on client '" + getClientUri() + "'");
-                    }
-                });
-        }
+        topics.forEach(this::doUnsubscribe);
     }
 
     @Override
@@ -356,82 +429,112 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
 
     @Override
     public ConnectionStatus getConnectionStatus() {
-        if (client == null) {
-            return ConnectionStatus.ERROR;
-        }
-        MqttClientState state = client.getState();
-        if (state == MqttClientState.CONNECTED) {
-            return ConnectionStatus.CONNECTED;
-        }
-        if (state == MqttClientState.DISCONNECTED) {
-            return ConnectionStatus.DISCONNECTED;
-        }
-
-        // We cannot differentiate between connecting and waiting with the callbacks provided so just use waiting state
-        return ConnectionStatus.WAITING;
+        return connectionStatus;
     }
 
     @Override
     public void connect() {
         synchronized (this) {
-            if (client == null) {
-                return;
-            }
-            if (!disconnected) {
+            if (connectionStatus != ConnectionStatus.DISCONNECTED) {
                 LOG.finest("Must be disconnected before calling connect: " + getClientUri());
                 return;
             }
 
-            LOG.fine("Connecting MQTT Client: " + getClientUri());
-            this.disconnected = false;
+            LOG.fine("Connecting client: " + getClientUri());
+            onConnectionStatusChanged(ConnectionStatus.CONNECTING);
         }
+        scheduleDoConnect(100);
+    }
 
+    protected void waitForConnectFuture(Future<Void> connectFuture) throws Exception {
+        connectFuture.get(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS);
+    }
+
+    public int getConnectTimeoutMillis() {
+        return this.connectTimeout;
+    }
+
+    protected void doReconnect() {
+        doDisconnect();
+        scheduleDoConnect(5000);
+    }
+
+    protected Future<Void> doConnect() {
         LOG.info("Establishing connection: " + getClientUri());
 
         Mqtt3ConnectBuilder.Send<CompletableFuture<Mqtt3ConnAck>> completableFutureSend = client.connectWith()
-            .cleanSession(true) // Always clean session as there's some inconsistency in how HiveMQ client handles this on reconnects
-            .keepAlive(5);
+                .cleanSession(cleanSession)
+                .keepAlive(10);
 
         if (usernamePassword != null) {
             completableFutureSend = completableFutureSend.simpleAuth()
-                .username(usernamePassword.getUsername())
-                .password(usernamePassword.getPassword().getBytes())
-                .applySimpleAuth();
+                    .username(usernamePassword.getUsername())
+                    .password(usernamePassword.getPassword().getBytes())
+                    .applySimpleAuth();
         }
 
-        completableFutureSend.send().whenComplete((connAck, throwable) -> {
-            if (throwable != null) {
-                LOG.log(Level.INFO, "Connection failed:" + getClientUri(), throwable.getMessage());
-            } else {
-                synchronized (connected) {
-                    connected.set(true);
+        CompletableFuture<Mqtt3ConnAck> connAckFuture = completableFutureSend.send();
 
-                    if (!this.cleanSession && !connAck.isSessionPresent()) {
-                        // Need to re-instate the subscriptions as HiveMQ client doesn't do it
-                        // Re-add all subscriptions
-                        topicConsumerMap.keySet().forEach(this::doClientSubscription);
-                    }
+        connAckFuture.whenComplete((connAck, throwable) -> {
+            if (connAck != null) {
+                LOG.fine("Connected code=" + connAck.getReturnCode() + ", sessionPresent=" + connAck.isSessionPresent());
+                boolean retryFailures = isRetrySubscriptionFailuresOnReconnect();
+                boolean retryAll = !connAck.isSessionPresent() || resubscribeIfSessionPresent;
+
+                if (retryAll || retryFailures) {
+                    Container.EXECUTOR.execute(() -> {
+                        // Get all failed or completed subscriptions and retry as needed
+                        synchronized (topicConsumerMap) {
+                            topicConsumerMap.entrySet()
+                                .stream()
+                                .filter(topicSubscriptionInfo ->
+                                    topicSubscriptionInfo.getValue().isSubDone()
+                                        && (retryAll || topicSubscriptionInfo.getValue().isSubFailed()))
+                                .forEach(topicSubscriptionInfo -> {
+                                    LOG.finest("Resubscribing uri=" + getClientUri() + ", topic=" + topicSubscriptionInfo.getKey());
+                                    topicSubscriptionInfo.getValue()
+                                        .updateSubAck(
+                                            doSubscribe(
+                                                topicSubscriptionInfo.getValue().qos,
+                                                topicSubscriptionInfo.getKey()
+                                            )
+                                        );
+                                });
+                        }
+                    });
+                }
+            } else if (throwable != null) {
+                if (throwable instanceof CancellationException) {
+                    LOG.info("Connection cancelled uri=" + getClientUri());
+                } else {
+                    LOG.info("Connection failed uri=" + getClientUri() + ", error=" + throwable.getMessage());
                 }
             }
         });
+
+        CompletableFuture<Void> voidFuture = connAckFuture.thenAccept(result -> {});
+
+        // Propagate cancellation from voidFuture to original
+        voidFuture.whenComplete((result, exception) -> {
+            if (voidFuture.isCancelled()) {
+                connAckFuture.cancel(true);
+            }
+        });
+        return voidFuture;
     }
 
-    /**
-     * Allows an override to be provided as {@link #getConnectionStatus} doesn't always return the correct status when a
-     * server initiated disconnect occurs (some sort of timing issue).
-     */
-    protected void onConnectionStatusChanged(ConnectionStatus statusOverride) {
-        ConnectionStatus status = statusOverride != null ? statusOverride : getConnectionStatus();
-        if (currentStatus == status) {
+    protected void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
+        if (this.connectionStatus == connectionStatus) {
             return;
         }
-        currentStatus = status;
-        LOG.info("Client '" + getClientUri() + "' connection status changed: " + status);
-
+        this.connectionStatus = connectionStatus;
+        if (!connectionStatusConsumers.isEmpty()) {
+            LOG.finest("Notifying connection status consumers: count=" + connectionStatusConsumers.size());
+        }
         connectionStatusConsumers.forEach(
                 consumer -> {
                     try {
-                        consumer.accept(status);
+                        consumer.accept(connectionStatus);
                     } catch (Exception e) {
                         LOG.log(Level.WARNING, "Connection status change handler threw an exception: " + getClientUri(), e);
                     }
@@ -445,38 +548,80 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         }
 
         synchronized (this) {
-            if (disconnected) {
-                LOG.finest("Already disconnected: " + getClientUri());
+            if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
+                LOG.finest("Already disconnected or disconnecting: " + getClientUri());
                 return;
             }
 
-            LOG.finest("Disconnecting IO client: " + getClientUri());
-            this.disconnected = true;
+            LOG.fine("Disconnecting: " + getClientUri());
+            onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
         }
 
+        try {
+            if (connectRetry != null) {
+                connectRetry.cancel(true);
+                connectRetry = null;
+            }
+        } catch (Exception ignored) {}
+        doDisconnect();
+        onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
+    }
+
+    protected void doDisconnect() {
+        LOG.finest("Performing disconnect: " + getClientUri());
         client.disconnect().whenComplete((unused, throwable) -> {
-            connected.set(false);
-
-            if (throwable != null) {
-                LOG.log(Level.INFO, "Disconnect error '" + getClientUri() + "':" + throwable.getMessage());
+            if (throwable != null && !(throwable instanceof MqttClientStateException)) {
+                LOG.log(Level.WARNING, "Failed to disconnect gracefully: " + getClientUri(), throwable);
+            } else {
+                LOG.finest("Disconnect done: " + getClientUri());
             }
-            if (this.cleanSession) {
-                removeAllMessageConsumers();
-            }
-
-            onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
         });
     }
 
     @Override
     public String getClientUri() {
-        if (websocketURI != null) {
-            return "mqtt_" + websocketURI + "?clientId=" + clientId;
-        }
-        return "mqtt" + (secure ? "s://" : "://" ) + host + ":" + port + "/?clientId=" + clientId;
+        return clientUri;
     }
 
     public abstract byte[] messageToBytes(S message);
 
     public abstract S messageFromBytes(byte[] bytes);
+
+    protected void scheduleDoConnect(long initialDelay) {
+        long delay = Math.max(initialDelay, RECONNECT_DELAY_INITIAL_MILLIS);
+        long maxDelay = Math.max(delay+1, RECONNECT_DELAY_MAX_MILLIS);
+
+        RetryPolicy<Object> retryPolicy = RetryPolicy.builder()
+                .withJitter(Duration.ofMillis(delay))
+                .withBackoff(Duration.ofMillis(delay), Duration.ofMillis(maxDelay))
+                .handle(Exception.class)
+                .onRetryScheduled((execution) ->
+                        LOG.info("Re-connection scheduled in '" + execution.getDelay() + "' for: " + getClientUri()))
+                .onFailedAttempt((execution) -> {
+                    LOG.info("Connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri() + ", error=" + (execution.getLastException() != null ? execution.getLastException().getMessage() : null));
+                    doDisconnect();
+                })
+                .withMaxRetries(Integer.MAX_VALUE)
+                .build();
+
+        connectRetry = Failsafe.with(retryPolicy).with(Container.EXECUTOR).runAsyncExecution((execution) -> {
+
+            LOG.fine("Connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri());
+            // Connection future should timeout so we just wait for it but add additional timeout just in case
+            Future<Void> connectFuture = doConnect();
+            waitForConnectFuture(connectFuture);
+            execution.recordResult(null);
+        });
+
+        connectRetry.whenComplete((result, ex) -> {
+            if (ex == null) {
+                synchronized (this) {
+                    if (connectionStatus == ConnectionStatus.CONNECTING) {
+                        LOG.fine("Connection attempt success: " + getClientUri());
+                        onConnectionStatusChanged(ConnectionStatus.CONNECTED);
+                    }
+                }
+            }
+        });
+    }
 }
