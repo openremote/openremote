@@ -1266,6 +1266,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                             if ((attr.value ?? 0) === Number(normalizedValue)) {
                                                 atLeastOneAttributeMatchValue = true;
                                             }
+                                        } else if (/\d/.test(normalizedValue)) {
+                                            const resultNumberEval: boolean = eval(attr.value + normalizedValue);
+                                            if (resultNumberEval) {
+                                                atLeastOneAttributeMatchValue = true;
+                                            }
                                         }
                                         break;
                                     }
