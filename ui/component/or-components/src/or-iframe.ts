@@ -1,41 +1,45 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import "./or-loading-indicator";
 import "@openremote/or-icon";
 
 export enum OrIFrameEventType {
-  LOADED = 'or-iframe-loaded',
-  ERROR = 'or-iframe-error',
-  TIMEOUT = 'or-iframe-timeout'
+  LOADED = "or-iframe-loaded",
+  ERROR = "or-iframe-error",
+  TIMEOUT = "or-iframe-timeout",
 }
 
+// event detail for or-iframe-event
 export interface OrIFrameEventDetail {
   type: OrIFrameEventType;
   src?: string;
   error?: string;
 }
 
-// language=CSS
 const style = css`
   :host {
     display: block;
     width: 100%;
     height: 100%;
   }
-  
+
   .wrapper {
     position: relative;
     width: 100%;
     height: 100%;
   }
-  
+
   iframe {
     width: 100%;
     height: 100%;
     border: none;
     display: block;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  iframe.loaded {
+    opacity: 1;
   }
 
   .error {
@@ -64,52 +68,12 @@ export class OrIframe extends LitElement {
   public loadErrorMessage?: string;
 
   @state()
-  private loading = false;
+  private loading = true;
 
   @state()
   private loadingError = false;
 
-  @query('#or-iframe')
-  private iframe!: HTMLIFrameElement;
-
   private timeoutId?: number;
-
-
-  private handleLoadEvent = (event: Event): void => {
-    this.handleIframeEvent(OrIFrameEventType.LOADED, event);
-  };
-
-  private handleErrorEvent = (event: Event): void => {
-    this.handleIframeEvent(OrIFrameEventType.ERROR, event);
-  };
-
-  private handleIframeEvent = (type: OrIFrameEventType, event: Event): void => {
-    this.clearTimeout();
-
-    // Dispatch event to parent
-    const detail: OrIFrameEventDetail = {
-      type,
-      src: this.src,
-      error: type === OrIFrameEventType.ERROR || type === OrIFrameEventType.TIMEOUT ? 
-        (type === OrIFrameEventType.TIMEOUT ? 'Timeout loading iframe' : 'Error loading iframe') : undefined
-    };
-
-    this.dispatchEvent(new CustomEvent('or-iframe-event', { detail }));
-
-    switch (type) {
-      case OrIFrameEventType.LOADED:
-        this.loadingError = false;
-        this.loading = false;
-        this.requestUpdate();
-        break;
-      case OrIFrameEventType.ERROR:
-      case OrIFrameEventType.TIMEOUT:
-        this.loadingError = true;
-        this.loading = false;
-        this.requestUpdate();
-        break;
-    }
-  };
 
   private clearTimeout(): void {
     if (this.timeoutId) {
@@ -120,10 +84,10 @@ export class OrIframe extends LitElement {
 
   private startTimeout(): void {
     this.clearTimeout();
-    
+
     this.timeoutId = window.setTimeout(() => {
       console.warn(`Iframe load timeout after ${this.timeout}ms for src: ${this.src}`);
-      this.handleIframeEvent(OrIFrameEventType.TIMEOUT, new Event('timeout'));
+      this.handleIframeEvent(OrIFrameEventType.TIMEOUT, new Event("timeout"));
     }, this.timeout);
   }
 
@@ -139,52 +103,73 @@ export class OrIframe extends LitElement {
   }
 
   willUpdate(changedProperties: PropertyValues): void {
-    // if src is changed, start loading again
-    if (changedProperties.has('src')) {
+    if (changedProperties.has("src")) {
       this.resetState();
     }
   }
 
-  firstUpdated(): void {
-    // Don't add listeners here since iframe might not exist yet
-  }
+  private handleLoadEvent = (event: Event): void => {
+    this.handleIframeEvent(OrIFrameEventType.LOADED, event);
+  };
 
-  updated(changedProperties: PropertyValues): void {
-    super.updated(changedProperties);
-    
-    // Add event listeners when iframe is rendered (when loading becomes false and error is false)
-    if (changedProperties.has('loading') || changedProperties.has('loadingError')) {
-      if (!this.loading && !this.loadingError && this.iframe) {
-        // Remove any existing listeners first
-        this.iframe.removeEventListener('load', this.handleLoadEvent);
-        this.iframe.removeEventListener('error', this.handleErrorEvent);
-        
-        // Add new listeners
-        this.iframe.addEventListener('load', this.handleLoadEvent);
-        this.iframe.addEventListener('error', this.handleErrorEvent);
-      }
+  private handleErrorEvent = (event: Event): void => {
+    this.handleIframeEvent(OrIFrameEventType.ERROR, event);
+  };
+
+  private handleIframeEvent = (type: OrIFrameEventType, event: Event): void => {
+    this.clearTimeout();
+
+    const detail: OrIFrameEventDetail = {
+      type,
+      src: this.src,
+      error:
+        type === OrIFrameEventType.ERROR || type === OrIFrameEventType.TIMEOUT
+          ? type === OrIFrameEventType.TIMEOUT
+            ? "Timeout loading iframe"
+            : "Error loading iframe"
+          : undefined,
+    };
+
+    this.dispatchEvent(new CustomEvent("or-iframe-event", { detail }));
+
+    switch (type) {
+      case OrIFrameEventType.LOADED:
+        console.log("or-iframe content loaded", event);
+        this.loadingError = false;
+        this.loading = false;
+        this.requestUpdate();
+        break;
+      case OrIFrameEventType.ERROR:
+        console.log("or-iframe content error", event);
+      case OrIFrameEventType.TIMEOUT:
+        console.log("or-iframe content timeout", event);
+        this.loadingError = true;
+        this.loading = false;
+        this.requestUpdate();
+        break;
     }
-  }
+  };
 
   disconnectedCallback(): void {
     this.clearTimeout();
-    if (this.iframe) {
-      this.iframe.removeEventListener('load', this.handleLoadEvent);
-      this.iframe.removeEventListener('error', this.handleErrorEvent);
-    }
   }
 
   render() {
     return html`
       <div class="wrapper">
         ${this.loading ? html`<or-loading-indicator></or-loading-indicator>` : html``}
-        ${this.loadingError ? html`<div class="error"><or-icon icon="alert-octagon"></or-icon> ${this.loadErrorMessage}</div>` : html``}
-        ${!this.loading && !this.loadingError ? html`
-          <iframe
-            id="or-iframe"
-            src="${this.src}"
-          ></iframe>
-        ` : html``}
+        ${this.loadingError
+          ? html`<div class="error">
+              <or-icon icon="alert-octagon"></or-icon> ${this.loadErrorMessage || "Failed to load iframe"}
+            </div>`
+          : html``}
+        <iframe
+          @load=${this.handleLoadEvent}
+          @error=${this.handleErrorEvent}
+          id="or-iframe"
+          src="${this.src}"
+          class="${!this.loading ? "loaded" : ""}"
+        ></iframe>
       </div>
     `;
   }
