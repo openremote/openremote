@@ -104,6 +104,7 @@ export class OrIframe extends LitElement {
     this.resetState();
   }
 
+
   willUpdate(changedProperties: PropertyValues): void {
     if (changedProperties.has("src")) {
       this.resetState();
@@ -154,6 +155,28 @@ export class OrIframe extends LitElement {
 
   disconnectedCallback(): void {
     this.clearTimeout();
+  }
+
+  /**
+   * Reload the iframe content by clearing and resetting the src
+   */
+  public reload(): void {
+    if (!this.src) {
+      console.warn('Cannot reload iframe: no src specified');
+      return;
+    }
+    this.resetState();
+    
+    // Force iframe reload by temporarily clearing and resetting src
+    const iframe = this.shadowRoot?.querySelector('iframe');
+    if (iframe) {
+      const currentSrc = this.src;
+      iframe.src = '';
+      // We can't use iframe.contentWindow.location.reload() because it doesn't work in all cases due to browser security restrictions
+      requestAnimationFrame(() => {
+        iframe.src = currentSrc;
+      });
+    }
   }
 
   render() {

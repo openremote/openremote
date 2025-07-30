@@ -5,7 +5,7 @@ import { Microservice, MicroserviceStatus } from "@openremote/model";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-components/or-iframe";
-import { OrIFrameEventType, OrIFrameEventDetail } from "@openremote/or-components/or-iframe";
+import { OrIFrameEventType, OrIFrameEventDetail, OrIframe } from "@openremote/or-components/or-iframe";
 import "@openremote/or-icon";
 import "./or-service-tree";
 import { consolidateServices, getServiceUrlPath } from "./utils";
@@ -224,8 +224,19 @@ export class OrServices extends LitElement {
     }
   }
 
+  // Refresh all services by reloading the data
   private async _onRefreshServices(): Promise<void> {
     await this._loadData();
+  }
+
+  // Reload the current service iframe
+  private _onRefreshServiceIFrame(): void {
+    const iframe = this.shadowRoot?.querySelector('#service-iframe') as OrIframe;
+    if (iframe && typeof iframe.reload === 'function') {
+      iframe.reload();
+    } else {
+      console.warn('Unable to reload iframe: iframe not found or reload method not available');
+    }
   }
 
   public setServiceName(serviceName: string | null): void {
@@ -328,7 +339,7 @@ export class OrServices extends LitElement {
                 </div>
                 <div id="fullscreen-header-actions">
                   <div id="fullscreen-header-actions-content">
-                    <or-icon class="small-btn" icon="refresh" title="${i18next.t("services.refresh")}" @click="${this._onRefreshServices}"></or-icon>
+                    <or-icon class="small-btn" icon="refresh" title="${i18next.t("services.refresh")}" @click="${this._onRefreshServiceIFrame}"></or-icon>
                     <or-icon class="small-btn" icon="open-in-new" title="${i18next.t("services.openInNewTab")}" @click="${this.openServiceInNewTab}"></or-icon>
                   </div>
                 </div>
@@ -338,7 +349,7 @@ export class OrServices extends LitElement {
           <div style="flex: 1;">
             ${noSelection
               ? html`<div class="msg"><or-translate value="services.noServiceSelected"></or-translate></div>`
-              : this.selectedService ? html`<or-iframe 
+              : this.selectedService ? html`<or-iframe id="service-iframe"
                   .src="${this.getServiceUrlPath(this.selectedService)}"
                   .loadErrorMessage="${i18next.t("services.iframeLoadError")}"
                   @or-iframe-event="${this._onIframeEvent}"
