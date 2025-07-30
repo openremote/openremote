@@ -174,7 +174,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
     }
 
     @Override
-    public void getDatapointExport(AsyncResponse asyncResponse, String attributeRefsString, long fromTimestamp, long toTimestamp) {
+    public void getDatapointExport(AsyncResponse asyncResponse, String attributeRefsString, long fromTimestamp, long toTimestamp, int format) {
         try {
             AttributeRef[] attributeRefs = JSON.readValue(attributeRefsString, AttributeRef[].class);
 
@@ -189,6 +189,10 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                     throw new WebApplicationException(Response.Status.NOT_FOUND);
                 }
 
+                if (format > 3 || format < 1) {
+                    throw new WebApplicationException(Response.Status.BAD_REQUEST);
+                }
+
                 if (!isRealmActiveAndAccessible(asset.getRealm())) {
                     DATA_EXPORT_LOG.info("Forbidden access for user '" + getUsername() + "': " + asset);
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
@@ -199,9 +203,9 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 );
             }
 
-            DATA_EXPORT_LOG.info("User '" + getUsername() +  "' started data export for " + attributeRefsString + " from " + fromTimestamp + " to " + toTimestamp);
+            DATA_EXPORT_LOG.info("User '" + getUsername() +  "' started data export for " + attributeRefsString + " from " + fromTimestamp + " to " + toTimestamp + " in format " + format);
 
-            ScheduledFuture<File> exportFuture = assetDatapointService.exportDatapoints(attributeRefs, fromTimestamp, toTimestamp);
+            ScheduledFuture<File> exportFuture = assetDatapointService.exportDatapoints(attributeRefs, fromTimestamp, toTimestamp, format);
 
             asyncResponse.register((ConnectionCallback) disconnected -> exportFuture.cancel(true));
 
@@ -210,14 +214,14 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             try {
                 exportFile = exportFuture.get();
 
-                ZipOutputStream zipOut = new ZipOutputStream(response.getOutputStream());
-                FileInputStream fin = new FileInputStream(exportFile);
-                ZipEntry zipEntry = new ZipEntry(exportFile.getName());
-                zipOut.putNextEntry(zipEntry);
-                IOUtils.copy(fin, zipOut);
-                zipOut.closeEntry();
-                zipOut.close();
-                fin.close();
+                try (FileInputStream fin = new FileInputStream(exportFile);
+                     ZipOutputStream zipOut = new ZipOutputStream(response.getOutputStream())) {
+
+                    ZipEntry zipEntry = new ZipEntry(exportFile.getName());
+                    zipOut.putNextEntry(zipEntry);
+                    IOUtils.copy(fin, zipOut);
+                    zipOut.closeEntry();
+                }
 
                 response.setContentType("application/zip");
                 response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"dataexport.zip\"");

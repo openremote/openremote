@@ -16,6 +16,7 @@ import {isAxiosError} from "@openremote/rest";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
+import { when } from "lit/directives/when.js";
 
 export function pageExportProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -175,9 +176,12 @@ export class PageExport extends Page<AppStateKeyed> {
                 }
                 
                 .timerange-wrapper {
+                    margin-bottom: 1em
+                }
+                .options {
+                    width: fit-content;
                     margin-bottom: 2em
                 }
-                
                 .export-btn-wrapper {
                     display: flex;
                     justify-content: space-between;
@@ -199,6 +203,14 @@ export class PageExport extends Page<AppStateKeyed> {
     private oldestTimestamp: number = moment().subtract(1, 'months').valueOf();
     @property({type: Number})
     private latestTimestamp: number = moment().valueOf();
+
+    @property()
+    protected _loading: boolean = false;
+
+    protected _exportFormats: {[key: number]: string} = {1: 'Default .csv', 2: "Column per attribute .csv", 3: "Column per attributes .csv with 1 minute averages"};
+
+    @property()
+    private selectedFormat: number = 1;
 
     private config?: OrExportConfig;
     private realm: string;
@@ -240,11 +252,17 @@ export class PageExport extends Page<AppStateKeyed> {
                     <or-icon icon="database-export"></or-icon> 
                     ${i18next.t("dataExport")}
                 </div>
+                        
                 <div class="panel">
                     <p class="panel-title">${i18next.t("dataSelection")}</p>
                     <div class="mdc-data-table" style="width: 100%; max-height: 500px; overflow-y: auto;margin-bottom: 2em">
                         <table class="mdc-data-table__table" aria-label="attribute list" >
                             <thead>
+                            ${when(this._loading, () => html`
+                                <div style="position: absolute; height: 100%; width: 100%;">
+                                    <or-loading-indicator ?overlay="false"></or-loading-indicator>
+                                </div>
+                            `)}
                             <tr class="mdc-data-table__header-row">
                             ${headers.map(header => html`
                                 <th class="mdc-data-table__header-cell" role="columnheader" scope="col">${header}</th>
@@ -262,13 +280,19 @@ export class PageExport extends Page<AppStateKeyed> {
                             </tbody>
                         </table>
                     </div>
-                    <div class="timerange-wrapper">
-                        <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("exportFrom"))}" .value="${moment(this.oldestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.oldestTimestamp = evt.detail.value}"></or-mwc-input>
-                        <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("to"))}" .value="${moment(this.latestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.latestTimestamp = evt.detail.value}"></or-mwc-input>
+                    <div class="options">
+                        <div class="timerange-wrapper">
+                            <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("exportFrom"))}" .value="${moment(this.oldestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.oldestTimestamp = evt.detail.value}"></or-mwc-input>
+                            <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("to"))}" .value="${moment(this.latestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.latestTimestamp = evt.detail.value}"></or-mwc-input>
+                        </div>
+                        <div>
+                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('exportFormat')}" .value="${this._exportFormats[this.selectedFormat]}" style="width: 100%;" .options="${Object.values(this._exportFormats)}"  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.selectedFormat = +Object.keys(this._exportFormats).find(k => this._exportFormats[+k] === ev.detail.value)}"></or-mwc-input>
+                        </div>
                     </div>
                     <div class="export-btn-wrapper">
                         <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="clearTable" @click="${() => this.clearSelection()}"></or-mwc-input>
-                        <or-mwc-input .disabled="${this.isExportBtnDisabled}" class="button" raised .type="${InputType.BUTTON}" label="export" @click="${() => this.export()}"></or-mwc-input>
+                        <div>
+                        <or-mwc-input .disabled="${this.isExportBtnDisabled || this._loading}" class="button" raised .type="${InputType.BUTTON}" label="export" @click="${() => this.export()}"></or-mwc-input>
                     </div>
                 </div>
             </div>
@@ -290,7 +314,7 @@ export class PageExport extends Page<AppStateKeyed> {
                 attributeName: attrRef.name,
             });
         });
-
+        this._loading = true;
         Promise.all(dataPointInfoPromises).then(datapointPeriod => {
 
             const assetInfoPromises = datapointPeriod.map(result => {
@@ -300,6 +324,7 @@ export class PageExport extends Page<AppStateKeyed> {
             Promise.all(assetInfoPromises).then(assetInfos => {
                 const allAssets = assetInfos.map(attr => attr.data);
                 const allDatapoints = datapointPeriod.map(datapoints => datapoints.data);
+
 
                 if (allDatapoints.length > 0) {
                     this.tableRows = allDatapoints.map(dataInfo => {
@@ -315,6 +340,7 @@ export class PageExport extends Page<AppStateKeyed> {
                     this.renderTableRows();
                     this.isClearExportBtnDisabled = false;
                     this.isExportBtnDisabled = false;
+                    this._loading = false;
                 } else {
                     this.isClearExportBtnDisabled = true;
                     this.isExportBtnDisabled = true;
@@ -375,10 +401,12 @@ export class PageExport extends Page<AppStateKeyed> {
     }
     
     protected export = () => {
+        this._loading = true;
         manager.rest.api.AssetDatapointResource.getDatapointExport({
             attributeRefs: JSON.stringify(this.tableRows.map(attr => ({id: attr.assetId, name: attr.attributeName}))),
             fromTimestamp: this.oldestTimestamp,
-            toTimestamp: this.latestTimestamp
+            toTimestamp: this.latestTimestamp,
+            format: this.selectedFormat
         }, {
             responseType: "blob",
             
@@ -397,8 +425,15 @@ export class PageExport extends Page<AppStateKeyed> {
                 if(ex.response?.status === 413) {
                     showSnackbar(undefined, "exportTooLargeError");
                 }
+                else if(ex.message.includes("timeout")) {
+                    showSnackbar(undefined, "noAttributeDataTimeout");
+                }
+                else {
+                    showSnackbar(undefined, "errorOccurred");
+                }
             }
         });
+        this._loading = false;
     }
     
     protected async loadConfig() {
