@@ -36,6 +36,8 @@ const style = css`
     display: block;
     opacity: 0;
     transition: opacity 0.3s ease;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   iframe.loaded {

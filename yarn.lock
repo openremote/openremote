@@ -1324,6 +1324,7 @@ __metadata:
     "@openremote/or-map": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-rules": "workspace:*"
+    "@openremote/or-services": "workspace:*"
     "@openremote/or-smart-notify": "workspace:*"
     "@openremote/or-timeline": "workspace:*"
     "@openremote/rest": "workspace:*"
@@ -1652,6 +1653,22 @@ __metadata:
     resize-observer: "npm:^1.0.3"
     rrule: "npm:^2.6.4"
     shortid: "npm:^2.2.15"
+  languageName: unknown
+  linkType: soft
+
+"@openremote/or-services@workspace:*, @openremote/or-services@workspace:ui/component/or-services":
+  version: 0.0.0-use.local
+  resolution: "@openremote/or-services@workspace:ui/component/or-services"
+  dependencies:
+    "@openremote/core": "workspace:*"
+    "@openremote/model": "workspace:*"
+    "@openremote/or-components": "workspace:*"
+    "@openremote/or-icon": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
+    "@openremote/or-tree-menu": "workspace:*"
+    "@openremote/rest": "workspace:*"
+    "@openremote/util": "workspace:*"
   languageName: unknown
   linkType: soft
 
