@@ -19,7 +19,7 @@ public class WaterMeterIntegraTopasSonic extends Asset<WaterMeterIntegraTopasSon
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 12,
-                "valueFilterJsonPath", "$.object.payload.dateAndTime"
+                "valueFilterJsonPath", "$.object.dateAndTime"
             ));
         }})
     );
@@ -29,7 +29,7 @@ public class WaterMeterIntegraTopasSonic extends Asset<WaterMeterIntegraTopasSon
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 12,
-                "valueFilterJsonPath", "$.object.payload.deltas[?(@.index == 1)].value"
+                "valueFilterJsonPath", "$.object.deltas[?(@.index == 1)].value"
             ));
         }})
     ).withUnits(UNITS_LITRE);
@@ -39,7 +39,7 @@ public class WaterMeterIntegraTopasSonic extends Asset<WaterMeterIntegraTopasSon
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 12,
-                "valueFilterJsonPath", "$.object.payload.deltas[?(@.index == 2)].value"
+                "valueFilterJsonPath", "$.object.deltas[?(@.index == 2)].value"
             ));
         }})
     ).withUnits(UNITS_LITRE);
@@ -49,7 +49,7 @@ public class WaterMeterIntegraTopasSonic extends Asset<WaterMeterIntegraTopasSon
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 12,
-                "valueFilterJsonPath", "$.object.payload.deltas[?(@.index == 3)].value"
+                "valueFilterJsonPath", "$.object.deltas[?(@.index == 3)].value"
             ));
         }})
     ).withUnits(UNITS_LITRE);
@@ -59,7 +59,7 @@ public class WaterMeterIntegraTopasSonic extends Asset<WaterMeterIntegraTopasSon
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 12,
-                "valueFilterJsonPath", "$.object.payload.deltas[?(@.index == 4)].value"
+                "valueFilterJsonPath", "$.object.deltas[?(@.index == 4)].value"
             ));
         }})
     ).withUnits(UNITS_LITRE);
@@ -69,7 +69,7 @@ public class WaterMeterIntegraTopasSonic extends Asset<WaterMeterIntegraTopasSon
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 12,
-                "valueFilterJsonPath", "$.object.payload.deltas[?(@.index == 5)].value"
+                "valueFilterJsonPath", "$.object.deltas[?(@.index == 5)].value"
             ));
         }})
     ).withUnits(UNITS_LITRE);
@@ -79,7 +79,7 @@ public class WaterMeterIntegraTopasSonic extends Asset<WaterMeterIntegraTopasSon
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 12,
-                "valueFilterJsonPath", "$.object.payload.deltas[?(@.index == 6)].value"
+                "valueFilterJsonPath", "$.object.deltas[?(@.index == 6)].value"
             ));
         }})
     ).withUnits(UNITS_LITRE);
@@ -89,7 +89,7 @@ public class WaterMeterIntegraTopasSonic extends Asset<WaterMeterIntegraTopasSon
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 12,
-                "valueFilterJsonPath", "$.object.payload.deltas[?(@.index == 7)].value"
+                "valueFilterJsonPath", "$.object.deltas[?(@.index == 7)].value"
             ));
         }})
     ).withUnits(UNITS_LITRE);
@@ -99,7 +99,7 @@ public class WaterMeterIntegraTopasSonic extends Asset<WaterMeterIntegraTopasSon
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 12,
-                "valueFilterJsonPath", "$.object.payload.deltas[?(@.index == 8)].value"
+                "valueFilterJsonPath", "$.object.deltas[?(@.index == 8)].value"
             ));
         }})
     ).withUnits(UNITS_LITRE);
@@ -109,7 +109,7 @@ public class WaterMeterIntegraTopasSonic extends Asset<WaterMeterIntegraTopasSon
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 12,
-                "valueFilterJsonPath", "$.object.payload.deltas[?(@.index == 9)].value"
+                "valueFilterJsonPath", "$.object.deltas[?(@.index == 9)].value"
             ));
         }})
     ).withUnits(UNITS_LITRE);
@@ -119,7 +119,7 @@ public class WaterMeterIntegraTopasSonic extends Asset<WaterMeterIntegraTopasSon
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 12,
-                "valueFilterJsonPath", "$.object.payload.deltas[?(@.index == 10)].value"
+                "valueFilterJsonPath", "$.object.deltas[?(@.index == 10)].value"
             ));
         }})
     ).withUnits(UNITS_LITRE);
@@ -129,7 +129,7 @@ public class WaterMeterIntegraTopasSonic extends Asset<WaterMeterIntegraTopasSon
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 12,
-                "valueFilterJsonPath", "$.object.payload.deltas[?(@.index == 11)].value"
+                "valueFilterJsonPath", "$.object.deltas[?(@.index == 11)].value"
             ));
         }})
     ).withUnits(UNITS_LITRE);
@@ -139,7 +139,7 @@ public class WaterMeterIntegraTopasSonic extends Asset<WaterMeterIntegraTopasSon
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 12,
-                "valueFilterJsonPath", "$.object.payload.deltas[?(@.index == 12)].value"
+                "valueFilterJsonPath", "$.object.deltas[?(@.index == 12)].value"
             ));
         }})
     ).withUnits(UNITS_LITRE);
@@ -149,7 +149,7 @@ public class WaterMeterIntegraTopasSonic extends Asset<WaterMeterIntegraTopasSon
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 12,
-                "valueFilterJsonPath", "$.object.payload.errorsAndAlarms"
+                "valueFilterJsonPath", "$.object.errorsAndAlarms"
             ));
         }})
     );
@@ -159,7 +159,7 @@ public class WaterMeterIntegraTopasSonic extends Asset<WaterMeterIntegraTopasSon
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 12,
-                "valueFilterJsonPath", "$.object.payload.indexNet.value"
+                "valueFilterJsonPath", "$.object.indexNet.value"
             ));
         }})
     ).withUnits(UNITS_LITRE);

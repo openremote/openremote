@@ -19,7 +19,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.dateAndTime"
+                "valueFilterJsonPath", "$.object.dateAndTime"
             ));
         }})
     );
@@ -27,7 +27,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.logDateAndTime"
+                "valueFilterJsonPath", "$.object.logDateAndTime"
             ));
         }})
     );
@@ -36,7 +36,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.status[0]"
+                "valueFilterJsonPath", "$.object.status[0]"
             ));
         }})
     );
@@ -45,7 +45,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.volume.value"
+                "valueFilterJsonPath", "$.object.volume.value"
             ));
         }})
     ).withUnits(UNITS_METRE, UNITS_CUBED);
@@ -54,7 +54,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.volumeAtLogDateAndTime.value"
+                "valueFilterJsonPath", "$.object.volumeAtLogDateAndTime.value"
             ));
         }})
     ).withUnits(UNITS_METRE, UNITS_CUBED);
@@ -63,7 +63,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.deltaVolumes[?(@.delta_period == 1)].value"
+                "valueFilterJsonPath", "$.object.deltaVolumes[?(@.delta_period == 1)].value"
             ));
         }})
     ).withUnits(UNITS_METRE, UNITS_CUBED);
@@ -72,7 +72,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.deltaVolumes[?(@.delta_period == 2)].value"
+                "valueFilterJsonPath", "$.object.deltaVolumes[?(@.delta_period == 2)].value"
             ));
         }})
     ).withUnits(UNITS_METRE, UNITS_CUBED);
@@ -81,7 +81,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.deltaVolumes[?(@.delta_period == 3)].value"
+                "valueFilterJsonPath", "$.object.deltaVolumes[?(@.delta_period == 3)].value"
             ));
         }})
     ).withUnits(UNITS_METRE, UNITS_CUBED);
@@ -90,7 +90,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.deltaVolumes[?(@.delta_period == 4)].value"
+                "valueFilterJsonPath", "$.object.deltaVolumes[?(@.delta_period == 4)].value"
             ));
         }})
     ).withUnits(UNITS_METRE, UNITS_CUBED);
@@ -99,7 +99,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.deltaVolumes[?(@.delta_period == 5)].value"
+                "valueFilterJsonPath", "$.object.deltaVolumes[?(@.delta_period == 5)].value"
             ));
         }})
     ).withUnits(UNITS_METRE, UNITS_CUBED);
@@ -108,7 +108,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.deltaVolumes[?(@.delta_period == 6)].value"
+                "valueFilterJsonPath", "$.object.deltaVolumes[?(@.delta_period == 6)].value"
             ));
         }})
     ).withUnits(UNITS_METRE, UNITS_CUBED);
@@ -117,7 +117,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.deltaVolumes[?(@.delta_period == 7)].value"
+                "valueFilterJsonPath", "$.object.deltaVolumes[?(@.delta_period == 7)].value"
             ));
         }})
     ).withUnits(UNITS_METRE, UNITS_CUBED);
@@ -126,7 +126,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.deltaVolumes[?(@.delta_period == 8)].value"
+                "valueFilterJsonPath", "$.object.deltaVolumes[?(@.delta_period == 8)].value"
             ));
         }})
     ).withUnits(UNITS_METRE, UNITS_CUBED);
@@ -135,7 +135,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.deltaVolumes[?(@.delta_period == 9)].value"
+                "valueFilterJsonPath", "$.object.deltaVolumes[?(@.delta_period == 9)].value"
             ));
         }})
     ).withUnits(UNITS_METRE, UNITS_CUBED);
@@ -144,7 +144,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.deltaVolumes[?(@.delta_period == 10)].value"
+                "valueFilterJsonPath", "$.object.deltaVolumes[?(@.delta_period == 10)].value"
             ));
         }})
     ).withUnits(UNITS_METRE, UNITS_CUBED);
@@ -153,7 +153,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.deltaVolumes[?(@.delta_period == 11)].value"
+                "valueFilterJsonPath", "$.object.deltaVolumes[?(@.delta_period == 11)].value"
             ));
         }})
     ).withUnits(UNITS_METRE, UNITS_CUBED);
@@ -162,7 +162,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.deltaVolumes[?(@.delta_period == 12)].value"
+                "valueFilterJsonPath", "$.object.deltaVolumes[?(@.delta_period == 12)].value"
             ));
         }})
     ).withUnits(UNITS_METRE, UNITS_CUBED);
@@ -171,7 +171,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.deltaVolumes[?(@.delta_period == 13)].value"
+                "valueFilterJsonPath", "$.object.deltaVolumes[?(@.delta_period == 13)].value"
             ));
         }})
     ).withUnits(UNITS_METRE, UNITS_CUBED);
@@ -180,7 +180,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.deltaVolumes[?(@.delta_period == 14)].value"
+                "valueFilterJsonPath", "$.object.deltaVolumes[?(@.delta_period == 14)].value"
             ));
         }})
     ).withUnits(UNITS_METRE, UNITS_CUBED);
@@ -189,7 +189,7 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(
                 "uplinkPort", 100,
-                "valueFilterJsonPath", "$.object.payload.deltaVolumes[?(@.delta_period == 15)].value"
+                "valueFilterJsonPath", "$.object.deltaVolumes[?(@.delta_period == 15)].value"
             ));
         }})
     ).withUnits(UNITS_METRE, UNITS_CUBED);
