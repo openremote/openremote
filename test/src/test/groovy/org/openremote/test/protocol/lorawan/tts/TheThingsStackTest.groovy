@@ -21,7 +21,6 @@ import org.openremote.model.asset.agent.AgentResource
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.file.FileInfo
-import org.openremote.model.value.ValueType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -46,8 +45,8 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait{
     static final String CLIENT_ID = "ttsAgentClientId"
     static final String DEV_EUI_1 = "1111111111111111"
     static final String DEV_EUI_2 = "2222222222222222"
-    static final String DEVIDE_ID_1 = "device_id_1"
-    static final String DEVIDE_ID_2 = "device_id_2"
+    static final String DEVICE_ID_1 = "device_id_1"
+    static final String DEVICE_ID_2 = "device_id_2"
     static final String ASSET_NAME_1 = "Test Asset 1"
     static final String ASSET_NAME_2 = "Test Asset 2"
     static final String VENDOR_ID  = "dragino"
@@ -101,13 +100,13 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait{
                         {
                             "ids": {
                                 "dev_eui": "${DEV_EUI_1}",
-                                "device_id": "${DEVIDE_ID_1}"
+                                "device_id": "${DEVICE_ID_1}"
                             }
                         },
                         {
                             "ids": {
                                 "dev_eui": "${DEV_EUI_2}",
-                                "device_id": "${DEVIDE_ID_2}"
+                                "device_id": "${DEVICE_ID_2}"
                             }
                         }
                     ]
@@ -206,7 +205,7 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait{
             ]
         ]
         mqttClient.publishWith()
-            .topic("v3/${APPLICATION_ID}@${TENANT_ID}/devices/${DEVIDE_ID_1}/up")
+            .topic("v3/${APPLICATION_ID}@${TENANT_ID}/devices/${DEVICE_ID_1}/up")
             .payload(JsonOutput.toJson(json).bytes)
             .send()
 
@@ -220,7 +219,7 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait{
         when: "an asset attribute value is written"
         def downlinkMessages = new CopyOnWriteArrayList<String>()
         mqttClient.subscribeWith()
-            .topicFilter("v3/${APPLICATION_ID}@${TENANT_ID}/devices/${DEVIDE_ID_1}/down/push")
+            .topicFilter("v3/${APPLICATION_ID}@${TENANT_ID}/devices/${DEVICE_ID_1}/down/push")
             .callback { Mqtt3Publish publish ->
                 downlinkMessages.add(new String(publish.payloadAsBytes))
             }.send()
