@@ -1,0 +1,144 @@
+import { css, html, unsafeCSS, TemplateResult, PropertyValues } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { DefaultColor3, DefaultColor5, DefaultColor6 } from "@openremote/core";
+import { OrTreeMenu, TreeNode, TreeMenuSelection, OrTreeNode } from "@openremote/or-tree-menu";
+import { Microservice, MicroserviceStatus } from "@openremote/model";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import { ServiceTreeNode, MicroserviceStatusIcon, MicroserviceStatusColor } from "./types";
+
+const treeStyles = css`
+  .iconfill-gray {
+    --or-icon-fill: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+  }
+
+  .iconfill-red {
+    --or-icon-fill: var(--or-app-color6, ${unsafeCSS(DefaultColor6)});
+  }
+
+  .service-icon {
+    --or-icon-fill: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+  }
+
+  or-tree-node {
+    padding-left: 10px;
+  }
+`;
+
+@customElement("or-service-tree")
+export class OrServiceTree extends OrTreeMenu {
+  static get styles(): any[] {
+    return [...super.styles, treeStyles];
+  }
+
+  @property({ type: Array })
+  public services?: Microservice[];
+
+  @property({ type: Object })
+  public selectedService?: Microservice;
+
+  @property({ type: Boolean })
+  public readonly = false;
+
+  nodes: ServiceTreeNode[] = [];
+  selection = TreeMenuSelection.SINGLE;
+  menuTitle = "services";
+
+  protected willUpdate(changedProps: PropertyValues): void {
+    if (changedProps.has("services")) {
+      if (this.services) {
+        this.nodes = this._getServiceNodes(this.services);
+
+        // Select any existing selected service
+        if (this.selectedService) {
+          const nodeToSelect = this.nodes.find((node) => node.id === this.selectedService?.serviceId);
+          if (nodeToSelect) {
+            this._selectNode(nodeToSelect as unknown as OrTreeNode);
+          }
+        }
+      }
+    }
+
+    // Handle select change from parent
+    if (changedProps.has("selectedService")) {
+      if (this.selectedService) {
+        const nodeToSelect = this.nodes.find((node) => node.id === this.selectedService?.serviceId);
+        if (nodeToSelect) {
+          this._selectNode(nodeToSelect as unknown as OrTreeNode);
+        }
+      } else {
+        this.deselectAllNodes();
+      }
+    }
+
+    super.willUpdate(changedProps);
+  }
+
+  protected _dispatchSelectEvent(nodes?: ServiceTreeNode[]): boolean {
+    // Only select if ONE is selected
+    const newSelected = !nodes || nodes.length > 1 ? undefined : nodes[0];
+
+    if (newSelected?.service) {
+      // Dispatch a custom event that the page can listen to
+      const event = new CustomEvent("service-selected", {
+        detail: {
+          service: newSelected.service,
+        },
+      });
+      this.dispatchEvent(event);
+    }
+
+    return super._dispatchSelectEvent(nodes);
+  }
+
+  protected _getServiceNodes(services: Microservice[]): ServiceTreeNode[] {
+    return services.map((service) => ({
+      id: service.serviceId || "",
+      label: service.label || "",
+      service,
+      disabled: service.status === MicroserviceStatus.UNAVAILABLE,
+    }));
+  }
+
+  protected _getSingleNodeSlotTemplate(node: ServiceTreeNode): TemplateResult {
+    const service = node.service!;
+    const statusIcon = service.status && MicroserviceStatusIcon[service.status] 
+      ? MicroserviceStatusIcon[service.status] 
+      : MicroserviceStatusIcon.UNAVAILABLE;
+    const statusColor = service.status && MicroserviceStatusColor[service.status] 
+      ? MicroserviceStatusColor[service.status] 
+      : MicroserviceStatusColor.UNAVAILABLE;
+    
+    return html`
+      <or-icon class="service-icon" slot="prefix" icon="puzzle"></or-icon>
+      <span>${node.label}</span>
+      <or-icon
+        slot="suffix"
+        icon="${statusIcon}"
+        class="${statusColor}"
+      >
+      </or-icon>
+    `;
+  }
+
+  protected _getHeaderTemplate(): TemplateResult {
+    return html`
+      <div id="tree-header">
+        <h3 id="tree-header-title">
+          <or-translate value="services.title"></or-translate>
+        </h3>
+        <div class="hideMobile">
+          <or-mwc-input
+            type=${InputType.BUTTON}
+            icon="refresh"
+            title="Refresh services"
+            @or-mwc-input-changed=${this._onRefreshServices}
+          ></or-mwc-input>
+        </div>
+      </div>
+    `;
+  }
+
+  protected _onRefreshServices(): void {
+    this.dispatchEvent(new CustomEvent("refresh-services", { detail: {} }));
+  }
+} 

@@ -924,5 +924,12 @@
     "source": "Source"
   },
   "expandAll": "Expand all",
-  "collapseAll": "Collapse all"
+  "collapseAll": "Collapse all",
+  "services": {
+    "noServiceSelected": "Please select a service on the left",
+    "title": "Services",
+    "servicesLoadError": "Something went wrong while retrieving the services",
+    "iframeLoadError": "The selected service could not be loaded",
+    "serviceUnavailable": "Service is unavailable"
+  }
 }
