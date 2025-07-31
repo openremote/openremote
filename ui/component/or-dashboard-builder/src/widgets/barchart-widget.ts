@@ -2,8 +2,7 @@ import {
     AssetDatapointIntervalQuery,
     AssetDatapointQueryUnion,
     Attribute,
-    AttributeRef,
-    DatapointInterval
+    AttributeRef
 } from "@openremote/model";
 import {html, PropertyValues, TemplateResult } from "lit";
 import { when } from "lit/directives/when.js";
@@ -15,7 +14,7 @@ import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {BarChartSettings} from "../settings/barchart-settings";
 import {WidgetSettings} from "../util/widget-settings";
 import "@openremote/or-attribute-barchart";
-import {IntervalConfig} from "@openremote/or-attribute-barchart";
+import {OrAttributeBarChart} from "@openremote/or-attribute-barchart";
 
 export interface BarChartWidgetConfig extends WidgetConfig {
     attributeRefs: AttributeRef[];
@@ -45,47 +44,9 @@ export interface BarChartWidgetConfig extends WidgetConfig {
     decimals: number;
 }
 
-function getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
-    return new Map<string, [moment.unitOfTime.DurationConstructor, number]>([
-        ["5Minutes", ['minutes', 5]],
-        ["30Minutes", ['minutes', 30]],
-        ["60Minutes", ['minutes', 60]],
-        ["hour", ['hours', 1]],
-        ["6Hours", ['hours', 6]],
-        ["24Hours", ['hours', 24]],
-        ["day", ['days', 1]],
-        ["7Days", ['days', 7]],
-        ["week", ['weeks', 1]],
-        ["30Days", ['days', 30]],
-        ["month", ['months', 1]],
-        ["365Days", ['days', 365]],
-        ["year", ['years', 1]]
-    ]);
-}
-
-function getDefaultTimePreFixOptions(): string[] {
-    return ["this", "last"];
-}
-
-function getDefaultIntervalOptions(): Map<string, IntervalConfig> {
-    return new Map<string, IntervalConfig>([
-        ["auto", {intervalName:"auto", steps: 1, orFormat: DatapointInterval.MINUTE, momentFormat: "minutes", millis: 60000}],
-        ["one", {intervalName:"one", steps:1, orFormat: DatapointInterval.MINUTE,momentFormat:"minutes", millis: 60000}],
-        ["1Minute", {intervalName:"1Minute", steps:1, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 60000}],
-        ["5Minutes", {intervalName:"5Minutes", steps:5, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 300000}],
-        ["30Minutes", {intervalName:"30Minutes", steps:30, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 1800000}],
-        ["hour", {intervalName:"hour", steps:1, orFormat:DatapointInterval.HOUR,momentFormat:"hours", millis: 3600000}],
-        ["day", {intervalName:"day", steps:1, orFormat:DatapointInterval.DAY,momentFormat:"days", millis: 86400000}],
-        ["week", {intervalName:"week", steps:1, orFormat:DatapointInterval.WEEK,momentFormat:"weeks", millis: 604800000}],
-        ["month", {intervalName:"month", steps:1, orFormat:DatapointInterval.MONTH,momentFormat:"months", millis: 2592000000}],
-        ["year", {intervalName:"year", steps:1, orFormat:DatapointInterval.YEAR,momentFormat:"years", millis: 31536000000}]
-    ]);
-}
-
-
 function getDefaultWidgetConfig(): BarChartWidgetConfig {
     const preset = "30Days";  // Default time preset, "last" prefix is hardcoded in startDate and endDate below.
-    const dateFunc = getDefaultTimeWindowOptions().get(preset);
+    const dateFunc = OrAttributeBarChart.getDefaultTimeWindowOptions().get(preset);
     const startDate = moment().subtract(dateFunc![1], dateFunc![0]).startOf(dateFunc![0]);
     const endDate = dateFunc![1]== 1 ? moment().endOf(dateFunc![0]) : moment();
     return {
@@ -159,9 +120,9 @@ export class BarChartWidget extends OrAssetWidget {
             },
             getSettingsHtml(config: BarChartWidgetConfig): WidgetSettings {
                 const settings = new BarChartSettings(config);
-                settings.setTimeWindowOptions(getDefaultTimeWindowOptions());
-                settings.setTimePrefixOptions(getDefaultTimePreFixOptions());
-                settings.setIntervalOptions(getDefaultIntervalOptions());
+                settings.setTimeWindowOptions(OrAttributeBarChart.getDefaultTimeWindowOptions());
+                settings.setTimePrefixOptions(OrAttributeBarChart.getDefaultTimePrefixOptions());
+                settings.setIntervalOptions(OrAttributeBarChart.getDefaultIntervalOptions());
                 return settings;
             },
             getDefaultConfig(): BarChartWidgetConfig {
@@ -249,19 +210,17 @@ export class BarChartWidget extends OrAssetWidget {
             `, () => {
                 return html`
                     <or-attribute-barchart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
-                              .colorPickedAttributes="${this.widgetConfig?.colorPickedAttributes != null ? this.widgetConfig?.colorPickedAttributes : []}"
-                              .attributeSettings="${this.widgetConfig?.attributeSettings != null ? this.widgetConfig.attributeSettings : {}}"
-                              .chartSettings="${this.widgetConfig?.chartSettings}"
-                              .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
-                              .timeWindowOptions="${getDefaultTimeWindowOptions()}"
-                              .timePrefixOptions="${getDefaultTimePreFixOptions()}"
-                              .intervalOptions="${getDefaultIntervalOptions()}"
-                              .interval="${this.widgetConfig?.defaultInterval}"
-                              .timePrefixKey="${this.widgetConfig?.defaultTimePrefixKey}"
-                              .timeWindowKey="${this.widgetConfig?.defaultTimeWindowKey}"
-                              .datapointQuery="${this.datapointQuery}" .chartOptions="${this.widgetConfig?.chartOptions}"
-                              .decimals="${this.widgetConfig?.decimals}"
-                              style="height: 100%"
+                                           .attributeColors="${this.widgetConfig?.colorPickedAttributes != null ? this.widgetConfig?.colorPickedAttributes : []}"
+                                           .attributeConfig="${this.widgetConfig?.attributeSettings != null ? this.widgetConfig.attributeSettings : {}}"
+                                           ?showLegend=${this.widgetConfig?.chartSettings?.showLegend}
+                                           ?stacked=${this.widgetConfig?.chartSettings?.defaultStacked}
+                                           .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
+                                           .interval="${this.widgetConfig?.defaultInterval}"
+                                           .timePrefixKey="${this.widgetConfig?.defaultTimePrefixKey}"
+                                           .timeWindowKey="${this.widgetConfig?.defaultTimeWindowKey}"
+                                           .datapointQuery="${this.datapointQuery}" .chartOptions="${this.widgetConfig?.chartOptions}"
+                                           .decimals="${this.widgetConfig?.decimals}"
+                                           style="height: 100%"
                     ></or-attribute-barchart>
                 `;
             }))}
@@ -273,6 +232,6 @@ export class BarChartWidget extends OrAssetWidget {
             type: "interval",
             fromTimestamp: moment().set('day', -30).toDate().getTime(),
             toTimestamp: moment().toDate().getTime()
-        }
+        };
     }
 }

@@ -1,46 +1,42 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+import {customElement, property, state, query} from "lit/decorators.js";
 import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
 import {
     Asset,
     AssetDatapointIntervalQueryFormula,
     AssetDatapointQueryUnion,
-    AssetEvent,
     AssetModelUtil,
-    AssetQuery,
     Attribute,
     AttributeRef,
     DatapointInterval,
-    ReadAssetEvent,
     ValueDatapoint
 } from "@openremote/model";
-import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
-import "@openremote/or-asset-tree";
-import "@openremote/or-mwc-components/or-mwc-input";
-import "@openremote/or-components/or-panel";
-import "@openremote/or-translate";
-import {ECharts, EChartsOption, init} from "echarts";
+import manager, {DefaultColor3, DefaultColor4, Util} from "@openremote/core";
+import * as echarts from "echarts/core";
+import {DatasetComponentOption, DataZoomComponent, DataZoomComponentOption, GridComponent, GridComponentOption, TooltipComponent, TooltipComponentOption} from "echarts/components";
+import {BarChart, BarSeriesOption} from "echarts/charts";
+import {CanvasRenderer} from "echarts/renderers";
+import {UniversalTransition} from "echarts/features";
 import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
-import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
-import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {cache} from "lit/directives/cache.js";
+import "@openremote/or-mwc-components/or-mwc-menu";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {when} from "lit/directives/when.js";
 import {createRef, Ref, ref} from "lit/directives/ref.js";
 
-export class OrAttributeBarChartEvent extends CustomEvent<OrAttributeBarChartEventDetail> {
+echarts.use([GridComponent, TooltipComponent, DataZoomComponent, BarChart, CanvasRenderer, UniversalTransition]);
 
-    public static readonly NAME = "or-barchart-event";
+export class OrAttributeBarChartRenderEvent extends CustomEvent<OrAttributeBarChartRenderEventDetail> {
+
+    public static readonly NAME = "or-barchart-render";
 
     constructor(value?: any, previousValue?: any) {
-        super(OrAttributeBarChartEvent.NAME, {
+        super(OrAttributeBarChartRenderEvent.NAME, {
             detail: {
                 value: value,
                 previousValue: previousValue
@@ -51,140 +47,79 @@ export class OrAttributeBarChartEvent extends CustomEvent<OrAttributeBarChartEve
     }
 }
 
-export interface AttributeBarChartViewConfig {
-    attributeRefs?: AttributeRef[];
-    fromTimestamp?: number;
-    toTimestamp?: number;
-    /*compareOffset?: number;*/
-    period?: moment.unitOfTime.Base;
-    deltaFormat?: "absolute" | "percentage";
-    decimals?: number;
-}
-
-export interface OrAttributeBarChartEventDetail {
+export interface OrAttributeBarChartRenderEventDetail {
     value?: any;
     previousValue?: any;
 }
 
-declare global {
-    export interface HTMLElementEventMap {
-        [OrAttributeBarChartEvent.NAME]: OrAttributeBarChartEvent;
-    }
+/**
+ * Bar chart configuration with options for individual attributes.
+ * For example, a list of attributes aligned to the axis on the right side.
+ */
+export interface BarChartAttributeConfig {
+    rightAxisAttributes?: AttributeRef[];
+    methodMaxAttributes?: AttributeRef[];
+    methodMinAttributes?: AttributeRef[];
+    methodAvgAttributes?: AttributeRef[];
+    methodDeltaAttributes?: AttributeRef[];
+    methodMedianAttributes?: AttributeRef[];
+    methodModeAttributes?: AttributeRef[];
+    methodSumAttributes?: AttributeRef[];
+    methodCountAttributes?: AttributeRef[];
 }
 
-export interface AttributeBarChartConfig {
-    xLabel?: string;
-    yLabel?: string;
-}
-
-export interface OrAttributeBarChartConfig {
-    barchart?: AttributeBarChartConfig;
-    realm?: string;
-    views: {[name: string]: {
-        [panelName: string]: AttributeBarChartViewConfig
-    }};
-}
-
+/**
+ * Interval configuration for a user to select from.
+ * It contains a {@link displayName}, together with a step+interval like "6 hours".
+ */
 export interface IntervalConfig {
- intervalName: string;
- steps: number;
- orFormat: DatapointInterval;
- momentFormat: moment.unitOfTime.DurationConstructor;
- millis: number;
+    displayName: string;
+    steps: number;
+    orFormat: DatapointInterval;
+    momentFormat: moment.unitOfTime.DurationConstructor;
+    millis: number;
 }
 
-// Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
-declare function require(name: string): any;
-
-// TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
-const dialogStyle = require("@material/dialog/dist/mdc.dialog.css");
-const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
+export type ECChartOption = echarts.ComposeOption<
+    | BarSeriesOption
+    | TooltipComponentOption
+    | GridComponentOption
+    | DatasetComponentOption
+    | DataZoomComponentOption
+>;
 
 // language=CSS
 const style = css`
     :host {
-        
-        --internal-or-chart-background-color: var(--or-chart-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
         --internal-or-chart-text-color: var(--or-chart-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
-        --internal-or-chart-controls-margin: var(--or-chart-controls-margin, 0 0 20px 0);       
-        --internal-or-chart-controls-margin-children: var(--or-chart-controls-margin-children, 0 auto 20px auto);            
-        --internal-or-chart-graph-fill-color: var(--or-chart-graph-fill-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
-        --internal-or-chart-graph-fill-opacity: var(--or-chart-graph-fill-opacity, 0.25);       
-        --internal-or-chart-graph-line-color: var(--or-chart-graph-line-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
-        --internal-or-chart-graph-point-color: var(--or-chart-graph-point-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
-        --internal-or-chart-graph-point-border-color: var(--or-chart-graph-point-border-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
-        --internal-or-chart-graph-point-radius: var(--or-chart-graph-point-radius, 4);
-        --internal-or-chart-graph-point-hit-radius: var(--or-chart-graph-point-hit-radius, 20);       
-        --internal-or-chart-graph-point-border-width: var(--or-chart-graph-point-border-width, 2);
-        --internal-or-chart-graph-point-hover-color: var(--or-chart-graph-point-hover-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));       
+        --internal-or-chart-graph-fill-color: var(--or-chart-graph-fill-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
         --internal-or-chart-graph-point-hover-border-color: var(--or-chart-graph-point-hover-border-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
-        --internal-or-chart-graph-point-hover-radius: var(--or-chart-graph-point-hover-radius, 4);      
-        --internal-or-chart-graph-point-hover-border-width: var(--or-chart-graph-point-hover-border-width, 2);
-        
         width: 100%;
-        display: block; 
+        display: block;
     }
 
-    .line-label {
-        border-width: 1px;
-        border-color: var(--or-app-color3);
-        margin-right: 5px;
-    }
-
-    .line-label.solid {
-        border-style: solid;
-    }
-
-    .line-label.dashed {
-        background-image: linear-gradient(to bottom, var(--or-app-color3) 50%, white 50%);
-        width: 2px;
-        border: none;
-        background-size: 10px 16px;
-        background-repeat: repeat-y;
-    }
-    
     .button-icon {
         align-self: center;
         padding: 10px;
         cursor: pointer;
     }
 
-    a {
-        display: flex;
-        cursor: pointer;
-        text-decoration: underline;
-        font-weight: bold;
-        color: var(--or-app-color1);
-        --or-icon-width: 12px;
-    }
-
     .mdc-dialog .mdc-dialog__surface {
         min-width: 600px;
         height: calc(100vh - 50%);
     }
-    
+
     :host([hidden]) {
         display: none;
     }
-    
+
     #container {
         display: flex;
         min-width: 0;
         flex-direction: row;
         height: 100%;
     }
-       
-    #msg {
-        height: 100%;
-        width: 100%;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-    }
-    
-    #msg:not([hidden]) {
-        display: flex;    
-    }
+
     .period-controls {
         display: flex;
         flex-direction: column;
@@ -211,10 +146,11 @@ const style = css`
         display: flex;
         flex-direction: column;
     }
+
     .attribute-list-dense {
         flex-wrap: wrap;
     }
-    
+
     .attribute-list-item {
         cursor: pointer;
         display: flex;
@@ -223,30 +159,11 @@ const style = css`
         padding: 0;
         min-height: 50px;
     }
+
     .attribute-list-item-dense {
         min-height: 28px;
     }
 
-    .button-clear {
-        background: none;
-        visibility: hidden;
-        color: ${unsafeCSS(DefaultColor5)};
-        --or-icon-fill: ${unsafeCSS(DefaultColor5)};
-        display: inline-block;
-        border: none;
-        padding: 0;
-        cursor: pointer;
-    }
-
-    .attribute-list-item:hover .button-clear {
-        visibility: visible;
-    }
-
-    .button-clear:hover {
-        --or-icon-fill: var(--or-app-color4);
-    }
-    
-    
     .attribute-list-item-label {
         display: flex;
         flex: 1 1 0;
@@ -283,7 +200,7 @@ const style = css`
     .dialog-container > * {
         flex: 1 1 0;
     }
-    
+
     .dialog-container > or-mwc-input {
         background-color: var(--or-app-color2);
         border-left: 3px solid var(--or-app-color4);
@@ -296,16 +213,18 @@ const style = css`
         /*min-height: 400px;
         max-height: 550px;*/
     }
+
     #chart-controls {
         display: flex;
         flex-direction: column;
         margin-top: 10px;
     }
+
     #chart {
-        width: 100% !important;
-        height: 100%; !important;
+        width: 100%;
+        height: 100%;
     }
-    
+
     @media screen and (max-width: 1280px) {
         #chart-container {
         }
@@ -327,6 +246,7 @@ const style = css`
             min-width: 100%;
             padding-left: 0;
         }
+
         .interval-controls,
         .period-controls {
             flex-direction: row;
@@ -338,137 +258,156 @@ const style = css`
 `;
 
 @customElement("or-attribute-barchart")
-export class OrAttributeBarChart extends translate(i18next)(LitElement) {
+export class OrAttributeBarChart extends LitElement {
 
-    static get styles() {
-        return [
-            css`${unsafeCSS(tableStyle)}`,
-            css`${unsafeCSS(dialogStyle)}`,
-            style
-        ];
-    }
-
+    /**
+     * Asset data to display in the bar chart. This array needs to be populated.
+     * Used for the chart legend, information about units, and retrieval of data points.
+     */
     @property({type: Object})
     public assets: Asset[] = [];
 
-    @property({type: Object})
-    private activeAsset?: Asset;
-
+    /**
+     * List of attributes to display in the bar chart. This array needs to be populated.
+     * Used for the chart legend, and the retrieval of data points.
+     * Formatted as a JSON array of;
+     *
+     * ```[<index of {@link assets}>, {@link Attribute}]```
+     */
     @property({type: Object})
     public assetAttributes: [number, Attribute<any>][] = [];
 
-    @property({type: Array})
-    public colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }> = [];
+    /**
+     * Realm name to associate all the chart data with.
+     */
+    @property({type: String})
+    public realm: string | undefined = manager?.displayRealm;
 
+    /**
+     * The list of HEX colors representing the line color for each {@link AttributeRef}.
+     * Acts as an override, and will fall back to the {@link colors} attribute if not specified.
+     * The {@link AttributeRef} object with Asset ID and Attribute name need to be present in the Chart to work.
+     * The HEX color should be put in without '#' prefix. For example, you'd use '4d9d2a' instead of '#4d9d2a'.
+     */
+    @property({type: Array})
+    public readonly attributeColors: [AttributeRef, string][] = [];
+
+    /**
+     * The attribute configuration object with, for example, a list of right-axis attributes.
+     * See {@link BarChartAttributeConfig} for full documentation on the options.
+     */
     @property({type: Object})
-    public attributeSettings = {
-        rightAxisAttributes: [] as AttributeRef[],
-        methodMaxAttributes:[] as AttributeRef[],
-        methodMinAttributes: [] as AttributeRef[],
-        methodAvgAttributes: [] as AttributeRef[],
-        methodDeltaAttributes: [] as AttributeRef[],
-        methodMedianAttributes: [] as AttributeRef[],
-        methodModeAttributes: [] as AttributeRef[],
-        methodSumAttributes: [] as AttributeRef[],
-        methodCountAttributes: [] as AttributeRef[]
-    };
+    public readonly attributeConfig?: BarChartAttributeConfig;
 
+    /**
+     * List of colors to display attributes values with inside the bar chart.
+     * The array corresponds with {@link assetAttributes}, so the 1st color will be used for the 1st attribute.
+     */
     @property({type: Array})
-    public colors: string[] = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
+    public readonly colors: string[] = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
 
+    /**
+     * The query object to request attribute data / data points with.
+     * Normally, it's of type {@link AssetDatapointIntervalQuery}, including a start- and end time.
+     */
     @property({type: Object})
     public readonly datapointQuery!: AssetDatapointQueryUnion;
 
-    @property({type: Object})
-    public config?: OrAttributeBarChartConfig;
-
-    @property({type: Object})
-    public chartOptions?: any
-    public chartSettings: {
-        showLegend: boolean;
-        showToolBox: boolean;
-        defaultStacked: boolean;
-    } = {
-        showLegend: true,
-        showToolBox: true,
-        defaultStacked: false,
-    };
-
-    @property({type: String})
-    public realm?: string;
-
-    @property()
-    public panelName?: string;
-
-    @property()
-    public attributeControls: boolean = true;
-
-    @property()
+    /**
+     * Selected timeframe using a [start date, end date] array format.
+     */
+    @property({type: Array})
     public timeframe?: [Date, Date];
 
-    @property()
-    public timestampControls: boolean = true;
+    /**
+     * Custom ECharts options object to configure the chart appearance.
+     * See their documentation for more info: https://echarts.apache.org/en/option.html
+     */
+    @property({type: Object})
+    public chartOptions?: ECChartOption;
 
-    @property()
-    protected timePrefixOptions?: string[];
+    /**
+     * Shows a right-side legend with the list of visible attributes.
+     */
+    @property({type: Boolean})
+    public showLegend = false;
 
-    @property()
-    public timeWindowOptions?: Map<string, [moment.unitOfTime.DurationConstructor, number]>;
+    /**
+     * Shows the right-side legend (toggled with {@link showLegend}) in a compact / dense format.
+     */
+    @property({type: Boolean})
+    public denseLegend = false;
 
-    @property()
-    public timePrefixKey?: string;
+    /**
+     * Displays the bar chart in a vertically "stacked" configuration.
+     * It will display a cumulative effect of all data series on top of each other.
+     */
+    @property({type: Boolean})
+    public stacked = false;
 
-    @property()
+    /**
+     * Enables time control for the user, allowing them to customize the {@link timeframe} shown.
+     * Leaving this disabled/unset will show them in a "read-only" state.
+     */
+    @property({type: Boolean})
+    public timestampControls = true;
+
+    /**
+     * Number of decimals to display for attributes.
+     */
+    @property({type: Number})
+    public decimals = 2;
+
+    @property({type: Array})
+    public timePrefixOptions: string[] = OrAttributeBarChart.getDefaultTimePrefixOptions();
+
+    @property({type: String})
+    public timePrefixKey: string = this.timePrefixOptions[0];
+
+    @property({type: Object})
+    public timeWindowOptions: Map<string, [moment.unitOfTime.DurationConstructor, number]> = OrAttributeBarChart.getDefaultTimeWindowOptions();
+
+    @property({type: String})
     public timeWindowKey?: string;
 
-    @property()
-    public interval: string = 'auto';
+    @property({type: Object})
+    public intervalOptions: Map<string, IntervalConfig> = OrAttributeBarChart.getDefaultIntervalOptions();
 
-    @property()
-    public intervalOptions?: Map<string, IntervalConfig>;
+    @property({type: String})
+    public interval?: string;
 
-    @property()
-    public isCustomWindow?: boolean = false;
+    @state()
+    protected _isCustomWindow = false;
 
-    @property()
-    public denseLegend: boolean = false;
+    @state()
+    protected _loading = false;
 
-    @property()
-    public decimals: number = 2;
-
-    @property()
-    protected _loading: boolean = false;
-
-    @property()
+    @state()
     protected _data?: any[];
 
     @query("#chart")
     protected _chartElem!: HTMLDivElement;
-    protected _chartOptions: EChartsOption = {};
-    protected _chart?: ECharts;
+
+    protected _chartOptions: ECChartOption = {};
+    protected _chart?: echarts.ECharts;
     protected _style!: CSSStyleDeclaration;
     protected _startOfPeriod?: number;
     protected _endOfPeriod?: number;
     protected _latestError?: string;
     protected _dataAbortController?: AbortController;
     protected _zoomHandler? :any;
-    protected _resizeHandler?: any;
     protected _containerResizeObserver?: ResizeObserver;
-
-    protected _displayedInterval: string = ''; //TEMP HERE
     protected _markAreaData: { xAxis: number }[][] = [];
 
     protected _intervalConfig?: IntervalConfig;
 
-    constructor() {
-        super();
-        this.addEventListener(OrAssetTreeSelectionEvent.NAME, this._onTreeSelectionChanged);
+    static get styles() {
+        return [style];
     }
 
     connectedCallback() {
         super.connectedCallback();
         this._style = window.getComputedStyle(this);
-        this.loadSettings(false)
     }
 
     disconnectedCallback(): void {
@@ -477,8 +416,14 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
 
     }
 
-    firstUpdated() {
-        // this.loadSettings(false);  //moved this to connectedcallback, otherwise settings are called before they exist
+    willUpdate(changedProps: PropertyValues) {
+        if(changedProps.has("timeWindowOptions") && this.timeWindowOptions) {
+            this.timeWindowKey = Array.from(this.timeWindowOptions.keys())[0];
+        }
+        if(changedProps.has("intervalOptions") && this.intervalOptions) {
+            this.interval = Array.from(this.intervalOptions.keys())[0];
+        }
+        return super.willUpdate(changedProps);
     }
 
     updated(changedProperties: PropertyValues) {
@@ -488,12 +433,12 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
         if (changedProperties.has("realm")) {
             if(changedProperties.get("realm") != undefined) { // Checking whether it was undefined previously, to prevent loading 2 times and resetting attribute properties.
                 this.assets = [];
-                this.loadSettings(true);
+                this.assetAttributes = [];
             }
         }
 
-        const reloadData = changedProperties.has('colorPickedAttributes') || changedProperties.has("datapointQuery") || changedProperties.has("timeframe") || changedProperties.has("interval") || changedProperties.has("timePrefixKey") || changedProperties.has("timeWindowKey")||
-            changedProperties.has("attributeSettings") || changedProperties.has("assetAttributes") || changedProperties.has("realm");
+        const reloadData = changedProperties.has('attributeColors') || changedProperties.has("datapointQuery") || changedProperties.has("timeframe") || changedProperties.has("interval") || changedProperties.has("timePrefixKey") || changedProperties.has("timeWindowKey")||
+            changedProperties.has("attributeConfig") || changedProperties.has("assetAttributes") || changedProperties.has("realm");
 
         if (reloadData) {
             this._data = undefined;
@@ -521,7 +466,7 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
                     borderColor: this._style.getPropertyValue("--internal-or-chart-text-color"),
                     left: 25,
                     right: 25,
-                    top: this.chartSettings.showToolBox ? 28 : 10,
+                    top: 10,
                     bottom:  25,
                     containLabel: true
                 },
@@ -541,7 +486,6 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
                         }
                     },
                 },
-                toolbox: this.chartSettings.showToolBox ? {show:true, feature: {magicType: {type: ['bar', 'stack']}}} : undefined,
                 xAxis: {
                     type: 'time',
                     axisLine: {
@@ -549,7 +493,7 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
                     },
                     //splitLine: {show: true},
                     //minorSplitLine: {show: true},
-                    splitNumer: (this._endOfPeriod! - this._startOfPeriod!)/this._intervalConfig!.millis - 1,
+                    splitNumber: (this._endOfPeriod! - this._startOfPeriod!)/this._intervalConfig!.millis - 1,
                     //minorTick: {show: true},
                     min: this._startOfPeriod,
                     max: this._endOfPeriod,
@@ -560,41 +504,41 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
                         interval: this._intervalConfig!.millis,
                         fontSize: 10,
                         formatter: {
-                            year: '{yyyy}',
+                            year: "{yyyy}",
                             month: "{MMMM} '{yy}",
-                            day: '{MMM} {d}th',
-                            hour: '{HH}:{mm}',
-                            minute: '{HH}:{mm}',
-                            second: '{HH}:{mm}:{ss}',
-                            millisecond: '{d}-{MMM} {HH}:{mm}',
+                            day: "{MMM} {d}th",
+                            hour: "{HH}:{mm}",
+                            minute: "{HH}:{mm}",
+                            second: "{HH}:{mm}:{ss}",
+                            millisecond: "{d}-{MMM} {HH}:{mm}",
                             // @ts-ignore
-                            none: '{MMM}-{dd} {HH}:{mm}'
+                            none: "{MMM}-{dd} {HH}:{mm}"
                         }
                     }
                 },
                 yAxis: [
                     {
-                        type: 'value',
+                        type: "value",
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
-                        boundaryGap: ['10%', '10%'],
+                        boundaryGap: ["10%", "10%"],
                         scale: true,
-                        min: this.chartOptions.options.scales.y.min ? this.chartOptions.options.scales.y.min : undefined,
-                        max: this.chartOptions.options.scales.y.max ? this.chartOptions.options.scales.y.max : undefined,
+                        min: (this.chartOptions?.options as any)?.scales?.y?.min,
+                        max: (this.chartOptions?.options as any)?.scales?.y?.max,
                         axisPointer: {
                             show: true, // Ensure it's visible
-                            type: 'line', // Only a line
+                            type: "line", // Only a line
                             label: { show: false }, // Hide label
                             triggerTooltip: false
                         },
                     },
                     {
                         type: 'value',
-                        show: this.attributeSettings.rightAxisAttributes.length > 0,
+                        show: (this.attributeConfig?.rightAxisAttributes?.length || 0) > 0,
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ['10%', '10%'],
                         scale: true,
-                        min: this.chartOptions.options.scales.y1.min ? this.chartOptions.options.scales.y1.min : undefined,
-                        max: this.chartOptions.options.scales.y1.max ? this.chartOptions.options.scales.y1.max : undefined
+                        min: (this.chartOptions?.options as any)?.scales?.y1?.min,
+                        max: (this.chartOptions?.options as any)?.scales?.y1?.max
                     }
                     ],
                 dataZoom: [
@@ -608,23 +552,8 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
                 series: [],
             };
 
-            // Add toolbox if enabled
-            if(this.chartSettings.showToolBox) {
-                this._chartOptions!.toolbox! = {
-                    right: 45,
-                    top: 0,
-                    feature: {
-                        dataView: {readOnly: true},
-                        magicType: {
-                            type: ['stack']
-                        },
-                        saveAsImage: {name: ['Chart Export ', this.panelName, `${moment(this._startOfPeriod).format("DD-MM-YYYY HH:mm")} - ${moment(this._endOfPeriod).format("DD-MM-YYYY HH:mm")}`].filter(Boolean).join('')}
-                    }
-                }
-            }
-
             // Initialize echarts instance
-            this._chart = init(this._chartElem);
+            this._chart = echarts.init(this._chartElem);
             // Set chart options to default
             this._chart.setOption(this._chartOptions);
             this._toggleChartEventListeners(true);
@@ -638,7 +567,7 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
         }
 
         this.onCompleted().then(() => {
-            this.dispatchEvent(new OrAttributeBarChartEvent('rendered'));
+            this.dispatchEvent(new OrAttributeBarChartRenderEvent('rendered'));
         });
 
     }
@@ -647,28 +576,28 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
     // Also sorts the attribute lists horizontally when it is below the chart
     applyChartResponsiveness(): void {
         if(this.shadowRoot) {
-            const container = this.shadowRoot.getElementById('container');
+            const container = this.shadowRoot.getElementById("container");
             if(container) {
                 const bottomLegend: boolean = (container.clientWidth < 600);
-                container.style.flexDirection = bottomLegend ? 'column' : 'row';
-                const controls = this.shadowRoot.getElementById('controls');
+                container.style.flexDirection = bottomLegend ? "column" : "row";
+                const controls = this.shadowRoot.getElementById("controls");
                 if(controls) {
-                    controls.style.flexDirection = bottomLegend ? 'row' : 'column';
+                    controls.style.flexDirection = bottomLegend ? "row" : "column";
                 }
-                const attributeList = this.shadowRoot.getElementById('attribute-list');
+                const attributeList = this.shadowRoot.getElementById("attribute-list");
                 if(attributeList) {
-                    attributeList.style.gap = bottomLegend ? '4px 12px' : '';
-                    attributeList.style.maxHeight = bottomLegend ? '90px' : '';
-                    attributeList.style.flexFlow = bottomLegend ? 'row wrap' : 'column nowrap';
-                    attributeList.style.padding = bottomLegend ? '0' : '5px 0';
+                    attributeList.style.gap = bottomLegend ? "4px 12px" : "";
+                    attributeList.style.maxHeight = bottomLegend ? "90px" : "";
+                    attributeList.style.flexFlow = bottomLegend ? "row wrap" : "column nowrap";
+                    attributeList.style.padding = bottomLegend ? "0" : "5px 0";
                 }
-                this.shadowRoot.querySelectorAll('.attribute-list-item').forEach((item: Element) => {
-                    (item as HTMLElement).style.minHeight = bottomLegend ? '0px' : '44px';
-                    (item as HTMLElement).style.paddingLeft = bottomLegend ? '' : '16px';
-                    (item.children[1] as HTMLElement).style.flexDirection = bottomLegend ? 'row' : 'column';
-                    (item.children[1] as HTMLElement).style.gap = bottomLegend ? '4px' : '';
+                this.shadowRoot.querySelectorAll(".attribute-list-item").forEach((item: Element) => {
+                    (item as HTMLElement).style.minHeight = bottomLegend ? "0px" : "44px";
+                    (item as HTMLElement).style.paddingLeft = bottomLegend ? "" : "16px";
+                    (item.children[1] as HTMLElement).style.flexDirection = bottomLegend ? "row" : "column";
+                    (item.children[1] as HTMLElement).style.gap = bottomLegend ? "4px" : "";
                 });
-                this._chart!.resize()
+                this._chart?.resize();
             }
         }
     }
@@ -677,9 +606,6 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
         const disabled =  this._loading || this._latestError;
 
         return html`
-            
-            
-            
             <div id="container">
                     ${when(this._loading, () => html`
                         <div style="position: absolute; height: 100%; width: 100%;">
@@ -688,10 +614,10 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
                     `)}
                     ${when(this._latestError, () => html`
                         <div style="position: absolute; height: 100%; width: 100%; display: flex; justify-content: center; align-items: center;">
-                            <or-translate .value="${this._latestError || 'errorOccurred'}"></or-translate>
+                            <or-translate .value="${this._latestError || "errorOccurred"}"></or-translate>
                         </div>
                     `)}
-                    ${when(Object.keys(this.attributeSettings).filter(key => key.startsWith('method')).every(key => (this.attributeSettings as any)[key].length === 0), () => html`
+                    ${when(Object.keys(this.attributeConfig || {}).filter(key => key.startsWith('method')).every(key => (this.attributeConfig as any)[key].length === 0), () => html`
                         <div style="position: inherit; height: 100%; width: 100%; display: flex; justify-content: center; align-items: center; z-index: 1; pointer-events: none;">
                             <or-translate .value="${'dashboard.selectMethod'}"></or-translate>
                         </div>
@@ -704,12 +630,8 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
                 <div id="chart-container">
                     <div id="chart" style="visibility: ${disabled ? 'hidden' : 'visible'}"></div>
                 </div>
-
-
-
-
-
-                ${(this.timestampControls || this.attributeControls || this.chartSettings.showLegend) ? html`
+                
+                ${(this.timestampControls || this.showLegend) ? html`
                     <div id="chart-controls">
                         <div id="controls">
                                 ${this.timePrefixKey && this.timePrefixOptions && this.timeWindowKey && this.timeWindowOptions ? html`
@@ -731,7 +653,7 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
                                             )}
                                             <!-- Time window selection -->
                                             ${getContentWithMenuTemplate(
-                                                    html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.isCustomWindow ? "timeframe" : this.timeWindowKey}" ?disabled="${!!this.timeframe}"></or-mwc-input>`,
+                                                    html`<or-mwc-input .type="${InputType.BUTTON}" label="${this._isCustomWindow ? "timeframe" : this.timeWindowKey}" ?disabled="${!!this.timeframe}"></or-mwc-input>`,
                                                     Array.from(this.timeWindowOptions!.keys()).map((key) => ({ value: key } as ListItem)),
                                                     this.timeWindowKey,
                                                     (value: string | string[]) => {
@@ -745,8 +667,8 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
                                             )}
                                             <!-- Interval selection -->
                                             ${getContentWithMenuTemplate(
-                                                    html`<or-mwc-input .type="${InputType.BUTTON}" label="interval: ${this._intervalConfig!.intervalName}" ?disabled="${false}"></or-mwc-input>`,
-                                                    Array.from(this.intervalOptions!.keys()).map((key) => ({ value: key } as ListItem)),
+                                                    html`<or-mwc-input .type="${InputType.BUTTON}" label="interval: ${this._intervalConfig?.displayName}" ?disabled="${false}"></or-mwc-input>`,
+                                                    Array.from(this.intervalOptions?.keys()).map((key) => ({ value: key } as ListItem)),
                                                     this.interval,
                                                     (value: string | string[]) => {
                                                         this.interval = value.toString();
@@ -764,7 +686,7 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
                                             <!-- Scroll right button -->
                                             <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._shiftTimeframe(this.timeframe? this.timeframe[0] : new Date(this._startOfPeriod!),this.timeframe? this.timeframe[1] : new Date(this._endOfPeriod!), this.timeWindowKey!, "next")}"></or-icon>
                                             <!-- Button that opens custom time selection or restores to widget setting-->
-                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="${this.timeframe ? 'restore' : 'calendar-clock'}" @click="${() => this.timeframe ? (this.isCustomWindow = false, this.timeframe = undefined)  : this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-icon>
+                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="${this.timeframe ? 'restore' : 'calendar-clock'}" @click="${() => this.timeframe ? (this._isCustomWindow = false, this.timeframe = undefined)  : this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-icon>
                                         </div>
                                     ` : html`
                                         <div style = "display: ruby; flex-direction: column; align-items: center">
@@ -792,11 +714,8 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
                                     </table>
                                 </div>
                             ` : undefined}
-                            ${this.attributeControls ? html`
-                                <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="selectAttributes" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
-                            ` : undefined}
                         </div>
-                        ${cache(this.chartSettings.showLegend ? html`
+                        ${cache(this.showLegend ? html`
                             <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}">
                                 ${this.assetAttributes == null || this.assetAttributes.length == 0 ? html`
                                     <div>
@@ -805,38 +724,40 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
                                 ` : undefined}
                                 ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
                                     const asset: Asset | undefined = this.assets[assetIndex];
-                                    const colourIndex = index % this.colors.length;
-                                    const color = this.colorPickedAttributes.find(({ attributeRef }) => attributeRef.name === attr.name && attributeRef.id === asset.id)?.color;
-                                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset!.type, attr.name, attr);
-                                    const label = Util.getAttributeLabel(attr, descriptors[0], asset!.type, true);
-                                    const axisNote = (this.attributeSettings.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
-                                    const bgColor = ( color ?? this.colors[colourIndex] ) || "";
-                                    //Find which aggregation methods are active
-                                    const methodList: { data: string }[] = Object.entries(this.attributeSettings)
-                                            .filter(([key]) => key.includes('method'))
-                                            .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
-                                            .reduce<{ data: string }[]>((list, [key, attributeRefs]) => {
-                                                const isActive = attributeRefs.some(
-                                                        (ref: AttributeRef) => ref.id === asset!.id && ref.name === attr.name
-                                                );
-                                                if (isActive) {
-                                                    list.push({ data: `(${i18next.t(key)})` });
-                                                }
-                                                return list;
-                                            }, []);
-                                    
-                                    return html`
-                                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}">
-                                            <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
-                                            <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
-                                                <div style="display: flex; justify-content: space-between;">
-                                                    <span style="font-size:12px; ${this.denseLegend ? 'margin-right: 8px' : undefined}">${this.assets[assetIndex].name}</span>
-                                                    ${when(axisNote, () => html`<span style="font-size:12px; color:grey">(${axisNote})</span>`)}
+                                    if(asset) {
+                                        const colourIndex = index % this.colors.length;
+                                        const color = this.attributeColors.find(x => x[0].id === asset.id && x[0].name === attr.name)?.[1];
+                                        const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
+                                        const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, true);
+                                        const axisNote = (this.attributeConfig?.rightAxisAttributes?.find(ar => asset.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
+                                        const bgColor = ( color ?? this.colors[colourIndex] ) || "";
+                                        //Find which aggregation methods are active
+                                        const methodList: { data: string }[] = Object.entries(this.attributeConfig || {})
+                                                .filter(([key]) => key.includes('method'))
+                                                .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+                                                .reduce<{ data: string }[]>((list, [key, attributeRefs]) => {
+                                                    const isActive = attributeRefs.some(
+                                                            (ref: AttributeRef) => ref.id === asset.id && ref.name === attr.name
+                                                    );
+                                                    if (isActive) {
+                                                        list.push({ data: `(${i18next.t(key)})` });
+                                                    }
+                                                    return list;
+                                                }, []);
+
+                                        return html`
+                                            <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}">
+                                                <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex].type), undefined, undefined, bgColor.split('#')[1])}</span>
+                                                <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
+                                                    <div style="display: flex; justify-content: space-between;">
+                                                        <span style="font-size:12px; ${this.denseLegend ? 'margin-right: 8px' : undefined}">${this.assets[assetIndex].name}</span>
+                                                        ${when(axisNote, () => html`<span style="font-size:12px; color:grey">(${axisNote})</span>`)}
+                                                    </div>
+                                                    <span style="font-size:12px; color:grey; white-space:pre-line;">${label} <br> ${methodList.map(item => item?.data).join('\n')}</span>
                                                 </div>
-                                                <span style="font-size:12px; color:grey; white-space:pre-line;">${label} <br> ${methodList.map(item => item?.data).join('\n')}</span>
                                             </div>
-                                        </div>
-                                    `
+                                        `;
+                                    }
                                 })}
                             </div>
                         ` : undefined)}
@@ -846,181 +767,8 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
         `;
     }
 
-    protected async _onTreeSelectionChanged(event: OrAssetTreeSelectionEvent) {
-        // Need to fully load the asset
-        if (!manager.events) {
-            return;
-        }
-
-        const selectedNode = event.detail && event.detail.newNodes.length > 0 ? event.detail.newNodes[0] : undefined;
-
-        if (!selectedNode) {
-            this.activeAsset = undefined;
-        } else {
-            // fully load the asset
-            const assetEvent: AssetEvent = await manager.events.sendEventWithReply({
-                eventType: "read-asset",
-                assetId: selectedNode.asset!.id
-            } as ReadAssetEvent);
-            this.activeAsset = assetEvent.asset;
-        }
-    }
-
-
-
-
-    async loadSettings(reset: boolean) {
-
-        if(this.assetAttributes == undefined || reset) {
-            this.assetAttributes = [];
-        }
-
-        if (!this.realm) {
-            this.realm = manager.getRealm();
-        }
-
-        if (!this.timePrefixOptions) {
-            this.timePrefixOptions = this._getDefaultTimePrefixOptions();
-        }
-
-        if (!this.timeWindowOptions) {
-            this.timeWindowOptions = this._getDefaultTimeWindowOptions();
-        }
-
-        if (!this.intervalOptions) {
-            this.intervalOptions = this._getDefaultIntervalOptions();
-        }
-
-        if (!this.interval) {
-            this.interval = this.intervalOptions.keys().next().value!.toString();
-        }
-
-        if (!this._intervalConfig) {
-            this._intervalConfig = this.intervalOptions.get(this.interval);
-        }
-
-        if (!this.timeWindowKey) {
-            this.timeWindowKey = this.timeWindowOptions.keys().next().value!.toString();
-        }
-
-        if (!this.timePrefixKey) {
-            this.timePrefixKey = this.timePrefixOptions[1];
-        }
-
-        if (!this.panelName) {
-            return;
-        }
-
-        const viewSelector = window.location.hash;
-        const allConfigs: OrAttributeBarChartConfig[] = await manager.console.retrieveData("OrChartConfig") || [];
-
-        if (!Array.isArray(allConfigs)) {
-            manager.console.storeData("OrChartConfig", [allConfigs]);
-        }
-
-        let config: OrAttributeBarChartConfig | undefined = allConfigs.find(e => e.realm === this.realm);
-
-        if (!config) {
-            return;
-        }
-
-        const view = config.views && config.views[viewSelector] ? config.views[viewSelector][this.panelName] : undefined;
-
-        if (!view) {
-            return;
-        }
-
-        if (!view.attributeRefs) {
-            // Old/invalid config format remove it
-            delete config.views[viewSelector][this.panelName];
-            const cleanData = [...allConfigs.filter(e => e.realm !== this.realm), config];
-            manager.console.storeData("OrChartConfig", cleanData);
-            return;
-        }
-
-        const assetIds = view.attributeRefs.map((attrRef) => attrRef.id!);
-
-        if (assetIds.length === 0) {
-            return;
-        }
-
-        this._loading = true;
-
-        if (!assetIds.every(id => !!this.assets.find(asset => asset.id === id))) {
-            const query = {
-                ids: assetIds
-            } as AssetQuery;
-
-            try {
-                const response = await manager.rest.api.AssetResource.queryAssets(query);
-                const assets = response.data || [];
-                view.attributeRefs = view.attributeRefs.filter((attrRef) => !!assets.find((asset) => asset.id === attrRef.id && asset.attributes && asset.attributes.hasOwnProperty(attrRef.name!)));
-
-                manager.console.storeData("OrChartConfig", [...allConfigs.filter(e => e.realm !== this.realm), config]);
-                this.assets = assets.filter((asset) => view.attributeRefs!.find((attrRef) => attrRef.id === asset.id));
-            } catch (e) {
-                console.error("Failed to get assets requested in settings", e);
-            }
-
-            this._loading = false;
-
-            if (this.assets && this.assets.length > 0) {
-                this.assetAttributes = view.attributeRefs.map((attrRef) => {
-                    const assetIndex = this.assets.findIndex((asset) => asset.id === attrRef.id);
-                    const asset = assetIndex >= 0 ? this.assets[assetIndex] : undefined;
-                    return asset && asset.attributes ? [assetIndex!, asset.attributes[attrRef.name!]] : undefined;
-                }).filter((indexAndAttr) => !!indexAndAttr) as [number, Attribute<any>][];
-            }
-        }
-    }
-
-    async saveSettings() {
-        if (!this.panelName) {
-            return;
-        }
-
-        const viewSelector = window.location.hash;
-        const allConfigs: OrAttributeBarChartConfig[] = await manager.console.retrieveData("OrChartConfig") || [];
-        let config: OrAttributeBarChartConfig | undefined = allConfigs.find(e => e.realm === this.realm);
-
-        if (!config) {
-            config = {
-                realm: this.realm,
-                views: {
-                }
-            }
-        }
-
-        if (!config.views[viewSelector]) {
-            config.views[viewSelector] = {};
-        }
-
-        if (!this.assets || !this.assetAttributes || this.assets.length === 0 || this.assetAttributes.length === 0) {
-            delete config.views[viewSelector][this.panelName];
-        } else {
-            config.realm = this.realm;
-            config.views[viewSelector][this.panelName] = {
-                attributeRefs: this.assetAttributes.map(([index, attr]) => {
-                    const asset = this.assets[index];
-                    return !!asset ? {id: asset.id, name: attr.name} as AttributeRef : undefined;
-                }).filter((attrRef) => !!attrRef) as AttributeRef[],
-            };
-        }
-
-        manager.console.storeData("OrChartConfig", [...allConfigs.filter(e => e.realm !== this.realm), config]);
-    }
-
-    protected _openDialog() {
-        const dialog = showDialog(new OrAttributePicker()
-            .setShowOnlyDatapointAttrs(true)
-            .setMultiSelect(true)
-            .setSelectedAttributes(this._getSelectedAttributes()));
-
-        dialog.addEventListener(OrAttributePickerPickedEvent.NAME, (ev: any) => this._addAttribute(ev.detail));
-    }
-
     protected _openTimeDialog(startTimestamp?: number, endTimestamp?: number) {
-        this.isCustomWindow = true;
+        this._isCustomWindow = true;
         const startRef: Ref<OrMwcInput> = createRef();
         const endRef: Ref<OrMwcInput> = createRef();
         const dialog = showDialog(new OrMwcDialog()
@@ -1046,33 +794,6 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
         )
     }
 
-
-    protected async _addAttribute(selectedAttrs?: AttributeRef[]) {
-        if (!selectedAttrs) return;
-
-        this.assetAttributes = [];
-        for (const attrRef of selectedAttrs) {
-            const response = await manager.rest.api.AssetResource.get(attrRef.id!);
-            this.activeAsset = response.data;
-            if (this.activeAsset) {
-                let assetIndex = this.assets.findIndex((asset) => asset.id === attrRef.id);
-                if (assetIndex < 0) {
-                    assetIndex = this.assets.length;
-                    this.assets = [...this.assets, this.activeAsset];
-                }
-                this.assetAttributes.push([assetIndex, attrRef]);
-            }
-        }
-        this.assetAttributes = [...this.assetAttributes];
-        this.saveSettings();
-    }
-
-    protected _getSelectedAttributes() {
-        return this.assetAttributes.map(([assetIndex, attr]) => {
-            return {id: this.assets[assetIndex].id, name: attr.name};
-        });
-    }
-
     async onCompleted() {
         await this.updateComplete;
     }
@@ -1087,31 +808,11 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
         }
     }
 
-    protected _deleteAttribute (index: number) {
-        const removed = this.assetAttributes.splice(index, 1)[0];
-        const assetIndex = removed[0];
-        this.assetAttributes = [...this.assetAttributes];
-        if (!this.assetAttributes.some(([index, attrRef]) => index === assetIndex)) {
-            // Asset no longer referenced
-            this.assets.splice(index, 1);
-            this.assetAttributes.forEach((indexRef) => {
-                if (indexRef[0] >= assetIndex) {
-                    indexRef[0] -= 1;
-                }
-            });
-        }
-        this.saveSettings();
-    }
-
-
-
-
-    protected _getDefaultTimePrefixOptions(): string[] {
+    public static getDefaultTimePrefixOptions(): string[] {
         return ["this", "last"];
     }
 
-
-    protected _getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
+    public static getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
         return new Map<string, [moment.unitOfTime.DurationConstructor, number]>([
             ["hour", ['hours', 1]],
             ["6Hours", ['hours', 6]],
@@ -1124,20 +825,20 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
             ["365Days", ['days', 365]],
             ["year", ['years', 1]]
         ]);
-    };
+    }
 
-    protected _getDefaultIntervalOptions(): Map<string, IntervalConfig> {
+    public static getDefaultIntervalOptions(): Map<string, IntervalConfig> {
         return new Map<string, IntervalConfig>([
-            ["auto", {intervalName:"auto", steps: 1, orFormat: DatapointInterval.MINUTE, momentFormat: "minutes", millis: 60000}],
-            ["one", {intervalName:"one", steps:1, orFormat: DatapointInterval.MINUTE,momentFormat:"minutes", millis: 60000}],
-            ["1Minute", {intervalName:"1Minute", steps:1, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 60000}],
-            ["5Minutes", {intervalName:"5Minutes", steps:5, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 300000}],
-            ["30Minutes", {intervalName:"30Minutes", steps:30, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 1800000}],
-            ["hour", {intervalName:"hour", steps:1, orFormat:DatapointInterval.HOUR,momentFormat:"hours", millis: 3600000}],
-            ["day", {intervalName:"day", steps:1, orFormat:DatapointInterval.DAY,momentFormat:"days", millis: 86400000}],
-            ["week", {intervalName:"week", steps:1, orFormat:DatapointInterval.WEEK,momentFormat:"weeks", millis: 604800000}],
-            ["month", {intervalName:"month", steps:1, orFormat:DatapointInterval.MONTH,momentFormat:"months", millis: 2592000000}],
-            ["year", {intervalName:"year", steps:1, orFormat:DatapointInterval.MINUTE,momentFormat:"years", millis: 31536000000}]
+            ["auto", {displayName:"auto", steps: 1, orFormat: DatapointInterval.MINUTE, momentFormat: "minutes", millis: 60000}],
+            ["one", {displayName:"one", steps:1, orFormat: DatapointInterval.MINUTE,momentFormat:"minutes", millis: 60000}],
+            ["1Minute", {displayName:"1Minute", steps:1, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 60000}],
+            ["5Minutes", {displayName:"5Minutes", steps:5, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 300000}],
+            ["30Minutes", {displayName:"30Minutes", steps:30, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 1800000}],
+            ["hour", {displayName:"hour", steps:1, orFormat:DatapointInterval.HOUR,momentFormat:"hours", millis: 3600000}],
+            ["day", {displayName:"day", steps:1, orFormat:DatapointInterval.DAY,momentFormat:"days", millis: 86400000}],
+            ["week", {displayName:"week", steps:1, orFormat:DatapointInterval.WEEK,momentFormat:"weeks", millis: 604800000}],
+            ["month", {displayName:"month", steps:1, orFormat:DatapointInterval.MONTH,momentFormat:"months", millis: 2592000000}],
+            ["year", {displayName:"year", steps:1, orFormat:DatapointInterval.MINUTE,momentFormat:"years", millis: 31536000000}]
         ]);
     };
 
@@ -1197,23 +898,23 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
         if (selectedInterval == "auto") {
             //Returns amount of steps, interval size and moment.js time format
             if(diffInHours <= 1) {
-                return { intervalName: "auto(5m)", steps: 5, orFormat: DatapointInterval.MINUTE, momentFormat: 'minutes', millis: 300000 };
+                return { displayName: "auto(5m)", steps: 5, orFormat: DatapointInterval.MINUTE, momentFormat: 'minutes', millis: 300000 };
             } else if(diffInHours <= 6) {
-                return {intervalName: "auto(30m)", steps: 30, orFormat: DatapointInterval.MINUTE, momentFormat:'minutes', millis: 1800000};
+                return {displayName: "auto(30m)", steps: 30, orFormat: DatapointInterval.MINUTE, momentFormat:'minutes', millis: 1800000};
             } else if(diffInHours <= 24) { // hour if up to one day
-                return {intervalName: "auto(1hr)", steps: 1, orFormat: DatapointInterval.HOUR, momentFormat:'hours', millis: 3600000};
+                return {displayName: "auto(1hr)", steps: 1, orFormat: DatapointInterval.HOUR, momentFormat:'hours', millis: 3600000};
             } else if(diffInHours <= 744) { // one day if up to one month
-                return {intervalName: "auto(day)", steps: 1, orFormat: DatapointInterval.DAY, momentFormat:'days', millis: 86400000};
+                return {displayName: "auto(day)", steps: 1, orFormat: DatapointInterval.DAY, momentFormat:'days', millis: 86400000};
             } else if(diffInHours <= 8760) { // one week if up to 1 year
-                return {intervalName: "auto(week)", steps: 1, orFormat: DatapointInterval.WEEK, momentFormat:'weeks', millis: 604800000};
+                return {displayName: "auto(week)", steps: 1, orFormat: DatapointInterval.WEEK, momentFormat:'weeks', millis: 604800000};
             } else { // one month if more than a year
-                return {intervalName: "auto(month)", steps: 1, orFormat: DatapointInterval.MONTH, momentFormat:'months', millis: 2592000000};
+                return {displayName: "auto(month)", steps: 1, orFormat: DatapointInterval.MONTH, momentFormat:'months', millis: 2592000000};
             }
         } else if (selectedInterval == "one") {
             //Set interval to total time span
             const millis = this._endOfPeriod!-this._startOfPeriod!
             const steps = Math.ceil(millis / 60000)
-            return {intervalName: "one", steps: steps, orFormat: DatapointInterval.MINUTE, momentFormat:'minutes', millis: millis};
+            return {displayName: "one", steps: steps, orFormat: DatapointInterval.MINUTE, momentFormat:'minutes', millis: millis};
         }
         // Otherwise, check if select interval is a valid combination with set time window
         const intervalProp: IntervalConfig = this.intervalOptions!.get(selectedInterval)!
@@ -1265,8 +966,8 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
                 promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
 
                     const asset = this.assets[assetIndex];
-                    const shownOnRightAxis = !!this.attributeSettings.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
-                    const color = this.colorPickedAttributes.find(({ attributeRef }) => attributeRef.name === attribute.name && attributeRef.id === asset.id)?.color;
+                    const shownOnRightAxis = !!this.attributeConfig?.rightAxisAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
+                    const color =  this.attributeColors.find(x => x[0].id === asset.id && x[0].name === attribute.name)?.[1];
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);
                     const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
                     const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
@@ -1276,14 +977,14 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
 
                     // Map calculation methods to their corresponding attribute arrays and formulas
                     const methodMapping: { [key: string]: { active: boolean; formula: AssetDatapointIntervalQueryFormula } } = {
-                        AVG: { active: !!this.attributeSettings.methodAvgAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.AVG },
-                        COUNT: { active: !!this.attributeSettings.methodCountAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.COUNT },
-                        DELTA: { active: !!this.attributeSettings.methodDeltaAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.DELTA },
-                        MAX: { active: !!this.attributeSettings.methodMaxAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MAX },
-                        MEDIAN: { active: !!this.attributeSettings.methodMedianAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MEDIAN },
-                        MIN: { active: !!this.attributeSettings.methodMinAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MIN },
-                        MODE: { active: !!this.attributeSettings.methodModeAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MODE },
-                        SUM: { active: !!this.attributeSettings.methodSumAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.SUM }
+                        AVG: { active: !!this.attributeConfig?.methodAvgAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.AVG },
+                        COUNT: { active: !!this.attributeConfig?.methodCountAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.COUNT },
+                        DELTA: { active: !!this.attributeConfig?.methodDeltaAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.DELTA },
+                        MAX: { active: !!this.attributeConfig?.methodMaxAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MAX },
+                        MEDIAN: { active: !!this.attributeConfig?.methodMedianAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MEDIAN },
+                        MIN: { active: !!this.attributeConfig?.methodMinAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MIN },
+                        MODE: { active: !!this.attributeConfig?.methodModeAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MODE },
+                        SUM: { active: !!this.attributeConfig?.methodSumAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.SUM }
                         };
 
                     // Iterate over the mapping, make a dataset for every active method
@@ -1342,7 +1043,7 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
             name: label,
             type: 'bar',
             data: [] as [any, any][],
-            stack: this.chartSettings.defaultStacked ? `${formula}` : undefined,
+            stack: this.stacked ? `${formula}` : undefined,
             barWidth: undefined,
             lineStyle: {
                 color: color,
@@ -1510,14 +1211,14 @@ export class OrAttributeBarChart extends translate(i18next)(LitElement) {
                 return;
             } else if (this._data.every(entry => entry.data.length == 1) && this._intervalConfig!.millis == (this._endOfPeriod! - this._startOfPeriod!)) {
                 //For single intervals, eCharts convertToPixel bugs.
-               this._data.forEach((value, index) => {
+               this._data.forEach((value) => {
                    let width = 50 / (barAmount * 1.2)
                    value.barWidth = `${width}%`;
                });
 
              } else {
 
-                this._data.forEach((value, index) => {
+                this._data.forEach((value) => {
                     const startTime = this._data?.find(entry => entry.data.length > 0)?.data?.[0][0]; //find some dataset that has a timestamp
                     const endTime = startTime + this._intervalConfig!.millis;
                     const pixelStart = this._chart!.convertToPixel({xAxisIndex: 0}, startTime);
