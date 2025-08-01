@@ -21,15 +21,9 @@
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
     "@openremote/or-attribute-card": "workspace:*",
-    "@openremote/or-attribute-history": "workspace:*",
-    "@openremote/or-attribute-input": "workspace:*",
     "@openremote/or-chart": "workspace:*",
     "@openremote/or-components": "workspace:*",
-    "@openremote/or-icon": "workspace:*",
-    "@openremote/or-map": "workspace:*",
-    "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "@openremote/rest": "workspace:*",
     "lit": "^2.0.2"
   },
   "devDependencies": {

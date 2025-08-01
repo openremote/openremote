@@ -20,9 +20,12 @@
   "dependencies": {
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
+    "@openremote/or-asset-tree": "workspace:*",
     "@openremote/or-attribute-input": "workspace:*",
+    "@openremote/or-attribute-picker": "workspace:*",
     "@openremote/or-components": "workspace:*",
     "@openremote/or-icon": "workspace:*",
+    "@openremote/or-map": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "@openremote/or-tree-menu": "workspace:*",

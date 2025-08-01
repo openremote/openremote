@@ -45,6 +45,7 @@
     "@material/tab-bar": "^9.0.0",
     "@material/textfield": "^9.0.0",
     "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "lit": "^2.0.2"

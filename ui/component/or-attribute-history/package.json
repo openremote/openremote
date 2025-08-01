@@ -20,6 +20,7 @@
   "dependencies": {
     "@material/data-table": "^9.0.0",
     "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
     "@openremote/or-chart": "workspace:*",
     "@openremote/or-components": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",

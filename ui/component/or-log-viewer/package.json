@@ -20,7 +20,10 @@
   "dependencies": {
     "@material/data-table": "^9.0.0",
     "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
+    "@openremote/or-components": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
+    "@openremote/or-translate": "workspace:*",
     "http-link-header": "^1.1.3",
     "lit": "^2.0.2",
     "moment": "^2.29.4",

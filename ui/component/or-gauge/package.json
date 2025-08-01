@@ -19,9 +19,8 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/core": "workspace:*",
-    "@openremote/or-components": "workspace:*",
+    "@openremote/model": "workspace:*",
     "@openremote/or-icon": "workspace:*",
-    "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "gaugeJS": "^1.3.7",
     "lit": "^2.0.2"

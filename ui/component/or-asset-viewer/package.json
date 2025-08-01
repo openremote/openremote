@@ -21,6 +21,7 @@
     "@material/data-table": "^9.0.0",
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
+    "@openremote/or-asset-tree": "workspace:*",
     "@openremote/or-attribute-history": "workspace:*",
     "@openremote/or-attribute-input": "workspace:*",
     "@openremote/or-chart": "workspace:*",

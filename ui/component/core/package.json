@@ -20,6 +20,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "@openremote/model": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/rest": "workspace:*",
     "i18next": "^21.5.3",
