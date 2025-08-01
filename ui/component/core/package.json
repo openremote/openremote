@@ -1,6 +1,6 @@
 {
   "name": "@openremote/core",
-  "version": "1.7.0-snapshot",
+  "version": "1.8.0-snapshot",
   "description": "OpenRemote 3.x Core",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "test": "echo \"No tests\" && exit 0",
-    "prepack": "npx webpack"
+    "prepack": "npx rspack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",

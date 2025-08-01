@@ -36,6 +36,8 @@ clean {
     doLast {
         def dir = new File("${projectDir}/dist")
         dir.deleteDir()
+        def libs = new File("${projectDir}/lib")
+        libs.deleteDir()
     }
 }
 

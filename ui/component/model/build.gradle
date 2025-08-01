@@ -36,6 +36,7 @@ npmBuild.dependsOn generateTypeScript
 clean {
     doLast {
         delete "dist"
+        delete "lib"
     }
 }
 

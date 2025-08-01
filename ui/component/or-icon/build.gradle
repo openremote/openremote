@@ -9,6 +9,7 @@ tasks.register('copyMdiFont', Exec) {
 tasks.register('clean') {
     doLast {
         delete "dist"
+        delete "lib"
     }
 }
 

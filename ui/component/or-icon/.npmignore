@@ -3,6 +3,7 @@ build.gradle
 test/
 src/
 webpack.config.js
+rspack.config.js
 tsconfig.json
 dist/Material Design Icons/
 *.tsbuildinfo
