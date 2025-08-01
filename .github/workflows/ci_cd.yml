@@ -664,7 +664,7 @@ jobs:
           path: test/build/reports/tests
 
       - name: Cleanup backend tests
-        if: ${{ steps.test-backend-command.outputs.value != '' && steps.test-ui-apps-command.outputs.value != '' }}
+        if: ${{ steps.test-backend-command.outputs.value != '' }}
         run: ${{ steps.run-backend-tests.outputs.cleanup }}
 
       - name: Run install dist
