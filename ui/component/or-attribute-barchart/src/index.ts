@@ -37,6 +37,7 @@ echarts.use([GridComponent, TooltipComponent, DataZoomComponent, BarChart, Canva
  */
 export interface BarChartAttributeConfig {
     rightAxisAttributes?: AttributeRef[];
+    faintAttributes?: AttributeRef[];
     methodMaxAttributes?: AttributeRef[];
     methodMinAttributes?: AttributeRef[];
     methodAvgAttributes?: AttributeRef[];
@@ -260,6 +261,8 @@ const style = css`
 @customElement("or-attribute-barchart")
 export class OrAttributeBarChart extends LitElement {
 
+    public static readonly DEFAULT_COLORS = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
+
     /**
      * Asset data to display in the bar chart. This array needs to be populated.
      * Used for the chart legend, information about units, and retrieval of data points.
@@ -304,7 +307,7 @@ export class OrAttributeBarChart extends LitElement {
      * The array corresponds with {@link assetAttributes}, so the 1st color will be used for the 1st attribute.
      */
     @property({type: Array})
-    public readonly colors: string[] = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
+    public readonly colors: string[] = OrAttributeBarChart.DEFAULT_COLORS;
 
     /**
      * The query object to request attribute data / data points with.
@@ -832,6 +835,7 @@ export class OrAttributeBarChart extends LitElement {
                 const shownOnRightAxis = !!this.attributeConfig?.rightAxisAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
                 const color = this.attributeColors.find(x => x[0].id === asset.id && x[0].name === attribute.name)?.[1];
                 const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);
+                const faint = !!this.attributeConfig?.faintAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
                 const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
                 const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
                 const colourIndex = index % this.colors.length;
@@ -852,8 +856,8 @@ export class OrAttributeBarChart extends LitElement {
                 for (const [key, value] of (Object.entries(methodMapping)).sort(([keyA], [keyB]) => keyA.localeCompare(keyB))) {
                     if (value.active) {
                         //Initiate query Attribute Data
-                        const dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, value.formula, asset.name + " " + label + " \n" + i18next.t(value.formula), options, unit);
-                        dataset.index = (index + 1) * (Object.keys(methodMapping).indexOf(key) + 1);
+                        const dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, value.formula, faint, asset.name + " " + label + " \n" + i18next.t(value.formula), options, unit);
+                        dataset.index = (Object.keys(methodMapping).indexOf(key) * 1000) + (index + 1);
                         dataset.assetId = asset.id;
                         dataset.attrName = attribute.name;
                         dataset.unit = unit;
@@ -892,8 +896,8 @@ export class OrAttributeBarChart extends LitElement {
         }
     }
 
-    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string, from: number, to: number, formula: AssetDatapointIntervalQueryFormula, label?: string, options?: any, _unit?: any): Promise<BarChartData> {
-        const dataset = this._getDefaultDatasetOptions(label ?? "", formula, color);
+    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string, from: number, to: number, formula: AssetDatapointIntervalQueryFormula, faint = false, label?: string, options?: any, _unit?: any): Promise<BarChartData> {
+        const dataset = this._getDefaultDatasetOptions(label ?? "", formula, color, faint);
 
         if (asset.id && attribute.name && this.datapointQuery) {
             const datapointQuery = JSON.parse(JSON.stringify(this.datapointQuery)); // recreating object, since the changes shouldn't apply to parent components; only or-attribute-barchart itself.
@@ -1035,14 +1039,15 @@ export class OrAttributeBarChart extends LitElement {
         };
     }
 
-    protected _getDefaultDatasetOptions(name: string, formula: string, color: string): BarChartData {
+    protected _getDefaultDatasetOptions(name: string, formula: string, color: string, faint = false): BarChartData {
         return {
             name: name,
             type: "bar",
             data: [] as [number, number][],
             stack: this.stacked ? `${formula}` : undefined,
-            lineStyle: {
-                color: color
+            itemStyle: {
+                color: color,
+                opacity: faint ? 0.31 : 1,
             },
             emphasis: {},
             label: {

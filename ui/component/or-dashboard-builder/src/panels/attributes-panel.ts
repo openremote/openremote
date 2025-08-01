@@ -145,10 +145,15 @@ const styling = css`
         visibility: visible;
     }
 
+    .button-action[disabled] {
+        opacity: 0.5;
+        cursor: initial;
+    }
+
     .button-action:hover {
         --or-icon-fill: var(--or-icon-fill--hover, var(--or-app-color4));
     }
-`
+`;
 
 @customElement('attributes-panel')
 export class AttributesPanel extends LitElement {

@@ -1,18 +1,20 @@
 import {css, html, TemplateResult} from "lit";
 import {customElement} from "lit/decorators.js";
 import {WidgetSettings} from "../util/widget-settings";
-import "../panels/attributes-panel";
+import "../panels/attributes-chart-panel";
 import "../util/settings-panel";
 import {i18next} from "@openremote/or-translate";
 import {AttributeAction, AttributeActionEvent, AttributesSelectEvent} from "../panels/attributes-panel";
-import {Asset, AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, Attribute, AttributeRef} from "@openremote/model";
+import {Asset, AssetDescriptor, Attribute, AttributeRef} from "@openremote/model";
 import {BarChartWidgetConfig} from "../widgets/barchart-widget";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {when} from "lit/directives/when.js";
 import moment from "moment/moment";
-import {ListItem, ListType, OrMwcList, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
-import {showDialog, OrMwcDialog, DialogAction} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {IntervalConfig} from "@openremote/or-attribute-barchart";
+import {ListItem, ListType, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
+import {showDialog, OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {IntervalConfig, OrAttributeBarChart} from "@openremote/or-attribute-barchart";
+import {OrChart} from "@openremote/or-chart";
+import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 
 const styling = css`
     .switch-container {
@@ -20,7 +22,7 @@ const styling = css`
         align-items: center;
         justify-content: space-between;
     }
-`
+`;
 
 
 @customElement("barchart-settings")
@@ -55,71 +57,79 @@ export class BarChartSettings extends WidgetSettings {
         const attrSettings = this.widgetConfig.attributeSettings;
         const min = this.widgetConfig.chartOptions.options?.scales?.y?.min;
         const max = this.widgetConfig.chartOptions.options?.scales?.y?.max;
-        const isMultiAxis = attrSettings.rightAxisAttributes.length > 0;
-        const attributeLabelCallback = (asset: Asset, attribute: Attribute<any>, attributeLabel: string) => {
-            const isOnRightAxis = isMultiAxis && attrSettings.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
-            //Find which calculation methods are active
-            const methodList = Object.entries(this.widgetConfig.attributeSettings)
-                .filter(([key]) => key.includes('method'))
-                .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
-                .reduce((activeKeys, [key, attributeRefs]) => {
-                    const isActive = attributeRefs.some(
-                        (ref: AttributeRef) => ref.id === asset?.id && ref.name === attribute.name
-                    );
-                    if (isActive) {
-                        activeKeys.push(i18next.t(key));
-                    }
-                    return activeKeys;
-                }, [] as any[]);
+        const isMultiAxis = !!attrSettings.rightAxisAttributes?.length;
 
-            return html`
-                <span>${asset.name}</span>
-                <span style="font-size:14px; color:grey;">${attributeLabel}</span>
-                ${when(isOnRightAxis, () => html`
-                    <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value="right"></or-translate></span>
-                `)}
-                <span style="font-size:14px; font-style:italic; color:grey;"><or-translate value=${methodList.length > 0 ? methodList : "selectMethod".toUpperCase()}></or-translate></span>
-            `
-        }
-
+        const attributeIconCallback = (asset: Asset, attribute: Attribute<any>, descriptor?: AssetDescriptor) => {
+            let color = this.widgetConfig.attributeColors?.find(a => a[0].id === asset.id && a[0].name === attribute.name)?.[1]?.replace('#', '');
+            if(!color) {
+                const index = this.widgetConfig.attributeRefs?.findIndex(ref => ref.id === asset.id && ref.name === attribute.name);
+                if(index >= 0) color = OrChart.DEFAULT_COLORS?.[index]?.replace('#', '');
+            }
+            return html`<span>${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, color)}</span>`;
+        };
 
         const attributeActionCallback = (attributeRef: AttributeRef): AttributeAction[] => {
+            const faint = !!this.widgetConfig?.attributeSettings?.faintAttributes?.find(ref => ref.id === attributeRef.id && ref.name === attributeRef.name);
+            let color = this.widgetConfig?.attributeColors?.find(([ref, _]) => ref.id === attributeRef.id && ref.name === attributeRef.name)?.[1];
+            let customColor = false;
+            if (!color) {
+                const index = this.widgetConfig?.attributeRefs?.findIndex(ref => ref.id === attributeRef.id && ref.name === attributeRef.name);
+                if (index >= 0) color = OrAttributeBarChart.DEFAULT_COLORS[index];
+            } else {
+                customColor = true;
+            }
             return [
                 {
-                    icon: 'calculator-variant-outline',
-                    tooltip: i18next.t('algorithmMethod'),
+                    icon: "arrow-up-circle",
+                    tooltip: "Order up",
                     active: false,
+                    disabled: this.widgetConfig.attributeRefs.indexOf(attributeRef) === 0
+                },
+                {
+                    icon: "arrow-down-circle",
+                    tooltip: "Order down",
+                    active: false,
+                    disabled: this.widgetConfig.attributeRefs.indexOf(attributeRef) === (this.widgetConfig.attributeRefs.length - 1)
+                },
+                {
+                    icon: "calculator-variant-outline",
+                    tooltip: i18next.t("algorithmMethod"),
+                    active: true,
+                    color: color,
                     disabled: false
                 },
                 {
-                    icon: 'palette',
-                    tooltip: i18next.t('dashboard.lineColor'),
-                    active: false,
+                    icon: "palette",
+                    tooltip: i18next.t("dashboard.lineColor"),
+                    active: customColor,
+                    color: color,
                     disabled: false
                 },
                 {
-                    icon: this.widgetConfig.attributeSettings.rightAxisAttributes.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
-                    tooltip: i18next.t('dashboard.toggleAxis'),
-                    active: false,
+                    icon: "arrange-send-backward",
+                    tooltip: i18next.t("dashboard.faint"),
+                    active: faint,
+                    color: color,
                     disabled: false
                 },
                 {
-                    icon: 'mdi-blank',
+                    icon: this.widgetConfig.attributeSettings.rightAxisAttributes?.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
+                    tooltip: i18next.t("dashboard.toggleAxis"),
                     active: false,
-                    tooltip: '',
-                    disabled: true
+                    color: color,
+                    disabled: false
                 }
-            ]
-        }
+            ];
+        };
         return html`
             <div>
                 <!-- Attribute selection -->
                 <settings-panel displayName="attributes" expanded="${true}">
-                    <attributes-panel .attributeRefs="${this.widgetConfig.attributeRefs}" multi="${true}" onlyDataAttrs="${true}" .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
-                                      .attributeLabelCallback="${attributeLabelCallback}" .attributeActionCallback="${attributeActionCallback}"
+                    <attributes-chart-panel .attributeRefs="${this.widgetConfig.attributeRefs}" multi onlyDataAttrs .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
+                                      .attributeIconCallback=${attributeIconCallback} .attributeActionCallback="${attributeActionCallback}"
                                       @attribute-action="${(ev: AttributeActionEvent) => this.onAttributeAction(ev)}"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
-                    ></attributes-panel>
+                    ></attributes-chart-panel>
                 </settings-panel>
 
                 <!-- Time options -->
@@ -283,37 +293,88 @@ export class BarChartSettings extends WidgetSettings {
             case "calculator-variant-outline":
                 this.openAlgorithmMethodsDialog(attributeRef);
                 break;
+            case "arrange-send-backward":
+                this.onFaintClick(attributeRef);
+                break;
+            case "arrow-up-circle":
+                this.onArrowUpClick(attributeRef);
+                break;
+            case "arrow-down-circle":
+                this.onArrowDownClick(attributeRef);
+                break;
             default:
                 console.warn('Unknown attribute panel action:', action);
         }
+    }
+
+    protected onFaintClick(attrRef: AttributeRef) {
+        this.widgetConfig.attributeSettings.faintAttributes ??= [];
+        const index = this.widgetConfig.attributeSettings.faintAttributes.findIndex(attr => attr.id === attrRef.id && attr.name === attrRef.name);
+        if (index > 0) {
+            this.widgetConfig.attributeSettings.faintAttributes = this.widgetConfig.attributeSettings.faintAttributes.filter(attr => attr.id !== attrRef.id && attr.name !== attrRef.name);
+        } else {
+            this.widgetConfig.attributeSettings.faintAttributes.push(attrRef);
+        }
+        this.notifyConfigUpdate();
+    }
+
+    protected onArrowUpClick(attrRef: AttributeRef) {
+        const index = this.widgetConfig.attributeRefs.indexOf(attrRef);
+        if (index > 0) {
+            const temp = this.widgetConfig.attributeRefs[index - 1];
+            this.widgetConfig.attributeRefs[index - 1] = attrRef;
+            this.widgetConfig.attributeRefs[index] = temp;
+        }
+        this.notifyConfigUpdate();
+    }
+
+    protected onArrowDownClick(attrRef: AttributeRef) {
+        const index = this.widgetConfig.attributeRefs.indexOf(attrRef);
+        if (index < this.widgetConfig.attributeRefs.length - 1) {
+            const temp = this.widgetConfig.attributeRefs[index + 1];
+            this.widgetConfig.attributeRefs[index + 1] = attrRef;
+            this.widgetConfig.attributeRefs[index] = temp;
+        }
+        this.notifyConfigUpdate();
     }
 
     // When the list of attributeRefs is changed by the asset selector,
     // we should remove the settings references for the attributes that got removed.
     // Also update the WidgetConfig attributeRefs field as usual
     protected onAttributesSelect(ev: AttributesSelectEvent) {
-        const removedAttributeRefs = this.widgetConfig.attributeRefs.filter(ar => !ev.detail.attributeRefs.includes(ar));
-        removedAttributeRefs.forEach(raf => {
-            this.removeFromAttributeSettings(raf);
-            this.removeFromColorPickedAttributes(raf);
+        const removedAttributeRefs = this.widgetConfig.attributeRefs.filter(ar => !ev.detail.attributeRefs.find(newRefs => newRefs.id === ar.id && newRefs.name === ar.name));
+        removedAttributeRefs.forEach(ref => {
+            this.removeFromAttributeSettings(ref);
+            this.removeFromAttributeColors(ref);
         });
-
         this.widgetConfig.attributeRefs = ev.detail.attributeRefs;
+
+        // Loop through attribute methods (MIN, AVG, MAX etc), and place attributes in 'AVG' if not in any yet.
+        const settings = this.widgetConfig.attributeSettings;
+        const methodRefsList = [...settings.methodAvgAttributes ?? [], ...settings.methodMinAttributes ?? [], ...settings.methodMaxAttributes ?? [],
+            ...settings.methodDeltaAttributes ?? [], ...settings.methodMedianAttributes ?? [], ...settings.methodModeAttributes ?? [],
+            ...settings.methodSumAttributes ?? [], ...settings.methodCountAttributes ?? []
+        ];
+        this.widgetConfig.attributeRefs.forEach(ref => {
+            if(!methodRefsList.find(methodRef => methodRef.id === ref.id && methodRef.name === ref.name)) {
+                this.widgetConfig.attributeSettings.methodAvgAttributes?.push(ref);
+            }
+        });
         this.notifyConfigUpdate();
     }
 
     protected removeFromAttributeSettings(attributeRef: AttributeRef) {
         const settings = this.widgetConfig.attributeSettings;
         (Object.keys(settings) as (keyof typeof settings)[]).forEach(key => {
-            settings[key] = settings[key].filter((ar: AttributeRef) => (ar.id !== attributeRef.id && ar.name !== attributeRef.name));
+            settings[key] = settings[key]!.filter((ar: AttributeRef) => (ar.id !== attributeRef.id && ar.name !== attributeRef.name));
         });
     }
 
     protected toggleAttributeSetting(
         setting: keyof BarChartWidgetConfig["attributeSettings"],
-        attributeRef: AttributeRef,
+        attributeRef: AttributeRef
     ): void {
-        const attributes = this.widgetConfig.attributeSettings[setting];
+        const attributes = this.widgetConfig.attributeSettings[setting] ?? [];
         const index = attributes.findIndex(
             (item: AttributeRef) => item.id === attributeRef.id && item.name === attributeRef.name
         );
@@ -326,24 +387,22 @@ export class BarChartSettings extends WidgetSettings {
     }
 
     protected openColorPickDialog(attributeRef: AttributeRef) {
-        const colorInput = document.createElement('input');
-        colorInput.type = 'color';
-        colorInput.style.border = 'none';
-        colorInput.style.height = '31px';
-        colorInput.style.width = '31px';
-        colorInput.style.padding = '1px 3px';
-        colorInput.style.minHeight = '22px';
-        colorInput.style.minWidth = '30px';
-        colorInput.style.cursor = 'pointer';
-        colorInput.addEventListener('change', (e: any) => {
+        const colorInput = document.createElement("input");
+        colorInput.type = "color";
+        colorInput.style.border = "none";
+        colorInput.style.height = "31px";
+        colorInput.style.width = "31px";
+        colorInput.style.padding = "1px 3px";
+        colorInput.style.minHeight = "22px";
+        colorInput.style.minWidth = "30px";
+        colorInput.style.cursor = "pointer";
+        colorInput.addEventListener("change", (e: any) => {
             const color = e.target.value;
-            const existingIndex = this.widgetConfig.colorPickedAttributes.findIndex(item =>
-                item.attributeRef.id === attributeRef.id && item.attributeRef.name === attributeRef.name
-            );
+            const existingIndex = this.widgetConfig.attributeColors.findIndex(([ref, _]) => ref.id === attributeRef.id && ref.name === attributeRef.name);
             if (existingIndex >= 0) {
-                this.widgetConfig.colorPickedAttributes[existingIndex].color = color;
+                this.widgetConfig.attributeColors[existingIndex][1] = color;
             } else {
-                this.widgetConfig.colorPickedAttributes.push({attributeRef, color});
+                this.widgetConfig.attributeColors.push([attributeRef, color]);
             }
             this.notifyConfigUpdate();
         });
@@ -351,16 +410,16 @@ export class BarChartSettings extends WidgetSettings {
     }
 
 
-    protected removeFromColorPickedAttributes(attributeRef: AttributeRef) {
-        this.widgetConfig.colorPickedAttributes = this.widgetConfig.colorPickedAttributes.filter(
-            item => item.attributeRef.id !== attributeRef.id || item.attributeRef.name !== attributeRef.name
+    protected removeFromAttributeColors(attributeRef: AttributeRef) {
+        this.widgetConfig.attributeColors = this.widgetConfig.attributeColors.filter(
+            ([ref, _]) => ref.id !== attributeRef.id || ref.name !== attributeRef.name
         );
     }
 
 
     protected openAlgorithmMethodsDialog(attributeRef: AttributeRef) {
         const methodList: ListItem[] = Object.entries(this.widgetConfig.attributeSettings)
-            .filter(([key]) => key.includes('method'))
+            .filter(([key]) => key.includes("method"))
             .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
             .map(([key, attributeRefs]) => {
                 const isActive = attributeRefs.some(

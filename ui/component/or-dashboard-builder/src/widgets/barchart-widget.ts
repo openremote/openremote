@@ -9,27 +9,16 @@ import { when } from "lit/directives/when.js";
 import moment from "moment";
 import {OrAssetWidget} from "../util/or-asset-widget";
 import { customElement, state } from "lit/decorators.js";
-import {WidgetConfig} from "../util/widget-config";
+import {AssetWidgetConfig} from "../util/widget-config";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {BarChartSettings} from "../settings/barchart-settings";
 import {WidgetSettings} from "../util/widget-settings";
 import "@openremote/or-attribute-barchart";
-import {OrAttributeBarChart} from "@openremote/or-attribute-barchart";
+import {BarChartAttributeConfig, OrAttributeBarChart} from "@openremote/or-attribute-barchart";
 
-export interface BarChartWidgetConfig extends WidgetConfig {
-    attributeRefs: AttributeRef[];
-    colorPickedAttributes: Array<{ attributeRef: AttributeRef; color: string }>;
-    attributeSettings: {
-        rightAxisAttributes: AttributeRef[],
-        methodAvgAttributes: AttributeRef[],
-        methodMinAttributes: AttributeRef[],
-        methodMaxAttributes: AttributeRef[],
-        methodDeltaAttributes: AttributeRef[],
-        methodMedianAttributes: AttributeRef[],
-        methodModeAttributes: AttributeRef[],
-        methodSumAttributes: AttributeRef[],
-        methodCountAttributes: AttributeRef[],
-    },
+export interface BarChartWidgetConfig extends AssetWidgetConfig {
+    attributeColors: [AttributeRef, string][];
+    attributeSettings: BarChartAttributeConfig,
     datapointQuery: AssetDatapointQueryUnion;
     chartOptions?: any;
     showTimestampControls: boolean;
@@ -51,18 +40,8 @@ function getDefaultWidgetConfig(): BarChartWidgetConfig {
     const endDate = dateFunc![1]== 1 ? moment().endOf(dateFunc![0]) : moment();
     return {
         attributeRefs: [],
-        colorPickedAttributes: [],
-        attributeSettings: {
-            rightAxisAttributes: [],
-            methodAvgAttributes: [],
-            methodMinAttributes: [],
-            methodMaxAttributes: [],
-            methodDeltaAttributes: [],
-            methodMedianAttributes: [],
-            methodModeAttributes: [],
-            methodSumAttributes: [],
-            methodCountAttributes: []
-        },
+        attributeColors: [],
+        attributeSettings: {},
         datapointQuery: {
             type: "interval",
             fromTimestamp: startDate.toDate().getTime(),
@@ -210,8 +189,7 @@ export class BarChartWidget extends OrAssetWidget {
             `, () => {
                 return html`
                     <or-attribute-barchart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
-                                           .attributeColors="${this.widgetConfig?.colorPickedAttributes != null ? this.widgetConfig?.colorPickedAttributes : []}"
-                                           .attributeConfig="${this.widgetConfig?.attributeSettings != null ? this.widgetConfig.attributeSettings : {}}"
+                                           .attributeColors="${this.widgetConfig?.attributeColors}" .attributeConfig="${this.widgetConfig?.attributeSettings}"
                                            ?showLegend=${this.widgetConfig?.chartSettings?.showLegend}
                                            ?stacked=${this.widgetConfig?.chartSettings?.defaultStacked}
                                            .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
