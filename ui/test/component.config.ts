@@ -12,7 +12,7 @@ export const defineCtConfig = (path: string) => {
     testMatch: "*.test.ts",
     /* Fail the build on CI if you accidentally left test.only in the source code. */
     forbidOnly: Boolean(CI),
-    /* Retry on CI only */
+    /* Retry failed tests twice on CI only to allow flaky behavior such as test timeouts to be retried */
     retries: CI ? 2 : 0,
     /* Reporter to use. See https://playwright.dev/docs/test-reporters */
     reporter: [["html", { outputFolder: "component-test-report" }]],
