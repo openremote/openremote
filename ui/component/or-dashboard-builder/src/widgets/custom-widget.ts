@@ -8,6 +8,7 @@ import { AssetWidgetConfig } from "../util/widget-config";
 import { CustomSettings } from "../settings/custom-settings";
 import "@openremote/or-icon";
 import "@openremote/or-attribute-input";
+import type { ValueMapping } from "../settings/custom-settings";
 
 export interface CustomWidgetConfig extends AssetWidgetConfig {
   customFieldTwo: number;
@@ -15,7 +16,7 @@ export interface CustomWidgetConfig extends AssetWidgetConfig {
   showHelperText: boolean;
   icon?: string;
   showIcon: boolean;
-  valueMappings?: Array<{ value: string; color: string }>;
+  valueMappings?: ValueMapping[];
 }
 
 function getDefaultWidgetConfig(): CustomWidgetConfig {
