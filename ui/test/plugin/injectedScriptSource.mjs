@@ -1,3 +1,8 @@
+// This file is required for the component testing setup to register components. This source is injected into the test app that renders the components and must not be changed.
+//
+// The code in this file has been copied from https://github.com/microsoft/playwright/blob/432f03dc70b6e4e405327057a6961d7872968e35/packages/playwright-ct-core/src/injected,
+// because this isn't exported by Playwright at the time of writing. See issue https://github.com/microsoft/playwright/issues/36889 for updates on this.
+
 export function isImportRef(value) {
   return typeof value === "object" && value && value.__pw_type === "importRef";
 }
