@@ -500,7 +500,7 @@ export class OrAttributeBarChart extends LitElement {
                     <div id="chart-controls">
                         <div id="controls">
                             ${when(this.timestampControls && this.timePrefixKey && this.timePrefixOptions && this.timeWindowKey && this.timeWindowOptions,
-                                    () => this._getTimeControlsTemplate(disabled),
+                                    () => this._getTimeControlsTemplate(disabled || !!this.timeframe),
                                     () => html`
                                         <div style="display: ruby; flex-direction: column; align-items: center">
                                             <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePrefixKey}" disabled></or-mwc-input>
@@ -522,8 +522,8 @@ export class OrAttributeBarChart extends LitElement {
             <div class="period-controls">
                 <!-- Time prefix selection -->
                 ${getContentWithMenuTemplate(
-                        html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}" ?disabled="${!!this.timeframe}"></or-mwc-input>`,
-                        this.timePrefixOptions.map(option => ({value: option} as ListItem)),
+                        html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}" ?disabled="${disabled}"></or-mwc-input>`,
+                        disabled ? null as any : this.timePrefixOptions.map(option => ({value: option} as ListItem)),
                         this.timePrefixKey,
                         (value: string | string[]) => {
                             this.timeframe = undefined; // remove any custom start & end times
@@ -536,8 +536,8 @@ export class OrAttributeBarChart extends LitElement {
                 )}
                 <!-- Time window selection -->
                 ${getContentWithMenuTemplate(
-                        html`<or-mwc-input .type="${InputType.BUTTON}" label="${this._isCustomWindow ? "timeframe" : this.timeWindowKey}" ?disabled="${!!this.timeframe}"></or-mwc-input>`,
-                        Array.from(this.timeWindowOptions.keys()).map(key => ({value: key} as ListItem)),
+                        html`<or-mwc-input .type="${InputType.BUTTON}" label="${this._isCustomWindow ? "timeframe" : this.timeWindowKey}" ?disabled="${disabled}"></or-mwc-input>`,
+                        disabled ? null as any : Array.from(this.timeWindowOptions.keys()).map(key => ({value: key} as ListItem)),
                         this.timeWindowKey,
                         (value: string | string[]) => {
                             this.timeframe = undefined; // remove any custom start & end times
@@ -549,7 +549,7 @@ export class OrAttributeBarChart extends LitElement {
                         true
                 )}
                 <!-- Interval selection -->
-                ${getContentWithMenuTemplate(html`<or-mwc-input .type="${InputType.BUTTON}" label="interval: ${this._intervalConfig?.displayName}" ?disabled="${false}"></or-mwc-input>`,
+                ${getContentWithMenuTemplate(html`<or-mwc-input .type="${InputType.BUTTON}" label="interval: ${this._intervalConfig?.displayName}"></or-mwc-input>`,
                         Array.from(this.intervalOptions.keys()).map(key => ({value: key} as ListItem)),
                         this.interval,
                         value => this.interval = value as BarChartInterval,
