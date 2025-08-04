@@ -66,6 +66,12 @@ const styling = css`
     box-sizing: border-box;
   }
 
+  .info strong {
+    font-size: 1.5rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
   /* Error-Text */
   #error-txt {
     height: 100%;
@@ -73,6 +79,11 @@ const styling = css`
     justify-content: center;
     align-items: center;
     text-align: center;
+  }
+
+  .timestamp {
+    font-size: 12px;
+    color: #777777ff;
   }
 `;
 
@@ -163,26 +174,25 @@ export class CustomWidget extends OrAssetWidget {
 
   // Responsive Icon-Größe
   protected firstUpdated(changed: PropertyValues): void {
-  super.firstUpdated(changed);
-  let lastSize = 0;
-  const ro = new ResizeObserver(entries => {
-    for (const entry of entries) {
-      const { width, height } = entry.contentRect;
-      const newSize = Math.min(width, height) * 0.4;
-      // Nur bei echtem Unterschied (z.B. >0.5px) updaten
-      if (Math.abs(newSize - lastSize) > 0.5) {
-        lastSize = newSize;
-        // Asynchron setzen, um den Resize‑Loop zu unterbrechen
-        requestAnimationFrame(() => {
-          this.style.setProperty("--icon-size", `${newSize}px`);
-        });
+    super.firstUpdated(changed);
+    let lastSize = 0;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        const newSize = Math.min(width, height) * 0.4;
+        // Nur bei echtem Unterschied (z.B. >0.5px) updaten
+        if (Math.abs(newSize - lastSize) > 0.5) {
+          lastSize = newSize;
+          // Asynchron setzen, um den Resize‑Loop zu unterbrechen
+          requestAnimationFrame(() => {
+            this.style.setProperty("--icon-size", `${newSize}px`);
+          });
+        }
       }
-    }
-  });
-  ro.observe(this);
-  this._resizeObserver = ro;
-}
-
+    });
+    ro.observe(this);
+    this._resizeObserver = ro;
+  }
 
   protected render(): TemplateResult {
     const cfg = this.widgetConfig;
@@ -200,9 +210,12 @@ export class CustomWidget extends OrAssetWidget {
     // Jetzt ist attribute garantiert definiert:
     const raw = attribute.value;
     const rawStr = String(raw);
+    const epoch = this.formatUpdatedAt(attribute.timestamp);
 
     console.log(rawStr);
-
+    console.log(attribute.type);
+    console.log(attribute);
+  
     // 4) Mapping‑Farbe ermitteln
     let iconColor = "inherit";
     for (const m of cfg.valueMappings ?? []) {
@@ -226,17 +239,55 @@ export class CustomWidget extends OrAssetWidget {
                 ${rawValue === true ? "Ja" : "Nein"}
               </div> `
           : html`<!-- Alle anderen Typen per at‑input -->
-              <or-attribute-input
-                class="attr-input"
-                fullWidth
-                .assetType="${asset.type}"
-                .attribute="${attribute}"
-                .assetId="${asset.id}"
-                .disabled="${!asset}"
-                .readonly="${cfg.readonly || this.getEditMode!()}"
-                .hasHelperText="${cfg.showHelperText}"
-              ></or-attribute-input> `}
+              <div class="info">
+                <strong>${attribute.name}:</strong>
+                ${attribute.value}
+              </div> `}
+        ${cfg.showHelperText ? html` <div class="timestamp">${epoch}</div> ` : null}
       </div>
     `;
+  }
+
+  private applyMappings() {
+    const maps = this.widgetConfig.valueMappings ?? [];
+    for (const m of maps) {
+      switch (m.type) {
+        case "special":
+          break;
+
+        case "regex":
+          break;
+        case "range":
+          break;
+        case "value":
+          break;
+      }
+    }
+  }
+
+  private formatUpdatedAt(epoch: number): string {
+    const date = new Date(epoch < 1e12 ? epoch * 1000 : epoch);
+
+    const parts = new Intl.DateTimeFormat("de-DE", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(date);
+
+    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+
+    let weekday = get("weekday"); // z.B. "Mo."
+    if (!weekday.endsWith(".")) weekday = weekday + "."; // sicherstellen, dass Punkt da ist
+    const day = get("day"); // z.B. "4"
+    const month = get("month"); // z.B. "Aug." – enthält meist schon den Punkt
+    const year = get("year");
+    const hour = get("hour");
+    const minute = get("minute");
+
+    return `Aktualisiert am: ${weekday}, ${day}. ${month} ${year} ${hour}:${minute}`;
   }
 }

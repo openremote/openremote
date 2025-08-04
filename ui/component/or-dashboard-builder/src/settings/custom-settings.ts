@@ -295,12 +295,6 @@ export class CustomSettings extends AssetWidgetSettings {
     this.notifyConfigUpdate();
   }
 
-  private onAddMapping() {
-    this.widgetConfig.valueMappings = [...(this.widgetConfig.valueMappings || []), { value: "", color: "#000000" }];
-    this.notifyConfigUpdate();
-    this.showMenu = false;
-  }
-
   private onRemoveMapping(idx: number) {
     this.widgetConfig.valueMappings = this.widgetConfig.valueMappings!.filter((_, i) => i !== idx);
     this.notifyConfigUpdate();
@@ -325,18 +319,12 @@ export class CustomSettings extends AssetWidgetSettings {
   }
 
   private _applyOption(option: string) {
-    switch (option) {
-      case "Option 1":
-        this.addMapping({ value: "A-default", color: "#ff0000", type: option });
-        break;
-      default:
-        this.onAddMapping();
-    }
+    this.addMapping(option);
   }
 
-  private addMapping(newMap: { value: string; color: string; type?: string }) {
+  private addMapping(option: string) {
     // Falls deine valueMappings noch kein "type" kennt, kannst du dein Interface erweitern.
-    this.widgetConfig.valueMappings = [...(this.widgetConfig.valueMappings || []), newMap as any];
+    this.widgetConfig.valueMappings = [...(this.widgetConfig.valueMappings || []), { value: "", color: "#000000", type: option }];
     this.notifyConfigUpdate();
   }
 
