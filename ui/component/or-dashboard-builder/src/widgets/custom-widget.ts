@@ -208,7 +208,7 @@ export class CustomWidget extends OrAssetWidget {
     const epoch = this.formatUpdatedAt(attribute.timestamp);
 
     console.log(rawStr);
-    console.log(attribute.type);
+    console.log(attribute.type === "boolean");
     console.log(attribute);
 
     // 4) Mapping‑Farbe ermitteln

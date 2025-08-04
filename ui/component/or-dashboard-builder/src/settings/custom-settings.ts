@@ -8,6 +8,9 @@ import "@openremote/or-icon";
 
 const ICON_OPTIONS = ["lightbulb", "solar-power", "fan", "water-pump", "fire", "emoticon"];
 export type ValueMapping = { value: string; color: string; type?: string };
+export type RangeMapping = { min: number; max: number; color: string, type: "range" };
+export type SpecialMapping = { kind: "boolean", color: string, type: "special" };
+export type ValueMappingUnion = ValueMapping | RangeMapping | SpecialMapping;
 
 const styling = css`
   :host {
@@ -160,97 +163,141 @@ export class CustomSettings extends AssetWidgetSettings {
 
         <!-- Mapping settings (only if icon is shown) -->
         ${this.widgetConfig.showIcon
-          ? html`
-              <settings-panel displayName="Value Mapping" expanded>
-                <div class="field">
-                  <div class="mapping-list">
-                    ${this.widgetConfig.valueMappings && this.widgetConfig.valueMappings.length
-                      ? Array.from(this.groupedMappings.entries()).map(
-                          ([type, entries]) => html`
-                            <div class="mapping-group">
-                              <div class="group-title">${type === "Allgemein" ? "Mapping" : `Mapping für ${type}`}</div>
-                              ${entries.map(
-                                ({ mapping, idx }) => html`
-                                  <div class="mapping-item">
-                                    <input
-                                      type="text"
-                                      placeholder="Wert"
-                                      .value=${mapping.value}
-                                      @input=${(e: Event) => this.onMappingValueChange(e, idx)}
-                                    />
-                                    <input
-                                      type="color"
-                                      .value=${mapping.color}
-                                      @input=${(e: Event) => this.onMappingColorChange(e, idx)}
-                                    />
-                                    <button @click=${() => this.onRemoveMapping(idx)}>✕</button>
-                                  </div>
+  ? html`
+      <settings-panel displayName="Value Mapping" expanded>
+        <div class="field">
+          <div class="mapping-list">
+            ${this.widgetConfig.valueMappings && this.widgetConfig.valueMappings.length
+              ? Array.from(this.groupedMappings.entries()).map(
+                  ([type, entries]) => html`
+                    <div class="mapping-group">
+                      <div class="group-title">
+                        ${type === "Allgemein" ? "Mapping" : `Mapping für ${type}`}
+                      </div>
+                      ${entries.map(
+                        ({ mapping, idx }: { mapping: ValueMappingUnion; idx: number }) => html`
+                          <div class="mapping-item">
+                            <!-- je nach Typ anderes UI -->
+                            ${mapping.type === "value"
+                              ? html`
+                                  <input
+                                    type="text"
+                                    placeholder="Wert"
+                                    .value=${(mapping as ValueMapping).value}
+                                    @input=${(e: Event) => this.onMappingValueChange(e, idx)}
+                                  />
                                 `
-                              )}
-                            </div>
-                          `
-                        )
-                      : html`<div>Keine Mappings definiert</div>`}
-                  </div>
-                </div>
+                              : null}
 
-                <div class="mapping-actions">
-                  <button
-                    @click=${(e: MouseEvent) => {
-                      e.stopPropagation();
-                      this.showMenu = !this.showMenu;
-                    }}
-                    aria-haspopup="true"
-                    aria-expanded=${this.showMenu}
-                  >
-                    Mapping hinzufügen ▼
-                  </button>
+                            ${mapping.type === "range"
+                              ? html`
+                                  <div class="range-inputs">
+                                    <label>
+                                      Von
+                                      <input
+                                        type="number"
+                                        .value=${(mapping as RangeMapping).min}
+                                        @input=${(e: Event) => this.onRangeChange("min", e, idx)}
+                                      />
+                                    </label>
+                                    <label>
+                                      Bis
+                                      <input
+                                        type="number"
+                                        .value=${(mapping as RangeMapping).max}
+                                        @input=${(e: Event) => this.onRangeChange("max", e, idx)}
+                                      />
+                                    </label>
+                                  </div>
+                                  ${((mapping as RangeMapping).min > (mapping as RangeMapping).max)
+                                    ? html`<div class="error">Min darf nicht größer als Max sein</div>`
+                                    : null}
+                                `
+                              : null}
+                            ${mapping.type === "special"
+                              ? html`
+                                  <select
+                                    .value=${(mapping as SpecialMapping).kind}
+                                    @change=${(e: Event) => this.onSpecialKindChange(e, idx)}
+                                  >
+                                    <option value="null">null</option>
+                                    <option value="NaN">NaN</option>
+                                    <option value="boolean">boolean</option>
+                                    <option value="empty">empty</option>
+                                  </select>
+                                `
+                              : null}
 
-                  ${this.showMenu
-                    ? html`
-                        <div class="dropdown-content" role="menu" aria-label="Mapping Optionen">
-                          ${[
-                            {
-                              title: "Value",
-                              subtitle: "Match a specific text value",
-                              action: () => this._onOptionSelected("value"),
-                            },
-                            {
-                              title: "Range",
-                              subtitle: "Match a numerical range of values",
-                              action: () => this._onOptionSelected("range"),
-                            },
-                            {
-                              title: "Regex",
-                              subtitle: "Match a regular expression with replacement",
-                              action: () => this._onOptionSelected("regex"),
-                            },
-                            {
-                              title: "Special",
-                              subtitle: "Match on null, NaN, boolean and empty values",
-                              action: () => this._onOptionSelected("special"),
-                            },
-                          ].map(
-                            (opt) => html`
-                              <button
-                                class="dropdown-item"
-                                role="menuitem"
-                                @click=${() => {
-                                  opt.action();
-                                }}
-                              >
-                                <div class="item-title">${opt.title}</div>
-                                <div class="item-subtitle">${opt.subtitle}</div>
-                              </button>
-                            `
-                          )}
-                        </div>
-                      `
-                    : null}
+                            <!-- Farbpicker immer -->
+                            <input
+                              type="color"
+                              .value=${(mapping as any).color}
+                              @input=${(e: Event) => this.onMappingColorChange(e, idx)}
+                            />
+                            <button @click=${() => this.onRemoveMapping(idx)}>✕</button>
+                          </div>
+                        `
+                      )}
+                    </div>
+                  `
+                )
+              : html`<div>Keine Mappings definiert</div>`}
+          </div>
+        </div>
+
+        <div class="mapping-actions">
+          <button
+            @click=${(e: MouseEvent) => {
+              e.stopPropagation();
+              this.showMenu = !this.showMenu;
+            }}
+            aria-haspopup="true"
+            aria-expanded=${this.showMenu}
+          >
+            Mapping hinzufügen ▼
+          </button>
+
+          ${this.showMenu
+            ? html`
+                <div class="dropdown-content" role="menu" aria-label="Mapping Optionen">
+                  ${[
+                    {
+                      title: "Value",
+                      subtitle: "Match a specific text value",
+                      action: () => this._onOptionSelected("value"),
+                    },
+                    {
+                      title: "Range",
+                      subtitle: "Match a numerical range of values",
+                      action: () => this._onOptionSelected("range"),
+                    },
+                    {
+                      title: "Special",
+                      subtitle: "Match on null, NaN, boolean and empty values",
+                      action: () => this._onOptionSelected("special"),
+                    },
+                  ].map(
+                    (opt) => html`
+                      <button
+                        class="dropdown-item"
+                        role="menuitem"
+                        @click=${() => {
+                          opt.action();
+                        }}
+                      >
+                        <div class="item-title">${opt.title}</div>
+                        <div class="item-subtitle">${opt.subtitle}</div>
+                      </button>
+                    `
+                  )}
                 </div>
-              </settings-panel>
-            `
-          : null}
+              `
+            : null}
+        </div>
+      </settings-panel>
+    `
+  : null}
+
 
         <!-- Other settings -->
         <settings-panel displayName="settings" expanded="true">
@@ -329,18 +376,6 @@ export class CustomSettings extends AssetWidgetSettings {
     this.notifyConfigUpdate();
   }
 
-  private onMappingValueChange(e: Event, idx: number) {
-    const val = (e.target as HTMLInputElement).value;
-    this.widgetConfig.valueMappings![idx].value = val;
-    this.notifyConfigUpdate();
-  }
-
-  private onMappingColorChange(e: Event, idx: number) {
-    const col = (e.target as HTMLInputElement).value;
-    this.widgetConfig.valueMappings![idx].color = col;
-    this.notifyConfigUpdate();
-  }
-
   private _onOptionSelected(option: string) {
     this.selectedOption = option;
     this._applyOption(option);
@@ -371,4 +406,22 @@ export class CustomSettings extends AssetWidgetSettings {
     });
     return map;
   }
+
+  private onMappingValueChange(e: Event, idx: number) {
+    
+}
+
+private onRangeChange(field: "min" | "max", e: Event, idx: number) {
+
+}
+
+private onMappingColorChange(e: Event, idx: number) {
+  this.requestUpdate();
+}
+
+private onSpecialKindChange(e: Event, idx: number) {
+
+}
+
+  
 }
