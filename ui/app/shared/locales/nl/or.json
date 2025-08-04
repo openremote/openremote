@@ -925,6 +925,7 @@
   "expandAll": "Alles uitklappen",
   "collapseAll": "Alles inklappen",
   "services": {
+    "": "Services",
     "noServiceSelected": "Selecteer een service aan de linkerkant",
     "title": "Services",
     "refresh": "Verversen",
