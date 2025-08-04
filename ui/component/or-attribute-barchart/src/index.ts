@@ -1110,7 +1110,7 @@ export class OrAttributeBarChart extends LitElement {
             [BarChartInterval.ONE_DAY, {displayName:"day", steps:1, orFormat:DatapointInterval.DAY,momentFormat:"days", millis: 86400000}],
             [BarChartInterval.ONE_WEEK, {displayName:"week", steps:1, orFormat:DatapointInterval.WEEK,momentFormat:"weeks", millis: 604800000}],
             [BarChartInterval.ONE_MONTH, {displayName:"month", steps:1, orFormat:DatapointInterval.MONTH,momentFormat:"months", millis: 2592000000}],
-            [BarChartInterval.ONE_YEAR, {displayName:"year", steps:1, orFormat:DatapointInterval.MINUTE,momentFormat:"years", millis: 31536000000}]
+            [BarChartInterval.ONE_YEAR, {displayName:"year", steps:1, orFormat:DatapointInterval.YEAR,momentFormat:"years", millis: 31536000000}]
         ]);
     }
 

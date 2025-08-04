@@ -29,7 +29,7 @@ function getDefaultWidgetConfig(): BarChartWidgetConfig {
     const preset = "30Days";  // Default time preset, "last" prefix is hardcoded in startDate and endDate below.
     const dateFunc = OrAttributeBarChart.getDefaultTimeWindowOptions().get(preset);
     const startDate = moment().subtract(dateFunc![1], dateFunc![0]).startOf(dateFunc![0]);
-    const endDate = dateFunc![1]== 1 ? moment().endOf(dateFunc![0]) : moment();
+    const endDate = dateFunc![1] === 1 ? moment().endOf(dateFunc![0]) : moment();
     return {
         attributeRefs: [],
         attributeColors: [],
@@ -196,7 +196,7 @@ export class BarChartWidget extends OrAssetWidget {
     protected getDefaultQuery(): AssetDatapointIntervalQuery {
         return {
             type: "interval",
-            fromTimestamp: moment().set('day', -30).toDate().getTime(),
+            fromTimestamp: moment().subtract(30, "days").toDate().getTime(),
             toTimestamp: moment().toDate().getTime()
         };
     }
