@@ -41,8 +41,8 @@ export function headerItemServices<S extends AppStateKeyed, A extends AnyAction>
     return {
         icon: "puzzle",
         href: "services",
-        text: "services",
-        roles: () => manager.hasRealmRole("read:services")
+        text: "services.title",
+        roles: ["read:services"]
     };
 }
 

@@ -926,7 +926,6 @@
   "expandAll": "Expand all",
   "collapseAll": "Collapse all",
   "services": {
-    "": "Services",
     "noServiceSelected": "Please select a service on the left",
     "refresh": "Refresh",
     "title": "Services",
