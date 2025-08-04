@@ -88,9 +88,9 @@ export const DefaultPagesConfig: PageProvider<any>[] = [
 export const DefaultHeaderMainMenu: {[name: string]: HeaderItem} = {
     map: headerItemMap(orApp),
     assets: headerItemAssets(orApp),
+    services: headerItemServices(orApp),
     rules: headerItemRules(orApp),
     insights: headerItemInsights(orApp),
-    services: headerItemServices(orApp)
 };
 
 export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {

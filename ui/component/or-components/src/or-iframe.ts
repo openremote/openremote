@@ -137,15 +137,12 @@ export class OrIframe extends LitElement {
 
     switch (type) {
       case OrIFrameEventType.LOADED:
-        console.log("or-iframe content loaded", event);
         this.loadingError = false;
         this.loading = false;
         this.requestUpdate();
         break;
       case OrIFrameEventType.ERROR:
-        console.log("or-iframe content error", event);
       case OrIFrameEventType.TIMEOUT:
-        console.log("or-iframe content timeout", event);
         this.loadingError = true;
         this.loading = false;
         this.requestUpdate();

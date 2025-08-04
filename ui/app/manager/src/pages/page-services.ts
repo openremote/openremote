@@ -38,11 +38,14 @@ export class PageServices extends Page<AppStateKeyed> {
   }
 
   get name(): string {
-    return "services";
+    return "services.title";
   }
 
   @state()
   private serviceId: string | null = null;
+
+  @state()
+  private service: Microservice | null = null;
 
   @state()
   protected realmName: string = "";
@@ -73,6 +76,7 @@ export class PageServices extends Page<AppStateKeyed> {
 
     if (service && service.serviceId !== this.serviceId) {
       this.serviceId = service.serviceId;
+      this.service = service;
       this._updateRoute();
     }
   }
