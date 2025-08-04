@@ -927,27 +927,32 @@ export class OrAttributeBarChart extends LitElement {
     }
 
     protected _updateChartData() {
+        console.debug(`Updating chart with data from ${moment(this._startOfPeriod)} to ${moment(this._endOfPeriod)}`);
         if(!this._chart) {
             console.error("Could not update bar chart data; the bar chart is not initialized yet.");
             return;
         }
         const xAxisTicks = Math.max(1, (this._endOfPeriod! - this._startOfPeriod!) / this._intervalConfig!.millis - 1);
         const maxTicks = this._chartElem?.clientWidth ? (this._chartElem.clientWidth / 50) : Number.MAX_SAFE_INTEGER;
-        const splitNumber = Math.min(xAxisTicks, maxTicks);
+        const splitNumber = Math.round(Math.min(xAxisTicks, maxTicks));
 
         // Update chart
         this._chart.setOption({
             xAxis: {
+                show: splitNumber > 1,
                 splitNumber: splitNumber,
                 min: this._startOfPeriod,
-                max: this._endOfPeriod
+                max: this._endOfPeriod,
+                axisLabel: {
+                    interval: this._intervalConfig?.millis
+                }
             },
             series: [
                 ...(this._data ?? []).map(series => ({
                     ...series
                 }))
             ]
-        });
+        } as ECChartOption);
     }
 
 
@@ -964,7 +969,7 @@ export class OrAttributeBarChart extends LitElement {
     protected _getDefaultChartOptions(): ECChartOption {
         const xAxisTicks = Math.max(1, (this._endOfPeriod! - this._startOfPeriod!) / this._intervalConfig!.millis - 1);
         const maxTicks = this._chartElem?.clientWidth ? (this._chartElem.clientWidth / 50) : Number.MAX_SAFE_INTEGER;
-        const splitNumber = Math.min(xAxisTicks, maxTicks);
+        const splitNumber = Math.round(Math.min(xAxisTicks, maxTicks));
         return {
             animation: false,
             grid: {
@@ -990,6 +995,7 @@ export class OrAttributeBarChart extends LitElement {
             },
             xAxis: {
                 type: "time",
+                show: splitNumber > 1,
                 axisLine: {
                     lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}
                 },
