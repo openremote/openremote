@@ -79,7 +79,7 @@ export class BarChartWidget extends OrAssetWidget {
 
     static getManifest(): WidgetManifest {
         return {
-            displayName: "Interval-Bar-Chart",
+            displayName: "Bar Chart",
             displayIcon: "chart-bar",
             minColumnWidth: 2,
             minColumnHeight: 2,
