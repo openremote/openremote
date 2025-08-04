@@ -257,13 +257,32 @@ export class CustomSettings extends AssetWidgetSettings {
           <div class="field">
             <!-- Toggle helper text -->
             <div class="switch-container">
-              <span><or-translate value="dashboard.showHelperText"></or-translate></span>
-              <or-mwc-input
-                .type=${InputType.SWITCH}
-                style="margin: 0 -10px;"
-                .value=${this.widgetConfig.showHelperText}
-                @or-mwc-input-changed=${(ev: OrInputChangedEvent) => this.onHelperTextToggle(ev)}
-              ></or-mwc-input>
+              <div class="switch-row">
+                <span><or-translate value="dashboard.showHelperText"></or-translate></span>
+                <or-mwc-input
+                  .type=${InputType.SWITCH}
+                  .value=${this.widgetConfig.showHelperText}
+                  @or-mwc-input-changed=${(ev: OrInputChangedEvent) => this.onHelperTextToggle(ev)}
+                ></or-mwc-input>
+              </div>
+
+              <div class="switch-row">
+                <span>Variable anzeigen</span>
+                <or-mwc-input
+                  .type=${InputType.SWITCH}
+                  .value=${this.widgetConfig.showVariable}
+                  @or-mwc-input-changed=${(ev: OrInputChangedEvent) => this.onShowVariableToggle(ev)}
+                ></or-mwc-input>
+              </div>
+
+              <div class="switch-row">
+                <span>Value anzeigen</span>
+                <or-mwc-input
+                  .type=${InputType.SWITCH}
+                  .value=${this.widgetConfig.showValue}
+                  @or-mwc-input-changed=${(ev: OrInputChangedEvent) => this.onShowValueToggle(ev)}
+                ></or-mwc-input>
+              </div>
             </div>
           </div>
         </settings-panel>
@@ -278,6 +297,16 @@ export class CustomSettings extends AssetWidgetSettings {
 
   private onShowIconToggle(ev: OrInputChangedEvent) {
     this.widgetConfig.showIcon = ev.detail.value as boolean;
+    this.notifyConfigUpdate();
+  }
+
+  private onShowValueToggle(ev: OrInputChangedEvent) {
+    this.widgetConfig.showValue = ev.detail.value as boolean;
+    this.notifyConfigUpdate();
+  }
+
+  private onShowVariableToggle(ev: OrInputChangedEvent) {
+    this.widgetConfig.showVariable = ev.detail.value as boolean;
     this.notifyConfigUpdate();
   }
 
@@ -324,7 +353,10 @@ export class CustomSettings extends AssetWidgetSettings {
 
   private addMapping(option: string) {
     // Falls deine valueMappings noch kein "type" kennt, kannst du dein Interface erweitern.
-    this.widgetConfig.valueMappings = [...(this.widgetConfig.valueMappings || []), { value: "", color: "#000000", type: option }];
+    this.widgetConfig.valueMappings = [
+      ...(this.widgetConfig.valueMappings || []),
+      { value: "", color: "#000000", type: option },
+    ];
     this.notifyConfigUpdate();
   }
 

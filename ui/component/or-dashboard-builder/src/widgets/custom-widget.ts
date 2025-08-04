@@ -14,6 +14,8 @@ export interface CustomWidgetConfig extends AssetWidgetConfig {
   customFieldTwo: number;
   readonly: boolean;
   showHelperText: boolean;
+  showVariable: boolean;
+  showValue: boolean;
   icon?: string;
   showIcon: boolean;
   valueMappings?: ValueMapping[];
@@ -25,6 +27,8 @@ function getDefaultWidgetConfig(): CustomWidgetConfig {
     customFieldTwo: 0,
     readonly: true,
     showHelperText: true,
+    showVariable: true,
+    showValue: true,
     icon: "lightbulb",
     showIcon: true,
     valueMappings: [],
@@ -60,13 +64,7 @@ const styling = css`
     --or-icon-height: var(--icon-size);
   }
 
-  /* Style fürs or-attribute-input */
-  .attr-input {
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .info strong {
+  .attribute-value {
     font-size: 1.5rem;
     font-weight: 600;
     flex-shrink: 0;
@@ -81,7 +79,7 @@ const styling = css`
     text-align: center;
   }
 
-  .timestamp {
+  .attribute-timestamp {
     font-size: 12px;
     color: #777777ff;
   }
@@ -204,9 +202,6 @@ export class CustomWidget extends OrAssetWidget {
       return html`<div id="error-txt">Kein Attribut ausgewählt</div>`;
     }
 
-    const rawValue = attribute.value; // kommt als String vom Server
-    const isBooleanString = attribute.type === "boolean";
-
     // Jetzt ist attribute garantiert definiert:
     const raw = attribute.value;
     const rawStr = String(raw);
@@ -215,7 +210,7 @@ export class CustomWidget extends OrAssetWidget {
     console.log(rawStr);
     console.log(attribute.type);
     console.log(attribute);
-  
+
     // 4) Mapping‑Farbe ermitteln
     let iconColor = "inherit";
     for (const m of cfg.valueMappings ?? []) {
@@ -232,18 +227,11 @@ export class CustomWidget extends OrAssetWidget {
               <or-icon icon="${cfg.icon}" style="color:${iconColor || "inherit"}"></or-icon>
             </div>`
           : null}
-        ${isBooleanString
-          ? html`<!-- Boolean‑Wert als Text -->
-              <div class="info">
-                <strong>${attribute.name}:</strong>
-                ${rawValue === true ? "Ja" : "Nein"}
-              </div> `
-          : html`<!-- Alle anderen Typen per at‑input -->
-              <div class="info">
-                <strong>${attribute.name}:</strong>
-                ${attribute.value}
-              </div> `}
-        ${cfg.showHelperText ? html` <div class="timestamp">${epoch}</div> ` : null}
+        <div class="info">
+          ${cfg.showVariable ? html` <div class="attribute-name">${attribute.name}:</div>` : null}
+          ${cfg.showValue ? html` <div class="attribute-value">${attribute.value}</div>` : null}
+        </div>
+        ${cfg.showHelperText ? html` <div class="attribute-timestamp">${epoch}</div> ` : null}
       </div>
     `;
   }
@@ -266,8 +254,45 @@ export class CustomWidget extends OrAssetWidget {
   }
 
   private formatUpdatedAt(epoch: number): string {
-    const date = new Date(epoch < 1e12 ? epoch * 1000 : epoch);
+    const now = new Date();
+    const date = new Date(epoch < 1e12 ? epoch * 1000 : epoch); // Sekunden oder ms erkennen
+    const diffMs = now.getTime() - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
 
+    if (diffSec < 10) {
+      return "Aktualisiert gerade eben";
+    }
+    if (diffMin < 1) {
+      return `Aktualisiert vor ${diffSec} ${diffSec === 1 ? "Sekunde" : "Sekunden"}`;
+    }
+    if (diffHour < 1) {
+      return `Aktualisiert vor ${diffMin} ${diffMin === 1 ? "Minute" : "Minuten"}`;
+    }
+
+    // Stunden (weniger als 24h)
+    if (diffHour < 24) {
+      return `Aktualisiert vor ${diffHour} ${diffHour === 1 ? "Stunde" : "Stunden"}`;
+    }
+
+    // gestern (zwischen 24 und 48 Stunden)
+    if (diffDay === 1) {
+      const time = date.toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      return `Aktualisiert gestern um ${time}`;
+    }
+
+    // innerhalb der letzten Woche (ab 2 Tagen bis <7)
+    if (diffDay < 7) {
+      return `Aktualisiert vor ${diffDay} ${diffDay === 1 ? "Tag" : "Tagen"}`;
+    }
+
+    // älter: absolute Darstellung
     const parts = new Intl.DateTimeFormat("de-DE", {
       weekday: "short",
       day: "numeric",
@@ -280,14 +305,14 @@ export class CustomWidget extends OrAssetWidget {
 
     const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
 
-    let weekday = get("weekday"); // z.B. "Mo."
-    if (!weekday.endsWith(".")) weekday = weekday + "."; // sicherstellen, dass Punkt da ist
-    const day = get("day"); // z.B. "4"
-    const month = get("month"); // z.B. "Aug." – enthält meist schon den Punkt
+    let weekday = get("weekday");
+    if (!weekday.endsWith(".")) weekday += ".";
+    const day = get("day");
+    const month = get("month");
     const year = get("year");
     const hour = get("hour");
     const minute = get("minute");
 
-    return `Aktualisiert am: ${weekday}, ${day}. ${month} ${year} ${hour}:${minute}`;
+    return `Aktualisiert am: ${weekday} ${day}. ${month} ${year} ${hour}:${minute}`;
   }
 }
