@@ -31,6 +31,15 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
             ));
         }})
     );
+    public static final AttributeDescriptor<String> STATUS = new AttributeDescriptor<>("status", ValueType.TEXT,
+        new MetaItem<>(MetaItemType.READ_ONLY),
+        new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
+            putAll(Map.of(
+                "uplinkPort", 100,
+                "valueFilterJsonPath", "$.object.status[0]"
+            ));
+        }})
+    );
     public static final AttributeDescriptor<Double> VOLUME = new AttributeDescriptor<>("volume", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY),
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
@@ -210,6 +219,10 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
 
     public Optional<String> getLogTimestamp() {
         return getAttributes().getValue(LOG_TIMESTAMP);
+    }
+
+    public Optional<String> getStatus() {
+        return getAttributes().getValue(STATUS);
     }
 
     public Optional<Double> getVolume() {
