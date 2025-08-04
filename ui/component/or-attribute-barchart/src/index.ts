@@ -876,8 +876,20 @@ export class OrAttributeBarChart extends LitElement {
             if (promises) {
                 await Promise.all(promises);
             }
+            // Sort data in correct order, for inserting it into the chart.
+            const sortedData = data.sort((a, b) => b.index! - a.index!).reverse();
+
+            // If stacked, remove all labels for every fill except the top
+            if (this.stacked) {
+                const formulas = new Set(sortedData.map(d => d.stack));
+                formulas.forEach(formula => {
+                    const lastEntry = [...sortedData].reverse().find(d => d.stack === formula);
+                    if(lastEntry) lastEntry.label!.show = true;
+                });
+            }
+
             // Sort data in correct order, and insert data in the chart
-            this._data = data.sort((a, b) => b.index! - a.index!).reverse();
+            this._data = sortedData;
             this._loading = false;
 
         } catch (ex) {
@@ -932,6 +944,23 @@ export class OrAttributeBarChart extends LitElement {
             console.error("Could not update bar chart data; the bar chart is not initialized yet.");
             return;
         }
+        // When data retrieved from HTTP API uses different start-end times, update them.
+        // For example, if 'endOfPeriod' is 18:03, but the interval is 15 min, the latest API datapoint will be from 18:15.
+        const firstEntry = this._data?.[0]?.data as [number, number][] | undefined;
+        if(firstEntry) {
+            const firstTimestamp = firstEntry[0][0];
+            if(firstTimestamp !== this._startOfPeriod) {
+                console.debug(`Correcting ${moment(this._startOfPeriod)} to ${moment(firstTimestamp)}...`);
+                this._startOfPeriod = firstTimestamp;
+            }
+            const endTimestamp = [...firstEntry].reverse()[0][0];
+            if(endTimestamp !== this._endOfPeriod) {
+                console.debug(`Correcting ${moment(this._endOfPeriod)} to ${moment(endTimestamp)}...`);
+                this._endOfPeriod = endTimestamp;
+            }
+        }
+
+        // Update ticks / labels
         const xAxisTicks = Math.max(1, (this._endOfPeriod! - this._startOfPeriod!) / this._intervalConfig!.millis - 1);
         const maxTicks = this._chartElem?.clientWidth ? (this._chartElem.clientWidth / 50) : Number.MAX_SAFE_INTEGER;
         const splitNumber = Math.round(Math.min(xAxisTicks, maxTicks));
@@ -946,6 +975,9 @@ export class OrAttributeBarChart extends LitElement {
                 axisLabel: {
                     interval: this._intervalConfig?.millis
                 }
+            },
+            dataZoom: {
+                minValueSpan: this._intervalConfig?.millis
             },
             series: [
                 ...(this._data ?? []).map(series => ({
@@ -1064,7 +1096,7 @@ export class OrAttributeBarChart extends LitElement {
             },
             emphasis: {},
             label: {
-                show: true,
+                show: this.stacked ? false : true,
                 align: "left",
                 verticalAlign: "middle",
                 position: "outside",
