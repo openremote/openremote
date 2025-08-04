@@ -927,6 +927,7 @@
   "collapseAll": "Collapse all",
   "services": {
     "noServiceSelected": "Please select a service on the left",
+    "refresh": "Refresh",
     "title": "Services",
     "servicesLoadError": "Something went wrong while retrieving the services",
     "iframeLoadError": "The selected service could not be loaded",
