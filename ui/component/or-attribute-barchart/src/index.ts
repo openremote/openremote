@@ -421,13 +421,13 @@ export class OrAttributeBarChart extends LitElement {
             this.assetAttributes = [];
         }
         if (changedProps.has("timePrefixOptions") && this.timePrefixOptions) {
-            this.timePrefixKey = this.timePrefixOptions[0];
+            this.timePrefixKey ??= this.timePrefixOptions[0];
         }
         if (changedProps.has("timeWindowOptions") && this.timeWindowOptions) {
-            this.timeWindowKey = Array.from(this.timeWindowOptions.keys())[0];
+            this.timeWindowKey ??= Array.from(this.timeWindowOptions.keys())[0];
         }
         if (changedProps.has("intervalOptions") && this.intervalOptions) {
-            this.interval = Array.from(this.intervalOptions.keys())[0];
+            this.interval ??= Array.from(this.intervalOptions.keys())[0];
         }
         return super.willUpdate(changedProps);
     }
@@ -443,6 +443,11 @@ export class OrAttributeBarChart extends LitElement {
             if (this._chart) {
                 this._cleanup(); // destroy chart if one exists
             }
+            // Gather information to use for loading
+            const dates: [Date, Date] = this._getTimeSelectionDates(this.timePrefixKey!, this.timeWindowKey!);
+            this._startOfPeriod = this.timeframe ? this.timeframe[0].getTime() : dates[0].getTime();
+            this._endOfPeriod = this.timeframe ? this.timeframe[1].getTime() : dates[1].getTime();
+            this._intervalConfig = this._getInterval(this._startOfPeriod, this._endOfPeriod, this.interval!);
             this._loadData();
         }
         // Abort when no data is present
@@ -705,8 +710,8 @@ export class OrAttributeBarChart extends LitElement {
     }
 
     protected _getTimeSelectionDates(timePrefixSelected: string, timeWindowSelected: string): [Date, Date] {
-        let startDate = moment();
-        let endDate = moment();
+        let startDate: moment.Moment = moment();
+        let endDate: moment.Moment = moment();
 
         const timeWindow: [moment.unitOfTime.DurationConstructor, number] | undefined = this.timeWindowOptions?.get(timeWindowSelected);
 
@@ -759,8 +764,9 @@ export class OrAttributeBarChart extends LitElement {
         this.timeframe = [newStart.toDate(), newEnd.toDate()];
     }
 
-    protected _getInterval(start: number, end: number, selectedInterval: BarChartInterval): IntervalConfig {
-        const diffInHours = (end - start) / 1000 / 60 / 60;
+    protected _getInterval(start: number, end: number, selectedInterval: BarChartInterval, exact = false): IntervalConfig {
+        const hoursDiff = (end - start) / 1000 / 60 / 60;
+        const diffInHours = exact ? hoursDiff : Math.round(hoursDiff);
         if (selectedInterval === BarChartInterval.AUTO) {
             // Returns number of steps, interval size and moment.js time format
             if(diffInHours <= 1) {
@@ -791,6 +797,7 @@ export class OrAttributeBarChart extends LitElement {
         }
 
         // If no selected interval is larger than timeframe, switch to the first next valid timeframe.
+        console.warn("Selected interval is larger than the timeframe! Changing to a valid timeframe...");
         const intervalOptions = Array.from(this.intervalOptions.entries());
 
         for (let i = intervalOptions.length - 1; i >= 0; i--) {
@@ -820,10 +827,7 @@ export class OrAttributeBarChart extends LitElement {
         }
 
         this._loading = true;
-        const dates: [Date, Date] = this._getTimeSelectionDates(this.timePrefixKey!, this.timeWindowKey!);
-        this._startOfPeriod = this.timeframe ? this.timeframe[0].getTime() : dates[0].getTime();
-        this._endOfPeriod = this.timeframe ? this.timeframe[1].getTime() : dates[1].getTime();
-        this._intervalConfig = this._getInterval(this._startOfPeriod, this._endOfPeriod, this.interval!);
+        this._latestError = undefined;
         const data: BarChartData[] = [];
         let promises;
 
@@ -913,15 +917,10 @@ export class OrAttributeBarChart extends LitElement {
             let data: ValueDatapoint<any>[] = [];
 
             if (response.status === 200) {
-                // Only push through if the returned data interval is equal to the requested interval or if only one datapoint is returned
-                if (response.data.length > 0 && (response.data.length === 1 || (response.data[1].x! - response.data[0].x!) === this._intervalConfig!.millis) ) {
-                    data = response.data.map(point => ({x: point.x, y: point.y} as ValueDatapoint<any>));
-                    // map to dataset and position to the middle of interval instead of start time
-                    dataset.data = data.map(point => [(point.x ?? 0) + 0.5 * this._intervalConfig!.millis, point.y?.toFixed(this.decimals)]);
-                } else {
-                    console.debug("Returned data interval is larger than requested interval, data will not be shown.");
-                    dataset.data = [];
-                }
+                data = response.data.map(point => ({x: point.x, y: point.y} as ValueDatapoint<any>));
+
+                // map to dataset and position to the middle of interval instead of start time
+                dataset.data = data.map(point => [(point.x ?? 0) + 0.5 * this._intervalConfig!.millis, point.y?.toFixed(this.decimals)]);
             }
         }
         return dataset;
@@ -932,9 +931,14 @@ export class OrAttributeBarChart extends LitElement {
             console.error("Could not update bar chart data; the bar chart is not initialized yet.");
             return;
         }
+        const xAxisTicks = Math.max(1, (this._endOfPeriod! - this._startOfPeriod!) / this._intervalConfig!.millis - 1);
+        const maxTicks = this._chartElem?.clientWidth ? (this._chartElem.clientWidth / 50) : Number.MAX_SAFE_INTEGER;
+        const splitNumber = Math.min(xAxisTicks, maxTicks);
+
         // Update chart
         this._chart.setOption({
             xAxis: {
+                splitNumber: splitNumber,
                 min: this._startOfPeriod,
                 max: this._endOfPeriod
             },
@@ -958,6 +962,9 @@ export class OrAttributeBarChart extends LitElement {
     }
 
     protected _getDefaultChartOptions(): ECChartOption {
+        const xAxisTicks = Math.max(1, (this._endOfPeriod! - this._startOfPeriod!) / this._intervalConfig!.millis - 1);
+        const maxTicks = this._chartElem?.clientWidth ? (this._chartElem.clientWidth / 50) : Number.MAX_SAFE_INTEGER;
+        const splitNumber = Math.min(xAxisTicks, maxTicks);
         return {
             animation: false,
             grid: {
@@ -986,7 +993,7 @@ export class OrAttributeBarChart extends LitElement {
                 axisLine: {
                     lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}
                 },
-                splitNumber: (this._endOfPeriod! - this._startOfPeriod!) / this._intervalConfig!.millis - 1,
+                splitNumber: splitNumber,
                 min: this._startOfPeriod,
                 max: this._endOfPeriod,
                 boundaryGap: false,

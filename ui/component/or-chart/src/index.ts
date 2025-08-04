@@ -1231,6 +1231,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         this._loading = true;
+        this._latestError = undefined;
         const dates: [Date, Date] = this._getTimeSelectionDates(this.timePrefixKey!, this.timeWindowKey!);
         const data: LineChartData[] = [];
         let promises;

@@ -1,20 +1,15 @@
-import {
-    AssetDatapointIntervalQuery,
-    AssetDatapointQueryUnion,
-    Attribute,
-    AttributeRef
-} from "@openremote/model";
-import {html, PropertyValues, TemplateResult } from "lit";
-import { when } from "lit/directives/when.js";
+import {AssetDatapointIntervalQuery, AssetDatapointQueryUnion, Attribute, AttributeRef} from "@openremote/model";
+import {html, PropertyValues, TemplateResult} from "lit";
+import {when} from "lit/directives/when.js";
 import moment from "moment";
 import {OrAssetWidget} from "../util/or-asset-widget";
-import { customElement, state } from "lit/decorators.js";
+import {customElement, state} from "lit/decorators.js";
 import {AssetWidgetConfig} from "../util/widget-config";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {BarChartSettings} from "../settings/barchart-settings";
 import {WidgetSettings} from "../util/widget-settings";
 import "@openremote/or-attribute-barchart";
-import {BarChartAttributeConfig, OrAttributeBarChart} from "@openremote/or-attribute-barchart";
+import {BarChartAttributeConfig, BarChartInterval, OrAttributeBarChart} from "@openremote/or-attribute-barchart";
 
 export interface BarChartWidgetConfig extends AssetWidgetConfig {
     attributeColors: [AttributeRef, string][];
@@ -24,12 +19,9 @@ export interface BarChartWidgetConfig extends AssetWidgetConfig {
     showTimestampControls: boolean;
     defaultTimeWindowKey: string;
     defaultTimePrefixKey: string;
-    defaultInterval: string;
-    chartSettings: {
-        showLegend: boolean;
-        showToolBox: boolean;
-        defaultStacked: boolean;
-    };
+    defaultInterval: BarChartInterval;
+    showLegend: boolean;
+    stacked: boolean;
     decimals: number;
 }
 
@@ -64,12 +56,9 @@ function getDefaultWidgetConfig(): BarChartWidgetConfig {
         showTimestampControls: false,
         defaultTimeWindowKey: preset,
         defaultTimePrefixKey: "last",
-        defaultInterval: 'auto',
-        chartSettings: {
-            showLegend: true,
-            showToolBox: false,
-            defaultStacked: false,
-        },
+        defaultInterval: BarChartInterval.AUTO,
+        showLegend: true,
+        stacked: false,
         decimals: 2
     };
 }
@@ -190,9 +179,8 @@ export class BarChartWidget extends OrAssetWidget {
                 return html`
                     <or-attribute-barchart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
                                            .attributeColors="${this.widgetConfig?.attributeColors}" .attributeConfig="${this.widgetConfig?.attributeSettings}"
-                                           ?showLegend=${this.widgetConfig?.chartSettings?.showLegend}
-                                           ?stacked=${this.widgetConfig?.chartSettings?.defaultStacked}
-                                           .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
+                                           ?showLegend=${this.widgetConfig?.showLegend} ?stacked=${this.widgetConfig?.stacked}
+                                           .timestampControls="${!this.widgetConfig?.showTimestampControls}"
                                            .interval="${this.widgetConfig?.defaultInterval}"
                                            .timePrefixKey="${this.widgetConfig?.defaultTimePrefixKey}"
                                            .timeWindowKey="${this.widgetConfig?.defaultTimeWindowKey}"

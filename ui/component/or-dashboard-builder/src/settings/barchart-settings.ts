@@ -135,53 +135,45 @@ export class BarChartSettings extends WidgetSettings {
                 <!-- Time options -->
                 <settings-panel displayName="time" expanded="${true}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
+                        
                         <!-- Timeframe & interval -->
-                        <div>
-                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('prefixDefault')}" style="width: 100%;"
-                                          .options="${this.timePrefixOptions}" value="${this.widgetConfig.defaultTimePrefixKey}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimePreFixSelect(ev)}"
-                            ></or-mwc-input>
-                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('timeframeDefault')}" style="width: 100%;"
-                                          .options="${Array.from(this.timeWindowOptions.keys())}" value="${this.widgetConfig.defaultTimeWindowKey}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimeWindowSelect(ev)}"
-                            ></or-mwc-input>
-                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('dashboard.withInterval')}" style="width: 100%;"
-                                          .options="${Array.from(this.intervalOptions.keys())}" value="${this.widgetConfig.defaultInterval}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onIntervalSelect(ev)}"
-                            ></or-mwc-input>
-                        </div>
-                        <!-- Time range selection -->
-                        <div>
-                            <div class="switch-container">
-                                <span><or-translate value="dashboard.allowTimerangeSelect"></or-translate></span>
-                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${!this.widgetConfig.showTimestampControls}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimestampControlsToggle(ev)}"
-                                ></or-mwc-input>
-                            </div>
-                        </div>
+                        <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('prefixDefault')}" style="width: 100%;"
+                                      .options="${this.timePrefixOptions}" value="${this.widgetConfig.defaultTimePrefixKey}"
+                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimePrefixSelect(ev)}"
+                        ></or-mwc-input>
+                        <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('timeframeDefault')}" style="width: 100%;"
+                                      .options="${Array.from(this.timeWindowOptions.keys())}" value="${this.widgetConfig.defaultTimeWindowKey}"
+                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimeWindowSelect(ev)}"
+                        ></or-mwc-input>
+                        <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('dashboard.withInterval')}" style="width: 100%;"
+                                      .options="${Array.from(this.intervalOptions.keys())}" value="${this.widgetConfig.defaultInterval}"
+                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onIntervalSelect(ev)}"
+                        ></or-mwc-input>
                     </div>
                 </settings-panel>
+                
                 <!-- Display options -->
                 <settings-panel displayName="display" expanded="${false}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 16px;">
-                        <div class="switch-container">
-                            <span><or-translate value="dashboard.showLegend"></or-translate></span>
-                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.chartSettings.showLegend}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowLegendToggle(ev)}"
-                            ></or-mwc-input>
-                        </div>
-                        <!-- Toolbox -->
-                        <div class="switch-container">
-                            <span><or-translate value="dashboard.showToolBox"></or-translate></span>
-                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.chartSettings.showToolBox}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowToolBoxToggle(ev)}"
-                            ></or-mwc-input>
-                        </div>
                         <!-- Stacked -->
                         <div class="switch-container">
                             <span><or-translate value="dashboard.defaultStacked"></or-translate></span>
-                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.chartSettings.defaultStacked}"
+                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.stacked}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onDefaultStackedToggle(ev)}"
+                            ></or-mwc-input>
+                        </div>
+                        <!-- Time range selection -->
+                        <div class="switch-container">
+                            <span><or-translate value="dashboard.allowTimerangeSelect"></or-translate></span>
+                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${!this.widgetConfig.showTimestampControls}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimestampControlsToggle(ev)}"
+                            ></or-mwc-input>
+                        </div>
+                        <!-- Show legend -->
+                        <div class="switch-container">
+                            <span><or-translate value="dashboard.showLegend"></or-translate></span>
+                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showLegend}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowLegendToggle(ev)}"
                             ></or-mwc-input>
                         </div>
                         <!-- Decimal places -->
@@ -310,7 +302,7 @@ export class BarChartSettings extends WidgetSettings {
     protected onFaintClick(attrRef: AttributeRef) {
         this.widgetConfig.attributeSettings.faintAttributes ??= [];
         const index = this.widgetConfig.attributeSettings.faintAttributes.findIndex(attr => attr.id === attrRef.id && attr.name === attrRef.name);
-        if (index > 0) {
+        if (index >= 0) {
             this.widgetConfig.attributeSettings.faintAttributes = this.widgetConfig.attributeSettings.faintAttributes.filter(attr => attr.id !== attrRef.id && attr.name !== attrRef.name);
         } else {
             this.widgetConfig.attributeSettings.faintAttributes.push(attrRef);
@@ -431,7 +423,7 @@ export class BarChartSettings extends WidgetSettings {
                     text: key,
                     value: key,
                     data: isActive ? key : undefined,
-                    translate: true,
+                    translate: true
                 };
             });
         let selected: ListItem[] = [];
@@ -482,7 +474,7 @@ export class BarChartSettings extends WidgetSettings {
             .setDismissAction(null));
     }
 
-    protected onTimePreFixSelect(ev: OrInputChangedEvent) {
+    protected onTimePrefixSelect(ev: OrInputChangedEvent) {
         this.widgetConfig.defaultTimePrefixKey = ev.detail.value.toString();
         this.notifyConfigUpdate();
     }
@@ -503,17 +495,12 @@ export class BarChartSettings extends WidgetSettings {
     }
 
     protected onShowLegendToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.chartSettings.showLegend = ev.detail.value;
-        this.notifyConfigUpdate();
-    }
-
-    protected onShowToolBoxToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.chartSettings.showToolBox = ev.detail.value;
+        this.widgetConfig.showLegend = ev.detail.value;
         this.notifyConfigUpdate();
     }
 
     protected onDefaultStackedToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.chartSettings.defaultStacked = ev.detail.value;
+        this.widgetConfig.stacked = ev.detail.value;
         this.notifyConfigUpdate();
     }
 
