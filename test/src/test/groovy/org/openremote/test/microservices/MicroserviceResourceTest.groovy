@@ -32,7 +32,6 @@ class MicroserviceResourceTest extends Specification implements ManagerContainer
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         when: "the users are authenticated"
-
         // regular user for non-service-user testing
         def regularUserAccessToken = authenticate(
                 container,
@@ -117,11 +116,12 @@ class MicroserviceResourceTest extends Specification implements ManagerContainer
         WebApplicationException ex = thrown()
         ex.response.status == Response.Status.CONFLICT.getStatusCode()
 
-        when: "time advances by 100 seconds (more than the 90 second lease duration)"
-        advancePseudoClock(100, TimeUnit.SECONDS, container)
+        when: "time advances by 70 seconds, longer than the lease duration"
+        advancePseudoClock(70, TimeUnit.SECONDS, container)
 
         then: "the energy service should go unavailable due to lease expiration"
         conditions.eventually {
+            microserviceRegistryService.markExpiredInstancesAsUnavailable()
             def servicesAfterLeaseDuration = microserviceResource.getServices(null)
             def service = servicesAfterLeaseDuration.find { it.serviceId == "energy-service" }
             assert service != null
@@ -141,6 +141,7 @@ class MicroserviceResourceTest extends Specification implements ManagerContainer
 
         then: "the returned services should contain the energy service as unavailable and the weather service as available"
         conditions.eventually {
+            microserviceRegistryService.markExpiredInstancesAsUnavailable()
             assert allServices.length >= 2
             def energyServiceInfo = allServices.find { it.serviceId == "energy-service" }
             def weatherServiceInfo = allServices.find { it.serviceId == "weather-service" }
@@ -150,11 +151,12 @@ class MicroserviceResourceTest extends Specification implements ManagerContainer
             assert weatherServiceInfo.status == MicroserviceStatus.AVAILABLE
         }
 
-        when: "time advances by 100 seconds again without sending a heartbeat for any service"
-        advancePseudoClock(100, TimeUnit.SECONDS, container)
+        when: "time advances by 70 seconds again without sending a heartbeat for any service"
+        advancePseudoClock(70, TimeUnit.SECONDS, container)
 
         then: "both services should be unavailable due to lease expiration"
         conditions.eventually {
+            microserviceRegistryService.markExpiredInstancesAsUnavailable()
             def servicesAfterSecondLeaseDuration = microserviceResource.getServices(null)
             def energyServiceInfo = servicesAfterSecondLeaseDuration.find { it.serviceId == "energy-service" }
             def weatherServiceInfo = servicesAfterSecondLeaseDuration.find { it.serviceId == "weather-service" }
@@ -180,11 +182,12 @@ class MicroserviceResourceTest extends Specification implements ManagerContainer
         assert energyServiceInfo != null
         assert energyServiceInfo.status == MicroserviceStatus.UNAVAILABLE
 
-        when: "time advances by 60 seconds (less than the 90 second lease duration)"
-        advancePseudoClock(60, TimeUnit.SECONDS, container)
+        when: "time advances by 40 seconds (less than the 60 second lease duration)"
+        advancePseudoClock(40, TimeUnit.SECONDS, container)
 
         then: "the weather service should still be available"
         conditions.eventually {
+            microserviceRegistryService.markExpiredInstancesAsUnavailable()
             def servicesAfter60Seconds = microserviceResource.getServices(null)
             def weatherServiceInfo = servicesAfter60Seconds.find { it.serviceId == "weather-service" }
             assert weatherServiceInfo != null
@@ -263,5 +266,29 @@ class MicroserviceResourceTest extends Specification implements ManagerContainer
         then: "the heartbeat should fail with a unauthorized error"
         ex = thrown()
         ex.response.status == Response.Status.UNAUTHORIZED.getStatusCode()
+
+
+
+        when: "another 60 seconds passes without heartbeats"
+        advancePseudoClock(60, TimeUnit.SECONDS, container)
+
+        then: "the weather service should go unavailable due to lease expiration"
+        conditions.eventually {
+            microserviceRegistryService.markExpiredInstancesAsUnavailable()
+            def servicesAfter60Seconds = microserviceResource.getServices(null)
+            def weatherServiceInfo = servicesAfter60Seconds.find { it.serviceId == "weather-service" }
+            assert weatherServiceInfo != null
+            assert weatherServiceInfo.status == MicroserviceStatus.UNAVAILABLE
+        }
+
+        when: "time advances by 24 hours without heartbeats"
+        advancePseudoClock(24, TimeUnit.HOURS, container)
+
+        then: "all unavailable services should be purged from the registry since they have been expired for over 24 hours"
+        conditions.eventually {
+            microserviceRegistryService.purgeLongExpiredInstances()
+            def servicesAfterPurge = microserviceResource.getServices(null)
+            assert servicesAfterPurge.length == 0
+        }
     }
 }

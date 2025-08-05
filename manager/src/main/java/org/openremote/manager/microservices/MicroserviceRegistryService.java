@@ -48,7 +48,7 @@ import org.openremote.model.microservices.MicroserviceLeaseInfo;
  * </p>
  *
  * <ul>
- * <li>Lease-based registration with automatic expiration (default: 90s)</li>
+ * <li>Lease-based registration with automatic expiration (default: 60s)</li>
  * <li>Heartbeat mechanism for lease renewal</li>
  * <li>Purge unavailable instances after 24 hours</li>
  * </ul>
@@ -57,11 +57,15 @@ public class MicroserviceRegistryService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(MicroserviceRegistryService.class.getName());
 
-    // 90 seconds till a service is marked as unavailable
-    protected static final long DEFAULT_LEASE_DURATION_MS = 90000;
+    // Lease duration is 60 seconds until expiration
+    protected static final long DEFAULT_LEASE_DURATION_MS = 60000;
+    // Mark expired service instances every 30 seconds
+    protected static final long MARK_EXPIRED_INSTANCES_INTERVAL_MS = 30000;
 
-    // 24 hours after an instance is marked as unavailable, it is purged
-    protected static final long DEFAULT_PURGE_UNAVAILABLE_MS = 1000 * 60 * 60 * 24;
+    // Purge threshold is 24 hours since a service has gone unavailable
+    protected static final long DEFAULT_PURGE_UNAVAILABLE_MS = 86400000;
+    // Check for purge-able services every hour
+    protected static final long PURGE_UNAVAILABLE_INTERVAL_MS = 3600000;
 
     protected TimerService timerService;
     protected ScheduledExecutorService scheduledExecutorService;
@@ -95,12 +99,15 @@ public class MicroserviceRegistryService implements ContainerService {
         // Periodically check for expired instances
         markExpiredInstancesAsUnavailableFuture = scheduledExecutorService.scheduleAtFixedRate(
                 this::markExpiredInstancesAsUnavailable, 0,
-                DEFAULT_LEASE_DURATION_MS / 2, TimeUnit.MILLISECONDS);
+                MARK_EXPIRED_INSTANCES_INTERVAL_MS, TimeUnit.MILLISECONDS);
 
         // Periodically cleanup expired unavailable instances
         cleanupExpiredUnavailableInstancesFuture = scheduledExecutorService.scheduleAtFixedRate(
-                this::cleanupExpiredUnavailableInstances, 0,
-                DEFAULT_PURGE_UNAVAILABLE_MS, TimeUnit.MILLISECONDS);
+                this::purgeLongExpiredInstances, 0,
+                PURGE_UNAVAILABLE_INTERVAL_MS, TimeUnit.MILLISECONDS);
+
+        LOG.info("MicroserviceRegistryService started with lease duration: " + DEFAULT_LEASE_DURATION_MS
+                + "ms and purge interval: " + DEFAULT_PURGE_UNAVAILABLE_MS + "ms");
     }
 
     @Override
@@ -120,7 +127,6 @@ public class MicroserviceRegistryService implements ContainerService {
      * @param microservice The microservice to register
      */
     public Microservice registerService(Microservice microservice) {
-
         LOG.fine("Registering microservice: " + microservice.getServiceId() + ", instanceId: "
                 + microservice.getInstanceId());
 
@@ -206,7 +212,6 @@ public class MicroserviceRegistryService implements ContainerService {
      * @param instanceId The instanceId of the microservice to deregister
      */
     public void deregisterService(String serviceId, String instanceId) {
-
         List<Microservice> instances = registry.get(serviceId);
         if (instances == null) {
             throw new NoSuchElementException("The given serviceId does not exist in the registry");
@@ -235,8 +240,6 @@ public class MicroserviceRegistryService implements ContainerService {
      * @return An array of all registered microservices and their instances
      */
     public Microservice[] getServices() {
-        markExpiredInstancesAsUnavailable();
-
         return registry.values().stream().flatMap(List::stream).toArray(Microservice[]::new);
     }
 
@@ -254,21 +257,20 @@ public class MicroserviceRegistryService implements ContainerService {
                 .forEach(entry -> entry.setStatus(MicroserviceStatus.UNAVAILABLE));
     }
 
-    protected void cleanupExpiredUnavailableInstances() {
+    protected void purgeLongExpiredInstances() {
         long currentTime = timerService.getCurrentTimeMillis();
-
         long purgeThreshold = currentTime - DEFAULT_PURGE_UNAVAILABLE_MS;
 
-        // Collect all services that are unavailable and have an expiration timestamp before the purge threshold
+        // Collect all services that are unavailable and have an expiration timestamp
+        // before the purge threshold
         List<Microservice> toRemove = registry.values().stream()
                 .flatMap(List::stream)
                 .filter(entry -> entry.getStatus() == MicroserviceStatus.UNAVAILABLE
                         && entry.getLeaseInfo().getExpirationTimestamp() < purgeThreshold)
                 .toList();
 
-        // Deregister long expired microservices
+        // Deregister long expired microservices0
         toRemove.forEach(entry -> deregisterService(entry.getServiceId(), entry.getInstanceId()));
-
     }
 
 }
