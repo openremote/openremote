@@ -280,18 +280,6 @@ export class OrServices extends LitElement {
     }
   }
 
-  protected _onIframeEvent(e: CustomEvent): void {
-    const detail = e.detail as OrIFrameEventDetail;
-    console.info("Iframe event received:", detail);
-    
-    // Handle iframe events here if needed
-    // For example, show notifications, log errors, etc.
-    if (detail.type === OrIFrameEventType.ERROR || detail.type === OrIFrameEventType.TIMEOUT) {
-      console.error("Iframe error:", detail.error);
-      // Could show a snackbar notification here if desired
-    }
-  }
-
   /**
    * Get the iframe path for a given service
    * @param service - The service to get the iframe path for
@@ -352,7 +340,6 @@ export class OrServices extends LitElement {
               : this.selectedService ? html`<or-iframe id="service-iframe"
                   .src="${this.getServiceUrlPath(this.selectedService)}"
                   .loadErrorMessage="${i18next.t("services.iframeLoadError")}"
-                  @or-iframe-event="${this._onIframeEvent}"
                 ></or-iframe>` : html``}
           </div>
         </div>

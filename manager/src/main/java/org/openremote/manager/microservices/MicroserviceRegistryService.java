@@ -256,8 +256,10 @@ public class MicroserviceRegistryService implements ContainerService {
 
     protected void cleanupExpiredUnavailableInstances() {
         long currentTime = timerService.getCurrentTimeMillis();
-        long purgeThreshold = currentTime + DEFAULT_PURGE_UNAVAILABLE_MS;
 
+        long purgeThreshold = currentTime - DEFAULT_PURGE_UNAVAILABLE_MS;
+
+        // Collect all services that are unavailable and have an expiration timestamp before the purge threshold
         List<Microservice> toRemove = registry.values().stream()
                 .flatMap(List::stream)
                 .filter(entry -> entry.getStatus() == MicroserviceStatus.UNAVAILABLE

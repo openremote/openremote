@@ -50,7 +50,7 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
         if (!isServiceAccount()) {
             LOG.warning("Service registration not allowed for non-service users");
             throw new WebApplicationException("Service registration not allowed for non-service users",
-                    Response.Status.FORBIDDEN);
+                    Response.Status.UNAUTHORIZED);
         }
 
         // Generate a instanceId if not provided
@@ -92,7 +92,7 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
         if (!isServiceAccount()) {
             LOG.warning("Service heartbeat not allowed for non-service users");
             throw new WebApplicationException("Service heartbeat not allowed for non-service users",
-                    Response.Status.FORBIDDEN);
+                    Response.Status.UNAUTHORIZED);
         }
 
         try {
@@ -109,7 +109,7 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
         if (!isServiceAccount()) {
             LOG.warning("Service deregistration not allowed for non-service users");
             throw new WebApplicationException("Service deregistration not allowed for non-service users",
-                    Response.Status.FORBIDDEN);
+                    Response.Status.UNAUTHORIZED);
         }
 
         try {

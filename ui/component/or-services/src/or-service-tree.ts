@@ -5,6 +5,7 @@ import { OrTreeMenu, TreeNode, TreeMenuSelection, OrTreeNode } from "@openremote
 import { Microservice, MicroserviceStatus } from "@openremote/model";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import { ServiceTreeNode, MicroserviceStatusIcon, MicroserviceStatusColor } from "./types";
+import { i18next } from "@openremote/or-translate";
 
 const treeStyles = css`
   .iconfill-gray {
@@ -130,7 +131,7 @@ export class OrServiceTree extends OrTreeMenu {
           <or-mwc-input
             type=${InputType.BUTTON}
             icon="refresh"
-            title="Refresh services"
+            title="${i18next.t("services.refresh")}" 
             @or-mwc-input-changed=${this._onRefreshServices}
           ></or-mwc-input>
         </div>
