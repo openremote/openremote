@@ -581,7 +581,7 @@ export class OrAttributeBarChart extends LitElement {
                     <thead>
                     <tr>
                         <th style="font-weight: normal; text-align: right;">${i18next.t("from")}:</th>
-                        <th style="font-weight: normal; text-align: right;">${moment(timeframe![-0]).format("lll")}</th>
+                        <th style="font-weight: normal; text-align: right;">${moment(timeframe![0]).format("lll")}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -614,7 +614,7 @@ export class OrAttributeBarChart extends LitElement {
                     const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, true);
                     const axisNote = (this.attributeConfig?.rightAxisAttributes?.find(ar => asset.id === ar.id && attr.name === ar.name)) ? i18next.t("right") : undefined;
                     const bgColor = (color ?? this.colors[colourIndex]) || "";
-                    //Find which aggregation methods are active
+                    // Find which aggregation methods are active
                     
                     const methodList: string[] = Object.entries(this.attributeConfig || {})
                             .filter(([key]) => key.includes("method"))
@@ -628,8 +628,8 @@ export class OrAttributeBarChart extends LitElement {
                             }, []);
 
                     return html`
-                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}"
-                             @mouseenter="${() => this._addDatasetHighlight({id: this.assets[assetIndex]!.id, name: attr.name})}"
+                        <div class="attribute-list-item ${this.denseLegend ? "attribute-list-item-dense" : undefined}"
+                             @mouseenter="${() => this._addDatasetHighlight({id: this.assets[assetIndex].id, name: attr.name})}"
                              @mouseleave="${()=> this._removeDatasetHighlights()}">
                             <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex].type), undefined, undefined, bgColor.split("#")[1])}</span>
                             <div class="attribute-list-item-label ${this.denseLegend ? "attribute-list-item-label-dense" : undefined}">
@@ -910,7 +910,7 @@ export class OrAttributeBarChart extends LitElement {
                 for (const [key, value] of (Object.entries(methodMapping)).sort(([keyA], [keyB]) => keyA.localeCompare(keyB))) {
                     if (value.active) {
                         //Initiate query Attribute Data
-                        const dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, value.formula, faint, asset.name + " " + label + " \n" + i18next.t(value.formula), options, unit);
+                        const dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, value.formula, faint, `${asset.name} ${label} \n${i18next.t(value.formula)}`, options, unit);
                         dataset.index = (Object.keys(methodMapping).indexOf(key) * 1000) + (index + 1);
                         dataset.assetId = asset.id;
                         dataset.attrName = attribute.name;

@@ -814,7 +814,8 @@
     "stepped": "Treden",
     "fill": "Vullen",
     "extendData": "Verleng laatste datapunt",
-    "lineColor": "Lijnkleur"
+    "lineColor": "Lijnkleur",
+    "barColor": "Kleur van de balk"
   },
   "south": "Zuid",
   "east": "Oost",

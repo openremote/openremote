@@ -37,7 +37,7 @@ function getDefaultWidgetConfig(): BarChartWidgetConfig {
         datapointQuery: {
             type: "interval",
             fromTimestamp: startDate.toDate().getTime(),
-            toTimestamp: endDate.toDate().getTime(),
+            toTimestamp: endDate.toDate().getTime()
         },
         chartOptions: {
             options: {
@@ -51,7 +51,7 @@ function getDefaultWidgetConfig(): BarChartWidgetConfig {
                         max: undefined
                     }
                 }
-            },
+            }
         },
         showTimestampControls: false,
         defaultTimeWindowKey: preset,
@@ -65,7 +65,7 @@ function getDefaultWidgetConfig(): BarChartWidgetConfig {
 
 /* --------------------------------------------------- */
 
-@customElement('barchart-widget')
+@customElement("barchart-widget")
 export class BarChartWidget extends OrAssetWidget {
 
     @state()
@@ -96,7 +96,7 @@ export class BarChartWidget extends OrAssetWidget {
             getDefaultConfig(): BarChartWidgetConfig {
                 return getDefaultWidgetConfig();
             }
-        }
+        };
     }
 
     // Method called on every refresh/reload of the widget
@@ -127,7 +127,7 @@ export class BarChartWidget extends OrAssetWidget {
             }
         }
 
-        if(changedProps.has('widgetConfig') && this.widgetConfig) {
+        if(changedProps.has("widgetConfig") && this.widgetConfig) {
             this.datapointQuery = this.widgetConfig.datapointQuery;
 
             const attributeRefs = this.widgetConfig.attributeRefs;
@@ -151,10 +151,10 @@ export class BarChartWidget extends OrAssetWidget {
         }
         this._loading = true;
         this._error = undefined;
-        this.fetchAssets(attributeRefs).then((assets) => {
+        this.fetchAssets(attributeRefs).then(assets => {
             this.loadedAssets = assets;
             this.assetAttributes = attributeRefs?.map((attrRef: AttributeRef) => {
-                const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
+                const assetIndex = assets.findIndex(asset => asset.id === attrRef.id);
                 const foundAsset = assetIndex >= 0 ? assets[assetIndex] : undefined;
                 return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
             }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
