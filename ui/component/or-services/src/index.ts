@@ -34,7 +34,6 @@ const serviceStyles = css`
     flex: 1;
     width: 100%;
   }
-    
 
   .wrapper {
     display: flex;
@@ -66,8 +65,6 @@ const serviceStyles = css`
     background-color: #f9f9f9;
   }
 
-
-  
   #fullscreen-header-wrapper {
     min-height: 36px;
     padding: 20px 30px 15px;
@@ -75,7 +72,7 @@ const serviceStyles = css`
     flex-direction: row;
     align-items: center;
   }
-  
+
   #fullscreen-header-title {
     font-size: 18px;
     font-weight: bold;
@@ -83,24 +80,24 @@ const serviceStyles = css`
     display: flex;
     align-items: center;
   }
-  
+
   #fullscreen-header-title > or-icon {
     margin-right: 10px;
     cursor: pointer;
   }
-  
+
   #fullscreen-header-actions {
     flex: 1 1 auto;
     text-align: right;
   }
-  
+
   #fullscreen-header-actions-content {
     display: flex;
     flex-direction: row;
     align-items: center;
     float: right;
   }
-  
+
   .small-btn {
     margin-left: 8px;
     cursor: pointer;
@@ -108,7 +105,7 @@ const serviceStyles = css`
     border-radius: 4px;
     transition: background-color 0.2s;
   }
-  
+
   .small-btn:hover {
     background-color: rgba(0, 0, 0, 0.1);
   }
@@ -118,30 +115,28 @@ const serviceStyles = css`
     .hideMobile {
       display: none !important;
     }
-    
+
     .sidebar {
       width: 100%;
       min-width: 100%;
       flex: 1;
     }
-    
+
     .sidebar.hidden {
       display: none !important;
     }
-    
+
     .wrapper {
       flex-direction: column;
     }
-    
+
     or-iframe {
       flex: 1;
       min-height: 400px;
     }
-    
 
     #fullscreen-header-wrapper {
       padding: 11px !important;
-
     }
   }
 
@@ -149,12 +144,12 @@ const serviceStyles = css`
     .showMobile {
       display: none !important;
     }
-    
+
     .sidebar {
       width: 300px;
       min-width: 300px;
     }
-    
+
     .wrapper {
       flex-direction: row;
     }
@@ -167,7 +162,7 @@ const serviceStyles = css`
       min-width: 300px;
       box-shadow: rgba(0, 0, 0, 0.21) 0px 1px 3px 0px;
     }
-    
+
     or-iframe {
       flex: 1;
       max-width: calc(100vw - 300px);
@@ -250,11 +245,11 @@ export class OrServices extends LitElement {
 
   // Reload the current service iframe
   private _onRefreshServiceIFrame(): void {
-    const iframe = this.shadowRoot?.querySelector('#service-iframe') as OrIframe;
-    if (iframe && typeof iframe.reload === 'function') {
+    const iframe = this.shadowRoot?.querySelector("#service-iframe") as OrIframe;
+    if (iframe && typeof iframe.reload === "function") {
       iframe.reload();
     } else {
-      console.warn('Unable to reload iframe: iframe not found or reload method not available');
+      console.warn("Unable to reload iframe: iframe not found or reload method not available");
     }
   }
 
@@ -272,16 +267,16 @@ export class OrServices extends LitElement {
 
   protected selectService(service: Microservice): void {
     this.selectedService = service;
-    
+
     // Dispatch event for parent components to handle navigation
     const event = new CustomEvent("service-selected", {
       detail: {
         service: service,
-        serviceId: service.serviceId
-      }
+        serviceId: service.serviceId,
+      },
     });
     this.dispatchEvent(event);
-    
+
     // On mobile, hide the tree when a service is selected
     if (window.matchMedia("(max-width: 600px)").matches) {
       this.showServiceTree = false;
@@ -312,55 +307,95 @@ export class OrServices extends LitElement {
   /**
    * Open the selected service in a new tab
    */
-  protected openServiceInNewTab(): void {
+  protected _openServiceInNewTab(): void {
     if (this.selectedService) {
       const url = this.getServiceUrlPath(this.selectedService);
-      window.open(url, '_blank');
+      window.open(url, "_blank");
     }
   }
 
+  /**
+   * Renders the main content area based on current state
+   */
+  protected getServiceContentTemplate(): TemplateResult {
+    // No service selected
+    if (!this.selectedService) {
+      return html`<div class="msg">
+        <or-translate value="services.noServiceSelected"></or-translate>
+      </div>`;
+    }
+
+    // No services available
+    if (this.services.length === 0) {
+      return html`<div class="msg">
+        <or-translate value="services.noServices"></or-translate>
+      </div>`;
+    }
+
+    // Service selected - render iframe
+    return html`<or-iframe
+      id="service-iframe"
+      .src="${this.getServiceUrlPath(this.selectedService)}"
+      .loadErrorMessage="${i18next.t("services.iframeLoadError")}"
+    ></or-iframe>`;
+  }
+
   protected render(): TemplateResult {
-    const noSelection = !this.selectedService;
-
-
     return html`
       <div class="wrapper">
-        ${this.showServiceTree ? html`
-          <div class="sidebar ${this.selectedService ? 'hideMobile' : ''}">
-            <or-service-tree
-              .services="${this.services}"
-              .selectedService="${this.selectedService}"
-              @service-selected="${this._onServiceSelected}"
-              @refresh-services="${this._onRefreshServices}"
-            ></or-service-tree>
-          </div>
-        ` : undefined}
-        <div class="${this.selectedService == null ? 'hideMobile' : undefined}" style="flex: 1; display: flex; flex-direction: column;">
-          ${this.selectedService ? html`
-            <div id="fullscreen-header">
-              <div id="fullscreen-header-wrapper">
-                <div id="fullscreen-header-title">
-                  <or-icon class="showMobile" icon="chevron-left" @click="${() => { this.selectedService = null; this.showServiceTree = true; }}"></or-icon>
-                  <or-icon class="hideMobile" icon="puzzle" title="${i18next.t("services.services")}"></or-icon>
-                  <span>${this.selectedService.label || this.selectedService.serviceId}</span>
-                </div>
-                <div id="fullscreen-header-actions">
-                  <div id="fullscreen-header-actions-content">
-                    <or-icon class="small-btn" icon="refresh" title="${i18next.t("services.refresh")}" @click="${this._onRefreshServiceIFrame}"></or-icon>
-                    <or-icon class="small-btn" icon="open-in-new" title="${i18next.t("services.openInNewTab")}" @click="${this.openServiceInNewTab}"></or-icon>
+        ${this.showServiceTree
+          ? html`
+              <div class="sidebar ${this.selectedService ? "hideMobile" : ""}">
+                <or-service-tree
+                  .services="${this.services}"
+                  .selectedService="${this.selectedService}"
+                  @service-selected="${this._onServiceSelected}"
+                  @refresh-services="${this._onRefreshServices}"
+                ></or-service-tree>
+              </div>
+            `
+          : undefined}
+        <div
+          class="${this.selectedService == null ? "hideMobile" : undefined}"
+          style="flex: 1; display: flex; flex-direction: column;"
+        >
+          ${this.selectedService
+            ? html`
+                <div id="fullscreen-header">
+                  <div id="fullscreen-header-wrapper">
+                    <div id="fullscreen-header-title">
+                      <or-icon
+                        class="showMobile"
+                        icon="chevron-left"
+                        @click="${() => {
+                          this.selectedService = null;
+                          this.showServiceTree = true;
+                        }}"
+                      ></or-icon>
+                      <or-icon class="hideMobile" icon="puzzle" title="${i18next.t("services.services")}"></or-icon>
+                      <span>${this.selectedService.label || this.selectedService.serviceId}</span>
+                    </div>
+                    <div id="fullscreen-header-actions">
+                      <div id="fullscreen-header-actions-content">
+                        <or-icon
+                          class="small-btn"
+                          icon="refresh"
+                          title="${i18next.t("services.refresh")}"
+                          @click="${this._onRefreshServiceIFrame}"
+                        ></or-icon>
+                        <or-icon
+                          class="small-btn"
+                          icon="open-in-new"
+                          title="${i18next.t("services.openInNewTab")}"
+                          @click="${this._openServiceInNewTab}"
+                        ></or-icon>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          ` : undefined}
-          <div style="flex: 1;">
-            ${noSelection
-              ? html`<div class="msg"><or-translate value="services.noServiceSelected"></or-translate></div>`
-              : this.selectedService ? html`<or-iframe id="service-iframe"
-                  .src="${this.getServiceUrlPath(this.selectedService)}"
-                  .loadErrorMessage="${i18next.t("services.iframeLoadError")}"
-                ></or-iframe>` : html``}
-          </div>
+              `
+            : undefined}
+          <div style="flex: 1;">${this.getServiceContentTemplate()}</div>
         </div>
       </div>
     `;
@@ -371,4 +406,4 @@ export class OrServices extends LitElement {
       this._loadData();
     }
   }
-} 
+}
