@@ -626,7 +626,9 @@ export class OrAttributeBarChart extends LitElement {
                             }, []);
 
                     return html`
-                        <div class="attribute-list-item ${this.denseLegend ? "attribute-list-item-dense" : undefined}">
+                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}"
+                             @mouseenter="${() => this._addDatasetHighlight({id: this.assets[assetIndex]!.id, name: attr.name})}"
+                             @mouseleave="${()=> this._removeDatasetHighlights()}">
                             <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex].type), undefined, undefined, bgColor.split("#")[1])}</span>
                             <div class="attribute-list-item-label ${this.denseLegend ? "attribute-list-item-label-dense" : undefined}">
                                 <div style="display: flex; justify-content: space-between;">
@@ -667,6 +669,50 @@ export class OrAttributeBarChart extends LitElement {
                 }
             }])
         );
+    }
+
+    /**
+     * Removes all active Chart bars color highlights, by reducing/increasing opacity.
+     * @protected
+     */
+    protected _removeDatasetHighlights(chart = this._chart) {
+        if(chart){
+            const options = chart.getOption();
+            (options.series as BarChartData[] | undefined)?.forEach(series => {
+                series.itemStyle ??= {};
+                if (series.itemStyle.opacity === 0.2 || series.itemStyle.opacity === 0.99) {
+                    series.itemStyle.opacity = 0.31;
+                } else {
+                    series.itemStyle.opacity = 1;
+                }
+            });
+            chart.setOption(options);
+        }
+    }
+
+    /**
+     * Adds a Chart bar color highlight, by reducing/increasing opacity.
+     * So the given bar (represented by {@link assetId} and {@link attrName} will be emphasized, while others are less visible.
+     * @param attrRef - Asset ID and attribute name to be highlighted
+     * @param chart - ECharts instance to add the highlight to.
+     */
+    protected _addDatasetHighlight(attrRef: AttributeRef, chart = this._chart) {
+        if (chart) {
+            const options = chart.getOption();
+            (options.series as BarChartData[] | undefined)?.forEach(series => {
+                series.itemStyle ??= {};
+                if (series.assetId !== attrRef.id || series.attrName !== attrRef.name) {
+                    if (series.itemStyle.opacity === 0.31) { // 0.31 is faint setting, 1 is normal
+                        series.itemStyle.opacity = 0.2;
+                    } else {
+                        series.itemStyle.opacity = 0.3;
+                    }
+                } else if (series.itemStyle.opacity === 0.31) { // extra highlight if selected is faint
+                    series.itemStyle.opacity = 0.99;
+                }
+            });
+            chart.setOption(options);
+        }
     }
 
     // Not the best implementation, but it changes the legend & controls to wrap under the chart.
