@@ -10,11 +10,12 @@ import {BarChartWidgetConfig} from "../widgets/barchart-widget";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {when} from "lit/directives/when.js";
 import moment from "moment/moment";
-import {ListItem, ListType, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
+import {ListItem, ListType, OrMwcList, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
 import {showDialog, OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {BarChartInterval, IntervalConfig, OrAttributeBarChart} from "@openremote/or-attribute-barchart";
+import {BarChartAttributeConfig, BarChartInterval, IntervalConfig, OrAttributeBarChart} from "@openremote/or-attribute-barchart";
 import {OrChart} from "@openremote/or-chart";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
+import {createRef, Ref, ref} from "lit/directives/ref.js";
 
 const styling = css`
     .switch-container {
@@ -346,7 +347,8 @@ export class BarChartSettings extends WidgetSettings {
         ];
         this.widgetConfig.attributeRefs.forEach(ref => {
             if(!methodRefsList.find(methodRef => methodRef.id === ref.id && methodRef.name === ref.name)) {
-                this.widgetConfig.attributeSettings.methodAvgAttributes?.push(ref);
+                this.widgetConfig.attributeSettings.methodAvgAttributes ??= [];
+                this.widgetConfig.attributeSettings.methodAvgAttributes.push(ref);
             }
         });
         this.notifyConfigUpdate();
@@ -359,11 +361,17 @@ export class BarChartSettings extends WidgetSettings {
         });
     }
 
-    protected toggleAttributeSetting(
-        setting: keyof BarChartWidgetConfig["attributeSettings"],
-        attributeRef: AttributeRef
-    ): void {
-        const attributes = this.widgetConfig.attributeSettings[setting] ?? [];
+    /**
+     * Adds or removes an {@link AttributeRef} from a field in the {@link BarChartAttributeConfig}.
+     * For example, you can modify the list of 'right aligned attributes', or attributes that are displaying their 'AVG value'.
+     * If the {@link AttributeRef} is already present, it'll be removed. Otherwise, it will be added.
+     * @param setting - Field of {@link BarChartWidgetConfig} to append/remove the attribute from.
+     * @param attributeRef - The {@link AttributeRef} to add/remove.
+     * @protected
+     */
+    protected toggleAttributeSetting(setting: keyof BarChartWidgetConfig["attributeSettings"], attributeRef: AttributeRef, notify = true): void {
+        this.widgetConfig.attributeSettings[setting] ??= [];
+        const attributes = this.widgetConfig.attributeSettings[setting];
         const index = attributes.findIndex(
             (item: AttributeRef) => item.id === attributeRef.id && item.name === attributeRef.name
         );
@@ -371,8 +379,13 @@ export class BarChartSettings extends WidgetSettings {
             attributes.push(attributeRef);
         } else {
             attributes.splice(index, 1);
+            if(attributes && attributes.length === 0) {
+                delete this.widgetConfig.attributeSettings[setting];
+            }
         }
-        this.notifyConfigUpdate();
+        if(notify) {
+            this.notifyConfigUpdate();
+        }
     }
 
     protected openColorPickDialog(attributeRef: AttributeRef) {
@@ -407,15 +420,13 @@ export class BarChartSettings extends WidgetSettings {
 
 
     protected openAlgorithmMethodsDialog(attributeRef: AttributeRef) {
-        const methodList: ListItem[] = Object.entries(this.widgetConfig.attributeSettings)
-            .filter(([key]) => key.includes("method"))
-            .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
-            .map(([key, attributeRefs]) => {
-                const isActive = attributeRefs.some(
-                    (ref: AttributeRef) =>
-                        ref.id === attributeRef.id && ref.name === attributeRef.name
-                );
-
+        const methodKeys: (keyof BarChartAttributeConfig)[] = [
+            "methodAvgAttributes", "methodCountAttributes", "methodDeltaAttributes", "methodMaxAttributes",
+            "methodMedianAttributes", "methodMinAttributes", "methodModeAttributes", "methodSumAttributes"
+        ];
+        const methodList: ListItem[] = methodKeys.map(key => {
+                const attributeRefs = this.widgetConfig.attributeSettings[key];
+                const isActive = attributeRefs?.some(attrRef => attrRef.id === attributeRef.id && attrRef.name === attributeRef.name);
                 return {
                     text: key,
                     value: key,
@@ -423,18 +434,15 @@ export class BarChartSettings extends WidgetSettings {
                     translate: true
                 };
             });
-        let selected: ListItem[] = [];
+
+        const listRef: Ref<OrMwcList> = createRef();
 
         showDialog(new OrMwcDialog()
             .setContent(html`
                 <div id="method-creator">
-                    <or-mwc-list id="method-creator-list" .type="${ListType.MULTI_CHECKBOX}"
+                    <or-mwc-list ${ref(listRef)} id="method-creator-list" .type="${ListType.MULTI_CHECKBOX}"
                                  .listItems="${methodList}"
                                  .values="${methodList.map(item => item.data)}"
-                                 @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => {
-                                     selected = Array.from(ev.detail.values());
-                                     selected = selected.map(item => ({...item, data: item.text}));
-                                 }}"
                     ></or-mwc-list>
                 </div>
             `)
@@ -448,22 +456,17 @@ export class BarChartSettings extends WidgetSettings {
                     default: true,
                     actionName: "ok",
                     action: () => {
-                        // Check which settings need updating
-                        const changedMethods = methodList.filter(input => {
-                            const selectedItem = selected.find(item => item.value === input.value);
-                            return (!selectedItem && input.data !== undefined) ||
-                                (selectedItem && selectedItem.data === undefined) ||
-                                (selectedItem && selectedItem.data !== input.data);
-                        });
-                        //Update the settings
-                        changedMethods.forEach((item: ListItem) => {
-                            if (item.value) {
-                                this.toggleAttributeSetting(
-                                    item.value as keyof BarChartWidgetConfig["attributeSettings"],
-                                    attributeRef
-                                );
-                            }
-                        });
+                        if(listRef.value) {
+                            // Find all "active" methods for this AttributeRef, and remove them all. (so they become empty arrays)
+                            methodKeys.filter(oldKey => !!this.widgetConfig.attributeSettings[oldKey]?.find(attrRef => attrRef.id === attributeRef.id && attrRef.name === attributeRef.name))
+                                .forEach(oldKey => this.toggleAttributeSetting(oldKey, attributeRef, false));
+
+                            // Add the methods that were checked in the checkbox list
+                            (listRef.value.values as (keyof BarChartAttributeConfig)[] | undefined)?.forEach(s => {
+                                this.toggleAttributeSetting(s, attributeRef, false);
+                            });
+                            this.notifyConfigUpdate();
+                        }
                     },
                     content: "ok"
                 }
