@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "path";
-import webpack from "webpack";
-import WebpackDevServer, { WebpackConfiguration } from "webpack-dev-server";
+import rspack, { Configuration } from "@rspack/core";
+import { RspackDevServer } from "@rspack/dev-server";
 import HtmlWebpackPlugin from "html-webpack-plugin";
 
 // @ts-expect-error No declaration file available
@@ -18,22 +18,22 @@ import {
   ImportInfo,
   transformIndexFile,
   resolveCtConfig,
-} from "./webpackUtils";
+} from "./rspackUtils";
 
 // Copied Playwright module (not exported in the playwright-core/package.json)
 const injectedSource = require.resolve("./injectedScriptSource");
 
-let devServer: WebpackDevServer;
+let devServer: RspackDevServer;
 
 /**
- * Create a plugin for Playwright component testing with Webpack.
+ * Create a plugin for Playwright component testing with Rspack.
  *
  * The plugin expects an index.html file to be present. The directory of the index.html file
  * can be set through `ctTemplateDir` (defaults to "playwright") in the playwright configuration file.
  * The index.html is used to serve the component to the browser to run the component tests against.
  *
  * Each component is mounted using the `mount` fixture available through `playwright-ct-core`. The plugin
- * starts a webpack development server that bundles the code to register and mount components to the
+ * starts a Rspack development server that bundles the code to register and mount components to the
  * document. The bundle will reference the component source code through the provided import alias.
  *
  * Note: You must use an import alias (like `@openremote/or-icon`) to import a component in a test file,
@@ -44,7 +44,7 @@ export function createPlugin() {
   let configDir: string;
 
   return {
-    name: "playwright-webpack-plugin",
+    name: "playwright-rspack-plugin",
 
     setup: async (cfg: FullConfig, cfgDir: string) => {
       config = cfg;
@@ -52,18 +52,17 @@ export function createPlugin() {
     },
 
     begin: async () => {
-      const webpackConfig = await buildBundle(config, configDir);
-      if (!webpackConfig) return;
+      const rspackConfig = await buildBundle(config, configDir);
+      if (!rspackConfig) return;
 
-      devServer = new WebpackDevServer(webpackConfig.devServer, webpack(webpackConfig));
+      devServer = new RspackDevServer(rspackConfig.devServer!, rspack(rspackConfig));
       await devServer.start();
 
       if (!devServer.server) return;
 
       const address = devServer.server.address();
       if (address && typeof address === "object") {
-        const protocol = webpackConfig.devServer!.https ? "https:" : "http:";
-        process.env.PLAYWRIGHT_TEST_BASE_URL = `${protocol}//${address.address}:${address.port}`;
+        process.env.PLAYWRIGHT_TEST_BASE_URL = `http://${address.address}:${address.port}`;
       }
     },
 
@@ -94,18 +93,18 @@ export function createPlugin() {
 
 /**
  * Writes required component registration source to the bundle cache directory and returns
- * a corresponding Webpack configuration.
+ * a corresponding Rspack configuration.
  *
  * Note: The Playwright configuration must specify the name of the project under `projects.use.ct`.
  * Otherwise the configuration will be ignored.
  *
- * @param config The full playwright component testing config
+ * @param ctConfig The full Playwright component testing config
  * @param configDir The directory of the component project
  *
- * @returns The Webpack configuration used to bundle and serve a component on the specified address.
+ * @returns The Rspack configuration used to bundle and serve a component on the specified address.
  */
-async function buildBundle(config: FullConfig, configDir: string): Promise<WebpackConfiguration | null> {
-  const use = resolveCtConfig(config);
+async function buildBundle(ctConfig: FullConfig, configDir: string): Promise<Configuration | null> {
+  const use = resolveCtConfig(ctConfig);
   if (!use) {
     console.log(`Could not resolve component test configuration.`);
     return null;
@@ -133,7 +132,7 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<Webpa
   // Populate component registry based on the tests' component imports.
   await populateComponentsFromTests(componentRegistry, componentsByImportingFile);
 
-  const { registerSourceFile } = (config as any)["@playwright/experimental-ct-core"];
+  const { registerSourceFile } = (ctConfig as any)["@playwright/experimental-ct-core"];
 
   // Consider including buildInfo in the cache dir to be able to know how to invalidate the cache dir
   const registerSource = fs.readFileSync(injectedSource, "utf-8") + "\n" + fs.readFileSync(registerSourceFile, "utf-8");
@@ -147,8 +146,7 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<Webpa
   fs.mkdirSync(dirs.outDir, { recursive: true });
   fs.writeFileSync(outputIndexPath, transformedIndex);
 
-  const webpackConfig: WebpackConfiguration = {
-    mode: "development",
+  const config: Configuration = {
     entry: outputIndexPath,
     output: {
       path: dirs.outDir,
@@ -162,9 +160,11 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<Webpa
       // Force ipv4
       host: "127.0.0.1",
       port: 0,
-      https: !!endpoint.https,
     },
     module: getStandardModuleRules(),
+    performance: {
+      hints: false,
+    },
     plugins: [
       new HtmlWebpackPlugin({
         inject: "body",
@@ -176,5 +176,5 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<Webpa
     },
   };
 
-  return webpackConfig;
+  return config;
 }

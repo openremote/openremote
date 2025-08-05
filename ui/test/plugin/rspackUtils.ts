@@ -8,14 +8,14 @@ import { resolveHook } from "playwright/lib/transform/transform";
 
 import type { PlaywrightTestConfig as BasePlaywrightTestConfig } from "playwright/types/test";
 import type { FullConfig } from "playwright/types/testReporter";
-import type { Configuration as WebpackConfig } from "webpack";
+import type { Configuration as RspackConfig } from "@rspack/core";
 
 export type CtConfig = BasePlaywrightTestConfig["use"] & {
   ct?: boolean;
   ctPort?: number;
   ctTemplateDir?: string;
   ctCacheDir?: string;
-  ctWebpackConfig?: WebpackConfig | (() => Promise<WebpackConfig>);
+  ctRspackConfig?: RspackConfig | (() => Promise<RspackConfig>);
 };
 
 /**
