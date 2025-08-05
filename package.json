@@ -10,8 +10,5 @@
   ],
   "devDependencies": {
     "@openremote/util": "workspace:*"
-  },
-  "dependencies": {
-    "@openremote/or-attribute-barchart": "workspace:^"
   }
 }
