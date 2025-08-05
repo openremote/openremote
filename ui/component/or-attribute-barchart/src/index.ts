@@ -22,6 +22,7 @@ import moment from "moment";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {isAxiosError} from "@openremote/rest";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {cache} from "lit/directives/cache.js";
 import "@openremote/or-mwc-components/or-mwc-menu";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
@@ -645,7 +646,6 @@ export class OrAttributeBarChart extends LitElement {
     }
 
     protected _openTimeDialog(startTimestamp?: number, endTimestamp?: number) {
-        this._isCustomWindow = true;
         const startRef: Ref<OrMwcInput> = createRef();
         const endRef: Ref<OrMwcInput> = createRef();
         showDialog(new OrMwcDialog()
@@ -663,8 +663,11 @@ export class OrAttributeBarChart extends LitElement {
                 actionName: "ok",
                 content: "ok",
                 action: () => {
-                    if(startRef.value?.value && endRef.value?.value) {
+                    if(startRef.value?.value && endRef.value?.value && startRef.value.value < endRef.value.value) {
+                        this._isCustomWindow = true;
                         this.timeframe = [new Date(startRef.value.value), new Date(endRef.value.value)];
+                    } else {
+                        showSnackbar(undefined, i18next.t("errorOccurred"));
                     }
                 }
             }])
