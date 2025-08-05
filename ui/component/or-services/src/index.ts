@@ -44,6 +44,7 @@ const serviceStyles = css`
   or-iframe {
     margin: 0 10px;
     width: calc(100% - 20px);
+    transition: opacity 0.3s ease-in-out;
   }
 
   .sidebar {
@@ -63,6 +64,7 @@ const serviceStyles = css`
     height: 100%;
     width: 100%;
     background-color: #f9f9f9;
+    transition: opacity 0.3s ease-in-out;
   }
 
   #fullscreen-header-wrapper {
@@ -213,8 +215,10 @@ export class OrServices extends LitElement {
     super.disconnectedCallback();
   }
 
-  private async _loadData(): Promise<void> {
-    this._loading = true;
+  private async _loadData(silent = false): Promise<void> {
+    if (!silent) {
+      this._loading = true;
+    }
 
     try {
       const response = await manager.rest.api.MicroserviceResource.getServices();
@@ -240,7 +244,7 @@ export class OrServices extends LitElement {
 
   // Refresh all services by reloading the data
   private async _onRefreshServices(): Promise<void> {
-    await this._loadData();
+    await this._loadData(true);
   }
 
   // Reload the current service iframe
@@ -318,17 +322,21 @@ export class OrServices extends LitElement {
    * Renders the main content area based on current state
    */
   protected getServiceContentTemplate(): TemplateResult {
-    // No service selected
-    if (!this.selectedService) {
-      return html`<div class="msg">
-        <or-translate value="services.noServiceSelected"></or-translate>
-      </div>`;
+    if (this._loading) {
+      return html`` // ignore
     }
 
-    // No services available
+    // If no services available, show a single consistent message
     if (this.services.length === 0) {
       return html`<div class="msg">
         <or-translate value="services.noServices"></or-translate>
+      </div>`;
+    }
+
+    // If services exist but none selected, show selection prompt
+    if (!this.selectedService) {
+      return html`<div class="msg">
+        <or-translate value="services.noServiceSelected"></or-translate>
       </div>`;
     }
 
