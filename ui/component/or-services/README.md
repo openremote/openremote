@@ -1,69 +1,31 @@
-# @openremote/or-services
+# @openremote/or-services  \<or-services\>
+[![NPM Version][npm-image]][npm-url]
+[![Linux Build][travis-image]][travis-url]
+[![Test Coverage][coveralls-image]][coveralls-url]
 
-OpenRemote services related UI components and utilities.
+Web component for displaying registered services from the OpenRemote Manager. The listed services are displayed in a sidebar menu and can be selected to display the service in an iframe.
 
-## Components
-
-### OrServiceTree
-
-A custom tree component for displaying and managing microservices.
-
-**Properties:**
-- `services?: Microservice[]` - Array of microservices to display
-- `selectedService?: Microservice` - Currently selected service
-- `readonly?: boolean` - Whether the tree is in readonly mode
-
-**Events:**
-- `service-selected` - Fired when a service is selected
-- `refresh-services` - Fired when the refresh button is clicked
-
-**Usage:**
-```typescript
-import "@openremote/or-services";
-
-// In your template
-<or-service-tree
-  .services="${services}"
-  .selectedService="${selectedService}"
-  @service-selected="${onServiceSelected}"
-  @refresh-services="${onRefreshServices}"
-></or-service-tree>
+## Install
+```bash
+npm i @openremote/or-services
+yarn add @openremote/or-services
 ```
 
-## Types
+## Usage
+For a full list of properties, methods and options refer to the TypeDoc generated [documentation]().
 
-### MicroserviceStatusIcon
-Enum for service status icons:
-- `AVAILABLE = "play"`
-- `UNAVAILABLE = "alert-octagon"`
 
-### MicroserviceStatusColor
-Enum for service status colors:
-- `AVAILABLE = "iconfill-gray"`
-- `UNAVAILABLE = "iconfill-red"`
+## Supported Browsers
+The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge. In addition,
+Internet Explorer 11 is also supported.
 
-### ServiceTreeNode
-Interface extending TreeNode with optional service property:
-```typescript
-interface ServiceTreeNode extends TreeNode {
-  service?: Microservice;
-}
-```
 
-## Utilities
+## License
+[GNU AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
-### consolidateServices(services: Microservice[]): Microservice[]
-Consolidates services by serviceId, preferring AVAILABLE over UNAVAILABLE status.
-
-### getServiceUrlPath(service: Microservice, realmName: string, isSuperUser: boolean): string
-Generates the iframe URL path for a service, handling realm parameter replacement.
-
-## Dependencies
-
-This package depends on:
-- `@openremote/core`
-- `@openremote/model`
-- `@openremote/or-tree-menu`
-- `@openremote/or-mwc-components`
-- `@openremote/or-translate`
-- `@openremote/or-icon`
+[npm-image]: https://img.shields.io/npm/v/live-xxx.svg
+[npm-url]: https://npmjs.org/package/@openremote/or-timeline
+[travis-image]: https://img.shields.io/travis/live-js/live-xxx/master.svg
+[travis-url]: https://travis-ci.org/live-js/live-xxx
+[coveralls-image]: https://img.shields.io/coveralls/live-js/live-xxx/master.svg
+[coveralls-url]: https://coveralls.io/r/live-js/live-xxx?branch=master
