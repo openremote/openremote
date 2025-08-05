@@ -12,7 +12,7 @@ import {when} from "lit/directives/when.js";
 import moment from "moment/moment";
 import {ListItem, ListType, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
 import {showDialog, OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {IntervalConfig, OrAttributeBarChart} from "@openremote/or-attribute-barchart";
+import {BarChartInterval, IntervalConfig, OrAttributeBarChart} from "@openremote/or-attribute-barchart";
 import {OrChart} from "@openremote/or-chart";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 
@@ -32,7 +32,7 @@ export class BarChartSettings extends WidgetSettings {
 
     protected timeWindowOptions: Map<string, [moment.unitOfTime.DurationConstructor, number]> = new Map<string, [moment.unitOfTime.DurationConstructor, number]>;
     protected timePrefixOptions: string[] = [];
-    protected intervalOptions: Map<string, IntervalConfig> = new Map<string, IntervalConfig>();
+    protected intervalOptions: Map<BarChartInterval, IntervalConfig> = new Map<BarChartInterval, IntervalConfig>();
 
     public setTimeWindowOptions(options: Map<string, [moment.unitOfTime.DurationConstructor, number]>) {
         this.timeWindowOptions = options;
@@ -42,7 +42,7 @@ export class BarChartSettings extends WidgetSettings {
         this.timePrefixOptions = options;
     }
 
-    public setIntervalOptions(options: Map<string, IntervalConfig>) {
+    public setIntervalOptions(options: Map<BarChartInterval, IntervalConfig>) {
         this.intervalOptions = options;
     }
 
@@ -100,7 +100,7 @@ export class BarChartSettings extends WidgetSettings {
                 },
                 {
                     icon: "palette",
-                    tooltip: i18next.t("dashboard.lineColor"),
+                    tooltip: i18next.t("dashboard.barColor"),
                     active: customColor,
                     color: color,
                     disabled: false
@@ -121,6 +121,8 @@ export class BarChartSettings extends WidgetSettings {
                 }
             ];
         };
+        const timeWindowOpts = Array.from(this.timeWindowOptions.keys()).map(o => ([o, i18next.t(o.toLowerCase())] as [string, string]));
+        const intervalOpts = Array.from(this.intervalOptions.keys()).map(o => ([o, i18next.t(`intervalBy${o.toLowerCase()}`)] as [string, string]));
         return html`
             <div>
                 <!-- Attribute selection -->
@@ -142,11 +144,11 @@ export class BarChartSettings extends WidgetSettings {
                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimePrefixSelect(ev)}"
                         ></or-mwc-input>
                         <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('timeframeDefault')}" style="width: 100%;"
-                                      .options="${Array.from(this.timeWindowOptions.keys())}" value="${this.widgetConfig.defaultTimeWindowKey}"
+                                      .options="${timeWindowOpts}" value="${this.widgetConfig.defaultTimeWindowKey}"
                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimeWindowSelect(ev)}"
                         ></or-mwc-input>
-                        <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('dashboard.withInterval')}" style="width: 100%;"
-                                      .options="${Array.from(this.intervalOptions.keys())}" value="${this.widgetConfig.defaultInterval}"
+                        <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('withInterval')}" style="width: 100%;"
+                                      .options="${intervalOpts}" value="${this.widgetConfig.defaultInterval}"
                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onIntervalSelect(ev)}"
                         ></or-mwc-input>
                     </div>
@@ -157,7 +159,7 @@ export class BarChartSettings extends WidgetSettings {
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 16px;">
                         <!-- Stacked -->
                         <div class="switch-container">
-                            <span><or-translate value="dashboard.defaultStacked"></or-translate></span>
+                            <span><or-translate value="dashboard.toggleStackView"></or-translate></span>
                             <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.stacked}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onDefaultStackedToggle(ev)}"
                             ></or-mwc-input>

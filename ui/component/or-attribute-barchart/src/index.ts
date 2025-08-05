@@ -537,8 +537,8 @@ export class OrAttributeBarChart extends LitElement {
                 )}
                 <!-- Time window selection -->
                 ${getContentWithMenuTemplate(
-                        html`<or-mwc-input .type="${InputType.BUTTON}" label="${this._isCustomWindow ? "timeframe" : this.timeWindowKey}" ?disabled="${disabled}"></or-mwc-input>`,
-                        disabled ? null as any : Array.from(this.timeWindowOptions.keys()).map(key => ({value: key} as ListItem)),
+                        html`<or-mwc-input .type="${InputType.BUTTON}" label="${this._isCustomWindow ? "timeframe" : i18next.t(this.timeWindowKey?.toLowerCase() ?? "")}" ?disabled="${disabled}"></or-mwc-input>`,
+                        disabled ? null as any : Array.from(this.timeWindowOptions.keys()).map(key => ({value: key, text: key.toLowerCase(), translate: true} as ListItem)),
                         this.timeWindowKey,
                         (value: string | string[]) => {
                             this.timeframe = undefined; // remove any custom start & end times
@@ -550,8 +550,8 @@ export class OrAttributeBarChart extends LitElement {
                         true
                 )}
                 <!-- Interval selection -->
-                ${getContentWithMenuTemplate(html`<or-mwc-input .type="${InputType.BUTTON}" label="interval: ${this._intervalConfig?.displayName}"></or-mwc-input>`,
-                        Array.from(this.intervalOptions.keys()).map(key => ({value: key} as ListItem)),
+                ${getContentWithMenuTemplate(html`<or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t(`intervalBy${this._intervalConfig?.displayName?.toLowerCase()}`)}"></or-mwc-input>`,
+                        Array.from(this.intervalOptions.keys()).map(key => ({value: key, text: `intervalBy${key.toLowerCase()}`, translate: true} as ListItem)),
                         this.interval,
                         value => this.interval = value as BarChartInterval,
                         undefined,
@@ -615,13 +615,14 @@ export class OrAttributeBarChart extends LitElement {
                     const axisNote = (this.attributeConfig?.rightAxisAttributes?.find(ar => asset.id === ar.id && attr.name === ar.name)) ? i18next.t("right") : undefined;
                     const bgColor = (color ?? this.colors[colourIndex]) || "";
                     //Find which aggregation methods are active
-                    const methodList: { data: string }[] = Object.entries(this.attributeConfig || {})
+                    
+                    const methodList: string[] = Object.entries(this.attributeConfig || {})
                             .filter(([key]) => key.includes("method"))
                             .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
-                            .reduce<{ data: string }[]>((list, [key, attributeRefs]) => {
+                            .reduce<string[]>((list, [key, attributeRefs]) => {
                                 const isActive = attributeRefs.some((attrRef: AttributeRef) => attrRef.id === asset.id && attrRef.name === attr.name);
                                 if (isActive) {
-                                    list.push({data: `(${i18next.t(key)})`});
+                                    list.push(i18next.t(`${key}-short`));
                                 }
                                 return list;
                             }, []);
@@ -636,7 +637,7 @@ export class OrAttributeBarChart extends LitElement {
                                     <span style="font-size:12px; ${this.denseLegend ? "margin-right: 8px" : undefined}">${this.assets[assetIndex].name}</span>
                                     ${when(axisNote, () => html`<span style="font-size:12px; color:grey">(${axisNote})</span>`)}
                                 </div>
-                                <span style="font-size:12px; color:grey; white-space:pre-line;">${label} <br> ${methodList.map(item => item?.data).join("\n")}</span>
+                                <span style="font-size:12px; color:grey; white-space:pre-line;">${label} <br> (${methodList.join(", ")})</span>
                             </div>
                         </div>
                     `;
@@ -819,17 +820,17 @@ export class OrAttributeBarChart extends LitElement {
         if (selectedInterval === BarChartInterval.AUTO) {
             // Returns number of steps, interval size and moment.js time format
             if(diffInHours <= 1) {
-                return { displayName: "auto(5m)", steps: 5, orFormat: DatapointInterval.MINUTE, momentFormat: "minutes", millis: 300000 };
+                return { displayName: "5Minutes-auto", steps: 5, orFormat: DatapointInterval.MINUTE, momentFormat: "minutes", millis: 300000 };
             } else if(diffInHours <= 6) {
-                return {displayName: "auto(30m)", steps: 30, orFormat: DatapointInterval.MINUTE, momentFormat: "minutes", millis: 1800000};
+                return {displayName: "30Minutes-auto", steps: 30, orFormat: DatapointInterval.MINUTE, momentFormat: "minutes", millis: 1800000};
             } else if(diffInHours <= 24) { // hour if up to one day
-                return {displayName: "auto(1hr)", steps: 1, orFormat: DatapointInterval.HOUR, momentFormat: "hours", millis: 3600000};
+                return {displayName: "hour-auto", steps: 1, orFormat: DatapointInterval.HOUR, momentFormat: "hours", millis: 3600000};
             } else if(diffInHours <= 744) { // one day if up to one month
-                return {displayName: "auto(day)", steps: 1, orFormat: DatapointInterval.DAY, momentFormat: "days", millis: 86400000};
+                return {displayName: "day-auto", steps: 1, orFormat: DatapointInterval.DAY, momentFormat: "days", millis: 86400000};
             } else if(diffInHours <= 8760) { // one week if up to 1 year
-                return {displayName: "auto(week)", steps: 1, orFormat: DatapointInterval.WEEK, momentFormat: "weeks", millis: 604800000};
+                return {displayName: "week-auto", steps: 1, orFormat: DatapointInterval.WEEK, momentFormat: "weeks", millis: 604800000};
             } else { // one month if more than a year
-                return {displayName: "auto(month)", steps: 1, orFormat: DatapointInterval.MONTH, momentFormat: "months", millis: 2592000000};
+                return {displayName: "month-auto", steps: 1, orFormat: DatapointInterval.MONTH, momentFormat: "months", millis: 2592000000};
             }
         } else if (selectedInterval === BarChartInterval.NONE) {
             // Set interval to total time span
@@ -1083,6 +1084,9 @@ export class OrAttributeBarChart extends LitElement {
                                     }
                                     case DatapointInterval.DAY: {
                                         return `${time.format("dddd, LL")}`;
+                                    }
+                                    case DatapointInterval.WEEK: {
+                                        return `${i18next.t("week")} ${startTime.format("w, LL")} - ${endTime.format("LL")}`;
                                     }
                                     default: {
                                         return `${startTime.format("LL")} - ${endTime.format("LL")}`;
