@@ -90,7 +90,7 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
                         "WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? " +
                         "GROUP BY x ORDER by x ASC";
             } else {
-                 return "select " + function +
+                return "SELECT " + function +
                          "(cast(? as interval), timestamp) AS x, " + this.formula.toString().toLowerCase() +
                          "(cast(value as numeric)) FROM " + tableName +
                          " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC";
@@ -133,14 +133,14 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
                         "ORDER BY d.x ASC";
 
             } else if (this.formula == Formula.MEDIAN) {
-                return "select " + function + "(cast(? as interval), timestamp) AS x, " +
+                return "SELECT " + function + "(cast(? as interval), timestamp) AS x, " +
                         "CASE WHEN PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY (CASE WHEN cast(value as text)::boolean THEN 1 ELSE 0 END)) >= 0.5 " +
                         "THEN true ELSE false END AS median_value " +
                         "FROM " + tableName + " " +
                         "WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? " +
                         "GROUP BY x ORDER by x ASC";
             } else {
-                return "select " + function + "(cast(? as interval), timestamp) AS x, " + this.formula.toString().toLowerCase() + "(case when cast(cast(value as text) as boolean) is true then 1 else 0 end) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC";
+                return "SELECT " + function + "(cast(? as interval), timestamp) AS x, " + this.formula.toString().toLowerCase() + "(case when cast(cast(value as text) as boolean) is true then 1 else 0 end) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC";
             }
         } else {
             throw new IllegalStateException("Query of type Interval requires either a number or a boolean attribute.");
