@@ -929,7 +929,7 @@
     "title": "Services",
     "refresh": "Verversen",
     "servicesLoadError": "Er is iets misgegaan bij het ophalen van de services",
-    "noServices": "Geen services gevonden, lees de documentatie voor informatie over hoe je een service kunt registreren en beschikbaar te stellen.",
+    "noServices": "Geen services gevonden, controleer de documentatie op hoe je services kunt toevoegen",
     "iframeLoadError": "De geselecteerde service kon niet worden geladen",
     "serviceUnavailable": "Service is niet beschikbaar"
   }
