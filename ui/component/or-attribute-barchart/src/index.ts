@@ -1021,7 +1021,28 @@ export class OrAttributeBarChart extends LitElement {
                 axisPointer: {
                     type: "cross",
                     label: {
-                        show: true
+                        show: true,
+                        formatter: params => {
+                            if(params.axisDimension === "x") {
+                                const time = moment(params.value as number);
+                                const startTime: moment.Moment = time.clone().subtract((this._intervalConfig?.millis ?? 0) / 2, "milliseconds");
+                                const endTime: moment.Moment = time.clone().add((this._intervalConfig?.millis ?? 0) / 2, "milliseconds");
+                                switch (this._intervalConfig?.orFormat) {
+                                    case DatapointInterval.MINUTE:
+                                    case DatapointInterval.HOUR: {
+                                        return `${startTime.format("lll")} - ${endTime.format("lll")}`;
+                                    }
+                                    case DatapointInterval.DAY: {
+                                        return `${time.format("dddd, LL")}`;
+                                    }
+                                    default: {
+                                        return `${startTime.format("LL")} - ${endTime.format("LL")}`;
+                                    }
+                                }
+                            } else {
+                                return Number(params.value).toFixed(this.decimals).toString();
+                            }
+                        }
                     }
                 }
             },
