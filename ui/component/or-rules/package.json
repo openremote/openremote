@@ -37,7 +37,6 @@
     "shortid": "^2.2.15"
   },
   "devDependencies": {
-    "@openremote/util": "workspace:*",
     "@types/shortid": "^0.0.29"
   },
   "publishConfig": {

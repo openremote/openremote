@@ -13,10 +13,6 @@
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
-  "dependencies": {
-    "@openremote/rest": "workspace:*",
-    "lit": "^2.0.2"
-  },
   "devDependencies": {
     "@openremote/util": "workspace:*",
     "@rspack/cli": "^1.1.3",

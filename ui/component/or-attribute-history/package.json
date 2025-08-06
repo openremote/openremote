@@ -28,9 +28,6 @@
     "jsonpath-plus": "^6.0.1",
     "lit": "^2.0.2"
   },
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
-  },
   "publishConfig": {
     "access": "public"
   }
