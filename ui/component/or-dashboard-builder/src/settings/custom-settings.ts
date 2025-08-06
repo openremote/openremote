@@ -1,5 +1,5 @@
 import { css, html, TemplateResult } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { CustomWidgetConfig } from "../widgets/custom-widget";
 import { AttributesSelectEvent } from "../panels/attributes-panel";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
@@ -7,9 +7,11 @@ import { AssetWidgetSettings } from "../util/or-asset-widget";
 import "@openremote/or-icon";
 
 const ICON_OPTIONS = ["lightbulb", "solar-power", "fan", "water-pump", "fire", "emoticon"];
-export type ValueMapping = { value: string; color: string; type?: string };
-export type RangeMapping = { min: number; max: number; color: string, type: "range" };
-export type SpecialMapping = { kind: "boolean", color: string, type: "special" };
+type MappingOption = "value" | "range" | "special";
+type ValueMapping = { value: string; color: string; type: "value" };
+type RangeMapping = { min: number; max: number; color: string; type: "range" };
+type SpecialMapping = { kind: "boolean"; color: string; type: "special" };
+
 export type ValueMappingUnion = ValueMapping | RangeMapping | SpecialMapping;
 
 const styling = css`
@@ -113,6 +115,7 @@ export class CustomSettings extends AssetWidgetSettings {
   protected readonly widgetConfig!: CustomWidgetConfig;
   @property({ type: Boolean }) private showMenu = false;
   @property({ type: String }) private selectedOption: string | null = null;
+  @state() private rangeErrors: Record<number, string> = {};
 
   static get styles() {
     return [...super.styles, styling];
@@ -163,141 +166,137 @@ export class CustomSettings extends AssetWidgetSettings {
 
         <!-- Mapping settings (only if icon is shown) -->
         ${this.widgetConfig.showIcon
-  ? html`
-      <settings-panel displayName="Value Mapping" expanded>
-        <div class="field">
-          <div class="mapping-list">
-            ${this.widgetConfig.valueMappings && this.widgetConfig.valueMappings.length
-              ? Array.from(this.groupedMappings.entries()).map(
-                  ([type, entries]) => html`
-                    <div class="mapping-group">
-                      <div class="group-title">
-                        ${type === "Allgemein" ? "Mapping" : `Mapping für ${type}`}
-                      </div>
-                      ${entries.map(
-                        ({ mapping, idx }: { mapping: ValueMappingUnion; idx: number }) => html`
-                          <div class="mapping-item">
-                            <!-- je nach Typ anderes UI -->
-                            ${mapping.type === "value"
-                              ? html`
-                                  <input
-                                    type="text"
-                                    placeholder="Wert"
-                                    .value=${(mapping as ValueMapping).value}
-                                    @input=${(e: Event) => this.onMappingValueChange(e, idx)}
-                                  />
-                                `
-                              : null}
+          ? html`
+              <settings-panel displayName="Value Mapping" expanded>
+                <div class="field">
+                  <div class="mapping-list">
+                    ${this.widgetConfig.valueMappings && this.widgetConfig.valueMappings.length
+                      ? Array.from(this.groupedMappings.entries()).map(
+                          ([type, entries]) => html`
+                            <div class="mapping-group">
+                              <div class="group-title">${type === "Allgemein" ? "Mapping" : `Mapping für ${type}`}</div>
+                              ${entries.map(
+                                ({ mapping, idx }: { mapping: ValueMappingUnion; idx: number }) => html`
+                                  <div class="mapping-item">
+                                    <!-- je nach Typ anderes UI -->
+                                    ${mapping.type === "value"
+                                      ? html`
+                                          <input
+                                            type="text"
+                                            placeholder="Wert"
+                                            .value=${(mapping as ValueMapping).value}
+                                            @input=${(e: Event) => this.onMappingValueChange(e, idx)}
+                                          />
+                                        `
+                                      : null}
+                                    ${mapping.type === "range"
+                                      ? html`
+                                          <div class="range-inputs">
+                                            <label>
+                                              Von
+                                              <input
+                                                type="number"
+                                                .value=${(mapping as RangeMapping).min}
+                                                @input=${(e: Event) => this.onRangeChange("min", e, idx)}
+                                              />
+                                            </label>
+                                            <label>
+                                              Bis
+                                              <input
+                                                type="number"
+                                                .value=${(mapping as RangeMapping).max}
+                                                @input=${(e: Event) => this.onRangeChange("max", e, idx)}
+                                              />
+                                            </label>
+                                          </div>
+                                          ${(mapping as RangeMapping).min > (mapping as RangeMapping).max
+                                            ? html`<div class="error">Min darf nicht größer als Max sein</div>`
+                                            : null}
+                                        `
+                                      : null}
+                                    ${mapping.type === "special"
+                                      ? html`
+                                          <select
+                                            .value=${(mapping as SpecialMapping).kind}
+                                            @change=${(e: Event) => this.onSpecialKindChange(e, idx)}
+                                          >
+                                            <option value="null">null</option>
+                                            <option value="NaN">NaN</option>
+                                            <option value="boolean">boolean</option>
+                                            <option value="empty">empty</option>
+                                          </select>
+                                        `
+                                      : null}
 
-                            ${mapping.type === "range"
-                              ? html`
-                                  <div class="range-inputs">
-                                    <label>
-                                      Von
-                                      <input
-                                        type="number"
-                                        .value=${(mapping as RangeMapping).min}
-                                        @input=${(e: Event) => this.onRangeChange("min", e, idx)}
-                                      />
-                                    </label>
-                                    <label>
-                                      Bis
-                                      <input
-                                        type="number"
-                                        .value=${(mapping as RangeMapping).max}
-                                        @input=${(e: Event) => this.onRangeChange("max", e, idx)}
-                                      />
-                                    </label>
+                                    <!-- Farbpicker immer -->
+                                    <input
+                                      type="color"
+                                      .value=${(mapping as any).color}
+                                      @input=${(e: Event) => this.onMappingColorChange(e, idx)}
+                                    />
+                                    <button @click=${() => this.onRemoveMapping(idx)}>✕</button>
                                   </div>
-                                  ${((mapping as RangeMapping).min > (mapping as RangeMapping).max)
-                                    ? html`<div class="error">Min darf nicht größer als Max sein</div>`
-                                    : null}
                                 `
-                              : null}
-                            ${mapping.type === "special"
-                              ? html`
-                                  <select
-                                    .value=${(mapping as SpecialMapping).kind}
-                                    @change=${(e: Event) => this.onSpecialKindChange(e, idx)}
-                                  >
-                                    <option value="null">null</option>
-                                    <option value="NaN">NaN</option>
-                                    <option value="boolean">boolean</option>
-                                    <option value="empty">empty</option>
-                                  </select>
-                                `
-                              : null}
-
-                            <!-- Farbpicker immer -->
-                            <input
-                              type="color"
-                              .value=${(mapping as any).color}
-                              @input=${(e: Event) => this.onMappingColorChange(e, idx)}
-                            />
-                            <button @click=${() => this.onRemoveMapping(idx)}>✕</button>
-                          </div>
-                        `
-                      )}
-                    </div>
-                  `
-                )
-              : html`<div>Keine Mappings definiert</div>`}
-          </div>
-        </div>
-
-        <div class="mapping-actions">
-          <button
-            @click=${(e: MouseEvent) => {
-              e.stopPropagation();
-              this.showMenu = !this.showMenu;
-            }}
-            aria-haspopup="true"
-            aria-expanded=${this.showMenu}
-          >
-            Mapping hinzufügen ▼
-          </button>
-
-          ${this.showMenu
-            ? html`
-                <div class="dropdown-content" role="menu" aria-label="Mapping Optionen">
-                  ${[
-                    {
-                      title: "Value",
-                      subtitle: "Match a specific text value",
-                      action: () => this._onOptionSelected("value"),
-                    },
-                    {
-                      title: "Range",
-                      subtitle: "Match a numerical range of values",
-                      action: () => this._onOptionSelected("range"),
-                    },
-                    {
-                      title: "Special",
-                      subtitle: "Match on null, NaN, boolean and empty values",
-                      action: () => this._onOptionSelected("special"),
-                    },
-                  ].map(
-                    (opt) => html`
-                      <button
-                        class="dropdown-item"
-                        role="menuitem"
-                        @click=${() => {
-                          opt.action();
-                        }}
-                      >
-                        <div class="item-title">${opt.title}</div>
-                        <div class="item-subtitle">${opt.subtitle}</div>
-                      </button>
-                    `
-                  )}
+                              )}
+                            </div>
+                          `
+                        )
+                      : html`<div>Keine Mappings definiert</div>`}
+                  </div>
                 </div>
-              `
-            : null}
-        </div>
-      </settings-panel>
-    `
-  : null}
 
+                <div class="mapping-actions">
+                  <button
+                    @click=${(e: MouseEvent) => {
+                      e.stopPropagation();
+                      this.showMenu = !this.showMenu;
+                    }}
+                    aria-haspopup="true"
+                    aria-expanded=${this.showMenu}
+                  >
+                    Mapping hinzufügen ▼
+                  </button>
+
+                  ${this.showMenu
+                    ? html`
+                        <div class="dropdown-content" role="menu" aria-label="Mapping Optionen">
+                          ${[
+                            {
+                              title: "Value",
+                              subtitle: "Match a specific text value",
+                              action: () => this._onOptionSelected("value"),
+                            },
+                            {
+                              title: "Range",
+                              subtitle: "Match a numerical range of values",
+                              action: () => this._onOptionSelected("range"),
+                            },
+                            {
+                              title: "Special",
+                              subtitle: "Match on null, NaN, boolean and empty values",
+                              action: () => this._onOptionSelected("special"),
+                            },
+                          ].map(
+                            (opt) => html`
+                              <button
+                                class="dropdown-item"
+                                role="menuitem"
+                                @click=${() => {
+                                  opt.action();
+                                }}
+                              >
+                                <div class="item-title">${opt.title}</div>
+                                <div class="item-subtitle">${opt.subtitle}</div>
+                              </button>
+                            `
+                          )}
+                        </div>
+                      `
+                    : null}
+                </div>
+              </settings-panel>
+            `
+          : null}
 
         <!-- Other settings -->
         <settings-panel displayName="settings" expanded="true">
@@ -376,52 +375,159 @@ export class CustomSettings extends AssetWidgetSettings {
     this.notifyConfigUpdate();
   }
 
-  private _onOptionSelected(option: string) {
+  private _onOptionSelected(option: MappingOption) {
     this.selectedOption = option;
     this._applyOption(option);
     this.showMenu = false;
   }
 
-  private _applyOption(option: string) {
+  private _applyOption(option: MappingOption) {
     this.addMapping(option);
   }
 
-  private addMapping(option: string) {
-    // Falls deine valueMappings noch kein "type" kennt, kannst du dein Interface erweitern.
-    this.widgetConfig.valueMappings = [
-      ...(this.widgetConfig.valueMappings || []),
-      { value: "", color: "#000000", type: option },
-    ];
+  private addMapping(option: "value" | "range" | "regex" | "special") {
+    // vorhandene Mappings nehmen oder leeres Array
+    const arr = this.widgetConfig.valueMappings ?? [];
+
+    // je nach Option korrekt typisiertes Mapping anlegen
+    let newMapping: ValueMappingUnion;
+    switch (option) {
+      case "value":
+        newMapping = {
+          type: "value",
+          value: "",
+          color: "#000000",
+        };
+        break;
+
+      case "range":
+        newMapping = {
+          type: "range",
+          min: 0,
+          max: 0,
+          color: "#000000",
+        };
+        break;
+
+      case "special":
+        newMapping = {
+          type: "special",
+          kind: "boolean", // oder "null" | "NaN" | "empty" je nach Default
+          color: "#000000",
+        };
+        break;
+
+      default:
+        // Falls doch mal ein fremder String reinkommt, abbrechen
+        return;
+    }
+
+    // ins Config-Array pushen und Config updaten
+    this.widgetConfig.valueMappings = [...arr, newMapping];
     this.notifyConfigUpdate();
   }
 
-  private get groupedMappings(): Map<string, Array<{ mapping: ValueMapping; idx: number }>> {
-    const map = new Map<string, Array<{ mapping: ValueMapping; idx: number }>>();
-    (this.widgetConfig.valueMappings || []).forEach((m, idx) => {
-      const key = m.type || "Allgemein";
+  private get groupedMappings(): Map<string, Array<{ mapping: ValueMappingUnion; idx: number }>> {
+    const map = new Map<string, Array<{ mapping: ValueMappingUnion; idx: number }>>();
+
+    (this.widgetConfig.valueMappings ?? []).forEach((m, idx) => {
+      // m.type ist jetzt eines der Literale "value" | "range" | "regex" | "special"
+      // Du kannst hier auch eine Übersetzung machen, z.B. "Allgemein" für "value"
+      const key = m.type === "value" ? "Allgemein" : m.type;
+
       if (!map.has(key)) {
         map.set(key, []);
       }
       map.get(key)!.push({ mapping: m, idx });
     });
+
     return map;
   }
 
   private onMappingValueChange(e: Event, idx: number) {
-    
-}
+    const input = e.currentTarget as HTMLInputElement;
+    const mappings = this.widgetConfig.valueMappings ?? [];
+    const m = mappings[idx];
 
-private onRangeChange(field: "min" | "max", e: Event, idx: number) {
+    if (m.type === "value") {
+      m.value = input.value;
+      this.notifyConfigUpdate();
+    }
+  }
 
-}
+  private onRangeChange(field: "min" | "max", e: Event, idx: number) {
+    const arr = this.widgetConfig.valueMappings;
+    if (!arr) return;
 
-private onMappingColorChange(e: Event, idx: number) {
-  this.requestUpdate();
-}
+    const mapping = arr[idx];
+    // Guard: wenn’s kein Range-Mapping ist, raus
+    if (mapping.type !== "range") return;
 
-private onSpecialKindChange(e: Event, idx: number) {
+    const input = e.currentTarget as HTMLInputElement;
+    const num = parseFloat(input.value);
+    if (isNaN(num)) return;
 
-}
+    // explizit pro Feld …
+    if (field === "min") {
+      mapping.min = num;
+    } else {
+      mapping.max = num;
+    }
 
-  
+    this.validateRangeMappings();
+    this.requestUpdate();
+  }
+
+  private validateRangeMappings() {
+    const errors: Record<number, string> = {};
+
+    // Sammle alle Range-Mappings
+    const ranges = this.widgetConfig.valueMappings
+      .map((m, i) => (m.type === "range" ? { idx: i, min: m.min, max: m.max } : null))
+      .filter((x): x is { idx: number; min: number; max: number } => x !== null);
+
+    // 1. Einzel-Validation: min <= max
+    for (const { idx, min, max } of ranges) {
+      if (min > max) {
+        errors[idx] = "Ungültiges Mapping: Min darf nicht größer als Max sein";
+      }
+    }
+
+    // 2. Paar-Validation: Überlappungen
+    for (let i = 0; i < ranges.length; i++) {
+      for (let j = i + 1; j < ranges.length; j++) {
+        const a = ranges[i],
+          b = ranges[j];
+        const overlap = a.min <= b.max && b.min <= a.max;
+        if (overlap) {
+          const msg = "Ungültiges Mapping: Überschneidet sich mit anderem Bereich";
+          errors[a.idx] = errors[a.idx] ? errors[a.idx] + "; Überschneidung" : msg;
+          errors[b.idx] = errors[b.idx] ? errors[b.idx] + "; Überschneidung" : msg;
+        }
+      }
+    }
+
+    this.rangeErrors = errors;
+  }
+
+  private onMappingColorChange(e: Event, idx: number) {
+    const input = e.currentTarget as HTMLInputElement;
+    const mappings = this.widgetConfig.valueMappings ?? [];
+    const m = mappings[idx];
+
+    // Farbe existiert in allen Mapping-Typen
+    m.color = input.value;
+    this.notifyConfigUpdate();
+  }
+
+  private onSpecialKindChange(e: Event, idx: number) {
+    const select = e.currentTarget as HTMLSelectElement;
+    const mappings = this.widgetConfig.valueMappings ?? [];
+    const m = mappings[idx];
+
+    if (m.type === "special") {
+      m.kind = select.value as SpecialMapping["kind"];
+      this.notifyConfigUpdate();
+    }
+  }
 }

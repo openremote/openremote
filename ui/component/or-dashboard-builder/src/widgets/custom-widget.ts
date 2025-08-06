@@ -8,7 +8,7 @@ import { AssetWidgetConfig } from "../util/widget-config";
 import { CustomSettings } from "../settings/custom-settings";
 import "@openremote/or-icon";
 import "@openremote/or-attribute-input";
-import type { ValueMapping } from "../settings/custom-settings";
+import type { ValueMappingUnion } from "../settings/custom-settings";
 
 export interface CustomWidgetConfig extends AssetWidgetConfig {
   customFieldTwo: number;
@@ -18,7 +18,7 @@ export interface CustomWidgetConfig extends AssetWidgetConfig {
   showValue: boolean;
   icon?: string;
   showIcon: boolean;
-  valueMappings?: ValueMapping[];
+  valueMappings: ValueMappingUnion[];
 }
 
 function getDefaultWidgetConfig(): CustomWidgetConfig {
@@ -202,55 +202,62 @@ export class CustomWidget extends OrAssetWidget {
       return html`<div id="error-txt">Kein Attribut ausgewählt</div>`;
     }
 
-    // Jetzt ist attribute garantiert definiert:
-    const raw = attribute.value;
-    const rawStr = String(raw);
+    const rawStr = String(attribute.value);
     const epoch = this.formatUpdatedAt(attribute.timestamp);
 
-    console.log(rawStr);
-    console.log(attribute.type === "boolean");
-    console.log(attribute);
-
-    // 4) Mapping‑Farbe ermitteln
-    let iconColor = "inherit";
-    for (const m of cfg.valueMappings ?? []) {
-      if (m.value === rawStr) {
-        iconColor = m.color;
-        break;
-      }
-    }
+    // → Hier iconColor holen
+    const iconColor = this.applyMappings(rawStr);
 
     return html`
       <div id="widget-wrapper" class="widget-container">
         ${cfg.showIcon
           ? html`<div class="icon-container">
-              <or-icon icon="${cfg.icon}" style="color:${iconColor || "inherit"}"></or-icon>
+              <or-icon icon="${cfg.icon}" style="color:${iconColor}"></or-icon>
             </div>`
           : null}
         <div class="info">
-          ${cfg.showVariable ? html` <div class="attribute-name">${attribute.name}:</div>` : null}
-          ${cfg.showValue ? html` <div class="attribute-value">${attribute.value}</div>` : null}
+          ${cfg.showVariable ? html`<div class="attribute-name">${attribute.name}:</div>` : null}
+          ${cfg.showValue ? html`<div class="attribute-value">${attribute.value}</div>` : null}
         </div>
-        ${cfg.showHelperText ? html` <div class="attribute-timestamp">${epoch}</div> ` : null}
+        ${cfg.showHelperText ? html`<div class="attribute-timestamp">${epoch}</div>` : null}
       </div>
     `;
   }
 
-  private applyMappings() {
-    const maps = this.widgetConfig.valueMappings ?? [];
-    for (const m of maps) {
-      switch (m.type) {
-        case "special":
-          break;
+  // → nun: Rückgabewert string
+  private applyMappings(rawStr: string): string {
+    let iconColor = "inherit";
 
-        case "regex":
-          break;
-        case "range":
-          break;
+    for (const m of this.widgetConfig.valueMappings ?? []) {
+      switch (m.type) {
         case "value":
-          break;
+          if (m.value === rawStr) {
+            iconColor = m.color;
+            break;
+          }
+          continue;
+
+        case "range":
+          const num = parseFloat(rawStr);
+          if (!isNaN(num) && num >= m.min && num <= m.max) {
+            iconColor = m.color;
+            break;
+          }
+          continue;
+
+        case "special":
+          if (m.kind === "boolean" && (rawStr === "true" || rawStr === "false")) {
+            iconColor = m.color;
+            break;
+          }
+          continue;
+      }
+      if (iconColor !== "inherit") {
+        break;
       }
     }
+
+    return iconColor;
   }
 
   private formatUpdatedAt(epoch: number): string {
