@@ -125,7 +125,7 @@ test("Create a Flow rule for an asset with logic connections", async ({ page, sh
   });
 
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.locator("text=Solar panel")).toHaveCount(1);
+  await expect(page.locator("or-rule-tree").getByText("Solar panel")).toHaveCount(1);
 });
 
 test.afterEach(async ({ manager }) => {
