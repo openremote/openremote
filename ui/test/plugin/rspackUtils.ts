@@ -1,9 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-// @ts-expect-error No declaration file available (internal Playwright module)
 import { getUserData } from "playwright/lib/transform/compilationCache";
-// @ts-expect-error No declaration file available (internal Playwright module)
 import { resolveHook } from "playwright/lib/transform/transform";
 
 import type { PlaywrightTestConfig as BasePlaywrightTestConfig } from "playwright/types/test";

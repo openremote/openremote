@@ -6,7 +6,6 @@ import HtmlWebpackPlugin from "html-webpack-plugin";
 
 // @ts-expect-error No declaration file available
 import { getStandardModuleRules } from "@openremote/util";
-// @ts-expect-error No declaration file available (internal Playwright module)
 import { isURLAvailable } from "playwright-core/lib/utils";
 
 import type { FullConfig } from "playwright/types/testReporter";
