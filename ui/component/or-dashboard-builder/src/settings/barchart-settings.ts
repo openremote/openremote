@@ -1,5 +1,5 @@
 import {css, html, TemplateResult} from "lit";
-import {customElement} from "lit/decorators.js";
+import {customElement, query} from "lit/decorators.js";
 import {WidgetSettings} from "../util/widget-settings";
 import "../panels/attributes-chart-panel";
 import "../util/settings-panel";
@@ -10,12 +10,14 @@ import {BarChartWidgetConfig} from "../widgets/barchart-widget";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {when} from "lit/directives/when.js";
 import moment from "moment/moment";
-import {ListItem, ListType, OrMwcList, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
+import {ListItem, ListType, OrMwcList} from "@openremote/or-mwc-components/or-mwc-list";
 import {showDialog, OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {BarChartAttributeConfig, BarChartInterval, IntervalConfig, OrAttributeBarChart} from "@openremote/or-attribute-barchart";
 import {OrChart} from "@openremote/or-chart";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {createRef, Ref, ref} from "lit/directives/ref.js";
+import {AttributesChartPanel} from "../panels/attributes-chart-panel";
+import {debounce} from "lodash";
 
 const styling = css`
     .switch-container {
@@ -28,6 +30,9 @@ const styling = css`
 
 @customElement("barchart-settings")
 export class BarChartSettings extends WidgetSettings {
+
+    @query("attributes-chart-panel")
+    protected _attributesPanelElem?: AttributesChartPanel;
 
     protected readonly widgetConfig!: BarChartWidgetConfig;
 
@@ -389,26 +394,34 @@ export class BarChartSettings extends WidgetSettings {
     }
 
     protected openColorPickDialog(attributeRef: AttributeRef) {
-        const colorInput = document.createElement("input");
-        colorInput.type = "color";
-        colorInput.style.border = "none";
-        colorInput.style.height = "31px";
-        colorInput.style.width = "31px";
-        colorInput.style.padding = "1px 3px";
-        colorInput.style.minHeight = "22px";
-        colorInput.style.minWidth = "30px";
-        colorInput.style.cursor = "pointer";
-        colorInput.addEventListener("change", (e: any) => {
-            const color = e.target.value;
-            const existingIndex = this.widgetConfig.attributeColors.findIndex(([ref, _]) => ref.id === attributeRef.id && ref.name === attributeRef.name);
-            if (existingIndex >= 0) {
-                this.widgetConfig.attributeColors[existingIndex][1] = color;
-            } else {
-                this.widgetConfig.attributeColors.push([attributeRef, color]);
+        const inputElem = this._attributesPanelElem?.shadowRoot?.querySelector(`#chart-color-${attributeRef.id}-${attributeRef.name}`) as HTMLInputElement | undefined;
+        if(inputElem) {
+            let oldColor = this.widgetConfig.attributeColors?.find(x => x[0] === attributeRef)?.[1];
+            if(!oldColor) {
+                const index = this.widgetConfig.attributeRefs?.indexOf(attributeRef);
+                if(index >= 0) {
+                    oldColor = OrChart.DEFAULT_COLORS?.[index];
+                }
             }
-            this.notifyConfigUpdate();
-        });
-        colorInput.click();
+            // Update value
+            inputElem.value = oldColor ?? "";
+
+            // Listen for changes
+            inputElem.addEventListener("input", debounce(() => {
+                const color = inputElem.value;
+                this.widgetConfig.attributeColors ??= [];
+                const existingColor = this.widgetConfig.attributeColors.find(x => x[0] === attributeRef);
+                if(existingColor) {
+                    existingColor[1] = color;
+                } else {
+                    this.widgetConfig.attributeColors.push([attributeRef, color]);
+                }
+                this.notifyConfigUpdate();
+            }, 200));
+
+            // Open color picker
+            inputElem.click();
+        }
     }
 
 
