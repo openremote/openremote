@@ -31,7 +31,8 @@ function getStandardModuleRules() {
                     // TODO: Switch to builtin:swc-loader, and remove ts-loader / webpack dependency
                     loader: "ts-loader",
                     options: {
-                        projectReferences: true
+                        projectReferences: true,
+                        transpileOnly: true,  // Disables type-checking (allows parallel builds).
                     }
                 }
             }
