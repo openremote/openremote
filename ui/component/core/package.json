@@ -32,10 +32,7 @@
     "url-search-params-polyfill": "^8.1.0"
   },
   "devDependencies": {
-    "@openremote/util": "workspace:*",
-    "@types/qs": "^6.9.7",
-    "xmldom": "^0.6.0",
-    "xpath": "^0.0.32"
+    "@types/qs": "^6.9.7"
   },
   "publishConfig": {
     "access": "public"

@@ -25,7 +25,6 @@
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "@openremote/rest": "workspace:*",
     "@polymer/polymer": "^3.3.1",
     "@types/mapbox": "^1.6.42",
     "lit": "^3.3.1",
@@ -33,7 +32,6 @@
     "maplibre-gl": "^4.1.2"
   },
   "devDependencies": {
-    "@openremote/util": "workspace:*",
     "@types/geojson": "^7946.0.7"
   },
   "publishConfig": {

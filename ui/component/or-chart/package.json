@@ -32,8 +32,6 @@
     "moment": "^2.29.4"
   },
   "devDependencies": {
-    "@openremote/util": "workspace:*",
-    "@types/chart.js": "^2.9.34",
     "@types/offscreencanvas": "^2019.6.4"
   },
   "publishConfig": {
