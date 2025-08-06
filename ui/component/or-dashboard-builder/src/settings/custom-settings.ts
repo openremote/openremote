@@ -13,6 +13,7 @@ type RangeMapping = { min: number; max: number; color: string; type: "range" };
 type SpecialMapping = { kind: "boolean"; color: string; type: "special" };
 
 export type ValueMappingUnion = ValueMapping | RangeMapping | SpecialMapping;
+export type TextMapping = { from: string; to: string };
 
 const styling = css`
   :host {
@@ -50,6 +51,26 @@ const styling = css`
   }
   .mapping-item input[type="text"] {
     flex: 1;
+  }
+
+  .mapping-item input[type="number"] {
+    width: 6ch;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .mapping-item input[type="text"] {
+    width: 6ch;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .error-message {
+    color: #b00020; /* sattes Rot */
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    /* optional: links einrücken, damit sie unter den Inputs sitzt */
+    margin-left: 2.5rem;
   }
 
   .mapping-actions {
@@ -115,6 +136,8 @@ export class CustomSettings extends AssetWidgetSettings {
   protected readonly widgetConfig!: CustomWidgetConfig;
   @property({ type: Boolean }) private showMenu = false;
   @property({ type: String }) private selectedOption: string | null = null;
+  @property({ type: Boolean }) private showTextMenu = false;
+
   @state() private rangeErrors: Record<number, string> = {};
 
   static get styles() {
@@ -160,14 +183,17 @@ export class CustomSettings extends AssetWidgetSettings {
                     `
                   )}
                 </div>
-              </div>`
+                <settings-panel displayName="Test" expanded>
+                  <div>Hallo</div>
+                </settings-panel>
+              </div> `
             : null}
         </settings-panel>
 
         <!-- Mapping settings (only if icon is shown) -->
         ${this.widgetConfig.showIcon
           ? html`
-              <settings-panel displayName="Value Mapping" expanded>
+              <settings-panel displayName="Value Mapping (Icon)" expanded>
                 <div class="field">
                   <div class="mapping-list">
                     ${this.widgetConfig.valueMappings && this.widgetConfig.valueMappings.length
@@ -209,9 +235,6 @@ export class CustomSettings extends AssetWidgetSettings {
                                               />
                                             </label>
                                           </div>
-                                          ${(mapping as RangeMapping).min > (mapping as RangeMapping).max
-                                            ? html`<div class="error">Min darf nicht größer als Max sein</div>`
-                                            : null}
                                         `
                                       : null}
                                     ${mapping.type === "special"
@@ -236,6 +259,10 @@ export class CustomSettings extends AssetWidgetSettings {
                                     />
                                     <button @click=${() => this.onRemoveMapping(idx)}>✕</button>
                                   </div>
+
+                                  ${this.rangeErrors[idx]
+                                    ? html`<div class="error-message">${this.rangeErrors[idx]}</div>`
+                                    : null}
                                 `
                               )}
                             </div>
@@ -299,6 +326,55 @@ export class CustomSettings extends AssetWidgetSettings {
           : null}
 
         <!-- Other settings -->
+        <settings-panel displayName="Text Mapping" expanded>
+          <div class="field">
+            <div class="mapping-list">
+              ${this.widgetConfig.textMappings.length
+                ? this.widgetConfig.textMappings.map(
+                    (m, idx) => html`
+                      <div class="mapping-item">
+                        <input
+                          type="text"
+                          placeholder="Original"
+                          .value=${m.from}
+                          @input=${(e: Event) => this.onTextFromChange(e, idx)}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Ersetzen durch"
+                          .value=${m.to}
+                          @input=${(e: Event) => this.onTextToChange(e, idx)}
+                        />
+                        <button @click=${() => this.onRemoveTextMapping(idx)}>✕</button>
+                      </div>
+                    `
+                  )
+                : html`<div>Keine Text-Mappings definiert</div>`}
+            </div>
+          </div>
+
+          <div class="mapping-actions">
+            <button
+              @click=${(e: MouseEvent) => {
+                e.stopPropagation();
+                this.showTextMenu = !this.showTextMenu;
+              }}
+              aria-haspopup="true"
+              aria-expanded=${this.showTextMenu}
+            >
+              Text-Mapping hinzufügen ▼
+            </button>
+
+            ${this.showTextMenu
+              ? html`
+                  <div class="dropdown-content">
+                    <button class="dropdown-item" @click=${() => this.addTextMapping()}>Neues Text-Mapping</button>
+                  </div>
+                `
+              : null}
+          </div>
+        </settings-panel>
+
         <settings-panel displayName="settings" expanded="true">
           <div class="field">
             <!-- Toggle helper text -->
@@ -385,6 +461,29 @@ export class CustomSettings extends AssetWidgetSettings {
     this.addMapping(option);
   }
 
+  private onTextFromChange(e: Event, idx: number) {
+    const input = e.currentTarget as HTMLInputElement;
+    this.widgetConfig.textMappings[idx].from = input.value;
+    this.notifyConfigUpdate();
+  }
+
+  private onTextToChange(e: Event, idx: number) {
+    const input = e.currentTarget as HTMLInputElement;
+    this.widgetConfig.textMappings[idx].to = input.value;
+    this.notifyConfigUpdate();
+  }
+
+  private addTextMapping() {
+    this.widgetConfig.textMappings.push({ from: "", to: "" });
+    this.showTextMenu = false;
+    this.notifyConfigUpdate();
+  }
+
+  private onRemoveTextMapping(idx: number) {
+    this.widgetConfig.textMappings.splice(idx, 1);
+    this.notifyConfigUpdate();
+  }
+
   private addMapping(option: "value" | "range" | "regex" | "special") {
     // vorhandene Mappings nehmen oder leeres Array
     const arr = this.widgetConfig.valueMappings ?? [];
@@ -418,7 +517,6 @@ export class CustomSettings extends AssetWidgetSettings {
         break;
 
       default:
-        // Falls doch mal ein fremder String reinkommt, abbrechen
         return;
     }
 
@@ -433,7 +531,8 @@ export class CustomSettings extends AssetWidgetSettings {
     (this.widgetConfig.valueMappings ?? []).forEach((m, idx) => {
       // m.type ist jetzt eines der Literale "value" | "range" | "regex" | "special"
       // Du kannst hier auch eine Übersetzung machen, z.B. "Allgemein" für "value"
-      const key = m.type === "value" ? "Allgemein" : m.type;
+      // const key = m.type === "value" ? "Allgemein" : m.type;
+      const key = m.type;
 
       if (!map.has(key)) {
         map.set(key, []);

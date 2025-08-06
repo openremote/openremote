@@ -8,7 +8,7 @@ import { AssetWidgetConfig } from "../util/widget-config";
 import { CustomSettings } from "../settings/custom-settings";
 import "@openremote/or-icon";
 import "@openremote/or-attribute-input";
-import type { ValueMappingUnion } from "../settings/custom-settings";
+import type { ValueMappingUnion, TextMapping } from "../settings/custom-settings";
 
 export interface CustomWidgetConfig extends AssetWidgetConfig {
   customFieldTwo: number;
@@ -19,6 +19,7 @@ export interface CustomWidgetConfig extends AssetWidgetConfig {
   icon?: string;
   showIcon: boolean;
   valueMappings: ValueMappingUnion[];
+  textMappings: TextMapping[];
 }
 
 function getDefaultWidgetConfig(): CustomWidgetConfig {
@@ -32,6 +33,7 @@ function getDefaultWidgetConfig(): CustomWidgetConfig {
     icon: "lightbulb",
     showIcon: true,
     valueMappings: [],
+    textMappings: [],
   };
 }
 
@@ -208,6 +210,8 @@ export class CustomWidget extends OrAssetWidget {
     // → Hier iconColor holen
     const iconColor = this.applyMappings(rawStr);
 
+    const displayValue = this.applyTextMappings(rawStr);
+
     return html`
       <div id="widget-wrapper" class="widget-container">
         ${cfg.showIcon
@@ -217,11 +221,20 @@ export class CustomWidget extends OrAssetWidget {
           : null}
         <div class="info">
           ${cfg.showVariable ? html`<div class="attribute-name">${attribute.name}:</div>` : null}
-          ${cfg.showValue ? html`<div class="attribute-value">${attribute.value}</div>` : null}
+          ${cfg.showValue ? html`<div class="attribute-value">${displayValue}</div>` : null}
         </div>
         ${cfg.showHelperText ? html`<div class="attribute-timestamp">${epoch}</div>` : null}
       </div>
     `;
+  }
+
+  private applyTextMappings(raw: string): string {
+    for (const tm of this.widgetConfig.textMappings ?? []) {
+      if (tm.from === raw) {
+        return tm.to;
+      }
+    }
+    return raw;
   }
 
   // → nun: Rückgabewert string
