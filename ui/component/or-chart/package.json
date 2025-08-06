@@ -21,14 +21,18 @@
     "@material/data-table": "^9.0.0",
     "@material/dialog": "^9.0.0",
     "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
     "@openremote/or-asset-tree": "workspace:*",
     "@openremote/or-attribute-picker": "workspace:*",
     "@openremote/or-components": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
+    "@openremote/rest": "workspace:*",
     "echarts": "~5.6.0",
+    "i18next": "^21.5.3",
     "lit": "^3.3.1",
+    "lodash": "^4.17.21",
     "moment": "^2.29.4"
   },
   "devDependencies": {

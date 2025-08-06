@@ -14,7 +14,11 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/or-thermostat": "workspace:*"
+    "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
+    "@openremote/or-thermostat": "workspace:*",
+    "@polymer/iron-demo-helpers": "^3.1.0",
+    "lit-html": "^3.3.1"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",
