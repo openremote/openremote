@@ -14,7 +14,6 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/demo-core": "workspace:*",
     "@openremote/or-asset-tree": "workspace:*"
   },
   "devDependencies": {

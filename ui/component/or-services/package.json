@@ -22,13 +22,8 @@
     "@openremote/model": "workspace:*",
     "@openremote/or-components": "workspace:*",
     "@openremote/or-icon": "workspace:*",
-    "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "@openremote/or-tree-menu": "workspace:*",
-    "@openremote/rest": "workspace:*"
-  },
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
+    "@openremote/or-tree-menu": "workspace:*"
   },
   "publishConfig": {
     "access": "public"
