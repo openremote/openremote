@@ -1900,17 +1900,17 @@ __metadata:
   dependencies:
     "@openremote/core": "workspace:*"
     "@openremote/util": "workspace:*"
-    "@playwright/experimental-ct-core": "npm:1.53.1"
-    "@playwright/test": "npm:1.53.1"
+    "@playwright/experimental-ct-core": "npm:1.54.2"
+    "@playwright/test": "npm:1.54.2"
     "@rspack/cli": "npm:^1.4.4"
     "@rspack/core": "npm:^1.4.4"
     "@rspack/dev-server": "npm:^1.1.4"
-    "@sand4rt/experimental-ct-web": "npm:1.53.1"
+    "@sand4rt/experimental-ct-web": "npm:1.54.2"
     css-loader: "npm:^6.5.1"
     html-webpack-plugin: "npm:^5.6.3"
     i18next: "npm:^21.5.3"
-    playwright: "npm:1.53.1"
-    playwright-core: "npm:1.53.1"
+    playwright: "npm:1.54.2"
+    playwright-core: "npm:1.54.2"
     ts-loader: "npm:~9.5.2"
     typescript: "npm:~5.8.3"
     webpack: "npm:^5.99.8"
@@ -1954,25 +1954,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@playwright/experimental-ct-core@npm:1.53.1":
-  version: 1.53.1
-  resolution: "@playwright/experimental-ct-core@npm:1.53.1"
+"@playwright/experimental-ct-core@npm:1.54.2":
+  version: 1.54.2
+  resolution: "@playwright/experimental-ct-core@npm:1.54.2"
   dependencies:
-    playwright: "npm:1.53.1"
-    playwright-core: "npm:1.53.1"
+    playwright: "npm:1.54.2"
+    playwright-core: "npm:1.54.2"
     vite: "npm:^6.3.4"
-  checksum: 10c0/7fb5dc09ecc8cdf8d108a18065734a0fd76c5a1cf68057cea641159f0c2f460c1a4309417e0d5db463eeb5bebcc074de156b40282c88b0547a1d6c2fe519bd0c
+  checksum: 10c0/9e357cf671a8dc5421a249950fbce36910c98b64bb1a46debd61c8f71fcdbd09790aa45046589ccbb8469d037a996af9a0351aa3b06884cea651abcee62ce505
   languageName: node
   linkType: hard
 
-"@playwright/test@npm:1.53.1":
-  version: 1.53.1
-  resolution: "@playwright/test@npm:1.53.1"
+"@playwright/test@npm:1.54.2":
+  version: 1.54.2
+  resolution: "@playwright/test@npm:1.54.2"
   dependencies:
-    playwright: "npm:1.53.1"
+    playwright: "npm:1.54.2"
   bin:
     playwright: cli.js
-  checksum: 10c0/f2ef7899ca6bc178c9f2ba6c8633d0bbeb5ba135048e9df01ecb949c6f743811ba5ef76d495f619454074c81dbfa28be12e4c0a1224bb2af0d4cb403182c716f
+  checksum: 10c0/a032d9714a91d6dc40405575ca65ec52f95b0ca95974cd0140e2c12b6c39fbe5311239b2d581b289acaa1e227dd871cf5c43a537f32457f6329723e4add6e6f1
   languageName: node
   linkType: hard
 
@@ -2336,14 +2336,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sand4rt/experimental-ct-web@npm:1.53.1":
-  version: 1.53.1
-  resolution: "@sand4rt/experimental-ct-web@npm:1.53.1"
+"@sand4rt/experimental-ct-web@npm:1.54.2":
+  version: 1.54.2
+  resolution: "@sand4rt/experimental-ct-web@npm:1.54.2"
   dependencies:
-    "@playwright/experimental-ct-core": "npm:1.53.1"
+    "@playwright/experimental-ct-core": "npm:1.54.2"
   bin:
     playwright: cli.js
-  checksum: 10c0/cfb060db972bf35d0f482360368074430a0c56b29878f82585b145bf930d01e1bc33b1528d6d7c7446d3b12270a85231c5bf35c854ae7406cbd69b6517c0b72c
+  checksum: 10c0/3eec05fc024c0545cf68cb1706f41d9701cd9d53d722c0172017890440857408528db335bc9f04b6f6eb82df886cca19326d92eec29ef175c3cf94524d44adba
   languageName: node
   linkType: hard
 
@@ -7472,27 +7472,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright-core@npm:1.53.1":
-  version: 1.53.1
-  resolution: "playwright-core@npm:1.53.1"
+"playwright-core@npm:1.54.2":
+  version: 1.54.2
+  resolution: "playwright-core@npm:1.54.2"
   bin:
     playwright-core: cli.js
-  checksum: 10c0/8780552740741b94c346373ab6f949e9a44d3df54016b12123da9fe2f5fb60c1838197642916789b0a2ffb567e4ba0089f2e57d496bef7e460ddc4526f9b3b0f
+  checksum: 10c0/44850e20bf35237c8c3dedf1096c655f8af939dde53c5469f72cae3dd744966858a302419b909a73d7a2093323123e7ebcc0fdd55151b4193afb7812c1fd2c88
   languageName: node
   linkType: hard
 
-"playwright@npm:1.53.1":
-  version: 1.53.1
-  resolution: "playwright@npm:1.53.1"
+"playwright@npm:1.54.2":
+  version: 1.54.2
+  resolution: "playwright@npm:1.54.2"
   dependencies:
     fsevents: "npm:2.3.2"
-    playwright-core: "npm:1.53.1"
+    playwright-core: "npm:1.54.2"
   dependenciesMeta:
     fsevents:
       optional: true
   bin:
     playwright: cli.js
-  checksum: 10c0/3dcbcd3791a7f0d1007db4d3126c8136258a2002c2fbfc8b840086b64cbc1fb628b2e25dd3b345d685fb27ba39790ab0f4ce81a8faade7dc748af3a63bdf3550
+  checksum: 10c0/6f642fa70179eee5d5bf8a90df2a6147c9638ff926f4f3ad0a0517396b8a3fe00ccebf13377e032a75b3f0b2610ec1562293e0cfc3bde234181c7a50af8af80a
   languageName: node
   linkType: hard
 
