@@ -20,12 +20,18 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
+    "@openremote/or-asset-tree": "workspace:*",
     "@openremote/or-attribute-picker": "workspace:*",
     "@openremote/or-chart": "workspace:*",
+    "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
+    "@openremote/rest": "workspace:*",
     "chart.js": "^3.6.0",
     "chartjs-adapter-moment": "^1.0.0",
+    "i18next": "^21.5.3",
     "lit": "^3.3.1",
+    "lodash": "^4.17.21",
     "moment": "^2.29.4"
   },
   "publishConfig": {

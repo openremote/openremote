@@ -18,7 +18,9 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "@jsonforms/core": "^3.5.1",
     "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
     "@openremote/or-components": "workspace:*",
     "@openremote/or-json-forms": "workspace:*",
     "@openremote/or-map": "workspace:*",

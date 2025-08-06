@@ -18,6 +18,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
     "lit": "^3.3.1"
   },

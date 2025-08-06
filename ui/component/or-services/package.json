@@ -23,7 +23,8 @@
     "@openremote/or-components": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "@openremote/or-tree-menu": "workspace:*"
+    "@openremote/or-tree-menu": "workspace:*",
+    "lit": "^3.3.1"
   },
   "publishConfig": {
     "access": "public"
