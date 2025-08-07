@@ -27,6 +27,9 @@ configurations.all {
         // This has been replaced with eclipse angus implementation
         exclude group: "com.sun.activation", module: "jakarta.activation"
 
+        // This has been replaced with org.bouncycastle bcpkix-jdk18on
+        exclude group: "org.bouncycastle", module: "bcpkix-jdk15on"
+
         // This has been replaced with org.bouncycastle bcprov-jdk18on
         exclude group: "org.bouncycastle", module: "bcprov-jdk15on"
 
