@@ -288,7 +288,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
         def intervalDatapoints1 = assetDatapointService.queryDatapoints(
                 asset.getId(),
                 asset.getAttribute(attributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
-                new AssetDatapointIntervalQuery(queryTime60, queryTimeNow, "3 minutes", AssetDatapointIntervalQuery.Formula.AVG, false)
+                new AssetDatapointIntervalQuery(queryTime60, queryTimeNow, "1 minute", AssetDatapointIntervalQuery.Formula.AVG, false)
         )
         assert intervalDatapoints1.size() == 6
         def index = 0
@@ -303,9 +303,9 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
         def intervalDatapoints2 = assetDatapointService.queryDatapoints(
                 asset.getId(),
                 asset.getAttribute(attributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
-                new AssetDatapointIntervalQuery(queryTime60, queryTimeNow, "3 minutes", AssetDatapointIntervalQuery.Formula.AVG, true)
+                new AssetDatapointIntervalQuery(queryTime60, queryTimeNow, "1 minute", AssetDatapointIntervalQuery.Formula.AVG, true)
         )
-        assert intervalDatapoints2.size() == 21 // because 60/3=20, plus an extra datapoint for the spare milliseconds of time
+        assert intervalDatapoints2.size() == 61 // because 60/1=60, plus an extra datapoint for the spare milliseconds of time
         def index2 = 0
         intervalDatapoints2.toList().stream().forEach { dp -> {
             if(index2 > 0) {
