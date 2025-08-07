@@ -27,6 +27,7 @@
     "querystring-es3": "^0.2.1",
     "shx": "~0.4.0",
     "source-map-loader": "^5.0.0",
+    "ts-checker-rspack-plugin": "^1.1.5",
     "ts-loader": "~9.5.2",
     "typescript": "~5.8.3",
     "webpack": "^5.99.8"

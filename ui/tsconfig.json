@@ -1,6 +1,7 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "incremental": true,
     "target": "es6",
     "module": "esNext",
     "moduleResolution": "node",

@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { rspack } = require('@rspack/core');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const { TsCheckerRspackPlugin } = require('ts-checker-rspack-plugin');
 
 function getStandardModuleRules() {
     return {
@@ -32,7 +33,7 @@ function getStandardModuleRules() {
                     loader: "ts-loader",
                     options: {
                         projectReferences: true,
-                        transpileOnly: true,  // Disables type-checking (allows parallel builds).
+                        transpileOnly: true,  // Disables type-checking (allows parallel builds). Type-checking is handled by TsCheckerRspackPlugin.
                     }
                 }
             }
@@ -101,6 +102,13 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
             chunksSortMode: 'none',
             inject: false,
             template: 'index.html'
+        }),
+        new TsCheckerRspackPlugin({
+          typescript: {
+            // Used for incremental builds
+            build: true,
+            mode: "write-references"
+          }
         })
     ];
 
