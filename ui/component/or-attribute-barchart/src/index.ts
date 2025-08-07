@@ -381,30 +381,90 @@ export class OrAttributeBarChart extends LitElement {
     @property({type: Number})
     public decimals = 2;
 
+    /**
+     * A JSON array list of strings that represent the prefix options in the UI, such as "current" or "last".
+     * In combination with {@link timeWindowOptions}, it provides a timeframe like "current 1 hour" to display data of.
+     */
     @property({type: Array})
     public timePrefixOptions: string[] = OrAttributeBarChart.getDefaultTimePrefixOptions();
 
+    /**
+     * The selected option from {@link timePrefixOptions}, such as "current" or "last".
+     * In combination with {@link timeWindowOptions}, it provides a timeframe like "current 1 hour" to display data of.
+     */
     @property({type: String})
     public timePrefixKey?: string;
 
+    /**
+     * A JSON object containing a list of time window options, like "1 day", "6 hours" or "52 weeks".
+     * In combination with {@link timePrefixOptions}, it provides a timeframe like "last 6 hours" to display data of.
+     * The input should contain a JavaScript {@link Map}, containing the following:
+     * - A {@link string} with a unique key like "6hours",
+     * - A combination of any {@link moment.unitOfTime.DurationConstructor} and {@link number}, like ["hours", 6]
+     *
+     * Example input: `{"6hours": ["hours", 6], "4weeks": ["weeks", 4]}`
+     */
     @property({type: Object})
     public timeWindowOptions: Map<string, [moment.unitOfTime.DurationConstructor, number]> = OrAttributeBarChart.getDefaultTimeWindowOptions();
 
+    /**
+     * The key value of the selected option from {@link timeWindowOptions}, such as "1day", "6hours" or "52weeks".
+     * In combination with {@link timePrefixOptions}, it provides a timeframe like "last 6 hours" to display data of.
+     */
     @property({type: String})
     public timeWindowKey?: string;
 
+    /**
+     * A JSON object containing a list of interval options, like "30minutes", "hour" or "day".
+     * It determines the interval to display data in sections. For example, split the data every 5 minutes of the past hour.
+     * In combination with the active formula in {@link datapointQuery}, such as AVG and MIN/MAX, it will show a '5 minute' average of the past hour.
+     * The input should contain a JavaScript {@link Map}, containing the following:
+     * - A {@link BarChartInterval} string with a unique key like "hour" or "day",
+     * - A {@link IntervalConfig} object with details on the interval, such as the display name and the unit of time.
+     *
+     * Example input:
+     * ```
+     * {"30minutes": {
+     *   displayName: "30Minutes", // translated automatically
+     *   steps: 30,
+     *   orFormat: "minute",
+     *   momentFormat: "minutes", // using moment.js format
+     *   millis: 1800000
+     * }}
+     * ```
+     */
     @property({type: Object})
     public intervalOptions: Map<BarChartInterval, IntervalConfig> = OrAttributeBarChart.getDefaultIntervalOptions();
 
+    /**
+     * The key value of the selected option from {@link intervalOptions}, such as "30minute", "hour" or "week".
+     * In combination with the active formula in {@link datapointQuery}, such as AVG and MIN/MAX, it will show a '5 minute' average of the past hour.
+     */
     @property({type: String})
     public interval?: BarChartInterval;
 
+    /**
+     * Whether a custom {@link timeframe} has been configured by the user or not.
+     * If it's a default value provided by us, it will be `false`.
+     * If a user customized the timeframe, it will be `true`.
+     * @protected
+     */
     @state()
     protected _isCustomWindow = false;
 
+    /**
+     * Loading state when fetching data from a remote source.
+     * Show a "loading indicator" in the UI when set to `true`.
+     * @protected
+     */
     @state()
     protected _loading = false;
 
+    /**
+     * Cached array of {@link BarChartData} objects to display in the chart.
+     * It contains custom data, but data from the ECharts library as well (see {@link BarSeriesOption} for details)
+     * @protected
+     */
     @state()
     protected _data?: BarChartData[];
 
@@ -413,8 +473,8 @@ export class OrAttributeBarChart extends LitElement {
 
     protected _chart?: echarts.ECharts;
     protected _style!: CSSStyleDeclaration;
-    protected _startOfPeriod?: number;
-    protected _endOfPeriod?: number;
+    protected _startOfPeriod?: number; // Start timestamp of the visible period
+    protected _endOfPeriod?: number; // End timestamp of the visible period
     protected _latestError?: string;
     protected _dataAbortController?: AbortController;
     protected _containerResizeObserver?: ResizeObserver;
