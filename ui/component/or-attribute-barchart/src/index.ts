@@ -659,13 +659,13 @@ export class OrAttributeBarChart extends LitElement {
                 <table style="text-align: right;">
                     <thead>
                     <tr>
-                        <th style="font-weight: normal; text-align: right;">${i18next.t("from")}:</th>
+                        <th style="font-weight: normal; text-align: right;"><or-translate value="from"></or-translate></th>
                         <th style="font-weight: normal; text-align: right;">${moment(timeframe![0]).format("lll")}</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr>
-                        <td style="text-align: right;">${i18next.t("to")}:</td>
+                        <td style="text-align: right;"><or-translate value="to"></or-translate></td>
                         <td style="text-align: right;">${moment(timeframe![1]).format("lll")}</td>
                     </tr>
                     </tbody>
@@ -679,7 +679,7 @@ export class OrAttributeBarChart extends LitElement {
             <div id="attribute-list" class="${this.denseLegend ? "attribute-list-dense" : undefined}">
                 ${when(this.assetAttributes == null || this.assetAttributes.length === 0, () => html`
                     <div>
-                        <span>${i18next.t("noAttributesConnected")}</span>
+                        <or-translate value="noAttributesConnected"></or-translate>
                     </div>
                 `)}
                 ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
@@ -1068,7 +1068,6 @@ export class OrAttributeBarChart extends LitElement {
     }
 
     protected _updateChartData() {
-        console.debug(`Updating chart with data from ${moment(this._startOfPeriod)} to ${moment(this._endOfPeriod)}`);
         if(!this._chart) {
             console.error("Could not update bar chart data; the bar chart is not initialized yet.");
             return;
@@ -1079,12 +1078,10 @@ export class OrAttributeBarChart extends LitElement {
         if(firstEntry) {
             const firstTimestamp = firstEntry[0][0];
             if(firstTimestamp !== this._startOfPeriod) {
-                console.debug(`Correcting ${moment(this._startOfPeriod)} to ${moment(firstTimestamp)}...`);
                 this._startOfPeriod = firstTimestamp;
             }
             const endTimestamp = [...firstEntry].reverse()[0][0];
             if(endTimestamp !== this._endOfPeriod) {
-                console.debug(`Correcting ${moment(this._endOfPeriod)} to ${moment(endTimestamp)}...`);
                 this._endOfPeriod = endTimestamp;
             }
         }
