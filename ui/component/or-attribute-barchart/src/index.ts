@@ -141,7 +141,7 @@ const style = css`
         height: 100%;
     }
 
-    .period-controls {
+    #period-controls {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -269,7 +269,7 @@ const style = css`
         }
 
         .interval-controls,
-        .period-controls {
+        #period-controls {
             flex-direction: row;
             justify-content: left;
             align-items: center;
@@ -599,7 +599,7 @@ export class OrAttributeBarChart extends LitElement {
 
     protected _getTimeControlsTemplate(disabled = true): TemplateResult {
         return html`
-            <div class="period-controls">
+            <div id="period-controls">
                 <!-- Time prefix selection -->
                 ${getContentWithMenuTemplate(
                         html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}" ?disabled="${disabled}"></or-mwc-input>`,
@@ -809,6 +809,10 @@ export class OrAttributeBarChart extends LitElement {
                 const controls = this.shadowRoot.getElementById("controls");
                 if(controls) {
                     controls.style.flexDirection = bottomLegend ? "row" : "column";
+                }
+                const periodControls = this.shadowRoot.getElementById("period-controls");
+                if(periodControls) {
+                    periodControls.style.flexDirection = bottomLegend ? "row" : "column";
                 }
                 const attributeList = this.shadowRoot.getElementById("attribute-list");
                 if(attributeList) {
