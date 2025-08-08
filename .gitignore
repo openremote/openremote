@@ -17,7 +17,6 @@ deployment/manager/fcm.json
 .classpath
 .project/
 .project
-.vscode/
 .idea/
 .sts4-cache/
 .local/
@@ -60,3 +59,5 @@ local.properties
 *~
 *.tar.gz
 /balena/manager-build/
+
+**.DS_*
