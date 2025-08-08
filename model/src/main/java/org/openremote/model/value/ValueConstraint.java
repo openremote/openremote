@@ -72,12 +72,12 @@ public abstract class ValueConstraint implements Serializable {
     public static final String NOT_NULL_MESSAGE_TEMPLATE = "{ValueConstraint.NotNull.message}";
     public static final String TIME_CONSTRAINT_EXAMPLES = """
         { "examples": [
-            "Date Only: 2025-04-18",
-            "Date and Time (UTC): 2025-04-18T14:30:00Z",
-            "Date and Time with Time Zone: 2025-04-18T14:30:00+02:00",
-            "Date and Time with Fractional Seconds: 2025-04-18T14:30:00.123Z",
-            "Combined Date and Time with Time Zone: 2025-04-18T14:30:00.456-05:00",
-            "Milliseconds Timestamp: 1713442200456"
+            "2025-04-18",
+            "2025-04-18T14:30:00Z",
+            "2025-04-18T14:30:00+02:00",
+            "2025-04-18T14:30:00.123Z",
+            "2025-04-18T14:30:00.456-05:00",
+            "1713442200456"
         ] }
     """;
 
