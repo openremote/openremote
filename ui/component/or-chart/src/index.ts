@@ -1231,6 +1231,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         this._loading = true;
+        this._latestError = undefined;
         const dates: [Date, Date] = this._getTimeSelectionDates(this.timePrefixKey!, this.timeWindowKey!);
         const data: LineChartData[] = [];
         let promises;
@@ -1506,7 +1507,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         if (connect) {
             // Add resize eventlisteners to make chart size responsive
             window.addEventListener("resize", () => this._chart!.resize());
-            this._containerResizeObserver = new ResizeObserver(() => { this._chart!.resize(); this.applyChartResponsiveness();});
+            this._containerResizeObserver = new ResizeObserver(() => { this.applyChartResponsiveness(); this._chart!.resize();});
             if (this.shadowRoot) {
                 this._containerResizeObserver.observe(this.shadowRoot!.getElementById('container') as HTMLElement);
             }

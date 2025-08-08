@@ -43,7 +43,7 @@ export class AttributesChartPanel extends AttributesPanel {
                     <or-icon icon="close-circle"></or-icon>
                 </button>
             </div>
-            ${when(!!this.attributeIconCallback, () => html`
+            ${when(!!this.attributeActionCallback, () => html`
                 <div class="attribute-list-item-actions" style="margin-left: 18px; justify-content: start;">
                     <!-- Custom actions defined by callback -->
                     ${this.attributeActionCallback!(attributeRef).map(action => this._getAttributeActionTemplate(action, asset, attributeRef))}
