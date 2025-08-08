@@ -1,12 +1,14 @@
 import {css, html, LitElement, PropertyValues} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {ErrorObject} from "ajv";
+import {camelCase} from "lodash";
 import {
     Actions,
     configReducer,
     CoreActions,
     coreReducer,
     createAjv,
+    createDefaultValue,
     Dispatch,
     generateDefaultUISchema,
     generateJsonSchema,
@@ -16,17 +18,19 @@ import {
     JsonFormsRendererRegistryEntry,
     JsonFormsSubStates,
     JsonFormsUISchemaRegistryEntry,
-    JsonSchema,
+    JsonSchema7,
     mapStateToJsonFormsRendererProps,
     OwnPropsOfJsonFormsRenderer,
+    Paths,
     setConfig,
     UISchemaElement
 } from "@jsonforms/core";
 import {getTemplateWrapper, StandardRenderers} from "./standard-renderers";
-import {getLabel, getTemplateFromProps} from "./util";
+import {getTemplateFromProps} from "./util";
 import {baseStyle} from "./styles";
-import {Util} from "@openremote/core";
+import manager, {Util} from "@openremote/core";
 import {AdditionalProps} from "./base-element";
+import { translate, i18next } from "@openremote/or-translate";
 
 declare global {
     interface SymbolConstructor {
@@ -58,13 +62,13 @@ const styles = css`
 `;
 
 @customElement("or-json-forms")
-export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRenderer, AdditionalProps {
+export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPropsOfJsonFormsRenderer, AdditionalProps {
 
     @property({type: Object})
     public uischema?: UISchemaElement;
 
     @property({type: Object})
-    public schema?: JsonSchema;
+    public schema?: JsonSchema7;
 
     @property({type: Object, attribute: false})
     public data: any;
@@ -115,7 +119,12 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
         super.shouldUpdate(_changedProperties);
 
         if (!this.schema) {
-            this.schema = this.data !== undefined ? generateJsonSchema(this.data) : {};
+            // Actually JsonSchema4 `generateJsonSchema` has no union JsonSchema return type
+            this.schema = this.data !== undefined ? generateJsonSchema(this.data) as JsonSchema7 : {};
+        }
+
+        if (!this.data) {
+          this.data = createDefaultValue(this.schema, this.schema);
         }
 
         if (!this.uischema) {
@@ -139,7 +148,14 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
             );
         }
 
-        if (!this.contextValue || _changedProperties.has("core") || _changedProperties.has("renderers") || _changedProperties.has("cells") || _changedProperties.has("config") || _changedProperties.has("readonly")) {
+        if (!this.contextValue
+          || _changedProperties.has("core")
+          || _changedProperties.has("renderers")
+          || _changedProperties.has("cells")
+          || _changedProperties.has("config")
+          || _changedProperties.has("readonly")
+          || _changedProperties.has("_language")
+        ) {
             this.contextValue = {
                 core: this.core,
                 renderers: this.renderers,
@@ -147,7 +163,20 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
                 config: this.config,
                 uischemas: this.uischemas,
                 readonly: this.readonly,
-                dispatch: (action: CoreActions) => this.updateCore(action)
+                dispatch: (action: CoreActions) => this.updateCore(action),
+                i18n: {
+                    locale: this._language,
+                    translate: (id, defaultMessage, values) => {
+                        const path = ["schema.item", camelCase(this.schema?.title), id].join(".")
+                        const defPath = ["schema.item", camelCase(this.schema?.title), "definitions", id].join(".")
+                        // console.log(path, id, defaultMessage, values, i18next.t([id, path, defPath], { defaultValue: defaultMessage }))
+                        return i18next.t([id, path, defPath], { defaultValue: defaultMessage }) || defaultMessage!;
+                    },
+                    translateError: (error, translate, uischema) => {
+                        console.log(`Locale: ${this.contextValue?.i18n?.locale}, Error: ${error}, UI Schema: ${uischema}`);
+                        return translate(error.message!, error.message!);
+                    },
+                }
             }
         }
 
@@ -180,7 +209,6 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
 
         const props: JsonFormsProps & AdditionalProps = {
             ...mapStateToJsonFormsRendererProps({jsonforms: {...this.contextValue}}, this),
-            label: getLabel(this.schema!, this.uischema!, this.label, undefined) || "",
             required: this.required
         };
         return getTemplateFromProps(this.contextValue, props) || html``;

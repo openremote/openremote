@@ -30,7 +30,6 @@ import jakarta.persistence.Entity;
 import java.util.Collection;
 import java.util.Optional;
 
-import static org.openremote.model.Constants.UNITS_DEGREE;
 import static org.openremote.model.value.ValueType.BOOLEAN;
 
 @Entity
@@ -45,9 +44,9 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
 
     public static final AttributeDescriptor<PanelOrientation> PANEL_ORIENTATION = new AttributeDescriptor<>("panelOrientation", PANEL_ORIENTATION_VALUE);
     public static final AttributeDescriptor<Integer> PANEL_AZIMUTH = new AttributeDescriptor<>("panelAzimuth", ValueType.INTEGER
-    ).withUnits(UNITS_DEGREE);
+    ).withUnits(Units.DEGREE);
     public static final AttributeDescriptor<Integer> PANEL_PITCH = new AttributeDescriptor<>("panelPitch", ValueType.POSITIVE_INTEGER
-    ).withUnits(UNITS_DEGREE);
+    ).withUnits(Units.DEGREE);
 
     public static final AttributeDescriptor<Boolean> INCLUDE_FORECAST_SOLAR_SERVICE = new AttributeDescriptor<>("includeForecastSolarService", BOOLEAN);
 

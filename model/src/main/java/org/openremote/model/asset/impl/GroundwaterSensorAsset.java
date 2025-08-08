@@ -22,22 +22,17 @@ package org.openremote.model.asset.impl;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueFormat;
-import org.openremote.model.value.ValueType;
+import org.openremote.model.value.*;
 
 import jakarta.persistence.Entity;
 import java.util.Optional;
-
-import static org.openremote.model.Constants.UNITS_CELSIUS;
 
 @Entity
 public class GroundwaterSensorAsset extends Asset<GroundwaterSensorAsset> {
 
     public static final AttributeDescriptor<Double> SOIL_TEMPERATURE = new AttributeDescriptor<>("soilTemperature", ValueType.NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_CELSIUS).withFormat(ValueFormat.NUMBER_1_DP());
+    ).withUnits(Units.CELSIUS).withFormat(ValueFormat.NUMBER_1_DP());
     public static final AttributeDescriptor<Integer> WATER_LEVEL = new AttributeDescriptor<>("waterLevel", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     );
