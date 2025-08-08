@@ -17,7 +17,13 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@openremote/or-app": "workspace:*"
+    "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
+    "@openremote/or-app": "workspace:*",
+    "@openremote/or-map": "workspace:*",
+    "@reduxjs/toolkit": "^1.8.1",
+    "lit": "^2.0.2",
+    "maplibre-gl": "^4.1.2"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*"

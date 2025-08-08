@@ -25,7 +25,15 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@openremote/or-app": "workspace:*"
+    "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
+    "@openremote/or-app": "workspace:*",
+    "@openremote/or-dashboard-builder": "workspace:*",
+    "@openremote/or-mwc-components": "workspace:*",
+    "@openremote/or-translate": "workspace:*",
+    "@openremote/rest": "workspace:*",
+    "@reduxjs/toolkit": "^1.8.1",
+    "lit": "^2.0.2"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*"
