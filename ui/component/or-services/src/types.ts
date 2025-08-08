@@ -21,15 +21,47 @@ import { TreeNode } from "@openremote/or-tree-menu";
 import { Microservice } from "@openremote/model";
 
 export enum MicroserviceStatusIcon {
-  AVAILABLE = "play",
-  UNAVAILABLE = "alert-octagon",
+    AVAILABLE = "play",
+    UNAVAILABLE = "alert-octagon",
 }
 
 export enum MicroserviceStatusColor {
-  AVAILABLE = "iconfill-gray",
-  UNAVAILABLE = "iconfill-red",
+    AVAILABLE = "iconfill-gray",
+    UNAVAILABLE = "iconfill-red",
 }
 
 export interface ServiceTreeNode extends TreeNode {
-  service?: Microservice;
-} 
+    service?: Microservice;
+}
+
+/**
+ * Model for the SERVICE-SELECTED event that {@link OrServiceTree} can dispatch.
+ * Once a service is selected, the selected service will be shared with the consumer elements.
+ */
+export class OrServiceSelectedEvent extends CustomEvent<Microservice> {
+    public static readonly NAME = "or-service-selected";
+
+    constructor(service: Microservice) {
+        super(OrServiceSelectedEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: service,
+        });
+    }
+}
+
+/**
+ * Model for the SERVICE-REFRESH event that {@link OrServiceTree} can dispatch.
+ * Triggers when the user requests to refresh the services list.
+ */
+export class OrServiceRefreshEvent extends CustomEvent<void> {
+    public static readonly NAME = "or-service-refresh";
+
+    constructor() {
+        super(OrServiceRefreshEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: undefined,
+        });
+    }
+}

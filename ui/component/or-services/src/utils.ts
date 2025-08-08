@@ -25,16 +25,19 @@ import { Microservice, MicroserviceStatus } from "@openremote/model";
  * @returns Consolidated array with unique serviceIds
  */
 export function consolidateServices(services: Microservice[]): Microservice[] {
-  return Object.values(
-    services.reduce((acc, service) => {
-      const serviceId = service.serviceId || "";
-      const existing = acc[serviceId];
-      if (!existing || (service.status === MicroserviceStatus.AVAILABLE && existing.status !== MicroserviceStatus.AVAILABLE)) {
-        acc[serviceId] = service;
-      }
-      return acc;
-    }, {} as Record<string, Microservice>)
-  );
+    return Object.values(
+        services.reduce((acc, service) => {
+            const serviceId = service.serviceId || "";
+            const existing = acc[serviceId];
+            if (
+                !existing ||
+                (service.status === MicroserviceStatus.AVAILABLE && existing.status !== MicroserviceStatus.AVAILABLE)
+            ) {
+                acc[serviceId] = service;
+            }
+            return acc;
+        }, {} as Record<string, Microservice>)
+    );
 }
 
 /**
@@ -45,7 +48,7 @@ export function consolidateServices(services: Microservice[]): Microservice[] {
  * @returns The iframe path
  */
 export function getServiceUrlPath(service: Microservice, realmName: string, isSuperUser: boolean): string {
-  // Replace {realm} param if provided, uses query param if not super user
-  const homepageUrl = service.homepageUrl || "";
-  return homepageUrl.replace("{realm}", isSuperUser ? realmName : `?realm=${realmName}`);
-} 
+    // Replace {realm} param if provided, uses query param if not super user
+    const homepageUrl = service.homepageUrl || "";
+    return homepageUrl.replace("{realm}", isSuperUser ? realmName : `?realm=${realmName}`);
+}

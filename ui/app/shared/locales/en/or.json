@@ -932,6 +932,7 @@
     "servicesLoadError": "Something went wrong while retrieving the services",
     "noServices": "No services found, check the documentation on how to add services",
     "iframeLoadError": "The selected service could not be loaded",
-    "serviceUnavailable": "Service is unavailable"
+    "serviceUnavailable": "Service is unavailable",
+    "servicesReloaded": "{{count}} service(s) retrieved"
   }
 }
