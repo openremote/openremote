@@ -706,7 +706,7 @@ export class OrMwcTable extends LitElement {
     }
 
     protected getMaxColumnWidth(index: number, columns?: string[] | TableColumn[], tableWidthPx?: number): string | undefined {
-        return tableWidthPx ? (`${tableWidthPx / (columns?.length || 2)}px`) : undefined;
+        return undefined;
     }
 
 }
