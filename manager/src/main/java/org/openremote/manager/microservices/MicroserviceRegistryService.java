@@ -127,7 +127,7 @@ public class MicroserviceRegistryService implements ContainerService {
      * @param microservice The microservice to register
      */
     public Microservice registerService(Microservice microservice) {
-        LOG.fine("Registering microservice: " + microservice.getServiceId() + ", instanceId: "
+        LOG.info("Registering microservice: " + microservice.getServiceId() + ", instanceId: "
                 + microservice.getInstanceId());
 
         List<Microservice> instances = registry.computeIfAbsent(microservice.getServiceId(),
@@ -156,7 +156,7 @@ public class MicroserviceRegistryService implements ContainerService {
         // Add the instance to the registry
         instances.add(microservice);
 
-        LOG.fine("Successfully registered microservice: " + microservice.getServiceId() + ", instanceId: "
+        LOG.info("Successfully registered microservice: " + microservice.getServiceId() + ", instanceId: "
                 + microservice.getInstanceId());
 
         return microservice;
@@ -194,6 +194,8 @@ public class MicroserviceRegistryService implements ContainerService {
             entry.getLeaseInfo().setRenewalTimestamp(renewalTimestamp);
             entry.getLeaseInfo().setExpirationTimestamp(expirationTimestamp);
             entry.setStatus(MicroserviceStatus.AVAILABLE);
+
+            LOG.fine("Successfully refreshed lease info for microservice: " + serviceId + ", instanceId: " + instanceId);
 
         } else {
             LOG.warning("Failed to refresh lease info for microservice: " + serviceId + ", instanceId: " + instanceId
@@ -249,15 +251,21 @@ public class MicroserviceRegistryService implements ContainerService {
      */
     protected void markExpiredInstancesAsUnavailable() {
         long currentTime = timerService.getCurrentTimeMillis();
+        LOG.fine("Marking expired microservice instances as unavailable");
 
         registry.values().stream()
                 .flatMap(List::stream)
                 .filter(entry -> entry.getLeaseInfo().isExpired(currentTime)
                         && entry.getStatus() == MicroserviceStatus.AVAILABLE)
-                .forEach(entry -> entry.setStatus(MicroserviceStatus.UNAVAILABLE));
+                .forEach(entry -> {
+                    entry.setStatus(MicroserviceStatus.UNAVAILABLE);
+                    LOG.fine("Marked microservice as unavailable: " + entry.getServiceId() + ", instanceId: " + entry.getInstanceId());
+                });
     }
 
     protected void purgeLongExpiredInstances() {
+        LOG.info("Purging long expired microservice registrations");
+        
         long currentTime = timerService.getCurrentTimeMillis();
         long purgeThreshold = currentTime - DEFAULT_PURGE_UNAVAILABLE_MS;
 
@@ -271,6 +279,7 @@ public class MicroserviceRegistryService implements ContainerService {
 
         // Deregister long expired microservices0
         toRemove.forEach(entry -> deregisterService(entry.getServiceId(), entry.getInstanceId()));
+        LOG.info("Purged " + toRemove.size() + " long expired microservice registrations");
     }
 
 }
