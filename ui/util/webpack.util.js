@@ -271,5 +271,6 @@ function generateExports(dirname) {
 module.exports = {
     getLibName: getLibName,
     generateExports: generateExports,
+    getStandardModuleRules: getStandardModuleRules,
     getAppConfig: getAppConfig
 };
