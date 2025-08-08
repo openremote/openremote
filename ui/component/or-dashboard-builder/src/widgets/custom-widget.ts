@@ -2,7 +2,7 @@
 import { css, html, PropertyValues, TemplateResult } from "lit";
 import { customElement, state, query } from "lit/decorators.js";
 import { throttle } from "lodash";
-import { OrWidget, WidgetManifest } from "../util/or-widget";
+import { WidgetManifest } from "../util/or-widget";
 import { OrAssetWidget } from "../util/or-asset-widget";
 import { AssetWidgetConfig } from "../util/widget-config";
 import { CustomSettings } from "../settings/custom-settings";
@@ -20,6 +20,8 @@ export interface CustomWidgetConfig extends AssetWidgetConfig {
   showIcon: boolean;
   valueMappings: ValueMappingUnion[];
   textMappings: TextMapping[];
+  variableLabel?: string;
+  iconColor: string;
 }
 
 function getDefaultWidgetConfig(): CustomWidgetConfig {
@@ -34,6 +36,8 @@ function getDefaultWidgetConfig(): CustomWidgetConfig {
     showIcon: true,
     valueMappings: [],
     textMappings: [],
+    variableLabel: "",
+    iconColor: "inherit"
   };
 }
 
@@ -51,6 +55,7 @@ const styling = css`
     display: flex;
     flex-direction: column;
     align-items: center; /* Icon+Input mittig */
+    text-align: center;
     justify-content: center;
     box-sizing: border-box;
     overflow: hidden;
@@ -220,7 +225,11 @@ export class CustomWidget extends OrAssetWidget {
             </div>`
           : null}
         <div class="info">
-          ${cfg.showVariable ? html`<div class="attribute-name">${attribute.name}:</div>` : null}
+          ${cfg.showVariable
+            ? html`<div class="attribute-name">
+                ${cfg.variableLabel && cfg.variableLabel.length ? cfg.variableLabel : attribute.name}:
+              </div>`
+            : null}
           ${cfg.showValue ? html`<div class="attribute-value">${displayValue}</div>` : null}
         </div>
         ${cfg.showHelperText ? html`<div class="attribute-timestamp">${epoch}</div>` : null}
@@ -239,7 +248,7 @@ export class CustomWidget extends OrAssetWidget {
 
   // → nun: Rückgabewert string
   private applyMappings(rawStr: string): string {
-    let iconColor = "inherit";
+    let iconColor = this.widgetConfig.iconColor;
 
     for (const m of this.widgetConfig.valueMappings ?? []) {
       switch (m.type) {
@@ -253,13 +262,6 @@ export class CustomWidget extends OrAssetWidget {
         case "range":
           const num = parseFloat(rawStr);
           if (!isNaN(num) && num >= m.min && num <= m.max) {
-            iconColor = m.color;
-            break;
-          }
-          continue;
-
-        case "special":
-          if (m.kind === "boolean" && (rawStr === "true" || rawStr === "false")) {
             iconColor = m.color;
             break;
           }

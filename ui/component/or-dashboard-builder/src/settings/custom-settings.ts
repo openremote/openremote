@@ -6,13 +6,12 @@ import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or
 import { AssetWidgetSettings } from "../util/or-asset-widget";
 import "@openremote/or-icon";
 
-const ICON_OPTIONS = ["lightbulb", "solar-power", "fan", "water-pump", "fire", "emoticon"];
+const ICON_OPTIONS = ["lightbulb", "solar-power", "fan", "water-pump", "fire", "emoticon", "door", "water", "alert", "lightning-bolt"];
 type MappingOption = "value" | "range" | "special";
 type ValueMapping = { value: string; color: string; type: "value" };
 type RangeMapping = { min: number; max: number; color: string; type: "range" };
-type SpecialMapping = { kind: "boolean"; color: string; type: "special" };
 
-export type ValueMappingUnion = ValueMapping | RangeMapping | SpecialMapping;
+export type ValueMappingUnion = ValueMapping | RangeMapping;
 export type TextMapping = { from: string; to: string };
 
 const styling = css`
@@ -54,7 +53,7 @@ const styling = css`
   }
 
   .mapping-item input[type="number"] {
-    width: 6ch;
+    width: 7ch;
     min-width: 0;
     box-sizing: border-box;
   }
@@ -135,8 +134,6 @@ const styling = css`
 export class CustomSettings extends AssetWidgetSettings {
   protected readonly widgetConfig!: CustomWidgetConfig;
   @property({ type: Boolean }) private showMenu = false;
-  @property({ type: String }) private selectedOption: string | null = null;
-  @property({ type: Boolean }) private showTextMenu = false;
 
   @state() private rangeErrors: Record<number, string> = {};
 
@@ -154,6 +151,14 @@ export class CustomSettings extends AssetWidgetSettings {
             style="padding-bottom: 12px;"
             @attribute-select=${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}
           ></attributes-panel>
+          <div class="field">
+            <span>Name der Variable:</span>
+            <input
+              type="text"
+              .value=${this.widgetConfig.variableLabel ?? ""}
+              @input=${(e: Event) => this.onVariableLabelChange(e)}
+            />
+          </div>
         </settings-panel>
 
         <!-- Icon visibility toggle -->
@@ -168,25 +173,33 @@ export class CustomSettings extends AssetWidgetSettings {
           </div>
 
           ${this.widgetConfig.showIcon
-            ? html`<div class="field">
-                <span>Icon auswählen</span>
-                <div class="icon-picker">
-                  ${ICON_OPTIONS.map(
-                    (iconName) => html`
-                      <div
-                        class="icon-option"
-                        ?selected=${this.widgetConfig.icon === iconName}
-                        @click=${() => this.onIconPicked(iconName)}
-                      >
-                        <or-icon icon=${iconName} style="--or-icon-width:32px; --or-icon-height:32px;"></or-icon>
-                      </div>
-                    `
-                  )}
+            ? html`
+                <div class="field">
+                  <span>Basisfarbe: </span>
+                  <input
+                    type="color"
+                    .value=${this.widgetConfig.iconColor}
+                    @input=${(e: Event) => this.onIconColorChange(e)}
+                  />
                 </div>
-                <settings-panel displayName="Test" expanded>
-                  <div>Hallo</div>
-                </settings-panel>
-              </div> `
+
+                <div class="field">
+                  <span>Icon auswählen</span>
+                  <div class="icon-picker">
+                    ${ICON_OPTIONS.map(
+                      (iconName) => html`
+                        <div
+                          class="icon-option"
+                          ?selected=${this.widgetConfig.icon === iconName}
+                          @click=${() => this.onIconPicked(iconName)}
+                        >
+                          <or-icon icon=${iconName} style="--or-icon-width:32px; --or-icon-height:32px;"></or-icon>
+                        </div>
+                      `
+                    )}
+                  </div>
+                </div>
+              `
             : null}
         </settings-panel>
 
@@ -237,19 +250,6 @@ export class CustomSettings extends AssetWidgetSettings {
                                           </div>
                                         `
                                       : null}
-                                    ${mapping.type === "special"
-                                      ? html`
-                                          <select
-                                            .value=${(mapping as SpecialMapping).kind}
-                                            @change=${(e: Event) => this.onSpecialKindChange(e, idx)}
-                                          >
-                                            <option value="null">null</option>
-                                            <option value="NaN">NaN</option>
-                                            <option value="boolean">boolean</option>
-                                            <option value="empty">empty</option>
-                                          </select>
-                                        `
-                                      : null}
 
                                     <!-- Farbpicker immer -->
                                     <input
@@ -290,18 +290,13 @@ export class CustomSettings extends AssetWidgetSettings {
                           ${[
                             {
                               title: "Value",
-                              subtitle: "Match a specific text value",
+                              subtitle: "Match a specific value",
                               action: () => this._onOptionSelected("value"),
                             },
                             {
                               title: "Range",
                               subtitle: "Match a numerical range of values",
                               action: () => this._onOptionSelected("range"),
-                            },
-                            {
-                              title: "Special",
-                              subtitle: "Match on null, NaN, boolean and empty values",
-                              action: () => this._onOptionSelected("special"),
                             },
                           ].map(
                             (opt) => html`
@@ -354,24 +349,7 @@ export class CustomSettings extends AssetWidgetSettings {
           </div>
 
           <div class="mapping-actions">
-            <button
-              @click=${(e: MouseEvent) => {
-                e.stopPropagation();
-                this.showTextMenu = !this.showTextMenu;
-              }}
-              aria-haspopup="true"
-              aria-expanded=${this.showTextMenu}
-            >
-              Text-Mapping hinzufügen ▼
-            </button>
-
-            ${this.showTextMenu
-              ? html`
-                  <div class="dropdown-content">
-                    <button class="dropdown-item" @click=${() => this.addTextMapping()}>Neues Text-Mapping</button>
-                  </div>
-                `
-              : null}
+            <button @click=${() => this.addTextMapping()} aria-haspopup="true">Text-Mapping hinzufügen</button>
           </div>
         </settings-panel>
 
@@ -452,7 +430,6 @@ export class CustomSettings extends AssetWidgetSettings {
   }
 
   private _onOptionSelected(option: MappingOption) {
-    this.selectedOption = option;
     this._applyOption(option);
     this.showMenu = false;
   }
@@ -475,12 +452,23 @@ export class CustomSettings extends AssetWidgetSettings {
 
   private addTextMapping() {
     this.widgetConfig.textMappings.push({ from: "", to: "" });
-    this.showTextMenu = false;
     this.notifyConfigUpdate();
   }
 
   private onRemoveTextMapping(idx: number) {
     this.widgetConfig.textMappings.splice(idx, 1);
+    this.notifyConfigUpdate();
+  }
+
+  private onVariableLabelChange(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    this.widgetConfig.variableLabel = input.value;
+    this.notifyConfigUpdate();
+  }
+
+  private onIconColorChange(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    this.widgetConfig.iconColor = input.value;
     this.notifyConfigUpdate();
   }
 
@@ -504,14 +492,6 @@ export class CustomSettings extends AssetWidgetSettings {
           type: "range",
           min: 0,
           max: 0,
-          color: "#000000",
-        };
-        break;
-
-      case "special":
-        newMapping = {
-          type: "special",
-          kind: "boolean", // oder "null" | "NaN" | "empty" je nach Default
           color: "#000000",
         };
         break;
@@ -617,16 +597,5 @@ export class CustomSettings extends AssetWidgetSettings {
     // Farbe existiert in allen Mapping-Typen
     m.color = input.value;
     this.notifyConfigUpdate();
-  }
-
-  private onSpecialKindChange(e: Event, idx: number) {
-    const select = e.currentTarget as HTMLSelectElement;
-    const mappings = this.widgetConfig.valueMappings ?? [];
-    const m = mappings[idx];
-
-    if (m.type === "special") {
-      m.kind = select.value as SpecialMapping["kind"];
-      this.notifyConfigUpdate();
-    }
   }
 }
