@@ -931,6 +931,7 @@
     "servicesLoadError": "Er is iets misgegaan bij het ophalen van de services",
     "noServices": "Geen services gevonden, controleer de documentatie op hoe je services kunt toevoegen",
     "iframeLoadError": "De geselecteerde service kon niet worden geladen",
-    "serviceUnavailable": "Service is niet beschikbaar"
+    "serviceUnavailable": "Service is niet beschikbaar",
+    "servicesReloaded": "{{count}} service(s) opgehaald"
   }
 }
