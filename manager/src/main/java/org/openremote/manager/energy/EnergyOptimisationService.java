@@ -408,7 +408,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         }
 
         double[] powerNets = new double[intervalCount];
-        ElectricitySupplierAsset supplierAsset = supplierAssets.get(0);
+        ElectricitySupplierAsset supplierAsset = supplierAssets.getFirst();
 
         if (LOG.isLoggable(Level.FINEST)) {
             LOG.finest(getLogPrefix(optimisationAssetId) + "Found child asset of type '" + ElectricitySupplierAsset.class.getSimpleName() + "': " + supplierAsset);

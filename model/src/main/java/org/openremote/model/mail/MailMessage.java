@@ -68,7 +68,7 @@ public class MailMessage {
         if (namedHeaders == null || namedHeaders.isEmpty()) {
             return null;
         }
-        return namedHeaders.get(0);
+        return namedHeaders.getFirst();
     }
 
     public List<String> getHeaders(String name) {

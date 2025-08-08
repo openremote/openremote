@@ -144,8 +144,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
 
         // Check all links are for the same user and realm
-        String realm = userAssetLinks.get(0).getId().getRealm();
-        String userId = userAssetLinks.get(0).getId().getUserId();
+        String realm = userAssetLinks.getFirst().getId().getRealm();
+        String userId = userAssetLinks.getFirst().getId().getUserId();
         String[] assetIds = new String[userAssetLinks.size()];
 
         IntStream.range(0, userAssetLinks.size()).forEach(i -> {
@@ -216,8 +216,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
 
         // Check all links are for the same user and realm
-        String realm = userAssetLinks.get(0).getId().getRealm();
-        String userId = userAssetLinks.get(0).getId().getUserId();
+        String realm = userAssetLinks.getFirst().getId().getRealm();
+        String userId = userAssetLinks.getFirst().getId().getUserId();
 
         if (userAssetLinks.stream().anyMatch(userAssetLink -> !userAssetLink.getId().getRealm().equals(realm) || !userAssetLink.getId().getUserId().equals(userId))) {
             throw new BadRequestException("All user asset links must be for the same user");

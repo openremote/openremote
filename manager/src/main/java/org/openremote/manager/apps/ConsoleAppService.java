@@ -70,7 +70,7 @@ public class ConsoleAppService implements ContainerService {
             HttpHandler customBaseFileHandler = ManagerWebService.createFileHandler(container, new PathResourceManager(consoleAppDocRoot), null);
 
             HttpHandler pathHandler = new PathHandler().addPrefixPath("info", customBaseFileHandler);
-            managerWebService.getRequestHandlers().add(0, pathStartsWithHandler(
+            managerWebService.getRequestHandlers().addFirst(pathStartsWithHandler(
                 "Console app info files",
                 "info",
                 pathHandler));
