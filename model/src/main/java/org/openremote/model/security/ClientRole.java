@@ -72,6 +72,7 @@ public enum ClientRole {
         READ_RULES,
         READ_INSIGHTS,
         READ_ALARMS,
+        READ_SERVICES,
         WRITE_USER,
         WRITE_ADMIN,
         WRITE_LOGS,
@@ -79,7 +80,8 @@ public enum ClientRole {
         WRITE_ATTRIBUTES,
         WRITE_RULES,
         WRITE_INSIGHTS,
-        WRITE_ALARMS
+        WRITE_ALARMS,
+        WRITE_SERVICES
     });
 
     // Only individual roles, not composites
