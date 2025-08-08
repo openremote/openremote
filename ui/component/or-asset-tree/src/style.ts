@@ -152,6 +152,7 @@ export const style = css`
     }
     
     .expander {
+        flex: 0 0 auto;
         width: 36px;
         height: 100%;
         display: inline-block;
@@ -176,13 +177,23 @@ export const style = css`
     }
     
     .node-name {
+        width: 100%;
         margin: -4px 0;
         flex: 1 0 auto;
         display: flex;
         align-items: center;
     }
     
-    .node-name > span {
+    .node-name-withCheck {
+        flex: 1 1 auto;
+        white-space: nowrap;
+        overflow: hidden;
+        margin-right: 4px;
+        text-overflow: ellipsis;
+        vertical-align: middle;
+    }
+
+    .node-name-noCheck {
         vertical-align: middle;
     }
     
@@ -220,7 +231,6 @@ export const style = css`
     }
     
     .mdc-checkbox or-icon {
-        height: 15px;
         width: auto;
         color: var(--internal-or-asset-tree-line-color);
     }
