@@ -279,7 +279,7 @@ export class ControlArrayElement extends ControlBaseElement {
     protected showAddDialog() {
 
         let selectedItemInfo: CombinatorInfo | undefined;
-        const listItems: ListItem[] = this.itemInfos!.map((itemInfo) => {
+        const listItems: ListItem[] = this.itemInfos!.filter(e => !this.data.find((f: any) => f?.[e.constProperty ?? ''] === (e.constValue))).map((itemInfo) => {
             const labelStr = itemInfo.title;
             return {
                 text: labelStr,
@@ -306,9 +306,10 @@ export class ControlArrayElement extends ControlBaseElement {
                         <div id="parameter-desc" class="col">
                             <or-translate id="parameter-title" value="${selectedItemInfo?.title}"></or-translate>
                             <p>${selectedItemInfo?.description}</p>
-                            ${when(selectedItemInfo && selectedItemInfo.examples.length > 0, () => html`<ul>
-                                <or-mwc-list .type="${ListType.PLAIN}" .listItems="${selectedItemInfo?.examples.sort((a, b) => a.localeCompare(b)).map((s) => ({ text: s }))}" id="examples-list"></or-mwc-list>
-                            </ul>`)}
+                            ${when(selectedItemInfo && selectedItemInfo.examples.length > 0, () => html`
+                                Examples
+                                <ul>${selectedItemInfo?.examples.map((s) => html`<li>${s}</li>`)}</ul>
+                            `)}
                         </div>
                     </form>
                 </div>
