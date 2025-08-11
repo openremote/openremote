@@ -182,9 +182,6 @@ export class OrServices extends LitElement {
     @property({ type: String })
     public realmName: string = manager.displayRealm;
 
-    @property({ type: Boolean })
-    public readonly: boolean = false;
-
     @state()
     private services: Microservice[] = [];
 

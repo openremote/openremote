@@ -112,6 +112,9 @@ export class OrIframe extends LitElement {
     @state()
     private error = false;
 
+    @property({ type: Boolean })
+    public preventCache = true;
+
     private timeoutId?: number;
 
     private clearTimeout(): void {
@@ -188,6 +191,13 @@ export class OrIframe extends LitElement {
         this.clearTimeout();
     }
 
+    public getSrc(): string {
+        if (this.preventCache && this.src) {
+            return this.src + "?t=" + Date.now();
+        }
+        return this.src || "";
+    }
+
     /**
      * Reload the iframe content by clearing and resetting the src
      */
@@ -201,7 +211,7 @@ export class OrIframe extends LitElement {
         // Force iframe reload by temporarily clearing and resetting src
         const iframe = this.shadowRoot?.querySelector("iframe");
         if (iframe) {
-            const currentSrc = this.src;
+            const currentSrc = this.getSrc();
             iframe.src = "";
             // We can't use iframe.contentWindow.location.reload() because it doesn't work in all cases due to browser security restrictions
             requestAnimationFrame(() => {
@@ -224,7 +234,7 @@ export class OrIframe extends LitElement {
                     @load=${this.handleLoadEvent}
                     @error=${this.handleErrorEvent}
                     id="or-iframe"
-                    src="${this.src}"
+                    src="${this.getSrc()}"
                     class="${!this.loading ? "loaded" : ""}"
                 ></iframe>
             </div>
