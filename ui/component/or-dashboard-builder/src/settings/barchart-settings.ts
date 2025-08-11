@@ -538,17 +538,9 @@ export class BarChartSettings extends WidgetSettings {
 
     protected setAxisMinMaxValue(axis: "left" | "right", type: "min" | "max", value?: number) {
         if (axis === "left") {
-            if (type === "min") {
-                this.widgetConfig.chartOptions.options.scales.y.min = value;
-            } else {
-                this.widgetConfig.chartOptions.options.scales.y.max = value;
-            }
+            this.widgetConfig.chartOptions.options.scales.y[type] = value;
         } else {
-            if (type === "min") {
-                this.widgetConfig.chartOptions.options.scales.y1.min = value;
-            } else {
-                this.widgetConfig.chartOptions.options.scales.y1.max = value;
-            }
+            this.widgetConfig.chartOptions.options.scales.y1[type] = value;
         }
         this.notifyConfigUpdate();
     }
