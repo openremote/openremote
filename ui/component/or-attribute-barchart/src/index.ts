@@ -21,8 +21,8 @@ import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "
 import {customElement, property, state, query} from "lit/decorators.js";
 import i18next from "i18next";
 import {
-    Asset,
-    AssetDatapointIntervalQueryFormula,
+    Asset, AssetDatapointIntervalQuery,
+    AssetDatapointIntervalQueryFormula, AssetDatapointLTTBQuery,
     AssetDatapointQueryUnion,
     AssetModelUtil,
     Attribute,
@@ -1049,7 +1049,7 @@ export class OrAttributeBarChart extends LitElement {
         const dataset = this._getDefaultDatasetOptions(label ?? "", formula, color, faint);
 
         if (asset.id && attribute.name && this.datapointQuery) {
-            const datapointQuery = JSON.parse(JSON.stringify(this.datapointQuery)); // recreating object, since the changes shouldn't apply to parent components; only or-attribute-barchart itself.
+            const datapointQuery = structuredClone(this.datapointQuery) as AssetDatapointIntervalQuery; // recreating object, since the changes shouldn't apply to parent components; only or-attribute-barchart itself.
 
             datapointQuery.fromTimestamp = from;
             datapointQuery.toTimestamp = to;

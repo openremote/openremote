@@ -123,12 +123,12 @@ export class BarChartWidget extends OrAssetWidget {
     // TODO: Improve this to a more efficient approach, instead of duplicating the object
     public refreshContent(force: boolean) {
         if(!force) {
-            const datapointQuery = JSON.parse(JSON.stringify(this.widgetConfig.datapointQuery)) as AssetDatapointQueryUnion;
+            const datapointQuery = structuredClone(this.widgetConfig.datapointQuery);
             datapointQuery.fromTimestamp = undefined;
             datapointQuery.toTimestamp = undefined;
             this.datapointQuery = datapointQuery;
         } else {
-            this.widgetConfig = JSON.parse(JSON.stringify(this.widgetConfig)) as BarChartWidgetConfig;
+            this.widgetConfig = structuredClone(this.widgetConfig);
         }
     }
 
