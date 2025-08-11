@@ -1582,7 +1582,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 if (displayValue) {
                     tooltipArray.push({
                         value: displayValue,
-                        text: `<div><span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color: ${dataset.lineStyle?.color}"></span> ${name}: <b>${displayValue} ${dataset.unit}</b></div>`
+                        text: `<div><span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color: ${dataset.lineStyle?.color}"></span> ${name}: <b>${displayValue}${dataset.unit ? ` ${dataset.unit}` : ""}</b></div>`
                     });
                 }
             }
