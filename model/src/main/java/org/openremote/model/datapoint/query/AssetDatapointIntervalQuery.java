@@ -40,31 +40,36 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
     public String getSQLQuery(String tableName, Class<?> attributeType) throws IllegalStateException {
         boolean isNumber = Number.class.isAssignableFrom(attributeType);
         boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
+        if (!isNumber && !isBoolean) {
+            throw new IllegalStateException("Query of type Interval requires either a number or a boolean attribute.");
+        }
+
         String function = (gapFill ? "public.time_bucket_gapfill" : "public.time_bucket");
-        if (isNumber) {
-            if (this.formula == Formula.DELTA) {
+        return isNumber ? getSQLQueryForNumbers(tableName, function) : getSQLQueryForBooleans(tableName, function);
+    }
+
+    protected String getSQLQueryForNumbers(String tableName, String function) {
+        switch (this.formula) {
+            case DELTA:
                 return "WITH interval_data AS (" +
                         "SELECT " + function +
                         "(cast(? as interval), timestamp) AS x, public.locf(public.last(value::DOUBLE PRECISION, timestamp)) AS numeric_value " +
                         "FROM " + tableName + " " + "WHERE ENTITY_ID = ? AND ATTRIBUTE_NAME = ? AND TIMESTAMP >= ? AND TIMESTAMP <= ? GROUP BY x )" +
                         "SELECT x, COALESCE(numeric_value - LAG(numeric_value, 1, numeric_value) OVER (ORDER BY x), numeric_value) AS delta FROM interval_data ORDER BY x ASC";
-
-            } else if (this.formula == Formula.COUNT) {
-                return  "SELECT " + function + "(cast(? as interval), timestamp) AS x, " +
+            case COUNT:
+                return "SELECT " + function + "(cast(? as interval), timestamp) AS x, " +
                         "COUNT(*) AS datapoint_count " +
                         "FROM " + tableName + " " +
                         "WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? " +
                         "GROUP BY x ORDER by x ASC";
-
-            } else if (this.formula == Formula.SUM) {
-                return  "SELECT " + function + "(cast(? as interval), timestamp) AS x, " +
+            case SUM:
+                return "SELECT " + function + "(cast(? as interval), timestamp) AS x, " +
                         "SUM(cast(value as numeric)) AS total_sum " +
                         "FROM " + tableName + " " +
                         "WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? " +
                         "GROUP BY x ORDER by x ASC";
-
-            } else if (this.formula == Formula.MODE) {
-                return     "WITH bucketed AS ( " +
+            case MODE:
+                return "WITH bucketed AS ( " +
                         "  SELECT " + function + "(cast(? as interval), timestamp) AS x, " +
                         "         cast(value as numeric) AS num_value " +
                         "  FROM " + tableName + " " +
@@ -82,37 +87,37 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
                         ") AS mode_value " +
                         "FROM (SELECT DISTINCT x FROM bucketed) d " +
                         "ORDER BY d.x ASC";
-
-            } else if (this.formula == Formula.MEDIAN) {
-                return  "SELECT " + function + "(cast(? as interval), timestamp) AS x, " +
+            case MEDIAN:
+                return "SELECT " + function + "(cast(? as interval), timestamp) AS x, " +
                         "PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY cast(value as numeric)) as median_value " +
                         "FROM " + tableName + " " +
                         "WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? " +
                         "GROUP BY x ORDER by x ASC";
-            } else {
+            default:
                 return "SELECT " + function +
                          "(cast(? as interval), timestamp) AS x, " + this.formula.toString().toLowerCase() +
                          "(cast(value as numeric)) FROM " + tableName +
                          " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC";
-            }
-        } else if (isBoolean) {
-            if (this.formula == Formula.DELTA) {
+        }
+    }
+
+    protected String getSQLQueryForBooleans(String tableName, String function) {
+        switch (this.formula) {
+            case DELTA:
                 throw new IllegalStateException("Query of type DELTA is not applicable for boolean attributes.");
-            } else if (this.formula == Formula.COUNT) {
+            case COUNT:
                 return "SELECT " + function + "(cast(? as interval), timestamp) AS x, " +
                         "COUNT(*) AS datapoint_count " +
                         "FROM " + tableName + " " +
                         "WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? " +
                         "GROUP BY x ORDER by x ASC";
-
-            } else if (this.formula == Formula.SUM) {
+            case SUM:
                 return  "SELECT " + function + "(cast(? as interval), timestamp) AS x, " +
                         "SUM(CASE WHEN cast(value as text)::boolean THEN 1 ELSE 0 END) AS true_count_sum " +
                         "FROM " + tableName + " " +
                         "WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? " +
                         "GROUP BY x ORDER by x ASC";
-
-            } else if (this.formula == Formula.MODE) {
+            case MODE:
                 return "WITH bucketed AS ( " +
                         "   SELECT " + function + "(cast(? as interval), timestamp) AS x, " +
                         "          cast(value as text)::boolean AS bool_value " +
@@ -131,19 +136,15 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
                         ") AS mode_value " +
                         "FROM (SELECT DISTINCT x FROM bucketed) d " +
                         "ORDER BY d.x ASC";
-
-            } else if (this.formula == Formula.MEDIAN) {
+            case MEDIAN:
                 return "SELECT " + function + "(cast(? as interval), timestamp) AS x, " +
                         "CASE WHEN PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY (CASE WHEN cast(value as text)::boolean THEN 1 ELSE 0 END)) >= 0.5 " +
                         "THEN true ELSE false END AS median_value " +
                         "FROM " + tableName + " " +
                         "WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? " +
                         "GROUP BY x ORDER by x ASC";
-            } else {
+            default:
                 return "SELECT " + function + "(cast(? as interval), timestamp) AS x, " + this.formula.toString().toLowerCase() + "(case when cast(cast(value as text) as boolean) is true then 1 else 0 end) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC";
-            }
-        } else {
-            throw new IllegalStateException("Query of type Interval requires either a number or a boolean attribute.");
         }
     }
 
