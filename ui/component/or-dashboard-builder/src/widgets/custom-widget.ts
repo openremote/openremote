@@ -1,11 +1,13 @@
 // File: custom-widget.ts
 import { css, html, PropertyValues, TemplateResult } from "lit";
 import { customElement, state, query } from "lit/decorators.js";
+import { when } from "lit/directives/when.js";
 import { throttle } from "lodash";
 import { WidgetManifest } from "../util/or-widget";
 import { OrAssetWidget } from "../util/or-asset-widget";
 import { AssetWidgetConfig } from "../util/widget-config";
 import { CustomSettings } from "../settings/custom-settings";
+import { AttributeRef } from "@openremote/model";
 import "@openremote/or-icon";
 import "@openremote/or-attribute-input";
 import type { ValueMappingUnion, TextMapping } from "../settings/custom-settings";
@@ -37,7 +39,7 @@ function getDefaultWidgetConfig(): CustomWidgetConfig {
     valueMappings: [],
     textMappings: [],
     variableLabel: "",
-    iconColor: "inherit"
+    iconColor: "inherit",
   };
 }
 
@@ -94,7 +96,7 @@ const styling = css`
 
 @customElement("custom-widget")
 export class CustomWidget extends OrAssetWidget {
-  protected readonly widgetConfig!: CustomWidgetConfig;
+  protected widgetConfig!: CustomWidgetConfig;
 
   @state() private _loading = false;
   @state() protected _error?: string;
@@ -120,23 +122,11 @@ export class CustomWidget extends OrAssetWidget {
 
   //  Beim ersten Mounten: ResizeObserver für Attribute‑Input-Workaround
   protected willUpdate(changed: PropertyValues) {
-    // erst Routinen vom Parent ausführen (z.B. Grid‑Resize‑Observer)
-    super.willUpdate(changed);
-
-    // Sobald widgetConfig (und damit attributeRefs) geändert wird:
-    if (changed.has("widgetConfig") && this.widgetConfig.attributeRefs.length > 0) {
-      this._loading = true;
-      this._error = undefined;
-      this.fetchAssets(this.widgetConfig.attributeRefs)
-        .then((assets) => {
-          this.loadedAssets = assets;
-        })
-        .catch((e) => {
-          this._error = e.message;
-        })
-        .finally(() => {
-          this._loading = false;
-        });
+    const attributeRefs = this.widgetConfig.attributeRefs;
+    if (attributeRefs.length === 0) {
+      this._error = "noAttributesConnected";
+    } else if (attributeRefs.length > 0 && !this.isAttributeRefLoaded(attributeRefs[0])) {
+      this.loadAssets(attributeRefs);
     }
 
     // Deinen Resize‐Observer fürs Input‑Widget weiterlaufen lassen
@@ -145,21 +135,17 @@ export class CustomWidget extends OrAssetWidget {
       this._resizeObserver.observe(this._wrapper);
     }
 
-    return true; // oder super.willUpdate(...) retour geben, je nach Basis‑Implementierung
+    return super.willUpdate(changed); // oder super.willUpdate(...) retour geben, je nach Basis‑Implementierung
   }
 
-  //  Daten (Assets) neu laden, wenn sich attributeRefs ändern
-  public refreshContent(force: boolean): void {
-    const refs = this.widgetConfig.attributeRefs;
-    if (!refs || refs.length === 0) {
+  protected loadAssets(attributeRefs: AttributeRef[]) {
+    if (attributeRefs.length === 0) {
       this._error = "noAttributesConnected";
-      this._loading = false;
       return;
     }
     this._loading = true;
     this._error = undefined;
-
-    this.fetchAssets(refs)
+    this.fetchAssets(attributeRefs)
       .then((assets) => {
         this.loadedAssets = assets;
       })
@@ -169,6 +155,11 @@ export class CustomWidget extends OrAssetWidget {
       .finally(() => {
         this._loading = false;
       });
+  }
+
+  //  Daten (Assets) neu laden, wenn sich attributeRefs ändern
+  public refreshContent(force: boolean): void {
+    this.widgetConfig = JSON.parse(JSON.stringify(this.widgetConfig)) as CustomWidgetConfig;
   }
 
   // Cleanup
@@ -205,35 +196,38 @@ export class CustomWidget extends OrAssetWidget {
     const attrRef = cfg.attributeRefs[0];
     const attribute: any = asset?.attributes?.[attrRef?.name!];
 
-    if (!attribute) {
-      return html`<div id="error-txt">Kein Attribut ausgewählt</div>`;
-    }
-
-    const rawStr = String(attribute.value);
-    const epoch = this.formatUpdatedAt(attribute.timestamp);
-
-    // → Hier iconColor holen
-    const iconColor = this.applyMappings(rawStr);
-
-    const displayValue = this.applyTextMappings(rawStr);
-
     return html`
-      <div id="widget-wrapper" class="widget-container">
-        ${cfg.showIcon
-          ? html`<div class="icon-container">
-              <or-icon icon="${cfg.icon}" style="color:${iconColor}"></or-icon>
-            </div>`
-          : null}
-        <div class="info">
-          ${cfg.showVariable
-            ? html`<div class="attribute-name">
-                ${cfg.variableLabel && cfg.variableLabel.length ? cfg.variableLabel : attribute.name}:
-              </div>`
-            : null}
-          ${cfg.showValue ? html`<div class="attribute-value">${displayValue}</div>` : null}
-        </div>
-        ${cfg.showHelperText ? html`<div class="attribute-timestamp">${epoch}</div>` : null}
-      </div>
+      ${when(
+        this._loading || this._error,
+        () => {
+          if (this._loading) {
+            return html`<or-loading-indicator></or-loading-indicator>`;
+          } else {
+            return html`<or-translate id="error-txt" .value="${this._error}"></or-translate>`;
+          }
+        },
+        () =>
+          when(cfg.attributeRefs.length > 0 && attribute && this.loadedAssets && this.loadedAssets.length > 0, () => {
+            return html`
+              <div id="widget-wrapper" class="widget-container">
+                ${cfg.showIcon
+                  ? html`<div class="icon-container">
+                      <or-icon icon="${cfg.icon}" style="color:${this.applyMappings(String(attribute.value))}"></or-icon>
+                    </div>`
+                  : null}
+                <div class="info">
+                  ${cfg.showVariable
+                    ? html`<div class="attribute-name">
+                        ${cfg.variableLabel && cfg.variableLabel.length ? cfg.variableLabel : attribute.name}:
+                      </div>`
+                    : null}
+                  ${cfg.showValue ? html`<div class="attribute-value">${this.applyTextMappings(String(attribute.value))}</div>` : null}
+                </div>
+                ${cfg.showHelperText ? html`<div class="attribute-timestamp">${this.formatUpdatedAt(attribute.timestamp)}</div>` : null}
+              </div>
+            `;
+          })
+      )}
     `;
   }
 

@@ -27,7 +27,7 @@ const styling = css`
     width: 100%;
     height: 100%;
   }
-    
+
   #error-txt {
     height: 100%;
     display: flex;
@@ -173,8 +173,6 @@ export class BatteryWidget extends OrAssetWidget {
     const attrRef = cfg.attributeRefs[0];
     const attribute: any = asset?.attributes?.[attrRef?.name!];
 
-    console.log("Error:", this._error);
-
     return html`
       ${when(
         this._loading || this._error,
@@ -207,13 +205,13 @@ export class BatteryWidget extends OrAssetWidget {
     let iconName = "battery-high";
     let iconColour = "green";
 
-    if (batteryStatus < 5) {
+    if (batteryStatus <= 5) {
       iconName = "battery-alert-variant-outline";
       iconColour = "red";
-    } else if (batteryStatus < 33) {
+    } else if (batteryStatus <= 33) {
       iconName = "battery-low";
       iconColour = "red";
-    } else if (batteryStatus < 66) {
+    } else if (batteryStatus <= 66) {
       iconName = "battery-medium";
       iconColour = "orange";
     }
