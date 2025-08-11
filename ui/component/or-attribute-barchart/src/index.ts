@@ -1200,7 +1200,7 @@ export class OrAttributeBarChart extends LitElement {
                 max: this._endOfPeriod,
                 boundaryGap: false,
                 axisLabel: {
-                    hideOverlap: true,
+                    // hideOverlap: true,
                     //rotate: 25,
                     interval: this._intervalConfig?.millis,
                     fontSize: 10,
@@ -1249,9 +1249,7 @@ export class OrAttributeBarChart extends LitElement {
     }
 
     protected _getDefaultDatasetOptions(name: string, formula: string, color: string, faint = false): BarChartData {
-        const hasMultipleMethods = Object.keys(this.attributeConfig || {})
-            .filter(key => key.startsWith("method"))
-            .every(key => (this.attributeConfig as any)[key].length > 1);
+        const hasMultipleMethods = Object.entries(this.attributeConfig || {}).filter(([key, value]) => key.startsWith("method") && value?.length > 0).length > 1;
         return {
             name: name,
             type: "bar",
@@ -1266,15 +1264,15 @@ export class OrAttributeBarChart extends LitElement {
                 show: this.stacked ? false : true,
                 align: "left",
                 verticalAlign: "middle",
-                position: "outside",
+                position: "top",
                 fontStyle: "italic",
                 fontSize: 10,
                 rotate: 90,
-                distance: 15,
+                distance: 10,
                 formatter: (params): string => {
                     if(hasMultipleMethods) {
                         const data = this._data?.[params.seriesIndex ?? 0]?.data;
-                        const firstIndex = data?.findIndex(x => (x as [number, number])[1] > 0);
+                        const firstIndex = data?.findIndex(x => (x as [number, number])[1] != 0);
                         if(firstIndex === params.dataIndex) {
                             return formula;
                         }
