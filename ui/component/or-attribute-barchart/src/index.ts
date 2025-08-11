@@ -1023,10 +1023,12 @@ export class OrAttributeBarChart extends LitElement {
             // If stacked, remove all labels for every fill except the top
             if (this.stacked) {
                 const formulas = new Set(sortedData.map(d => d.stack));
-                formulas.forEach(formula => {
-                    const lastEntry = [...sortedData].reverse().find(d => d.stack === formula);
-                    if(lastEntry) lastEntry.label!.show = true;
-                });
+                if(formulas.size > 1) {
+                    formulas.forEach(formula => {
+                        const lastEntry = [...sortedData].reverse().find(d => d.stack === formula);
+                        if(lastEntry) lastEntry.label!.show = true;
+                    });
+                }
             }
 
             // Sort data in correct order, and insert data in the chart
@@ -1247,6 +1249,9 @@ export class OrAttributeBarChart extends LitElement {
     }
 
     protected _getDefaultDatasetOptions(name: string, formula: string, color: string, faint = false): BarChartData {
+        const hasMultipleMethods = Object.keys(this.attributeConfig || {})
+            .filter(key => key.startsWith("method"))
+            .every(key => (this.attributeConfig as any)[key].length > 1);
         return {
             name: name,
             type: "bar",
@@ -1267,9 +1272,14 @@ export class OrAttributeBarChart extends LitElement {
                 rotate: 90,
                 distance: 15,
                 formatter: (params): string => {
-                    const data = this._data?.[params.seriesIndex ?? 0]?.data;
-                    const firstIndex = data?.findIndex(x => (x as [number, number])[1] > 0);
-                    return firstIndex === params.dataIndex ? `${formula}` : "";
+                    if(hasMultipleMethods) {
+                        const data = this._data?.[params.seriesIndex ?? 0]?.data;
+                        const firstIndex = data?.findIndex(x => (x as [number, number])[1] > 0);
+                        if(firstIndex === params.dataIndex) {
+                            return formula;
+                        }
+                    }
+                    return "";
                 }
             }
         } as BarChartData;
