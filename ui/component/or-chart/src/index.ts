@@ -1267,7 +1267,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     const options = { signal: this._dataAbortController?.signal };
 
                     // Load Historic Data
-                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], false, smooth, stacked, stepped, area, faint, false, `${asset.name} ${label}`, options, unit);
+                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], false, smooth, stacked, stepped, area, faint, false, `${asset.name} | ${label}`, options, unit);
                     dataset.assetId = asset.id;
                     dataset.attrName = attribute.name;
                     dataset.unit = unit;
@@ -1275,12 +1275,12 @@ export class OrChart extends translate(i18next)(LitElement) {
                     data.push(dataset);
 
                     // Load Predicted Data
-                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stacked, stepped, area, faint, false , `${asset.name} ${label} ${i18next.t("predicted")}`, options, unit);
+                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stacked, stepped, area, faint, false , `${asset.name} | ${label} ${i18next.t("predicted")}`, options, unit);
                     data.push(dataset);
 
                     // If necessary, load Extended Data
                     if (extended) {
-                        dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, stacked, false, area, faint, extended, `${asset.name} ${label} lastKnown`, options, unit);
+                        dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, stacked, false, area, faint, extended, `${asset.name} | ${label} lastKnown`, options, unit);
                         dataset.yAxisIndex = shownOnRightAxis ? 1 : 0;
                         data.push(dataset);
                     }

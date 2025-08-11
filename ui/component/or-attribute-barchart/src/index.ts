@@ -1001,7 +1001,7 @@ export class OrAttributeBarChart extends LitElement {
                 for (const [key, value] of (Object.entries(methodMapping)).sort(([keyA], [keyB]) => keyA.localeCompare(keyB))) {
                     if (value.active) {
                         //Initiate query Attribute Data
-                        const dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, value.formula, faint, `${asset.name} ${label} \n${i18next.t(value.formula)}`, options, unit);
+                        const dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, value.formula, faint, `${asset.name} | ${label} \n${i18next.t(value.formula)}`, options, unit);
                         dataset.index = (Object.keys(methodMapping).indexOf(key) * 1000) + (index + 1);
                         dataset.assetId = asset.id;
                         dataset.attrName = attribute.name;

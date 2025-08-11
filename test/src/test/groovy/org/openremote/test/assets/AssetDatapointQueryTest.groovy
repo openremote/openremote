@@ -440,7 +440,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
                 new AssetDatapointIntervalQuery(queryTime30, queryTimeNow, "60 minutes", AssetDatapointIntervalQuery.Formula.MODE, true)
         )
 
-        then: "MODE datapoints will should return 90, because it is most common within the interval"
+        then: "MODE datapoints should return 90, because it is most common within the interval"
         assert modeDatapoints2.size() == 1
         assert modeDatapoints2[0].timestamp == time60.toEpochMilli()
         assert modeDatapoints2[0].value == 90
