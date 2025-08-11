@@ -84,8 +84,16 @@ export interface IntervalConfig {
  * List of interval options
  */
 export enum BarChartInterval {
-    AUTO = "auto", NONE = "none", ONE_MINUTE = "1Minute", FIVE_MINUTES = "5Minutes", THIRTY_MINUTES = "30Minutes", ONE_HOUR = "hour",
-    ONE_DAY = "day", ONE_WEEK = "week", ONE_MONTH = "month", ONE_YEAR = "year"
+    AUTO = "auto",
+    NONE = "none",
+    ONE_MINUTE = "1Minute",
+    FIVE_MINUTES = "5Minutes",
+    THIRTY_MINUTES = "30Minutes",
+    ONE_HOUR = "hour",
+    ONE_DAY = "day",
+    ONE_WEEK = "week",
+    ONE_MONTH = "month",
+    ONE_YEAR = "year"
 }
 
 /**
