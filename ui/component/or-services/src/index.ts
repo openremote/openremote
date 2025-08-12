@@ -188,9 +188,7 @@ export class OrServices extends LitElement {
         }
     }
 
-
-
-    protected selectService(service: Microservice): void {
+    protected _selectService(service: Microservice): void {
         this.selectedService = service;
 
         // Dispatch event for parent components to handle navigation
@@ -203,35 +201,27 @@ export class OrServices extends LitElement {
         }
     }
 
-    protected toggleServiceTree(): void {
+    protected _toggleServiceTree(): void {
         this.showServiceTree = !this.showServiceTree;
     }
 
-    protected getSidebarClass(): string {
+    protected _getSidebarClass(): string {
         return this.selectedService ? "hideMobile" : "";
     }
 
     protected _onServiceSelected(e: OrServiceSelectedEvent): void {
         const service = e.detail;
         if (service) {
-            this.selectService(service);
+            this._selectService(service);
         }
     }
 
-    /**
-     * Get the iframe path for a given service
-     * @param service - The service to get the iframe path for
-     * @returns The iframe path
-     */
-    protected getServiceUrlPath(service: Microservice): string {
+    protected _getServiceUrlPath(service: Microservice): string {
         const isSuperUser = manager.isSuperUser();
         return getServiceUrlPath(service, this.realmName, isSuperUser);
     }
 
-    /**
-     * Renders the main content area based on current state
-     */
-    protected getServiceContentTemplate(): TemplateResult {
+    protected _getServiceContentTemplate(): TemplateResult {
         if (this.loading) {
             return html``; // ignore
         }
@@ -251,20 +241,19 @@ export class OrServices extends LitElement {
         }
 
         // Service selected - render iframe
-        return html`<or-iframe id="service-iframe" .src="${this.getServiceUrlPath(this.selectedService)}">
+        return html`<or-iframe id="service-iframe" .src="${this._getServiceUrlPath(this.selectedService)}">
             <span slot="onerror">${i18next.t("services.iframeLoadError")}</span>
         </or-iframe>`;
     }
 
     protected render(): TemplateResult {
-
         const icon = this.selectedService?.isGlobal ? "earth" : "puzzle";
-        
+
         return html`
             <div class="wrapper">
                 ${this.showServiceTree
                     ? html`
-                          <div class="sidebar ${this.getSidebarClass()}">
+                          <div class="sidebar ${this._getSidebarClass()}">
                               <or-service-tree
                                   .services="${this.services}"
                                   .selectedService="${this.selectedService}"
@@ -301,11 +290,9 @@ export class OrServices extends LitElement {
                               </div>
                           `
                         : undefined}
-                    <div style="flex: 1;">${this.getServiceContentTemplate()}</div>
+                    <div style="flex: 1;">${this._getServiceContentTemplate()}</div>
                 </div>
             </div>
         `;
     }
-
-
 }

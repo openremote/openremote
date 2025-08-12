@@ -23,64 +23,87 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * A microservice in the context of OpenRemote is an external service that is
- * managed by the microservice registry.
+ * Represents a microservice or external service managed by the OpenRemote microservice registry.
  * 
- * It is used to register, deregister and manage the lifecycle of the service.
- * 
- * The microservice registry is used to keep track of the microservices and
- * their
- * instances.
+ * This class encapsulates the essential information needed to register, manage, and track
+ * the lifecycle of external services within the OpenRemote system. The registry maintains
+ * information about service instances, their status, and lease management.
  */
 public class Microservice {
 
     /**
-     * The unique identifier of the service, e.g. "energy-service"
+     * The unique identifier of the service (e.g., "energy-service").
+     * 
+     * This ID is used to group related service instances and must be consistent
+     * across all instances of the same service type.
      */
     @JsonProperty("serviceId")
     protected String serviceId;
 
     /**
-     * Unique identifier of the instance, in scope of the serviceId
+     * Unique identifier for this specific instance within the scope of the serviceId.
+     * 
+     * Each running instance of a service must have a unique instanceId to distinguish
+     * it from other instances of the same service type.
      */
     @JsonProperty(value = "instanceId")
     protected String instanceId;
 
     /**
-     * The label of the service, e.g. "Energy Service" for display purposes
+     * Human-readable display name for the service (e.g., "Energy Service").
+     * 
+     * This label is used in user interfaces to provide a friendly name
+     * for the service.
      */
     @JsonProperty("label")
     protected String label;
 
     /**
-     * The URL of the service's configuration page/UI, e.g.
-     * "https://openremote.app/services/energy-service/ui"
+     * URL to the service's configuration page or user interface.
+     * 
+     * This URL provides access to the service's web interface for configuration
+     * and management purposes (e.g., "https://openremote.app/services/energy-service/ui").
      */
     @JsonProperty("homepageUrl")
     protected String homepageUrl;
 
     /**
-     * The active status of the service, e.g. "AVAILABLE"
+     * Current operational status of the service instance.
+     * 
+     * Indicates whether the service is available, unavailable, or in another state.
+     * The status is managed by the microservice registry based on lease expiration.
      */
     @JsonProperty("status")
     protected MicroserviceStatus status;
 
     /**
-     * The realm of the service, e.g. "master"
+     * The realm identifier where this service is registered.
+     * 
+     * Services are typically scoped to a specific realm. When set to MASTER_REALM
+     * and registered by a super admin service user, the service becomes available
+     * across all realms. This is used to indicate that the service is a global service.
      */
     @JsonProperty("realm")
     protected String realm;
 
     /**
-     * The lease info of the service, contains timestamps for lease expiration,
-     * registration and renewal. Used internally by the microservice registry.
+     * Internal lease management information for the service registration.
+     * 
+     * Contains timestamps for lease expiration, registration, and renewal.
+     * This information is used internally by the microservice registry to manage
+     * service lifecycle and availability.
      */
     @JsonIgnore
     protected MicroserviceLeaseInfo leaseInfo;
 
     /**
-     * Whether the service is considered a global service thus available to all
-     * realms
+     * Indicates whether this service is globally accessible across all realms.
+     * 
+     * Global services are available to all realms and typically use super admin
+     * service users with system-wide access permissions.
+     * 
+     * This is set automatically by the microservice registry when the service is
+     * registered by a super admin service user and set to MASTER_REALM.
      */
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     protected boolean isGlobal = false;

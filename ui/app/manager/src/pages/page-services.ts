@@ -84,16 +84,16 @@ export class PageServices extends Page<AppStateKeyed> {
     }
 
     @state()
-    private serviceId: string | null = null;
+    protected serviceId: string | null = null;
 
     @state()
     protected realmName: string = "";
 
     @state()
-    private services: Microservice[] = [];
+    protected services: Microservice[] = [];
 
     @state()
-    private selectedService: Microservice | null = null;
+    protected selectedService: Microservice | null = null;
 
     @state()
     protected _loading = false;
@@ -133,8 +133,12 @@ export class PageServices extends Page<AppStateKeyed> {
     }
 
     protected _onEvent(event: MicroserviceEvent) {
-        console.log("MicroserviceEvent", event);
         if (!event.microservice || !event.cause) {
+            return;
+        }
+
+        // Super users receive all events, so we need to filter them out if they are not for the display realm or global
+        if (manager.isSuperUser && event.microservice.realm !== this.realmName && !event.microservice.isGlobal) {
             return;
         }
 
@@ -259,7 +263,7 @@ export class PageServices extends Page<AppStateKeyed> {
     }
 
     // Reload the current service iframe
-    private _refreshIframe(): void {
+    protected _refreshIframe(): void {
         const servicesComponent = this.shadowRoot?.querySelector("or-services") as any;
         if (servicesComponent && typeof servicesComponent.refreshIframe === "function") {
             servicesComponent.refreshIframe();

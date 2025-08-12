@@ -20,7 +20,10 @@
 import { Microservice, MicroserviceStatus } from "@openremote/model";
 
 /**
- * Consolidate services by serviceId, preferring AVAILABLE over UNAVAILABLE
+ * Consolidate services by serviceId, preferring AVAILABLE over UNAVAILABLE.
+ *
+ * This is used to ensure that only one service is displayed for a given serviceId.
+ *
  * @param services - Array of services to consolidate
  * @returns Consolidated array with unique serviceIds
  */
@@ -41,11 +44,11 @@ export function consolidateServices(services: Microservice[]): Microservice[] {
 }
 
 /**
- * Get the iframe path for a given service
- * @param service - The service to get the iframe path for
+ * Get the iframe src path for a given service
+ * @param service - The service to get the iframe src path for
  * @param realmName - The realm name
  * @param isSuperUser - Whether the user is a super user
- * @returns The iframe path
+ * @returns The iframe src path
  */
 export function getServiceUrlPath(service: Microservice, realmName: string, isSuperUser: boolean): string {
     // Replace {realm} param if provided, uses query param if not super user

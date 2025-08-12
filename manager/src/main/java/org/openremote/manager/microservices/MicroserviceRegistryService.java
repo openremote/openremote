@@ -37,9 +37,7 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.EventSubscription;
-import org.openremote.model.event.shared.RealmFilter;
 import org.openremote.model.microservices.Microservice;
 import org.openremote.model.microservices.MicroserviceEvent;
 import org.openremote.model.microservices.MicroserviceStatus;
@@ -47,12 +45,12 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.microservices.MicroserviceLeaseInfo;
 
 /**
- * Service discovery and registration for microservices/external services.
+ * Service discovery and registration for microservices and external services.
  *
  * <p>
  * Provides centralized registry functionality including registration
- * management,
- * heartbeat management, and status tracking. Services are marked unavailable
+ * management, heartbeat management, and status tracking. Services are marked as
+ * unavailable
  * when their lease expires.
  * </p>
  *
@@ -97,11 +95,11 @@ public class MicroserviceRegistryService implements ContainerService {
         this.identityService = container.getService(ManagerIdentityService.class);
         this.clientEventService = container.getService(ClientEventService.class);
 
+        this.registry = new ConcurrentHashMap<>();
+
         // Register the microservice REST resource
         container.getService(ManagerWebService.class).addApiSingleton(
                 new MicroserviceResourceImpl(timerService, identityService, this));
-
-        this.registry = new ConcurrentHashMap<>();
 
         // Add a subscription authorizer for microservice events
         clientEventService.addSubscriptionAuthorizer((realm, authContext, eventSubscription) -> {
@@ -109,26 +107,22 @@ public class MicroserviceRegistryService implements ContainerService {
                 return false;
             }
 
+            if (authContext.isSuperUser()) {
+                return true;
+            }
+
             @SuppressWarnings("unchecked")
             EventSubscription<MicroserviceEvent> subscription = (EventSubscription<MicroserviceEvent>) eventSubscription;
-
-            // Add a custom filter to the subscription
-            // Filters the events to only allow events for the authenticated realm or global
-            // services
             subscription.setFilter(event -> {
                 Microservice eventMicroservice = event.getMicroservice();
                 boolean isGlobalService = eventMicroservice.getIsGlobal();
                 boolean realmMatches = eventMicroservice.getRealm().equals(authContext.getAuthenticatedRealmName());
 
+                // Filter events to only contain events for the authenticated realm or for
+                // global services
                 return isGlobalService || realmMatches ? event : null;
             });
 
-            // Super user is always allowed to subscribe
-            if (authContext.isSuperUser()) {
-                return true;
-            }
-
-            // Regular users must have the read services role
             return authContext.hasResourceRole(ClientRole.READ_SERVICES.getValue(),
                     Constants.KEYCLOAK_CLIENT_ID);
         });
@@ -171,11 +165,11 @@ public class MicroserviceRegistryService implements ContainerService {
     /**
      * Register a microservice instance
      *
-     * @param microservice    The microservice to register
-     * @param isGlobalService Whether the service should be available to all realms
-     *                        e.g. globally
-     *                        should only be for services that use a super admin
-     *                        service user e.g. has global access.
+     * @param microservice The microservice to register
+     * @param isGlobal     Whether the service should be available to all realms.
+     *                     This should only be used for services that use a super
+     *                     admin
+     *                     service user with global access.
      */
     public Microservice registerService(Microservice microservice, boolean isGlobal) {
         LOG.info("Registering microservice: " + microservice.getServiceId() + ", instanceId: "
@@ -266,7 +260,7 @@ public class MicroserviceRegistryService implements ContainerService {
     }
 
     /**
-     * Deregister a microservice instance
+     * Deregister a microservice instance.
      * 
      * If the microservice is not found, a {@link NoSuchElementException} is
      * thrown.
@@ -301,9 +295,11 @@ public class MicroserviceRegistryService implements ContainerService {
     }
 
     /**
-     * Get all registered services/microservices and their instances for the given
-     * realm
+     * Get all registered services and microservices and their instances for the
+     * given
+     * realm.
      * 
+     * @param realm The realm to filter services by
      * @return An array of all registered microservices and their instances
      */
     public Microservice[] getServices(String realm) {
@@ -314,7 +310,7 @@ public class MicroserviceRegistryService implements ContainerService {
     }
 
     /**
-     * Get all globally registered services/microservices and their instances
+     * Get all globally registered services and microservices and their instances.
      * 
      * @return An array of all registered microservices and their instances
      */
@@ -326,7 +322,7 @@ public class MicroserviceRegistryService implements ContainerService {
     }
 
     /**
-     * Get a specific microservice registration
+     * Get a specific microservice registration.
      * 
      * @param serviceId  The serviceId of the microservice to get
      * @param instanceId The instanceId of the microservice to get
@@ -343,7 +339,8 @@ public class MicroserviceRegistryService implements ContainerService {
 
     /**
      * Check for expired registrations and mark them as unavailable if the
-     * instance lease has expired.
+     * instance lease has not been renewed within the configured
+     * {@link #DEFAULT_LEASE_DURATION_MS} lease duration.
      */
     protected void markExpiredInstancesAsUnavailable() {
         long currentTime = timerService.getCurrentTimeMillis();
@@ -363,6 +360,11 @@ public class MicroserviceRegistryService implements ContainerService {
                 });
     }
 
+    /**
+     * Deregister long expired microservices. This is used to remove microservice
+     * instances that have been unavailable for longer than the configured
+     * {@link #DEFAULT_DEREGISTER_UNAVAILABLE_MS} threshold.
+     */
     protected void deregisterLongExpiredInstances() {
         LOG.info("Deregistering long expired microservice registrations");
 
@@ -377,7 +379,7 @@ public class MicroserviceRegistryService implements ContainerService {
                         && entry.getLeaseInfo().getExpirationTimestamp() < purgeThreshold)
                 .toList();
 
-        // Deregister long expired microservices0
+        // Deregister long expired microservices
         toRemove.forEach(entry -> deregisterService(entry.getServiceId(), entry.getInstanceId()));
         LOG.info("Deregistered " + toRemove.size() + " long expired microservice registrations");
     }
