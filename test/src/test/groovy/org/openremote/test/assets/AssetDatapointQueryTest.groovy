@@ -314,29 +314,29 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
             index2++
         }}
 
-        when: "requesting interval datapoints using DELTA"
-        def deltaDatapoints1 = assetDatapointService.queryDatapoints(
+        when: "requesting interval datapoints using DIFFERENCE"
+        def diffDatapoints1 = assetDatapointService.queryDatapoints(
                 asset.getId(),
                 asset.getAttribute(attributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
-                new AssetDatapointIntervalQuery(queryTime30, queryTimeNow, "5 minutes", AssetDatapointIntervalQuery.Formula.DELTA, true)
+                new AssetDatapointIntervalQuery(queryTime30, queryTimeNow, "5 minutes", AssetDatapointIntervalQuery.Formula.DIFFERENCE, true)
         )
 
-        then: "DELTA datapoints should be correct"
-        assert deltaDatapoints1.size() == 7 // Because 30/5=6, plus an extra datapoint for the spare milliseconds of time.
-        assert deltaDatapoints1[0].timestamp == time30.toEpochMilli()
-        assert deltaDatapoints1[1].timestamp == time30.plus(5, ChronoUnit.MINUTES).toEpochMilli()
-        assert deltaDatapoints1[2].timestamp == time30.plus(10, ChronoUnit.MINUTES).toEpochMilli()
-        assert deltaDatapoints1[3].timestamp == time30.plus(15, ChronoUnit.MINUTES).toEpochMilli()
-        assert deltaDatapoints1[4].timestamp == time30.plus(20, ChronoUnit.MINUTES).toEpochMilli()
-        assert deltaDatapoints1[5].timestamp == time30.plus(25, ChronoUnit.MINUTES).toEpochMilli()
-        assert deltaDatapoints1[6].timestamp == timeNow.toEpochMilli()
-        assert deltaDatapoints1[0].value == 0 // Initial value was 10, nothing happened since
-        assert deltaDatapoints1[1].value == 5 // First bump from 10 -> 15, so delta is 5.
-        assert deltaDatapoints1[2].value == 75 // 15 -> 90
-        assert deltaDatapoints1[3].value == -70 // 90 -> 20
-        assert deltaDatapoints1[4].value == 5 // 20 -> 25
-        assert deltaDatapoints1[5].value == 5 // 25 -> 30
-        assert deltaDatapoints1[6].value == 0 // Because nothing happened the spare milliseconds of time
+        then: "DIFFERENCE datapoints should be correct"
+        assert diffDatapoints1.size() == 7 // Because 30/5=6, plus an extra datapoint for the spare milliseconds of time.
+        assert diffDatapoints1[0].timestamp == time30.toEpochMilli()
+        assert diffDatapoints1[1].timestamp == time30.plus(5, ChronoUnit.MINUTES).toEpochMilli()
+        assert diffDatapoints1[2].timestamp == time30.plus(10, ChronoUnit.MINUTES).toEpochMilli()
+        assert diffDatapoints1[3].timestamp == time30.plus(15, ChronoUnit.MINUTES).toEpochMilli()
+        assert diffDatapoints1[4].timestamp == time30.plus(20, ChronoUnit.MINUTES).toEpochMilli()
+        assert diffDatapoints1[5].timestamp == time30.plus(25, ChronoUnit.MINUTES).toEpochMilli()
+        assert diffDatapoints1[6].timestamp == timeNow.toEpochMilli()
+        assert diffDatapoints1[0].value == 0 // Initial value was 10, nothing happened since
+        assert diffDatapoints1[1].value == 5 // First bump from 10 -> 15, so difference is 5.
+        assert diffDatapoints1[2].value == 75 // 15 -> 90
+        assert diffDatapoints1[3].value == -70 // 90 -> 20
+        assert diffDatapoints1[4].value == 5 // 20 -> 25
+        assert diffDatapoints1[5].value == 5 // 25 -> 30
+        assert diffDatapoints1[6].value == 0 // Because nothing happened the spare milliseconds of time
 
         when: "requesting interval datapoints using COUNT"
         def countDatapoints1 = assetDatapointService.queryDatapoints(

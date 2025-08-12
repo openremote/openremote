@@ -16,7 +16,7 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
     public Formula formula;
 
     public enum Formula {
-        MIN, AVG, MAX, DELTA, COUNT, SUM, MODE, MEDIAN
+        MIN, AVG, MAX, DIFFERENCE, COUNT, SUM, MODE, MEDIAN
     }
 
     public AssetDatapointIntervalQuery() {
@@ -50,7 +50,7 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
 
     protected String getSQLQueryForNumbers(String tableName, String function) {
         switch (this.formula) {
-            case DELTA:
+            case DIFFERENCE:
                 return "WITH interval_data AS (" +
                         "SELECT " + function +
                         "(cast(? as interval), timestamp) AS x, public.locf(public.last(value::DOUBLE PRECISION, timestamp)) AS numeric_value " +
@@ -103,8 +103,8 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
 
     protected String getSQLQueryForBooleans(String tableName, String function) {
         switch (this.formula) {
-            case DELTA:
-                throw new IllegalStateException("Query of type DELTA is not applicable for boolean attributes.");
+            case DIFFERENCE:
+                throw new IllegalStateException("Query of type DIFFERENCE is not applicable for boolean attributes.");
             case COUNT:
                 return "SELECT " + function + "(cast(? as interval), timestamp) AS x, " +
                         "COUNT(*) AS datapoint_count " +

@@ -366,7 +366,7 @@ export class BarChartSettings extends WidgetSettings {
         // Loop through attribute methods (MIN, AVG, MAX etc), and place attributes in 'AVG' if not in any yet.
         const settings = this.widgetConfig.attributeSettings;
         const methodRefsList = [...settings.methodAvgAttributes ?? [], ...settings.methodMinAttributes ?? [], ...settings.methodMaxAttributes ?? [],
-            ...settings.methodDeltaAttributes ?? [], ...settings.methodMedianAttributes ?? [], ...settings.methodModeAttributes ?? [],
+            ...settings.methodDifferenceAttributes ?? [], ...settings.methodMedianAttributes ?? [], ...settings.methodModeAttributes ?? [],
             ...settings.methodSumAttributes ?? [], ...settings.methodCountAttributes ?? []
         ];
         this.widgetConfig.attributeRefs.forEach(ref => {
@@ -453,7 +453,7 @@ export class BarChartSettings extends WidgetSettings {
 
     protected openAlgorithmMethodsDialog(attributeRef: AttributeRef) {
         const methodKeys: (keyof BarChartAttributeConfig)[] = [
-            "methodAvgAttributes", "methodCountAttributes", "methodDeltaAttributes", "methodMaxAttributes",
+            "methodAvgAttributes", "methodCountAttributes", "methodDifferenceAttributes", "methodMaxAttributes",
             "methodMedianAttributes", "methodMinAttributes", "methodModeAttributes", "methodSumAttributes"
         ];
         const methodList: ListItem[] = methodKeys.map(key => {

@@ -61,7 +61,7 @@ export interface BarChartAttributeConfig {
     methodMaxAttributes?: AttributeRef[];
     methodMinAttributes?: AttributeRef[];
     methodAvgAttributes?: AttributeRef[];
-    methodDeltaAttributes?: AttributeRef[];
+    methodDifferenceAttributes?: AttributeRef[];
     methodMedianAttributes?: AttributeRef[];
     methodModeAttributes?: AttributeRef[];
     methodSumAttributes?: AttributeRef[];
@@ -1012,7 +1012,7 @@ export class OrAttributeBarChart extends LitElement {
                 const methodMapping: { [key: string]: { active: boolean; formula: AssetDatapointIntervalQueryFormula } } = {
                     AVG: {active: !!this.attributeConfig?.methodAvgAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.AVG},
                     COUNT: {active: !!this.attributeConfig?.methodCountAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.COUNT},
-                    DELTA: {active: !!this.attributeConfig?.methodDeltaAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.DELTA},
+                    DIFFERENCE: {active: !!this.attributeConfig?.methodDifferenceAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.DIFFERENCE},
                     MAX: {active: !!this.attributeConfig?.methodMaxAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MAX},
                     MEDIAN: {active: !!this.attributeConfig?.methodMedianAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MEDIAN},
                     MIN: {active: !!this.attributeConfig?.methodMinAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name), formula: AssetDatapointIntervalQueryFormula.MIN},
