@@ -591,9 +591,9 @@ export class OrAttributeBarChart extends LitElement {
                             ${when(this.timestampControls && this.timePrefixKey && this.timePrefixOptions && this.timeWindowKey && this.timeWindowOptions,
                                     () => this._getTimeControlsTemplate(disabled || !!this.timeframe),
                                     () => html`
-                                        <div style="display: ruby; flex-direction: column; align-items: center">
-                                            <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePrefixKey}" disabled></or-mwc-input>
-                                            <or-mwc-input .type="${InputType.BUTTON}" label="${this.timeWindowKey}" disabled></or-mwc-input>
+                                        <div style="display: flex; justify-content: center;">
+                                            <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t(this.timePrefixKey?.toLowerCase() ?? '???')}" disabled style="margin-right: -2px;"></or-mwc-input>
+                                            <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t(this.timeWindowKey?.toLowerCase() ?? '???')}" disabled style="margin-left: -2px;"></or-mwc-input>
                                         </div>
                                     `
                             )}
@@ -1089,6 +1089,7 @@ export class OrAttributeBarChart extends LitElement {
             datapointQuery.gapFill = true;
             datapointQuery.interval = `${this._intervalConfig?.steps ?? "???"} ${this._intervalConfig?.orFormat ?? "???"}`; // for example: "5 minute"
 
+            console.debug(`Requesting datapoints for '${attribute.name}' of ${asset.id}, between ${moment(from).format('lll')} and ${moment(to - 1).format('lll')}...`);
             const response = await manager.rest.api.AssetDatapointResource.getDatapoints(asset.id, attribute.name, datapointQuery, options);
 
             let data: ValueDatapoint<any>[] = [];
@@ -1142,7 +1143,7 @@ export class OrAttributeBarChart extends LitElement {
                 }
             },
             dataZoom: {
-                minValueSpan: this._intervalConfig?.millis
+                minValueSpan: (this._intervalConfig?.millis ?? 0) * 4
             },
             series: [
                 ...(this._data ?? []).map(series => ({
@@ -1169,7 +1170,6 @@ export class OrAttributeBarChart extends LitElement {
         const maxTicks = Math.floor(recommendedTicks * 1.5);
         const splitNumber = Math.max(1, Math.min(xAxisTicks, maxTicks));
         return {
-            animation: false,
             grid: {
                 show: true,
                 backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
@@ -1265,9 +1265,7 @@ export class OrAttributeBarChart extends LitElement {
             dataZoom: [
                 {
                     type: "inside",
-                    start: 0,
-                    end: 100,
-                    minValueSpan: this._intervalConfig?.millis
+                    minValueSpan: (this._intervalConfig?.millis ?? 0) * 4
                 }
             ],
             series: []
