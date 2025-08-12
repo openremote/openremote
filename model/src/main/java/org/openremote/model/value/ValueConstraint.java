@@ -20,8 +20,8 @@
 package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.*;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
 
+import org.openremote.model.util.JSONSchemaUtil.JsonSchemaExamples;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.Serializable;
@@ -70,16 +70,6 @@ public abstract class ValueConstraint implements Serializable {
     public static final String NOT_EMPTY_MESSAGE_TEMPLATE = "{ValueConstraint.NotEmpty.message}";
     public static final String NOT_BLANK_MESSAGE_TEMPLATE = "{ValueConstraint.NotBlank.message}";
     public static final String NOT_NULL_MESSAGE_TEMPLATE = "{ValueConstraint.NotNull.message}";
-    public static final String TIME_CONSTRAINT_EXAMPLES = """
-        { "examples": [
-            "2025-04-18",
-            "2025-04-18T14:30:00Z",
-            "2025-04-18T14:30:00+02:00",
-            "2025-04-18T14:30:00.123Z",
-            "2025-04-18T14:30:00.456-05:00",
-            "1713442200456"
-        ] }
-    """;
 
     /**
      * The attribute value must be between the specified boundaries based on the {@link #min} and
@@ -458,7 +448,14 @@ public abstract class ValueConstraint implements Serializable {
      * considered valid.
      */
     @JsonTypeName("past")
-    @JsonSchemaInject(json = TIME_CONSTRAINT_EXAMPLES)
+    @JsonSchemaExamples({
+        "2025-04-18",
+        "2025-04-18T14:30:00Z",
+        "2025-04-18T14:30:00+02:00",
+        "2025-04-18T14:30:00.123Z",
+        "2025-04-18T14:30:00.456-05:00",
+        "1713442200456"
+    })
     public static class Past extends ValueConstraint {
 
         public Past() {
@@ -498,7 +495,14 @@ public abstract class ValueConstraint implements Serializable {
      * values are considered valid.
      */
     @JsonTypeName("pastOrPresent")
-    @JsonSchemaInject(json = TIME_CONSTRAINT_EXAMPLES)
+    @JsonSchemaExamples({
+        "2025-04-18",
+        "2025-04-18T14:30:00Z",
+        "2025-04-18T14:30:00+02:00",
+        "2025-04-18T14:30:00.123Z",
+        "2025-04-18T14:30:00.456-05:00",
+        "1713442200456"
+    })
     public static class PastOrPresent extends ValueConstraint {
 
         public PastOrPresent() {
@@ -538,7 +542,14 @@ public abstract class ValueConstraint implements Serializable {
      * considered valid.
      */
     @JsonTypeName("future")
-    @JsonSchemaInject(json = TIME_CONSTRAINT_EXAMPLES)
+    @JsonSchemaExamples({
+        "2025-04-18",
+        "2025-04-18T14:30:00Z",
+        "2025-04-18T14:30:00+02:00",
+        "2025-04-18T14:30:00.123Z",
+        "2025-04-18T14:30:00.456-05:00",
+        "1713442200456"
+    })
     public static class Future extends ValueConstraint {
 
         public Future() {
@@ -578,7 +589,14 @@ public abstract class ValueConstraint implements Serializable {
      * values are considered valid.
      */
     @JsonTypeName("futureOrPresent")
-    @JsonSchemaInject(json = TIME_CONSTRAINT_EXAMPLES)
+    @JsonSchemaExamples({
+        "2025-04-18",
+        "2025-04-18T14:30:00Z",
+        "2025-04-18T14:30:00+02:00",
+        "2025-04-18T14:30:00.123Z",
+        "2025-04-18T14:30:00.456-05:00",
+        "1713442200456"
+    })
     public static class FutureOrPresent extends ValueConstraint {
 
         public FutureOrPresent() {
@@ -722,10 +740,10 @@ public abstract class ValueConstraint implements Serializable {
         }
     }
 
-    @JsonSchemaInject(json =
-    """
-        { "i18n": "schema.meta.constraint.message" },
-    """)
+//    @JsonSchemaInject(json =
+//    """
+//        { "i18n": "schema.meta.constraint.message" },
+//    """)
     protected String message;
 
     protected ValueConstraint(String message) {

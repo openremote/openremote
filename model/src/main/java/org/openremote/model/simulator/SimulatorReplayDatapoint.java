@@ -19,7 +19,7 @@
  */
 package org.openremote.model.simulator;
 
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
+import org.openremote.model.util.JSONSchemaUtil.JsonSchemaTitle;
 import java.io.Serializable;
 import java.util.Optional;
 

@@ -19,8 +19,8 @@
  */
 package org.openremote.model.query.filter;
 
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
+import org.openremote.model.util.JSONSchemaUtil.JsonSchemaDescription;
+import org.openremote.model.util.JSONSchemaUtil.JsonSchemaTitle;
 
 import java.util.Objects;
 import java.util.function.Predicate;
