@@ -65,6 +65,11 @@ const styling = css`
     font-weight: 600;
     flex-shrink: 0;
   }
+
+  .attribute-timestamp {
+    font-size: 12px;
+    color: #777777ff;
+  }
 `;
 
 @customElement("battery-widget")

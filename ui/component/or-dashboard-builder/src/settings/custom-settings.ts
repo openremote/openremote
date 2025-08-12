@@ -6,7 +6,18 @@ import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or
 import { AssetWidgetSettings } from "../util/or-asset-widget";
 import "@openremote/or-icon";
 
-const ICON_OPTIONS = ["lightbulb", "solar-power", "fan", "water-pump", "fire", "emoticon", "door", "water", "alert", "lightning-bolt"];
+const ICON_OPTIONS = [
+  "lightbulb",
+  "solar-power",
+  "fan",
+  "water-pump",
+  "fire",
+  "emoticon",
+  "door",
+  "water",
+  "alert",
+  "lightning-bolt",
+];
 type MappingOption = "value" | "range" | "special";
 type ValueMapping = { value: string; color: string; type: "value" };
 type RangeMapping = { min: number; max: number; color: string; type: "range" };
@@ -152,12 +163,12 @@ export class CustomSettings extends AssetWidgetSettings {
             @attribute-select=${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}
           ></attributes-panel>
           <div class="field">
-            <span>Name der Variable:</span>
-            <input
-              type="text"
+            <or-mwc-input
+              .type=${InputType.TEXT}
               .value=${this.widgetConfig.variableLabel ?? ""}
-              @input=${(e: Event) => this.onVariableLabelChange(e)}
-            />
+              @or-mwc-input-changed=${(e: OrInputChangedEvent) => this.onVariableLabelChange(e)}
+              label="Neuer Name der Variable"
+            ></or-mwc-input>
           </div>
         </settings-panel>
 
@@ -176,11 +187,11 @@ export class CustomSettings extends AssetWidgetSettings {
             ? html`
                 <div class="field">
                   <span>Basisfarbe: </span>
-                  <input
-                    type="color"
-                    .value=${this.widgetConfig.iconColor}
-                    @input=${(e: Event) => this.onIconColorChange(e)}
-                  />
+                  <or-mwc-input
+                    type="${InputType.COLOUR}"
+                    value="${this.widgetConfig.iconColor}"
+                    @or-mwc-input-changed="${(event: Event) => this.onIconColorChange(event)}"
+                  ></or-mwc-input>
                 </div>
 
                 <div class="field">
@@ -252,12 +263,17 @@ export class CustomSettings extends AssetWidgetSettings {
                                       : null}
 
                                     <!-- Farbpicker immer -->
-                                    <input
-                                      type="color"
-                                      .value=${(mapping as any).color}
-                                      @input=${(e: Event) => this.onMappingColorChange(e, idx)}
-                                    />
-                                    <button @click=${() => this.onRemoveMapping(idx)}>✕</button>
+                                    <or-mwc-input
+                                      type="${InputType.COLOUR}"
+                                      value="${(mapping as any).color}"
+                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) =>
+                                        this.onMappingColorChange(event, idx)}"
+                                    ></or-mwc-input>
+                                    <or-mwc-input
+                                      .type=${InputType.BUTTON}
+                                      icon="delete-outline"
+                                      @or-mwc-input-changed=${() => this.onRemoveTextMapping(idx)}
+                                    ></or-mwc-input>
                                   </div>
 
                                   ${this.rangeErrors[idx]
@@ -273,17 +289,13 @@ export class CustomSettings extends AssetWidgetSettings {
                 </div>
 
                 <div class="mapping-actions">
-                  <button
-                    @click=${(e: MouseEvent) => {
-                      e.stopPropagation();
-                      this.showMenu = !this.showMenu;
-                    }}
-                    aria-haspopup="true"
-                    aria-expanded=${this.showMenu}
-                  >
-                    Mapping hinzufügen ▼
-                  </button>
-
+                  <or-mwc-input
+                    .type=${InputType.BUTTON}
+                    label="Mapping hinzufügen"
+                    style="margin-top: 8px;"
+                    icon="triangle-down"
+                    @or-mwc-input-changed=${() => (this.showMenu = !this.showMenu)}
+                  ></or-mwc-input>
                   ${this.showMenu
                     ? html`
                         <div class="dropdown-content" role="menu" aria-label="Mapping Optionen">
@@ -340,7 +352,11 @@ export class CustomSettings extends AssetWidgetSettings {
                           .value=${m.to}
                           @input=${(e: Event) => this.onTextToChange(e, idx)}
                         />
-                        <button @click=${() => this.onRemoveTextMapping(idx)}>✕</button>
+                        <or-mwc-input
+                          .type=${InputType.BUTTON}
+                          icon="delete-outline"
+                          @or-mwc-input-changed=${() => this.onRemoveTextMapping(idx)}
+                        ></or-mwc-input>
                       </div>
                     `
                   )
@@ -349,7 +365,13 @@ export class CustomSettings extends AssetWidgetSettings {
           </div>
 
           <div class="mapping-actions">
-            <button @click=${() => this.addTextMapping()} aria-haspopup="true">Text-Mapping hinzufügen</button>
+            <or-mwc-input
+              .type=${InputType.BUTTON}
+              style="margin-top: 8px;"
+              label="Text-Mapping"
+              icon="plus"
+              @or-mwc-input-changed=${() => this.addTextMapping()}
+            ></or-mwc-input>
           </div>
         </settings-panel>
 
