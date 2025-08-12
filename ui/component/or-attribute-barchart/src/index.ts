@@ -247,6 +247,7 @@ const style = css`
         display: flex;
         flex-direction: column;
         margin-top: 10px;
+        margin-right: -4px;
     }
 
     #chart {
@@ -608,34 +609,40 @@ export class OrAttributeBarChart extends LitElement {
     protected _getTimeControlsTemplate(disabled = true): TemplateResult {
         return html`
             <div id="period-controls">
-                <!-- Time prefix selection -->
-                ${getContentWithMenuTemplate(
-                        html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}" ?disabled="${disabled}"></or-mwc-input>`,
-                        disabled ? null as any : this.timePrefixOptions.map(option => ({value: option} as ListItem)),
-                        this.timePrefixKey,
-                        (value: string | string[]) => {
-                            this.timeframe = undefined; // remove any custom start & end times
-                            this.timePrefixKey = value.toString();
-                        },
-                        undefined,
-                        undefined,
-                        undefined,
-                        true
-                )}
-                <!-- Time window selection -->
-                ${getContentWithMenuTemplate(
-                        html`<or-mwc-input .type="${InputType.BUTTON}" label="${this._isCustomWindow ? "timeframe" : i18next.t(this.timeWindowKey?.toLowerCase() ?? "")}" ?disabled="${disabled}"></or-mwc-input>`,
-                        disabled ? null as any : Array.from(this.timeWindowOptions.keys()).map(key => ({value: key, text: key.toLowerCase(), translate: true} as ListItem)),
-                        this.timeWindowKey,
-                        (value: string | string[]) => {
-                            this.timeframe = undefined; // remove any custom start & end times
-                            this.timeWindowKey = value.toString();
-                        },
-                        undefined,
-                        undefined,
-                        undefined,
-                        true
-                )}
+                <div style="flex: 0; display: flex;">
+                    <div style="margin-right: -2px;">
+                        <!-- Time prefix selection -->
+                        ${getContentWithMenuTemplate(
+                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}" ?disabled="${disabled}"></or-mwc-input>`,
+                                disabled ? null as any : this.timePrefixOptions.map(option => ({value: option} as ListItem)),
+                                this.timePrefixKey,
+                                (value: string | string[]) => {
+                                    this.timeframe = undefined; // remove any custom start & end times
+                                    this.timePrefixKey = value.toString();
+                                },
+                                undefined,
+                                undefined,
+                                undefined,
+                                true
+                        )}
+                    </div>
+                    <div style="margin-left: -2px;">
+                        <!-- Time window selection -->
+                        ${getContentWithMenuTemplate(
+                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this._isCustomWindow ? "timeframe" : i18next.t(this.timeWindowKey?.toLowerCase() ?? "")}" ?disabled="${disabled}"></or-mwc-input>`,
+                                disabled ? null as any : Array.from(this.timeWindowOptions.keys()).map(key => ({value: key, text: key.toLowerCase(), translate: true} as ListItem)),
+                                this.timeWindowKey,
+                                (value: string | string[]) => {
+                                    this.timeframe = undefined; // remove any custom start & end times
+                                    this.timeWindowKey = value.toString();
+                                },
+                                undefined,
+                                undefined,
+                                undefined,
+                                true
+                        )}
+                    </div>
+                </div>
                 <!-- Interval selection -->
                 ${getContentWithMenuTemplate(html`<or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t(`intervalBy${this._intervalConfig?.displayName?.toLowerCase()}`)}"></or-mwc-input>`,
                         Array.from(this.intervalOptions.keys()).map(key => ({value: key, text: `intervalBy${key.toLowerCase()}`, translate: true} as ListItem)),
@@ -841,12 +848,15 @@ export class OrAttributeBarChart extends LitElement {
         // Update ticks / labels
         const xAxisTicks = Math.max(1, (this._endOfPeriod! - this._startOfPeriod!) / this._intervalConfig!.millis - 1);
         const recommendedTicks = this._chartElem?.clientWidth ? (this._chartElem.clientWidth / 50) : Number.MAX_SAFE_INTEGER;
+        const maxTicks = Math.floor(recommendedTicks * 1.5);
+        const splitNumber = Math.max(1, Math.min(xAxisTicks, maxTicks));
         this._chart?.setOption({
             xAxis: {
-                show: xAxisTicks > 1,
-                splitNumber: xAxisTicks,
+                show: splitNumber > 1,
+                splitNumber: splitNumber,
+                minInterval: this._intervalConfig!.millis,
                 axisLabel: {
-                    rotate: xAxisTicks > recommendedTicks ? 45 : 0,
+                    rotate: splitNumber > recommendedTicks ? 45 : 0,
                 }
             }
         });
@@ -1115,17 +1125,20 @@ export class OrAttributeBarChart extends LitElement {
         // Update ticks / labels
         const xAxisTicks = Math.max(1, (this._endOfPeriod! - this._startOfPeriod!) / this._intervalConfig!.millis - 1);
         const recommendedTicks = this._chartElem?.clientWidth ? (this._chartElem.clientWidth / 50) : Number.MAX_SAFE_INTEGER;
+        const maxTicks = Math.floor(recommendedTicks * 1.5);
+        const splitNumber = Math.max(1, Math.min(xAxisTicks, maxTicks));
 
         // Update chart
         this._chart.setOption({
             xAxis: {
-                show: xAxisTicks > 1,
-                splitNumber: xAxisTicks,
+                show: splitNumber > 1,
+                splitNumber: splitNumber,
+                minInterval: this._intervalConfig!.millis,
                 min: this._startOfPeriod,
                 max: this._endOfPeriod,
                 axisLabel: {
                     interval: this._intervalConfig?.millis,
-                    rotate: xAxisTicks > recommendedTicks ? 45 : 0,
+                    rotate: splitNumber > recommendedTicks ? 45 : 0,
                 }
             },
             dataZoom: {
@@ -1153,6 +1166,8 @@ export class OrAttributeBarChart extends LitElement {
     protected _getDefaultChartOptions(): ECChartOption {
         const xAxisTicks = Math.max(1, (this._endOfPeriod! - this._startOfPeriod!) / this._intervalConfig!.millis - 1);
         const recommendedTicks = this._chartElem?.clientWidth ? (this._chartElem.clientWidth / 50) : Number.MAX_SAFE_INTEGER;
+        const maxTicks = Math.floor(recommendedTicks * 1.5);
+        const splitNumber = Math.max(1, Math.min(xAxisTicks, maxTicks));
         return {
             animation: false,
             grid: {
@@ -1206,12 +1221,13 @@ export class OrAttributeBarChart extends LitElement {
                 axisLine: {
                     lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}
                 },
-                splitNumber: xAxisTicks,
+                splitNumber: splitNumber,
+                minInterval: this._intervalConfig!.millis,
                 min: this._startOfPeriod,
                 max: this._endOfPeriod,
                 boundaryGap: false,
                 axisLabel: {
-                    rotate: xAxisTicks > recommendedTicks ? 45 : 0,
+                    rotate: splitNumber > recommendedTicks ? 45 : 0,
                     interval: this._intervalConfig?.millis,
                     fontSize: 10,
                     formatter: {
