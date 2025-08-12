@@ -4,14 +4,14 @@ import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
+//import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 import net.objecthunter.exp4j.Expression;
 import net.objecthunter.exp4j.ExpressionBuilder;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.Optional;
 
-@JsonSchemaTitle("Mathematical Expression")
+//@JsonSchemaTitle("Mathematical Expression")
 @JsonTypeName(MathExpressionValueFilter.NAME)
 @JsonClassDescription("Performs the mathematical expression submitted using Exp4j (https://www.objecthunter.net/exp4j). " +
         "Refer to that website for more information about formatting, permitted operations, etc." +

@@ -23,12 +23,12 @@ import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
+//import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.Optional;
 
-@JsonSchemaTitle("Substring")
+//@JsonSchemaTitle("Substring")
 @JsonTypeName(SubStringValueFilter.NAME)
 @JsonClassDescription("Returns the substring beginning at the specified index (inclusive) and ending at the optional endIndex (exclusive); if endIndex is not supplied then" +
     " the remainder of the string is returned; negative values can be used to indicate a backwards count from the length of the string e.g. -1 means length-1")
