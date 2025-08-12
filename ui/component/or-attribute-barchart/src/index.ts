@@ -1084,7 +1084,7 @@ export class OrAttributeBarChart extends LitElement {
             const datapointQuery = structuredClone(this.datapointQuery) as AssetDatapointIntervalQuery; // recreating object, since the changes shouldn't apply to parent components; only or-attribute-barchart itself.
 
             datapointQuery.fromTimestamp = from;
-            datapointQuery.toTimestamp = to;
+            datapointQuery.toTimestamp = to - 1; // subtract 1 millisecond
             datapointQuery.formula = formula;
             datapointQuery.gapFill = true;
             datapointQuery.interval = `${this._intervalConfig?.steps ?? "???"} ${this._intervalConfig?.orFormat ?? "???"}`; // for example: "5 minute"
