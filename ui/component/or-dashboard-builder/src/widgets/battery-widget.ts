@@ -13,11 +13,13 @@ import { when } from "lit/directives/when.js";
 
 export interface BatteryWidgetConfig extends AssetWidgetConfig {
   attributeRefs: AttributeRef[];
+  showHelperText: boolean;
 }
 
 function getDefaultWidgetConfig(): BatteryWidgetConfig {
   return {
     attributeRefs: [],
+    showHelperText: true,
   };
 }
 
@@ -194,6 +196,7 @@ export class BatteryWidget extends OrAssetWidget {
                   ></or-icon>
                 </div>
                 <div class="attribute-value">${attribute.value}%</div>
+                ${cfg.showHelperText ? html`<div class="attribute-timestamp">${this.formatUpdatedAt(attribute.timestamp)}</div>` : null}
               </div>
             `;
           })
@@ -217,5 +220,68 @@ export class BatteryWidget extends OrAssetWidget {
     }
 
     return { iconName, iconColour };
+  }
+
+  private formatUpdatedAt(epoch: number): string {
+    const now = new Date();
+    const date = new Date(epoch < 1e12 ? epoch * 1000 : epoch); // Sekunden oder ms erkennen
+    const diffMs = now.getTime() - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+
+    if (diffSec < 10) {
+      return "Aktualisiert gerade eben";
+    }
+    if (diffMin < 1) {
+      return `Aktualisiert vor ${diffSec} ${diffSec === 1 ? "Sekunde" : "Sekunden"}`;
+    }
+    if (diffHour < 1) {
+      return `Aktualisiert vor ${diffMin} ${diffMin === 1 ? "Minute" : "Minuten"}`;
+    }
+
+    // Stunden (weniger als 24h)
+    if (diffHour < 24) {
+      return `Aktualisiert vor ${diffHour} ${diffHour === 1 ? "Stunde" : "Stunden"}`;
+    }
+
+    // gestern (zwischen 24 und 48 Stunden)
+    if (diffDay === 1) {
+      const time = date.toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      return `Aktualisiert gestern um ${time}`;
+    }
+
+    // innerhalb der letzten Woche (ab 2 Tagen bis <7)
+    if (diffDay < 7) {
+      return `Aktualisiert vor ${diffDay} ${diffDay === 1 ? "Tag" : "Tagen"}`;
+    }
+
+    // älter: absolute Darstellung
+    const parts = new Intl.DateTimeFormat("de-DE", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(date);
+
+    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+
+    let weekday = get("weekday");
+    if (!weekday.endsWith(".")) weekday += ".";
+    const day = get("day");
+    const month = get("month");
+    const year = get("year");
+    const hour = get("hour");
+    const minute = get("minute");
+
+    return `Aktualisiert am: ${weekday} ${day}. ${month} ${year} ${hour}:${minute}`;
   }
 }
