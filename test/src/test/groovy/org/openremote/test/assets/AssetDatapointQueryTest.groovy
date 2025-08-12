@@ -400,7 +400,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
         )
 
         then: "MODE datapoints should be correct"
-        assert modeDatapoints1.size() == 6 // TODO: Fix!! Because 30/5=6, plus an extra datapoint for the spare milliseconds of time.
+        assert modeDatapoints1.size() == 6
         assert modeDatapoints1[0].timestamp == time30.toEpochMilli()
         assert modeDatapoints1[1].timestamp == time30.plus(5, ChronoUnit.MINUTES).toEpochMilli()
         assert modeDatapoints1[2].timestamp == time30.plus(10, ChronoUnit.MINUTES).toEpochMilli()
