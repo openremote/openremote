@@ -19,7 +19,7 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import * as echarts from "echarts/core";
-import {DatasetComponentOption, DataZoomComponent, DataZoomComponentOption, GridComponent, GridComponentOption, TooltipComponent, TooltipComponentOption} from "echarts/components";
+import {DatasetComponentOption, DataZoomComponent, DataZoomComponentOption, GridComponent, GridComponentOption, MarkLineComponent, TooltipComponent, TooltipComponentOption} from "echarts/components";
 import {LineChart, LineSeriesOption} from "echarts/charts";
 import {CanvasRenderer} from "echarts/renderers";
 import {UniversalTransition} from "echarts/features";
@@ -38,7 +38,7 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import { when } from "lit/directives/when.js";
 import {createRef, Ref, ref } from "lit/directives/ref.js";
 
-echarts.use([GridComponent, TooltipComponent, DataZoomComponent, LineChart, CanvasRenderer, UniversalTransition]);
+echarts.use([GridComponent, TooltipComponent, DataZoomComponent, MarkLineComponent, LineChart, CanvasRenderer, UniversalTransition]);
 
 export type ECChartOption = echarts.ComposeOption<
     | LineSeriesOption
@@ -587,7 +587,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                         return this._tooltipCache[1];
                     }
                 },
-                toolbox: {},
                 xAxis: {
                     type: "time",
                     axisLine: {
@@ -597,6 +596,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                     splitLine: {show: true},
                     min: this._startOfPeriod,
                     max: this._endOfPeriod,
+                    markLine: {
+                        data: [{name: 'now', xAxis: Date.now()}],
+                        silent: true,
+                        lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}
+                    },
                     axisLabel: {
                         hideOverlap: true,
                         fontSize: 10,
@@ -1580,7 +1584,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                         displayValue = pastDatapoint.value;
                     }
                 }
-                if (displayValue) {
+                if (displayValue != null) {
                     tooltipArray.push({
                         value: displayValue,
                         text: `<div><span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color: ${dataset.lineStyle?.color}"></span> ${name}: <b>${displayValue}${dataset.unit ?? ""}</b></div>`
