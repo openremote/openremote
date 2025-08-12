@@ -21,6 +21,7 @@ package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.util.JSONSchemaUtil.JsonSchemaTitle;
 
 import java.io.Serializable;
 
@@ -34,6 +35,7 @@ import java.io.Serializable;
  * <li>{@link ValueDescriptor#getFormat}</li>
  * </ol>
  */
+@JsonSchemaTitle("ValueFormat")
 public class ValueFormat implements Serializable {
 
     public enum StyleRepresentation {

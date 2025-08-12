@@ -19,10 +19,12 @@
  */
 package org.openremote.model.value;
 
+import org.openremote.model.util.JSONSchemaUtil.JsonSchemaTitle;
 import org.openremote.model.util.TsIgnore;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
+@JsonSchemaTitle("Units")
 @TsIgnore
 public enum Units {
     PER("per"),

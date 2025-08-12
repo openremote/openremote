@@ -31,10 +31,10 @@ dependencies {
 
     api "io.swagger.core.v3:swagger-annotations:$swaggerVersion"
 
-    // Custom build until PR is merged from https://github.com/richturner/mbknor-jackson-jsonSchema
-    api "com.github.richturner:mbknor-jackson-jsonschema:1.0.40-JAKARTA"
-    //api "com.kjetland:mbknor-jackson-jsonschema_2.12:1.0.39"
-    api "org.scala-lang:scala-library:2.12.10"
+    api "com.github.victools:jsonschema-generator:$victoolsJsonSchemaGeneratorVersion"
+    api "com.github.victools:jsonschema-module-jackson:$victoolsJsonSchemaGeneratorVersion"
+    api "com.github.victools:jsonschema-module-jakarta-validation:$victoolsJsonSchemaGeneratorVersion"
+
     api "io.github.classgraph:classgraph:$classgraphVersion"
     api "io.micrometer:micrometer-core:$micrometerVersion"
     api "com.devskiller.friendly-id:friendly-id:$friendlyIdVersion"

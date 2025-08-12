@@ -27,9 +27,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.databind.util.StdConverter;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
+//import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
 import org.openremote.model.Constants;
-import org.openremote.model.util.JSONSchemaUtil;
 import org.openremote.model.value.impl.PeriodAndDuration;
 
 import jakarta.validation.constraints.NotNull;
@@ -51,7 +50,7 @@ public class ForecastConfigurationWeightedExponentialAverage extends ForecastCon
     @NotNull
     @JsonSerialize(using = ToStringSerializer.class)
     @JsonDeserialize(converter = PeriodAndDurationConverter.class)
-    @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_STRING_TYPE)
+//    @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_STRING_TYPE)
     // TODO: consider @JsonSchemaFormat("duration") requires new or-mwc-input type
     protected ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration pastPeriod;
     @NotNull
@@ -60,7 +59,7 @@ public class ForecastConfigurationWeightedExponentialAverage extends ForecastCon
     @NotNull
     @JsonSerialize(using = ToStringSerializer.class)
     @JsonDeserialize(converter = PeriodAndDurationConverter.class)
-    @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_STRING_TYPE)
+//    @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_STRING_TYPE)
     // TODO: consider @JsonSchemaFormat("duration") requires new or-mwc-input type
     protected ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration forecastPeriod;
     @NotNull
