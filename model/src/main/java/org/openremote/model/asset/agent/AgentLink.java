@@ -22,11 +22,9 @@ package org.openremote.model.asset.agent;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaFormat;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.query.filter.ValuePredicate;
-import org.openremote.model.util.JSONSchemaUtil;
+import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFilter;
@@ -54,9 +52,9 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
         " will be converted to JSON and if this string matches a key in the converter then the value of that key will be" +
         " pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but" +
         " you want to connect this to a Boolean attribute")
-    @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
+//    @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
     protected Map<String, Object> valueConverter;
-    @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
+//    @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
     @JsonPropertyDescription("Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion")
     protected Map<String, Object> writeValueConverter;
     @JsonPropertyDescription("String to be used for attribute writes and can contain dynamic placeholders to allow dyanmic" +
