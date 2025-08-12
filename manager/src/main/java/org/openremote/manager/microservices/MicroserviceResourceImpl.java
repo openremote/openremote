@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.microservices;
 
+import static org.openremote.model.Constants.MASTER_REALM;
+
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.logging.Logger;
@@ -31,6 +33,7 @@ import org.openremote.model.microservices.Microservice;
 import org.openremote.model.microservices.MicroserviceResource;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
@@ -53,14 +56,23 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
                     Response.Status.UNAUTHORIZED);
         }
 
+        if (!isRealmActiveAndAccessible(microservice.getRealm())) {
+            throw new ForbiddenException(
+                    "Realm '" + microservice.getRealm() + "' is nonexistent, inactive or inaccessible");
+        }
+
         // Generate a instanceId if not provided
         if (microservice.getInstanceId() == null) {
             String instanceId = UniqueIdentifierGenerator.generateId();
             microservice.setInstanceId(instanceId);
         }
 
+        // If the user is a super admin and the registration is for master it is
+        // considered a global
+        boolean isGlobal = isSuperUser() && microservice.getRealm().equals(MASTER_REALM);
+
         try {
-            Microservice registeredMicroservice = microserviceRegistry.registerService(microservice);
+            Microservice registeredMicroservice = microserviceRegistry.registerService(microservice, isGlobal);
 
             if (registeredMicroservice == null) {
                 LOG.warning("Failed to register microservice: " + microservice.getServiceId() + " with instanceId: "
@@ -79,8 +91,21 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
     }
 
     @Override
-    public Microservice[] getServices(RequestParams requestParams) {
-        Microservice[] services = microserviceRegistry.getServices();
+    public Microservice[] getServices(RequestParams requestParams, String realm) {
+        if (!isRealmActiveAndAccessible(realm)) {
+            throw new ForbiddenException("Realm '" + realm + "' is nonexistent, inactive or inaccessible");
+        }
+
+        Microservice[] services = microserviceRegistry.getServices(realm);
+
+        // Map services to the representation model
+        return Arrays.stream(services)
+                .toArray(Microservice[]::new);
+    }
+
+    @Override
+    public Microservice[] getGlobalServices(RequestParams requestParams) {
+        Microservice[] services = microserviceRegistry.getGlobalServices();
 
         // Map services to the representation model
         return Arrays.stream(services)
@@ -96,6 +121,14 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
         }
 
         try {
+            Microservice service = microserviceRegistry.getService(serviceId, instanceId);
+
+            if (!isRealmActiveAndAccessible(service.getRealm())) {
+                throw new ForbiddenException(
+                        "Realm '" + service.getRealm() + "' is nonexistent, inactive or inaccessible for microservice "
+                                + serviceId + " instance " + instanceId);
+            }
+
             microserviceRegistry.heartbeat(serviceId, instanceId);
         } catch (NoSuchElementException e) {
             LOG.warning("Failed heartbeat for microservice " + serviceId + " instance " + instanceId + ": "
@@ -113,6 +146,14 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
         }
 
         try {
+            Microservice service = microserviceRegistry.getService(serviceId, instanceId);
+
+            if (!isRealmActiveAndAccessible(service.getRealm())) {
+                throw new ForbiddenException(
+                        "Realm '" + service.getRealm() + "' is nonexistent, inactive or inaccessible for microservice "
+                                + serviceId + " instance " + instanceId);
+            }
+
             microserviceRegistry.deregisterService(serviceId, instanceId);
             LOG.fine("Successfully deregistered microservice: " + serviceId + " instance: " + instanceId);
         } catch (NoSuchElementException e) {

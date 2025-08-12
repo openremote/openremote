@@ -150,15 +150,15 @@ export class OrIframe extends LitElement {
         }
     }
 
-    private handleLoadEvent = (event: Event): void => {
+    private readonly handleLoadEvent = (event: Event): void => {
         this.handleIframeEvent(OrIFrameEventType.LOADED, event);
     };
 
-    private handleErrorEvent = (event: Event): void => {
+    private readonly handleErrorEvent = (event: Event): void => {
         this.handleIframeEvent(OrIFrameEventType.ERROR, event);
     };
 
-    private handleIframeEvent = (type: OrIFrameEventType, event: Event): void => {
+    private readonly handleIframeEvent = (type: OrIFrameEventType, event: Event): void => {
         this.clearTimeout();
 
         const detail: OrIFrameEventDetail = {

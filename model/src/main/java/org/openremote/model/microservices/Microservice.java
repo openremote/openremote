@@ -66,20 +66,34 @@ public class Microservice {
     protected MicroserviceStatus status;
 
     /**
+     * The realm of the service, e.g. "master"
+     */
+    @JsonProperty("realm")
+    protected String realm;
+
+    /**
      * The lease info of the service, contains timestamps for lease expiration,
      * registration and renewal. Used internally by the microservice registry.
      */
     @JsonIgnore
     protected MicroserviceLeaseInfo leaseInfo;
 
+    /**
+     * Whether the service is considered a global service thus available to all
+     * realms
+     */
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    protected boolean isGlobal = false;
+
     public Microservice() {
     }
 
-    public Microservice(String label, String serviceId, String homepageUrl, MicroserviceStatus status) {
+    public Microservice(String label, String serviceId, String homepageUrl, MicroserviceStatus status, String realm) {
         this.label = label;
         this.serviceId = serviceId;
         this.homepageUrl = homepageUrl;
         this.status = status;
+        this.realm = realm;
     }
 
     public String getLabel() {
@@ -114,6 +128,14 @@ public class Microservice {
         this.homepageUrl = homepageUrl;
     }
 
+    public String getRealm() {
+        return realm;
+    }
+
+    public void setRealm(String realm) {
+        this.realm = realm;
+    }
+
     public MicroserviceStatus getStatus() {
         return status;
     }
@@ -130,6 +152,14 @@ public class Microservice {
         this.leaseInfo = leaseInfo;
     }
 
+    public boolean getIsGlobal() {
+        return isGlobal;
+    }
+
+    public void setIsGlobal(boolean isGlobal) {
+        this.isGlobal = isGlobal;
+    }
+
     @Override
     public String toString() {
         return "Microservice{" +
@@ -138,6 +168,8 @@ public class Microservice {
                 ", instanceId='" + instanceId + '\'' +
                 ", homepageUrl='" + homepageUrl + '\'' +
                 ", status='" + status + '\'' +
+                ", realm='" + realm + '\'' +
+                ", isGlobal='" + isGlobal + '\'' +
                 '}';
     }
 }

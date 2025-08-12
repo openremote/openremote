@@ -20,15 +20,14 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { manager } from "@openremote/core";
-import { Microservice, MicroserviceStatus } from "@openremote/model";
-import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { Microservice } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-components/or-iframe";
-import { OrIframe, OrIFrameEventDetail, OrIFrameEventType } from "@openremote/or-components/or-iframe";
+import { OrIframe } from "@openremote/or-components/or-iframe";
 import "@openremote/or-icon";
 import "./or-service-tree";
-import { consolidateServices, getServiceUrlPath } from "./utils";
-import { OrServiceRefreshEvent, OrServiceSelectedEvent } from "./types";
+import { getServiceUrlPath } from "./utils";
+import { OrServiceSelectedEvent } from "./types";
 
 const serviceStyles = css`
     :host {
@@ -87,30 +86,6 @@ const serviceStyles = css`
     #fullscreen-header-title > or-icon {
         margin-right: 10px;
         cursor: pointer;
-    }
-
-    #fullscreen-header-actions {
-        flex: 1 1 auto;
-        text-align: right;
-    }
-
-    #fullscreen-header-actions-content {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        float: right;
-    }
-
-    .small-btn {
-        margin-left: 8px;
-        cursor: pointer;
-        padding: 4px;
-        border-radius: 4px;
-        transition: background-color 0.2s;
-    }
-
-    .small-btn:hover {
-        background-color: rgba(0, 0, 0, 0.1);
     }
 
     /* Mobile responsive styles */
@@ -182,85 +157,38 @@ export class OrServices extends LitElement {
     @property({ type: String })
     public realmName: string = manager.displayRealm;
 
-    @state()
-    private services: Microservice[] = [];
+    @property({ type: Array })
+    public services: Microservice[] = [];
 
-    @state()
-    private selectedService: Microservice | null = null;
+    @property({ type: Object })
+    public selectedService: Microservice | null = null;
 
-    @state()
-    private serviceName: string | null = null;
-
-    @state()
-    protected _loading = false;
+    @property({ type: Boolean })
+    public loading: boolean = false;
 
     @state()
     protected showServiceTree: boolean = true;
 
     connectedCallback(): void {
         super.connectedCallback();
-        this._loadData();
     }
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
     }
 
-    private async _loadData(silent = false): Promise<void> {
-        if (!silent) {
-            this._loading = true;
-        }
-
-        try {
-            const response = await manager.rest.api.MicroserviceResource.getServices();
-            if (response.status === 200) {
-                this.services = consolidateServices(response.data);
-                this.requestUpdate();
-
-                // Re-select service if necessary after loading services
-                if (this.serviceName && !this.selectedService) {
-                    const service = this.services.find((service) => service.serviceId === this.serviceName);
-                    if (service) {
-                        this.selectService(service);
-                    }
-                }
-            }
-        } catch (error) {
-            console.error("Failed to load services:", error);
-            showSnackbar(undefined, i18next.t("services.servicesLoadError"));
-        } finally {
-            this._loading = false;
-        }
-    }
-
-    // Refresh all services by reloading the data
-    private async _onRefreshServices(): Promise<void> {
-        await this._loadData(true);
-        // Show feedback to user that services were actively reloaded/refreshed
-        showSnackbar(undefined, i18next.t("services.servicesReloaded", { count: this.services.length }));
-    }
-
-    // Reload the current service iframe
-    private _onRefreshServiceIFrame(): void {
+    // Method to refresh iframe - called by parent component
+    public refreshIframe(): void {
         const iframe = this.shadowRoot?.querySelector("#service-iframe") as OrIframe;
         if (iframe && typeof iframe.reload === "function") {
+            console.log("Reloading iframe");
             iframe.reload();
         } else {
             console.warn("Unable to reload iframe: iframe not found or reload method not available");
         }
     }
 
-    public setServiceName(serviceName: string | null): void {
-        this.serviceName = serviceName;
-        if (serviceName) {
-            const service = this.services.find((service) => service.serviceId === serviceName);
-            if (service) {
-                this.selectService(service);
-            }
-        } else {
-            this.selectedService = null;
-        }
-    }
+
 
     protected selectService(service: Microservice): void {
         this.selectedService = service;
@@ -277,6 +205,10 @@ export class OrServices extends LitElement {
 
     protected toggleServiceTree(): void {
         this.showServiceTree = !this.showServiceTree;
+    }
+
+    protected getSidebarClass(): string {
+        return this.selectedService ? "hideMobile" : "";
     }
 
     protected _onServiceSelected(e: OrServiceSelectedEvent): void {
@@ -297,20 +229,10 @@ export class OrServices extends LitElement {
     }
 
     /**
-     * Open the selected service in a new tab
-     */
-    protected _openServiceInNewTab(): void {
-        if (this.selectedService) {
-            const url = this.getServiceUrlPath(this.selectedService);
-            window.open(url, "_blank");
-        }
-    }
-
-    /**
      * Renders the main content area based on current state
      */
     protected getServiceContentTemplate(): TemplateResult {
-        if (this._loading) {
+        if (this.loading) {
             return html``; // ignore
         }
 
@@ -335,16 +257,18 @@ export class OrServices extends LitElement {
     }
 
     protected render(): TemplateResult {
+
+        const icon = this.selectedService?.isGlobal ? "earth" : "puzzle";
+        
         return html`
             <div class="wrapper">
                 ${this.showServiceTree
                     ? html`
-                          <div class="sidebar ${this.selectedService ? "hideMobile" : ""}">
+                          <div class="sidebar ${this.getSidebarClass()}">
                               <or-service-tree
                                   .services="${this.services}"
                                   .selectedService="${this.selectedService}"
                                   @or-service-selected="${this._onServiceSelected}"
-                                  @or-service-refresh="${this._onRefreshServices}"
                               ></or-service-tree>
                           </div>
                       `
@@ -368,26 +292,10 @@ export class OrServices extends LitElement {
                                           ></or-icon>
                                           <or-icon
                                               class="hideMobile"
-                                              icon="puzzle"
+                                              icon="${icon}"
                                               title="${i18next.t("services.services")}"
                                           ></or-icon>
                                           <span>${this.selectedService.label || this.selectedService.serviceId}</span>
-                                      </div>
-                                      <div id="fullscreen-header-actions">
-                                          <div id="fullscreen-header-actions-content">
-                                              <or-icon
-                                                  class="small-btn"
-                                                  icon="refresh"
-                                                  title="${i18next.t("services.refresh")}"
-                                                  @click="${this._onRefreshServiceIFrame}"
-                                              ></or-icon>
-                                              <or-icon
-                                                  class="small-btn"
-                                                  icon="open-in-new"
-                                                  title="${i18next.t("services.openInNewTab")}"
-                                                  @click="${this._openServiceInNewTab}"
-                                              ></or-icon>
-                                          </div>
                                       </div>
                                   </div>
                               </div>
@@ -399,9 +307,5 @@ export class OrServices extends LitElement {
         `;
     }
 
-    protected updated(changedProperties: Map<string, any>) {
-        if (changedProperties.has("realmName")) {
-            this._loadData();
-        }
-    }
+
 }

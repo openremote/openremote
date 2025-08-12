@@ -20,17 +20,14 @@
 import { css, html, unsafeCSS, TemplateResult, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { DefaultColor3, DefaultColor5, DefaultColor6 } from "@openremote/core";
-import { OrTreeMenu, TreeNode, TreeMenuSelection, OrTreeNode } from "@openremote/or-tree-menu";
+import { OrTreeMenu, TreeMenuSelection, OrTreeNode } from "@openremote/or-tree-menu";
 import { Microservice, MicroserviceStatus } from "@openremote/model";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import {
     ServiceTreeNode,
     MicroserviceStatusIcon,
     MicroserviceStatusColor,
     OrServiceSelectedEvent,
-    OrServiceRefreshEvent,
 } from "./types";
-import { i18next } from "@openremote/or-translate";
 
 const treeStyles = css`
     .iconfill-gray {
@@ -52,7 +49,6 @@ const treeStyles = css`
 
 /**
  * @event {OrServiceSelectedEvent} or-service-selected - Triggers upon selecting a service, and dispatches the selected service.
- * @event {OrServiceRefreshEvent} or-service-refresh - Triggers when the user requests to refresh the services list.
  */
 @customElement("or-service-tree")
 export class OrServiceTree extends OrTreeMenu {
@@ -136,8 +132,10 @@ export class OrServiceTree extends OrTreeMenu {
                 ? MicroserviceStatusColor[service.status]
                 : MicroserviceStatusColor.UNAVAILABLE;
 
+        const icon = service.isGlobal ? "earth" : "puzzle";
+
         return html`
-            <or-icon class="service-icon" slot="prefix" icon="puzzle"></or-icon>
+            <or-icon class="service-icon" slot="prefix" icon="${icon}"></or-icon>
             <span>${node.label}</span>
             <or-icon slot="suffix" icon="${statusIcon}" class="${statusColor}"> </or-icon>
         `;
@@ -149,19 +147,7 @@ export class OrServiceTree extends OrTreeMenu {
                 <h3 id="tree-header-title">
                     <or-translate value="services.title"></or-translate>
                 </h3>
-                <div class="hideMobile">
-                    <or-mwc-input
-                        type=${InputType.BUTTON}
-                        icon="refresh"
-                        title="${i18next.t("services.refresh")}"
-                        @or-mwc-input-changed=${this._onRefreshServices}
-                    ></or-mwc-input>
-                </div>
             </div>
         `;
-    }
-
-    protected _onRefreshServices(): void {
-        this.dispatchEvent(new OrServiceRefreshEvent());
     }
 }

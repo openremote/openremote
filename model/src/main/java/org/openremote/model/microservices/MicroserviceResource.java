@@ -68,15 +68,29 @@ public interface MicroserviceResource {
             @NotNull @Valid Microservice microservice);
 
     /**
-     * Lists all currently registered microservices with their details and status.
+     * Lists all currently registered microservices for a given realm with their details and status.
      */
     @GET
+    @Path("realm")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({ Constants.READ_SERVICES_ROLE })
-    @Operation(operationId = "getServices", summary = "List all registered external services/microservices with their details and current status", responses = {
+    @Operation(operationId = "getServices", summary = "List all registered external services/microservices for the given realm with their details and current status", responses = {
             @ApiResponse(responseCode = "200", description = "List of registered microservices", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Microservice[].class))),
     })
-    Microservice[] getServices(@BeanParam RequestParams requestParams);
+    Microservice[] getServices(@BeanParam RequestParams requestParams, @QueryParam("realm") String realm);
+
+
+     /**
+      * Lists all currently registered microservices that are globally available
+      */
+     @GET
+     @Path("global")
+     @Produces(APPLICATION_JSON)
+     @RolesAllowed({ Constants.READ_SERVICES_ROLE })
+     @Operation(operationId = "getGlobalServices", summary = "List all registered external services/microservices that are globally accessible with their details and current status", responses = {
+             @ApiResponse(responseCode = "200", description = "List of registered microservices", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Microservice[].class))),
+     })
+     Microservice[] getGlobalServices(@BeanParam RequestParams requestParams);
 
     /**
      * Send a heartbeat to refresh the active registration lease for the
