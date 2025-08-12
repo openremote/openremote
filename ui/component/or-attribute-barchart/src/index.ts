@@ -838,6 +838,18 @@ export class OrAttributeBarChart extends LitElement {
                 this._chart?.resize();
             }
         }
+        // Update ticks / labels
+        const xAxisTicks = Math.max(1, (this._endOfPeriod! - this._startOfPeriod!) / this._intervalConfig!.millis - 1);
+        const recommendedTicks = this._chartElem?.clientWidth ? (this._chartElem.clientWidth / 50) : Number.MAX_SAFE_INTEGER;
+        this._chart?.setOption({
+            xAxis: {
+                show: xAxisTicks > 1,
+                splitNumber: xAxisTicks,
+                axisLabel: {
+                    rotate: xAxisTicks > recommendedTicks ? 45 : 0,
+                }
+            }
+        });
     }
 
     protected _cleanup() {
@@ -1102,18 +1114,18 @@ export class OrAttributeBarChart extends LitElement {
 
         // Update ticks / labels
         const xAxisTicks = Math.max(1, (this._endOfPeriod! - this._startOfPeriod!) / this._intervalConfig!.millis - 1);
-        const maxTicks = this._chartElem?.clientWidth ? (this._chartElem.clientWidth / 50) : Number.MAX_SAFE_INTEGER;
-        const splitNumber = Math.round(Math.min(xAxisTicks, maxTicks));
+        const recommendedTicks = this._chartElem?.clientWidth ? (this._chartElem.clientWidth / 50) : Number.MAX_SAFE_INTEGER;
 
         // Update chart
         this._chart.setOption({
             xAxis: {
-                show: splitNumber > 1,
-                splitNumber: splitNumber,
+                show: xAxisTicks > 1,
+                splitNumber: xAxisTicks,
                 min: this._startOfPeriod,
                 max: this._endOfPeriod,
                 axisLabel: {
-                    interval: this._intervalConfig?.millis
+                    interval: this._intervalConfig?.millis,
+                    rotate: xAxisTicks > recommendedTicks ? 45 : 0,
                 }
             },
             dataZoom: {
@@ -1140,8 +1152,7 @@ export class OrAttributeBarChart extends LitElement {
 
     protected _getDefaultChartOptions(): ECChartOption {
         const xAxisTicks = Math.max(1, (this._endOfPeriod! - this._startOfPeriod!) / this._intervalConfig!.millis - 1);
-        const maxTicks = this._chartElem?.clientWidth ? (this._chartElem.clientWidth / 50) : Number.MAX_SAFE_INTEGER;
-        const splitNumber = Math.round(Math.min(xAxisTicks, maxTicks));
+        const recommendedTicks = this._chartElem?.clientWidth ? (this._chartElem.clientWidth / 50) : Number.MAX_SAFE_INTEGER;
         return {
             animation: false,
             grid: {
@@ -1191,17 +1202,16 @@ export class OrAttributeBarChart extends LitElement {
             },
             xAxis: {
                 type: "time",
-                show: splitNumber > 1,
+                show: xAxisTicks > 1,
                 axisLine: {
                     lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}
                 },
-                splitNumber: splitNumber,
+                splitNumber: xAxisTicks,
                 min: this._startOfPeriod,
                 max: this._endOfPeriod,
                 boundaryGap: false,
                 axisLabel: {
-                    // hideOverlap: true,
-                    //rotate: 25,
+                    rotate: xAxisTicks > recommendedTicks ? 45 : 0,
                     interval: this._intervalConfig?.millis,
                     fontSize: 10,
                     formatter: {
