@@ -20,14 +20,21 @@
 import { css, html, unsafeCSS, TemplateResult, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { DefaultColor3, DefaultColor5, DefaultColor6 } from "@openremote/core";
-import { OrTreeMenu, TreeMenuSelection, OrTreeNode } from "@openremote/or-tree-menu";
+import { OrTreeMenu, TreeMenuSelection, OrTreeNode, TreeMenuSorting } from "@openremote/or-tree-menu";
 import { Microservice, MicroserviceStatus } from "@openremote/model";
+import { i18next } from "@openremote/or-translate";
+import { Util } from "@openremote/core";
 import {
     ServiceTreeNode,
     MicroserviceStatusIcon,
     MicroserviceStatusColor,
     OrServiceSelectedEvent,
 } from "./types";
+
+
+export enum ServiceTreeSorting {
+    NAME = "name", STATUS = "status"
+}
 
 const treeStyles = css`
     .iconfill-gray {
@@ -46,6 +53,8 @@ const treeStyles = css`
         padding-left: 10px;
     }
 `;
+
+
 
 /**
  * @event {OrServiceSelectedEvent} or-service-selected - Triggers upon selecting a service, and dispatches the selected service.
@@ -68,6 +77,8 @@ export class OrServiceTree extends OrTreeMenu {
     nodes: ServiceTreeNode[] = [];
     selection = TreeMenuSelection.SINGLE;
     menuTitle = "services";
+    sortBy: any = ServiceTreeSorting.NAME;
+    sortOptions: any[] = [ServiceTreeSorting.NAME, ServiceTreeSorting.STATUS];
 
     protected willUpdate(changedProps: PropertyValues): void {
         if (changedProps.has("services")) {
@@ -147,7 +158,23 @@ export class OrServiceTree extends OrTreeMenu {
                 <h3 id="tree-header-title">
                     <or-translate value="services.title"></or-translate>
                 </h3>
+                <div id="tree-header-actions">
+                    ${this._getSortActionTemplate(this.sortBy, this.sortOptions)}
+                </div>
             </div>
         `;
+    }
+
+    protected _getSortFunction(sortBy?: TreeMenuSorting): (a: ServiceTreeNode, b: ServiceTreeNode) => number {
+        const sorting = sortBy as ServiceTreeSorting | undefined;
+        switch (sorting) {
+            case ServiceTreeSorting.STATUS: {
+                return Util.sortByString(node => node.service?.status || "");
+            }
+            case ServiceTreeSorting.NAME:
+            default: {
+                return super._getSortFunction(sortBy);
+            }
+        }
     }
 }
