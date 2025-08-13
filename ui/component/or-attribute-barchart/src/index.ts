@@ -22,7 +22,7 @@ import {customElement, property, state, query} from "lit/decorators.js";
 import i18next from "i18next";
 import {
     Asset, AssetDatapointIntervalQuery,
-    AssetDatapointIntervalQueryFormula, AssetDatapointLTTBQuery,
+    AssetDatapointIntervalQueryFormula,
     AssetDatapointQueryUnion,
     AssetModelUtil,
     Attribute,
@@ -1226,6 +1226,12 @@ export class OrAttributeBarChart extends LitElement {
                 min: this._startOfPeriod,
                 max: this._endOfPeriod,
                 boundaryGap: false,
+                splitArea: {
+                    show: true,
+                    areaStyle: {
+                        color: ["transparent", "rgba(0, 0, 0, 0.05)"]
+                    }
+                },
                 axisLabel: {
                     rotate: splitNumber > recommendedTicks ? 45 : 0,
                     interval: this._intervalConfig?.millis,
