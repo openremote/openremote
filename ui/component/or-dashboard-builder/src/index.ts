@@ -32,7 +32,8 @@ import {AttributeInputWidget} from "./widgets/attribute-input-widget";
 import {TableWidget} from "./widgets/table-widget";
 import {GatewayWidget} from "./widgets/gateway-widget";
 import {CustomWidget} from "./widgets/custom-widget";
-import { BatteryWidget } from "./widgets/battery-widget";
+// import { BatteryWidget } from "./widgets/battery-widget";
+import { ParkingWidget } from "./widgets/parking-widget";
 
 // language=CSS
 const styling = css`
@@ -221,7 +222,8 @@ export function registerWidgetTypes() {
     widgetTypes.set("table", TableWidget.getManifest());
     widgetTypes.set("gateway", GatewayWidget.getManifest());
     widgetTypes.set("custom", CustomWidget.getManifest());
-    widgetTypes.set("battery", BatteryWidget.getManifest());
+    // widgetTypes.set("battery", BatteryWidget.getManifest());
+    widgetTypes.set("parking", ParkingWidget.getManifest());
 }
 
 @customElement("or-dashboard-builder")
