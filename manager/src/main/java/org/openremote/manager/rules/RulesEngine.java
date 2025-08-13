@@ -429,6 +429,12 @@ public class RulesEngine<T extends Ruleset> {
                 }
                 // Process rules for all deployments
                 fireAllDeployments();
+
+                if (Thread.currentThread().isInterrupted()) {
+                    LOG.finest("Timer interrupted during rules execution - not scheduling next fire");
+                    return;
+                }
+
                 fireTimer = null;
                 scheduleFire(false);
             },
