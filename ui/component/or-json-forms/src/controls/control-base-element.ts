@@ -4,6 +4,7 @@ import {
     createId,
     isControl,
     JsonSchema,
+    JsonSchema7,
     mapDispatchToControlProps,
     OwnPropsOfControl,
     removeId
@@ -18,7 +19,7 @@ export abstract class ControlBaseElement extends BaseElement<ControlElement, Con
     public description?: string | undefined;
 
     @property()
-    public rootSchema!: JsonSchema;
+    public rootSchema!: JsonSchema7;
 
     public handleChange!: (path: string, data: any) => void;
 

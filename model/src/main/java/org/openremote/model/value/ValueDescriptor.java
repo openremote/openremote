@@ -115,7 +115,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
     protected Integer arrayDimensions;
     protected ValueConstraint[] constraints;
     protected ValueFormat format;
-    protected String[] units;
+    protected Units[] units;
     /**
      * A flag to indicate that this {@link ValueDescriptor} is intended for use in a {@link MetaItem}; this can be used
      * for UI purposes but nothing actually stops the values being used in an {@link Attribute} also.
@@ -142,7 +142,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
     }
 
     @JsonCreator
-    protected ValueDescriptor(String name, Class<T> type, ValueConstraint[] constraints, ValueFormat format, String[] units, Integer arrayDimensions) {
+    protected ValueDescriptor(String name, Class<T> type, ValueConstraint[] constraints, ValueFormat format, Units[] units, Integer arrayDimensions) {
         this.name = name;
         this.type = type;
         this.arrayDimensions = arrayDimensions;
@@ -212,7 +212,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
         return new ValueDescriptor<>(name, type, constraints, format, units, arrayDimensions);
     }
 
-    public ValueDescriptor<T> withUnits(String...units) {
+    public ValueDescriptor<T> withUnits(Units...units) {
         return new ValueDescriptor<>(name, type, constraints, format, units, arrayDimensions);
     }
 
@@ -238,7 +238,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
         return format;
     }
 
-    public String[] getUnits() {
+    public Units[] getUnits() {
         return units;
     }
 

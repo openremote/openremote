@@ -5,7 +5,7 @@ import {
     getSchema,
     GroupLayout,
     isControl,
-    JsonSchema,
+    JsonSchema7,
     mapStateToControlProps,
     mapStateToControlWithDetailProps,
     mapStateToJsonFormsRendererProps,
@@ -22,7 +22,6 @@ import {LayoutBaseElement} from "./layout-base-element";
 import {
     CombinatorInfo,
     controlWithoutLabel,
-    getLabel,
     getSchemaPicker,
     getTemplateFromProps,
     showJsonEditor
@@ -88,7 +87,7 @@ const style = css`
     }
 `;
 
-function isDynamic(schema: JsonSchema): boolean {
+function isDynamic(schema: JsonSchema7): boolean {
     return schema.allOf === undefined && schema.anyOf === undefined && (schema.properties === undefined || Object.keys(schema.properties).length === 0);
 }
 
@@ -113,17 +112,17 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
 
         const optionalProps: StatePropsOfControl[] = [];
         const jsonFormsState = {jsonforms: {...this.state}};
-        const rootSchema = getSchema(jsonFormsState);
+        const rootSchema = getSchema(jsonFormsState) as JsonSchema7;
         const dynamic = isDynamic(this.schema);
         let dynamicPropertyRegex = ".+";
-        let dynamicValueSchema: JsonSchema | undefined;
+        let dynamicValueSchema: JsonSchema7 | undefined;
 
         if (dynamic) {
             if (typeof this.schema.patternProperties === "object") {
                 const patternObjs = Object.entries(this.schema.patternProperties);
                 if (patternObjs.length === 1) {
                     dynamicPropertyRegex = patternObjs[0][0];
-                    dynamicValueSchema = (patternObjs[0][1] as JsonSchema);
+                    dynamicValueSchema = patternObjs[0][1];
                 }
             } else if (typeof this.schema.additionalProperties === "object") {
                 dynamicValueSchema = this.schema.additionalProperties;
@@ -154,7 +153,6 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
 
                     const controlProps = childProps as OwnPropsOfControl;
                     const stateControlProps = mapStateToControlProps(jsonFormsState, controlProps);
-                    stateControlProps.label = stateControlProps.label || getLabel(this.schema, rootSchema, undefined, (childProps.uischema as ControlElement).scope) || "";
                     childProps.label = stateControlProps.label;
                     childProps.required = !!stateControlProps.required;
                     if (!stateControlProps.required && stateControlProps.data === undefined) {
@@ -176,7 +174,6 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                 <div id="content">
                     ${contentTemplate || ``}
                 </div>
-
                 ${this.errors || (optionalProps.length === 0 && !dynamic) ? `` : html`
                         <div id="footer">
                             <or-mwc-input .type="${InputType.BUTTON}" label="addParameter" icon="plus" @or-mwc-input-changed="${() => this._addParameter(rootSchema, optionalProps, dynamicPropertyRegex, dynamicValueSchema)}"></or-mwc-input>
@@ -187,7 +184,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
         return this.minimal ? html`<div>${content}</div>` : html`<or-collapsible-panel .expandable="${expandable}">${content}</or-collapsible-panel>`;
     }
 
-    protected _getDynamicContentTemplate(dynamicPropertyRegex: string, dynamicValueSchema: JsonSchema): TemplateResult | undefined {
+    protected _getDynamicContentTemplate(dynamicPropertyRegex: string, dynamicValueSchema: JsonSchema7): TemplateResult | undefined {
         if (!this.data) {
             return undefined;
         }
@@ -263,7 +260,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
         });
     }
 
-    protected _addParameter(rootSchema: JsonSchema, optionalProps: StatePropsOfControl[], dynamicPropertyRegex?: string, dynamicValueSchema?: JsonSchema) {
+    protected _addParameter(rootSchema: JsonSchema7, optionalProps: StatePropsOfControl[], dynamicPropertyRegex?: string, dynamicValueSchema?: JsonSchema7) {
 
         const dynamic = optionalProps.length === 0;
         let selectedParameter: StatePropsOfControl | undefined;
@@ -316,7 +313,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                     (dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput).disabled = !selectedOneOf;
                     (dialog.shadowRoot!.getElementById("schema-description") as HTMLParagraphElement).innerHTML = (selectedOneOf ? selectedOneOf.description : i18next.t("schema.selectTypeMessage")) || i18next.t("schema.noDescriptionAvailable");
                 };
-                schemaPicker = getSchemaPicker(rootSchema, selectedParameter.schema, selectedParameter.path, "oneOf", selectedParameter.label, handleChange);
+                schemaPicker = getSchemaPicker(rootSchema, selectedParameter.schema as JsonSchema7, selectedParameter.path, "oneOf", selectedParameter.label, handleChange);
             }
 
             return html`
@@ -329,7 +326,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                         `}
                         <div id="parameter-desc" class="col">
                             ${!selectedParameter ? `` : html`
-                                <or-translate id="parameter-title" value="${selectedParameter.label}"></or-translate>
+                                <or-translate id="parameter-title" value="${i18next.t(selectedParameter.label)}"></or-translate>
                                 <p>${selectedParameter.description}</p>`}
                             ${!dynamic ? !schemaPicker ? `` : html`
                                 <style>
