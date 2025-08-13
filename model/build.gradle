@@ -27,6 +27,7 @@ dependencies {
 
     api "com.github.victools:jsonschema-generator:$victoolsJsonSchemaGeneratorVersion"
     api "com.github.victools:jsonschema-module-jackson:$victoolsJsonSchemaGeneratorVersion"
+    api "com.github.victools:jsonschema-module-jakarta-validation:$victoolsJsonSchemaGeneratorVersion"
 
     api "io.github.classgraph:classgraph:$classgraphVersion"
     api "io.micrometer:micrometer-core:$micrometerVersion"
