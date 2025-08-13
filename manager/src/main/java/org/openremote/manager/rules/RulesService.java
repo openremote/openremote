@@ -978,7 +978,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
     public void fireDeploymentsWithPredictedDataForAsset(String assetId) {
         List<AttributeInfo> assetStates = getAssetStatesInScope(assetId);
         if (!assetStates.isEmpty()) {
-            String realm = assetStates.get(0).getRealm();
+            String realm = assetStates.getFirst().getRealm();
             String[] assetPaths = assetStates.stream().flatMap(assetState -> Arrays.stream(assetState.getPath())).toArray(String[]::new);
             synchronized (ENGINE_LOCK) {
                 for (RulesEngine<?> rulesEngine : getEnginesInScope(realm, assetPaths)) {
