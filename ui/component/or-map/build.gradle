@@ -1,18 +1,24 @@
-task clean() {
+tasks.register('clean') {
     doLast {
         delete "dist"
         delete "lib"
     }
 }
 
-task installDist() {
+tasks.register('installDist') {
     dependsOn npmAnalyze
 }
 
-task prepareUi() {
+tasks.register('prepareUi') {
     dependsOn clean, npmPublish, npmPrepare
 }
 
-task publishUi() {
+tasks.register('publishUi') {
     dependsOn clean, npmPublish
+}
+
+tasks.register('npmBuild', Exec) {
+    mustRunAfter npmClean
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "run", "build"
 }
