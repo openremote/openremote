@@ -3,8 +3,7 @@
 set -eo pipefail
 
 # Name of cluster, not exposed but must be unique within account
-# !!! make sure to also update in cluster.yaml
-CLUSTER_NAME=testcluster
+export CLUSTER_NAME=testcluster
 
 # Hostname to use for public access to this instance, always under the openremote.app domain
 HOSTNAME=testmanager
@@ -12,8 +11,7 @@ FQDN=$HOSTNAME.openremote.app
 MQTT_FQDN=mqtt.$FQDN
 MQTTS_FQDN=mqtts.$FQDN
 
-# !!! make sure region in cluster.yaml matches
-AWS_REGION="eu-west-1"
+export AWS_REGION="eu-west-1"
 AWS_ACCOUNT_ID="463235666115" # openremote
 
 DNSCHG_ROLE_ARN="arn:aws:iam::134517981306:role/route53-full-access"
