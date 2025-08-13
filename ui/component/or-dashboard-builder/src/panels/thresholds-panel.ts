@@ -121,12 +121,19 @@ export class ThresholdsPanel extends LitElement {
         }
     }
 
+    private get colorValue() {
+        return (color?: string) => {
+            if (!color) return "#000000";
+            return color.startsWith('#') ? color : '#' + color;
+        }
+    }
+
     protected render(): TemplateResult {
         return html`
             <div id="thresholds-list" class="expanded-panel">
 
                 <!-- Thresholds by number -->
-                ${(this.valueType === 'number' || this.valueType === 'positiveInteger'
+                ${(this.valueType === 'number' || this.valueType === 'integer' || this.valueType === 'positiveInteger'
                         || this.valueType === 'positiveNumber' || this.valueType === 'negativeInteger'
                         || this.valueType === 'negativeNumber') ? html`
                     ${(this.thresholds as [number, string][]).sort((x, y) => (x[0] < y[0]) ? -1 : 1).map((threshold, index) => {
@@ -173,14 +180,12 @@ export class ThresholdsPanel extends LitElement {
                 ` : null}
 
                 <!-- Thresholds by boolean -->
-                ${(this.valueType === 'boolean') ? html`
+                ${(this.valueType === 'boolean' && this.boolColors) ? html`
                     <div class="threshold-list-item">
                         <div class="threshold-list-item-colour">
-                            <or-mwc-input type="${InputType.COLOUR}" value="${this.boolColors.true}"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              this.boolColors.true = event.detail.value;
-                                              this.requestUpdate('boolColors');
-                                          }}"
+                            <or-mwc-input type="${InputType.COLOUR}" value="${this.colorValue(this.boolColors?.true)}"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {   
+                                          this.onBoolColorChange(true, event.detail.value)}}"
                             ></or-mwc-input>
                         </div>
                         <or-mwc-input type="${InputType.TEXT}" comfortable .value="${'True'}" .readonly="${true}"
@@ -188,11 +193,9 @@ export class ThresholdsPanel extends LitElement {
                     </div>
                     <div class="threshold-list-item">
                         <div class="threshold-list-item-colour">
-                            <or-mwc-input type="${InputType.COLOUR}" value="${this.boolColors.false}"
+                            <or-mwc-input type="${InputType.COLOUR}" value="${this.colorValue(this.boolColors?.false)}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              this.boolColors.false = event.detail.value;
-                                              this.requestUpdate('boolColors');
-                                          }}"
+                                            this.onBoolColorChange(false, event.detail.value)}}"
                             ></or-mwc-input>
                         </div>
                         <or-mwc-input type="${InputType.TEXT}" comfortable .value="${'False'}" .readonly="${true}"
@@ -245,12 +248,30 @@ export class ThresholdsPanel extends LitElement {
         `
     }
 
+    protected onBoolColorChange(isTrue: boolean, newColor: string) {
+         // in case newColor already has '#' prefix
+        const color = newColor.startsWith('#') ? newColor.substring(1) : newColor;
+        
+        if (!this.boolColors) {
+            this.boolColors = {
+                type: 'boolean',
+                true: '4caf50',
+                false: 'ef5350'
+            };
+        }
+
+        this.boolColors = {
+            ...this.boolColors,
+            [isTrue ? 'true' : 'false']: color
+        };
+    }
+
     protected removeThreshold(threshold: [any, string]) {
         switch (typeof threshold[0]) {
             case "number":
                 this.thresholds = (this.thresholds as [number, string][]).filter((x) => x !== threshold);
                 break;
-            default:
+            default: 
                 this.textColors = (this.textColors as [string, string][]).filter((x) => x !== threshold);
                 break;
         }

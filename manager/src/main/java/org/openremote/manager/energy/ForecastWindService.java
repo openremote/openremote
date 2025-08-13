@@ -117,7 +117,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
     protected GatewayService gatewayService;
     protected AssetPredictedDatapointService assetPredictedDatapointService;
     protected ClientEventService clientEventService;
-    protected ScheduledExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected RulesService rulesService;
     private ResteasyWebTarget weatherForecastWebTarget;
     private String openWeatherAppId;
@@ -141,7 +141,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
         gatewayService = container.getService(GatewayService.class);
         assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);
         clientEventService = container.getService(ClientEventService.class);
-        executorService = container.getExecutorService();
+        scheduledExecutorService = container.getScheduledExecutor();
         rulesService = container.getService(RulesService.class);
 
         openWeatherAppId = getString(container.getConfig(), OR_OPEN_WEATHER_API_APP_ID, null);
@@ -181,7 +181,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
         electricityProducerWindAssets.forEach(this::startCalculation);
 
-        clientEventService.addInternalSubscription(
+        clientEventService.addSubscription(
                 AttributeEvent.class,
                 null,
                 this::processAttributeEvent);
@@ -195,7 +195,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
     protected static void initClient() {
         synchronized (resteasyClient) {
             if (resteasyClient.get() == null) {
-                resteasyClient.set(createClient(org.openremote.container.Container.EXECUTOR_SERVICE));
+                resteasyClient.set(createClient(org.openremote.container.Container.SCHEDULED_EXECUTOR));
             }
         }
     }
@@ -258,7 +258,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
     protected void startCalculation(ElectricityProducerWindAsset electricityProducerWindAsset) {
         LOG.fine("Starting calculation for producer wind asset: " + electricityProducerWindAsset);
-        calculationFutures.put(electricityProducerWindAsset.getId(), executorService.scheduleAtFixedRate(() -> {
+        calculationFutures.put(electricityProducerWindAsset.getId(), scheduledExecutorService.scheduleAtFixedRate(() -> {
             processWeatherData(electricityProducerWindAsset);
         }, 0, 1, TimeUnit.HOURS));
     }
@@ -294,7 +294,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
                 for (WeatherForecastModel weatherForecastModel : weatherForecastResponseModel.getList()) {
                     double powerForecast = calculatePower(electricityProducerWindAsset, weatherForecastModel);
 
-                    LocalDateTime timestamp = LocalDateTime.ofInstant(Instant.ofEpochMilli(weatherForecastModel.getTimestamp()), ZoneId.systemDefault());
+                    LocalDateTime timestamp = Instant.ofEpochMilli(weatherForecastModel.getTimestamp()).atZone(ZoneId.systemDefault()).toLocalDateTime();
                     assetPredictedDatapointService.updateValue(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), -powerForecast, timestamp);
                     assetPredictedDatapointService.updateValue(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), -powerForecast, timestamp);
 

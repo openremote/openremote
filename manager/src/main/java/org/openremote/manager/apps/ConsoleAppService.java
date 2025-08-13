@@ -21,6 +21,7 @@ package org.openremote.manager.apps;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.PathHandler;
+import io.undertow.server.handlers.resource.PathResourceManager;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -66,7 +67,7 @@ public class ConsoleAppService implements ContainerService {
 
         // Serve console app config files
         if (Files.isDirectory(consoleAppDocRoot)) {
-            HttpHandler customBaseFileHandler = ManagerWebService.createFileHandler(container, consoleAppDocRoot, null);
+            HttpHandler customBaseFileHandler = ManagerWebService.createFileHandler(container, new PathResourceManager(consoleAppDocRoot), null);
 
             HttpHandler pathHandler = new PathHandler().addPrefixPath("info", customBaseFileHandler);
             managerWebService.getRequestHandlers().add(0, pathStartsWithHandler(

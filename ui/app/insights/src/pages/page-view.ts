@@ -79,8 +79,10 @@ export class PageView extends Page<AppStateKeyed> {
         super(props);
 
         // Register user
-        const userPromise = manager.rest.api.UserResource.getCurrent().then((response: any) => { this._userId = response.data.id; });
-        this.registerPromise('user', userPromise, true, true);
+        if(manager.authenticated) {
+            const userPromise = manager.rest.api.UserResource.getCurrent().then((response: any) => { this._userId = response.data.id; });
+            this.registerPromise('user', userPromise, true, true);
+        }
 
         // Load available realms
         const realmPromise = manager.rest.api.RealmResource.getAccessible().then((response: any) => { this._loadedRealms = response.data; });
@@ -190,13 +192,8 @@ export class PageView extends Page<AppStateKeyed> {
             const response = await promise;
             return response.data;
         } catch (ex) {
-            if(isAxiosError(ex)) {
-                if(ex.response.status === 404 && manager.isSuperUser()) {
-                    return undefined;
-                }
-                if(!manager.authenticated && ex.response.status === 403 && loginRedirect) {
-                    manager.login();
-                }
+            if(isAxiosError(ex) && !manager.authenticated && loginRedirect) {
+                manager.login();
             }
             return undefined;
         }

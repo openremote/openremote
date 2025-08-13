@@ -14,6 +14,7 @@ export class RestApi {
 
     protected _client!: ApiClient;
     protected _axiosInstance!: AxiosInstance;
+    protected _baseUrl!: string;
 
     constructor() {
         this._axiosInstance = axios.create();
@@ -28,6 +29,10 @@ export class RestApi {
         return this._axiosInstance;
     }
 
+    get baseUrl() {
+        return this._baseUrl;
+    }
+
     public setTimeout(timeout: number) {
         this._axiosInstance.defaults.timeout = timeout;
     }
@@ -37,6 +42,7 @@ export class RestApi {
     }
 
     public initialise(baseUrl: string) {
+        this._baseUrl = baseUrl;
         this._client = new ApiClient(baseUrl, this._axiosInstance);
     }
 }

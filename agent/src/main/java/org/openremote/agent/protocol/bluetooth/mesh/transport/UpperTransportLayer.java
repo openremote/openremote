@@ -80,14 +80,14 @@ public abstract class UpperTransportLayer extends AccessLayer{
     abstract void createLowerTransportControlPDU(final ControlMessage message);
 
     /**
-     * Removes the lower transport layer header and reassembles a segented lower transport access pdu in to one message
+     * Removes the lower transport layer header and reassembles a segmented lower transport access pdu in to one message
      *
      * @param accessMessage access message containing the lower transport pdus
      */
     abstract void reassembleLowerTransportAccessPDU(final AccessMessage accessMessage);
 
     /**
-     * Removes the lower transport layer header and reassembles a segented lower transport control pdu in to one message
+     * Removes the lower transport layer header and reassembles a segmented lower transport control pdu in to one message
      *
      * @param controlMessage control message containing the lower transport pdus
      */

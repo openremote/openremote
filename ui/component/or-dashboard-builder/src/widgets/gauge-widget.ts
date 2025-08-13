@@ -1,7 +1,7 @@
-import {html, TemplateResult} from "lit";
+import {html, css, TemplateResult} from "lit";
 import {customElement, state} from "lit/decorators.js";
 import {OrAssetWidget} from "../util/or-asset-widget";
-import {WidgetConfig} from "../util/widget-config";
+import {AssetWidgetConfig} from "../util/widget-config";
 import {Attribute, AttributeRef} from "@openremote/model";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {WidgetSettings} from "../util/widget-settings";
@@ -9,8 +9,7 @@ import {GaugeSettings} from "../settings/gauge-settings";
 import {when} from "lit/directives/when.js";
 import "@openremote/or-gauge";
 
-export interface GaugeWidgetConfig extends WidgetConfig {
-    attributeRefs: AttributeRef[];
+export interface GaugeWidgetConfig extends AssetWidgetConfig {
     thresholds: [number, string][];
     decimals: number;
     min: number;
@@ -28,6 +27,16 @@ function getDefaultWidgetConfig(): GaugeWidgetConfig {
         valueType: 'number',
     };
 }
+
+const styling = css`
+  #error-txt {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+`;
 
 @customElement("gauge-widget")
 export class GaugeWidget extends OrAssetWidget {
@@ -60,6 +69,10 @@ export class GaugeWidget extends OrAssetWidget {
         this.loadAssets(this.widgetConfig.attributeRefs);
     }
 
+    static get styles() {
+        return [...super.styles, styling];
+    }
+
     // WebComponent lifecycle method, that occurs DURING every state update
     protected willUpdate(changedProps: Map<string, any>) {
 
@@ -80,7 +93,12 @@ export class GaugeWidget extends OrAssetWidget {
     }
 
     protected loadAssets(attributeRefs: AttributeRef[]) {
+        if(attributeRefs.length === 0) {
+            this._error = "noAttributesConnected";
+            return;
+        }
         this._loading = true;
+        this._error = undefined;
         this.fetchAssets(attributeRefs).then((assets) => {
             this.loadedAssets = assets;
             this.assetAttributes = attributeRefs?.map((attrRef: AttributeRef) => {
@@ -88,6 +106,8 @@ export class GaugeWidget extends OrAssetWidget {
                 const foundAsset = assetIndex >= 0 ? assets[assetIndex] : undefined;
                 return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
             }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
+        }).catch(e => {
+            this._error = e.message;
         }).finally(() => {
             this._loading = false;
         });
@@ -96,10 +116,12 @@ export class GaugeWidget extends OrAssetWidget {
 
     protected render(): TemplateResult {
         return html`
-            ${when(this._loading, () => {
-                return html`
-                    <or-loading-indicator></or-loading-indicator>
-                `;
+            ${when(this._loading || this._error, () => {
+                if(this._loading) {
+                    return html`<or-loading-indicator></or-loading-indicator>`;
+                } else {
+                    return html`<or-translate id="error-txt" .value="${this._error}"></or-translate>`;
+                }
             }, () => when(this.loadedAssets && this.assetAttributes && this.loadedAssets.length > 0 && this.assetAttributes.length > 0, () => {
                 return html`
                     <or-gauge .asset="${this.loadedAssets[0]}" .assetAttribute="${this.assetAttributes[0]}" .thresholds="${this.widgetConfig.thresholds}"
@@ -109,7 +131,7 @@ export class GaugeWidget extends OrAssetWidget {
                 `;
             }, () => {
                 return html`
-                    <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
+                    <div style="height: 100%; display: flex; justify-content: center; align-items: center; text-align: center;">
                         <span><or-translate value="noAttributeConnected"></or-translate></span>
                     </div>
                 `;

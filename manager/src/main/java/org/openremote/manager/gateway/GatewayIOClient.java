@@ -22,8 +22,8 @@ package org.openremote.manager.gateway;
 
 import org.openremote.agent.protocol.websocket.WebsocketIOClient;
 import org.openremote.model.auth.OAuthGrant;
-import org.openremote.model.event.shared.EventRequestResponseWrapper;
 import org.openremote.model.gateway.GatewayCapabilitiesRequestEvent;
+import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.syslog.SyslogCategory;
 
 import java.net.URI;
@@ -56,7 +56,12 @@ public class GatewayIOClient extends WebsocketIOClient<String> {
 
     @Override
     protected Future<Void> startChannel() {
-        CompletableFuture<Void> connectedFuture = toCompletableFuture(super.startChannel());
+        CompletableFuture<Void> connectedFuture;
+        try {
+            connectedFuture = toCompletableFuture(super.startChannel());
+        } catch (Exception e) {
+            connectedFuture = CompletableFuture.failedFuture(e);
+        }
 
         return connectedFuture
             .orTimeout(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS)
@@ -65,7 +70,11 @@ public class GatewayIOClient extends WebsocketIOClient<String> {
                 .orTimeout(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
                 .handle((result, ex) -> {
                     syncFuture = null;
-                    if (ex instanceof TimeoutException) {
+                    if (ex instanceof TimeoutException && !channel.isOpen()) {
+                        // Channel could have been closed whilst waiting for sync
+                        LOG.info("Channel has been closed unexpectedly during sync");
+                        throw new RuntimeException("Channel has been closed unexpectedly during sync");
+                    } else if (ex instanceof TimeoutException) {
                         LOG.finest("Timeout reached whilst waiting for sync complete event");
                     } else if (ex != null) {
                         throw new RuntimeException(ex.getMessage());
@@ -88,11 +97,15 @@ public class GatewayIOClient extends WebsocketIOClient<String> {
 
     @Override
     protected void onMessageReceived(String message) {
-        if (syncFuture != null && message.startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX) && message.contains(GatewayCapabilitiesRequestEvent.TYPE)) {
+        if (syncFuture != null && message.contains(GatewayCapabilitiesRequestEvent.TYPE)) {
             LOG.finest("Gateway connection is now ready");
             syncFuture.complete(null);
         }
 
+        if (syncFuture != null && message.contains(GatewayDisconnectEvent.TYPE)) {
+            LOG.finest("Gateway disconnect event received during sync: " + message);
+            syncFuture.completeExceptionally(new RuntimeException("Gateway disconnect event received during sync"));
+        }
         super.onMessageReceived(message);
     }
 }

@@ -149,9 +149,9 @@ rules.add()
             // Stop time is start time plus CYCLE_TIME_MILLISECONDS
             def stopMilliseconds = startSeconds + CYCLE_TIME_MILLISECONDS
             LOG.info("Smart switch mode is ON_AT, enabling actuator with start/stop times " +
-                    LocalDateTime.ofInstant(Instant.ofEpochMilli(startSeconds), ZoneId.systemDefault()) +
+                    Instant.ofEpochMilli(startSeconds).atZone(ZoneId.systemDefault()).toLocalDateTime() +
                     "/" +
-                    LocalDateTime.ofInstant(Instant.ofEpochMilli(stopMilliseconds), ZoneId.systemDefault()) +
+                    Instant.ofEpochMilli(stopMilliseconds).atZone(ZoneId.systemDefault()).toLocalDateTime() +
                     ": " + beginEnd)
             String smartSwitchName = getSmartSwitchName(beginEnd)
             facts.updateAssetState(beginEnd.id, "smartSwitch" + SmartSwitchAttribute.StartTime + smartSwitchName, startSeconds)
@@ -199,8 +199,8 @@ rules.add()
             // Stop time is user-provided smart switch time (in seconds)
             def stopMilliseconds = beginEnd.value.orElse(0l)
             LOG.info("Smart switch mode is READY_AT, enabling actuator with start/stop times " +
-                    LocalDateTime.ofInstant(Instant.ofEpochMilli(startMilliseconds), ZoneId.systemDefault()) + "/" +
-                    LocalDateTime.ofInstant(Instant.ofEpochMilli(stopMilliseconds), ZoneId.systemDefault()) +
+                    Instant.ofEpochMilli(startMilliseconds).atZone(ZoneId.systemDefault()).toLocalDateTime() + "/" +
+                    Instant.ofEpochMilli(stopMilliseconds).atZone(ZoneId.systemDefault()).toLocalDateTime() +
                     ": " +
                     beginEnd)
             String smartSwitchName = getSmartSwitchName(beginEnd)

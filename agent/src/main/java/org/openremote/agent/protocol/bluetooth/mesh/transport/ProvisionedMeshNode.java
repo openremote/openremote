@@ -90,10 +90,10 @@ public final class ProvisionedMeshNode extends ProvisionedBaseMeshNode {
         ttl = provisioner.getGlobalTtl();
         mTimeStampInMillis = System.currentTimeMillis();
         final MeshModel model = SigModelParser.getSigModel(SigModelParser.CONFIGURATION_CLIENT);
-        final HashMap<Integer, MeshModel> models = new HashMap<>();
+        final Map<Integer, MeshModel> models = new HashMap<>();
         models.put(model.getModelId(), model);
         final Element element = new Element(unicastAddress, 0, models);
-        final HashMap<Integer, Element> elements = new HashMap<>();
+        final Map<Integer, Element> elements = new HashMap<>();
         elements.put(unicastAddress, element);
         mElements = elements;
         nodeFeatures = new Features(Features.UNSUPPORTED, Features.UNSUPPORTED, Features.UNSUPPORTED, Features.UNSUPPORTED);
@@ -312,7 +312,7 @@ public final class ProvisionedMeshNode extends ProvisionedBaseMeshNode {
         if (mAddedAppKeys.isEmpty()) {
             mAddedAppKeys.addAll(addAppKeyList(indexes, new ArrayList<>()));
         } else {
-            final ArrayList<NodeKey> tempList = new ArrayList<>(mAddedAppKeys);
+            final List<NodeKey> tempList = new ArrayList<>(mAddedAppKeys);
             for (ApplicationKey applicationKey : keyIndexes) {
                 if (applicationKey.getBoundNetKeyIndex() == netKeyIndex) {
                     for (NodeKey nodeKey : mAddedAppKeys) {
@@ -328,7 +328,7 @@ public final class ProvisionedMeshNode extends ProvisionedBaseMeshNode {
         }
     }
 
-    private List<NodeKey> addAppKeyList(final List<Integer> indexes, final ArrayList<NodeKey> tempList) {
+    private List<NodeKey> addAppKeyList(final List<Integer> indexes, final List<NodeKey> tempList) {
         for (Integer index : indexes) {
             tempList.add(new NodeKey(index, false));
         }

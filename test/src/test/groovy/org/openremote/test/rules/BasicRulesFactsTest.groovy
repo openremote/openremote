@@ -70,7 +70,6 @@ class BasicRulesFactsTest extends Specification {
         then: "facts should be present"
         assert rulesFacts.allFacts.count() == 3
         assert rulesFacts.assetStates.size() == 0
-        assert rulesFacts.assetEvents.size() == 0
         assert rulesFacts.namedFacts.size() == 3
         assert rulesFacts.anonymousFacts.size() == 0
         assert rulesFacts.vars.size() == 0
@@ -117,7 +116,6 @@ class BasicRulesFactsTest extends Specification {
         then: "facts should be present"
         assert rulesFacts.allFacts.count() == 3
         assert rulesFacts.assetStates.size() == 0
-        assert rulesFacts.assetEvents.size() == 0
         assert rulesFacts.namedFacts.size() == 0
         assert rulesFacts.anonymousFacts.size() == 3
         assert rulesFacts.vars.size() == 0
@@ -171,7 +169,6 @@ class BasicRulesFactsTest extends Specification {
         then: "facts should be present"
         assert rulesFacts.allFacts.count() == 5
         assert rulesFacts.assetStates.size() == 0
-        assert rulesFacts.assetEvents.size() == 0
         assert rulesFacts.namedFacts.size() == 0
         assert rulesFacts.anonymousFacts.size() == 5
         assert rulesFacts.vars.size() == 0
@@ -189,7 +186,6 @@ class BasicRulesFactsTest extends Specification {
         then: "updated facts should be present"
         assert rulesFacts.allFacts.count() == 5
         assert rulesFacts.assetStates.size() == 0
-        assert rulesFacts.assetEvents.size() == 0
         assert rulesFacts.namedFacts.size() == 0
         assert rulesFacts.anonymousFacts.size() == 5
         assert rulesFacts.vars.size() == 0
@@ -231,7 +227,6 @@ class BasicRulesFactsTest extends Specification {
         then: "facts should be present"
         assert rulesFacts.allFacts.count() == 6
         assert rulesFacts.assetStates.size() == 0
-        assert rulesFacts.assetEvents.size() == 0
         assert rulesFacts.namedFacts.size() == 3
         assert rulesFacts.anonymousFacts.size() == 3
         assert rulesFacts.vars.size() == 0
@@ -248,7 +243,6 @@ class BasicRulesFactsTest extends Specification {
         then: "updated facts should be present"
         assert rulesFacts.allFacts.count() == 6
         assert rulesFacts.assetStates.size() == 0
-        assert rulesFacts.assetEvents.size() == 0
         assert rulesFacts.namedFacts.size() == 3
         assert rulesFacts.anonymousFacts.size() == 3
         assert rulesFacts.vars.size() == 0
@@ -267,7 +261,6 @@ class BasicRulesFactsTest extends Specification {
         then: "updated facts should be present"
         assert rulesFacts.allFacts.count() == 5
         assert rulesFacts.assetStates.size() == 0
-        assert rulesFacts.assetEvents.size() == 0
         assert rulesFacts.namedFacts.size() == 3
         assert rulesFacts.anonymousFacts.size() == 2
         assert rulesFacts.vars.size() == 0

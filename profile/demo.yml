@@ -12,8 +12,6 @@
 #
 # Please see profile/deploy.yml for configuration details for each service.
 #
-version: '2.4'
-
 volumes:
   proxy-data:
   manager-data:
@@ -78,6 +76,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
+      KC_LOG_CONSOLE_FORMAT: '%-5p [%c] (%t) %s%e%n'
     <<: *awslogs
 
   manager:
@@ -103,6 +102,7 @@ services:
       OR_SSL_PORT: ${OR_SSL_PORT:--1}
       OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
       OR_ADDITIONAL_HOSTNAMES:
+      OR_WEBSERVER_ALLOWED_ORIGINS: ${OR_WEBSERVER_ALLOWED_ORIGINS:-}
       OR_DEV_MODE: ${OR_DEV_MODE:-false}
       # The following variables will configure the demo
       OR_FORECAST_SOLAR_API_KEY:

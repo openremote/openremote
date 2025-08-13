@@ -1,6 +1,6 @@
 import { LitElement, html, css, TemplateResult } from "lit";
 import {customElement, property} from "lit/decorators.js";
-import { Node, PickerType, AttributeInternalValue, Asset, NodeDataType, AttributeRef, AssetModelUtil } from "@openremote/model";
+import { Node, PickerType, AttributeInternalValue, Asset, NodeDataType, AssetModelUtil } from "@openremote/model";
 import { nodeConverter } from "../converters/node-converter";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import rest from "@openremote/rest";
@@ -11,9 +11,10 @@ import { NodeUtilities } from "../node-structure";
 import { translate, i18next } from "@openremote/or-translate";
 import { PickerStyle } from "../styles/picker-styles";
 import { Util } from "@openremote/core";
-import { OrAttributePicker, OrAttributePickerPickedEvent } from "@openremote/or-attribute-picker";
+import {OrAssetAttributePicker, OrAssetAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
+import {ifDefined} from "lit/directives/if-defined.js";
 
 @customElement("internal-picker")
 export class InternalPicker extends translate(i18next)(LitElement) {
@@ -107,8 +108,10 @@ export class InternalPicker extends translate(i18next)(LitElement) {
                 return this.dropdownInput;
             case PickerType.MULTILINE:
                 return this.multilineInput;
+            case PickerType.DATE:
+                return this.getNumberInput(0, undefined, 50);
             case PickerType.NUMBER:
-                return this.numberInput;
+                return this.getNumberInput(undefined, undefined, undefined);
             case PickerType.TEXT:
                 return this.textInput;
             default:
@@ -156,29 +159,12 @@ export class InternalPicker extends translate(i18next)(LitElement) {
     private get assetAttributeInput(): TemplateResult {
 
         const openDialog = () => {
-            let _selectedAttributes : AttributeRef[] = [];
-            let _selectedAssets: string[] = [];
-            let val = this.node.internals![this.internalIndex].value;
-
-            if (val){
-                _selectedAttributes = [{
-                    id: val.assetId,
-                    name: val.attributeName
-                }];
-            }
-
-            if (this.selectedAsset && this.selectedAsset.id) {
-                _selectedAssets = [ this.selectedAsset.id ];
-            }
-
-            const dialog = showDialog(new OrAttributePicker()
+            const dialog = showDialog(new OrAssetAttributePicker()
                 .setShowOnlyRuleStateAttrs(true)
                 .setShowOnlyDatapointAttrs(false)
-                .setMultiSelect(false)
-                .setSelectedAttributes(_selectedAttributes))
-                .setSelectedAssets(_selectedAssets);
+                .setMultiSelect(false));
 
-            dialog.addEventListener(OrAttributePickerPickedEvent.NAME, async (ev: OrAttributePickerPickedEvent) => {
+            dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, async (ev: OrAssetAttributePickerPickedEvent) => {
                 const value: AttributeInternalValue = {
                     assetId: ev.detail[0].id,
                     attributeName: ev.detail[0].name
@@ -247,12 +233,18 @@ export class InternalPicker extends translate(i18next)(LitElement) {
         }}" style="${sizeString}" @input="${(e: any) => this.setValue(e.target.value)}" placeholder="${this.internal.name!}">${this.internal.value || ""}</textarea>`;
     }
 
-    private get numberInput(): TemplateResult {
-        return html`<input @wheel="${(e: any) => {
-            if (e.target === this.shadowRoot!.activeElement) {
-                return e.stopPropagation();
-            }
-        }}" @input="${(e: any) => this.setValue(parseFloat(e.target.value))}" value="${this.internal.value || 0}" type="number" placeholder="${this.internal.name!}"/>`;
+    private getNumberInput(min?: number, max?: number, width?: number): TemplateResult {
+        return html`<input
+                @wheel="${(e: any) => {
+                    if (e.target === this.shadowRoot!.activeElement) {
+                        return e.stopPropagation();
+                    }
+                }}"
+                @input="${(e: any) => this.setValue(parseFloat(e.target.value))}"
+                value="${this.internal.value || 0}" type="number" placeholder="${this.internal.name!}"
+                style="max-width: ${ifDefined(width)}px"
+                min="${ifDefined(min)}" max="${ifDefined(max)}"
+        />`;
     }
 
     private get textInput(): TemplateResult {

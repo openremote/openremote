@@ -44,12 +44,15 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.*;
+import org.openremote.model.asset.impl.GatewayAsset;
 import org.openremote.model.asset.impl.GroupAsset;
 import org.openremote.model.asset.impl.ThingAsset;
+import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
-import org.openremote.model.event.shared.EventRequestResponseWrapper;
+import org.openremote.model.event.Event;
+import org.openremote.model.event.RespondableEvent;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.query.AssetQuery;
@@ -57,6 +60,7 @@ import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
+import org.openremote.model.util.LockByKey;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -64,6 +68,7 @@ import org.postgresql.util.PGobject;
 
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -75,11 +80,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static java.util.logging.Level.FINE;
+import static java.util.logging.Level.*;
 import static java.util.stream.Collectors.groupingBy;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
 import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
 import static org.openremote.model.query.AssetQuery.*;
 import static org.openremote.model.query.AssetQuery.Access.*;
@@ -152,15 +156,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
              }
 
              AssetFilter<T> filter = (AssetFilter<T>) subscription.getFilter();
+
              if (filter == null) {
                  filter = new AssetFilter<>();
                  subscription.setFilter(filter);
              }
 
-             filter.setInternal(subscription.isInternal());
-
-             // Internal subscribers and superusers can get events for any asset in any realm
-             if (subscription.isInternal() || (auth != null && auth.isSuperUser())) {
+             // Superusers can get events for any asset in any realm
+             if (auth != null && auth.isSuperUser()) {
                  return true;
              }
 
@@ -228,6 +231,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected ManagerIdentityService identityService;
     protected ClientEventService clientEventService;
     protected GatewayService gatewayService;
+    protected ExecutorService executorService;
+    protected final LockByKey assetLocks = new LockByKey();
 
     /**
      * Will evaluate each {@link CalendarEventPredicate} and apply it depending on the {@link LogicGroup} type
@@ -313,6 +318,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         identityService = container.getService(ManagerIdentityService.class);
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
+        executorService = container.getExecutor();
         EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, this);
 
         clientEventService.addSubscriptionAuthorizer((realm, auth, subscription) -> {
@@ -340,6 +346,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             return authorize && authorizeAssetQuery(((HasAssetQuery)event).getAssetQuery(), auth, realm);
         });
+
+        // TODO: Update once client event service supports interface subscriptions
+        clientEventService.addSubscription(ReadAssetEvent.class, this::onReadRequest);
+        clientEventService.addSubscription(ReadAssetsEvent.class, this::onReadRequest);
+        clientEventService.addSubscription(ReadAttributeEvent.class, this::onReadRequest);
 
         container.getService(ManagerWebService.class).addApiSingleton(
             new AssetResourceImpl(
@@ -379,60 +390,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             .routeId("Persistence-Asset")
             .filter(isPersistenceEventForEntityType(Asset.class))
             .process(exchange -> publishModificationEvents(exchange.getIn().getBody(PersistenceEvent.class)));
-
-        // React if a client wants to read assets and attributes
-        from(CLIENT_INBOUND_QUEUE)
-            .routeId("ClientInbound-Query")
-            .filter(body().isInstanceOf(HasAssetQuery.class))
-            .process(exchange -> {
-                HasAssetQuery hasAssetQuery = exchange.getIn().getBody(HasAssetQuery.class);
-                AssetQuery assetQuery = hasAssetQuery.getAssetQuery();
-                String sessionKey = ClientEventService.getSessionKey(exchange);
-                String messageId = exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
-                Object response = null;
-
-                if (hasAssetQuery instanceof ReadAssetsEvent) {
-                    List<Asset<?>> assets = findAll(assetQuery);
-                    response = new AssetsEvent(assets);
-                } else {
-                    Asset<?> asset = find(assetQuery);
-                    String assetId;
-                    String attributeName = null;
-
-                    if (asset != null) {
-                        if (hasAssetQuery instanceof ReadAttributeEvent readAttributeEvent) {
-                            assetId = readAttributeEvent.getAttributeRef().getId();
-                            attributeName = readAttributeEvent.getAttributeRef().getName();
-                        } else {
-                            assetId = ((ReadAssetEvent) hasAssetQuery).getAssetId();
-                        }
-
-                        if (!TextUtil.isNullOrEmpty(attributeName)) {
-                            Attribute<?> assetAttribute = asset.getAttributes().get(attributeName).orElse(null);
-                            if (assetAttribute != null) {
-                                // Check access constraints
-                                if (assetQuery.access == null
-                                    || assetQuery.access == PRIVATE
-                                    || (assetQuery.access == PUBLIC && assetAttribute.getMetaValue(ACCESS_PUBLIC_READ).orElse(false))
-                                    || (assetQuery.access == PROTECTED && assetAttribute.getMetaValue(ACCESS_RESTRICTED_READ).orElse(false))) {
-                                    response = new AttributeEvent(assetId, attributeName, assetAttribute.getValue().orElse(null), assetAttribute.getTimestamp().orElse(0L));
-                                }
-                            }
-                        } else {
-                            response = new AssetEvent(AssetEvent.Cause.READ, asset, null);
-                        }
-                    }
-                }
-
-                if (response != null) {
-                    if (!isNullOrEmpty(messageId)) {
-                        response = new EventRequestResponseWrapper<>(messageId, (SharedEvent)response);
-                    }
-                    clientEventService.sendToSession(sessionKey, response);
-                }
-
-            })
-            .end();
     }
 
     /**
@@ -610,7 +567,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
     public <T extends Asset<?>> T merge(T asset, boolean overrideVersion) throws IllegalStateException, ConstraintViolationException {
-        return merge(asset, overrideVersion, false, null);
+        return merge(asset, overrideVersion, null, null);
     }
 
     /**
@@ -619,35 +576,48 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
     public <T extends Asset<?>> T merge(T asset, String userName) throws IllegalStateException, ConstraintViolationException {
-        return merge(asset, false, false, userName);
+        return merge(asset, false, null, userName);
     }
 
     /**
      * Merge the requested {@link Asset} checking that it meets all constraint requirements before doing so; the
      * timestamp of each {@link Attribute} will also be updated to the current system time if it has changed to assist
      * with {@link Attribute} equality (see {@link Attribute#equals}).
-     * @param overrideVersion If <code>true</code>, the merge will override the data in the database, independent of
-     *                        version.
-     * @param skipGatewayCheck Don't check if asset is a gateway asset and merge asset into local persistence service.
-     * @param userName        the user which this asset needs to be assigned to.
+     * @param overrideVersion        If <code>true</code>, the merge will override the data in the database, independent of
+     *                               version.
+     * @param requestingGatewayAsset If set this is the {@link GatewayAsset} merging the asset so skip standard checks
+     * @param userName               the user which this asset needs to be assigned to.
      * @return The current stored asset state.
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
     @SuppressWarnings("unchecked")
-    public <T extends Asset<?>> T merge(T asset, boolean overrideVersion, boolean skipGatewayCheck, String userName) throws IllegalStateException, ConstraintViolationException {
+    public <T extends Asset<?>> T merge(T asset, boolean overrideVersion, GatewayAsset requestingGatewayAsset, String userName) throws IllegalStateException, ConstraintViolationException {
 
         if (LOG.isLoggable(Level.FINEST)) {
             LOG.finest("Merging asset: " + asset);
         }
 
-        return persistenceService.doReturningTransaction(em -> {
+        long startTime = System.currentTimeMillis();
+        String assetId = asset.getId() != null ? asset.getId() : "";
 
-            long startTime = System.currentTimeMillis();
-            String gatewayId = gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
+        // We skip all standard checks as asset is coming from a gateway and would be validated from there
+        if (requestingGatewayAsset != null) {
+            if (asset.getId() == null || asset.getParentId() == null || asset.getRealm() == null) {
+                String msg = "GatewayAsset descendant must have an ID, parent ID and realm defined: asset=" + asset;
+                LOG.warning(msg);
+                throw new IllegalStateException(msg);
+            }
+        } else {
+            String gatewayId = null;
 
-            if (!skipGatewayCheck && gatewayId != null) {
-                LOG.fine("Sending asset merge request to gateway: Gateway ID=" + gatewayId);
-                return gatewayService.mergeGatewayAsset(gatewayId, asset);
+            if (asset.getId() != null || asset.getParentId() != null) {
+                gatewayId = gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
+            }
+
+            if (gatewayId != null) {
+                String msg = "Cannot directly add or modify a descendant asset on a gateway asset, do this on the gateway itself: Gateway ID=" + gatewayId;
+                LOG.info(msg);
+                throw new IllegalStateException(msg);
             }
 
             // Validate realm
@@ -658,6 +628,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             // Do standard JSR-380 validation on the asset (includes custom validation using descriptors and constraints)
+            // Only do validation on non gateway descendants as the asset types in the central instance may not
+            // match the edge gateway
             Set<ConstraintViolation<Asset<?>>> validationFailures = ValueUtil.validate(asset);
 
             if (!validationFailures.isEmpty()) {
@@ -666,6 +638,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 LOG.log(Level.WARNING, msg + ", exception=" + ex.getMessage());
                 throw ex;
             }
+        }
+
+        return withAssetLock(assetId, () -> persistenceService.doReturningTransaction(em -> {
 
             T existingAsset = TextUtil.isNullOrEmpty(asset.getId()) ? null : (T)em.find(Asset.class, asset.getId());
 
@@ -769,14 +744,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             // Validate group child asset type attribute
-            if (asset instanceof GroupAsset) {
-                String childAssetType = ((GroupAsset)asset).getChildAssetType()
-                    .map(childAssetTypeString -> TextUtil.isNullOrEmpty(childAssetTypeString) ? null : childAssetTypeString)
-                    .orElseThrow(() -> {
-                        String msg = "Asset of type GROUP childAssetType attribute must be a valid string: asset=" + asset;
-                        LOG.warning(msg);
-                        return new IllegalStateException(msg);
-                    });
+            if (asset instanceof GroupAsset groupAsset) {
+
+                // Ensure the asset has a childAssetType (set to empty if missing)
+                String childAssetType = groupAsset.getChildAssetType()
+                        .orElseGet(() -> {
+                            groupAsset.setChildAssetType(""); // Set empty on the asset
+                            return "";
+                        });
 
                 String existingChildAssetType = existingAsset != null ? ((GroupAsset)existingAsset)
                     .getChildAssetType()
@@ -786,7 +761,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         return new IllegalStateException(msg);
                     }) : childAssetType;
 
-                if (!childAssetType.equals(existingChildAssetType)) {
+                if (!childAssetType.isEmpty() && !existingChildAssetType.isEmpty() && !childAssetType.equals(existingChildAssetType)) {
                     String msg = "Asset of type GROUP so childAssetType attribute cannot be changed: asset=" + asset;
                     LOG.warning(msg);
                     throw new IllegalStateException(msg);
@@ -813,7 +788,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             }
 
-            T updatedAsset = em.merge(asset);
+            T updatedAsset;
+
+            if (existingAsset instanceof UnknownAsset && !(asset instanceof UnknownAsset)) {
+                // This occurs when an existing asset is merged but the type is unknown
+                // We'll copy updates into existing asset
+                existingAsset.setAttributes(asset.getAttributes());
+                existingAsset.setName(asset.getName());
+                existingAsset.setVersion(asset.getVersion());
+                existingAsset.setParentId(asset.getParentId());
+                existingAsset.setAccessPublicRead(asset.isAccessPublicRead());
+                updatedAsset = em.merge(existingAsset);
+            } else {
+                updatedAsset = em.merge(asset);
+            }
 
             if (LOG.isLoggable(FINE)) {
                 LOG.fine("Asset merge took: " + (System.currentTimeMillis() - startTime) + "ms");
@@ -834,7 +822,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             return updatedAsset;
-        });
+        }));
     }
 
     /**
@@ -847,9 +835,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public boolean delete(List<String> assetIds, boolean skipGatewayCheck) {
 
         List<String> ids = new ArrayList<>(assetIds);
-        Map<String, List<String>> gatewayIdAssetIdMap = new HashMap<>();
 
         if (!skipGatewayCheck) {
+
+            // Don't allow deletion of gateway descendant assets (they must be deleted on the gateway itself)
+            boolean gatewayDescendant = ids.stream().anyMatch(id -> gatewayService.getLocallyRegisteredGatewayId(id, null) != null);
+            if (gatewayDescendant) {
+                String msg = "Cannot delete one or more requested assets as they are descendants of a gateway asset";
+                LOG.info(msg);
+                throw new IllegalStateException(msg);
+            }
+
             List<String> gatewayIds = ids.stream().filter(id -> gatewayService.isLocallyRegisteredGateway(id)).toList();
 
             if (!gatewayIds.isEmpty()) {
@@ -862,76 +858,40 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             return false;
                         }
                     } catch (Exception e) {
+                        LOG.log(WARNING, "Failed to delete gateway asset: " + gatewayId, e);
                         return false;
                     }
                 }
             }
+        }
 
-            ids.removeIf(id -> {
-                String gatewayId = gatewayService.getLocallyRegisteredGatewayId(id, null);
-                if (gatewayId != null) {
+        if (!ids.isEmpty()) {
+            try {
+                // Get locks for each asset ID
+                ids.forEach(assetLocks::lock);
 
-                    if (gatewayIds.contains(gatewayId)) {
-                        // Gateway is being deleted so no need to try and delete this descendant asset
-                        return true;
+                persistenceService.doTransaction(em -> {
+                    List<Asset<?>> assets = em
+                        .createQuery("select a from Asset a where not exists(select child.id from Asset child where child.parentId = a.id and not child.id in :ids) and a.id in :ids", Asset.class)
+                        .setParameter("ids", ids)
+                        .getResultList().stream().map(asset -> (Asset<?>) asset).collect(Collectors.toList());
+
+                    if (ids.size() != assets.size()) {
+                        throw new IllegalArgumentException("Cannot delete one or more requested assets as they either have children or don't exist");
                     }
 
-                    gatewayIdAssetIdMap.compute(gatewayId, (gId, aIds) -> {
-                        if (aIds == null) {
-                            aIds = new ArrayList<>();
-                        }
-                        aIds.add(id);
-                        return aIds;
-                    });
-                    return true;
-                }
+                    assets.sort(Comparator.comparingInt((Asset<?> asset) -> asset.getPath() == null ? 0 : asset.getPath().length).reversed());
+                    assets.forEach(em::remove);
+                    em.flush();
+                });
+            } catch (Exception e) {
+                LOG.log(SEVERE, "Failed to delete one or more requested assets: " + Arrays.toString(assetIds.toArray()), e);
                 return false;
-            });
-
-            if (gatewayIdAssetIdMap.isEmpty() && ids.isEmpty()) {
-                return true;
-            }
-
-            // This is not atomic across gateways
-            if (!gatewayIdAssetIdMap.isEmpty()) {
-                for (Map.Entry<String, List<String>> gatewayIdAssetIds : gatewayIdAssetIdMap.entrySet()) {
-                    String gatewayId = gatewayIdAssetIds.getKey();
-                    List<String> gatewayAssetIds = gatewayIdAssetIds.getValue();
-                    try {
-                        boolean deleted = gatewayService.deleteGatewayAssets(gatewayId, gatewayAssetIds);
-                        if (!deleted) {
-                            return false;
-                        }
-                    } catch (Exception e) {
-                        return false;
-                    }
-                }
-
-                if (ids.isEmpty()) {
-                    return true;
-                }
+            } finally {
+                // Release all of the locks
+                ids.forEach(assetLocks::unlock);
             }
         }
-
-        try {
-            persistenceService.doTransaction(em -> {
-                List<Asset<?>> assets = em
-                    .createQuery("select a from Asset a where not exists(select child.id from Asset child where child.parentId = a.id and not child.id in :ids) and a.id in :ids", Asset.class)
-                    .setParameter("ids", ids)
-                    .getResultList().stream().map(asset -> (Asset<?>) asset).collect(Collectors.toList());
-
-                if (assetIds.size() != assets.size()) {
-                    throw new IllegalArgumentException("Cannot delete one or more requested assets as they either have children or don't exist");
-                }
-
-                assets.sort(Comparator.comparingInt((Asset<?> asset) -> asset.getPath() == null ? 0 : asset.getPath().length).reversed());
-                assets.forEach(em::remove);
-                em.flush();
-            });
-        } catch (Exception e) {
-            return false;
-        }
-
         return true;
     }
 
@@ -1202,6 +1162,15 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         });
     }
 
+    public <R> R withAssetLock(String assetId, Supplier<R> action) {
+        try {
+            assetLocks.lock(assetId);
+            return action.get();
+        } finally {
+            assetLocks.unlock(assetId);
+        }
+    }
+
     protected void createUserAssetLinks(EntityManager em, List<UserAssetLink> userAssets) {
 
         em.unwrap(Session.class).doWork(connection -> {
@@ -1327,8 +1296,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             return assets.stream().filter(asset -> calendarEventPredicateMatches(timerService::getCurrentTimeMillis, query, asset)).toList();
         }
 
-        if (LOG.isLoggable(FINE)) {
-            LOG.fine("Asset query took " + (System.currentTimeMillis() - startMillis) + "ms: return count=" + assets.size());
+        if (LOG.isLoggable(FINEST)) {
+            LOG.finest("Asset query took " + (System.currentTimeMillis() - startMillis) + "ms: return count=" + assets.size());
         }
 
         return assets;
@@ -1409,6 +1378,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             newAttribute.getTimestamp().orElse(0L),
                             newAttribute.getValue().orElse(null),
                             newAttribute.getTimestamp().orElse(0L))
+                                .setSource(getClass().getSimpleName())
                     ));
             }
             case UPDATE -> {
@@ -1434,6 +1404,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         .forEach(obsoleteAttribute ->
                             clientEventService.publishEvent(
                                 new AttributeEvent(asset, obsoleteAttribute, getClass().getSimpleName(), null, timerService.getCurrentTimeMillis(), null, 0L)
+                                    .setSource(getClass().getSimpleName())
                                     .setDeleted(true)
                             ));
                 }
@@ -1459,7 +1430,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             newOrModifiedAttribute.getTimestamp().orElse(0L),
                             oldAttribute.flatMap(Attribute::getValue).orElse(null),
                             oldAttribute.flatMap(Attribute::getTimestamp).orElse(0L)
-                        ));
+                        ).setSource(getClass().getSimpleName()));
                     });
             }
             case DELETE -> {
@@ -1477,6 +1448,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 deletedAttributes.forEach(obsoleteAttribute ->
                     clientEventService.publishEvent(
                         new AttributeEvent(asset, obsoleteAttribute, getClass().getSimpleName(), null, timerService.getCurrentTimeMillis(), null, 0L)
+                            .setSource(getClass().getSimpleName())
                             .setDeleted(true)
                     ));
             }
@@ -1729,7 +1701,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 binders.add((em, st) -> st.setParameter(pos, query.userIds));
             }
 
-            if (level == 1 && query.access == Access.PUBLIC) {
+            if (query.access == Access.PUBLIC) {
                 sb.append(" and A.ACCESS_PUBLIC_READ is true");
             }
 
@@ -1827,7 +1799,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                 if (attributePredicate.meta != null && attributePredicate.meta.length > 0) {
                     String metaJsonObjName = jsonObjName + "_AM" + metaIndex++;
-                    selectInserter.accept(" LEFT JOIN jsonb_each(" + jsonObjName + ".VALUE #> '{meta}') as " + metaJsonObjName + " ON true");
+                    selectInserter.accept(" LEFT JOIN jsonb_each(jsonb_strip_nulls(" + jsonObjName + ".VALUE) #> '{meta}') as " + metaJsonObjName + " ON true");
                     sb.append(" and (");
                     addNameValuePredicates(Arrays.asList(attributePredicate.meta.clone()), sb, binders, metaJsonObjName, selectInserter, true, timeProvider);
                     sb.append(")");
@@ -2118,5 +2090,55 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         throw new IllegalArgumentException("Unsupported operator: " + operator);
+    }
+
+    protected <T extends HasAssetQuery & RespondableEvent> void onReadRequest(T event) {
+        AssetQuery assetQuery = event.getAssetQuery();
+        Event response = null;
+
+        if (event.getResponseConsumer() == null) {
+            LOG.warning("Cannot respond to read request event as response consumer is not set");
+            return;
+        }
+
+        if (event instanceof ReadAssetsEvent) {
+            List<Asset<?>> assets = findAll(assetQuery);
+            response = new AssetsEvent(assets);
+        } else {
+            Asset<?> asset = find(assetQuery);
+            String assetId;
+            String attributeName = null;
+
+            if (asset != null) {
+                if (event instanceof ReadAttributeEvent readAttributeEvent) {
+                    assetId = readAttributeEvent.getAttributeRef().getId();
+                    attributeName = readAttributeEvent.getAttributeRef().getName();
+                } else {
+                    assetId = ((ReadAssetEvent) event).getAssetId();
+                }
+
+                if (!TextUtil.isNullOrEmpty(attributeName)) {
+                    Attribute<?> assetAttribute = asset.getAttributes().get(attributeName).orElse(null);
+                    if (assetAttribute != null) {
+                        // Check access constraints
+                        if (assetQuery.access == null
+                            || assetQuery.access == PRIVATE
+                            || (assetQuery.access == PUBLIC && assetAttribute.getMetaValue(ACCESS_PUBLIC_READ).orElse(false))
+                            || (assetQuery.access == PROTECTED && assetAttribute.getMetaValue(ACCESS_RESTRICTED_READ).orElse(false))) {
+                            response = new AttributeEvent(assetId, attributeName, assetAttribute.getValue().orElse(null), assetAttribute.getTimestamp().orElse(0L));
+                        }
+                    }
+                } else {
+                    response = new AssetEvent(AssetEvent.Cause.READ, asset, null);
+                }
+            }
+        }
+
+        if (response != null) {
+            if (!isNullOrEmpty(((SharedEvent) event).getMessageID())) {
+                response.setMessageID(((SharedEvent) event).getMessageID());
+            }
+            event.getResponseConsumer().accept(response);
+        }
     }
 }

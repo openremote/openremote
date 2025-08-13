@@ -39,7 +39,7 @@ import jakarta.servlet.http.HttpSession;
  * It's a bit the idea of using the convenient {@link HttpServlet} abstract servlet class instead of the barebones
  * {@link Servlet} interface.
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <p>
  * To use it, just let your custom filter extend from {@link HttpFilter} instead of implement {@link Filter}.
  * For example:
@@ -69,7 +69,7 @@ public abstract class HttpFilter implements Filter {
 	// Constants ------------------------------------------------------------------------------------------------------
 
 	private static final String ERROR_NO_FILTERCONFIG = "FilterConfig is not available."
-		+ " It seems that you've overriden HttpFilter#init(FilterConfig)."
+		+ " It seems that you've overridden HttpFilter#init(FilterConfig)."
 		+ " You should be overriding HttpFilter#init() instead, otherwise you have to call super.init(config).";
 
 	// Properties -----------------------------------------------------------------------------------------------------

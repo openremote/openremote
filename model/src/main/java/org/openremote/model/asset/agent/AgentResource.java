@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset.agent;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
@@ -37,7 +38,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
  * This resource is for Agent specific tasks like import and discovery; normal asset/attribute CRUD operations should
  * still use {@link AssetResource}.
  */
-@Tag(name = "Agent")
+@Tag(name = "Agent", description = "Operations on agents")
 @Path("agent")
 public interface AgentResource {
 
@@ -54,6 +55,7 @@ public interface AgentResource {
     @Path("instanceDiscovery/{agentType}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
+    @Operation(operationId = "doProtocolInstanceDiscovery", summary = "Do protocol instance discovery")
     Agent<?, ?, ?>[] doProtocolInstanceDiscovery(
         @BeanParam RequestParams requestParams,
         @QueryParam("parentId") String parentId,
@@ -72,6 +74,7 @@ public interface AgentResource {
     @Path("assetDiscovery/{agentId}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "doProtocolAssetDiscovery", summary = "Do protocol asset discovery")
     AssetTreeNode[] doProtocolAssetDiscovery(
         @BeanParam RequestParams requestParams,
         @PathParam("agentId") String agentId,
@@ -91,6 +94,7 @@ public interface AgentResource {
     @Path("assetImport/{agentId}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "doProtocolAssetImport", summary = "Do protocol asset import")
     // TODO: File upload should use standard multipart mechanism
     AssetTreeNode[] doProtocolAssetImport(
         @BeanParam RequestParams requestParams,

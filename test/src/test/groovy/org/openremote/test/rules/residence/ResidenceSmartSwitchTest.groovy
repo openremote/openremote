@@ -48,7 +48,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
             apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
-            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
+            assert apartment1Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
         }
 
         and: "smart switches should be off"
@@ -174,7 +174,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
             apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
-            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
+            assert apartment1Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
         }
 
         and: "smart switches should be off"
@@ -268,7 +268,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
             apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
-            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
+            assert apartment1Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
         }
 
         and: "smart switches should be off"
@@ -386,7 +386,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
             apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
-            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
+            assert apartment1Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
         }
 
         and: "smart switches should be off"
@@ -481,7 +481,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
             apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
-            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
+            assert apartment1Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
         }
 
         and: "smart switches should be off"

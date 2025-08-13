@@ -76,7 +76,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * This is a HTTP client protocol for communicating with HTTP servers; it uses the {@link WebTargetBuilder} factory to
  * generate JAX-RS {@link jakarta.ws.rs.client.WebTarget}s that can be used to make arbitrary calls to endpoints on a HTTP
  * server but it can also be extended and used as a JAX-RS client proxy.
- * <h1>Response filtering</h1>
+ * <h2>Response filtering</h2>
  * <p>
  * Any {@link Attribute} whose value is to be set by the HTTP server response (i.e. it has an {@link
  * HTTPAgentLink#getPollingMillis()} value can use the standard {@link AgentLink#getValueFilters()} in order to filter
@@ -84,13 +84,13 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <p>
  * <b>NOTE: if an exception is thrown during the request that means no response is returned then this is treated as if
  * a 500 response has been received</b>
- * <h1>Dynamic placeholder injection</h1>
+ * <h2>Dynamic placeholder injection</h2>
  * This allows the path, query params, headers and/or {@link AgentLink#getWriteValue()} to contain the linked
  * {@link Attribute} value when sending requests.
- * <h2>Path example</h2>
+ * <h3>Path example</h3>
  * {@link HTTPAgentLink#getPath()} = "volume/set/%VALUE%" and request received to set attribute value to 100. Actual
  * path used for the request = "volume/set/100"
- * <h2>Query parameter example</h2>
+ * <h3>Query parameter example</h3>
  * {@link HTTPAgentLink#getQueryParameters()} =
  * <blockquote><pre>
  * {@code
@@ -102,9 +102,9 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * }
  * </pre></blockquote>
  * Request received to set attribute value to true. Actual query parameters injected into the request =
- * "param1=val1&param1=val2&param2=12232&param3=true"
- * <h2>Body examples</h2>
- * {@link AgentLink#getWriteValue()} = '<?xml version="1.0" encoding="UTF-8"?>%VALUE%</xml>' and request received to
+ * "param1=val1&amp;param1=val2&amp;param2=12232&amp;param3=true"
+ * <h3>Body examples</h3>
+ * {@link AgentLink#getWriteValue()} = &lt;?xml version="1.0" encoding="UTF-8"?&gt;%VALUE%&lt;/xml&gt; and request received to
  * set attribute value to 100. Actual body used for the request = "{volume: 100}"
  * <p>
  * {@link AgentLink#getWriteValue()} = '{myObject: "%VALUE%"}' and request received to set attribute value to:
@@ -464,7 +464,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
     protected static void initClient() {
         synchronized (client) {
             if (client.get() == null) {
-                client.set(createClient(org.openremote.container.Container.EXECUTOR_SERVICE));
+                client.set(createClient(org.openremote.container.Container.SCHEDULED_EXECUTOR));
             }
         }
     }
@@ -489,7 +489,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
 
         LOG.fine("Scheduling polling request '" + clientRequest + "' to execute every " + pollingMillis + " ms for attribute: " + attribute);
 
-        return executorService.scheduleWithFixedDelay(() -> {
+        return scheduledExecutorService.scheduleWithFixedDelay(() -> {
 
             try {
                 Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doOutboundValueProcessing(

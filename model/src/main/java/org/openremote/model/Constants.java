@@ -28,7 +28,7 @@ public interface Constants {
     String MANAGER_CLIENT_ID = "manager-keycloak";
     String MASTER_REALM = "master";
     String MASTER_REALM_ADMIN_USER = "admin";
-    String REALM_ADMIN_ROLE = "admin";
+    String SUPER_USER_REALM_ROLE = "admin";
     String READ_LOGS_ROLE = "read:logs";
     String READ_USERS_ROLE = "read:users";
     String READ_ADMIN_ROLE = "read:admin";
@@ -36,6 +36,7 @@ public interface Constants {
     String READ_ASSETS_ROLE = "read:assets";
     String READ_RULES_ROLE = "read:rules";
     String READ_INSIGHTS_ROLE = "read:insights";
+    String READ_ALARMS_ROLE = "read:alarms";
     String WRITE_USER_ROLE = "write:user";
     String WRITE_ADMIN_ROLE = "write:admin";
     String WRITE_LOGS_ROLE = "write:logs";
@@ -43,16 +44,14 @@ public interface Constants {
     String WRITE_ATTRIBUTES_ROLE = "write:attributes";
     String WRITE_RULES_ROLE = "write:rules";
     String WRITE_INSIGHTS_ROLE = "write:insights";
+    String WRITE_ALARMS_ROLE = "write:alarms";
     String RESTRICTED_USER_REALM_ROLE = "restricted_user";
     String AUTH_CONTEXT = "AUTH_CONTEXT";
-    String SESSION_TERMINATOR = "connection.sessionTerminator";
-    String SESSION_KEY = "connection.sessionKey";
     String SESSION_OPEN = "connection.sessionOpen";
     String SESSION_CLOSE = "connection.sessionClose";
     String SESSION_CLOSE_ERROR = "connection.sessionCloseError";
     int ACCESS_TOKEN_LIFESPAN_SECONDS = 60; // 1 minute
     String PERSISTENCE_SEQUENCE_ID_GENERATOR = "OPENREMOTE_SEQUENCE";
-    String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
 
     String OR_HOSTNAME = "OR_HOSTNAME";
     String OR_ADDITIONAL_HOSTNAMES = "OR_ADDITIONAL_HOSTNAMES";
@@ -85,7 +84,7 @@ public interface Constants {
     String HTTP_URL_REGEXP = "^(http:\\/\\/www\\.|https:\\/\\/www\\.|http:\\/\\/|https:\\/\\/)?((((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)))|(((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:)))(%.+)?)|(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9]))+(\\.([A-Za-z]|[A-Za-z][A-Za-z0-9\\-]*[A-Za-z0-9]))*)(:[0-9]{1,5})?(\\/.*)?$";
     String WS_URL_REGEXP = "^(ws:\\/\\/www\\.|wss:\\/\\/www\\.|ws:\\/\\/|wss:\\/\\/)?((((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)))|(((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:)))(%.+)?)|(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9]))+(\\.([A-Za-z]|[A-Za-z][A-Za-z0-9\\-]*[A-Za-z0-9]))*)(:[0-9]{1,5})?(\\/.*)?$";
     String DYNAMIC_VALUE_PLACEHOLDER_REGEXP = "\\%VALUE(?::([^:]+))?\\%";
-    String DYNAMIC_TIME_PLACEHOLDER_REGEXP = "\\%TIME([+-]P\\w*)?(?::(.+))?\\%";
+    String DYNAMIC_TIME_PLACEHOLDER_REGEXP = "\\%TIME([+-]P\\w*)?(?::(.+?))?\\%";
 
     static String[] units(String...units) {
         return units;

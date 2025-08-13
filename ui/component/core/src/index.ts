@@ -28,7 +28,9 @@ export * from "./console";
 export * from "./event";
 export * from "./defaults";
 
-export const DEFAULT_ICONSET: string = "mdi";
+export const DEFAULT_ICONSET = "mdi";
+export const OPENREMOTE_CLIENT_ID = "openremote";
+export const RESTRICTED_USER_REALM_ROLE = "restricted_user";
 
 export declare type KeycloakPromise<T> = {
     success<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | KeycloakPromise<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | KeycloakPromise<TResult2>) | undefined | null): KeycloakPromise<TResult1 | TResult2>;
@@ -91,7 +93,8 @@ export function normaliseConfig(config: ManagerConfig): ManagerConfig {
 
     if (!normalisedConfig.managerUrl || normalisedConfig.managerUrl === "") {
         // Assume manager is running on same host as this code
-        normalisedConfig.managerUrl = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ":" + window.location.port : "");
+        normalisedConfig.managerUrl = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ":" + window.location.port : "")
+            + window.location.pathname.replace(/\/[^/]+\/?$/, '');
     } else {
         // Normalise by stripping any trailing slashes
         normalisedConfig.managerUrl = normalisedConfig.managerUrl.replace(/\/+$/, "");
@@ -139,7 +142,7 @@ export function normaliseConfig(config: ManagerConfig): ManagerConfig {
     }
 
     if (normalisedConfig.clientId === undefined) {
-        normalisedConfig.clientId = "openremote";
+        normalisedConfig.clientId = OPENREMOTE_CLIENT_ID;
     }
 
     return normalisedConfig;
@@ -187,7 +190,7 @@ export class Manager implements EventProviderFactory {
                 }
             }
         } else if (this._basicIdentity && this._basicIdentity.roles) {
-            roleMap.set(this._config.clientId!, this._basicIdentity.roles.map((r) => r.name!));
+            roleMap.set(this._config.clientId!, this._basicIdentity.roles!);
         }
 
         return roleMap;
@@ -202,11 +205,11 @@ export class Manager implements EventProviderFactory {
     }
 
     get managerUrl() {
-        return this._config.managerUrl;
+        return this._config?.managerUrl;
     }
 
     get keycloakUrl() {
-        return this._config.keycloakUrl;
+        return this._config?.keycloakUrl;
     }
 
     get isError() {
@@ -238,9 +241,13 @@ export class Manager implements EventProviderFactory {
     }
 
     set language(lang: string) {
+        console.debug(`Changing language to ${lang}.`);
         if (lang) {
             i18next.changeLanguage(lang);
             this.console.storeData("LANGUAGE", lang);
+            if(this.authenticated) {
+                this.updateKeycloakUserLanguage(lang).catch(e => console.error(e));
+            }
         }
     }
 
@@ -254,6 +261,10 @@ export class Manager implements EventProviderFactory {
         }
         this._displayRealm = realm;
         this._emitEvent(OREvent.DISPLAY_REALM_CHANGED);
+    }
+
+    get clientId() {
+        return this._config.clientId || OPENREMOTE_CLIENT_ID;
     }
 
     getEventProvider(): EventProvider | undefined {
@@ -276,7 +287,7 @@ export class Manager implements EventProviderFactory {
     private _basicIdentity?: {
         token: string | undefined,
         user: User | undefined,
-        roles: Role[] | undefined
+        roles: string[] | undefined
     };
     private _keycloakUpdateTokenInterval?: number = undefined;
     private _managerVersion: string = "";
@@ -472,9 +483,8 @@ export class Manager implements EventProviderFactory {
         });
 
         // Look for language preference in local storage
-        const language: string | undefined = !this.console ? undefined : await this.console.retrieveData("LANGUAGE");
         const initOptions: InitOptions = {
-            lng: !language || language === "null" ? this.config.defaultLanguage || "en" : language, // somehow language is "null" sometimes
+            lng: await this.getConsolePreferredLanguage() || await this.getUserPreferredLanguage() || this.config.defaultLanguage || "en",
             fallbackLng: "en",
             defaultNS: "app",
             fallbackNS: "or",
@@ -577,7 +587,7 @@ export class Manager implements EventProviderFactory {
     }
 
     protected doRestApiInit(): boolean {
-        rest.setTimeout(10000);
+        rest.setTimeout(20000);
         rest.initialise(this.getApiBaseUrl());
         return true;
     }
@@ -643,7 +653,7 @@ export class Manager implements EventProviderFactory {
         if (this._config.loadIcons) {
             IconSets.addIconSet(
                 "mdi",
-                createMdiIconSet(manager.config.managerUrl!)
+                createMdiIconSet(manager.managerUrl!)
             );
             IconSets.addIconSet(
                 "or",
@@ -654,12 +664,53 @@ export class Manager implements EventProviderFactory {
 
     protected async getConsoleAppConfig(): Promise<boolean> {
         try {
-            const response = await fetch(manager.config.managerUrl + "/consoleappconfig/" + manager.displayRealm + ".json");
+            const response = await fetch((manager.managerUrl ?? "") + "/consoleappconfig/" + manager.displayRealm + ".json");
             this._consoleAppConfig = await response.json() as ConsoleAppConfig;
             return true;
         } catch (e) {
             return true;
         }
+    }
+
+    /**
+     * Checks the native console to gather the preferred language of the device.
+     */
+    public async getConsolePreferredLanguage(orConsole = this.console): Promise<string | undefined> {
+        return orConsole.retrieveData("LANGUAGE");
+    }
+
+    /**
+     * Checks the keycloak access token to gather the preferred language of a user.
+     */
+    public async getUserPreferredLanguage(keycloak = this._keycloak): Promise<string | undefined> {
+
+        if(keycloak && keycloak.authenticated) {
+            const profile: Keycloak.KeycloakProfile | undefined = keycloak?.profile || await keycloak?.loadUserProfile();
+            if(profile?.attributes) {
+                const attributes = new Map(Object.entries(profile.attributes));
+                if(attributes.has("locale")) {
+                    const attr = attributes.get("locale") as any[];
+                    if(typeof attr[0] === "string") {
+                        return attr[0];
+                    }
+                }
+                console.warn("Could not get user language from keycloak: no user attributes were found.");
+            } else {
+                console.warn("Could not get user language from keycloak: no valid keycloak user profile was found.");
+            }
+        }
+    }
+
+    protected async updateKeycloakUserLanguage(lang: string, rest = this.rest): Promise<void> {
+        if(!this.authenticated) {
+            console.warn("Tried updating user language, but the user is not authenticated.");
+            return;
+        }
+        if(!rest) {
+            console.warn("Tried updating user language, but the REST API is not initialized yet.");
+            return;
+        }
+        await rest.api.UserResource.updateCurrentUserLocale(lang, { headers: { "Content-Type": "application/json" } });
     }
 
     public logout(redirectUrl?: string) {
@@ -789,7 +840,7 @@ export class Manager implements EventProviderFactory {
                 authenticated = true;
 
                 // Get user roles
-                const rolesResponse = await rest.api.UserResource.getCurrentUserRoles();
+                const rolesResponse = await rest.api.UserResource.getCurrentUserClientRoles(this.clientId);
                 this._basicIdentity!.roles = rolesResponse.data;
             } else {
                 console.debug("Unknown response so aborting");
@@ -808,7 +859,7 @@ export class Manager implements EventProviderFactory {
     }
 
     public isRestrictedUser(): boolean {
-        return !!this.hasRealmRole("restricted_user");
+        return !!this.hasRealmRole(RESTRICTED_USER_REALM_ROLE);
     }
 
     public getApiBaseUrl(): string {
@@ -880,8 +931,8 @@ export class Manager implements EventProviderFactory {
         try {
             // Initialise keycloak
             this._keycloak = new Keycloak({
-                clientId: this._config.clientId,
-                realm: this._config.realm,
+                clientId: this._config.clientId!,
+                realm: this._config.realm!,
                 url: this._config.keycloakUrl
             });
 
@@ -1015,7 +1066,7 @@ export class Manager implements EventProviderFactory {
         if (!this._disconnected) {
             return;
         }
-        
+
         if (this._reconnectTimer) {
             window.clearTimeout(this._reconnectTimer);
             this._reconnectTimer = undefined;
@@ -1030,7 +1081,7 @@ export class Manager implements EventProviderFactory {
                 return false;
             }
             console.debug("Keycloak is reachable");
-            
+
             // Check if access token can be refreshed
             console.debug("Checking keycloak access token");
             try {

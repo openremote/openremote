@@ -3,18 +3,38 @@ import java.nio.file.Paths
 import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
 import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 
+// Configure version based on Git tags
+apply plugin: 'pl.allegro.tech.build.axion-release'
+scmVersion {
+    releaseOnlyOnReleaseBranches = true
+    releaseBranchNames = ['main', 'master']
+    unshallowRepoOnCI.set(true)
+    versionCreator('simple')
+    versionIncrementer('incrementMinor')
+    repository {
+        remote.set('origin')
+    }
+    tag {
+        prefix.set('')
+        // This deserializer prevents errors when tags exist that cannot be deserialized
+        deserializer({config, position, tagName -> tagName ==~ /^[0-9]+\.[0-9]+\.[0-9]+$/ ? tagName : "1.1.0" })
+        initialVersion({config, position -> '1.2.0'})
+    }
+}
+
 allprojects {
-    apply from: "${findProject(":openremote") != null ? project(":openremote").projectDir : rootDir}/project.gradle"
+    apply from: "${findProject(':openremote') != null ? project(':openremote').projectDir : rootDir}/project.gradle"
+    version = scmVersion.version
 }
 
 // Uncomment the following to configure files to be encrypted/decrypted
 // Each file must be explicitly added to .gitignore otherwise git commit will fail
 // When using encryption the the GFE_PASSWORD environment variable must be set or the build will fail
 // use ./gradlew encryptFiles to encrypt files
-apply plugin: "com.cherryperry.gradle-file-encrypt"
+apply plugin: 'com.cherryperry.gradle-file-encrypt'
 gradleFileEncrypt {
     // files to encrypt
-    plainFiles.from("deployment/manager/fcm.json")
+    plainFiles.from('deployment/manager/fcm.json')
     // (optional) setup file mapping to store all encrypted files in one place for example
     //mapping = [ 'deployment/mySensitiveFile' : 'secrets/mySensitiveFile' ]
     // Use custom password provider as standard env mechanism doesn't seem to work
@@ -23,26 +43,96 @@ gradleFileEncrypt {
         return password != null ? password.toCharArray() : ''.toCharArray()
     }
 }
-task checkFilesGitIgnoredNew(type: Exec) {
+
+apply plugin: 'io.github.gradle-nexus.publish-plugin'
+nexusPublishing {
+    repositories {
+        sonatype {
+            nexusUrl = uri(findProperty('releasesRepoUrl'))
+            snapshotRepositoryUrl = uri(findProperty('snapshotsRepoUrl'))
+            username = findProperty('publishUsername')
+            password = findProperty('publishPassword')
+        }
+    }
+}
+group = 'io.openremote'
+
+tasks.register('checkFilesGitIgnoredNew', Exec) {
     // The provided checkFilesGitIgnored task doesn't work on Windows so here's one that does
     def args = []
     if (isFamily(FAMILY_WINDOWS)) {
-        args.add("cmd")
-        args.add("/c")
+        args.add('cmd')
+        args.add('/c')
     }
-    args.add("git")
-    args.add("check-ignore")
-    args.add("-q")
-    args.addAll(project.getProperties().get("gradleFileEncrypt").plainFiles)
+    args.add('git')
+    args.add('check-ignore')
+    args.add('-q')
+    args.addAll(project.getProperties().get('gradleFileEncrypt').plainFiles)
 
     commandLine args
 }
 // openremote .git dir doesn't exist when used as a submodule
-def gitFile = Paths.get(projectDir.path, ".git").toFile()
+def gitFile = Paths.get(projectDir.path, '.git').toFile()
 checkFilesGitIgnoredNew.enabled = gitFile.exists() && gitFile.isDirectory()
 
-task clean() {
+tasks.register('clean') {
     doLast {
-        delete "tmp"
+        delete 'tmp'
+    }
+}
+
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.ow2.asm:asm:9.5'
+        classpath 'org.ow2.asm:asm-tree:9.5'
+    }
+}
+
+subprojects {
+    afterEvaluate { proj ->
+        if (proj.plugins.hasPlugin('java')) {
+            def entityAnnotation = 'Ljakarta/persistence/Entity;'
+
+            proj.tasks.register('checkJpaEntitiesEquality') {
+                group = 'verification'
+                description = 'Ensure all JPA entities implement equals() and hashCode()'
+                dependsOn proj.tasks.named('classes')
+
+                doLast {
+                    proj.sourceSets.main.output.classesDirs.each { dir ->
+                        if (!dir.exists()) return
+
+                        dir.eachFileRecurse { file ->
+                            if (file.name.endsWith('.class')) {
+                                def reader = new org.objectweb.asm.ClassReader(file.bytes)
+                                def classNode = new org.objectweb.asm.tree.ClassNode()
+                                reader.accept(classNode, 0)
+
+                                def isEntity = classNode.visibleAnnotations?.any {
+                                    it.desc == entityAnnotation
+                                }
+
+                                if (isEntity) {
+                                    def methodNames = classNode.methods*.name
+                                    def className = classNode.name.replace('/', '.')
+
+                                    def missing = []
+                                    if (!methodNames.contains('equals')) missing << 'equals()'
+                                    if (!methodNames.contains('hashCode')) missing << 'hashCode()'
+
+                                    if (!missing.isEmpty()) {
+                                        println "❌ Entity $className is missing: ${missing.join(', ')}"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

@@ -8,6 +8,7 @@ import org.openremote.agent.protocol.tradfri.util.CoapClient;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The class that observes a device to automagically detect changes
@@ -43,19 +44,19 @@ public class DeviceObserver extends Observer {
     public void callEventHandlers(String payload) {
         try {
             DeviceResponse response = objectMapper.readValue(payload, DeviceResponse.class);
-            ArrayList<DeviceEvent> events = new ArrayList<>();
-            ArrayList<EventHandler<?>> called = new ArrayList<>();
+            List<DeviceEvent> events = new ArrayList<>();
+            List<EventHandler<?>> called = new ArrayList<>();
             if (device.isLight()){
                 LightProperties oldProperties = (LightProperties) device.getProperties();
                 if(response.getLightProperties() != null && response.getLightProperties().length > 0) device.setProperties(response.getLightProperties()[0]);
                 LightProperties newProperties = (LightProperties) device.getProperties();
                 events.add(new LightEvent(device.toLight()));
-                ArrayList<DeviceEvent> changeEvents = new ArrayList<>();
+                List<DeviceEvent> changeEvents = new ArrayList<>();
                 if (checkChanges(oldProperties.getOn(), newProperties.getOn())) changeEvents.add(new LightChangeOnEvent(device.toLight(), oldProperties, newProperties));
                 if (checkChanges(oldProperties.getBrightness(), newProperties.getBrightness())) changeEvents.add(new LightChangeBrightnessEvent(device.toLight(), oldProperties, newProperties));
                 if (checkChanges(oldProperties.getColourX(), newProperties.getColourX()) || checkChanges(oldProperties.getColourY(), newProperties.getColourY()) || checkChanges(oldProperties.getHue(), newProperties.getHue()) || checkChanges(oldProperties.getSaturation(), newProperties.getSaturation())) changeEvents.add(new LightChangeColourEvent(device.toLight(), oldProperties, newProperties));
                 if (checkChanges(oldProperties.getColourTemperature(), newProperties.getColourTemperature())) changeEvents.add(new LightChangeColourTemperatureEvent(device.toLight(), oldProperties, newProperties));
-                if (changeEvents.size() > 0){
+                if (!changeEvents.isEmpty()){
                     events.add(new LightChangeEvent(device.toLight(), oldProperties, newProperties));
                     events.addAll(changeEvents);
                 }

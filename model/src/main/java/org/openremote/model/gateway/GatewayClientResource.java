@@ -19,6 +19,7 @@
  */
 package org.openremote.model.gateway;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -34,7 +35,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 /**
  * Resource for managing the connection to a central manager
  */
-@Tag(name = "Gateway")
+@Tag(name = "Gateway", description = "Operations on gateways")
 @Path("gateway")
 public interface GatewayClientResource {
 
@@ -45,12 +46,14 @@ public interface GatewayClientResource {
     @Path("connection/{realm}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE})
+    @Operation(operationId = "getConnection", summary = "Retrieve the gateway connection of a realm")
     GatewayConnection getConnection(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     @GET
     @Path("status/{realm}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE})
+    @Operation(operationId = "getConnectionStatus", summary = "Retrieve the gateway connection status of a realm")
     ConnectionStatus getConnectionStatus(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     /**
@@ -60,6 +63,7 @@ public interface GatewayClientResource {
     @Path("connection")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE})
+    @Operation(operationId = "getConnections", summary = "Retrieve the gateway connections of all realms")
     List<GatewayConnection> getConnections(@BeanParam RequestParams requestParams);
 
     /**
@@ -69,15 +73,18 @@ public interface GatewayClientResource {
     @Path("connection/{realm}")
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
+    @Operation(operationId = "setConnection", summary = "Update the gateway connection of a realm")
     void setConnection(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid GatewayConnection connection);
 
     @DELETE
     @Path("connection/{realm}")
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
+    @Operation(operationId = "deleteConnection", summary = "Delete the gateway connection of a realm")
     void deleteConnection(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     @DELETE
     @Path("connection")
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
+    @Operation(operationId = "deleteConnections", summary = "Delete the gateway connections of multiple realms")
     void deleteConnections(@BeanParam RequestParams requestParams, @QueryParam("realm") List<String> realms);
 }

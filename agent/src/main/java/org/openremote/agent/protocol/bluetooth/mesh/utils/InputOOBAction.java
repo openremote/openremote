@@ -22,6 +22,7 @@ package org.openremote.agent.protocol.bluetooth.mesh.utils;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 public enum InputOOBAction {
@@ -71,7 +72,7 @@ public enum InputOOBAction {
      * Returns the Input OOB Action description
      *
      * @param type Input OOB type
-     * @return Input OOB type descrption
+     * @return Input OOB type description
      */
     public static String getInputOOBActionDescription(final InputOOBAction type) {
         switch (type) {
@@ -90,9 +91,9 @@ public enum InputOOBAction {
         }
     }
 
-    public static ArrayList<InputOOBAction> parseInputActionsFromBitMask(final int inputAction) {
+    public static List<InputOOBAction> parseInputActionsFromBitMask(final int inputAction) {
         final InputOOBAction[] inputActions = {PUSH, TWIST, INPUT_NUMERIC, INPUT_ALPHA_NUMERIC};
-        final ArrayList<InputOOBAction> supportedActionValues = new ArrayList<>();
+        final List<InputOOBAction> supportedActionValues = new ArrayList<>();
         for (InputOOBAction action : inputActions) {
             if ((inputAction & action.inputOOBAction) == action.inputOOBAction) {
                 supportedActionValues.add(action);

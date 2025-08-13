@@ -34,9 +34,8 @@ import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -75,13 +74,10 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
                 this.createDashboardQuery(realm).ids(dashboardId).limit(1),
                 getUserId()
         );
-        // If no dashboards were returned, check whether it existed, and return a different response.
+
+        // Don't return a different response if dashboard exists, expensive and of limited use it only gives attackers more info than we should
         if(dashboards.length == 0) {
-            if(this.dashboardStorageService.exists(dashboardId, realm)) {
-                throw new WebApplicationException(FORBIDDEN);
-            } else {
-                throw new WebApplicationException(NOT_FOUND);
-            }
+            throw new WebApplicationException(NOT_FOUND);
         }
 
         return dashboards[0];
@@ -91,12 +87,8 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     public Dashboard[] query(RequestParams requestParams, DashboardQuery query) {
         if(query == null) {
             query = this.createDashboardQuery(getRequestRealmName());
-        }
-        if(query.realm == null || query.realm.name == null) {
-            query.realm(new RealmPredicate(getRequestRealmName()));
-        }
-        if(isAuthenticated() && !isSuperUser() && !(getAuthenticatedRealmName().equals(query.realm.name))) {
-            throw new WebApplicationException(FORBIDDEN);
+        } else {
+            query = this.sanitizeDashboardQuery(query);
         }
 
         return dashboardStorageService.query(query, getUserId());
@@ -113,13 +105,9 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
         }
         try {
             dashboard.setOwnerId(getUserId());
-            dashboard.setViewAccess(DashboardAccess.SHARED);
-            dashboard.setEditAccess(DashboardAccess.SHARED);
-
+            dashboard.setAccess(DashboardAccess.SHARED);
             return this.dashboardStorageService.createNew(ValueUtil.clone(dashboard));
-
         } catch (IllegalStateException ex) {
-            ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
         }
     }
@@ -138,7 +126,6 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
         } catch (IllegalArgumentException ex) {
             throw new WebApplicationException(ex, NOT_FOUND);
         } catch (IllegalStateException ex) {
-            ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
         }
     }
@@ -156,45 +143,44 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
         } catch (IllegalArgumentException ex) {
             throw new WebApplicationException(ex, NOT_FOUND);
         } catch (IllegalStateException ex) {
-            ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
         }
     }
 
     /**
-     * Function that builds an {@link DashboardQuery} object, based on user permissions.
+     * Function that corrects an {@link DashboardQuery} object, based on user permissions.
      * Automatically fills NULL values, adjusts access filters based on roles, etc.
      *
-     * @param realm
-     * @return An instantiated DashboardQuery with the correct permissions based on the user.
+     * @param query The query to correct
+     * @return A DashboardQuery with the correct permissions based on the user.
      */
-    protected DashboardQuery createDashboardQuery(String realm) {
-        if(realm == null) {
-            realm = getRequestRealmName();
+    protected DashboardQuery sanitizeDashboardQuery(DashboardQuery query) {
+        Set<DashboardAccess> userAccess = new HashSet<>(Set.of(
+                Optional.ofNullable(query.getConditions().getDashboard().getAccess()).orElse(new DashboardAccess[0])
+        ));
+        Set<DashboardQuery.AssetAccess> assetAccess = new HashSet<>(Set.of(
+                Optional.ofNullable(query.getConditions().getAsset().getAccess()).orElse(new DashboardQuery.AssetAccess[0])
+        ));
+
+        if(query.getRealm() == null || query.getRealm().name == null) {
+            query.realm(new RealmPredicate(getRequestRealmName()));
         }
-        DashboardQuery query = new DashboardQuery().realm(new RealmPredicate(realm));
-        Set<DashboardAccess> userViewAccess = new HashSet<>(Set.of(query.conditions.getDashboard().getViewAccess()));
-        Set<DashboardAccess> userEditAccess = new HashSet<>(Set.of(query.conditions.getDashboard().getEditAccess()));
-        Set<DashboardQuery.AssetAccess> assetAccess = new HashSet<>(Set.of(query.conditions.getAsset().getAccess()));
 
         // Detect cross realm access
-        if(isAuthenticated() && !isSuperUser() && !realm.equals(getAuthenticatedRealmName())) {
+        if(isAuthenticated() && !isSuperUser() && !query.getRealm().name.equals(getAuthenticatedRealmName())) {
             throw new WebApplicationException(FORBIDDEN);
         }
 
         // User always has access to public dashboards
-        userViewAccess.add(DashboardAccess.PUBLIC);
-        userEditAccess.add(DashboardAccess.PUBLIC);
+        userAccess.add(DashboardAccess.PUBLIC);
         assetAccess.add(DashboardQuery.AssetAccess.REALM);
 
         // Adjust query object based on user roles/permissions
         if (isAuthenticated()) {
             assetAccess.add(DashboardQuery.AssetAccess.LINKED);
-            if (hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
-                Collections.addAll(userViewAccess, DashboardAccess.SHARED, DashboardAccess.PRIVATE);
-            }
-            if (hasResourceRole(ClientRole.WRITE_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
-                Collections.addAll(userEditAccess, DashboardAccess.SHARED, DashboardAccess.PRIVATE);
+            if (!hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                userAccess.remove(DashboardAccess.SHARED);
+                userAccess.remove(DashboardAccess.PRIVATE);
             }
             if (isRestrictedUser()) {
                 assetAccess = new HashSet<>(Set.of(DashboardQuery.AssetAccess.RESTRICTED));
@@ -203,19 +189,31 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
 
         // If not logged in, force only public read/write access
         else {
-            userViewAccess = new HashSet<>(Set.of(DashboardAccess.PUBLIC));
-            userEditAccess = new HashSet<>(Set.of(DashboardAccess.PUBLIC));
+            userAccess = new HashSet<>(Set.of(DashboardAccess.PUBLIC));
             assetAccess = new HashSet<>(Set.of(DashboardQuery.AssetAccess.REALM));
         }
 
         // Build query object and return
         return query.conditions(new DashboardQuery.Conditions(
                         new DashboardQuery.DashboardConditions()
-                                .viewAccess(userViewAccess.toArray(new DashboardAccess[0]))
-                                .editAccess(userEditAccess.toArray(new DashboardAccess[0])),
+                                .access(userAccess.toArray(new DashboardAccess[0])),
                         new DashboardQuery.AssetConditions()
                                 .access(assetAccess.toArray(new DashboardQuery.AssetAccess[0]))
                 )
         );
+    }
+
+    /**
+     * Function that builds an {@link DashboardQuery} object, based on user permissions.
+     * Automatically fills NULL values, adjusts access filters based on roles, etc.
+     *
+     * @param realm The realm to create a DashboardQuery for.
+     * @return An instantiated DashboardQuery with the correct permissions based on the user.
+     */
+    protected DashboardQuery createDashboardQuery(String realm) {
+        if(realm == null) {
+            realm = getRequestRealmName();
+        }
+        return this.sanitizeDashboardQuery(new DashboardQuery().realm(new RealmPredicate(realm)));
     }
 }

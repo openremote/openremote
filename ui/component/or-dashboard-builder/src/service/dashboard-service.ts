@@ -23,7 +23,7 @@ export class DashboardService {
                 }
             } as Dashboard;
         } else {
-            dashboard.id = randomId();
+            dashboard.id = undefined;
             if(dashboard.template) {
                 dashboard.template.id = randomId();
                 dashboard.template.widgets?.forEach(w => w.id = randomId());

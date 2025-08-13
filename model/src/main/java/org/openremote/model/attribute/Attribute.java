@@ -65,8 +65,8 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
         protected static final JavaType META_MAP_TYPE = TypeFactory.defaultInstance().constructType(MetaMap.class);
         protected static final JavaType OBJECT_TYPE = TypeFactory.defaultInstance().constructType(Object.class);
-
         public static final System.Logger LOG = System.getLogger(AttributeDeserializer.class.getName() + "." + SyslogCategory.MODEL_AND_VALUES);
+        protected static JsonDeserializer<Object> metaDeserialiser = null;
 
         protected AttributeDeserializer() {
             super(Attribute.class);
@@ -90,7 +90,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
             }
 
             AssetTypeInfo assetTypeInfo = (AssetTypeInfo) ctxt.getAttribute(Asset.AssetDeserializer.ASSET_TYPE_INFO_ATTRIBUTE);
-            String attributeName = jp.getCurrentName();
+            String attributeName = jp.currentName();
             AttributeDescriptor<?> attributeDescriptor = assetTypeInfo != null ? assetTypeInfo.getAttributeDescriptors().get(attributeName) : null;
             Attribute<?> attribute;
 
@@ -118,8 +118,11 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
                         }
                     }
                     case "meta" -> {
-                        JsonDeserializer<Object> metaDeserializer = ctxt.findNonContextualValueDeserializer(META_MAP_TYPE);
-                        attribute.meta = (MetaMap) metaDeserializer.deserialize(jp, ctxt);
+                        // findNonContextualValueDeserializer is slow so caching the result to speed up deserialisation
+                        if (metaDeserialiser == null) {
+                            metaDeserialiser = ctxt.findNonContextualValueDeserializer(META_MAP_TYPE);
+                        }
+                        attribute.meta = (MetaMap) metaDeserialiser.deserialize(jp, ctxt);
                     }
                     case "name" -> {
                         String name = jp.getValueAsString();

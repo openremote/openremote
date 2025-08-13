@@ -30,7 +30,9 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Realm;
 import org.openremote.model.security.User;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -57,12 +59,19 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
     public String testuser1Id;
     public String testuser2Id;
     public String testuser3Id;
+    public String testuser4Id;
     public String smartCityUserId;
     public String buildingUserId;
     public Realm realmMaster;
     public Realm realmBuilding;
     public Realm realmEnergy;
     public Realm realmCity;
+    public User testuser1;
+    public User testuser2;
+    public User testuser3;
+    public User testuser4;
+    public User buildingUser;
+    public User smartCityUser;
     public User serviceUser;
     public User serviceUser2;
 
@@ -95,29 +104,34 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
 
 
         // Users
-        User testuser1 = createUser(MASTER_REALM, "testuser1", "testuser1", "DemoMaster", "DemoLast", null, true, REGULAR_USER_ROLES);
+        testuser1 = createUser(MASTER_REALM, "testuser1", "testuser1", "DemoMaster", "DemoLast", null, true, REGULAR_USER_ROLES);
         this.testuser1Id = testuser1.getId();
-        keycloakProvider.updateUserRoles(MASTER_REALM, testuser1Id, "account"); // Remove all roles for account client
-        User testuser2 = createUser(realmBuilding.getName(), "testuser2", "testuser2", "DemoA2", "DemoLast", "testuser2@openremote.local", true, false, true, new ClientRole[] {
+        keycloakProvider.updateUserClientRoles(MASTER_REALM, testuser1Id, "account"); // Remove all roles for account client
+        testuser2 = createUser(realmBuilding.getName(), "testuser2", "testuser2", "DemoA2", "DemoLast", "testuser2@openremote.local", true, false, true, new ClientRole[] {
             ClientRole.WRITE_USER,
             ClientRole.READ_MAP,
             ClientRole.READ_ASSETS
         });
         this.testuser2Id = testuser2.getId();
-        keycloakProvider.updateUserRoles(realmBuilding.getName(), testuser2Id, "account"); // Remove all roles for account client
-        User testuser3 = createUser(realmBuilding.getName(), "testuser3", "testuser3", "DemoA3", "DemoLast", "testuser3@openremote.local", true, true, false, REGULAR_USER_ROLES);
+        keycloakProvider.updateUserClientRoles(realmBuilding.getName(), testuser2Id, "account"); // Remove all roles for account client
+        testuser3 = createUser(realmBuilding.getName(), "testuser3", "testuser3", "DemoA3", "DemoLast", "testuser3@openremote.local", true, true, false, REGULAR_USER_ROLES);
         this.testuser3Id = testuser3.getId();
-        keycloakProvider.updateUserRoles(realmBuilding.getName(), testuser3Id, "account"); // Remove all roles for account client
+        keycloakProvider.updateUserClientRoles(realmBuilding.getName(), testuser3Id, "account"); // Remove all roles for account client
         // Add realm role
-        keycloakProvider.updateUserRealmRoles(realmBuilding.getName(), testuser3Id, keycloakProvider.addRealmRoles(realmBuilding.getName(), testuser3Id, REALM_ROLE_TEST));
-        User buildingUser = createUser(realmBuilding.getName(), "building", "building", "Building", "User", "building@openremote.local", true, noWriteAccess);
+        keycloakProvider.updateUserRealmRoles(realmBuilding.getName(), testuser3Id, keycloakProvider.addUserRealmRoles(realmBuilding.getName(), testuser3Id, REALM_ROLE_TEST));
+        List<ClientRole> testuser4Roles = new ArrayList<>(Arrays.asList(REGULAR_USER_ROLES));
+        testuser4Roles.add(ClientRole.WRITE_ADMIN);
+        testuser4 = createUser(realmBuilding.getName(), "testuser4", "testuser4", "DemoA4", "DemoLast", null, true, false, true, testuser4Roles.toArray(new ClientRole[0]));
+        this.testuser4Id = testuser4.getId();
+        keycloakProvider.updateUserClientRoles(realmBuilding.getName(), testuser4Id, "account"); // Remove all roles for account client
+        buildingUser = createUser(realmBuilding.getName(), "building", "building", "Building", "User", "building@openremote.local", true, noWriteAccess);
         this.buildingUserId = buildingUser.getId();
-        keycloakProvider.updateUserRoles(realmBuilding.getName(), buildingUserId, "account"); // Remove all roles for account client
+        keycloakProvider.updateUserClientRoles(realmBuilding.getName(), buildingUserId, "account"); // Remove all roles for account client
         // Add realm role
-        keycloakProvider.updateUserRealmRoles(realmBuilding.getName(), buildingUserId, keycloakProvider.addRealmRoles(realmBuilding.getName(), buildingUserId, REALM_ROLE_TEST2));
-        User smartCityUser = createUser(realmCity.getName(), "smartcity", "smartcity", "Smart", "City", null, true, noWriteAccess);
+        keycloakProvider.updateUserRealmRoles(realmBuilding.getName(), buildingUserId, keycloakProvider.addUserRealmRoles(realmBuilding.getName(), buildingUserId, REALM_ROLE_TEST2));
+        smartCityUser = createUser(realmCity.getName(), "smartcity", "smartcity", "Smart", "City", null, true, noWriteAccess);
         this.smartCityUserId = smartCityUser.getId();
-        keycloakProvider.updateUserRoles(realmCity.getName(), smartCityUserId, "account"); // Remove all roles for account client
+        keycloakProvider.updateUserClientRoles(realmCity.getName(), smartCityUserId, "account"); // Remove all roles for account client
 
         /*
          * Service user clients
@@ -127,7 +141,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
             .setEnabled(true)
             .setUsername("serviceuser");
         serviceUser = keycloakProvider.createUpdateUser(realmBuilding.getName(), serviceUser, UniqueIdentifierGenerator.generateId("serviceusertest"), true);
-        keycloakProvider.updateUserRoles(
+        keycloakProvider.updateUserClientRoles(
             realmBuilding.getName(),
             serviceUser.getId(),
             Constants.KEYCLOAK_CLIENT_ID,
@@ -138,7 +152,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
             .setEnabled(true)
             .setUsername("serviceuser2");
         serviceUser2 = keycloakProvider.createUpdateUser(realmBuilding.getName(), serviceUser2, UniqueIdentifierGenerator.generateId("serviceuser2test"), true);
-        keycloakProvider.updateUserRoles(
+        keycloakProvider.updateUserClientRoles(
             realmBuilding.getName(),
             serviceUser2.getId(),
             Constants.KEYCLOAK_CLIENT_ID,
@@ -147,8 +161,8 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
 
         // ################################ Make users restricted ###################################
         ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
-        identityProvider.updateUserRealmRoles(realmBuilding.getName(), testuser3Id, identityProvider.addRealmRoles(realmBuilding.getName(), testuser3Id, RESTRICTED_USER_REALM_ROLE));
-        identityProvider.updateUserRealmRoles(realmBuilding.getName(), buildingUserId, identityProvider.addRealmRoles(realmBuilding.getName(), buildingUserId, RESTRICTED_USER_REALM_ROLE));
-        identityProvider.updateUserRealmRoles(realmBuilding.getName(), serviceUser2.getId(), identityProvider.addRealmRoles(realmBuilding.getName(), serviceUser2.getId(), RESTRICTED_USER_REALM_ROLE));
+        identityProvider.updateUserRealmRoles(realmBuilding.getName(), testuser3Id, identityProvider.addUserRealmRoles(realmBuilding.getName(), testuser3Id, RESTRICTED_USER_REALM_ROLE));
+        identityProvider.updateUserRealmRoles(realmBuilding.getName(), buildingUserId, identityProvider.addUserRealmRoles(realmBuilding.getName(), buildingUserId, RESTRICTED_USER_REALM_ROLE));
+        identityProvider.updateUserRealmRoles(realmBuilding.getName(), serviceUser2.getId(), identityProvider.addUserRealmRoles(realmBuilding.getName(), serviceUser2.getId(), RESTRICTED_USER_REALM_ROLE));
     }
 }

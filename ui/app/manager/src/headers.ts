@@ -25,7 +25,7 @@ export function headerItemRules<S extends AppStateKeyed, A extends AnyAction>(or
         href: "rules",
         text: "rule_plural",
         hideMobile: true,
-        roles: () => !manager.hasRealmRole("restricted_user")
+        roles: () => !manager.isRestrictedUser()
     };
 }
 
@@ -52,7 +52,7 @@ export function headerItemGatewayTunnel<S extends AppStateKeyed, A extends AnyAc
         icon: "lan-connect",
         value: "gateway-tunnel",
         href: "gateway-tunnel",
-        text: "gatewayTunnels.",
+        text: "gatewayTunnel",
         roles: ["write:admin", "read:admin"]
     }
 }
@@ -85,7 +85,8 @@ export function headerItemLogs<S extends AppStateKeyed, A extends AnyAction>(orA
         value: "logs",
         href: "logs",
         text: "logs",
-        hideMobile: true
+        hideMobile: true,
+        roles: ["write:logs", "read:logs"]
     };
 }
 export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
@@ -94,9 +95,7 @@ export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(
         value: "account",
         href: "account",
         text: "account",
-        roles: {
-            account: ["manage-account"]
-        }
+        roles: ["write:user"]
     };
 }
 export function headerItemUsers<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {

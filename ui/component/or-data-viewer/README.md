@@ -41,7 +41,7 @@ const viewerConfig = {
 };
 ```
 
-gridColumn can also be used to change the position horizontaly.
+gridColumn can also be used to change the position horizontally.
 ```javascript
 const viewerConfig = {
     panels: {

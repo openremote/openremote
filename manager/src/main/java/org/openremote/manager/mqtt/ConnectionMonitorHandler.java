@@ -38,6 +38,7 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
@@ -80,7 +81,7 @@ public class ConnectionMonitorHandler extends MQTTHandler {
     @Override
     public void init(Container container, Configuration serverConfiguration) throws Exception {
         super.init(container, serverConfiguration);
-        executorService = container.getExecutorService();
+        executorService = container.getExecutor();
         mqttBrokerService = container.getService(MQTTBrokerService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
@@ -130,7 +131,8 @@ public class ConnectionMonitorHandler extends MQTTHandler {
 
     @Override
     public void start(Container container) throws Exception {
-        super.start(container);
+        // Don't do super start as don't need to publish or subscribe
+        //super.start(container);
 
         // Don't block start
         executorService.submit(() -> {

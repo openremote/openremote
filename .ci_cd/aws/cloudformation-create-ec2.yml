@@ -21,7 +21,7 @@
 #
 # - [DAILY] - Cleanup journalctl logs
 #
-# ---------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------
 
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'AWS Linux 2, docker compose, nfs support, cron support, cloud watch logging, route53 updating'
@@ -43,12 +43,11 @@ Parameters:
   EFSDNS:
     Description: EFS DNS entry (for maps - IP address of EFS mount target in the same AZ ID)
     Type: String
-# Old string based image ID
-#  ImageId:
-#    Description: AMI ID
-#    Type: String
-#    Default: "ami-062cd09187a31b743"
   ImageId:
+    Description: AMI ID
+    Type: String
+    Default: ""
+  ImageAMI:
     Description: AMI ID
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64'
@@ -78,6 +77,13 @@ Parameters:
     Description: Role ARN that can be assumed for updating DNS A record (if Hosted Zone in another account)
     Type: String
     Default: ""
+  DLMExecutionRoleArn:
+    Description: Role ARN for executing the DLM operations
+    Type: String
+  SnapshotId:
+    Description: Snapshot ID to create the EBS data volume based of an existing snapshot
+    Type: String
+    Default: ""
   ElasticIP:
     Description: Assign elastic IP address
     Type: String
@@ -85,10 +91,21 @@ Parameters:
       - true
       - false
     Default: false
-  DiskSize:
+  Metrics:
+    Description: Enable metrics collection
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Default: false
+  RootDiskSize:
     Description: Root EBS volume size GB
     Type: Number
-    Default: 30
+    Default: 16
+  DataDiskSize:
+    Description: Amount of storage you want to provision for this EBS data volume
+    Type: Number
+    Default: 16
   HealthChecks:
     Description: Create health checks
     Type: String
@@ -120,7 +137,10 @@ Parameters:
 
 Conditions:
   AssignElasticIP: !Equals [!Ref ElasticIP, "true"]
+  MetricsEnabled: !Equals [!Ref Metrics, "true"]
   CreateHealthChecks: !Equals [!Ref HealthChecks, "true"]
+  SnapshotProvided: !Not [!Equals [!Ref SnapshotId, ""]]
+  UseAMIID: !Equals [!Ref ImageId, ""]
 
 Resources:
   InstanceRoleProfile:
@@ -208,9 +228,9 @@ Resources:
           default:
             - setupCfnHup
             - create_swapfile
+            - docker_setup
             - cloudwatch_config
             - restart_amazon-cloudwatch-agent
-            - docker_setup
             - cron_setup
             - env_vars
             - dns_updater
@@ -237,188 +257,210 @@ Resources:
         cloudwatch_config:
           files:
             "/opt/aws/amazon-cloudwatch-agent/var/config.json":
-              content: |
-                {
-                  "metrics": {
-                    "append_dimensions": {
-                      "AutoScalingGroupName": "${aws:AutoScalingGroupName}",
-                      "ImageId": "${aws:ImageId}",
-                      "InstanceId": "${aws:InstanceId}",
-                      "InstanceType": "${aws:InstanceType}"
+              content: !If
+                - MetricsEnabled
+                - |
+                  {
+                    "agent":{
+                      "metrics_collection_interval": 300
                     },
-                    "metrics_collected": {
-                      "mem": {
-                        "measurement": [
-                          "mem_used_percent"
-                        ],
-                        "metrics_collection_interval": 600
+                    "metrics": {
+                      "append_dimensions": {
+                        "InstanceId": "${aws:InstanceId}"
                       },
-                      "disk": {
-                        "drop_device": true,
-                        "measurement": [
-                          "used_percent"
-                        ],
-                        "resources": [
-                          "/"
-                        ],
-                        "metrics_collection_interval": 1800
+                      "metrics_collected": {
+                        "mem": {
+                          "measurement": [
+                            "mem_used_percent"
+                          ],
+                          "metrics_collection_interval": 900
+                        },
+                        "disk": {
+                          "drop_device": true,
+                          "measurement": [
+                            "used_percent"
+                          ],
+                          "resources": [
+                            "/",
+                            "/var/lib/docker/volumes"
+                          ],
+                          "metrics_collection_interval": 900
+                        }
                       }
-                    }
-                  },
-                  "logs": {
-                    "metrics_collected": {
-                      "prometheus": {
-                        "log_group_name": "Prometheus",
-                        "prometheus_config_path": "/opt/aws/amazon-cloudwatch-agent/var/prometheus.yaml",
-                        "emf_processor": {
-                          "metric_declaration_dedup": true,
-                          "metric_namespace": "CWAgent-Prometheus",
-                          "metric_unit": {
-                            "or_rules_facts": "Count",
-                            "or_rules_firing_sum": "Seconds",
-                            "or_rules_firing_count": "Count",
-                            "or_camel_route_queue_size": "Count",
-                            "or_camel_route_failed_total": "Count",
-                            "or_camel_route_failed_queue_full_total": "Count",
-                            "or_camel_route_total": "Count",
-                            "or_camel_route_seconds_sum": "Seconds",
-                            "or_camel_route_seconds_count": "Count",
-                            "executor_seconds_count": "Count",
-                            "executor_seconds_sum": "Seconds",
-                            "haproxy_server_current_sessions": "Count",
-                            "haproxy_server_bytes_in_total": "Bytes",
-                            "haproxy_server_bytes_out_total": "Bytes",
-                            "haproxy_server_status": "Count",
-                            "haproxy_server_http_responses_total": "Count",
-                            "haproxy_server_max_session_rate": "Count/Second",
-                            "haproxy_server_total_time_average_seconds": "Seconds"
-                          },
-                          "metric_declaration": [
-                            {
-                              "source_labels": [ "job" ],
-                              "label_matcher": "^manager$",
-                              "dimensions": [
-                                [ "instance_name","id","type" ]
-                              ],
-                              "metric_selectors": [
-                                "^or_rules.*$"
-                              ]
+                    },
+                    "logs": {
+                      "metrics_collected": {
+                        "prometheus": {
+                          "log_group_name": "Prometheus",
+                          "prometheus_config_path": "/opt/aws/amazon-cloudwatch-agent/var/prometheus.yaml",
+                          "emf_processor": {
+                            "metric_declaration_dedup": true,
+                            "metric_namespace": "CWAgent-Prometheus",
+                            "metric_unit": {
+                              "artemis_message_count": "Count",
+                              "artemis_messages_added": "Count",
+                              "or_rules_seconds_max": "Seconds",
+                              "or_rules_seconds_sum": "Seconds",
+                              "or_rules_seconds_count": "Count",
+                              "or_attributes_seconds_max": "Seconds",
+                              "or_attributes_seconds_sum": "Seconds",
+                              "or_attributes_seconds_count": "Count",
+                              "or_attributes_total": "Count",
+                              "or_provisioning_seconds_max": "Seconds",
+                              "or_provisioning_seconds_sum": "Seconds",
+                              "or_provisioning_seconds_count": "Count",
+                              "executor_pool_size_threads": "Count",
+                              "executor_pool_core_threads": "Count",
+                              "executor_pool_max_threads": "Count",
+                              "executor_seconds_count": "Count",
+                              "executor_seconds_sum": "Seconds",
+                              "haproxy_server_current_sessions": "Count",
+                              "haproxy_server_bytes_in_total": "Bytes",
+                              "haproxy_server_bytes_out_total": "Bytes",
+                              "haproxy_server_status": "Count",
+                              "haproxy_server_http_responses_total": "Count",
+                              "haproxy_server_max_session_rate": "Count/Second",
+                              "haproxy_server_total_time_average_seconds": "Seconds"
                             },
-                            {
-                              "source_labels": [ "job" ],
-                              "label_matcher": "^manager$",
-                              "dimensions": [
-                                [ "instance_name","routeId" ]
-                              ],
-                              "metric_selectors": [
-                                "^or_camel_route.*$"
-                              ]
-                            },
-                            {
-                              "source_labels": [ "job" ],
-                              "label_matcher": "^manager$",
-                              "dimensions": [
-                                [ "instance_name" ]
-                              ],
-                              "metric_selectors": [
-                                "^or_camel_route_failed_queue_full_total$"
-                              ]
-                            },
-                            {
-                              "source_labels": [ "job" ],
-                              "label_matcher": "^manager$",
-                              "dimensions": [
-                                [ "instance_name","name" ]
-                              ],
-                              "metric_selectors": [
-                                "^executor_seconds.*$"
-                              ]
-                            },
-                            {
-                              "source_labels": [ "job" ],
-                              "label_matcher": "^proxy$",
-                              "dimensions": [
-                                [ "instance_name", "proxy", "server" ]
-                              ],
-                              "metric_selectors": [
-                                "^haproxy_server_total_time_average_seconds$",
-                                "^haproxy_server_max_session_rate$",
-                                "^haproxy_server_bytes.*$",
-                                "^haproxy_server_current_sessions$"
-                              ]
-                            },
-                            {
-                              "source_labels": [ "job" ],
-                              "label_matcher": "^proxy$",
-                              "dimensions": [
-                                [ "instance_name", "proxy", "server", "code" ]
-                              ],
-                              "metric_selectors": [
-                                "^haproxy_server_http_responses_total$"
-                              ]
-                            },
-                            {
-                              "source_labels": [ "job" ],
-                              "label_matcher": "^proxy$",
-                              "dimensions": [
-                                [ "instance_name", "proxy", "server", "state" ]
-                              ],
-                              "metric_selectors": [
-                                "^haproxy_server_status$"
-                              ]
-                            }
-                          ]
+                            "metric_declaration": [
+                              {
+                                "source_labels": [ "job" ],
+                                "label_matcher": "^manager$",
+                                "dimensions": [
+                                  [ "InstanceName" ]
+                                ],
+                                "metric_selectors": [
+                                  "^or_rules_seconds_count$",
+                                  "^or_rules_seconds_sum$",
+                                  "^or_rules_seconds_max$",
+                                  "^or_attributes_seconds_count$",
+                                  "^or_attributes_seconds_sum$",
+                                  "^or_attributes_seconds_max$",
+                                  "^or_provisioning_seconds_count$",
+                                  "^or_provisioning_seconds_sum$",
+                                  "^or_provisioning_seconds_max$"
+                                ]
+                              },
+                              {
+                                "source_labels": [ "job", "source" ],
+                                "label_matcher": "manager;(RulesEngine|AgentService|DefaultMQTTHandler|AssetResource|WebsocketClient)",
+                                "dimensions": [
+                                  [ "InstanceName", "source" ]
+                                ],
+                                "metric_selectors": [
+                                  "^or_attributes_total$"
+                                ]
+                              },
+                              {
+                                "source_labels": [ "job", "name" ],
+                                "label_matcher": "^manager;ContainerExecutor$",
+                                "dimensions": [
+                                  [ "InstanceName","name" ]
+                                ],
+                                "metric_selectors": [
+                                  "^executor_pool_",
+                                  "^executor_seconds_count$",
+                                  "^executor_seconds_sum$"
+                                ]
+                              },
+                              {
+                                "source_labels": [ "job" ],
+                                "label_matcher": "^manager$",
+                                "dimensions": [
+                                  [ "InstanceName","queue" ]
+                                ],
+                                "metric_selectors": [
+                                  "^artemis_message_count$",
+                                  "^artemis_messages_added$"
+                                ]
+                              },
+                              {
+                                "source_labels": [ "job" ],
+                                "label_matcher": "^proxy$",
+                                "dimensions": [
+                                  [ "InstanceName", "proxy", "server" ]
+                                ],
+                                "metric_selectors": [
+                                  "^haproxy_server_total_time_average_seconds$",
+                                  "^haproxy_server_max_session_rate$",
+                                  "^haproxy_server_bytes",
+                                  "^haproxy_server_current_sessions$"
+                                ]
+                              },
+                              {
+                                "source_labels": [ "job" ],
+                                "label_matcher": "^proxy$",
+                                "dimensions": [
+                                  [ "InstanceName", "proxy", "server", "code" ]
+                                ],
+                                "metric_selectors": [
+                                  "^haproxy_server_http_responses_total$"
+                                ]
+                              },
+                              {
+                                "source_labels": [ "job" ],
+                                "label_matcher": "^proxy$",
+                                "dimensions": [
+                                  [ "InstanceName", "proxy", "server", "state" ]
+                                ],
+                                "metric_selectors": [
+                                  "^haproxy_server_status$"
+                                ]
+                              }
+                            ]
+                          }
                         }
                       }
                     }
                   }
-                }
-
+                - '{}'
             "/opt/aws/amazon-cloudwatch-agent/var/prometheus.yaml":
-              content: !Sub |
-                # Prometheus scrape config file
-                global:
-                  scrape_interval: 5m
-                  scrape_timeout: 10s
-                scrape_configs:
-                  - job_name: proxy
-                    sample_limit: 10000
-                    static_configs:
-                      - targets:
-                          - localhost:8404
-                      - labels:
-                          instance_name: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
-                    metric_relabel_configs:
-                      - action: keep
-                        source_labels: [__name__,state,code]
-                        regex: '(haproxy_server_current_sessions;;|haproxy_server_bytes_in_total;;|haproxy_server_bytes_out_total;;|haproxy_server_status;UP;|haproxy_server_http_responses_total;;5xx|haproxy_server_max_session_rate;;|haproxy_server_total_time_average_seconds;;)'
-                      - action: replace # THIS IS A WORKAROUND FOR BROKEN LABELS ABOVE
-                        source_labels: [ instance_name ]
-                        regex: '(.*)'
-                        replacement: '${Host}'
-                        target_label: instance_name
-                
-                  - job_name: manager
-                    sample_limit: 10000
-                    static_configs:
-                      - targets:
-                          - localhost:8405
-                      - labels:
-                          instance_name: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
-                    metric_relabel_configs:
-                      - action: keep
-                        source_labels: [__name__,routeId,name]
-                        regex: '(or_camel_route_failed_queue_full_total;;|or_camel_route_total;AttributeEvent-Router;|or_camel_route_seconds_count;AttributeEvent-Processor1;|or_camel_route_seconds_sum;AttributeEvent-Processor1;|or_camel_route_total;NotificationQueue;|or_camel_route_failed_handled_total;NotificationQueue;|or_rules_.*|executor_seconds_count;;RulesService|executor_seconds_sum;;RulesService)'
-                      - action: replace # THIS IS A WORKAROUND FOR BROKEN LABELS ABOVE
-                        source_labels: [instance_name]
-                        regex: '(.*)'
-                        replacement: '${Host}'
-                        target_label: instance_name
-
+              content: !If
+                - MetricsEnabled
+                - !Sub |
+                  # Prometheus scrape config file
+                  global:
+                    scrape_interval: 100s
+                    scrape_timeout: 10s
+                  scrape_configs:
+                    - job_name: proxy
+                      sample_limit: 10000
+                      static_configs:
+                        - targets:
+                            - localhost:8404
+                        - labels:
+                            InstanceName: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
+                      metric_relabel_configs:
+                        - action: keep
+                          source_labels: [__name__,state,code]
+                          regex: '(haproxy_server_current_sessions;;|haproxy_server_bytes_in_total;;|haproxy_server_bytes_out_total;;|haproxy_server_status;UP;|haproxy_server_http_responses_total;;5xx|haproxy_server_max_session_rate;;|haproxy_server_total_time_average_seconds;;)'
+                        - action: replace # THIS IS A WORKAROUND FOR BROKEN LABELS ABOVE
+                          source_labels: [ InstanceName ]
+                          regex: '(.*)'
+                          replacement: '${Host}'
+                          target_label: InstanceName
+                  
+                    - job_name: manager
+                      sample_limit: 10000
+                      static_configs:
+                        - targets:
+                            - localhost:8405
+                        - labels:
+                            InstanceName: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
+                      metric_relabel_configs:
+                        - action: keep
+                          source_labels: [__name__,name]
+                          regex: '(or_rules_.*|or_attributes.*|or.provisioning.*|executor_pool_(core|size).*;ContainerExecutor|executor_seconds_count;ContainerExecutor|executor_seconds_sum;ContainerExecutor|artemis_message_count.*|artemis_messages_added.*)'
+                        - action: replace # THIS IS A WORKAROUND FOR BROKEN LABELS ABOVE
+                          source_labels: [ InstanceName ]
+                          regex: '(.*)'
+                          replacement: '${Host}'
+                          target_label: InstanceName
+                - "# Prometheus scrape config file"
         daily_cleanup:
           files:
             "/usr/local/bin/daily-cleanup":
-              content: !Sub |
+              content: |
                 #!/bin/bash
                 journalctl --vacuum-time=7d
             "/etc/cron.d/cleanup":
@@ -715,6 +757,12 @@ Resources:
                 if [ -n "${DNSHostedZoneRoleArn}" ]; then
                   echo "AWS_ROUTE53_ROLE=${DNSHostedZoneRoleArn}" >> /etc/environment
                 fi
+            04_metrics:
+              command: !Sub |
+                # Output OR_METRICS_ENABLED to /etc/environment for use by manager container
+                if [ -n "${Metrics}" ]; then
+                  echo "OR_METRICS_ENABLED=${Metrics}" >> /etc/environment
+                fi
 
         docker_setup:
           packages:
@@ -731,7 +779,7 @@ Resources:
               docker:
                 enabled: "true"
                 ensureRunning: "true"
-
+  
         cron_setup:
           packages:
             yum:
@@ -785,7 +833,7 @@ Resources:
     Properties:
       InstanceType: !Ref InstanceType
       KeyName: "developers"
-      ImageId: !Ref ImageId
+      ImageId: !If [UseAMIID, !Ref ImageAMI, !Ref ImageId]
       SubnetId: !Ref SubnetId
       SecurityGroupIds:
         - Ref: SSHSecurityGroupId
@@ -793,7 +841,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: !Ref DiskSize
+            VolumeSize: !Ref RootDiskSize
             VolumeType: gp3
             DeleteOnTermination: true
       Ipv6AddressCount: 1
@@ -831,9 +879,54 @@ Resources:
       InstanceId: !Ref EC2Instance
       EIP: !Ref IPAddress
 
-  # Telemetry and Alarms
+  EBSDataVolume:
+    Type: AWS::EC2::Volume
+    Properties:
+      AvailabilityZone: !GetAtt EC2Instance.AvailabilityZone
+      Size: !Ref DataDiskSize
+      VolumeType: gp3
+      SnapshotId: !If [SnapshotProvided, !Ref SnapshotId, !Ref 'AWS::NoValue']
+      Tags:
+        - Key: Name
+          Value: !Sub ${Host}-data
+        - Key: Type
+          Value: !Sub ${Host}-or-data-not-in-use
+    DeletionPolicy: Snapshot
+
+  # DLM Policy for automatic snapshot creation
+
+  DLMPolicy:
+    Type: AWS::DLM::LifecyclePolicy
+    DependsOn: EBSDataVolume
+    Properties:
+      ExecutionRoleArn: !Ref DLMExecutionRoleArn
+      Description: 'or-data'
+      State: ENABLED
+      PolicyDetails:
+        PolicyLanguage: STANDARD
+        PolicyType: EBS_SNAPSHOT_MANAGEMENT
+        TargetTags:
+          - Key: Type
+            Value: !Sub ${Host}-or-data-in-use
+        ResourceTypes: 
+          - VOLUME
+        Schedules:
+          - Name: Daily Backup
+            CreateRule:
+              Interval: 24
+              IntervalUnit: HOURS
+              Times:
+              - '05:00'
+            RetainRule:
+              Count: 5
+      Tags:
+        - Key: Name
+          Value: !Ref Host
+
+  # Telemetry and Alarms.
 
   EmailSubscription:
+    Condition: CreateHealthChecks
     Type: AWS::SNS::Subscription
     Properties:
       Endpoint: support@openremote.io
@@ -841,6 +934,7 @@ Resources:
       TopicArn: !Ref SnsTopic
 
   SnsTopic:
+    Condition: CreateHealthChecks
     Type: AWS::SNS::Topic
     Properties:
       DisplayName: !Sub ${Host}.${EC2Instance}
@@ -887,6 +981,7 @@ Resources:
 
   CPUUtilizationAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
     Properties:
       Namespace: AWS/EC2
       MetricName: CPUUtilization
@@ -903,8 +998,9 @@ Resources:
         - Name: InstanceId
           Value: !Ref EC2Instance
 
-  DiskUtilizationAlarm:
+  RootDiskUtilizationAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
     Properties:
       Namespace: CWAgent
       MetricName: disk_used_percent
@@ -920,17 +1016,37 @@ Resources:
       Dimensions:
         - Name: InstanceId
           Value: !Ref EC2Instance
-        - Name: ImageId
-          Value: !Ref ImageId
-        - Name: InstanceType
-          Value: !Ref InstanceType
         - Name: path
           Value: /
         - Name: fstype
           Value: xfs
 
+  DataDiskUtilizationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
+    Properties:
+      Namespace: CWAgent
+      MetricName: disk_used_percent
+      Statistic: Average
+      Period: 3600
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 90
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref EC2Instance
+        - Name: path
+          Value: /var/lib/docker/volumes
+        - Name: fstype
+          Value: xfs
+
   MemoryUtilizationAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
     Properties:
       Namespace: CWAgent
       MetricName: mem_used_percent
@@ -946,260 +1062,45 @@ Resources:
       Dimensions:
         - Name: InstanceId
           Value: !Ref EC2Instance
-        - Name: ImageId
-          Value: !Ref ImageId
-        - Name: InstanceType
-          Value: !Ref InstanceType
 
-  CloudWatchDashboard:
-    Type: AWS::CloudWatch::Dashboard
+  ThreadPoolAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
     Properties:
-      DashboardName: !Join ["-", !Split [ '.', !Ref Host] ]
-      DashboardBody: !Sub |
-        {
-          "widgets": [
-            {
-              "height": 6,
-              "width": 6,
-              "y": 0,
-              "x": 6,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ { "expression": "m11 / m12", "label": "Avg Processor 1 (s)", "id": "e1" } ],
-                  [ "CWAgent-Prometheus", "or_camel_route_seconds_sum", "routeId", "AttributeEvent-Processor1", "instance_name", "${Host}", { "id": "m11", "visible": false } ],
-                  [ ".", "or_camel_route_seconds_count", ".", ".", ".", ".", { "id": "m12", "visible": false, "stat": "Maximum" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "stat": "Average",
-                "period": 300,
-                "title": "Attr Event Processing Time",
-                "yAxis": {
-                  "left": {
-                    "showUnits": false
-                  }
-                }
-              }
-            },
-            {
-              "height": 6,
-              "width": 6,
-              "y": 0,
-              "x": 0,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ { "expression": "m1/PERIOD(m1)", "label": "Success [/s]", "id": "e1", "region": "eu-west-1" } ],
-                  [ { "expression": "m2/PERIOD(m2)", "label": "Fail (Queue Full) [/s]", "id": "e2", "region": "eu-west-1" } ],
-                  [ "CWAgent-Prometheus", "or_camel_route_total", "routeId", "AttributeEvent-Router", "instance_name", "${Host}", { "id": "m1", "label": "Success", "visible": false } ],
-                  [ ".", "or_camel_route_failed_queue_full_total", "instance_name", "${Host}", { "id": "m2", "label": "Fail (Queue Full)", "visible": false } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "title": "Attr Events Processed",
-                "stat": "Sum",
-                "period": 300,
-                "yAxis": {
-                  "left": {
-                    "showUnits": false
-                  }
-                }
-              }
-            },
-            {
-              "height": 6,
-              "width": 6,
-              "y": 6,
-              "x": 0,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ { "expression": "m1 / m2", "label": "Max (s)", "id": "e1" } ],
-                  [ "CWAgent-Prometheus", "executor_seconds_sum", "instance_name", "${Host}", "name", "RulesService", { "id": "m1", "visible": false } ],
-                  [ ".", "executor_seconds_count", ".", ".", ".", ".", { "id": "m2", "visible": false } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "stat": "Maximum",
-                "period": 300,
-                "title": "Rule Engine Execution Time",
-                "yAxis": {
-                  "left": {
-                    "showUnits": false
-                  }
-                }
-              }
-            },
-            {
-              "height": 6,
-              "width": 6,
-              "y": 6,
-              "x": 12,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ "CWAgent-Prometheus", "haproxy_server_current_sessions", "server", "manager", "proxy", "mqtt", "instance_name", "${Host}", { "label": "MQTT" } ],
-                  [ "...", "manager_backend", ".", ".", { "label": "HTTP/WS" } ],
-                  [ "...", "keycloak", ".", "keycloak_backend", ".", ".", { "label": "Keycloak" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "title": "Proxy Active Sessions",
-                "stat": "Sum",
-                "period": 300
-              }
-            },
-            {
-              "height": 6,
-              "width": 6,
-              "y": 0,
-              "x": 12,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ "CWAgent-Prometheus", "haproxy_server_max_session_rate", "server", "manager", "proxy", "mqtt", "instance_name", "${Host}", { "label": "MQTT" } ],
-                  [ "...", "manager_backend", ".", ".", { "label": "HTTP/WS" } ],
-                  [ "...", "keycloak", ".", "keycloak_backend", ".", ".", { "label": "Keycloak" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "title": "Proxy Session Rate",
-                "stat": "Average",
-                "period": 300
-              }
-            },
-            {
-              "height": 6,
-              "width": 6,
-              "y": 12,
-              "x": 12,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ "CWAgent-Prometheus", "haproxy_server_bytes_in_total", "server", "manager", "proxy", "mqtt", "instance_name", "${Host}", { "label": "MQTT Bytes In" } ],
-                  [ ".", "haproxy_server_bytes_out_total", ".", ".", ".", ".", ".", ".", { "label": "MQTT Bytes Out" } ],
-                  [ "...", "keycloak", ".", "keycloak_backend", ".", ".", { "label": "Keycloak Bytes Out" } ],
-                  [ ".", "haproxy_server_bytes_in_total", ".", ".", ".", ".", ".", ".", { "label": "Keycloak Bytes In" } ],
-                  [ "...", "manager", ".", "manager_backend", ".", ".", { "label": "HTTP/WS Bytes In" } ],
-                  [ ".", "haproxy_server_bytes_out_total", ".", ".", ".", ".", ".", ".", { "label": "HTTP/WS Bytes Out" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "title": "Proxy I/O",
-                "stat": "Sum",
-                "period": 300
-              }
-            },
-            {
-              "height": 6,
-              "width": 6,
-              "y": 12,
-              "x": 6,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ "CWAgent-Prometheus", "haproxy_server_http_responses_total", "server", "keycloak", "proxy", "keycloak_backend", "instance_name", "${Host}", "code", "5xx", { "label": "Keycloak 5xx" } ],
-                  [ "...", "manager", ".", "manager_backend", ".", ".", ".", ".", { "label": "Manager 5xx" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "title": "HTTP Error Responses",
-                "stat": "Sum",
-                "period": 300
-              }
-            },
-            {
-              "height": 6,
-              "width": 6,
-              "y": 6,
-              "x": 18,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ "AWS/EBS", "VolumeReadOps", "VolumeId", "vol-08af38ccf9207da16", { "label": "Reads" } ],
-                  [ ".", "VolumeWriteOps", ".", ".", { "label": "Writes" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "title": "EBS Operations",
-                "stat": "Sum",
-                "period": 300
-              }
-            },
-            {
-              "height": 6,
-              "width": 6,
-              "y": 12,
-              "x": 18,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ "AWS/EBS", "VolumeReadBytes", "VolumeId", "vol-08af38ccf9207da16", { "label": "Read" } ],
-                  [ ".", "VolumeWriteBytes", ".", ".", { "label": "Write" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "title": "EBS Bytes",
-                "stat": "Sum",
-                "period": 300
-              }
-            },
-            {
-              "height": 6,
-              "width": 6,
-              "y": 0,
-              "x": 18,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ "AWS/EC2", "EBSIOBalance%", "InstanceId", "i-0c9e821c9865e70ea", { "label": "EBS IO Balance %" } ],
-                  [ ".", "EBSByteBalance%", ".", ".", { "label": "EBS Byte Balance %" } ],
-                  [ ".", "CPUCreditBalance", ".", ".", { "yAxis": "right", "label": "CPU Credit Balance" } ],
-                  [ ".", "CPUUtilization", ".", ".", { "label": "CPU Utilization %", "stat": "Maximum" } ],
-                  [ "CWAgent", "mem_used_percent", ".", ".", "ImageId", "ami-062cd09187a31b743", "InstanceType", "t4g.small", { "label": "Memory Usage %", "period": 900 } ],
-                  [ ".", "disk_used_percent", "path", "/", "InstanceId", "i-0c9e821c9865e70ea", "ImageId", "ami-062cd09187a31b743", "InstanceType", "t4g.small", "fstype", "xfs", { "label": "Disk Usage %", "period": 1800 } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "stat": "Average",
-                "period": 300,
-                "title": "EC2 Stats"
-              }
-            },
-            {
-              "height": 6,
-              "width": 6,
-              "y": 6,
-              "x": 6,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ "CWAgent-Prometheus", "or_camel_route_total", "instance_name", "${Host}", "routeId", "NotificationQueue", { "label": "Success" } ],
-                  [ ".", "or_camel_route_failed_total", ".", ".", ".", ".", { "label": "Fail" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "title": "Notifications",
-                "region": "${AWS::Region}",
-                "stat": "Sum",
-                "period": 300,
-                "yAxis": {
-                  "left": {
-                    "showUnits": false
-                  }
-                }
-              }
-            }
-          ]
-        }
+      Metrics:
+        - Expression: m1-m2
+          Id: e1
+          ReturnData: true
+        - Id: m1
+          MetricStat:
+            Metric:
+              MetricName: executor_pool_size_threads
+              Namespace: CWAgent-Prometheus
+              Dimensions:
+                - Name: InstanceName
+                  Value: !Ref Host
+                - Name: name
+                  Value: ContainerExecutor
+            Period: 300
+            Stat: Average
+          ReturnData: false
+        - Id: m2
+          MetricStat:
+            Metric:
+              MetricName: executor_pool_core_threads
+              Namespace: CWAgent-Prometheus
+              Dimensions:
+                - Name: InstanceName
+                  Value: !Ref Host
+                - Name: name
+                  Value: ContainerExecutor
+            Period: 300
+            Stat: Average
+          ReturnData: false
+      EvaluationPeriods: 3
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic

@@ -1,0 +1,57 @@
+{
+  "rules": [
+    {
+      "recurrence": {
+        "mins": 0
+      },
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    "RoomAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "co2Level"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_THAN",
+                          "value": 5000
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "7BQS4awDpktKayW0HrngTR"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "alarm",
+          "alarm": {
+            "title": "%RULESET_NAME%",
+            "content": "%TRIGGER_ASSETS%",
+            "severity": "HIGH",
+            "status": "OPEN"
+          }
+        }
+      ],
+      "name": "CO2 Alarm Rule"
+    }
+  ]
+}

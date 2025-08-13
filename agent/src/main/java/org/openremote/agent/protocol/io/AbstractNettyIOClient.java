@@ -151,13 +151,15 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     protected Channel channel;
     protected Bootstrap bootstrap;
     protected EventLoopGroup workerGroup;
-    protected ScheduledExecutorService executorService;
+    protected ExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected CompletableFuture<Void> connectRetry;
     protected int connectTimeout = 5000;
     protected Supplier<ChannelHandler[]> encoderDecoderProvider;
 
     protected AbstractNettyIOClient() {
-        this.executorService = Container.EXECUTOR_SERVICE;
+        this.executorService = Container.EXECUTOR;
+        this.scheduledExecutorService = Container.SCHEDULED_EXECUTOR;
     }
 
     @Override
@@ -227,7 +229,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             .onRetryScheduled((execution) ->
                 LOG.info("Re-connection scheduled in '" + execution.getDelay() + "' for: " + getClientUri()))
             .onFailedAttempt((execution) -> {
-                LOG.info("Connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri());
+                LOG.info("Connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri() + ", error=" + (execution.getLastException() != null ? execution.getLastException().getMessage() : null));
                 doDisconnect();
             })
             .withMaxRetries(Integer.MAX_VALUE)
@@ -240,7 +242,9 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             Future<Void> connectFuture = doConnect();
             waitForConnectFuture(connectFuture);
             execution.recordResult(null);
-        }).whenComplete((result, ex) -> {
+        });
+
+        connectRetry.whenComplete((result, ex) -> {
             if (ex != null) {
                 // Cleanup resources
                 disconnect();
@@ -277,15 +281,20 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
         }
 
-        if (connectRetry != null) {
-            connectRetry.cancel(true);
-            connectRetry = null;
-        }
+        try {
+            if (connectRetry != null) {
+                connectRetry.cancel(true);
+                connectRetry = null;
+            }
+        } catch (Exception ignored) {}
         doDisconnect();
-        if (workerGroup != null) {
-            workerGroup.shutdownGracefully();
-            workerGroup = null;
-        }
+        try {
+            if (workerGroup != null) {
+                workerGroup.shutdownGracefully();
+                workerGroup = null;
+            }
+        } catch (Exception ignored) {}
+        bootstrap = null;
         onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
     }
 
@@ -403,7 +412,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
                 } else if (cause instanceof EncoderException encoderException) {
                     onEncodeException(ctx, encoderException);
                 } else {
-                    // Agressively force close the channel on other exceptions which will cause a reconnect
+                    // Aggressively force close the channel on other exceptions which will cause a reconnect
                     ctx.close();
                 }
             }
@@ -481,19 +490,24 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         }
         if (future instanceof ChannelFuture channelFuture) {
             CompletableFuture<Void> completableFuture = new CompletableFuture<>();
-            channelFuture.addListener(cf -> {
-                if (cf.isCancelled()) {
-                    completableFuture.cancel(true);
-                    return;
-                }
-                if (cf.cause() != null) {
-                    completableFuture.completeExceptionally(cf.cause());
-                } else if (!cf.isSuccess()) {
-                    completableFuture.completeExceptionally(new RuntimeException("Unknown connection failure occurred"));
-                } else {
-                    completableFuture.complete(null);
-                }
-            });
+
+            try {
+                channelFuture.addListener(cf -> {
+                    if (cf.isCancelled()) {
+                        completableFuture.cancel(true);
+                        return;
+                    }
+                    if (cf.cause() != null) {
+                        completableFuture.completeExceptionally(cf.cause());
+                    } else if (!cf.isSuccess()) {
+                        completableFuture.completeExceptionally(new RuntimeException("Unknown connection failure occurred"));
+                    } else {
+                        completableFuture.complete(null);
+                    }
+                });
+            } catch (Exception e) {
+                completableFuture.completeExceptionally(e);
+            }
             return completableFuture;
         }
         throw new UnsupportedOperationException("Future must be a ChannelFuture or already a CompletableFuture");

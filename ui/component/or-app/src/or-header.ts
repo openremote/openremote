@@ -16,9 +16,12 @@ import "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-icon";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
-import {Realm} from "@openremote/model";
+import {Alarm, AlarmEvent, AlarmStatus, PersistenceEvent, Realm} from "@openremote/model";
 import {AppStateKeyed, router, updateRealm} from "./index";
 import {AnyAction, Store} from "@reduxjs/toolkit";
+import * as Model from "@openremote/model";
+import {i18next} from "@openremote/or-translate";
+
 
 export {DEFAULT_LANGUAGES, Languages}
 
@@ -349,6 +352,14 @@ export class OrHeader extends LitElement {
     @state()
     private _drawerOpened = false;
 
+    @state()
+    private alarmButton = 'bell-outline';
+
+    @state()
+    private alarmColor = '--or-app-color3, ${unsafeCSS(DefaultColor3)}';
+
+    private _eventSubscriptionId?: string;
+
     public _onRealmSelect(realm: string) {
         this.store.dispatch(updateRealm(realm));
     }
@@ -357,7 +368,35 @@ export class OrHeader extends LitElement {
         if (changedProperties.has("config")) {
             this.activeMenu = getCurrentMenuItemRef(this.config && this.config.mainMenu && this.config.mainMenu.length > 0 ? this.config.mainMenu[0].href : undefined);
         }
+        if (changedProperties.has("realm")) {
+            this._getAlarmButton();
+        }
         return super.shouldUpdate(changedProperties);
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        this._subscribeEvents();
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this._unsubscribeEvents();
+    }
+
+    protected async _subscribeEvents() {
+        if (manager.events) {
+            this._eventSubscriptionId = await manager.events.subscribe<AlarmEvent>({
+                eventType: "alarm"
+            }, (ev) => this._getAlarmButton());
+        }
+    }
+
+    protected _unsubscribeEvents() {
+        if (this._eventSubscriptionId) {
+            manager.events!.unsubscribe(this._eventSubscriptionId);
+            this._eventSubscriptionId = undefined;
+        }
     }
 
     protected render() {
@@ -386,6 +425,11 @@ export class OrHeader extends LitElement {
                         </div>
                     </nav>
                     <div id="desktop-right">
+                        <div id="alarm-btn">
+                            <a class="menu-item" @click="${(e: MouseEvent) => router.navigate('alarms')}">
+                                <or-icon icon="${this.alarmButton}" style="color:var(${this.alarmColor})" title="${i18next.t("alarm.alarm_plural")}"></or-icon>
+                            </a>
+                        </div>
                         ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}
                         ${secondaryItems ? getContentWithMenuTemplate(html`
                             <button id="menu-btn-desktop" class="menu-btn" title="Menu"><or-icon icon="dots-vertical"></or-icon></button>
@@ -456,6 +500,16 @@ export class OrHeader extends LitElement {
         }
 
         return realmTemplate;
+    }
+
+    protected async _getAlarmButton() {
+        let newAlarms = false;
+        if (manager.hasRole("read:alarms") || manager.hasRole("read:admin")) {
+            const response = await manager.rest.api.AlarmResource.getAlarms({realm: manager.displayRealm, status: Model.AlarmStatus.OPEN});
+            newAlarms = response.data.length > 0;
+        }
+        this.alarmButton = newAlarms ? 'bell-badge-outline' : 'bell-outline';
+        this.alarmColor = newAlarms ? '--or-app-color4, ${unsafeCSS(DefaultColor4)}' : '--or-app-color3, ${unsafeCSS(DefaultColor3)}';
     }
 
     protected _onSecondaryMenuSelect(value: string) {

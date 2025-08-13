@@ -11,7 +11,6 @@ import org.openremote.model.gateway.GatewayServiceResource;
 import org.openremote.model.gateway.GatewayTunnelInfo;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.TextUtil;
-import org.w3c.dom.Text;
 
 public class GatewayServiceResourceImpl extends ManagerWebResource implements GatewayServiceResource {
 

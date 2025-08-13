@@ -7,18 +7,17 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.openremote.model.util.HibernateUniqueIdentifierType;
 
 import java.util.Date;
-
-import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
+import java.util.Objects;
 
 @Entity
 @Table(name = "DASHBOARD")
 public class Dashboard {
 
-    @Id
+    @Id @HibernateUniqueIdentifierType
     @Column(name = "ID", length = 22, columnDefinition = "char(22)")
-    @GeneratedValue(generator = PERSISTENCE_UNIQUE_ID_GENERATOR)
     protected String id;
 
     @Temporal(TemporalType.TIMESTAMP)
@@ -33,16 +32,13 @@ public class Dashboard {
 
     @Version
     @Column(name = "VERSION", nullable = false)
-    protected long version;
+    protected Long version;
 
     @Column(name = "OWNER_ID", nullable = false)
     protected String ownerId;
 
-    @Column(name = "VIEW_ACCESS", nullable = false)
-    protected DashboardAccess viewAccess;
-
-    @Column(name = "EDIT_ACCESS", nullable = false)
-    protected DashboardAccess editAccess;
+    @Column(name = "ACCESS", nullable = false)
+    protected DashboardAccess access;
 
     @NotBlank(message = "{Dashboard.displayName.NotBlank}")
     @Column(name = "DISPLAY_NAME", nullable = false)
@@ -60,10 +56,12 @@ public class Dashboard {
     public Dashboard() {
     }
 
-    public Dashboard(String realm, String displayName, DashboardScreenPreset[] screenPresets) {
+    public Dashboard(String realm, String displayName, DashboardScreenPreset[] screenPresets, String ownerId) {
         this.realm = realm;
         this.template = new DashboardTemplate(screenPresets);
         this.displayName = displayName;
+        this.access = DashboardAccess.SHARED;
+        this.ownerId = ownerId;
     }
 
     public Dashboard setId(String id) {
@@ -91,13 +89,8 @@ public class Dashboard {
         return this;
     }
 
-    public Dashboard setViewAccess(DashboardAccess access) {
-        this.viewAccess = access;
-        return this;
-    }
-
-    public Dashboard setEditAccess(DashboardAccess access) {
-        this.editAccess = access;
+    public Dashboard setAccess(DashboardAccess access) {
+        this.access = access;
         return this;
     }
 
@@ -111,7 +104,6 @@ public class Dashboard {
         return this;
     }
 
-
     public String getId() {
         return this.id;
     }
@@ -124,7 +116,7 @@ public class Dashboard {
         return this.realm;
     }
 
-    public long getVersion() {
+    public Long getVersion() {
         return this.version;
     }
 
@@ -132,12 +124,8 @@ public class Dashboard {
         return this.ownerId;
     }
 
-    public DashboardAccess getViewAccess() {
-        return this.viewAccess;
-    }
-
-    public DashboardAccess getEditAccess() {
-        return this.editAccess;
+    public DashboardAccess getAccess() {
+        return this.access;
     }
 
     public String getDisplayName() {
@@ -146,5 +134,17 @@ public class Dashboard {
 
     public DashboardTemplate getTemplate() {
         return this.template;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Dashboard dashboard)) return false;
+        return Objects.equals(id, dashboard.id) && Objects.equals(createdOn, dashboard.createdOn) && Objects.equals(realm, dashboard.realm) && Objects.equals(version, dashboard.version) && Objects.equals(ownerId, dashboard.ownerId) && access == dashboard.access && Objects.equals(displayName, dashboard.displayName) && Objects.equals(template, dashboard.template);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, createdOn, realm, version, ownerId, access, displayName, template);
     }
 }

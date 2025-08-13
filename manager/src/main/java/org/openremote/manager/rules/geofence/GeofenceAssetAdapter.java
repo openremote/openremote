@@ -38,7 +38,7 @@ import java.util.List;
  * {@link Asset}, it is the adapters job to maintain state if required (see initialising flag on {@link
  * #processLocationPredicates}).
  * <p>
- * How the gefences are implemented and 'pushed' to the {@link Asset}s is up to the adapter but when a geofence is
+ * How the geofences are implemented and 'pushed' to the {@link Asset}s is up to the adapter but when a geofence is
  * triggered on an asset then the asset should update its own location by posting to the asset/location endpoint, the
  * location value sent should be as follows:
  * <ul>

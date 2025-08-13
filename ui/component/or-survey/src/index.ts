@@ -12,7 +12,6 @@ import filter from "lodash-es/filter";
 import "@openremote/or-translate";
 
 const moment = momentImported;
-declare var MANAGER_URL: string;
 
 export interface OrComputeGridEventDetail {
 }
@@ -146,7 +145,7 @@ class OrSurvey extends LitElement {
                                                                    ` : html`
                                                                         ${question.attributes && question.attributes.answerOptions.value.map((answer:AnswerOption, index:number) => {
                 return html`
-                                                                                <div class="anwser-card ${this.getType(question.type)}">
+                                                                                <div class="answer-card ${this.getType(question.type)}">
                                                                                     
                                                                                     ${!currentAnswer ? html`
                                                                                         <input type="${this.getInputType(question.type)}" id="${question.id}_${index}"
@@ -291,7 +290,7 @@ class OrSurvey extends LitElement {
                 localStorage.setItem('survey'+this.survey.id, "set");
 
                 const xhttp = new XMLHttpRequest();
-                const url = manager.config.managerUrl ? manager.config.managerUrl+"/rest/survey/" : window.location.origin+"/rest/survey/";
+                const url = manager.managerUrl ? manager.managerUrl+"/rest/survey/" : window.location.origin+"/rest/survey/";
                 xhttp.open("POST", url + this.survey.id, true);
                 xhttp.setRequestHeader("Content-type", "application/json");
                 xhttp.send(JSON.stringify(this.surveyAnswers));

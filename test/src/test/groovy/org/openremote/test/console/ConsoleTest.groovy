@@ -110,7 +110,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             def realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
             assert realmBuildingEngine != null
             assert realmBuildingEngine.isRunning()
-            assert realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.facts.getAssetStates().size() == DEMO_RULE_STATES_SMART_BUILDING
         }
 
         and: "an authenticated user"
@@ -128,7 +128,6 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def authenticatedAssetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(AssetResource.class)
         def anonymousConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name).proxy(ConsoleResource.class)
         def anonymousRulesResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name).proxy(RulesResource.class)
-        def anonymousAssetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name).proxy(AssetResource.class)
 
         when: "a console registers with an authenticated user"
         def consoleRegistration = new ConsoleRegistration(null,
@@ -678,8 +677,12 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         notificationIds.clear()
         messages.clear()
 
-        and: "an existing ruleset containing a radial location predicate is updated"
-        newRuleset.rules = getClass().getResource("/org/openremote/test/rules/BasicLocationPredicates.groovy").text
+        and: "a new ruleset is created containing a radial location predicate"
+        newRuleset = new AssetRuleset(
+                testUser3Console1.parentId,
+                "Console test location predicates",
+                Ruleset.Lang.GROOVY,
+                getClass().getResource("/org/openremote/test/rules/BasicLocationPredicates.groovy").text)
         newRuleset = rulesetStorageService.merge(newRuleset)
 
         then: "a push notification should have been sent to all consoles telling them to refresh their geofences"

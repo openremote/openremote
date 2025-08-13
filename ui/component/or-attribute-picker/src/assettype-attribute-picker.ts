@@ -1,4 +1,4 @@
-import {property, state} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import {AttributePicker, AttributePickerPickedEvent} from "./attribute-picker";
 import {PropertyValues, html, unsafeCSS} from "lit";
 import {DefaultColor5, Util} from "@openremote/core";
@@ -13,12 +13,12 @@ import "./assettype-list";
  * Custom Event that is dispatched upon closing the dialog.
  * Contains a map that is keyed by {@link AssetDescriptor.name}, with an array of {@link AttributeDescriptor}s of the selected attributes.
  */
-export class AssetTypeAttributePickerPickedEvent extends AttributePickerPickedEvent {
+export class OrAssetTypeAttributePickerPickedEvent extends AttributePickerPickedEvent {
 
     public static readonly NAME = "or-asset-type-attribute-picker-picked";
 
     constructor(attrDescriptors: Map<string, AttributeDescriptor[]>) {
-        super(AssetTypeAttributePickerPickedEvent.NAME, {
+        super(OrAssetTypeAttributePickerPickedEvent.NAME, {
             bubbles: true,
             composed: true,
             detail: attrDescriptors
@@ -28,7 +28,7 @@ export class AssetTypeAttributePickerPickedEvent extends AttributePickerPickedEv
 
 declare global {
     export interface HTMLElementEventMap {
-        [AssetTypeAttributePickerPickedEvent.NAME]: AssetTypeAttributePickerPickedEvent;
+        [OrAssetTypeAttributePickerPickedEvent.NAME]: OrAssetTypeAttributePickerPickedEvent;
     }
 }
 
@@ -37,10 +37,9 @@ declare global {
  *
  * @attribute {object} assetTypeFilter -Callback method for consumers to filter the asset type list shown. Returning true will make the asset type visible, returning false hides it.
  * @attribute {object} attributeFilter - Callback method for consumers to filter the attribute list shown. Returning true will make the attribute visible, returning false hides it.
- *
- * @remarks TODO: In the future this should be a separate component named "or-assettype-attribute-picker"
  */
-export class AssetTypeAttributePicker extends AttributePicker {
+@customElement("or-assettype-attribute-picker")
+export class OrAssetTypeAttributePicker extends AttributePicker {
 
     @property()
     public assetTypeFilter?: (descriptor: AssetDescriptor) => boolean;
@@ -130,9 +129,9 @@ export class AssetTypeAttributePicker extends AttributePicker {
 
         const assetTypes = this._loadedAssetTypes || this._loadAssetTypes();
         const selectedTypeNames = this.selectedAttributes ? Array.from(this.selectedAttributes.keys()) : undefined;
-        const assetTypeItems = this._getAssetTypeDescriptors(assetTypes, assetTypes.filter(type => !selectedTypeNames || selectedTypeNames.includes(type.name)));
+        const assetTypeItems = this._getAssetTypeDescriptors(assetTypes, assetTypes.filter(type => !selectedTypeNames || selectedTypeNames.includes(type.name!)));
         const assetDescriptor = this._getAssetDescriptorByName(this._selectedAssetType);
-        const attributeTypes = (this._loadedAttributeTypes || (assetDescriptor ? this._loadAttributeTypes(assetDescriptor) : undefined))?.sort(Util.sortByString(item => item.name));
+        const attributeTypes = (this._loadedAttributeTypes || (assetDescriptor ? this._loadAttributeTypes(assetDescriptor) : undefined))?.sort(Util.sortByString(item => item.name!));
 
         this.content = () => html`
             <div class="row" style="display: flex;height: 600px;width: 800px;border-top: 1px solid ${unsafeCSS(DefaultColor5)};">
@@ -144,7 +143,7 @@ export class AssetTypeAttributePicker extends AttributePicker {
                 </div>
                 <div class="col" style="flex: 1 1 auto;width: 320px;overflow: auto;">
                     ${when(attributeTypes && attributeTypes.length > 0, () => {
-                        const selectedAttrNames = this._selectedAssetType ? this.selectedAttributes.get(this._selectedAssetType)?.map(desc => desc.name) : undefined;
+                        const selectedAttrNames = this._selectedAssetType ? this.selectedAttributes.get(this._selectedAssetType)?.map(desc => desc.name!) : undefined;
                         return html`
                             <div class="attributes-header">
                                 <or-translate value="attribute_plural"></or-translate>
@@ -185,7 +184,7 @@ export class AssetTypeAttributePicker extends AttributePicker {
                     <or-mwc-input id="add-btn" class="button" label="add" .type="${InputType.BUTTON}"></or-mwc-input>`,
                 action: () => {
                     if (!this.addBtn.disabled) {
-                        this.dispatchEvent(new AssetTypeAttributePickerPickedEvent(this.selectedAttributes));
+                        this.dispatchEvent(new OrAssetTypeAttributePickerPickedEvent(this.selectedAttributes));
                     }
                 }
             }
@@ -213,7 +212,7 @@ export class AssetTypeAttributePicker extends AttributePicker {
             console.warn("Could not select attribute, since the attribute list seems to be empty?");
             return;
         }
-        this.selectedAttributes.set(this._selectedAssetType, this._loadedAttributeTypes?.filter(desc => attrNames.includes(desc.name)));
+        this.selectedAttributes.set(this._selectedAssetType, this._loadedAttributeTypes?.filter(desc => attrNames.includes(desc.name!)));
     }
 
 

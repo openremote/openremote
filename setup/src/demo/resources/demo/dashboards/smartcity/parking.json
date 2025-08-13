@@ -1,11 +1,8 @@
 {
-  "id": "5o0KL29L50Q7hSoVyvAI2y",
   "createdOn": 1711029229921,
   "realm": "smartcity",
-  "version": 8,
   "ownerId": "e5ca8a39-5193-478d-ba86-57e7095679cf",
-  "viewAccess": "SHARED",
-  "editAccess": "SHARED",
+  "access": "SHARED",
   "displayName": "Parking dashboard",
   "template": {
     "id": "szpfxnrzpg",
@@ -69,7 +66,6 @@
             "fromTimestamp": 1710942863421,
             "amountOfPoints": 100
           },
-          "rightAxisAttributes": [],
           "defaultTimePresetKey": "last24Hours",
           "showTimestampControls": false
         }

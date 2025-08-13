@@ -35,7 +35,7 @@ import java.util.concurrent.Future;
  * Users of this {@link IOClient} are responsible for adding encoders for converting messages of type &lt;T&gt; to
  * {@link io.netty.buffer.ByteBuf} (see {@link MessageToByteEncoder}) and adding decoders to convert from
  * {@link io.netty.buffer.ByteBuf} to messages of type &lt;T&gt; and ensuring these decoded messages are passed back
- * to this client via {@link AbstractNettyIOClient#onMessageReceived} (see {@link ByteToMessageDecoder and
+ * to this client via {@link AbstractNettyIOClient#onMessageReceived} (see {@link ByteToMessageDecoder} and
  * {@link MessageToMessageDecoder}).
  */
 public class TCPIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> {

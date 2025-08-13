@@ -94,7 +94,7 @@ public class Scene {
     }
 
     /**
-     * Validates the excene number
+     * Validates the scene number
      *
      * @param sceneNumber Scene number
      * @return true if is a valid or throws an IllegalArgument exception

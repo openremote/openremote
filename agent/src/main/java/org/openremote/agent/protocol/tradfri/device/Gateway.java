@@ -142,7 +142,7 @@ public class Gateway {
      * @return An array of the devices registered to the IKEA TRÅDFRI gateway
      */
     public Device[] getDevices(){
-        ArrayList<Device> deviceList = new ArrayList<>();
+        List<Device> deviceList = new ArrayList<>();
         int[] deviceIds = getDeviceIds();
         if(deviceIds == null) return null;
         for(int deviceId: deviceIds){

@@ -40,6 +40,8 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.EntityClassProvider;
 import org.openremote.model.PersistenceEvent;
+import org.openremote.model.alarm.AlarmAssetLink;
+import org.openremote.model.alarm.SentAlarm;
 import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -360,6 +362,8 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add(Dashboard.class.getName());
         entityClasses.add(ProvisioningConfig.class.getName());
         entityClasses.add(X509ProvisioningConfig.class.getName());
+        entityClasses.add(SentAlarm.class.getName());
+        entityClasses.add(AlarmAssetLink.class.getName());
 
         // Add packages with package-info (don't think this is JPA spec but hibernate specific)
         entityClasses.add("org.openremote.container.util");
@@ -429,11 +433,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         } catch (Exception ex) {
             if (tx != null && tx.isActive()) {
                 try {
-                    if (LOG.isLoggable(Level.FINER)) {
-                        LOG.log(Level.FINE, "Rolling back failed transaction, cause follows", ex);
-                    } else {
-                        LOG.log(Level.FINE, "Rolling back failed transaction");
-                    }
+                    LOG.log(Level.FINE, "Rolling back failed transaction");
                     tx.rollback();
                 } catch (RuntimeException rbEx) {
                     LOG.log(Level.SEVERE, "Rollback of transaction failed!", rbEx);

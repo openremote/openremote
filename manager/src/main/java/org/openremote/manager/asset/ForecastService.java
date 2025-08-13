@@ -80,7 +80,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
     protected AssetDatapointService assetDatapointService;
     protected PersistenceService persistenceService;
     protected AssetPredictedDatapointService assetPredictedDatapointService;
-    protected ScheduledExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected ForecastTaskManager forecastTaskManager = new ForecastTaskManager();
 
     @Override
@@ -91,7 +91,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
         assetDatapointService = container.getService(AssetDatapointService.class);
         persistenceService = container.getService(PersistenceService.class);
         assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);
-        executorService = container.getExecutorService();
+        scheduledExecutorService = container.getScheduledExecutor();
     }
 
     @Override
@@ -453,10 +453,10 @@ public class ForecastService extends RouteBuilder implements ContainerService {
 
             if (delay.isPresent()) {
                 LOG.fine("Scheduling next forecast calculation in '" + delay.get() + " [ms]'.");
-                scheduledFuture = executorService.schedule(() -> calculateForecasts(), delay.get(), TimeUnit.MILLISECONDS);
+                scheduledFuture = scheduledExecutorService.schedule(() -> calculateForecasts(), delay.get(), TimeUnit.MILLISECONDS);
             } else {
                 scheduledFuture = null;
-                if (forecastAttributes.size() > 0) {
+                if (!forecastAttributes.isEmpty()) {
                     LOG.fine("Scheduling next forecast calculation in '" + DEFAULT_SCHEDULE_DELAY + " [ms]'.");
                     scheduleForecastCalculation(now, Optional.of(DEFAULT_SCHEDULE_DELAY));
                 }

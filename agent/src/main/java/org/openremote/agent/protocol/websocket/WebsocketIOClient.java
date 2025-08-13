@@ -20,9 +20,7 @@
 package org.openremote.agent.protocol.websocket;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.MessageToMessageEncoder;
@@ -140,8 +138,14 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
     @Override
     protected Future<Void> startChannel() {
         handshakeFuture = new CompletableFuture<>();
+        CompletableFuture<Void> channelFuture;
+        try {
+            channelFuture = toCompletableFuture(bootstrap.connect(new InetSocketAddress(host, port)));
+        } catch (Exception e) {
+            channelFuture = CompletableFuture.failedFuture(e);
+        }
         return CompletableFuture.allOf(
-            toCompletableFuture(bootstrap.connect(new InetSocketAddress(host, port))),
+            channelFuture,
             handshakeFuture
         );
     }
@@ -249,7 +253,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
 
     private void doPing(ChannelHandlerContext ctx) {
         LOG.finest("Sending PING: " + getClientUri());
-        pingFuture = executorService.schedule(() -> {
+        pingFuture = scheduledExecutorService.schedule(() -> {
             ctx.fireExceptionCaught(new Exception("PING failed"));
         }, PING_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
         ctx.channel().writeAndFlush(new PingWebSocketFrame());

@@ -266,15 +266,6 @@ export const style = css`
     .hidden {
         display: none;
     }
-    
-    .multipleAssetsView {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .multipleAssetsView > *:first-child {
-        margin: 30px;
-    }
 
     @media screen and (max-width: 767px) {
         #wrapper {

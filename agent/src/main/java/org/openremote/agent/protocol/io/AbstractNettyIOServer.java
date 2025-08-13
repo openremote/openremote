@@ -33,6 +33,7 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -53,7 +54,8 @@ public abstract class AbstractNettyIOServer<T, U extends Channel, V extends Abst
     protected final static int MAX_RECONNECT_DELAY_MILLIS = 60000;
     protected final static int RECONNECT_BACKOFF_MULTIPLIER = 2;
     protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractNettyIOServer.class);
-    protected final ScheduledExecutorService executorService;
+    protected final ExecutorService executorService;
+    protected final ScheduledExecutorService scheduledExecutorService;
     protected int clientLimit = 0; // 0 means no limit
     protected V bootstrap;
     protected ConnectionStatus connectionStatus = ConnectionStatus.DISCONNECTED;
@@ -68,7 +70,8 @@ public abstract class AbstractNettyIOServer<T, U extends Channel, V extends Abst
     protected int reconnectDelayMilliseconds = INITIAL_RECONNECT_DELAY_MILLIS;
 
     public AbstractNettyIOServer() {
-        this.executorService = Container.EXECUTOR_SERVICE;
+        this.executorService = Container.EXECUTOR;
+        this.scheduledExecutorService = Container.SCHEDULED_EXECUTOR;
     }
 
     @Override
@@ -431,7 +434,7 @@ public abstract class AbstractNettyIOServer<T, U extends Channel, V extends Abst
 
         LOG.finest("Scheduling reconnection in '" + reconnectDelayMilliseconds + "' milliseconds: " + getSocketAddressString());
 
-        reconnectTask = executorService.schedule(() -> {
+        reconnectTask = scheduledExecutorService.schedule(() -> {
             synchronized (AbstractNettyIOServer.this) {
                 reconnectTask = null;
 
@@ -455,7 +458,7 @@ public abstract class AbstractNettyIOServer<T, U extends Channel, V extends Abst
     protected abstract V createAndConfigureBootstrap();
 
     /**
-     * Should return a descriptor to identify the speficied client for use in log files etc.
+     * Should return a descriptor to identify the specified client for use in log files etc.
      */
     protected abstract String getClientDescriptor(U client);
 

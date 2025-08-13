@@ -6,7 +6,7 @@ import {until} from "lit/directives/until.js";
 import {createRef, Ref, ref} from "lit/directives/ref.js";
 import "@openremote/or-components/or-panel";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {AttributeDescriptor, AttributePredicate, ClientRole, ConnectionStatus, GatewayAttributeFilter, GatewayConnection, GatewayConnectionStatusEvent, LogicGroupOperator} from "@openremote/model";
+import {AttributeDescriptor, AttributePredicate, ClientRole, ConnectionStatus, GatewayAttributeFilter, GatewayConnection, GatewayConnectionStatusEvent, LogicGroupOperator, GatewayAssetSyncRule} from "@openremote/model";
 import manager, {DefaultColor1, DefaultColor3} from "@openremote/core";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
@@ -58,13 +58,14 @@ export class PageGateway extends Page<AppStateKeyed>  {
             }
 
             #title {
-                margin: 20px auto 0;
-                max-width: 1360px;
-                width: 100%;
                 display: flex;
-                justify-content: space-between;
+                width: calc(100% - 40px);
+                max-width: 1360px;
+                padding: 0px 20px;
+                flex-direction: row;
                 align-items: center;
-                color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+                justify-content: space-between;
+                margin: 8px auto;
             }
             
             #title div {
@@ -78,15 +79,18 @@ export class PageGateway extends Page<AppStateKeyed>  {
             }
 
             #title > div > or-icon {
+                --or-icon-width: 20px;
+                --or-icon-height: 20px;
                 margin-right: 10px;
                 margin-left: 14px;
             }
 
             or-panel {
                 position: relative;
+                width: calc(100% - 40px);
                 max-width: 1360px;
-                width: 100%;
-                margin: 20px auto;
+                margin: 0 auto 16px;
+                --or-panel-heading-text-transform: uppercase;
             }
 
             .gateway-status-header {
@@ -241,7 +245,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                 
                 ${until(this._getTitleTemplate(connection, this._connectionStatus, disabled))}
                 
-                <or-panel ?disabled="${disabled}" .heading="${i18next.t("connectionDetails")}">
+                <or-panel ?disabled="${disabled}" .heading="${i18next.t("gateway.connectionDetails")}">
                     ${when(this._connectionStatus, () => html`
                         <div class="gateway-status-header">
                             <or-translate value="status" style="font-weight: normal;"></or-translate>:
@@ -251,13 +255,17 @@ export class PageGateway extends Page<AppStateKeyed>  {
                     ${until(this._getContentTemplate(() => this._getSettingsColumns(connection, disabled)))}
                 </or-panel>
                 
-                <or-panel ?disabled="${disabled}" heading="${i18next.t("dataSharing")}">
+                <or-panel ?disabled="${disabled}" heading="${i18next.t("gateway.dataSharing")}">
                     <div class="gateway-status-header">
                         <or-mwc-input .type="${InputType.BUTTON}" label="JSON" outlined icon="pencil"
                                       @or-mwc-input-changed="${() => this._openConnectionJSONEditor(connection)}"
                         ></or-mwc-input>
                     </div>
                     ${until(this._getContentTemplate(() => this._getDataSharingColumns(connection, this._isDataSharingCustom(connection), disabled)))}
+                </or-panel>                
+     
+                <or-panel ?disabled="${disabled}" heading="${i18next.t("gateway.assetSyncRules")}">
+                    ${until(this._getContentTemplate(() => this._getAssetSyncRulesColumns(connection, disabled)))}
                 </or-panel>
             </div>
         `;
@@ -370,7 +378,28 @@ export class PageGateway extends Page<AppStateKeyed>  {
                         <or-translate value="gateway.limit_sharing_rate_suffix"></or-translate>
                     </div>
                 </div>
-                <div></div>
+            </div>
+        `;
+    }
+
+    protected async _getAssetSyncRulesColumns(connection: GatewayConnection, disabled = true): Promise<TemplateResult> {
+        const controlStyling = disabled ? "--mdc-theme-text-primary-on-background: lightgray; color: lightgray" : undefined;
+        return html`
+            <div id="gateway-column-4" class="gateway-column">
+                <div class="gateway-sharing-control"  style="${controlStyling}">
+                    <or-mwc-input .label="${i18next.t("gateway.assetSyncRulesEnable")}" .type="${InputType.CHECKBOX}"
+                                  ?disabled="${disabled}" .value="${!!connection.assetSyncRules}"
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onAssetSyncRulesToggle(!!e.detail.value)}"
+                    ></or-mwc-input>
+                    <div class="gateway-sharing-control-child">
+                        <or-mwc-input .type="${InputType.JSON_OBJECT}" ?disabled="${disabled || !connection.assetSyncRules}" 
+                                      .value="${connection?.assetSyncRules}"
+                                      resizevertical
+                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("assetSyncRules", e.detail.value)}"
+                                      .label="${i18next.t('gateway.assetSyncRulesInput')}" style="width: 100%;"></or-mwc-input>
+                        <or-translate value=""></or-translate>
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -455,6 +484,44 @@ export class PageGateway extends Page<AppStateKeyed>  {
             });
         }
         this._updateAttributeFilters(attributeFilters);
+    }
+
+    protected _onAssetSyncRulesToggle(enabled: boolean) {
+        if (!enabled) {
+            this._setConnectionProperty("assetSyncRules", undefined);
+        } else {
+            this._setConnectionProperty("assetSyncRules", this._getDefaultGatewayAssetSyncRules());
+        }
+    }
+
+    /**
+     * HTML callback for when the GatewayAssetSyncRules updates.
+     */
+    protected _onAssetSyncRulesUpdated(syncRules?: { [index: string]: GatewayAssetSyncRule }) {
+        this._setConnectionProperty("assetSyncRules", syncRules);
+    }
+
+    protected  _getDefaultGatewayAssetSyncRules(): { [index: string]: GatewayAssetSyncRule }  {
+        return {
+            "*" : {
+                excludeAttributeMeta: {
+                    "*": [
+                        "accessPublicRead",
+                        "accessPublicWrite",
+                        "accessRestrictedRead",
+                        "accessRestrictedWrite"
+                    ]
+                },
+                addAttributeMeta: {
+                    "*": {
+                        "storeDataPoints": true
+                    }
+                },
+                excludeAttributes: [
+                    "notes"
+                ]
+            }
+        }
     }
 
     /**

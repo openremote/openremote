@@ -33,6 +33,7 @@ import org.openremote.model.validation.AttributeInfoValid;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.Objects;
 import java.util.Optional;
@@ -58,7 +59,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     protected Object value;
     protected boolean deleted;
     @JsonIgnore
-    protected Object source;
+    protected String source;
     protected String realm;
     @JsonView(Enhanced.class)
     protected String parentId;
@@ -85,12 +86,24 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         this(assetId, attributeDescriptor.getName(), value);
     }
 
+    public <T> AttributeEvent(String assetId, AttributeDescriptor<T> attributeDescriptor, T value, Long timestamp) {
+        this(assetId, attributeDescriptor.getName(), value, timestamp);
+    }
+
+    public <T> AttributeEvent(String assetId, AttributeDescriptor<T> attributeDescriptor, T value, Instant timestamp) {
+        this(assetId, attributeDescriptor.getName(), value, timestamp);
+    }
+
     public AttributeEvent(String assetId, String attributeName, Object value) {
         this(new AttributeRef(assetId, attributeName), value);
     }
 
     public AttributeEvent(String assetId, String attributeName, Object value, Long timestamp) {
         this(new AttributeRef(assetId, attributeName), value, timestamp);
+    }
+
+    public AttributeEvent(String assetId, String attributeName, Object value, Instant timestamp) {
+        this(new AttributeRef(assetId, attributeName), value, timestamp.toEpochMilli());
     }
 
     public AttributeEvent(AttributeState attributeState) {
@@ -101,8 +114,16 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         this(attributeState.getRef(), attributeState.getValue().orElse(null), timestamp);
     }
 
+    public AttributeEvent(AttributeState attributeState, Instant timestamp) {
+        this(attributeState.getRef(), attributeState.getValue().orElse(null), timestamp.toEpochMilli());
+    }
+
     public AttributeEvent(AttributeRef attributeRef, Object value) {
         this(attributeRef, value, 0L);
+    }
+
+    public AttributeEvent(AttributeRef ref, Object value, Instant timestamp) {
+        this(ref, value, timestamp.toEpochMilli());
     }
 
     public AttributeEvent(AttributeRef ref, Object value, Long timestamp) {
@@ -125,7 +146,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         }
     }
 
-    public AttributeEvent(AssetInfo asset, Attribute<?> attribute, Object source, Object value, Long valueTimestamp, Object oldValue, Long oldValueTimestamp) {
+    public AttributeEvent(AssetInfo asset, Attribute<?> attribute, String source, Object value, Long valueTimestamp, Object oldValue, Long oldValueTimestamp) {
         this(new AttributeRef(asset.getId(), attribute.getName()),value, valueTimestamp);
 
         this.oldValue = oldValue;
@@ -186,11 +207,11 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return this;
     }
 
-    public Object getSource() {
+    public String getSource() {
         return source;
     }
 
-    public AttributeEvent setSource(Object source) {
+    public AttributeEvent setSource(String source) {
         this.source = source;
         return this;
     }
@@ -270,6 +291,11 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     @Override
     public MetaMap getMeta() {
         return meta;
+    }
+
+    public AttributeEvent setMeta(MetaMap meta) {
+        this.meta = meta;
+        return this;
     }
 
     @JsonIgnore

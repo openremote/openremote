@@ -20,6 +20,7 @@
 package org.openremote.model.notification;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
@@ -28,7 +29,7 @@ import jakarta.ws.rs.*;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Notification")
+@Tag(name = "Notification", description = "Operations on notifications")
 @Path("notification")
 public interface NotificationResource {
 
@@ -43,6 +44,7 @@ public interface NotificationResource {
     @GET
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE})
+    @Operation(operationId = "getNotifications", summary = "Retrieve all sent notifications by targets")
     SentNotification[] getNotifications(@BeanParam RequestParams requestParams,
                                         @QueryParam("id") Long id,
                                         @QueryParam("type") String type,
@@ -72,6 +74,7 @@ public interface NotificationResource {
      */
     @DELETE
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
+    @Operation(operationId = "removeNotifications", summary = "Delete all sent notifications by targets")
     void removeNotifications(@BeanParam RequestParams requestParams,
                              @QueryParam("id") Long id,
                              @QueryParam("type") String type,
@@ -99,6 +102,7 @@ public interface NotificationResource {
     @DELETE
     @Path("{notificationId}")
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
+    @Operation(operationId = "removeNotification", summary = "Delete a sent notification")
     void removeNotification(@BeanParam RequestParams requestParams,
                             @PathParam("notificationId") Long notificationId);
 
@@ -110,6 +114,7 @@ public interface NotificationResource {
     @POST
     @Path("alert")
     @Consumes(APPLICATION_JSON)
+    @Operation(operationId = "sendNotification", summary = "Send a notification to one or more targets")
     void sendNotification(@BeanParam RequestParams requestParams,
                           Notification notification);
 
@@ -121,6 +126,7 @@ public interface NotificationResource {
      */
     @PUT
     @Path("{notificationId}/delivered")
+    @Operation(operationId = "notificationDelivered", summary = "Update a notification as delivered")
     void notificationDelivered(@BeanParam RequestParams requestParams,
                                @QueryParam("targetId") String targetId,
                                @PathParam("notificationId") Long notificationId);
@@ -134,6 +140,7 @@ public interface NotificationResource {
     @PUT
     @Path("{notificationId}/acknowledged")
     @Consumes(APPLICATION_JSON)
+    @Operation(operationId = "notificationAcknowledged", summary = "Update a notification as acknowledged")
     void notificationAcknowledged(@BeanParam RequestParams requestParams,
                                   @QueryParam("targetId") String targetId,
                                   @PathParam("notificationId") Long notificationId,

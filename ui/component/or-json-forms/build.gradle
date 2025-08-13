@@ -1,11 +1,16 @@
 task clean() {
     doLast {
         delete "dist"
+        delete "lib"
     }
 }
 
+task installDist() {
+    dependsOn npmAnalyze
+}
+
 task prepareUi() {
-    dependsOn clean, npmPrepare
+    dependsOn clean, npmAnalyze, npmPrepare
 }
 
 task publishUi() {
