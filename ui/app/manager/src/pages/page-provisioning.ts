@@ -451,16 +451,16 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                         <div class="row" style="margin-bottom: 0;">
                             ${config.id ? html`<or-mwc-input label="delete"
                                           .type="${InputType.BUTTON}"
-                                          @click="${() => this._deleteConfig(config)}"></or-mwc-input>
+                                          @or-mwc-input-changed="${() => this._deleteConfig(config)}"></or-mwc-input>
                             ` : ``}              
                             ${!config.id ? html`<or-mwc-input label="cancel"
                                       .type="${InputType.BUTTON}"
-                                      @click="${() => addCancel()}"></or-mwc-input>
+                                      @or-mwc-input-changed="${() => addCancel()}"></or-mwc-input>
                             ` : ``}
                             <or-mwc-input class="savebtn" style="margin-left: auto;"
                                   label="${config.id ? "save" : "create"}"
                                   .type="${InputType.BUTTON}"
-                                  @click="${() => this._createUpdateConfig(config)}"></or-mwc-input>
+                                  @or-mwc-input-changed="${() => this._createUpdateConfig(config)}"></or-mwc-input>
                         </div>
                     </div>
                 </td>

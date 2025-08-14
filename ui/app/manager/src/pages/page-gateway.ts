@@ -285,7 +285,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("disabled", !e.detail.value)}"
                         ></or-mwc-input>
                     </div>
-                    <or-mwc-input label="save" ?disabled="${!this._dirty || !this._invalid || disabled}" .type="${InputType.BUTTON}" raised @click="${() => this._save()}"></or-mwc-input>
+                    <or-mwc-input label="save" ?disabled="${!this._dirty || !this._invalid || disabled}" .type="${InputType.BUTTON}" raised @or-mwc-input-changed="${() => this._save()}"></or-mwc-input>
                 </div>
             </div>
         `;
