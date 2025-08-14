@@ -39,112 +39,152 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 /**
  * REST resource for managing microservices and external services.
  * 
- * This resource provides endpoints for service discovery, registration, and management
+ * This resource provides endpoints for service discovery, registration, and
+ * management
  * of external services and microservices through the OpenRemote manager.
  * 
- * Registered services are made available via the OpenRemote manager's Web UI and API,
+ * Registered services are made available via the OpenRemote manager's Web UI
+ * and API,
  * enabling centralized service management and monitoring.
  */
 @Tag(name = "Services", description = "Registration and management of microservices/external services")
 @Path("service")
 public interface MicroserviceResource {
 
-    /**
-     * Register a new microservice or external service with the OpenRemote manager.
-     * 
-     * Creates a new registration entry and returns the registered microservice
-     * with its generated instanceId and initial status.
-     * 
-     * @param microservice The microservice to register
-     * @return The registered microservice with its instanceId and status
-     */
-    @POST
-    @Consumes(APPLICATION_JSON)
-    @Produces(APPLICATION_JSON)
-    @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
-    @Operation(operationId = "registerService", summary = "Register an external service/microservice with the OpenRemote manager", responses = {
-            @ApiResponse(responseCode = "200", description = "Service registered successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Microservice.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid microservice object"),
-            @ApiResponse(responseCode = "409", description = "Microservice instance already registered"),
-    })
-    Microservice registerService(@BeanParam RequestParams requestParams,
-            @NotNull @Valid Microservice microservice);
+        /**
+         * Register a new microservice or external service with the OpenRemote manager.
+         * 
+         * Creates a new registration entry and returns the registered microservice
+         * with its generated instanceId and initial status.
+         * 
+         * This service will be made available only to the realm it is registered for.
+         * 
+         * @param microservice The microservice to register
+         * @return The registered microservice with its instanceId and status
+         */
+        @POST
+        @Consumes(APPLICATION_JSON)
+        @Produces(APPLICATION_JSON)
+        @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
+        @Operation(operationId = "registerService", summary = "Register an external service/microservice with the OpenRemote manager", responses = {
+                        @ApiResponse(responseCode = "200", description = "Service registered successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Microservice.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid microservice object"),
+                        @ApiResponse(responseCode = "409", description = "Microservice instance already registered"),
+        })
+        Microservice registerService(@BeanParam RequestParams requestParams,
+                        @NotNull @Valid Microservice microservice);
 
-    /**
-     * Retrieve all registered microservices and external services for a specific realm.
-     * 
-     * Returns a list of all currently registered services within the specified realm,
-     * including their details and current status.
-     * 
-     * @param realm The realm to filter services by
-     * @return Array of registered microservices for the specified realm
-     */
-    @GET
-    @Path("realm")
-    @Produces(APPLICATION_JSON)
-    @RolesAllowed({ Constants.READ_SERVICES_ROLE })
-    @Operation(operationId = "getServices", summary = "List all registered external services/microservices for the given realm within the OpenRemote manager", responses = {
-            @ApiResponse(responseCode = "200", description = "List of registered microservices", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Microservice[].class))),
-    })
-    Microservice[] getServices(@BeanParam RequestParams requestParams, @QueryParam("realm") String realm);
+        /**
+         * Register a new global microservice or external service with the OpenRemote
+         * manager. This service will be made available to all realms.
+         * 
+         * Creates a new registration entry and returns the registered microservice
+         * with its generated instanceId and initial status.
+         * 
+         * @param microservice The microservice to register
+         * @return The registered microservice with its instanceId and status
+         */
+        @POST
+        @Path("global")
+        @Consumes(APPLICATION_JSON)
+        @Produces(APPLICATION_JSON)
+        @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
+        @Operation(operationId = "registerGlobalService", summary = "Register a global microservice/external service with the OpenRemote manager", responses = {
+                        @ApiResponse(responseCode = "200", description = "Service registered successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Microservice.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid microservice object"),
+                        @ApiResponse(responseCode = "409", description = "Microservice instance already registered"),
+        })
+        Microservice registerGlobalService(@BeanParam RequestParams requestParams,
+                        @NotNull @Valid Microservice microservice);
 
+        /**
+         * Retrieve all registered microservices and external services for a specific
+         * realm.
+         * 
+         * @param realm The realm to filter services by
+         * @return Array of registered microservices for the specified realm
+         */
+        @GET
+        @Produces(APPLICATION_JSON)
+        @RolesAllowed({ Constants.READ_SERVICES_ROLE })
+        @Operation(operationId = "getServices", summary = "List all registered external services/microservices for the given realm within the OpenRemote manager", responses = {
+                        @ApiResponse(responseCode = "200", description = "List of registered microservices", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Microservice[].class))),
+        })
+        Microservice[] getServices(@BeanParam RequestParams requestParams, @QueryParam("realm") @NotNull String realm);
 
-    /**
-     * Retrieve all globally available microservices and external services.
-     * 
-     * Returns a list of all registered services that are accessible across all realms,
-     * typically used for system-wide services with global access permissions.
-     * 
-     * @return Array of globally accessible microservices
-     */
-     @GET
-     @Path("global")
-     @Produces(APPLICATION_JSON)
-     @RolesAllowed({ Constants.READ_SERVICES_ROLE })
-     @Operation(operationId = "getGlobalServices", summary = "List all registered external services/microservices that are globally accessible within the OpenRemote manager", responses = {
-             @ApiResponse(responseCode = "200", description = "List of registered microservices", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Microservice[].class))),
-     })
-     Microservice[] getGlobalServices(@BeanParam RequestParams requestParams);
+        /**
+         * Retrieve a specific microservice and external service by its serviceId and
+         * instanceId.
+         * 
+         * @param serviceId  The serviceId of the microservice to retrieve
+         * @param instanceId The instanceId of the microservice to retrieve
+         * @return The microservice with the specified serviceId and instanceId
+         */
+        @GET
+        @Path("{serviceId}/{instanceId}")
+        @Produces(APPLICATION_JSON)
+        @RolesAllowed({ Constants.READ_SERVICES_ROLE })
+        @Operation(operationId = "getService", summary = "Retrieve a specific microservice/external service by its serviceId and instanceId", responses = {
+                        @ApiResponse(responseCode = "200", description = "Microservice retrieved successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Microservice.class))),
+                        @ApiResponse(responseCode = "404", description = "Microservice not found"),
+        })
+        Microservice getService(@BeanParam RequestParams requestParams,
+                        @PathParam("serviceId") @NotNull @Size(min = 1) String serviceId,
+                        @PathParam("instanceId") @NotNull @Size(min = 1) String instanceId);
 
-    /**
-     * Send a heartbeat to refresh the active registration lease for a microservice.
-     * 
-     * This endpoint is used by microservices to indicate they are still running
-     * and available. It extends the service's lease duration and maintains its
-     * active status in the registry.
-     * 
-     * @param serviceId  The serviceId of the microservice to send the heartbeat to
-     * @param instanceId The instanceId of the microservice to send the heartbeat to
-     */
-    @PUT
-    @Path("{serviceId}/{instanceId}")
-    @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
-    @Operation(operationId = "heartbeat", summary = "Update the active registration lease for the specified microservice", responses = {
-            @ApiResponse(responseCode = "204", description = "Heartbeat sent successfully"),
-            @ApiResponse(responseCode = "404", description = "Service instance not found"),
-    })
-    void heartbeat(@BeanParam RequestParams requestParams,
-            @PathParam("serviceId") @NotNull @Size(min = 1) String serviceId,
-            @PathParam("instanceId") @NotNull @Size(min = 1) String instanceId);
+        /**
+         * Retrieve all microservices/external services that are globally registered
+         * 
+         * @return Array of globally accessible microservices
+         */
+        @GET
+        @Path("global")
+        @Produces(APPLICATION_JSON)
+        @RolesAllowed({ Constants.READ_SERVICES_ROLE })
+        @Operation(operationId = "getGlobalServices", summary = "List all registered external services/microservices that are globally accessible within the OpenRemote manager", responses = {
+                        @ApiResponse(responseCode = "200", description = "List of registered microservices", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Microservice[].class))),
+        })
+        Microservice[] getGlobalServices(@BeanParam RequestParams requestParams);
 
-    /**
-     * Deregister a microservice or external service from the registry.
-     * 
-     * Removes the active registration for the specified service, causing it to
-     * no longer be available through the microservice registry. This is typically
-     * called when a service shuts down or needs to be removed from the system.
-     * 
-     * @param serviceId  The serviceId of the microservice to deregister
-     * @param instanceId The instanceId of the microservice to deregister
-     */
-    @DELETE
-    @Path("{serviceId}/{instanceId}")
-    @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
-    @Operation(operationId = "deregisterService", summary = "Deregister an external service/microservice", responses = {
-            @ApiResponse(responseCode = "204", description = "Service deregistered successfully"),
-            @ApiResponse(responseCode = "404", description = "Service instance not found"),
-    })
-    void deregisterService(@BeanParam RequestParams requestParams, @PathParam("serviceId") String serviceId,
-            @PathParam("instanceId") String instanceId);
+        /**
+         * Send a heartbeat to refresh the active registration lease for a microservice.
+         * 
+         * This endpoint is used by microservices to indicate they are still running
+         * and available. It extends the service's lease duration and maintains its
+         * active status in the registry.
+         * 
+         * @param serviceId  The serviceId of the microservice to send the heartbeat to
+         * @param instanceId The instanceId of the microservice to send the heartbeat to
+         */
+        @PUT
+        @Path("{serviceId}/{instanceId}")
+        @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
+        @Operation(operationId = "heartbeat", summary = "Update the active registration lease for the specified microservice", responses = {
+                        @ApiResponse(responseCode = "204", description = "Heartbeat sent successfully"),
+                        @ApiResponse(responseCode = "404", description = "Service instance not found"),
+        })
+        void heartbeat(@BeanParam RequestParams requestParams,
+                        @PathParam("serviceId") @NotNull @Size(min = 1) String serviceId,
+                        @PathParam("instanceId") @NotNull @Size(min = 1) String instanceId);
+
+        /**
+         * Deregister a microservice or external service from the registry.
+         * 
+         * Removes the active registration for the specified service, causing it to
+         * no longer be available through the microservice registry. This is typically
+         * called when a service shuts down or needs to be removed from the system.
+         * 
+         * @param serviceId  The serviceId of the microservice to deregister
+         * @param instanceId The instanceId of the microservice to deregister
+         */
+        @DELETE
+        @Path("{serviceId}/{instanceId}")
+        @RolesAllowed({ Constants.WRITE_SERVICES_ROLE })
+        @Operation(operationId = "deregisterService", summary = "Deregister an external service/microservice", responses = {
+                        @ApiResponse(responseCode = "204", description = "Service deregistered successfully"),
+                        @ApiResponse(responseCode = "404", description = "Service instance not found"),
+        })
+        void deregisterService(@BeanParam RequestParams requestParams, @PathParam("serviceId") String serviceId,
+                        @PathParam("instanceId") String instanceId);
 
 }

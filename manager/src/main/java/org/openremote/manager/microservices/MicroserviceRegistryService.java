@@ -21,7 +21,6 @@ package org.openremote.manager.microservices;
 
 import static org.openremote.model.Constants.MASTER_REALM;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,6 +41,7 @@ import org.openremote.model.microservices.Microservice;
 import org.openremote.model.microservices.MicroserviceEvent;
 import org.openremote.model.microservices.MicroserviceStatus;
 import org.openremote.model.security.ClientRole;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.microservices.MicroserviceLeaseInfo;
 
 /**
@@ -49,15 +49,42 @@ import org.openremote.model.microservices.MicroserviceLeaseInfo;
  *
  * <p>
  * Provides centralized registry functionality including registration
- * management, heartbeat management, and status tracking. Services are marked as
- * unavailable
+ * management,
+ * heartbeat management, and status tracking. Services are marked as unavailable
  * when their lease expires.
  * </p>
  *
+ * <h3>Registry Structure</h3>
+ * <p>
+ * The registry supports multiple instances per service ID, allowing for
+ * horizontal
+ * scaling and high availability. Each service instance is uniquely identified
+ * by
+ * the combination of {@code serviceId} and {@code instanceId}.
+ * </p>
+ *
+ * <h3>Service Types</h3>
  * <ul>
- * <li>Lease-based registration with automatic expiration (default: 60s)</li>
+ * <li><strong>Global:</strong> Available to all realms, these services are
+ * flagged as global (isGlobal=true) and are intended for multi-tenant use
+ * cases/scenarios</li>
+ * <li><strong>Realm-bound:</strong> Available to a singular specific realm,
+ * these services are flagged as realm-bound (isGlobal=false) and are intended
+ * for
+ * single-tenant use cases/scenarios</li>
+ * </ul>
+ *
+ * <h3>Notes</h3>
+ * <ul>
+ * <li>Multiple instances of the same service can be registered for load
+ * balancing and redundancy</li>
+ * <li>Global and realm-bound services can coexist with different service
+ * IDs</li>
+ * <li>Lease-based registration with automatic expiration (default:
+ * {@link #DEFAULT_LEASE_DURATION_MS})</li>
  * <li>Heartbeat mechanism for lease renewal</li>
- * <li>Deregister unavailable instances after 24 hours</li>
+ * <li>Deregister unavailable instances after
+ * {@link #DEFAULT_DEREGISTER_UNAVAILABLE_MS}</li>
  * </ul>
  */
 public class MicroserviceRegistryService implements ContainerService {
@@ -79,8 +106,8 @@ public class MicroserviceRegistryService implements ContainerService {
     protected ManagerIdentityService identityService;
     protected ClientEventService clientEventService;
 
-    // serviceId -> list of registered microservices/services
-    protected ConcurrentHashMap<String, List<Microservice>> registry;
+    // serviceId: <instanceId: Microservice>
+    protected ConcurrentHashMap<String, ConcurrentHashMap<String, Microservice>> registry;
 
     // Scheduled future for the lease check task
     protected ScheduledFuture<?> markExpiredInstancesAsUnavailableFuture;
@@ -101,7 +128,11 @@ public class MicroserviceRegistryService implements ContainerService {
         container.getService(ManagerWebService.class).addApiSingleton(
                 new MicroserviceResourceImpl(timerService, identityService, this));
 
-        // Add a subscription authorizer for microservice events
+        addSubscriptionAuthorizer();
+
+    }
+
+    protected void addSubscriptionAuthorizer() {
         clientEventService.addSubscriptionAuthorizer((realm, authContext, eventSubscription) -> {
             if (!eventSubscription.isEventType(MicroserviceEvent.class) || authContext == null) {
                 return false;
@@ -137,24 +168,24 @@ public class MicroserviceRegistryService implements ContainerService {
         deregisterExpiredUnavailableInstancesFuture = scheduledExecutorService.scheduleAtFixedRate(
                 this::deregisterLongExpiredInstances, 0,
                 DEREGISTER_UNAVAILABLE_INTERVAL_MS, TimeUnit.MILLISECONDS);
-
-        LOG.info("MicroserviceRegistryService started with lease duration: " + DEFAULT_LEASE_DURATION_MS
-                + "ms and deregister interval: " + DEFAULT_DEREGISTER_UNAVAILABLE_MS + "ms");
     }
 
     @Override
     public void stop(Container container) throws Exception {
+        // cancel any scheduled tasks
         if (markExpiredInstancesAsUnavailableFuture != null) {
             markExpiredInstancesAsUnavailableFuture.cancel(true);
         }
         if (deregisterExpiredUnavailableInstancesFuture != null) {
             deregisterExpiredUnavailableInstancesFuture.cancel(true);
         }
+
+        // clear the registry
         registry.clear();
     }
 
     /**
-     * Register a microservice instance
+     * Register a realm-bound microservice instance
      *
      * @param microservice The microservice to register
      */
@@ -175,34 +206,34 @@ public class MicroserviceRegistryService implements ContainerService {
         LOG.info("Registering microservice: " + microservice.getServiceId() + ", instanceId: "
                 + microservice.getInstanceId());
 
-        List<Microservice> instances = registry.computeIfAbsent(microservice.getServiceId(),
-                k -> new ArrayList<>());
+        // Generate a instanceId if not provided
+        if (microservice.getInstanceId() == null) {
+            String instanceId = UniqueIdentifierGenerator.generateId();
+            microservice.setInstanceId(instanceId);
+        }
 
-        // Check if the given instance already exists in the registry
-        Microservice existingEntry = instances.stream()
-                .filter(e -> e.getInstanceId().equals(microservice.getInstanceId()))
-                .findFirst()
-                .orElse(null);
+        // Check if the given microservice is already registered
+        Microservice existingEntry = getService(microservice.getServiceId(), microservice.getInstanceId());
 
         if (existingEntry != null) {
-            LOG.warning("Microservice instance already registered: " + microservice.getServiceId()
+            LOG.warning("Microservice already registered: " + microservice.getServiceId()
                     + ", instanceId: " + microservice.getInstanceId());
-            throw new IllegalStateException("Microservice instance already registered");
+            throw new IllegalStateException("Microservice already registered");
         }
 
         // Set the lease info for the new instance
-        long registrationTimestamp = timerService.getCurrentTimeMillis();
-        long renewalTimestamp = timerService.getCurrentTimeMillis();
-        long expirationTimestamp = registrationTimestamp + DEFAULT_LEASE_DURATION_MS;
+        long now = timerService.getCurrentTimeMillis();
+        long expirationTimestamp = now + DEFAULT_LEASE_DURATION_MS;
 
         microservice.setLeaseInfo(new MicroserviceLeaseInfo(expirationTimestamp,
-                registrationTimestamp, renewalTimestamp));
+                now, now));
 
         // Set the global visibility state
         microservice.setIsGlobal(isGlobal);
 
         // Add the instance to the registry
-        instances.add(microservice);
+        registry.computeIfAbsent(microservice.getServiceId(), k -> new ConcurrentHashMap<>())
+                .put(microservice.getInstanceId(), microservice);
 
         // Publish the register event
         clientEventService.publishEvent(new MicroserviceEvent(microservice, MicroserviceEvent.Cause.REGISTER));
@@ -224,22 +255,13 @@ public class MicroserviceRegistryService implements ContainerService {
      * @param instanceId The instanceId of the microservice to send the heartbeat to
      */
     public void heartbeat(String serviceId, String instanceId) {
-        List<Microservice> instances = registry.get(serviceId);
-
-        if (instances == null) {
-            LOG.warning("Failed to refresh lease info for microservice: " + serviceId + ", instanceId: " + instanceId
-                    + " - service not found");
-            throw new NoSuchElementException("Specified service could not be found");
-        }
-
-        Microservice entry = instances.stream()
-                .filter(e -> e.getInstanceId().equals(instanceId))
-                .findFirst()
-                .orElse(null);
+        Microservice entry = getService(serviceId, instanceId);
 
         if (entry != null) {
-            long renewalTimestamp = timerService.getCurrentTimeMillis();
-            long expirationTimestamp = renewalTimestamp + DEFAULT_LEASE_DURATION_MS;
+
+            long now = timerService.getCurrentTimeMillis();
+            long renewalTimestamp = now;
+            long expirationTimestamp = now + DEFAULT_LEASE_DURATION_MS;
 
             // Update the lease info and set the instance status to available
             entry.getLeaseInfo().setRenewalTimestamp(renewalTimestamp);
@@ -255,7 +277,8 @@ public class MicroserviceRegistryService implements ContainerService {
         } else {
             LOG.warning("Failed to refresh lease info for microservice: " + serviceId + ", instanceId: " + instanceId
                     + " - instance not found");
-            throw new NoSuchElementException("Specified instance of service could not be found");
+            throw new NoSuchElementException(
+                    "The given serviceId and instanceId combination does not exist in the registry");
         }
     }
 
@@ -269,29 +292,29 @@ public class MicroserviceRegistryService implements ContainerService {
      * @param instanceId The instanceId of the microservice to deregister
      */
     public void deregisterService(String serviceId, String instanceId) {
-        List<Microservice> instances = registry.get(serviceId);
-        if (instances == null) {
-            throw new NoSuchElementException("The given serviceId does not exist in the registry");
+        LOG.info("De-registering microservice: " + serviceId + ", instanceId: " + instanceId);
+
+        ConcurrentHashMap<String, Microservice> instanceMap = registry.get(serviceId);
+        if (instanceMap == null || !instanceMap.containsKey(instanceId)) {
+            throw new NoSuchElementException(
+                    "The given serviceId and instanceId combination does not exist in the registry");
         }
 
-        Microservice entry = instances.stream()
-                .filter(e -> e.getInstanceId().equals(instanceId))
-                .findFirst()
-                .orElse(null);
-
-        if (entry == null) {
-            throw new NoSuchElementException("The given instanceId does not exist in the registry");
-        }
-
-        instances.remove(entry);
+        Microservice entry = instanceMap.remove(instanceId);
 
         // Publish the deregister event
         clientEventService.publishEvent(new MicroserviceEvent(entry, MicroserviceEvent.Cause.DEREGISTER));
 
-        // If no instances are left, remove the service from the registry
-        if (instances.isEmpty()) {
-            registry.remove(serviceId);
-        }
+        // Attempt to remove the outer map only if it's still empty
+        registry.computeIfPresent(serviceId, (key, map) -> {
+            if (map.isEmpty()) {
+                LOG.info("No instances left for service: " + serviceId + ", removed from registry");
+                return null;
+            }
+            return map;
+        });
+
+        LOG.info("Successfully de-registered microservice: " + serviceId + ", instanceId: " + instanceId);
     }
 
     /**
@@ -304,19 +327,21 @@ public class MicroserviceRegistryService implements ContainerService {
      */
     public Microservice[] getServices(String realm) {
         return registry.values().stream()
-                .flatMap(List::stream)
+                .flatMap(instanceMap -> instanceMap.values().stream())
                 .filter(entry -> entry.getRealm().equals(realm))
                 .toArray(Microservice[]::new);
     }
 
     /**
      * Get all globally registered services and microservices and their instances.
+     * A service is considered global if it is registered with the master realm and
+     * is has the isGlobal flag set to true.
      * 
-     * @return An array of all registered microservices and their instances
+     * @return An array of all globally registered microservices and their instances
      */
     public Microservice[] getGlobalServices() {
         return registry.values().stream()
-                .flatMap(List::stream)
+                .flatMap(instanceMap -> instanceMap.values().stream())
                 .filter(entry -> entry.getRealm().equals(MASTER_REALM) && entry.getIsGlobal())
                 .toArray(Microservice[]::new);
     }
@@ -329,12 +354,11 @@ public class MicroserviceRegistryService implements ContainerService {
      * @return The microservice
      */
     public Microservice getService(String serviceId, String instanceId) {
-        return registry.values().stream()
-                .flatMap(List::stream)
-                .filter(entry -> entry.getServiceId().equals(serviceId) && entry.getInstanceId().equals(instanceId))
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("Specified instance of service could not be found: "
-                        + serviceId + ", instanceId: " + instanceId));
+        ConcurrentHashMap<String, Microservice> instanceMap = registry.get(serviceId);
+        if (instanceMap != null) {
+            return instanceMap.get(instanceId);
+        }
+        return null;
     }
 
     /**
@@ -343,12 +367,12 @@ public class MicroserviceRegistryService implements ContainerService {
      * {@link #DEFAULT_LEASE_DURATION_MS} lease duration.
      */
     protected void markExpiredInstancesAsUnavailable() {
-        long currentTime = timerService.getCurrentTimeMillis();
+        long now = timerService.getCurrentTimeMillis();
         LOG.fine("Marking expired microservice instances as unavailable");
 
         registry.values().stream()
-                .flatMap(List::stream)
-                .filter(entry -> entry.getLeaseInfo().isExpired(currentTime)
+                .flatMap(instanceMap -> instanceMap.values().stream())
+                .filter(entry -> entry.getLeaseInfo().isExpired(now)
                         && entry.getStatus() == MicroserviceStatus.AVAILABLE)
                 .forEach(entry -> {
                     entry.setStatus(MicroserviceStatus.UNAVAILABLE);
@@ -368,20 +392,24 @@ public class MicroserviceRegistryService implements ContainerService {
     protected void deregisterLongExpiredInstances() {
         LOG.info("Deregistering long expired microservice registrations");
 
-        long currentTime = timerService.getCurrentTimeMillis();
-        long purgeThreshold = currentTime - DEFAULT_DEREGISTER_UNAVAILABLE_MS;
+        long now = timerService.getCurrentTimeMillis();
+        long purgeThreshold = now - DEFAULT_DEREGISTER_UNAVAILABLE_MS;
 
-        // Collect all services that are unavailable and have an expiration timestamp
-        // before the purge threshold
-        List<Microservice> toRemove = registry.values().stream()
-                .flatMap(List::stream)
+        List<Microservice> toDeregister = registry.values().stream()
+                .flatMap(instanceMap -> instanceMap.values().stream())
                 .filter(entry -> entry.getStatus() == MicroserviceStatus.UNAVAILABLE
                         && entry.getLeaseInfo().getExpirationTimestamp() < purgeThreshold)
                 .toList();
 
         // Deregister long expired microservices
-        toRemove.forEach(entry -> deregisterService(entry.getServiceId(), entry.getInstanceId()));
-        LOG.info("Deregistered " + toRemove.size() + " long expired microservice registrations");
+        toDeregister.forEach(entry -> {
+            try {
+                deregisterService(entry.getServiceId(), entry.getInstanceId());
+            } catch (NoSuchElementException e) {
+                LOG.warning("Service was already deregistered: " + entry.getServiceId() + ", instanceId: "
+                        + entry.getInstanceId() + " - " + e.getMessage());
+            }
+        });
     }
 
 }
