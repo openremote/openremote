@@ -204,11 +204,14 @@ public class JSONSchemaUtil {
             builder.forFields().withInstanceAttributeOverride((attrs, fieldScope, context) -> {
                 ObjectMapper mapper = context.getGeneratorConfig().getObjectMapper();
 
-                applyFieldAnnotation(fieldScope, JsonSchemaTitle.class, attrs, mapper);
-                applyFieldAnnotation(fieldScope, JsonSchemaDescription.class, attrs, mapper);
-                applyFieldAnnotation(fieldScope, JsonSchemaFormat.class, attrs, mapper);
-                applyFieldAnnotation(fieldScope, JsonSchemaDefault.class, attrs, mapper);
-                applyFieldAnnotation(fieldScope, JsonSchemaExamples.class, attrs, mapper);
+                // Avoids annotation also being applied to the `items` in an array. See https://victools.github.io/jsonschema-generator/#generator-individual-configurations
+                if (!fieldScope.isFakeContainerItemScope()) {
+                    applyFieldAnnotation(fieldScope, JsonSchemaTitle.class, attrs, mapper);
+                    applyFieldAnnotation(fieldScope, JsonSchemaDescription.class, attrs, mapper);
+                    applyFieldAnnotation(fieldScope, JsonSchemaFormat.class, attrs, mapper);
+                    applyFieldAnnotation(fieldScope, JsonSchemaDefault.class, attrs, mapper);
+                    applyFieldAnnotation(fieldScope, JsonSchemaExamples.class, attrs, mapper);
+                }
             });
         }
 
