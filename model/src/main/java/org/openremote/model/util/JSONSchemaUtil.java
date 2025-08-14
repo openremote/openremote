@@ -169,7 +169,7 @@ public class JSONSchemaUtil {
 
                 ObjectNode targetNode;
 
-                // If there is an allOf array, inject into the first object inside it
+                // If there is an allOf array, inject into the first object inside it to allow for cleanup with `Option.ALLOF_CLEANUP_AT_THE_END`
                 JsonNode allOfNode = attrs.get("allOf");
                 if (allOfNode instanceof ArrayNode allOf && !allOf.isEmpty()) {
                     targetNode = (ObjectNode) allOf.get(0);
@@ -302,7 +302,8 @@ public class JSONSchemaUtil {
             Option.PUBLIC_NONSTATIC_FIELDS,
             Option.NONPUBLIC_NONSTATIC_FIELDS_WITH_GETTERS,
             Option.ALLOF_CLEANUP_AT_THE_END,
-            Option.DEFINITIONS_FOR_ALL_OBJECTS,
+            Option.ADDITIONAL_FIXED_TYPES,
+            // Option.DEFINITIONS_FOR_ALL_OBJECTS,
             Option.DUPLICATE_MEMBER_ATTRIBUTE_CLEANUP_AT_THE_END
         ))
         .with(new JacksonModule(
