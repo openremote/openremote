@@ -204,24 +204,8 @@ public class JSONSchemaUtil {
                 ObjectMapper mapper
         ) {
             A annotation = type.getDeclaredAnnotation(annotationClass);
-            if (annotation == null) return;
-
-            try {
-                String keyword = (String) annotationClass.getMethod("keyword").invoke(annotation);
-                Method valueMethod = annotationClass.getMethod("value");
-                Class<?> returnType = valueMethod.getReturnType();
-                Object value = valueMethod.invoke(annotation);
-
-                if (returnType.isArray()) {
-                    ArrayNode arrayNode = schema.putArray(keyword);
-                    for (Object element : (Object[]) value) {
-                        arrayNode.add(parseJsonOrString(mapper, element.toString()));
-                    }
-                } else {
-                    schema.set(keyword, parseJsonOrString(mapper, value.toString()));
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to apply annotation " + annotationClass.getSimpleName(), e);
+            if (annotation != null) {
+                applyAnnotation(annotationClass, annotation, schema, mapper);
             }
         }
 
@@ -232,8 +216,12 @@ public class JSONSchemaUtil {
                 ObjectMapper mapper
         ) {
             A annotation = fieldScope.getAnnotation(annotationClass);
-            if (annotation == null) return;
+            if (annotation != null) {
+                applyAnnotation(annotationClass, annotation, schema, mapper);
+            };
+        }
 
+        private static <A extends Annotation> void applyAnnotation(Class<?> annotationClass, A annotation, ObjectNode schema, ObjectMapper mapper) {
             try {
                 String keyword = (String) annotationClass.getMethod("keyword").invoke(annotation);
                 Method valueMethod = annotationClass.getMethod("value");
