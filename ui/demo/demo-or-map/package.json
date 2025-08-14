@@ -14,8 +14,9 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/demo-core": "workspace:*",
-    "@openremote/or-map": "workspace:*"
+    "@openremote/core": "workspace:*",
+    "@openremote/or-map": "workspace:*",
+    "@polymer/iron-demo-helpers": "^3.1.0"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",

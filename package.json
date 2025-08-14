@@ -7,8 +7,5 @@
     "ui/app/*",
     "ui/component/*",
     "ui/demo/*"
-  ],
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
-  }
+  ]
 }
