@@ -9,6 +9,7 @@ task copyMdiFont(type: Exec) {
 task clean() {
     doLast {
         delete "dist"
+        delete "lib"
     }
 }
 
