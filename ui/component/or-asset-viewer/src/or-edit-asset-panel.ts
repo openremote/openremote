@@ -520,13 +520,12 @@ export class OrEditAssetPanel extends LitElement {
                     default: true,
                     actionName: "add",
                     action: () => {
-                        if (attr) {
+                        if (!isDisabled(attr)) {
                             this.asset.attributes![attr.name!] = attr;
                             this._onModified();
                         }
                     },
-                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled label="add"
-                                    @or-mwc-input-changed="${(ev: Event) => { if (isDisabled(attr)) { ev.stopPropagation(); return false; } } }"></or-mwc-input>`
+                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled label="add"></or-mwc-input>`
                 }
             ])
             .setDismissAction(null));
