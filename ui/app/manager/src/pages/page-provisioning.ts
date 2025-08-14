@@ -1,6 +1,6 @@
 import {css, html, TemplateResult, unsafeCSS} from "lit";
 import {customElement, state} from "lit/decorators.js";
-import manager, {DefaultColor3} from "@openremote/core";
+import manager, {DefaultColor3, OPENREMOTE_CLIENT_ID} from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
@@ -301,7 +301,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
             return;
         }
 
-        const rolesResponse = await manager.rest.api.UserResource.getRoles(manager.displayRealm);
+        const rolesResponse = await manager.rest.api.UserResource.getClientRoles(manager.displayRealm, OPENREMOTE_CLIENT_ID);
 
         if (!responseAndStateOK(rolesResponse, i18next.t("loadFailedRoles"))) {
             return;
@@ -371,6 +371,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                 <or-mwc-input .label="${i18next.t("CACertPem")}" required
                               .type="${InputType.TEXTAREA}"
                               .value="${data.CACertPEM}"
+                              resizeVertical
                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => data.CACertPEM = e.detail.value}"></or-mwc-input>
                 <or-mwc-input .label="${i18next.t("ignoreExpiryDate")}"
                               .type="${InputType.CHECKBOX}"
@@ -430,6 +431,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                                 <or-mwc-input .label="${i18next.t("assetTemplate")}"
                                               .type="${InputType.JSON}"
                                               .value="${config.assetTemplate ? JSON.stringify(JSON.parse(config.assetTemplate), null, 2) : undefined}"
+                                              resizeVertical
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.assetTemplate = e.detail.value ? JSON.stringify(e.detail.value) : undefined}"></or-mwc-input>
                                 <or-mwc-input .label="${i18next.t("createAsRestrictedUser")}"
                                               .type="${InputType.CHECKBOX}"

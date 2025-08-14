@@ -1,11 +1,8 @@
 {
-  "id": "3k0JH2gePMKy3BnLoRqLp5",
   "createdOn": 1711029945937,
   "realm": "manufacturer",
-  "version": 11,
   "ownerId": "e5ca8a39-5193-478d-ba86-57e7095679cf",
-  "viewAccess": "SHARED",
-  "editAccess": "SHARED",
+  "access": "SHARED",
   "displayName": "Harvesting dashboard",
   "template": {
     "id": "vmkw9nr0i4",
@@ -69,7 +66,6 @@
             "fromTimestamp": 1710943555635,
             "amountOfPoints": 100
           },
-          "rightAxisAttributes": [],
           "defaultTimePresetKey": "last24Hours",
           "showTimestampControls": false
         }

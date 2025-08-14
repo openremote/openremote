@@ -42,9 +42,9 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
         boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
         String function = (gapFill ? "public.time_bucket_gapfill" : "public.time_bucket");
         if (isNumber) {
-            return "select " + function + "(?::interval, timestamp) AS x, " + this.formula.toString().toLowerCase() + "(value::text::numeric) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC;";
+            return "select " + function + "(cast(? as interval), timestamp) AS x, " + this.formula.toString().toLowerCase() + "(cast(value as numeric)) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC";
         } else if (isBoolean) {
-            return "select " + function + "(?::interval, timestamp) AS x, " + this.formula.toString().toLowerCase() + "(case when VALUE::text::boolean is true then 1 else 0 end) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC;";
+            return "select " + function + "(cast(? as interval), timestamp) AS x, " + this.formula.toString().toLowerCase() + "(case when cast(cast(value as text) as boolean) is true then 1 else 0 end) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC";
         } else {
             throw new IllegalStateException("Query of type Interval requires either a number or a boolean attribute.");
         }

@@ -20,6 +20,7 @@ import {Alarm, AlarmEvent, AlarmStatus, PersistenceEvent, Realm} from "@openremo
 import {AppStateKeyed, router, updateRealm} from "./index";
 import {AnyAction, Store} from "@reduxjs/toolkit";
 import * as Model from "@openremote/model";
+import {i18next} from "@openremote/or-translate";
 
 
 export {DEFAULT_LANGUAGES, Languages}
@@ -373,10 +374,6 @@ export class OrHeader extends LitElement {
         return super.shouldUpdate(changedProperties);
     }
 
-    firstUpdated() {
-        this._getAlarmButton();
-    }
-
     connectedCallback() {
         super.connectedCallback();
         this._subscribeEvents();
@@ -430,7 +427,7 @@ export class OrHeader extends LitElement {
                     <div id="desktop-right">
                         <div id="alarm-btn">
                             <a class="menu-item" @click="${(e: MouseEvent) => router.navigate('alarms')}">
-                                <or-icon icon="${this.alarmButton}" style="color:var(${this.alarmColor})"></or-icon>
+                                <or-icon icon="${this.alarmButton}" style="color:var(${this.alarmColor})" title="${i18next.t("alarm.alarm_plural")}"></or-icon>
                             </a>
                         </div>
                         ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}

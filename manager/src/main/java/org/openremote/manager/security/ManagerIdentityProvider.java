@@ -58,19 +58,21 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     void deleteUser(String realm, String userId);
 
+    void requestPasswordReset(String realm, String userId);
+
     void resetPassword(String realm, String userId, Credential credential);
 
     String resetSecret(String realm, String userId, String secret);
 
-    Role[] getRoles(String realm, String client);
+    Role[] getClientRoles(String realm, String client);
 
     void updateClientRoles(String realm, String client, Role[] roles);
 
-    Role[] getUserRoles(String realm, String userId, String client);
+    String[] getUserClientRoles(String realm, String userId, String client);
 
-    Role[] getUserRealmRoles(String realm, String userId);
+    String[] getUserRealmRoles(String realm, String userId);
 
-    void updateUserRoles(String realm, String userId, String client, String... roles);
+    void updateUserClientRoles(String realm, String userId, String client, String... roles);
 
     void updateUserRealmRoles(String realm, String userId, String... roles);
 
@@ -113,10 +115,10 @@ public interface ManagerIdentityProvider extends IdentityProvider {
      * BELOW ARE STATIC HELPER METHODS
      */
 
-    default String[] addRealmRoles(String realm, String userId, String... roles) {
-        Set<String> realmRoles = Arrays.stream(getUserRealmRoles(realm, userId)).filter(role -> role.isAssigned() || Arrays.stream(roles).anyMatch(r -> role.getName().equals(r))).map(Role::getName).collect(Collectors.toCollection(LinkedHashSet::new));
-        realmRoles.addAll(Arrays.asList(roles));
-        return realmRoles.toArray(new String[0]);
+    default String[] addUserRealmRoles(String realm, String userId, String... roles) {
+        List<String> existingRoles = new ArrayList<>(Arrays.asList(getUserRealmRoles(realm, userId)));
+        existingRoles.addAll(Arrays.asList(roles));
+        return existingRoles.toArray(new String[0]);
     }
 
     @SuppressWarnings("unchecked")
@@ -303,10 +305,10 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     static User getUserByUsernameFromDb(PersistenceService persistenceService, String realm, String username) {
         return persistenceService.doReturningTransaction(em -> {
             List<User> result =
-                    em.createQuery("select u from User u where u.realm = :realm and u.username = :username", User.class)
-                            .setParameter("realm", realm)
-                            .setParameter("username", username)
-                            .getResultList();
+                em.createQuery("select u from User u where u.realm = :realm and u.username = :username", User.class)
+                    .setParameter("realm", realm)
+                    .setParameter("username", username)
+                    .getResultList();
             return result.size() > 0 ? result.get(0) : null;
         });
     }
@@ -314,9 +316,9 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     static User getUserByIdFromDb(PersistenceService persistenceService, String userId) {
         return persistenceService.doReturningTransaction(em -> {
             List<User> result =
-                    em.createQuery("select u from User u where u.id = :userId", User.class)
-                            .setParameter("userId", userId)
-                            .getResultList();
+                em.createQuery("select u from User u where u.id = :userId", User.class)
+                    .setParameter("userId", userId)
+                    .getResultList();
             return result.size() > 0 ? result.get(0) : null;
         });
     }
@@ -326,17 +328,17 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
         return persistenceService.doReturningTransaction(em -> {
             Map<String, String> usernameIdMap = em.createQuery(
-                            "select u.username, u.id from User u join Realm r on r.id = u.realmId where u.username in :usernames and r.name = :realm", Tuple.class)
-                    .setParameter("usernames", CIUsernames)
-                    .setParameter("realm", realm)
-                    .getResultList()
-                    .stream()
-                    .collect(
-                            Collectors.toMap(
-                                    tuple -> (String) tuple.get(0),
-                                    tuple -> (String) tuple.get(1)
-                            )
-                    );
+                    "select u.username, u.id from User u join Realm r on r.id = u.realmId where u.username in :usernames and r.name = :realm", Tuple.class)
+                .setParameter("usernames", CIUsernames)
+                .setParameter("realm", realm)
+                .getResultList()
+                .stream()
+                .collect(
+                    Collectors.toMap(
+                        tuple -> (String) tuple.get(0),
+                        tuple -> (String) tuple.get(1)
+                    )
+                );
 
             return CIUsernames.stream().map(usernameIdMap::get).collect(Collectors.toList());
         });
@@ -346,8 +348,10 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     static Realm[] getRealmsFromDb(PersistenceService persistenceService) {
         return persistenceService.doReturningTransaction(entityManager -> {
             List<Realm> realms = (List<Realm>) entityManager.createNativeQuery(
-                    "select *, (select ra.VALUE from PUBLIC.REALM_ATTRIBUTE ra where ra.REALM_ID = r.ID and ra.name = 'displayName') as displayName from public.realm r  where r.not_before is null or r.not_before = 0 or r.not_before <= extract('epoch' from now())"
-                    , Realm.class).getResultList();
+                "select *, " +
+                    "(select ra.VALUE from PUBLIC.REALM_ATTRIBUTE ra where ra.REALM_ID = r.ID and ra.name = 'displayName') as displayName " +
+                    "from public.realm r where r.not_before is null or r.not_before = 0 or r.not_before <= extract('epoch' from now())"
+                , Realm.class).getResultList();
 
             // Make sure the master realm is always on top
             realms.sort((o1, o2) -> {
@@ -358,23 +362,15 @@ public interface ManagerIdentityProvider extends IdentityProvider {
                 return o1.getName().compareTo(o2.getName());
             });
 
-            // TODO: Remove this once migrated to hibernate 6.2.x+
-            realms.forEach(r -> r.getRealmRoles().size());
-
-            return realms.toArray(new Realm[realms.size()]);
+            return realms.toArray(new Realm[0]);
         });
     }
 
-    static Realm getRealmFromDb(PersistenceService persistenceService, String realm) {
-        return persistenceService.doReturningTransaction(em -> {
-                    List<Realm> realms = em.createQuery("select r from Realm r where r.name = :realm", Realm.class)
-                            .setParameter("realm", realm).getResultList();
-
-                    // TODO: Remove this once migrated to hibernate 6.2.x+
-                    realms.forEach(r -> r.getRealmRoles().size());
-
-                    return realms.size() == 1 ? realms.get(0) : null;
-                }
+    static Realm getRealmFromDb(PersistenceService persistenceService, String name) {
+        return persistenceService.doReturningTransaction(em -> em
+            .createQuery("select r from Realm r where r.name = :realm", Realm.class)
+            .setParameter("realm", name)
+            .getSingleResult()
         );
     }
 
@@ -382,8 +378,8 @@ public interface ManagerIdentityProvider extends IdentityProvider {
         return persistenceService.doReturningTransaction(em -> {
 
             long count = (long) em.createNativeQuery(
-                    "select count(*) from public.realm r where r.name = :realm and r.enabled = true and (r.not_before is null or r.not_before = 0 or r.not_before <= extract('epoch' from now()))",
-                    Long.class).setParameter("realm", realm).getSingleResult();
+                "select count(*) from public.realm r where r.name = :realm and r.enabled = true and (r.not_before is null or r.not_before = 0 or r.not_before <= extract('epoch' from now()))",
+                Long.class).setParameter("realm", realm).getSingleResult();
 
             return count > 0;
         });

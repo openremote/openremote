@@ -39,6 +39,7 @@ import org.openremote.model.Container;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.UserAssetLink;
+import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.provisioning.*;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
@@ -116,6 +117,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     protected boolean isKeycloak;
     protected final ConcurrentMap<Long, Set<RemotingConnection>> provisioningConfigAuthenticatedConnectionMap = new ConcurrentHashMap<>();
     protected Timer provisioningTimer;
+    protected final Map<String, RemotingConnection> responseSubscribedConnections = new ConcurrentHashMap<>();
 
     @Override
     public void init(Container container, Configuration serverConfiguration) throws Exception {
@@ -187,7 +189,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     @Override
     public boolean topicMatches(Topic topic) {
         return isProvisioningTopic(topic)
-            && topic.getTokens().size() == 3
+            && topic.getTokens().length == 3
             && (isRequestTopic(topic) || isResponseTopic(topic));
     }
 
@@ -203,19 +205,30 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             return false;
         }
 
-        return isResponseTopic(topic)
+        boolean allowed = isResponseTopic(topic)
             && !TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 1))
             && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 1));
+
+        if (allowed) {
+            // Only allow if there is no existing subscription for this topic
+            RemotingConnection existingConnection = responseSubscribedConnections.get(topic.toString());
+            if (existingConnection != null) {
+                LOG.warning("Subscription already exists possible eavesdropping");
+                allowed = false;
+            }
+        }
+
+        return allowed;
     }
 
     @Override
     public void onSubscribe(RemotingConnection connection, Topic topic) {
-        // Nothing to do here as we'll publish to this topic in response to client messages
+        responseSubscribedConnections.put(topic.toString(), connection);
     }
 
     @Override
     public void onUnsubscribe(RemotingConnection connection, Topic topic) {
-
+        responseSubscribedConnections.remove(topic.toString());
     }
 
     @Override
@@ -259,12 +272,22 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
     @Override
     public void onConnectionLost(RemotingConnection connection) {
-        provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
+        provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> {
+            if (connections.remove(connection)) {
+                // Remove sessions as durable sessions will never reconnect if client ID already subscribed to attribute topics
+                mqttBrokerService.doForceDisconnect(connection);
+            }
+        });
     }
 
     @Override
     public void onDisconnect(RemotingConnection connection) {
-        provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
+        provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> {
+            if (connections.remove(connection)) {
+                // Remove sessions as durable sessions will never reconnect if client ID already subscribed to attribute topics
+                mqttBrokerService.doForceDisconnect(connection);
+            }
+        });
     }
 
     protected void processProvisioningRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
@@ -398,7 +421,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         provisioningConfigAuthenticatedConnectionMap.compute(matchingConfig.getId(), (id, connections) -> {
             if (connections == null) {
-                connections = new HashSet<>();
+                connections = ConcurrentHashMap.newKeySet();
             }
             connections.add(connection);
             return connections;
@@ -469,7 +492,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         if (provisioningConfig.getUserRoles() != null && provisioningConfig.getUserRoles().length > 0) {
             LOG.finest("Setting user roles: realm=" + realm + ", username=" + username + ", roles=" + Arrays.toString(provisioningConfig.getUserRoles()));
-            identityProvider.updateUserRoles(
+            identityProvider.updateUserClientRoles(
                 realm,
                 serviceUser.getId(),
                 Constants.KEYCLOAK_CLIENT_ID,
@@ -481,7 +504,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         if (provisioningConfig.isRestrictedUser()) {
             LOG.finest("User will be made restricted: realm=" + realm + ", username=" + username);
-            identityProvider.updateUserRealmRoles(realm, serviceUser.getId(), identityProvider.addRealmRoles(realm, serviceUser.getId(),RESTRICTED_USER_REALM_ROLE));
+            identityProvider.updateUserRealmRoles(realm, serviceUser.getId(), identityProvider.addUserRealmRoles(realm, serviceUser.getId(),RESTRICTED_USER_REALM_ROLE));
         }
 
         // Inject secret
@@ -529,18 +552,16 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     protected void forceClientDisconnects(long provisioningConfigId) {
-        provisioningConfigAuthenticatedConnectionMap.computeIfPresent(provisioningConfigId, (id, connections) -> {
-            // Force disconnect of each connection and the disconnect handler will remove the connection from the map
-            connections.forEach(connection -> {
-                try {
-                    LOG.fine("Force disconnecting client that is using provisioning config ID '" + provisioningConfigId + "': " + MQTTBrokerService.connectionToString(connection));
-                    connection.disconnect(false);
-                } catch (Exception e) {
-                    getLogger().log(Level.WARNING, "Failed to disconnect client: " + MQTTBrokerService.connectionToString(connection), e);
-                }
-            });
-            connections.clear();
-            return connections;
+
+        Set<RemotingConnection> connections = provisioningConfigAuthenticatedConnectionMap.remove(provisioningConfigId);
+
+        // Force disconnect of each connection and the disconnect handler will remove the connection from the map
+        connections.forEach(connection -> {
+            try {
+                mqttBrokerService.doForceDisconnect(connection);
+            } catch (Exception e) {
+                getLogger().log(Level.WARNING, "Failed to disconnect client: " + MQTTBrokerService.connectionToString(connection), e);
+            }
         });
     }
 }

@@ -1,7 +1,8 @@
 {
   "name": "@openremote/or-data-viewer",
-  "version": "1.1.0",
+  "version": "1.8.0-snapshot",
   "description": "OpenRemote data Viewer",
+  "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
@@ -10,23 +11,24 @@
   },
   "types": "lib/index.d.ts",
   "scripts": {
+    "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "test": "echo \"No tests\" && exit 0",
-    "prepublishOnly": "npx webpack"
+    "prepack": "npx rspack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
-    "@openremote/or-attribute-card": "^1.1.0",
-    "@openremote/or-attribute-history": "^1.1.0",
-    "@openremote/or-attribute-input": "^1.1.0",
-    "@openremote/or-chart": "^1.1.0",
-    "@openremote/or-components": "^1.1.0",
-    "@openremote/or-icon": "^1.1.0",
-    "@openremote/or-map": "^1.1.0",
-    "@openremote/or-mwc-components": "^1.1.0",
-    "@openremote/or-translate": "^1.1.0",
+    "@openremote/or-attribute-card": "workspace:*",
+    "@openremote/or-attribute-history": "workspace:*",
+    "@openremote/or-attribute-input": "workspace:*",
+    "@openremote/or-chart": "workspace:*",
+    "@openremote/or-components": "workspace:*",
+    "@openremote/or-icon": "workspace:*",
+    "@openremote/or-map": "workspace:*",
+    "@openremote/or-mwc-components": "workspace:*",
+    "@openremote/or-translate": "workspace:*",
     "@openremote/rest": "workspace:*",
     "lit": "^2.0.2"
   },

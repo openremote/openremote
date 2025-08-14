@@ -913,7 +913,6 @@ abstract public class BaseMeshNetwork {
      * <p>
      * Please note that this is not persisted within the node since the filter is reinitialized to a whitelist filter upon connecting to a proxy node.
      * Therefore after setting a proxy filter and disconnecting users will have to manually
-     * <p/>
      */
     public synchronized void setProxyFilter(final ProxyFilter proxyFilter) {
         this.proxyFilter = proxyFilter;

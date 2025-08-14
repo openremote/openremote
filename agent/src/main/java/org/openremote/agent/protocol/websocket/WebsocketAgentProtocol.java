@@ -60,7 +60,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 /**
  * This is a generic {@link org.openremote.model.asset.agent.Protocol} for communicating with a Websocket server
  * using {@link String} based messages.
- * <p>
+ *
  * <h2>Protocol Specifics</h2>
  * When the websocket connection is established it is possible to subscribe to events by specifying the
  * {@link WebsocketAgent#CONNECT_SUBSCRIPTIONS} on the {@link WebsocketAgent} or

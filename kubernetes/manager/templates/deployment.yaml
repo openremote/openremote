@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "manager.fullname" . }}
+  labels:
+    {{- include "manager.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "manager.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "manager.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "manager.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.startupProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: TZ
+              value: "{{ .Values.or.timeZone }}"
+            - name: OR_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: openremote-secret
+                  key: admin-password
+            - name: OR_HOSTNAME
+              value: "{{ .Values.or.hostname }}"
+            - name: OR_SSL_PORT
+              value: "{{ .Values.or.port }}"
+
+            - name: OR_FIREBASE_CONFIG_FILE
+              value: "{{ .Values.or.firebaseConfigFile }}"
+
+            - name: OR_DEV_MODE
+              value: "{{ .Values.or.devMode }}"
+
+            - name: OR_SETUP_RUN_ON_RESTART
+              value: "{{ .Values.or.setupRunOnRestart }}"
+
+            - name: OR_DB_VENDOR
+              value: "{{ .Values.or.dbVendor }}"
+            - name: OR_DB_HOST
+              value: "{{ .Values.or.postgresql.host }}"
+            - name: OR_DB_PORT
+              value: "{{ .Values.or.postgresql.port }}"
+            - name: OR_DB_NAME
+              value: "{{ .Values.or.postgresql.database }}"
+            - name: OR_DB_SCHEMA
+              value: "{{ .Values.or.postgresql.schema }}"
+            - name: KC_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: openremote-secret
+                  key: postgresql-username
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: openremote-secret
+                  key: postgresql-password
+            - name: OR_DB_POOL_MIN_SIZE
+              value: "{{ .Values.or.postgresql.poolMinSize }}"
+            - name: OR_DB_POOL_MAX_SIZE
+              value: "{{ .Values.or.postgresql.poolMaxSize }}"
+            - name: OR_DB_CONNECTION_TIMEOUT_SECONDS
+              value: "{{ .Values.or.postgresql.connectionTimeoutSeconds }}"
+
+            - name: OR_KEYCLOAK_HOST
+              value: "{{ .Values.or.keycloak.host }}"
+            - name: OR_KEYCLOAK_PORT
+              value: "{{ .Values.or.keycloak.port }}"
+            - name: OR_KEYCLOAK_PATH
+              value: "{{ .Values.or.keycloak.path }}"
+
+            - name: OR_APP_DOCROOT
+              value: "{{ .Values.or.appDocroot }}"
+            - name: OR_CUSTOM_APP_DOCROOT
+              value: "{{ .Values.or.customAppDocroot }}"
+            - name: OR_PROVISIONING_DOCROOT
+              value: "{{ .Values.or.provisioningDocroot }}"
+            - name: OR_ROOT_REDIRECT_PATH
+              value: "{{ .Values.or.rootRedirectPath }}"
+
+            - name: OR_MAP_TILES_PATH
+              value: "{{ .Values.or.mapTilesPath }}"
+            - name: OR_MAP_SETTINGS_PATH
+              value: "{{ .Values.or.mapSettingsPath }}"
+
+            - name: OR_RULE_EVENT_EXPIRES
+              value: "{{ .Values.or.ruleEventExpires }}"
+
+            - name: OR_IDENTITY_PROVIDER
+              value: "{{ .Values.or.identityProvider }}"
+            - name: OR_IDENTITY_SESSION_MAX_MINUTES
+              value: "{{ .Values.or.identitySessionMaxMinutes }}"
+            - name: OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES
+              value: "{{ .Values.or.identitySessionOfflineTimeoutMinutes }}"
+
+            - name: OR_METRICS_ENABLED
+              value: "{{ .Values.or.metricsEnabled }}"
+            - name: OR_METRICS_PORT
+              value: "{{ .Values.or.metricsPort }}"
+          {{- with .Values.or.env }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /storage
+              name: manager-data
+          {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: manager-data
+          persistentVolumeClaim:
+            claimName: {{ include "manager.fullname" . }}
+      {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

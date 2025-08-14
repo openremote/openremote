@@ -13,6 +13,7 @@ import {TableColumn, TableRow} from "@openremote/or-mwc-components/or-mwc-table"
 import {getAssetsRoute} from "../routes";
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import moment from "moment";
 
 export function pageGatewayTunnelProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -97,8 +98,17 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
     @state()
     protected _loading = false;
 
+    protected _refreshTimer?: number = undefined;
+
     static get styles() {
         return [styling];
+    }
+
+    disconnectedCallback() {
+        if (this._refreshTimer) {
+            clearTimeout(this._refreshTimer);
+        }
+        super.disconnectedCallback();
     }
 
     get name(): string {
@@ -114,7 +124,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
             <div id="wrapper">
                 <div id="title">
                     <or-icon icon="lan-connect"></or-icon>
-                    ${i18next.t("gatewayTunnels.")}
+                    ${i18next.t("gatewayTunnel")}
                 </div>
                 <div class="panel">
                     <div class="panel-title" style="justify-content: space-between;">
@@ -147,6 +157,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
             {title: i18next.t("gatewayTunnels.target"), isSortable: true, hideMobile: true},
             {title: i18next.t("gatewayTunnels.targetPort"), isSortable: true, hideMobile: true},
             {title: i18next.t("gatewayTunnels.assignedPort"), isSortable: true, hideMobile: true},
+            {title: i18next.t("gatewayTunnels.closesAt"), isSortable: true, hideMobile: true},
             {title: ""}
         ];
         const rows: TableRow[] = tunnels?.map(tunnel => ({
@@ -157,6 +168,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
                 tunnel.target,
                 tunnel.targetPort + "",
                 !tunnel.assignedPort ? "" : tunnel.assignedPort + "",
+                tunnel.autoCloseTime ? moment(tunnel.autoCloseTime).format('lll') : "",
                 until(this._getTunnelActionsTemplate(tunnel), html`${i18next.t("loading")}`)
             ],
             clickable: false,
@@ -407,12 +419,31 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
         }
 
         if (response.data.length > 0) {
+            this._updateRefreshTimer(response.data);
             return response.data;
         } else {
             console.warn("No tunnels were received from the manager.")
         }
     }
 
+    /**
+     * Sets a timeout to refresh the tunnels whenever the next tunnel is automatically closed.
+     */
+    protected _updateRefreshTimer(tunnels?: GatewayTunnelInfo[]) {
+        if (this._refreshTimer) {
+            clearTimeout(this._refreshTimer);
+        }
+
+        if (tunnels && tunnels.length > 0) {
+            const nextCloseTime = tunnels.map(t => t.autoCloseTime).filter(t => t).sort()[0];
+            if (nextCloseTime) {
+                const timeout = nextCloseTime - Date.now();
+                if (timeout > 0) {
+                    this._refreshTimer = window.setTimeout(() => this._fetchTunnelsTask.run(), timeout);
+                }
+            }
+        }
+    }
 
     /* ------------------------------ */
 

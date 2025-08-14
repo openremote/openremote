@@ -28,8 +28,8 @@ export * from "./or-header";
 export * from "./types";
 
 // Declare MANAGER_URL and KEYCLOAK_URL - Global var injected by webpack
-declare var MANAGER_URL: string | undefined;
-declare var KEYCLOAK_URL: string | undefined;
+declare const MANAGER_URL: string | undefined;
+declare const KEYCLOAK_URL: string | undefined;
 
 export {HeaderConfig, DEFAULT_LANGUAGES};
 
@@ -38,8 +38,8 @@ export function getDefaultManagerConfig() {
 }
 
 const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
-    managerUrl: MANAGER_URL,
-    keycloakUrl: KEYCLOAK_URL,
+    managerUrl: (MANAGER_URL || ""),
+    keycloakUrl: (KEYCLOAK_URL || ""),
     auth: Auth.KEYCLOAK,
     autoLogin: true,
     realm: undefined,
@@ -101,7 +101,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 fill: ${unsafeCSS(DefaultColor3)};
                 font-size: 14px;
 
-                height: 100vh;
+                height: 100vh; /* Fallback */
+                height: 100dvh; /* Stretch to dynamic viewport height */
                 display: flex;
                 flex: 1;
                 flex-direction: column;
@@ -269,7 +270,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     this._activeMenu = activeMenu;
                 };
                 router.hooks({
-                    before(done, match) {
+                    before: (done, match) => {
                         headerUpdater(match ? match.url.split('/')[0] : undefined);
                         done();
                     }
@@ -371,12 +372,16 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
             if (!this._config.logo) {
                 this._config.logo = DefaultLogo;
+            }else{
+                this._config.logo = (manager.managerUrl ?? "") + this._config.logo
             }
             if (!this._config.logoMobile) {
                 this._config.logoMobile = DefaultMobileLogo;
+            }else{
+                this._config.logoMobile = (manager.managerUrl ?? "") + this._config.logoMobile
             }
 
-            const favIcon = this._config && this._config.favicon ? this._config.favicon : DefaultFavIcon;
+            const favIcon = this._config && this._config.favicon ? (manager.managerUrl || "") + this._config.favicon : DefaultFavIcon;
 
             let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
 
@@ -464,7 +469,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
         setTimeout(() => {
             if(!finished) { deferred.resolve(); }  // resolve THIS timer if not done yet.
-        }, this.appConfig?.offlineTimeout || 10000)
+        }, this.appConfig?.offlineTimeout || 20000)
 
         this._offlineFallbackDeferred = deferred;
     }

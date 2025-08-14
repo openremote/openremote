@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/openjdk-17-runtime
+FROM registry.access.redhat.com/ubi9/openjdk-21-runtime
 
 # Add git commit label must be specified at build time using --build-arg GIT_COMMIT=dadadadadad
 ARG GIT_COMMIT=unknown
@@ -66,6 +66,7 @@ ENV OR_JAVA_OPTS ${OR_JAVA_OPTS:--Xms500m -Xmx2g \
 ENV PROMETHEUS_DISABLE_CREATED_SERIES ${PROMETHEUS_DISABLE_CREATED_SERIES:-true}
 
 RUN mkdir -p /deployment/manager/extensions
+RUN mkdir -p /storage/logs
 
 WORKDIR /opt/app
 ADD ./balena-deployment/image /deployment

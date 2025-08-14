@@ -21,13 +21,12 @@ package org.openremote.model.security;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.openremote.model.Constants;
-import org.openremote.model.http.RequestParams;
-import org.openremote.model.query.UserQuery;
-
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
+import org.openremote.model.Constants;
+import org.openremote.model.http.RequestParams;
+import org.openremote.model.query.UserQuery;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -38,14 +37,6 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 @Tag(name = "User", description = "Operations on users")
 @Path("user")
 public interface UserResource {
-
-    @GET
-    @Path("{realm}/roles")
-    @Produces(APPLICATION_JSON)
-    @SuppressWarnings("unusable-by-js")
-    @RolesAllowed(Constants.READ_ADMIN_ROLE)
-    @Operation(operationId = "getRoles", summary = "Retrieve roles for a realm")
-    Role[] getRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     @GET
     @Path("{realm}/{clientId}/roles")
@@ -96,6 +87,14 @@ public interface UserResource {
     @Operation(operationId = "updateUser", summary = "Update a user in a realm")
     User update(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid User user);
 
+    @PUT
+    @Path("update")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed(Constants.WRITE_USER_ROLE)
+    @Operation(operationId = "updateSelf", summary = "Update the currently authenticated user")
+    User updateCurrent(@BeanParam RequestParams requestParams, @Valid User user);
+
     @POST
     @Path("{realm}/users")
     @Consumes(APPLICATION_JSON)
@@ -111,12 +110,36 @@ public interface UserResource {
     void delete(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
 
     @PUT
+    @Path("{realm}/request-password-reset/{userId}")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
+    @Operation(operationId = "requestUserPasswordReset", summary = "Request a password reset for a user in a realm")
+    void requestPasswordReset(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
+
+    @PUT
+    @Path("request-password-reset")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed(Constants.WRITE_USER_ROLE)
+    @Operation(operationId = "requestPasswordReset", summary = "Request a password reset for the currently authenticated user")
+    void requestPasswordResetCurrent(@BeanParam RequestParams requestParams);
+
+    @PUT
     @Path("{realm}/reset-password/{userId}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
-    @Operation(operationId = "resetPassword", summary = "Reset the password for a user in a realm")
-    void resetPassword(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Credential credential);
+    @Operation(operationId = "updatePassword", summary = "Update the password for a user in a realm")
+    void updatePassword(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Credential credential);
+
+    @PUT
+    @Path("reset-password")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed(Constants.WRITE_USER_ROLE)
+    @Operation(operationId = "updateOwnPassword", summary = "Update the password for the currently authenticated user")
+    void updatePasswordCurrent(@BeanParam RequestParams requestParams, Credential credential);
 
     @GET
     @Path("{realm}/reset-secret/{userId}")
@@ -126,61 +149,48 @@ public interface UserResource {
     String resetSecret(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
 
     @GET
-    @Path("{realm}/userRoles/{userId}")
-    @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getUserRoles", summary = "Retrieve client roles for a user in a realm")
-    Role[] getUserRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
-
-    @GET
     @Path("{realm}/userRoles/{userId}/{clientId}")
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getUserClientRoles", summary = "Retrieve client roles for a user using a client ID in a realm")
-    Role[] getUserClientRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, @PathParam("clientId") String clientId);
+    String[] getUserClientRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, @PathParam("clientId") String clientId);
 
     @GET
     @Path("{realm}/userRealmRoles/{userId}")
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getUserRealmRoles", summary = "Retrieve realm roles for a user in a realm")
-    Role[] getUserRealmRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
-
-    @GET
-    @Path("userRoles")
-    @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getCurrentUserRoles", summary = "Retrieve client roles for the currently authenticated user")
-    Role[] getCurrentUserRoles(@BeanParam RequestParams requestParams);
+    String[] getUserRealmRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
 
     @GET
     @Path("userRoles/{clientId}")
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getCurrentUserClientRoles", summary = "Retrieve client roles for the currently authenticated user using a client ID")
-    Role[] getCurrentUserClientRoles(@BeanParam RequestParams requestParams, @PathParam("clientId") String clientId);
+    String[] getCurrentUserClientRoles(@BeanParam RequestParams requestParams, @PathParam("clientId") String clientId);
 
     @GET
     @Path("userRealmRoles")
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getCurrentUserRealmRoles", summary = "Retrieve realm roles for the currently authenticated user")
-    Role[] getCurrentUserRealmRoles(@BeanParam RequestParams requestParams);
-
-    @PUT
-    @Path("{realm}/userRoles/{userId}")
-    @Consumes(APPLICATION_JSON)
-    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
-    @Operation(operationId = "updateUserRoles", summary = "Update client roles for a user in a realm")
-    void updateUserRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Role[] roles);
+    String[] getCurrentUserRealmRoles(@BeanParam RequestParams requestParams);
 
     @PUT
     @Path("{realm}/userRoles/{userId}/{clientId}")
     @Consumes(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @Operation(operationId = "updateUserClientRoles", summary = "Update client roles for a user in a realm using a client ID")
-    void updateUserClientRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Role[] roles, @PathParam("clientId") String clientId);
+    void updateUserClientRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, String[] roles, @PathParam("clientId") String clientId);
 
     @PUT
     @Path("{realm}/userRealmRoles/{userId}")
     @Consumes(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @Operation(operationId = "updateUserRealmRoles", summary = "Update realm roles for a user in a realm")
-    void updateUserRealmRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Role[] roles);
+    void updateUserRealmRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, String[] roles);
+
+    @PUT
+    @Path("locale")
+    @Consumes(APPLICATION_JSON)
+    @Operation(operationId = "updateCurrentUserLocale", summary = "Update locale for the current user in a realm")
+    void updateCurrentUserLocale(@BeanParam RequestParams requestParams, String locale);
 
     @GET
     @Path("{realm}/userSessions/{userId}")

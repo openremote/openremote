@@ -4,8 +4,8 @@ import {OrAssetWidget} from "../util/or-asset-widget";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {WidgetSettings} from "../util/widget-settings";
 import {MapSettings} from "../settings/map-settings";
-import {WidgetConfig} from "../util/widget-config";
-import {Asset, AssetDescriptor, Attribute, AttributeRef, GeoJSONPoint, WellknownAttributes, WellknownMetaItems} from "@openremote/model";
+import {AssetWidgetConfig} from "../util/widget-config";
+import {Asset, AssetDescriptor, Attribute, GeoJSONPoint, WellknownAttributes, WellknownMetaItems} from "@openremote/model";
 import {
     LngLatLike,
     AttributeMarkerColours,
@@ -18,9 +18,7 @@ import manager, {Util} from "@openremote/core";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import "@openremote/or-map";
 
-export interface MapWidgetConfig extends WidgetConfig {
-    // General values
-    attributeRefs: AttributeRef[];
+export interface MapWidgetConfig extends AssetWidgetConfig {
     // Map related values
     zoom?: number,
     center?: LngLatLike,
@@ -38,6 +36,7 @@ export interface MapWidgetConfig extends WidgetConfig {
     max?: number,
     // Asset type related values
     assetType?: string,
+    allOfType?: boolean,
     valueType?: string,
     attributeName?: string,
     assetTypes: AssetDescriptor[],
@@ -56,6 +55,7 @@ function getDefaultWidgetConfig(): MapWidgetConfig {
         thresholds: [[0, "#4caf50"], [75, "#ff9800"], [90, "#ef5350"]],
         assetTypes: [],
         assetType: undefined,
+        allOfType: true,
         assetIds: [],
         attributes: [],
     } as MapWidgetConfig;
@@ -97,12 +97,38 @@ export class MapWidget extends OrAssetWidget {
     }
 
     protected async loadAssets() {
-        if(this.widgetConfig.assetType && this.widgetConfig.attributeName) {
+         if(this.widgetConfig.assetType && this.widgetConfig.attributeName && this.widgetConfig.allOfType) {
             this.fetchAssetsByType([this.widgetConfig.assetType], this.widgetConfig.attributeName).then((assets) => {
                 this.loadedAssets = assets;
             });
-        }
+        } else if(this.widgetConfig.assetType && this.widgetConfig.attributeName && !this.widgetConfig.allOfType) {
+            this.fetchAssetsById([this.widgetConfig.assetType], this.widgetConfig.attributeName, this.widgetConfig.assetIds).then((assets) => {
+                            this.loadedAssets = assets;
+                    });
+          }
     }
+
+    protected async fetchAssetsById(assetTypes: string[], attributeName: string, assetIds: string[]) {
+        let assets: Asset[] = [];
+        await manager.rest.api.AssetResource.queryAssets({
+            realm: {
+                name:manager.displayRealm
+            },
+            select: {
+                attributes: [attributeName, 'location']
+            },
+            types: assetTypes,
+            ids: assetIds,
+
+            }).then(response => {
+                assets = response.data;
+                this.markers = {};
+            }).catch((reason) => {
+                console.error(reason);
+                showSnackbar(undefined, "errorOccurred");
+            });
+            return assets;
+        }
 
     protected async fetchAssetsByType(assetTypes: string[], attributeName: string) {
         let assets: Asset[] = [];

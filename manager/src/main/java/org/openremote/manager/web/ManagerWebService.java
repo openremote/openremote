@@ -36,6 +36,9 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RedirectHandler;
+import io.undertow.server.handlers.resource.ClassPathResourceManager;
+import io.undertow.server.handlers.resource.PathResourceManager;
+import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.ServletInfo;
@@ -49,6 +52,7 @@ import org.openremote.model.Container;
 import jakarta.ws.rs.WebApplicationException;
 
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -81,17 +85,23 @@ public class ManagerWebService extends WebService {
 
     public static final int PRIORITY = LOW_PRIORITY + 100;
     public static final String OR_APP_DOCROOT = "OR_APP_DOCROOT";
-    public static final String OR_APP_DOCROOT_DEFAULT = "manager/src/web";
+    public static final String OR_APP_DOCROOT_DEFAULT = "ui/app";
     public static final String OR_CUSTOM_APP_DOCROOT = "OR_CUSTOM_APP_DOCROOT";
     public static final String OR_CUSTOM_APP_DOCROOT_DEFAULT = "deployment/manager/app";
     public static final String OR_ROOT_REDIRECT_PATH = "OR_ROOT_REDIRECT_PATH";
     public static final String OR_ROOT_REDIRECT_PATH_DEFAULT = "/manager";
+
     public static final String API_PATH = "/api";
     public static final String MANAGER_APP_PATH = "/manager";
     public static final String INSIGHTS_APP_PATH = "/insights";
     public static final String SWAGGER_APP_PATH = "/swagger";
     public static final String CONSOLE_LOADER_APP_PATH = "/console_loader";
     public static final String SHARED_PATH = "/shared";
+
+    public static final List<String> APP_PATHS = List.of(MANAGER_APP_PATH, INSIGHTS_APP_PATH, SWAGGER_APP_PATH, CONSOLE_LOADER_APP_PATH, SHARED_PATH);
+
+    public static final String UI_CLASSPATH_PREFIX = "org/openremote/web";
+
     private static final Logger LOG = Logger.getLogger(ManagerWebService.class.getName());
     protected static final Pattern PATTERN_REALM_SUB = Pattern.compile("/([a-zA-Z0-9\\-_]+)/(.*)");
 
@@ -115,47 +125,7 @@ public class ManagerWebService extends WebService {
 
         String rootRedirectPath = getString(container.getConfig(), OR_ROOT_REDIRECT_PATH, OR_ROOT_REDIRECT_PATH_DEFAULT);
 
-        // Modify swagger object mapper to match ours
-        configureObjectMapper(Json.mapper());
-        Json.mapper().addMixIn(StringSchema.class, StringSchemaMixin.class);
-        Json.mapper().addMixIn(ServerVariable.class, ServerVariableMixin.class);
-
-        // Add swagger resource
-        OpenAPI oas = new OpenAPI()
-                .servers(List.of(new Server().url("/api/{realm}/").variables(new ServerVariables().addServerVariable("realm", new ServerVariable()._default("master")))))
-                .schemaRequirement("openid", new SecurityScheme().type(SecurityScheme.Type.OAUTH2).flows(
-                        new OAuthFlows() //
-                                .authorizationCode(
-                                        new OAuthFlow()
-                                                .authorizationUrl("/auth/realms/master/protocol/openid-connect/auth")
-                                                .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
-                                                .tokenUrl("/auth/realms/master/protocol/openid-connect/token")
-                                                .scopes(new Scopes().addString("profile", "profile"))
-                                )
-                                .clientCredentials(
-                                        // for service users
-                                        new OAuthFlow()
-                                                .tokenUrl("/auth/realms/master/protocol/openid-connect/token")
-                                                .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
-                                                .scopes(new Scopes().addString("profile", "profile"))
-                                )
-                )).security(List.of(new SecurityRequirement().addList("openid")));
-
-        Info info = new Info()
-                .title("OpenRemote Manager REST API")
-                .version("3.0.0")
-                .description("This is the documentation for the OpenRemote Manager HTTP REST API.  Please see the [documentation](https://docs.openremote.io) for more info.")
-                .contact(new Contact().email("info@openremote.io"))
-                .license(new License().name("AGPL 3.0").url("https://www.gnu.org/licenses/agpl-3.0.en.html"));
-
-        oas.info(info);
-        SwaggerConfiguration oasConfig = new SwaggerConfiguration()
-                .resourcePackages(Set.of("org.openremote.model.*"))
-                .openAPI(oas);
-
-        OpenApiResource openApiResource = new OpenApiResource();
-        openApiResource.openApiConfiguration(oasConfig);
-        addApiSingleton(openApiResource);
+        addOpenApiResource();
 
         initialised = true;
         ResteasyDeployment resteasyDeployment = createResteasyDeployment(container, getApiClasses(), apiSingletons, true);
@@ -204,7 +174,7 @@ public class ManagerWebService extends WebService {
         HttpHandler defaultHandler = null;
 
         if (Files.isDirectory(customAppDocRoot)) {
-            HttpHandler customBaseFileHandler = createFileHandler(container, customAppDocRoot, null);
+            HttpHandler customBaseFileHandler = createFileHandler(container, new PathResourceManager(customAppDocRoot), null);
             defaultHandler = exchange -> {
                 if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
                     exchange.setRelativePath("/index.html");
@@ -215,25 +185,8 @@ public class ManagerWebService extends WebService {
 
         PathHandler deploymentHandler = defaultHandler != null ? new PathHandler(defaultHandler) : new PathHandler();
 
-        // Serve deployment files
-        if (Files.isDirectory(builtInAppDocRoot)) {
-            HttpHandler appBaseFileHandler = createFileHandler(container, builtInAppDocRoot, null);
-            HttpHandler appFileHandler = exchange -> {
-                if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
-                    exchange.setRelativePath("/index.html");
-                }
-
-                // Reinstate the full path
-                exchange.setRelativePath(exchange.getRequestPath());
-                appBaseFileHandler.handleRequest(exchange);
-            };
-
-            deploymentHandler.addPrefixPath(MANAGER_APP_PATH, appFileHandler);
-            deploymentHandler.addPrefixPath(INSIGHTS_APP_PATH, appFileHandler);
-            deploymentHandler.addPrefixPath(SWAGGER_APP_PATH, appFileHandler);
-            deploymentHandler.addPrefixPath(CONSOLE_LOADER_APP_PATH, appFileHandler);
-            deploymentHandler.addPrefixPath(SHARED_PATH, appFileHandler);
-        }
+        serveFilesFromBuiltInAppDocRoot(container, deploymentHandler);
+        serveFilesFromClassPath(container, deploymentHandler);
 
         // Add all route handlers required by the manager in priority order
 
@@ -261,6 +214,94 @@ public class ManagerWebService extends WebService {
                         deploymentHandler
                 )
         );
+    }
+
+    private void addOpenApiResource() {
+        // Modify swagger object mapper to match ours
+        configureObjectMapper(Json.mapper());
+        Json.mapper().addMixIn(StringSchema.class, StringSchemaMixin.class);
+        Json.mapper().addMixIn(ServerVariable.class, ServerVariableMixin.class);
+
+        // Add swagger resource
+        OpenAPI oas = new OpenAPI()
+                .servers(List.of(new Server().url("/api/{realm}/").variables(new ServerVariables().addServerVariable("realm", new ServerVariable()._default("master")))))
+                .schemaRequirement("openid", new SecurityScheme().type(SecurityScheme.Type.OAUTH2).flows(
+                        new OAuthFlows() //
+                                .authorizationCode(
+                                        new OAuthFlow()
+                                                .authorizationUrl("/auth/realms/master/protocol/openid-connect/auth")
+                                                .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
+                                                .tokenUrl("/auth/realms/master/protocol/openid-connect/token")
+                                                .scopes(new Scopes().addString("profile", "profile"))
+                                )
+                                .clientCredentials(
+                                        // for service users
+                                        new OAuthFlow()
+                                                .tokenUrl("/auth/realms/master/protocol/openid-connect/token")
+                                                .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
+                                                .scopes(new Scopes().addString("profile", "profile"))
+                                )
+                )).security(List.of(new SecurityRequirement().addList("openid")));
+
+        Info info = new Info()
+                .title("OpenRemote Manager REST API")
+                .version("3.0.0")
+                .description("This is the documentation for the OpenRemote Manager HTTP REST API.  Please see the [documentation](https://docs.openremote.io) for more info.")
+                .contact(new Contact().email("info@openremote.io"))
+                .license(new License().name("AGPL 3.0").url("https://www.gnu.org/licenses/agpl-3.0.en.html"));
+
+        oas.info(info);
+        SwaggerConfiguration oasConfig = new SwaggerConfiguration()
+                .resourcePackages(Set.of("org.openremote.model.*"))
+                .openAPI(oas)
+                .defaultResponseCode("200");
+        OpenApiResource openApiResource = new OpenApiResource();
+        openApiResource.openApiConfiguration(oasConfig);
+        addApiSingleton(openApiResource);
+    }
+
+    protected void serveFilesFromBuiltInAppDocRoot(Container container, PathHandler deploymentHandler) {
+        if (Files.isDirectory(builtInAppDocRoot)) {
+            HttpHandler appBaseFileHandler = createFileHandler(container, new PathResourceManager(builtInAppDocRoot), null);
+            HttpHandler appFileHandler = exchange -> {
+                if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
+                    exchange.setRelativePath("/index.html");
+                }
+
+                // Reinstate the full path
+                exchange.setRelativePath(exchange.getRequestPath());
+                appBaseFileHandler.handleRequest(exchange);
+            };
+
+            APP_PATHS.forEach(path -> {
+                Path diskPath =  builtInAppDocRoot.resolve(path.substring(1));
+                if (Files.isDirectory(diskPath)) {
+                    deploymentHandler.addPrefixPath(path, appFileHandler);
+                    LOG.info("Serving " + path + " from disk: " + diskPath.toAbsolutePath());
+                }
+            });
+        }
+    }
+
+    protected void serveFilesFromClassPath(Container container, PathHandler deploymentHandler) {
+        HttpHandler classPathFileHandler = createFileHandler(container, new ClassPathResourceManager(ManagerWebService.class.getClassLoader(), UI_CLASSPATH_PREFIX), null);
+        HttpHandler appFileHandler = exchange -> {
+            if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
+                exchange.setRelativePath("index.html");
+            }
+
+            // Reinstate the full path
+            exchange.setRelativePath(exchange.getRequestPath());
+            classPathFileHandler.handleRequest(exchange);
+        };
+
+        APP_PATHS.forEach(path -> {
+            URL url = ManagerWebService.class.getClassLoader().getResource(UI_CLASSPATH_PREFIX + path);
+            if (url != null) {
+                deploymentHandler.addPrefixPath(path, appFileHandler);
+                LOG.info("Serving " + path + " from classpath: " + url);
+            }
+        });
     }
 
     /**
@@ -315,11 +356,10 @@ public class ManagerWebService extends WebService {
         return addServletDeployment(container, deploymentInfo, resteasyDeployment.isSecurityEnabled());
     }
 
-    // TODO: Switch to use PathResourceManager
-    public static HttpHandler createFileHandler(Container container, Path filePath, String[] requiredRoles) {
+    public static HttpHandler createFileHandler(Container container, ResourceManager resourceManager, String[] requiredRoles) {
         boolean devMode = container.isDevMode();
         requiredRoles = requiredRoles == null ? new String[0] : requiredRoles;
-        DeploymentInfo deploymentInfo = ManagerFileServlet.createDeploymentInfo(devMode, "", filePath, requiredRoles);
+        DeploymentInfo deploymentInfo = ManagerFileServlet.createDeploymentInfo(devMode, "", resourceManager, requiredRoles);
         return new CanonicalPathHandler(addServletDeployment(container, deploymentInfo, requiredRoles.length != 0));
     }
 

@@ -22,8 +22,7 @@ package org.openremote.model.notification;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class Notification {
 
@@ -46,12 +45,24 @@ public class Notification {
 
         protected TargetType type;
         protected String id;
+        protected String locale;
+        protected Set<String> allowedLocales = new HashSet<>();
         protected Object data; // Handlers can store temporary data here
 
         @JsonCreator
         public Target(@JsonProperty("type") TargetType type, @JsonProperty("id") String id) {
             this.type = type;
             this.id = id;
+        }
+
+        /**
+         * Manual constructor for the Target class
+         * @param locale ISO 639-1 code; for example "nl" or "en"
+         */
+        public Target(TargetType type, String id, String locale) {
+            this.type = type;
+            this.id = id;
+            this.locale = locale;
         }
 
         public TargetType getType() {
@@ -64,6 +75,33 @@ public class Notification {
 
         public String getId() {
             return id;
+        }
+
+        public void setLocale(String locale) {
+            this.locale = locale;
+        }
+
+        public String getLocale() {
+            return locale;
+        }
+
+        public Target setAllowedLocales(Set<String> allowedLocales) {
+            this.allowedLocales = allowedLocales;
+            return this;
+        }
+
+        public Target addAllowedLocale(String locale) {
+            this.allowedLocales.add(locale);
+            return this;
+        }
+
+        public Target addAllowedLocales(Set<String> allowedLocales) {
+            this.allowedLocales.addAll(allowedLocales);
+            return this;
+        }
+
+        public Set<String> getAllowedLocales() {
+            return allowedLocales;
         }
 
         public Target setData(Object data) {

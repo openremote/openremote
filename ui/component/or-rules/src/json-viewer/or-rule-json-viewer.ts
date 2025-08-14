@@ -143,6 +143,11 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         }
     }
 
+    disconnectedCallback() {
+        this.removeEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onJsonRuleChanged);
+        return super.disconnectedCallback();
+    }
+
     public set ruleset(ruleset: RulesetUnion) {
         if (this._ruleset === ruleset) {
             return;
@@ -418,7 +423,7 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                 if (!attribute.name || !attribute.name.match || !attribute.name.value) {
                     return false;
                 }
-                if (!attribute.value || !this._validateValuePredicate(attribute.value)) {
+                if (!attribute.timestampOlderThan && (!attribute.value || !this._validateValuePredicate(attribute.value))) {
                     return false;
                 }
             }

@@ -23,10 +23,17 @@ public class MQTTMessage<T> {
 
     protected String topic;
     protected T payload;
+    protected Integer qos;
 
     public MQTTMessage(String topic, T payload) {
         this.topic = topic;
         this.payload = payload;
+    }
+
+    public MQTTMessage(String topic, T payload, Integer qos) {
+        this.topic = topic;
+        this.payload = payload;
+        this.qos = qos;
     }
 
     public String getTopic() {
@@ -35,5 +42,16 @@ public class MQTTMessage<T> {
 
     public T getPayload() {
         return payload;
+    }
+
+    public Integer getQos() { return qos; }
+
+    @Override
+    public String toString() {
+        return "MQTTMessage{" +
+                "topic='" + topic + '\'' +
+                ", payload=" + payload +
+                ", qos=" + qos +
+                '}';
     }
 }

@@ -86,6 +86,11 @@ export interface NodeSelectEventDetail {
     newNodes: UiAssetTreeNode[];
 }
 
+export interface ChangeParentEventDetail {
+    parentId: string | undefined;
+    assetIds: string[];
+}
+
 export {style};
 
 export class OrAssetTreeRequestSelectionEvent extends CustomEvent<Util.RequestEventDetail<NodeSelectEventDetail>> {
@@ -117,7 +122,7 @@ export class OrAssetTreeSelectionEvent extends CustomEvent<NodeSelectEventDetail
     }
 }
 
-export class OrAssetTreeChangeParentEvent extends CustomEvent<any> {
+export class OrAssetTreeChangeParentEvent extends CustomEvent<ChangeParentEventDetail> {
 
     public static readonly NAME = "or-asset-tree-change-parent";
 
@@ -127,7 +132,7 @@ export class OrAssetTreeChangeParentEvent extends CustomEvent<any> {
             composed: true,
             detail: {
                 parentId: parent,
-                assetsIds: assetsIds
+                assetIds: assetsIds
             }
         });
     }
@@ -456,13 +461,13 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 </div>
 
                 <div id="header-btns">
-                    <or-mwc-input ?hidden="${!this.selectedIds || this.selectedIds.length === 0 || !this.showDeselectBtn}" type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => this._onDeselectClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length !== 1 || !canAdd}" type="${InputType.BUTTON}" icon="content-copy" @or-mwc-input-changed="${() => this._onCopyClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0 || this._gatewayDescendantIsSelected()}" type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => this._onDeleteClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !canAdd}" type="${InputType.BUTTON}" icon="plus" @or-mwc-input-changed="${() => this._onAddClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${!this.selectedIds || this.selectedIds.length === 0 || !this.showDeselectBtn}" type="${InputType.BUTTON}" icon="close" title="${i18next.t("deselect")}" @or-mwc-input-changed="${() => this._onDeselectClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length !== 1 || !canAdd}" type="${InputType.BUTTON}" icon="content-copy" title="${i18next.t("duplicate")}" @or-mwc-input-changed="${() => this._onCopyClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0 || this._gatewayDescendantIsSelected()}" type="${InputType.BUTTON}" icon="delete" title="${i18next.t("delete")}" @or-mwc-input-changed="${() => this._onDeleteClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${this._isReadonly() || !canAdd}" type="${InputType.BUTTON}" icon="plus" title="${i18next.t("addAsset")}" @or-mwc-input-changed="${() => this._onAddClicked()}"></or-mwc-input>
                     
                     ${getContentWithMenuTemplate(
-                            html`<or-mwc-input type="${InputType.BUTTON}" ?hidden="${!this.showSortBtn}" icon="sort-variant"></or-mwc-input>`,
+                            html`<or-mwc-input type="${InputType.BUTTON}" ?hidden="${!this.showSortBtn}" icon="sort-variant" title="${i18next.t("sort")}" ></or-mwc-input>`,
                             ["name", "type", "createdOn"].map((sort) => { return {value: sort, text: i18next.t(sort)} as ListItem; }),
                             this.sortBy,
                             (v) => this._onSortClicked(v as string))}
@@ -487,7 +492,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                       this._onFilterInput((e.detail.value as string) || undefined, true);
                                   }}">
                     </or-mwc-input>
-                    <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" @click="${() => {
+                    <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" title="${i18next.t(this._filterSettingOpen ? "filter.close" : "filter.open")}" @click="${() => {
                         if (this._filterSettingOpen) {
                             this._filterSettingOpen = false;
                         } else {
@@ -688,7 +693,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         nodes.forEach((node) => this._updateSort(node.children, sortFunction));
     }
 
-    protected _toggleExpander(expander: HTMLElement, node: UiAssetTreeNode | null) {
+    protected _toggleExpander(expander: HTMLElement, node: UiAssetTreeNode | null, silent: boolean = false) {
         if (node && node.expandable) {
             node.expanded = !node.expanded;
 
@@ -700,30 +705,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
             const elem = expander.parentElement!.parentElement!.parentElement!;
             elem.toggleAttribute("data-expanded");
-            this.dispatchEvent(new OrAssetTreeToggleExpandEvent({ node: node }));
-            this.requestUpdate();
-        }
-    }
-
-    /**
-     * This method is used to avoid to re-render and erase all the this.selectedIds attribute
-     *
-     * @param expander
-     * @param node
-     * @protected
-     */
-    protected _toggleExpanderWithoutEventDispatch(expander: HTMLElement, node: UiAssetTreeNode | null) {
-        if (node && node.expandable) {
-            node.expanded = !node.expanded;
-
-            if (node.expanded) {
-                this._expandedNodes.push(node);
-            } else {
-                this._expandedNodes = this._expandedNodes.filter(n => n !== node);
+            if (!silent) {
+                this.dispatchEvent(new OrAssetTreeToggleExpandEvent({node: node}));
             }
-
-            const elem = expander.parentElement!.parentElement!.parentElement!;
-            elem.toggleAttribute("data-expanded");
             this.requestUpdate();
         }
     }
@@ -1258,7 +1242,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 let matchingAsset: Asset | undefined = response.data.find((a: Asset) => a.id === asset.id );
 
                 if (matchingAsset && matchingAsset.attributes) {
-                    for (let attributeValIndex = 0; attributeValIndex < attributeVal.length; attributeValIndex++ ) {
+                    for (let attributeValIndex = 0; attributeValIndex < attributeVal.length; attributeValIndex++) {
                         let currentAttributeVal = attributeVal[attributeValIndex];
 
                         let atLeastOneAttributeMatchValue: boolean = false;
@@ -1266,7 +1250,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                             let attr: Attribute<any> = matchingAsset!.attributes![key];
 
                             // attr.value check to avoid to compare with empty/non existing value
-                            if (attr.name!.toLowerCase() === currentAttributeVal[0].toLowerCase() && attr.value) {
+                            if (attr.name!.toLowerCase() === currentAttributeVal[0].toLowerCase()) {
                                 switch (attr.type!) {
                                     case "number":
                                     case "integer":
@@ -1276,29 +1260,48 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                     case "positiveInteger":
                                     case "negativeInteger":
                                     case "positiveNumber":
-                                    case "negativeNumber":
+                                    case "negativeNumber": {
+                                        let normalizedValue: string = currentAttributeVal[1]?.replace(",", ".");
+                                        if (!isNaN(Number(normalizedValue))) {
+                                            if ((attr.value ?? 0) === Number(normalizedValue)) {
+                                                atLeastOneAttributeMatchValue = true;
+                                            }
+                                        } else if (/\d/.test(normalizedValue)) {
+                                            if (normalizedValue.endsWith("%")) {
+                                                normalizedValue = normalizedValue?.replace("%", "");
+                                            }
+                                            // If filter starts with a number, append '==' in front of it.
+                                            if (/^[0-9]/.test(normalizedValue)) {
+                                                normalizedValue = "==" + normalizedValue;
+                                            }
+                                            const func = attr.value + normalizedValue.replace(/[a-z]/gi, "");
+
+                                            // Execute the function
+                                            try {
+                                                const resultNumberEval: boolean = eval(func);
+                                                if (resultNumberEval) {
+                                                    atLeastOneAttributeMatchValue = true;
+                                                }
+                                            } catch (_ignored) {
+                                                console.warn("Could not process filter on attribute number value;", func);
+                                            }
+                                        }
+                                        break;
+                                    }
+                                    case "boolean": {
                                         let value: string = currentAttributeVal[1];
-                                        if (currentAttributeVal[1].startsWith('=') && currentAttributeVal[1][1] !== '=') {
-                                            value = '=' + value;
-                                        }
-
-                                        if (/^[0-9]+$/.test(currentAttributeVal[1])) {
-                                            value = '==' + value;
-                                        }
-
-                                        const resultNumberEval: boolean = eval(attr.value + value);
-
-                                        if (resultNumberEval) {
+                                        if ((value === "false" || value === "true") && value === (attr.value ?? false).toString()) {
                                             atLeastOneAttributeMatchValue = true;
                                         }
                                         break;
-                                    case "text":
+                                    }
+                                    case "text": {
                                         if (attr.value) {
                                             let unparsedValue: string = currentAttributeVal[1];
                                             const multicharString: string = '*';
 
                                             let parsedValue: string = unparsedValue.replace(multicharString, '.*');
-                                            parsedValue = parsedValue.replace(/"/g,'');
+                                            parsedValue = parsedValue.replace(/"/g, '');
 
                                             let valueFromAttribute: string = attr.value as string;
 
@@ -1307,6 +1310,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                             }
                                         }
                                         break;
+                                    }
                                 }
                             }
                         });
@@ -1722,7 +1726,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             return;
         }
 
-        if (event.eventType === "asset" && this._nodes && this._nodes.length > 0) {
+        if (event.eventType === "asset") {
 
             const assetEvent = event as AssetEvent;
             if (assetEvent.cause === AssetEventCause.READ) {
@@ -1739,15 +1743,18 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             if (assetEvent.cause !== AssetEventCause.DELETE) {
                 assets.push(assetEvent.asset!);
             }
-            OrAssetTree._forEachNodeRecursive(this._nodes, (node) => {
-                if (node.asset!.id !== assetEvent.asset!.id) {
-                    assets.push(node.asset!);
-                }
-            });
+            if (this._nodes) {
+                OrAssetTree._forEachNodeRecursive(this._nodes, (node) => {
+                    if (node.asset!.id !== assetEvent.asset!.id) {
+                        assets.push(node.asset!);
+                    }
+                });
+            }
 
             // In case of filter already active, do not override the actual state of assetTree
-            if ( !this._filterInput.value ) {
-                this._buildTreeNodes(assets, this._getSortFunction());
+            this._buildTreeNodes(assets, this._getSortFunction());
+            if (this._filterInput.value) {
+                this._doFiltering();
             }
             this.dispatchEvent(new OrAssetTreeAssetEvent(assetEvent));
         }
@@ -1760,15 +1767,20 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             this._nodes = [];
         } else {
             if (manager.isRestrictedUser()) {
-                // Any assets whose parents aren't accessible need to be re-parented
+                // Restricted users might have access to children, without access to the parent asset.
+                // Any assets whose parents aren't accessible need to be 're-parented'.
                 assets.forEach(asset => {
                     if (!!asset.parentId && !!asset.path && assets.find(a => a.id === asset.parentId) === undefined) {
                         let reparentId = null;
-                        for (let i = 2; i < asset.path!.length; i++) {
+
+                        // Loop through ALL assets in the path, and check if they're present in the (restricted) asset list
+                        // Once found, update its parent ID without replacing the original (that's why it's named 'reparentId').
+                        for (let i = 0; i < asset.path!.length; i++) {
                             const ancestorId = asset.path![i];
-                            if (assets.find(a => a.id === ancestorId) !== undefined) {
+                            if (asset.id !== ancestorId && assets.find(a => a.id === ancestorId) !== undefined) {
                                 reparentId = ancestorId;
-                                break;
+
+                                // break; No break statement here, as when an asset further down the tree has been found, it should overwrite the parent ID.
                             }
                         }
                         (asset as AssetWithReparentId).reparentId = reparentId;
@@ -1828,9 +1840,19 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             const newExpanded: UiAssetTreeNode[] = [];
             this._expandedNodes.forEach(expandedNode => {
                 OrAssetTree._forEachNodeRecursive(this._nodes!, n => {
-                    if (n.asset && expandedNode.asset && n.asset.id === expandedNode.asset.id) {
+                    if (n.asset && expandedNode && expandedNode.asset && n.asset.id === expandedNode.asset.id) {
                         n.expanded = true;
                         newExpanded.push(n);
+
+                        // Expand every ancestor
+                        let parent = n.parent;
+                        while (parent) {
+                            parent.expanded = true;
+                            parent = parent.parent;
+                            if (newExpanded.indexOf(parent) < 0) {
+                                newExpanded.push(parent);
+                            }
+                        }
                     }
                 });
             });
@@ -1941,8 +1963,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             const node = this._findNodeFromAssetId(assetId);
             let elem: HTMLElement | null = this.shadowRoot?.querySelector('[node-asset-id="' + assetId + '"]');
             if(elem && node && !node.expanded) {
-
-                this._toggleExpanderWithoutEventDispatch(elem.firstElementChild!.firstElementChild! as HTMLElement, node);
+                this._toggleExpander(elem.firstElementChild!.firstElementChild! as HTMLElement, node, true);
             }
         }
     }
@@ -1999,7 +2020,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         return html`
             <li class="asset-list-element" ?data-selected="${treeNode.selected}" ?data-expanded="${treeNode.expanded}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, treeNode)}">
                 <div class="in-between-element" node-asset-id="${treeNode.parent ? (treeNode.parent.asset ? treeNode.parent.asset.id : '' ) : undefined}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"></div>
-                <div class="node-container draggable" node-asset-id="${treeNode.asset ? treeNode.asset.id : ''}" draggable="true" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragstart="${(ev: DragEvent) => this._onDragStart(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}" style="padding-left: ${level * 22}px">
+                <div class="node-container draggable" node-asset-id="${treeNode.asset ? treeNode.asset.id : ''}" draggable="${!this._isReadonly()}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragstart="${(ev: DragEvent) => this._onDragStart(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}" style="padding-left: ${level * 22}px">
                     <div class="node-name">
                         <div class="expander" ?data-expandable="${treeNode.expandable}"></div>
                         ${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, (filterColorForNonMatchingAsset ? 'd3d3d3' : undefined))}

@@ -1,6 +1,7 @@
 package org.openremote.test.assets
 
 import net.fortuna.ical4j.model.Recur
+import net.fortuna.ical4j.transform.recurrence.*
 import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetProcessingService
@@ -118,7 +119,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.size() == 6
         assets.get(0).id == managerTestSetup.apartment1Id
         assets.get(1).id == managerTestSetup.apartment1LivingroomId
-        assets.get(1).getAttributes().size() == 7
+        assets.get(1).getAttributes().size() == 8
         !assets.get(1).getAttribute("motionSensor").isPresent()
         !assets.get(1).getAttribute("currentTemperature").get().getValue().isPresent()
         !assets.get(1).getAttribute("currentTemperature").get().meta.isEmpty()
@@ -360,7 +361,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.find {it.id == managerTestSetup.apartment1Id} != null
         def livingroom = assets.find {it.id == managerTestSetup.apartment1LivingroomId}
         livingroom != null
-        livingroom.getAttributes().size() == 7
+        livingroom.getAttributes().size() == 8
         !livingroom.getAttribute("currentTemperature").get().getValue().isPresent()
         !livingroom.getAttribute("currentTemperature").get().meta.isEmpty()
         !livingroom.getAttribute("targetTemperature").get().getValue().isPresent()
@@ -815,7 +816,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         def start = calendar.getTime()
         calendar.add(Calendar.HOUR, 2)
         def end = calendar.getTime()
-        def recur = new Recur(Recur.DAILY, 5)
+        def recur = new Recur(Frequency.DAILY, 5)
         recur.setInterval(2)
 
         lobby.addAttributes(
@@ -823,7 +824,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
         lobby = assetStorageService.merge(lobby)
 
-        recur = new Recur(Recur.DAILY, 3)
+        recur = new Recur(Frequency.DAILY, 3)
         recur.setInterval(2)
 
         floor.addAttributes(

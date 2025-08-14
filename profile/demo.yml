@@ -12,8 +12,6 @@
 #
 # Please see profile/deploy.yml for configuration details for each service.
 #
-version: '2.4'
-
 volumes:
   proxy-data:
   manager-data:
@@ -78,6 +76,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
+      KC_LOG_CONSOLE_FORMAT: '%-5p [%c] (%t) %s%e%n'
     <<: *awslogs
 
   manager:

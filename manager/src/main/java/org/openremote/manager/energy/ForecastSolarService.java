@@ -162,6 +162,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
 
     @Override
     public void stop(Container container) throws Exception {
+        scheduledExecutorService.shutdown();
     }
 
     protected static void initClient() {

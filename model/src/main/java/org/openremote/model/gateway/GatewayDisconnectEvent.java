@@ -32,12 +32,15 @@ import java.util.Date;
  */
 public class GatewayDisconnectEvent extends SharedEvent {
 
+    public static final String TYPE = "gateway-disconnect";
+
     public enum Reason {
         TERMINATING,
         DISABLED,
         ALREADY_CONNECTED,
         UNRECOGNISED,
-        PERMANENT_ERROR
+        PERMANENT_ERROR,
+        SYNC_ERROR
     }
 
     protected Reason reason;
@@ -54,5 +57,12 @@ public class GatewayDisconnectEvent extends SharedEvent {
 
     public Reason getReason() {
         return reason;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "reason=" + reason +
+            '}';
     }
 }
