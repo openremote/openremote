@@ -76,6 +76,14 @@ export class ParkingSettings extends AssetWidgetSettings {
             .value=${this.widgetConfig.showParkingIcon}
             @or-mwc-input-changed=${(ev: OrInputChangedEvent) => this.onShowParkingIconToggle(ev)}
           ></or-mwc-input>
+          <div class="switch-row">
+            <span><or-translate value="dashboard.showHelperText"></or-translate></span>
+            <or-mwc-input
+              .type=${InputType.SWITCH}
+              .value=${this.widgetConfig.showHelperText}
+              @or-mwc-input-changed=${(ev: OrInputChangedEvent) => this.onHelperTextToggle(ev)}
+            ></or-mwc-input>
+          </div>
         </div>
       </settings-panel>
     `;
@@ -111,6 +119,11 @@ export class ParkingSettings extends AssetWidgetSettings {
 
   protected onParkingLabelChange(ev: OrInputChangedEvent) {
     this.widgetConfig.parkingLabel = ev.detail.value as string;
+    this.notifyConfigUpdate();
+  }
+
+  protected onHelperTextToggle(ev: OrInputChangedEvent) {
+    this.widgetConfig.showHelperText = ev.detail.value as boolean;
     this.notifyConfigUpdate();
   }
 

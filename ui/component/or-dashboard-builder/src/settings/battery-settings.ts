@@ -36,14 +36,14 @@ export class BatterySettings extends AssetWidgetSettings {
       </settings-panel>
       <settings-panel displayName="Einstellungen" expanded="true">
         <div class="switch-container">
-                      <div class="switch-row">
-                        <span><or-translate value="dashboard.showHelperText"></or-translate></span>
-                        <or-mwc-input
-                          .type=${InputType.SWITCH}
-                          .value=${this.widgetConfig.showHelperText}
-                          @or-mwc-input-changed=${(ev: OrInputChangedEvent) => this.onHelperTextToggle(ev)}
-                        ></or-mwc-input>
-                      </div>
+          <div class="switch-row">
+            <span><or-translate value="dashboard.showHelperText"></or-translate></span>
+            <or-mwc-input
+              .type=${InputType.SWITCH}
+              .value=${this.widgetConfig.showHelperText}
+              @or-mwc-input-changed=${(ev: OrInputChangedEvent) => this.onHelperTextToggle(ev)}
+            ></or-mwc-input>
+          </div>
         </div>
       </settings-panel>
     `;

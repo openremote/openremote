@@ -111,6 +111,21 @@ const styling = css`
   .parking-card .bus .value.empty {
     opacity: 0.6;
   }
+
+  .attribute-timestamp {
+    position: absolute; /* relativ zum äußeren Wrapper */
+    inset-inline-start: 8px; /* links (RTL-sicher) */
+    inset-block-end: 6px; /* unten */
+    font-size: clamp(10px, calc(12px * var(--k, 1)), 13px);
+    line-height: 1.1;
+    color: #9ca3af; /* dezentes Grau */
+    z-index: 1;
+    pointer-events: none; /* blockiert keine Handles/Clicks */
+    max-width: calc(100% - 16px); /* falls Text doch lang wird */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 `;
 
 export interface ParkingWidgetConfig extends AssetWidgetConfig {
@@ -120,6 +135,7 @@ export interface ParkingWidgetConfig extends AssetWidgetConfig {
   invertOccupied: boolean;
   showParkingIcon: boolean;
   parkingLabel: string;
+  showHelperText: boolean;
 }
 
 function getDefaultWidgetConfig(): ParkingWidgetConfig {
@@ -130,6 +146,7 @@ function getDefaultWidgetConfig(): ParkingWidgetConfig {
     invertOccupied: false,
     showParkingIcon: false,
     parkingLabel: "",
+    showHelperText: false,
   };
 }
 
@@ -291,6 +308,7 @@ export class ParkingWidget extends OrAssetWidget {
             const occupiedVal = this.widgetConfig.invertOccupied ? !occupiedValBase : occupiedValBase;
 
             const busVal = this._getAttrValue(asset, busRef);
+            const timestamp: any = this.loadedAssets[0].attributes?.[busRef?.name!].timestamp;
 
             const canShow =
               !!asset && !!busRef && !!occupiedRef && occupiedValBase !== undefined && busVal !== undefined;
@@ -316,6 +334,9 @@ export class ParkingWidget extends OrAssetWidget {
                           : null}
                       </div>
                     </div>
+                    ${cfg.showHelperText
+                      ? html`<div class="attribute-timestamp">${this.formatUpdatedAt(timestamp)}</div>`
+                      : null}
                   </div>
                 `
               : html``;
@@ -323,5 +344,68 @@ export class ParkingWidget extends OrAssetWidget {
         )}
       </div>
     `;
+  }
+
+  private formatUpdatedAt(epoch: number): string {
+    const now = new Date();
+    const date = new Date(epoch < 1e12 ? epoch * 1000 : epoch); // Sekunden oder ms erkennen
+    const diffMs = now.getTime() - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+
+    if (diffSec < 10) {
+      return "Aktualisiert gerade eben";
+    }
+    if (diffMin < 1) {
+      return `Aktualisiert vor ${diffSec} ${diffSec === 1 ? "Sekunde" : "Sekunden"}`;
+    }
+    if (diffHour < 1) {
+      return `Aktualisiert vor ${diffMin} ${diffMin === 1 ? "Minute" : "Minuten"}`;
+    }
+
+    // Stunden (weniger als 24h)
+    if (diffHour < 24) {
+      return `Aktualisiert vor ${diffHour} ${diffHour === 1 ? "Stunde" : "Stunden"}`;
+    }
+
+    // gestern (zwischen 24 und 48 Stunden)
+    if (diffDay === 1) {
+      const time = date.toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      return `Aktualisiert gestern um ${time}`;
+    }
+
+    // innerhalb der letzten Woche (ab 2 Tagen bis <7)
+    if (diffDay < 7) {
+      return `Aktualisiert vor ${diffDay} ${diffDay === 1 ? "Tag" : "Tagen"}`;
+    }
+
+    // älter: absolute Darstellung
+    const parts = new Intl.DateTimeFormat("de-DE", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(date);
+
+    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+
+    let weekday = get("weekday");
+    if (!weekday.endsWith(".")) weekday += ".";
+    const day = get("day");
+    const month = get("month");
+    const year = get("year");
+    const hour = get("hour");
+    const minute = get("minute");
+
+    return `Aktualisiert am: ${weekday} ${day}. ${month} ${year} ${hour}:${minute}`;
   }
 }
