@@ -213,10 +213,24 @@ const style = css`
     #msg:not([hidden]) {
         display: flex;    
     }
+    
     #period-controls {
         display: flex;
         flex-direction: column;
         align-items: center;
+    }
+
+    #period-dropdown-controls {
+        flex: 0;
+        display: flex;
+    }
+
+    #period-dropdown-controls > *:first-child {
+        margin-right: -2px;
+    }
+
+    #period-dropdown-controls > *:last-child {
+        margin-left: -2px;
     }
     
 
@@ -756,34 +770,36 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 ${this.timePrefixKey && this.timePrefixOptions && this.timeWindowKey && this.timeWindowOptions ? html`
                                     ${this.timestampControls ? html`
                                         <div id="period-controls">
-                                            <!-- Time prefix selection -->
-                                            ${getContentWithMenuTemplate(
-                                                    html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey.toLowerCase()}"></or-mwc-input>`,
-                                                    this.timePrefixOptions.map(option => ({value: option, text: option.toLowerCase() } as ListItem)),
-                                                    this.timePrefixKey,
-                                                    (value: string | string[]) => {
-                                                        this.timeframe = undefined; // remove any custom start & end times
-                                                        this.timePrefixKey = value.toString();
-                                                    },
-                                                    undefined,
-                                                    undefined,
-                                                    undefined,
-                                                    true
-                                            )}
-                                            <!-- Time window selection -->
-                                            ${getContentWithMenuTemplate(
-                                                    html`<or-mwc-input .type="${InputType.BUTTON}" label="${this._isCustomWindow ? "timeframe" : this.timeWindowKey.toLowerCase()}"></or-mwc-input>`,
-                                                    Array.from(this.timeWindowOptions!.keys()).map(key => ({ value: key, text: key.toLowerCase() } as ListItem)),
-                                                    this.timeWindowKey,
-                                                    (value: string | string[]) => {
-                                                        this.timeframe = undefined; // remove any custom start & end times
-                                                        this.timeWindowKey = value.toString();
-                                                    },
-                                                    undefined,
-                                                    undefined,
-                                                    undefined,
-                                                    true
-                                            )}
+                                            <div id="period-dropdown-controls">
+                                                <!-- Time prefix selection -->
+                                                ${getContentWithMenuTemplate(
+                                                        html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey.toLowerCase()}"></or-mwc-input>`,
+                                                        this.timePrefixOptions.map(option => ({value: option, text: option.toLowerCase() } as ListItem)),
+                                                        this.timePrefixKey,
+                                                        (value: string | string[]) => {
+                                                            this.timeframe = undefined; // remove any custom start & end times
+                                                            this.timePrefixKey = value.toString();
+                                                        },
+                                                        undefined,
+                                                        undefined,
+                                                        undefined,
+                                                        true
+                                                )}
+                                                <!-- Time window selection -->
+                                                ${getContentWithMenuTemplate(
+                                                        html`<or-mwc-input .type="${InputType.BUTTON}" label="${this._isCustomWindow ? "timeframe" : this.timeWindowKey.toLowerCase()}"></or-mwc-input>`,
+                                                        Array.from(this.timeWindowOptions!.keys()).map(key => ({ value: key, text: key.toLowerCase() } as ListItem)),
+                                                        this.timeWindowKey,
+                                                        (value: string | string[]) => {
+                                                            this.timeframe = undefined; // remove any custom start & end times
+                                                            this.timeWindowKey = value.toString();
+                                                        },
+                                                        undefined,
+                                                        undefined,
+                                                        undefined,
+                                                        true
+                                                )}
+                                            </div>
                                         </div>
                                         <div style="text-align: center">
                                             <!-- Scroll left button -->

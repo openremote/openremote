@@ -154,6 +154,19 @@ const style = css`
         flex-direction: column;
         align-items: center;
     }
+    
+    #period-dropdown-controls {
+        flex: 0;
+        display: flex;
+    }
+    
+    #period-dropdown-controls > *:first-child {
+        margin-right: -2px;
+    }
+    
+    #period-dropdown-controls > *:last-child {
+        margin-left: -2px;
+    }
 
     .navigate {
         flex-direction: column;
@@ -609,39 +622,35 @@ export class OrAttributeBarChart extends LitElement {
     protected _getTimeControlsTemplate(disabled = true): TemplateResult {
         return html`
             <div id="period-controls">
-                <div style="flex: 0; display: flex;">
-                    <div style="margin-right: -2px;">
-                        <!-- Time prefix selection -->
-                        ${getContentWithMenuTemplate(
-                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}" ?disabled="${disabled}"></or-mwc-input>`,
-                                disabled ? null as any : this.timePrefixOptions.map(option => ({value: option} as ListItem)),
-                                this.timePrefixKey,
-                                (value: string | string[]) => {
-                                    this.timeframe = undefined; // remove any custom start & end times
-                                    this.timePrefixKey = value.toString();
-                                },
-                                undefined,
-                                undefined,
-                                undefined,
-                                true
-                        )}
-                    </div>
-                    <div style="margin-left: -2px;">
-                        <!-- Time window selection -->
-                        ${getContentWithMenuTemplate(
-                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this._isCustomWindow ? "timeframe" : i18next.t(this.timeWindowKey?.toLowerCase() ?? "")}" ?disabled="${disabled}"></or-mwc-input>`,
-                                disabled ? null as any : Array.from(this.timeWindowOptions.keys()).map(key => ({value: key, text: key.toLowerCase(), translate: true} as ListItem)),
-                                this.timeWindowKey,
-                                (value: string | string[]) => {
-                                    this.timeframe = undefined; // remove any custom start & end times
-                                    this.timeWindowKey = value.toString();
-                                },
-                                undefined,
-                                undefined,
-                                undefined,
-                                true
-                        )}
-                    </div>
+                <div id="period-dropdown-controls">
+                    <!-- Time prefix selection -->
+                    ${getContentWithMenuTemplate(
+                            html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}" ?disabled="${disabled}"></or-mwc-input>`,
+                            disabled ? null as any : this.timePrefixOptions.map(option => ({value: option} as ListItem)),
+                            this.timePrefixKey,
+                            (value: string | string[]) => {
+                                this.timeframe = undefined; // remove any custom start & end times
+                                this.timePrefixKey = value.toString();
+                            },
+                            undefined,
+                            undefined,
+                            undefined,
+                            true
+                    )}
+                    <!-- Time window selection -->
+                    ${getContentWithMenuTemplate(
+                            html`<or-mwc-input .type="${InputType.BUTTON}" label="${this._isCustomWindow ? "timeframe" : i18next.t(this.timeWindowKey?.toLowerCase() ?? "")}" ?disabled="${disabled}"></or-mwc-input>`,
+                            disabled ? null as any : Array.from(this.timeWindowOptions.keys()).map(key => ({value: key, text: key.toLowerCase(), translate: true} as ListItem)),
+                            this.timeWindowKey,
+                            (value: string | string[]) => {
+                                this.timeframe = undefined; // remove any custom start & end times
+                                this.timeWindowKey = value.toString();
+                            },
+                            undefined,
+                            undefined,
+                            undefined,
+                            true
+                    )}
                 </div>
                 <!-- Interval selection -->
                 ${getContentWithMenuTemplate(html`<or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t(`intervalBy${this._intervalConfig?.displayName?.toLowerCase()}`)}"></or-mwc-input>`,
