@@ -363,6 +363,16 @@ export class BarChartSettings extends WidgetSettings {
         });
         this.widgetConfig.attributeRefs = ev.detail.attributeRefs;
 
+        // Add colors
+        this.widgetConfig.attributeColors ??= [];
+        ev.detail.attributeRefs.forEach(((attrRef, index) => {
+            const color = this.widgetConfig.attributeColors.find(x => x[0].id === attrRef.id && x[0].name === ref.name);
+            if(!color) {
+                const newColor = OrAttributeBarChart.DEFAULT_COLORS[index] ?? "#000000";
+                this.widgetConfig.attributeColors.push([attrRef, newColor]);
+            }
+        }));
+
         // Loop through attribute methods (MIN, AVG, MAX etc), and place attributes in 'AVG' if not in any yet.
         const settings = this.widgetConfig.attributeSettings;
         const methodRefsList = [...settings.methodAvgAttributes ?? [], ...settings.methodMinAttributes ?? [], ...settings.methodMaxAttributes ?? [],
@@ -415,21 +425,12 @@ export class BarChartSettings extends WidgetSettings {
     protected openColorPickDialog(attributeRef: AttributeRef) {
         const inputElem = this._attributesPanelElem?.shadowRoot?.querySelector(`#chart-color-${attributeRef.id}-${attributeRef.name}`) as HTMLInputElement | undefined;
         if(inputElem) {
-            let oldColor = this.widgetConfig.attributeColors?.find(x => x[0] === attributeRef)?.[1];
-            if(!oldColor) {
-                const index = this.widgetConfig.attributeRefs?.indexOf(attributeRef);
-                if(index >= 0) {
-                    oldColor = OrChart.DEFAULT_COLORS?.[index];
-                }
-            }
-            // Update value
-            inputElem.value = oldColor ?? "";
 
             // Listen for changes
             inputElem.addEventListener("input", debounce(() => {
                 const color = inputElem.value;
                 this.widgetConfig.attributeColors ??= [];
-                const existingColor = this.widgetConfig.attributeColors.find(x => x[0] === attributeRef);
+                const existingColor = this.widgetConfig.attributeColors.find(x => x[0].id === attributeRef.id && x[0].name === attributeRef.name);
                 if(existingColor) {
                     existingColor[1] = color;
                 } else {
