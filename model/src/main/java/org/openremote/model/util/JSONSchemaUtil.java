@@ -21,6 +21,7 @@ package org.openremote.model.util;
 
 
 import com.fasterxml.classmate.ResolvedType;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,6 +33,7 @@ import com.github.victools.jsonschema.generator.*;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import com.github.victools.jsonschema.module.jackson.JsonSubTypesResolver;
 import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidationModule;
 import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidationOption;
 import org.reflections.Reflections;
@@ -140,8 +142,25 @@ public class JSONSchemaUtil {
                     return null;
                 });
 
-            // Class subtype resolver for extended classes
-            builder.forTypesInGeneral().withSubtypeResolver(CustomModule::findSubtypes);
+            // Class subtype resolver for abstract classes
+            builder.forTypesInGeneral().withCustomDefinitionProvider((resolvedType, context) -> {
+                List<ResolvedType> subTypes = findSubtypes(resolvedType, context);
+                if (subTypes == null || subTypes.isEmpty()) {
+                    return null;
+                }
+
+                ObjectNode definition = context.getGeneratorConfig().createObjectNode();
+                ArrayNode oneOfArray = definition.withArray(context.getKeyword(SchemaKeyword.TAG_ONEOF));
+
+                for (ResolvedType subType : subTypes) {
+                    oneOfArray.add(context.createDefinitionReference(subType));
+                }
+
+                return new CustomDefinition(definition, CustomDefinition.DefinitionType.STANDARD, CustomDefinition.AttributeInclusion.NO);
+            });
+
+            // Effectively disable const generation (on the root of subtypes)
+            builder.forTypesInGeneral().withEnumResolver(typeScope -> null);
 
             // Custom annotations injection
             builder.forTypesInGeneral().withTypeAttributeOverride((attrs, javaType, context) -> {
@@ -253,10 +272,10 @@ public class JSONSchemaUtil {
                 return null;
             }
 
-//            // Only attempt subtype discovery if @JsonTypeInfo is present and no subtypes have been defined
-//            if (!rawType.isAnnotationPresent(JsonTypeInfo.class) || rawType.isAnnotationPresent(JsonSubTypes.class)) {
-//                return null;
-//            }
+            // Reuse Jackson Module JsonSubTypesResolver to get explicitly declared types
+            if (rawType.isAnnotationPresent(JsonSubTypes.class)) {
+                return new JsonSubTypesResolver().findSubtypes(declaredType, context);
+            }
 
             // Cached lookup
             return subtypeCache.computeIfAbsent(rawType, baseType -> {
@@ -286,7 +305,8 @@ public class JSONSchemaUtil {
         .with(new JacksonModule(
             JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
             JacksonOption.ALWAYS_REF_SUBTYPES,
-            JacksonOption.INLINE_TRANSFORMED_SUBTYPES
+            // Disable subtype lookup in Jackson module, as we handle this ourselves to replace anyOf with oneOf
+            JacksonOption.SKIP_SUBTYPE_LOOKUP
         ))
         .with(new JakartaValidationModule(
             JakartaValidationOption.INCLUDE_PATTERN_EXPRESSIONS,
