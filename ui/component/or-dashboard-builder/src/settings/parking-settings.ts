@@ -7,7 +7,8 @@ import { Attribute, AttributeRef } from "@openremote/model";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-icon";
 
-const styling = css``;
+const styling = css`
+`;
 
 @customElement("parking-settings")
 export class ParkingSettings extends AssetWidgetSettings {
@@ -33,6 +34,14 @@ export class ParkingSettings extends AssetWidgetSettings {
     };
 
     return html`
+      <div class="field" style="padding-inline-start:14px">
+        <or-mwc-input
+          .type=${InputType.TEXT}
+          .value=${this.widgetConfig.parkingLabel ?? ""}
+          @or-mwc-input-changed=${(e: OrInputChangedEvent) => this.onParkingLabelChange(e)}
+          label="Parkplatz Name"
+        ></or-mwc-input>
+      </div>
       <settings-panel displayName="attributes" expanded="${true}">
         <settings-panel displayName="Belegungsstatus" expanded="true">
           <attributes-panel
@@ -59,6 +68,16 @@ export class ParkingSettings extends AssetWidgetSettings {
           ></attributes-panel>
         </settings-panel>
       </settings-panel>
+      <settings-panel displayName="settings" expanded="${true}">
+        <div class="switch-row">
+          <span>Parking-Icon anzeigen</span>
+          <or-mwc-input
+            .type=${InputType.SWITCH}
+            .value=${this.widgetConfig.showParkingIcon}
+            @or-mwc-input-changed=${(ev: OrInputChangedEvent) => this.onShowParkingIconToggle(ev)}
+          ></or-mwc-input>
+        </div>
+      </settings-panel>
     `;
   }
 
@@ -84,4 +103,15 @@ export class ParkingSettings extends AssetWidgetSettings {
     this.widgetConfig.invertOccupied = ev.detail.value as boolean;
     this.notifyConfigUpdate();
   }
+
+  protected onShowParkingIconToggle(ev: OrInputChangedEvent) {
+    this.widgetConfig.showParkingIcon = ev.detail.value as boolean;
+    this.notifyConfigUpdate();
+  }
+
+  protected onParkingLabelChange(ev: OrInputChangedEvent) {
+    this.widgetConfig.parkingLabel = ev.detail.value as string;
+    this.notifyConfigUpdate();
+  }
+
 }
