@@ -143,10 +143,10 @@ export class OrServiceTree extends OrTreeMenu {
                 ? MicroserviceStatusColor[service.status]
                 : MicroserviceStatusColor.UNAVAILABLE;
 
-        const icon = service.isGlobal ? "earth" : "puzzle";
+   
 
         return html`
-            <or-icon class="service-icon" slot="prefix" icon="${icon}"></or-icon>
+            <or-icon class="service-icon" slot="prefix" icon="puzzle"></or-icon>
             <span>${node.label}</span>
             <or-icon slot="suffix" icon="${statusIcon}" class="${statusColor}"> </or-icon>
         `;
@@ -166,7 +166,7 @@ export class OrServiceTree extends OrTreeMenu {
     }
 
     protected _getSortFunction(sortBy?: TreeMenuSorting): (a: ServiceTreeNode, b: ServiceTreeNode) => number {
-        const sorting = sortBy as ServiceTreeSorting | undefined;
+        const sorting = sortBy as unknown as ServiceTreeSorting | undefined;
         switch (sorting) {
             case ServiceTreeSorting.STATUS: {
                 return Util.sortByString(node => node.service?.status || "");
