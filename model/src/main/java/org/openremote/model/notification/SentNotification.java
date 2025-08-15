@@ -59,6 +59,10 @@ public class SentNotification {
     @Enumerated(EnumType.STRING)
     protected Notification.Source source;
 
+    @NotNull
+    @Column(name = "REALM", nullable = false, updatable = false)
+    protected String realm;
+
     @Column(name = "SOURCE_ID", length = 43)
     protected String sourceId;
 
@@ -191,6 +195,17 @@ public class SentNotification {
         this.acknowledgement = acknowledgement;
         return this;
     }
+
+    // add realm getters and setters
+    public String getRealm() {
+        return realm;
+    }
+
+    public SentNotification setRealm(String realm) {
+        this.realm = realm;
+        return this;
+    }
+
 
     public String getError() {
         return error;
