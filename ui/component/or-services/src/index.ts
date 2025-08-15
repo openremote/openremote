@@ -247,7 +247,7 @@ export class OrServices extends LitElement {
     }
 
     protected render(): TemplateResult {
-        const icon = this.selectedService?.isGlobal ? "earth" : "puzzle";
+
 
         return html`
             <div class="wrapper">
@@ -281,7 +281,7 @@ export class OrServices extends LitElement {
                                           ></or-icon>
                                           <or-icon
                                               class="hideMobile"
-                                              icon="${icon}"
+                                              icon="puzzle"
                                               title="${i18next.t("services.services")}"
                                           ></or-icon>
                                           <span>${this.selectedService.label || this.selectedService.serviceId}</span>
