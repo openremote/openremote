@@ -26,6 +26,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.impl.CityAsset;
 import org.openremote.model.asset.impl.ElectricityChargerAsset;
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.geo.GeoJSONPoint;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -113,8 +114,11 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
             ElectricityChargerAsset chargerAsset = new ElectricityChargerAsset("Charger #" + i);
             chargerAsset.setRealm(realm);
             chargerAsset.setParent(parentAsset);
+            double x = 4.242 + Math.random() * (4.505 - 4.242);
+            double y = 5.890 + Math.random() * (5.988 - 5.890);
             chargerAsset.getAttributes().addOrReplace(
-                    new Attribute<>(ElectricityChargerAsset.ENERGY_LEVEL_PERCENTAGE, 70)
+                    new Attribute<>(ElectricityChargerAsset.ENERGY_LEVEL_PERCENTAGE, 70),
+                    new Attribute<>(ElectricityChargerAsset.LOCATION, new GeoJSONPoint(x, y))
             );
             assetStorageService.merge(chargerAsset);
         }
