@@ -115,7 +115,7 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
             chargerAsset.setRealm(realm);
             chargerAsset.setParent(parentAsset);
             double x = 4.242 + Math.random() * (4.505 - 4.242);
-            double y = 5.890 + Math.random() * (5.988 - 5.890);
+            double y = 51.890 + Math.random() * (51.988 - 51.890);
             chargerAsset.getAttributes().addOrReplace(
                     new Attribute<>(ElectricityChargerAsset.ENERGY_LEVEL_PERCENTAGE, 70),
                     new Attribute<>(ElectricityChargerAsset.LOCATION, new GeoJSONPoint(x, y))
