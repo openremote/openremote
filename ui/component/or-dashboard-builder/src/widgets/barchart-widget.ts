@@ -45,7 +45,7 @@ export interface BarChartWidgetConfig extends AssetWidgetConfig {
 }
 
 function getDefaultWidgetConfig(): BarChartWidgetConfig {
-    const preset = "30Days";  // Default time preset, "last" prefix is hardcoded in startDate and endDate below.
+    const preset = "Day";  // Default time preset, "current" prefix is hardcoded in startDate and endDate below.
     const dateFunc = OrAttributeBarChart.getDefaultTimeWindowOptions().get(preset);
     const startDate = moment().subtract(dateFunc![1], dateFunc![0]).startOf(dateFunc![0]);
     const endDate = dateFunc![1] === 1 ? moment().endOf(dateFunc![0]) : moment();
@@ -74,7 +74,7 @@ function getDefaultWidgetConfig(): BarChartWidgetConfig {
         },
         showTimestampControls: false,
         defaultTimeWindowKey: preset,
-        defaultTimePrefixKey: "last",
+        defaultTimePrefixKey: "this",
         defaultInterval: BarChartInterval.AUTO,
         showLegend: true,
         stacked: false,

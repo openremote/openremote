@@ -1311,7 +1311,7 @@ export class OrAttributeBarChart extends LitElement {
                 formatter: (params): string => {
                     if(hasMultipleMethods) {
                         const data = this._data?.[params.seriesIndex ?? 0]?.data;
-                        const firstIndex = data?.findIndex(x => (x as [number, number])[1] != 0);
+                        const firstIndex = data?.findIndex(x => (x as [number, number])[1] != null);
                         if(firstIndex === params.dataIndex) {
                             return formula;
                         }
