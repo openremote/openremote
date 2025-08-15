@@ -21,7 +21,6 @@ package org.openremote.manager.microservices;
 
 import static org.openremote.model.Constants.MASTER_REALM;
 
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -47,47 +46,21 @@ import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.microservices.MicroserviceLeaseInfo;
 
 /**
- * Service discovery and registration for microservices and external services.
- *
+ * Manages {@link org.openremote.model.microservices.Microservice} discovery and
+ * registration with lease-based lifecycle management; supports both
+ * global (multi-tenant) and realm-bound services, allowing multiple instances
+ * per service ID for
+ * horizontal scaling and high availability.
  * <p>
- * Provides centralized registry functionality including registration
- * management,
- * heartbeat management, and status tracking. Services are marked as unavailable
- * when their lease expires.
- * </p>
- *
- * <h3>Registry Structure</h3>
- * <p>
- * The registry supports multiple instances per service ID, allowing for
- * horizontal
- * scaling and high availability. Each service instance is uniquely identified
- * by
- * the combination of {@code serviceId} and {@code instanceId}.
- * </p>
- *
- * <h3>Service Types</h3>
- * <ul>
- * <li><strong>Global:</strong> Available to all realms, these services are
- * flagged as global (isGlobal=true) and are intended for multi-tenant use
- * cases/scenarios</li>
- * <li><strong>Realm-bound:</strong> Available to a singular specific realm,
- * these services are flagged as realm-bound (isGlobal=false) and are intended
- * for
- * single-tenant use cases/scenarios</li>
- * </ul>
- *
- * <h3>Notes</h3>
- * <ul>
- * <li>Multiple instances of the same service can be registered for load
- * balancing and redundancy</li>
- * <li>Global and realm-bound services can coexist with different service
- * IDs</li>
- * <li>Lease-based registration with automatic expiration (default:
- * {@link #DEFAULT_LEASE_DURATION_MS})</li>
- * <li>Heartbeat mechanism for lease renewal</li>
- * <li>Deregister unavailable instances after
- * {@link #DEFAULT_DEREGISTER_UNAVAILABLE_MS}</li>
- * </ul>
+ * The service automatically manages microservice health through scheduled tasks
+ * that mark expired
+ * instances as unavailable and eventually deregister long-expired instances. It
+ * registers a REST resource
+ * ({@link MicroserviceResourceImpl}) for external access to the registry and
+ * adds event subscription
+ * authorization to the {@link ClientEventService} to filter microservice events
+ * based on realm and user
+ * roles, publishing microservice lifecycle events for external consumption.
  */
 public class MicroserviceRegistryService implements ContainerService {
 
@@ -109,6 +82,7 @@ public class MicroserviceRegistryService implements ContainerService {
     protected ClientEventService clientEventService;
 
     // serviceId: <instanceId: Microservice>
+    // Nested ConcurrentHashMaps for segmenting, segment locks and fast lookups
     protected ConcurrentHashMap<String, ConcurrentHashMap<String, Microservice>> registry;
 
     // Scheduled future for the lease check task
