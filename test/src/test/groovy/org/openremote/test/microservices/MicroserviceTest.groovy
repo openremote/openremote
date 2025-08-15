@@ -73,7 +73,7 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         assert superServiceUserMicroserviceResource != null
 
 
-        // === Tests related to interacting with realm-bound services as a service user from the same realm ===
+        // === Tests related to interacting with the services resource as a service user for a specific realm ===
 
         when: "the building service user registers a microservice"
         def buildingMicroservice = new Microservice(
@@ -97,6 +97,14 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         assert buildingServices[0].realm == buildingMicroservice.realm
         assert buildingServices[0].homepageUrl == buildingMicroservice.homepageUrl
         assert buildingServices[0].status == buildingMicroservice.status
+
+
+        when: "the building service user tries to register the exact same microservice"
+        buildingMicroserviceResource.registerService(null, registeredBuildingMicroservice)
+
+        then: "the building service user should receive a 409 conflict response"
+        def ex = thrown(WebApplicationException)
+        assert ex.response.status == Response.Status.CONFLICT.getStatusCode()
 
         when: "time advanced by 70 seconds, longer than the default registration lease duration"
         advancePseudoClock(70, TimeUnit.SECONDS)
@@ -125,7 +133,7 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         buildingMicroserviceResource.getService(null, registeredBuildingMicroservice.serviceId, registeredBuildingMicroservice.instanceId)
 
         then: "the building service user should receive a 404 not found response"
-        def ex = thrown(WebApplicationException)
+        ex = thrown(WebApplicationException)
         assert ex.response.status == Response.Status.NOT_FOUND.getStatusCode()
 
         when: "the building service user tries to register the microservice with an inaccessible realm"
@@ -329,7 +337,7 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         def buildingServiceAfterInstanceExpiryMisc = buildingMicroserviceResource.getService(null, registeredBuildingMicroservice2.serviceId, registeredBuildingMicroservice2.instanceId)
         assert buildingServiceAfterInstanceExpiryMisc.status == MicroserviceStatus.UNAVAILABLE
 
-        when: "time advances by 24 hours, longer than the default deregistration lease duration"
+        when: "time advances by 24 hours, longer than the default automatic deregistration threshold"
         advancePseudoClock(24, TimeUnit.HOURS)
         microserviceRegistryService.deregisterLongExpiredInstances()
 
@@ -338,7 +346,7 @@ class MicroserviceTest extends Specification implements ManagerContainerTrait {
         assert buildingRealmServices.size() == 0
 
         and: "the global microservice should now be deregistered, thus the list of global services should be empty"
-        def globalRealmServices = superServiceUserMicroserviceResource.getGlobalServices()
+        def globalRealmServices = buildingMicroserviceResource.getGlobalServices()
         assert globalRealmServices.size() == 0
 
     }
