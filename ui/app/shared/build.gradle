@@ -69,7 +69,43 @@ signing {
     }
 }
 
+def cacheDir = layout.projectDirectory.dir("cache").asFile
+def openMapTilesFontsVersion = "v2.0"
+def openMapTilesFontsZip = new File(cacheDir, "openmaptiles-fonts-${openMapTilesFontsVersion}.zip")
+
+tasks.register('downloadOpenMapTilesFontsZip') {
+    // Mark the downloaded file as the output (for Gradle caching)
+    outputs.file openMapTilesFontsZip
+
+    // Mark version and package name as inputs (if they change, redownload)
+    inputs.property("openMapTilesFontsVersion", openMapTilesFontsVersion)
+
+    doLast {
+        if (!openMapTilesFontsZip.exists()) {
+            cacheDir.mkdirs()
+            logger.lifecycle("Downloading OpenMapTiles Fonts ${openMapTilesFontsVersion} ...")
+            def url = new URL("https://github.com/openmaptiles/fonts/releases/download/${openMapTilesFontsVersion}/${openMapTilesFontsVersion}.zip")
+            url.openStream().withCloseable { is ->
+                openMapTilesFontsZip.withOutputStream { os ->
+                    is.transferTo(os)
+                }
+            }
+        } else {
+            logger.lifecycle("Using cached ${openMapTilesFontsZip.name}")
+        }
+    }
+}
+
+tasks.register('extractOpenMapTilesFontsZip', Copy) {
+    dependsOn downloadOpenMapTilesFontsZip
+    from(zipTree(openMapTilesFontsZip)) {
+        include "Open Sans Bold/**", "Open Sans Italic/**", "Open Sans Regular/**", "Open Sans SemiBold/**"
+    }
+    into layout.buildDirectory.dir("classes/main/org/openremote/web/${project.name}/fonts").get().asFile
+}
+
 tasks.register('generateSources', Copy) {
+    dependsOn extractOpenMapTilesFontsZip
     from fileTree(projectDir) {
         exclude 'build.gradle'
         exclude 'build/**'
