@@ -366,7 +366,7 @@ export class OrEditAssetPanel extends LitElement {
                                         disableWrite disableSubscribe disableButton compact 
                                         @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
                 </td>
-                <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}">` : ``}</td>
+                <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-mwc-input type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${deleteAttribute}">` : ``}</td>
             </tr>
             <tr class="attribute-meta-row">
                 <td colspan="4">
@@ -520,7 +520,7 @@ export class OrEditAssetPanel extends LitElement {
                     default: true,
                     actionName: "add",
                     action: () => {
-                        if (attr) {
+                        if (!isDisabled(attr)) {
                             this.asset.attributes![attr.name!] = attr;
                             this._onModified();
                         }
