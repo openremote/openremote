@@ -20,17 +20,21 @@
 import { css, html, unsafeCSS, TemplateResult, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { DefaultColor3, DefaultColor5, DefaultColor6 } from "@openremote/core";
-import { OrTreeMenu, TreeNode, TreeMenuSelection, OrTreeNode } from "@openremote/or-tree-menu";
+import { OrTreeMenu, TreeMenuSelection, OrTreeNode, TreeMenuSorting } from "@openremote/or-tree-menu";
 import { Microservice, MicroserviceStatus } from "@openremote/model";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import { i18next } from "@openremote/or-translate";
+import { Util } from "@openremote/core";
 import {
     ServiceTreeNode,
     MicroserviceStatusIcon,
     MicroserviceStatusColor,
     OrServiceSelectedEvent,
-    OrServiceRefreshEvent,
 } from "./types";
-import { i18next } from "@openremote/or-translate";
+
+
+export enum ServiceTreeSorting {
+    NAME = "name", STATUS = "status"
+}
 
 const treeStyles = css`
     .iconfill-gray {
@@ -50,9 +54,10 @@ const treeStyles = css`
     }
 `;
 
+
+
 /**
  * @event {OrServiceSelectedEvent} or-service-selected - Triggers upon selecting a service, and dispatches the selected service.
- * @event {OrServiceRefreshEvent} or-service-refresh - Triggers when the user requests to refresh the services list.
  */
 @customElement("or-service-tree")
 export class OrServiceTree extends OrTreeMenu {
@@ -72,6 +77,8 @@ export class OrServiceTree extends OrTreeMenu {
     nodes: ServiceTreeNode[] = [];
     selection = TreeMenuSelection.SINGLE;
     menuTitle = "services";
+    sortBy: any = ServiceTreeSorting.NAME;
+    sortOptions: any[] = [ServiceTreeSorting.NAME, ServiceTreeSorting.STATUS];
 
     protected willUpdate(changedProps: PropertyValues): void {
         if (changedProps.has("services")) {
@@ -136,8 +143,10 @@ export class OrServiceTree extends OrTreeMenu {
                 ? MicroserviceStatusColor[service.status]
                 : MicroserviceStatusColor.UNAVAILABLE;
 
+        const icon = service.isGlobal ? "earth" : "puzzle";
+
         return html`
-            <or-icon class="service-icon" slot="prefix" icon="puzzle"></or-icon>
+            <or-icon class="service-icon" slot="prefix" icon="${icon}"></or-icon>
             <span>${node.label}</span>
             <or-icon slot="suffix" icon="${statusIcon}" class="${statusColor}"> </or-icon>
         `;
@@ -149,19 +158,23 @@ export class OrServiceTree extends OrTreeMenu {
                 <h3 id="tree-header-title">
                     <or-translate value="services.title"></or-translate>
                 </h3>
-                <div class="hideMobile">
-                    <or-mwc-input
-                        type=${InputType.BUTTON}
-                        icon="refresh"
-                        title="${i18next.t("services.refresh")}"
-                        @or-mwc-input-changed=${this._onRefreshServices}
-                    ></or-mwc-input>
+                <div id="tree-header-actions">
+                    ${this._getSortActionTemplate(this.sortBy, this.sortOptions)}
                 </div>
             </div>
         `;
     }
 
-    protected _onRefreshServices(): void {
-        this.dispatchEvent(new OrServiceRefreshEvent());
+    protected _getSortFunction(sortBy?: TreeMenuSorting): (a: ServiceTreeNode, b: ServiceTreeNode) => number {
+        const sorting = sortBy as ServiceTreeSorting | undefined;
+        switch (sorting) {
+            case ServiceTreeSorting.STATUS: {
+                return Util.sortByString(node => node.service?.status || "");
+            }
+            case ServiceTreeSorting.NAME:
+            default: {
+                return super._getSortFunction(sortBy);
+            }
+        }
     }
 }

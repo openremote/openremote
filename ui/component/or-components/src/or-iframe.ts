@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import { css, html, LitElement, PropertyValues } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import "./or-loading-indicator";
 import "@openremote/or-icon";
 
@@ -107,56 +107,59 @@ export class OrIframe extends LitElement {
     public timeout = 10000; // 10 seconds default timeout
 
     @state()
-    private loading = true;
+    protected loading = true;
 
     @state()
-    private error = false;
+    protected error = false;
 
-    private timeoutId?: number;
+    @property({ type: Boolean })
+    public preventCache = true;
 
-    private clearTimeout(): void {
+    protected timeoutId?: number;
+
+    protected _clearTimeout(): void {
         if (this.timeoutId) {
             window.clearTimeout(this.timeoutId);
             this.timeoutId = undefined;
         }
     }
 
-    private startTimeout(): void {
-        this.clearTimeout();
+    protected _startTimeout(): void {
+        this._clearTimeout();
 
         this.timeoutId = window.setTimeout(() => {
             console.warn(`Iframe load timeout after ${this.timeout}ms for src: ${this.src}`);
-            this.handleIframeEvent(OrIFrameEventType.TIMEOUT, new Event("timeout"));
+            this._handleIframeEvent(OrIFrameEventType.TIMEOUT, new Event("timeout"));
         }, this.timeout);
     }
 
-    private resetState(): void {
+    protected _resetState(): void {
         this.loading = true;
         this.error = false;
-        this.startTimeout();
+        this._startTimeout();
     }
 
     connectedCallback(): void {
         super.connectedCallback();
-        this.resetState();
+        this._resetState();
     }
 
     willUpdate(changedProperties: PropertyValues): void {
         if (changedProperties.has("src")) {
-            this.resetState();
+            this._resetState();
         }
     }
 
-    private handleLoadEvent = (event: Event): void => {
-        this.handleIframeEvent(OrIFrameEventType.LOADED, event);
+    protected readonly _handleLoadEvent = (event: Event): void => {
+        this._handleIframeEvent(OrIFrameEventType.LOADED, event);
     };
 
-    private handleErrorEvent = (event: Event): void => {
-        this.handleIframeEvent(OrIFrameEventType.ERROR, event);
+    protected readonly _handleErrorEvent = (event: Event): void => {
+        this._handleIframeEvent(OrIFrameEventType.ERROR, event);
     };
 
-    private handleIframeEvent = (type: OrIFrameEventType, event: Event): void => {
-        this.clearTimeout();
+    protected readonly _handleIframeEvent = (type: OrIFrameEventType, event: Event): void => {
+        this._clearTimeout();
 
         const detail: OrIFrameEventDetail = {
             type,
@@ -185,7 +188,14 @@ export class OrIframe extends LitElement {
     };
 
     disconnectedCallback(): void {
-        this.clearTimeout();
+        this._clearTimeout();
+    }
+
+    public getSrc(): string {
+        if (this.preventCache && this.src) {
+            return this.src + "?t=" + Date.now();
+        }
+        return this.src || "";
     }
 
     /**
@@ -196,12 +206,12 @@ export class OrIframe extends LitElement {
             console.warn("Cannot reload iframe: no src specified");
             return;
         }
-        this.resetState();
+        this._resetState();
 
         // Force iframe reload by temporarily clearing and resetting src
         const iframe = this.shadowRoot?.querySelector("iframe");
         if (iframe) {
-            const currentSrc = this.src;
+            const currentSrc = this.getSrc();
             iframe.src = "";
             // We can't use iframe.contentWindow.location.reload() because it doesn't work in all cases due to browser security restrictions
             requestAnimationFrame(() => {
@@ -221,10 +231,10 @@ export class OrIframe extends LitElement {
                       </div>`
                     : html``}
                 <iframe
-                    @load=${this.handleLoadEvent}
-                    @error=${this.handleErrorEvent}
+                    @load=${this._handleLoadEvent}
+                    @error=${this._handleErrorEvent}
                     id="or-iframe"
-                    src="${this.src}"
+                    src="${this.getSrc()}"
                     class="${!this.loading ? "loaded" : ""}"
                 ></iframe>
             </div>

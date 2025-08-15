@@ -57,7 +57,8 @@ public abstract class AbstractKeycloakSetup implements Setup {
         ClientRole.WRITE_ATTRIBUTES,
         ClientRole.WRITE_RULES,
         ClientRole.WRITE_INSIGHTS,
-        ClientRole.WRITE_ALARMS
+        ClientRole.WRITE_ALARMS,
+        ClientRole.WRITE_SERVICES
     };
 
     final protected Container container;

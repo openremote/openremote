@@ -49,19 +49,3 @@ export class OrServiceSelectedEvent extends CustomEvent<Microservice> {
         });
     }
 }
-
-/**
- * Model for the SERVICE-REFRESH event that {@link OrServiceTree} can dispatch.
- * Triggers when the user requests to refresh the services list.
- */
-export class OrServiceRefreshEvent extends CustomEvent<void> {
-    public static readonly NAME = "or-service-refresh";
-
-    constructor() {
-        super(OrServiceRefreshEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: undefined,
-        });
-    }
-}

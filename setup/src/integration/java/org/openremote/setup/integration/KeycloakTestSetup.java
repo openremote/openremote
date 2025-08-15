@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 
 import static org.openremote.model.Constants.MASTER_REALM;
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
+import static org.openremote.model.Constants.SUPER_USER_REALM_ROLE;
 
 /**
  * We have the following demo users:
@@ -72,6 +73,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
     public User testuser4;
     public User buildingUser;
     public User smartCityUser;
+    public User superServiceUser;
     public User serviceUser;
     public User serviceUser2;
 
@@ -82,6 +84,8 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
     @Override
     public void onStart() throws Exception {
         super.onStart();
+
+        ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
 
         // Realms
         realmMaster = identityService.getIdentityProvider().getRealm(Constants.MASTER_REALM);
@@ -133,6 +137,23 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         this.smartCityUserId = smartCityUser.getId();
         keycloakProvider.updateUserClientRoles(realmCity.getName(), smartCityUserId, "account"); // Remove all roles for account client
 
+
+
+        // Service user for master realm with SUPER_USER realm role
+        superServiceUser = new User()
+            .setServiceAccount(true)
+            .setEnabled(true)
+            .setUsername("superserviceuser");
+        superServiceUser = keycloakProvider.createUpdateUser(MASTER_REALM, superServiceUser, UniqueIdentifierGenerator.generateId("superserviceusertest"), true);
+        keycloakProvider.updateUserClientRoles(
+            MASTER_REALM,
+            superServiceUser.getId(),
+            Constants.KEYCLOAK_CLIENT_ID,
+            Stream.of(ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES, ClientRole.WRITE_SERVICES, ClientRole.READ_SERVICES).map(ClientRole::getValue).toArray(String[]::new)
+        );
+        // Add SUPER_USER_REALM_ROLE to superServiceUser
+        identityProvider.updateUserRealmRoles(MASTER_REALM, superServiceUser.getId(), identityProvider.addUserRealmRoles(MASTER_REALM, superServiceUser.getId(), SUPER_USER_REALM_ROLE));
+
         /*
          * Service user clients
          */
@@ -160,7 +181,6 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         );
 
         // ################################ Make users restricted ###################################
-        ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
         identityProvider.updateUserRealmRoles(realmBuilding.getName(), testuser3Id, identityProvider.addUserRealmRoles(realmBuilding.getName(), testuser3Id, RESTRICTED_USER_REALM_ROLE));
         identityProvider.updateUserRealmRoles(realmBuilding.getName(), buildingUserId, identityProvider.addUserRealmRoles(realmBuilding.getName(), buildingUserId, RESTRICTED_USER_REALM_ROLE));
         identityProvider.updateUserRealmRoles(realmBuilding.getName(), serviceUser2.getId(), identityProvider.addUserRealmRoles(realmBuilding.getName(), serviceUser2.getId(), RESTRICTED_USER_REALM_ROLE));
