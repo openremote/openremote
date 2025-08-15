@@ -30,27 +30,6 @@ import { getServicesRoute } from "../routes";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
 
-/**
- * Consolidate services by serviceId, preferring AVAILABLE over UNAVAILABLE
- * @param services - Array of services to consolidate
- * @returns Consolidated array with unique serviceIds
- */
-function consolidateServices(services: Microservice[]): Microservice[] {
-    return Object.values(
-        services.reduce((acc, service) => {
-            const serviceId = service.serviceId || "";
-            const existing = acc[serviceId];
-            if (
-                !existing ||
-                (service.status === MicroserviceStatus.AVAILABLE && existing.status !== MicroserviceStatus.AVAILABLE)
-            ) {
-                acc[serviceId] = service;
-            }
-            return acc;
-        }, {} as Record<string, Microservice>)
-    );
-}
-
 export function pageServicesProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
         name: "services",
@@ -72,6 +51,27 @@ const serviceStyles = css`
         background: transparent;
     }
 `;
+
+/**
+ * Consolidate services by serviceId, preferring AVAILABLE over UNAVAILABLE
+ * @param services - Array of services to consolidate
+ * @returns Consolidated array with unique serviceIds
+ */
+function consolidateServices(services: Microservice[]): Microservice[] {
+    return Object.values(
+        services.reduce((acc, service) => {
+            const serviceId = service.serviceId || "";
+            const existing = acc[serviceId];
+            if (
+                !existing ||
+                (service.status === MicroserviceStatus.AVAILABLE && existing.status !== MicroserviceStatus.AVAILABLE)
+            ) {
+                acc[serviceId] = service;
+            }
+            return acc;
+        }, {} as Record<string, Microservice>)
+    );
+}
 
 @customElement("page-services")
 export class PageServices extends Page<AppStateKeyed> {
