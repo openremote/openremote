@@ -22,12 +22,17 @@ package org.openremote.model.microservices;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 /**
- * Represents a microservice or external service managed by the OpenRemote microservice registry.
+ * Represents a microservice or external service managed by the OpenRemote
+ * microservice registry.
  * 
- * This class encapsulates the essential information needed to register, manage, and track
- * the lifecycle of external services within the OpenRemote system. The registry maintains
- * information about service instances, their status, and lease management.
+ * This class encapsulates service metadata and the required information needed
+ * to register, manage,
+ * and track the lifecycle of external services within the OpenRemote system.
  */
 public class Microservice {
 
@@ -37,17 +42,56 @@ public class Microservice {
      * This ID is used to group related service instances and must be consistent
      * across all instances of the same service type.
      */
+    @Size(min = 3, max = 255, message = "{Microservice.serviceId.Size}")
+    @NotEmpty(message = "{Microservice.serviceId.NotEmpty}")
     @JsonProperty("serviceId")
     protected String serviceId;
 
     /**
-     * Unique identifier for this specific instance within the scope of the serviceId.
+     * Unique identifier for this specific instance within the scope of the
+     * serviceId.
      * 
-     * Each running instance of a service must have a unique instanceId to distinguish
+     * Each running instance of a service must have a unique instanceId to
+     * distinguish
      * it from other instances of the same service type.
      */
     @JsonProperty(value = "instanceId")
     protected String instanceId;
+
+    /**
+     * The version of the service.
+     * 
+     * Can be optionally set, to determine the version of the service, and interpret
+     * which
+     * version of the service is running and registered.
+     */
+    @Size(min = 3, max = 255, message = "{Microservice.version.Size}")
+    @JsonProperty("version")
+    protected String version;
+
+    /**
+     * The realm identifier where this service is registered.
+     * 
+     * Services are typically scoped to a specific realm. When set to MASTER_REALM
+     * and registered by a super admin service user, the service becomes available
+     * across all realms. This is used to indicate that the service is a global
+     * service.
+     */
+    @Size(min = 3, max = 255, message = "{Microservice.realm.Size}")
+    @NotEmpty(message = "{Microservice.realm.NotEmpty}")
+    @JsonProperty("realm")
+    protected String realm;
+
+    /**
+     * The icon to display for the service.
+     * 
+     * This icon is used in user interfaces to provide a visual representation
+     * of the service. The default icon is "puzzle" which is a generic service icon.
+     * 
+     * Should be a valid icon name from the Material Design Icons library.
+     */
+    @JsonProperty("icon")
+    protected String icon = "puzzle";
 
     /**
      * Human-readable display name for the service (e.g., "Energy Service").
@@ -55,15 +99,21 @@ public class Microservice {
      * This label is used in user interfaces to provide a friendly name
      * for the service.
      */
+    @NotEmpty(message = "{Microservice.label.NotEmpty}")
+    @Size(min = 1, max = 255, message = "{Microservice.label.Size}")
     @JsonProperty("label")
     protected String label;
 
     /**
-     * URL to the service's configuration page or user interface.
+     * URL/Path to the service's configuration page or user interface.
      * 
-     * This URL provides access to the service's web interface for configuration
-     * and management purposes (e.g., "https://openremote.app/services/energy-service/ui").
+     * This URL/Path provides access to the service's web interface for configuration
+     * and management purposes (e.g.,
+     * "https://openremote.app/services/energy-service/ui").
+     *
      */
+    @Size(min = 3, max = 512, message = "{Microservice.homepageUrl.Size}")
+    @NotEmpty(message = "{Microservice.homepageUrl.NotEmpty}")
     @JsonProperty("homepageUrl")
     protected String homepageUrl;
 
@@ -73,18 +123,9 @@ public class Microservice {
      * Indicates whether the service is available, unavailable, or in another state.
      * The status is managed by the microservice registry based on lease expiration.
      */
+    @NotNull(message = "{Microservice.status.NotNull}")
     @JsonProperty("status")
     protected MicroserviceStatus status;
-
-    /**
-     * The realm identifier where this service is registered.
-     * 
-     * Services are typically scoped to a specific realm. When set to MASTER_REALM
-     * and registered by a super admin service user, the service becomes available
-     * across all realms. This is used to indicate that the service is a global service.
-     */
-    @JsonProperty("realm")
-    protected String realm;
 
     /**
      * Internal lease management information for the service registration.
@@ -111,22 +152,16 @@ public class Microservice {
     public Microservice() {
     }
 
-    public Microservice(String label, String serviceId, String homepageUrl, MicroserviceStatus status, String realm) {
-        this.label = label;
+    // Minimal constructor
+    public Microservice(String serviceId, String realm, String label, String homepageUrl, MicroserviceStatus status) {
         this.serviceId = serviceId;
+        this.realm = realm;
+        this.label = label;
         this.homepageUrl = homepageUrl;
         this.status = status;
-        this.realm = realm;
     }
 
-    public String getLabel() {
-        return label;
-    }
-
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
+    // Getters and setters in property order
     public String getServiceId() {
         return serviceId;
     }
@@ -143,12 +178,12 @@ public class Microservice {
         this.instanceId = instanceId;
     }
 
-    public String getHomepageUrl() {
-        return homepageUrl;
+    public String getVersion() {
+        return version;
     }
 
-    public void setHomepageUrl(String homepageUrl) {
-        this.homepageUrl = homepageUrl;
+    public void setVersion(String version) {
+        this.version = version;
     }
 
     public String getRealm() {
@@ -157,6 +192,30 @@ public class Microservice {
 
     public void setRealm(String realm) {
         this.realm = realm;
+    }
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public void setIcon(String icon) {
+        this.icon = icon;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    public String getHomepageUrl() {
+        return homepageUrl;
+    }
+
+    public void setHomepageUrl(String homepageUrl) {
+        this.homepageUrl = homepageUrl;
     }
 
     public MicroserviceStatus getStatus() {
@@ -186,12 +245,14 @@ public class Microservice {
     @Override
     public String toString() {
         return "Microservice{" +
-                "label='" + label + '\'' +
-                ", serviceId='" + serviceId + '\'' +
+                "serviceId='" + serviceId + '\'' +
                 ", instanceId='" + instanceId + '\'' +
+                ", version='" + version + '\'' +
+                ", realm='" + realm + '\'' +
+                ", icon='" + icon + '\'' +
+                ", label='" + label + '\'' +
                 ", homepageUrl='" + homepageUrl + '\'' +
                 ", status='" + status + '\'' +
-                ", realm='" + realm + '\'' +
                 ", isGlobal='" + isGlobal + '\'' +
                 '}';
     }

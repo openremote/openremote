@@ -22,7 +22,6 @@ import { customElement, property } from "lit/decorators.js";
 import { DefaultColor3, DefaultColor5, DefaultColor6 } from "@openremote/core";
 import { OrTreeMenu, TreeMenuSelection, OrTreeNode, TreeMenuSorting } from "@openremote/or-tree-menu";
 import { Microservice, MicroserviceStatus } from "@openremote/model";
-import { i18next } from "@openremote/or-translate";
 import { Util } from "@openremote/core";
 import {
     ServiceTreeNode,
@@ -146,7 +145,7 @@ export class OrServiceTree extends OrTreeMenu {
    
 
         return html`
-            <or-icon class="service-icon" slot="prefix" icon="puzzle"></or-icon>
+            <or-icon class="service-icon" slot="prefix" icon="${node.service?.icon ?? "puzzle"}"></or-icon>
             <span>${node.label}</span>
             <or-icon slot="suffix" icon="${statusIcon}" class="${statusColor}"> </or-icon>
         `;

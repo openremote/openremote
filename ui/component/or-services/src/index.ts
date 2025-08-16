@@ -281,7 +281,7 @@ export class OrServices extends LitElement {
                                           ></or-icon>
                                           <or-icon
                                               class="hideMobile"
-                                              icon="puzzle"
+                                              icon="${this.selectedService.icon ?? "puzzle"}"
                                               title="${i18next.t("services.services")}"
                                           ></or-icon>
                                           <span>${this.selectedService.label || this.selectedService.serviceId}</span>
