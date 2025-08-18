@@ -19,7 +19,7 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import * as echarts from "echarts/core";
-import {DatasetComponentOption, DataZoomComponent, DataZoomComponentOption, GridComponent, GridComponentOption, TooltipComponent, TooltipComponentOption} from "echarts/components";
+import {DatasetComponentOption, DataZoomComponent, DataZoomComponentOption, GridComponent, GridComponentOption, MarkLineComponent, TooltipComponent, TooltipComponentOption} from "echarts/components";
 import {LineChart, LineSeriesOption} from "echarts/charts";
 import {CanvasRenderer} from "echarts/renderers";
 import {UniversalTransition} from "echarts/features";
@@ -38,7 +38,7 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import { when } from "lit/directives/when.js";
 import {createRef, Ref, ref } from "lit/directives/ref.js";
 
-echarts.use([GridComponent, TooltipComponent, DataZoomComponent, LineChart, CanvasRenderer, UniversalTransition]);
+echarts.use([GridComponent, TooltipComponent, DataZoomComponent, MarkLineComponent, LineChart, CanvasRenderer, UniversalTransition]);
 
 export type ECChartOption = echarts.ComposeOption<
     | LineSeriesOption
@@ -213,10 +213,24 @@ const style = css`
     #msg:not([hidden]) {
         display: flex;    
     }
+    
     #period-controls {
         display: flex;
         flex-direction: column;
         align-items: center;
+    }
+
+    #period-dropdown-controls {
+        flex: 0;
+        display: flex;
+    }
+
+    #period-dropdown-controls > *:first-child {
+        margin-right: -2px;
+    }
+
+    #period-dropdown-controls > *:last-child {
+        margin-left: -2px;
     }
     
 
@@ -587,7 +601,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                         return this._tooltipCache[1];
                     }
                 },
-                toolbox: {},
                 xAxis: {
                     type: "time",
                     axisLine: {
@@ -597,6 +610,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                     splitLine: {show: true},
                     min: this._startOfPeriod,
                     max: this._endOfPeriod,
+                    markLine: {
+                        data: [{name: 'now', xAxis: Date.now()}],
+                        silent: true,
+                        lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}
+                    },
                     axisLabel: {
                         hideOverlap: true,
                         fontSize: 10,
@@ -752,34 +770,36 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 ${this.timePrefixKey && this.timePrefixOptions && this.timeWindowKey && this.timeWindowOptions ? html`
                                     ${this.timestampControls ? html`
                                         <div id="period-controls">
-                                            <!-- Time prefix selection -->
-                                            ${getContentWithMenuTemplate(
-                                                    html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey.toLowerCase()}"></or-mwc-input>`,
-                                                    this.timePrefixOptions.map(option => ({value: option, text: option.toLowerCase() } as ListItem)),
-                                                    this.timePrefixKey,
-                                                    (value: string | string[]) => {
-                                                        this.timeframe = undefined; // remove any custom start & end times
-                                                        this.timePrefixKey = value.toString();
-                                                    },
-                                                    undefined,
-                                                    undefined,
-                                                    undefined,
-                                                    true
-                                            )}
-                                            <!-- Time window selection -->
-                                            ${getContentWithMenuTemplate(
-                                                    html`<or-mwc-input .type="${InputType.BUTTON}" label="${this._isCustomWindow ? "timeframe" : this.timeWindowKey.toLowerCase()}"></or-mwc-input>`,
-                                                    Array.from(this.timeWindowOptions!.keys()).map(key => ({ value: key, text: key.toLowerCase() } as ListItem)),
-                                                    this.timeWindowKey,
-                                                    (value: string | string[]) => {
-                                                        this.timeframe = undefined; // remove any custom start & end times
-                                                        this.timeWindowKey = value.toString();
-                                                    },
-                                                    undefined,
-                                                    undefined,
-                                                    undefined,
-                                                    true
-                                            )}
+                                            <div id="period-dropdown-controls">
+                                                <!-- Time prefix selection -->
+                                                ${getContentWithMenuTemplate(
+                                                        html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey.toLowerCase()}"></or-mwc-input>`,
+                                                        this.timePrefixOptions.map(option => ({value: option, text: option.toLowerCase() } as ListItem)),
+                                                        this.timePrefixKey,
+                                                        (value: string | string[]) => {
+                                                            this.timeframe = undefined; // remove any custom start & end times
+                                                            this.timePrefixKey = value.toString();
+                                                        },
+                                                        undefined,
+                                                        undefined,
+                                                        undefined,
+                                                        true
+                                                )}
+                                                <!-- Time window selection -->
+                                                ${getContentWithMenuTemplate(
+                                                        html`<or-mwc-input .type="${InputType.BUTTON}" label="${this._isCustomWindow ? "timeframe" : this.timeWindowKey.toLowerCase()}"></or-mwc-input>`,
+                                                        Array.from(this.timeWindowOptions!.keys()).map(key => ({ value: key, text: key.toLowerCase() } as ListItem)),
+                                                        this.timeWindowKey,
+                                                        (value: string | string[]) => {
+                                                            this.timeframe = undefined; // remove any custom start & end times
+                                                            this.timeWindowKey = value.toString();
+                                                        },
+                                                        undefined,
+                                                        undefined,
+                                                        undefined,
+                                                        true
+                                                )}
+                                            </div>
                                         </div>
                                         <div style="text-align: center">
                                             <!-- Scroll left button -->
@@ -1231,6 +1251,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         this._loading = true;
+        this._latestError = undefined;
         const dates: [Date, Date] = this._getTimeSelectionDates(this.timePrefixKey!, this.timeWindowKey!);
         const data: LineChartData[] = [];
         let promises;
@@ -1266,7 +1287,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     const options = { signal: this._dataAbortController?.signal };
 
                     // Load Historic Data
-                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], false, smooth, stacked, stepped, area, faint, false, `${asset.name} ${label}`, options, unit);
+                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], false, smooth, stacked, stepped, area, faint, false, `${asset.name} | ${label}`, options, unit);
                     dataset.assetId = asset.id;
                     dataset.attrName = attribute.name;
                     dataset.unit = unit;
@@ -1274,12 +1295,12 @@ export class OrChart extends translate(i18next)(LitElement) {
                     data.push(dataset);
 
                     // Load Predicted Data
-                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stacked, stepped, area, faint, false , `${asset.name} ${label} ${i18next.t("predicted")}`, options, unit);
+                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stacked, stepped, area, faint, false , `${asset.name} | ${label} ${i18next.t("predicted")}`, options, unit);
                     data.push(dataset);
 
                     // If necessary, load Extended Data
                     if (extended) {
-                        dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, stacked, false, area, faint, extended, `${asset.name} ${label} lastKnown`, options, unit);
+                        dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, stacked, false, area, faint, extended, `${asset.name} | ${label} lastKnown`, options, unit);
                         dataset.yAxisIndex = shownOnRightAxis ? 1 : 0;
                         data.push(dataset);
                     }
@@ -1506,7 +1527,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         if (connect) {
             // Add resize eventlisteners to make chart size responsive
             window.addEventListener("resize", () => this._chart!.resize());
-            this._containerResizeObserver = new ResizeObserver(() => { this._chart!.resize(); this.applyChartResponsiveness();});
+            this._containerResizeObserver = new ResizeObserver(() => { this.applyChartResponsiveness(); this._chart!.resize();});
             if (this.shadowRoot) {
                 this._containerResizeObserver.observe(this.shadowRoot!.getElementById('container') as HTMLElement);
             }
@@ -1579,7 +1600,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                         displayValue = pastDatapoint.value;
                     }
                 }
-                if (displayValue) {
+                if (displayValue != null) {
                     tooltipArray.push({
                         value: displayValue,
                         text: `<div><span style="display:inline-block;margin-right:5px;border-radius:10px;width:9px;height:9px;background-color: ${dataset.lineStyle?.color}"></span> ${name}: <b>${displayValue}${dataset.unit ?? ""}</b></div>`
