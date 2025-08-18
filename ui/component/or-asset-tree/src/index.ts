@@ -1242,7 +1242,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 let matchingAsset: Asset | undefined = response.data.find((a: Asset) => a.id === asset.id );
 
                 if (matchingAsset && matchingAsset.attributes) {
-                    for (let attributeValIndex = 0; attributeValIndex < attributeVal.length; attributeValIndex++ ) {
+                    for (let attributeValIndex = 0; attributeValIndex < attributeVal.length; attributeValIndex++) {
                         let currentAttributeVal = attributeVal[attributeValIndex];
 
                         let atLeastOneAttributeMatchValue: boolean = false;
@@ -1250,7 +1250,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                             let attr: Attribute<any> = matchingAsset!.attributes![key];
 
                             // attr.value check to avoid to compare with empty/non existing value
-                            if (attr.name!.toLowerCase() === currentAttributeVal[0].toLowerCase() && attr.value) {
+                            if (attr.name!.toLowerCase() === currentAttributeVal[0].toLowerCase()) {
                                 switch (attr.type!) {
                                     case "number":
                                     case "integer":
@@ -1260,29 +1260,48 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                     case "positiveInteger":
                                     case "negativeInteger":
                                     case "positiveNumber":
-                                    case "negativeNumber":
+                                    case "negativeNumber": {
+                                        let normalizedValue: string = currentAttributeVal[1]?.replace(",", ".");
+                                        if (!isNaN(Number(normalizedValue))) {
+                                            if ((attr.value ?? 0) === Number(normalizedValue)) {
+                                                atLeastOneAttributeMatchValue = true;
+                                            }
+                                        } else if (/\d/.test(normalizedValue)) {
+                                            if (normalizedValue.endsWith("%")) {
+                                                normalizedValue = normalizedValue?.replace("%", "");
+                                            }
+                                            // If filter starts with a number, append '==' in front of it.
+                                            if (/^[0-9]/.test(normalizedValue)) {
+                                                normalizedValue = "==" + normalizedValue;
+                                            }
+                                            const func = attr.value + normalizedValue.replace(/[a-z]/gi, "");
+
+                                            // Execute the function
+                                            try {
+                                                const resultNumberEval: boolean = eval(func);
+                                                if (resultNumberEval) {
+                                                    atLeastOneAttributeMatchValue = true;
+                                                }
+                                            } catch (_ignored) {
+                                                console.warn("Could not process filter on attribute number value;", func);
+                                            }
+                                        }
+                                        break;
+                                    }
+                                    case "boolean": {
                                         let value: string = currentAttributeVal[1];
-                                        if (currentAttributeVal[1].startsWith('=') && currentAttributeVal[1][1] !== '=') {
-                                            value = '=' + value;
-                                        }
-
-                                        if (/^[0-9]+$/.test(currentAttributeVal[1])) {
-                                            value = '==' + value;
-                                        }
-
-                                        const resultNumberEval: boolean = eval(attr.value + value);
-
-                                        if (resultNumberEval) {
+                                        if ((value === "false" || value === "true") && value === (attr.value ?? false).toString()) {
                                             atLeastOneAttributeMatchValue = true;
                                         }
                                         break;
-                                    case "text":
+                                    }
+                                    case "text": {
                                         if (attr.value) {
                                             let unparsedValue: string = currentAttributeVal[1];
                                             const multicharString: string = '*';
 
                                             let parsedValue: string = unparsedValue.replace(multicharString, '.*');
-                                            parsedValue = parsedValue.replace(/"/g,'');
+                                            parsedValue = parsedValue.replace(/"/g, '');
 
                                             let valueFromAttribute: string = attr.value as string;
 
@@ -1291,6 +1310,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                             }
                                         }
                                         break;
+                                    }
                                 }
                             }
                         });
