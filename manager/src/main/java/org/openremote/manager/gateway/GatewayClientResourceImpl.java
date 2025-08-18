@@ -117,7 +117,7 @@ public class GatewayClientResourceImpl extends ManagerWebResource implements Gat
             throw new WebApplicationException(BAD_REQUEST);
         }
 
-        if ((realms.size() > 1 || !getAuthenticatedRealmName().equals(realms.get(0))) && !isSuperUser()) {
+        if ((realms.size() > 1 || !getAuthenticatedRealmName().equals(realms.getFirst())) && !isSuperUser()) {
             throw new WebApplicationException(FORBIDDEN);
         }
 
