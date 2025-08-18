@@ -1167,9 +1167,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected async getMatcherFromQuery(): Promise<((asset: Asset) => boolean)> {
-        let assetCond: StringPredicate[] | undefined = undefined;
-        let attributeCond: LogicGroup<AttributePredicate> | undefined = undefined;
-        let assetTypeCond: string[] | undefined = undefined;
+        let assetCond: StringPredicate[] | undefined;
+        let attributeCond: LogicGroup<AttributePredicate> | undefined;
+        let assetTypeCond: string[] | undefined;
+        const assetQueries: AssetQuery[] = [];
 
         if (this._filter.asset) {
             assetCond = [{
@@ -1198,34 +1199,49 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                             }
                         };
                     })
-            }
+            };
         }
 
-        const query: AssetQuery = {
+        assetQueries.push({
             select: {
                 attributes: attributeCond ? undefined : []
             },
             names: assetCond,
             types: assetTypeCond,
             attributes: attributeCond
-        };
+        });
 
+        // If the "Asset string input" is 22 characters long, we also query for the asset id
+        if(this._filter.asset && this._filter.asset.length === 22) {
+            assetQueries.push({
+                select: {
+                    attributes: attributeCond ? undefined : []
+                },
+                types: assetTypeCond,
+                attributes: attributeCond,
+                ids: [this._filter.asset],
+                limit: 1
+            });
+        }
 
-
-        let response: any;
+        let foundAssets: Asset[];
         let foundAssetIds: string[];
 
        try {
-           response = await manager.rest.api.AssetResource.queryAssets(query);
-           foundAssetIds = response.data.map((asset: Asset) => asset.id!);
+           const promises = assetQueries.map(q => manager.rest.api.AssetResource.queryAssets(q));
+           const responses = await Promise.all(promises);
+           foundAssets = responses.flatMap(r => r.data);
+           foundAssetIds = foundAssets.map(a => a.id!);
+
        } catch (e) {
-            this._filter.assetType.forEach((assetT: string) => {
-                if(this._assetTypes.findIndex((assetD: AssetDescriptor) => { return assetD.name === assetT; }) === -1) {
-                    showSnackbar(undefined, "filter.assetTypeDoesNotExist", "dismiss");
-                }
-            });
-            foundAssetIds = [];
-        }
+           console.error("Error querying Asset Tree assets with filter:", e);
+           this._filter.assetType.forEach((assetT: string) => {
+               if (this._assetTypes.findIndex((assetD: AssetDescriptor) => assetD.name === assetT) === -1) {
+                   showSnackbar(undefined, "filter.assetTypeDoesNotExist", "dismiss");
+               }
+           });
+           foundAssetIds = [];
+       }
 
         return (asset) => {
             let attrValueCheck = true;
@@ -1239,7 +1255,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     }
                 });
 
-                let matchingAsset: Asset | undefined = response.data.find((a: Asset) => a.id === asset.id );
+                const matchingAsset: Asset | undefined = foundAssets.find((a: Asset) => a.id === asset.id );
 
                 if (matchingAsset && matchingAsset.attributes) {
                     for (let attributeValIndex = 0; attributeValIndex < attributeVal.length; attributeValIndex++) {
