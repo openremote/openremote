@@ -10,8 +10,11 @@ volumes:
   manager-data:
   postgresql-data:
 
-services:
+networks:
+  monitoring:
+    external: true
 
+services:
   proxy:
     image: openremote/proxy:${PROXY_VERSION:-latest}
     restart: always
@@ -53,9 +56,8 @@ services:
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
 
-
   manager:
-#    privileged: true
+    #    privileged: true
     restart: always
     image: openremote/manager:${MANAGER_VERSION:-latest}
     depends_on:
@@ -86,3 +88,6 @@ services:
       OR_SETUP_IMPORT_DEMO_AGENT_VELBUS:
     volumes:
       - manager-data:/storage
+    networks:
+      - default
+      - monitoring

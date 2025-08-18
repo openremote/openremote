@@ -1,0 +1,89 @@
+name: Deploy to Hetzner Cloud
+
+on:
+  workflow_dispatch:
+    inputs:
+      instance_name:
+        description: "Name of the instance"
+        required: true
+      server_type:
+        description: |
+          Hetzner server type
+        required: true
+        type: choice
+        default: cx22
+        options:
+          - cpx11
+          - cpx21
+          - cpx31
+          - cpx41
+          - cpx51
+          - cax11
+          - cax21
+          - cax31
+          - cax41
+          - ccx13
+          - ccx23
+          - ccx33
+          - ccx43
+          - ccx53
+          - ccx63
+          - cx22
+          - cx32
+          - cx42
+          - cx52
+      volume_size:
+        description: "Volume size in GB (10-1000)"
+        required: true
+        default: "10"
+      enable_monitoring:
+        description: "Enable monitoring stack?"
+        required: true
+        default: "false"
+        type: boolean
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: "1.3.0"
+
+      - name: Validate volume_size input
+        run: |
+          if ! [[ "${{ github.event.inputs.volume_size }}" =~ ^[0-9]+$ ]]; then
+            echo "Error: volume_size must be an integer."
+            exit 1
+          fi
+          if (( ${{ github.event.inputs.volume_size }} < 10 || ${{ github.event.inputs.volume_size }} > 1000 )); then
+            echo "Error: volume_size must be between 10 and 1000."
+            exit 1
+          fi
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform apply
+        id: terraform
+        run: terraform apply -auto-approve -var="hcloud_token=${{ secrets.HETZNER_API_TOKEN }}" -var="instance_name=${{ github.event.inputs.instance_name }}" -var="server_type=${{ github.event.inputs.server_type }}" -var="volume_size=${{ github.event.inputs.volume_size }}" -var="github_repository=${{ github.repository }}" -var="github_ref=${{ github.ref_name }}" -var="enable_monitoring=${{ github.event.inputs.enable_monitoring }}"
+        env:
+          HETZNER_API_TOKEN: ${{ secrets.HETZNER_API_TOKEN }}
+
+      - name: Get Terraform outputs
+        uses: dflook/terraform-output@v2
+        id: terraform-output
+
+      - name: Wait for server to be ready
+        run: |
+          echo "Waiting for OpenRemote service to be ready..."
+          until curl -Ikf "https://${{ steps.terraform-output.outputs.server_ip }}"; do
+            echo "Waiting for HTTPS service to be available..."
+            sleep 10
+          done
+          echo "Server is ready with enabled. IP: ${{ steps.terraform-output.outputs.server_ip }}"

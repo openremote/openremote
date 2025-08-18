@@ -1,0 +1,40 @@
+#cloud-config
+
+package_update: true
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gnupg
+  - lsb-release
+  - git
+
+runcmd:
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+  - echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+  - systemctl enable docker
+  - systemctl start docker
+  - usermod -aG docker root
+  - mkdir -p /opt/openremote
+  - cd /opt/openremote && curl -o docker-compose.yml https://raw.githubusercontent.com/${github_repository}/refs/heads/${github_ref}/docker-compose.yml
+  - cd /opt/openremote && curl -o prometheus.yml https://raw.githubusercontent.com/${github_repository}/refs/heads/${github_ref}/prometheus.yml
+  - mkdir -p /opt/openremote/grafana/provisioning/datasources
+  - mkdir -p /opt/openremote/grafana/provisioning/dashboards
+  - mkdir -p /opt/openremote/grafana/provisioning/dashboards/dashboards
+  - mkdir -p /opt/openremote/monitoring
+  - cd /opt/openremote && curl -o grafana/provisioning/datasources/prometheus.yml https://raw.githubusercontent.com/${github_repository}/refs/heads/${github_ref}/grafana/provisioning/datasources/prometheus.yml
+  - cd /opt/openremote && curl -o grafana/provisioning/dashboards/dashboard.yml https://raw.githubusercontent.com/${github_repository}/refs/heads/${github_ref}/grafana/provisioning/dashboards/dashboard.yml
+  - cd /opt/openremote && curl -o grafana/provisioning/dashboards/dashboards/openremote-overview.json https://raw.githubusercontent.com/${github_repository}/refs/heads/${github_ref}/grafana/provisioning/dashboards/dashboards/openremote-overview.json
+  - cd /opt/openremote && curl -o monitoring/docker-compose.yml https://raw.githubusercontent.com/${github_repository}/refs/heads/${github_ref}/monitoring/docker-compose.yml
+  - cd /opt/openremote && docker compose pull
+  - docker network create monitoring
+  - |
+      cd /opt/openremote
+      OR_HOSTNAME=$(hostname -I | awk '{print $1}')
+      if [ "${enable_monitoring}" = "true" ]; then
+        docker compose -f docker-compose.yml -f ./monitoring/docker-compose.yml -p openremote up -d
+      else
+        docker compose -p openremote up -d
+      fi
