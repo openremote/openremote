@@ -1,29 +1,35 @@
 buildDir = "dist"
 
-task copyMdiFont(type: Exec) {
+tasks.register('copyMdiFont', Exec) {
     dependsOn getYarnInstallTask()
     // Using yarn throws an error relating to node_module resolution
     commandLine npmCommand("npm"), "run", "copyMdiFont"
 }
 
-task clean() {
+tasks.register('clean') {
     doLast {
         delete "dist"
         delete "lib"
     }
 }
 
-task prepareUi() {
+tasks.register('prepareUi') {
     dependsOn clean, npmAnalyze, npmPrepare
 }
 
-task publishUi() {
+tasks.register('publishUi') {
     dependsOn clean, npmPublish
 }
 
-task installDist(type: Copy) {
+tasks.register('installDist', Copy) {
     dependsOn getYarnInstallTask(), copyMdiFont, npmAnalyze
     resolveTask(":ui:app:shared:generateSources").dependsOn it
     from "${buildDir}/Material Design Icons"
     into "${project(':ui:app:shared').projectDir}/fonts/Material Design Icons"
+}
+
+tasks.register('npmBuild', Exec) {
+    mustRunAfter npmClean
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "run", "build"
 }
