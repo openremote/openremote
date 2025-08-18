@@ -322,6 +322,17 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     @property({type: Boolean})
     public checkboxes?: boolean = false;
 
+    @property({type: Boolean})
+    public enableVirtualization?: boolean = true;
+
+    @property({type: Number})
+    public virtualItemHeight?: number = 44; // height of each tree item in pixels
+    
+    private _measuredItemHeight?: number; // dynamically measured height
+
+    @property({type: Number})
+    public virtualBufferSize?: number = 10; // number of items to render outside visible area
+
     protected config?: AssetTreeConfig;
 
     @property({attribute: false})
@@ -332,6 +343,18 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _selectedNodes: UiAssetTreeNode[] = [];
     protected _expandedNodes: UiAssetTreeNode[] = [];
     protected _initCallback?: EventCallback;
+
+    // Virtual scrolling state
+    @state()
+    protected _flattenedNodes: UiAssetTreeNode[] = [];
+    @state()
+    protected _scrollTop: number = 0;
+    @state()
+    protected _containerHeight: number = 0;
+    @state()
+    protected _startIndex: number = 0;
+    @state()
+    protected _endIndex: number = 0;
 
     @state()
     protected _filter: OrAssetTreeFilter = new OrAssetTreeFilter();
@@ -355,6 +378,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     private _dragDropParentId: string | null = null;
     protected _expandTimer?: number = undefined;
     private _latestSelected: UiAssetTreeNode | undefined = undefined;
+    private _resizeObserver?: ResizeObserver;
+    private _listContainer?: HTMLElement;
+    private _scrollUpdatePending: boolean = false;
 
     protected assetsChildren: {
         [key: string]: UiAssetTreeNode[]
@@ -374,7 +400,29 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     public disconnectedCallback() {
         super.disconnectedCallback();
+        this._cleanupVirtualScrolling();
         this.requestUpdate();
+    }
+
+    protected firstUpdated(changedProperties: PropertyValues) {
+        super.firstUpdated(changedProperties);
+        this._setupVirtualScrolling();
+    }
+
+    protected updated(changedProperties: PropertyValues) {
+        super.updated(changedProperties);
+        
+        // Re-setup virtual scrolling if container was re-rendered
+        if (this.enableVirtualization && !this._listContainer) {
+            this._setupVirtualScrolling();
+        }
+        
+        // Update virtual range if relevant properties changed
+        if (changedProperties.has('enableVirtualization') || 
+            changedProperties.has('virtualItemHeight') || 
+            changedProperties.has('virtualBufferSize')) {
+            this._updateVirtualScrollRange();
+        }
     }
 
     public refresh() {
@@ -581,16 +629,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     <span id="loading"><or-translate value="loading"></or-translate></span>`
                 : ((this._nodes.length === 0 || !this.atLeastOneNodeToBeShown())
                             ? html `<span id="noAssetsFound"><or-translate value="noAssetsFound"></or-translate></span>` 
-                            : html`
-                    <div id="list-container">
-                        <ol id="list">
-                            ${this._nodes.map((treeNode) => this._treeNodeTemplate(treeNode, 0)).filter(t => !!t)}
-                            <li class="asset-list-element">    
-                                <div class="end-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"></div>
-                            </li>
-                        </ol>
-                    </div>
-                `)
+                            : this._renderTreeList())
             }
 
             <div id="footer">
@@ -695,6 +734,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     protected _toggleExpander(expander: HTMLElement, node: UiAssetTreeNode | null, silent: boolean = false) {
         if (node && node.expandable) {
+
             node.expanded = !node.expanded;
 
             if (node.expanded) {
@@ -705,10 +745,27 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
             const elem = expander.parentElement!.parentElement!.parentElement!;
             elem.toggleAttribute("data-expanded");
+            
+
+            
+            // Update flattened nodes when expansion state changes
+            this._updateFlattenedNodes();
+            
+            // Force immediate re-render to prevent visual gaps
+            this.requestUpdate();
+            
+            // Sync scroll position if virtualization is active
+            if (this.enableVirtualization && this._flattenedNodes.length >= 50) {
+                setTimeout(() => {
+                    if (this._listContainer && Math.abs(this._listContainer.scrollTop - this._scrollTop) > 5) {
+                        this._listContainer.scrollTop = this._scrollTop;
+                    }
+                }, 0);
+            }
+            
             if (!silent) {
                 this.dispatchEvent(new OrAssetTreeToggleExpandEvent({node: node}));
             }
-            this.requestUpdate();
         }
     }
 
@@ -1117,6 +1174,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     node.notMatchingFilter = false;
                     node.hidden = false;
                 });
+                this._updateFlattenedNodes();
                 this.requestUpdate("_nodes");
                 return;
             }
@@ -1137,6 +1195,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         this._nodes.forEach((node: UiAssetTreeNode) => {
                             this.filterTreeNode(node, matcher);
                         });
+                        this._updateFlattenedNodes();
                         this.disabled = false;
                     }
                 });
@@ -1762,6 +1821,252 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
 
 
+    protected _flattenTreeNodes(nodes: UiAssetTreeNode[], level: number = 0): UiAssetTreeNode[] {
+        let flattened: UiAssetTreeNode[] = [];
+        
+        for (const node of nodes) {
+            if (!node.hidden) {
+                // Add level information for indentation
+                (node as any).level = level;
+                flattened.push(node);
+                
+                // If node is expanded and has children, add them recursively
+                if (node.expanded && node.children && node.children.length > 0) {
+                    flattened = flattened.concat(this._flattenTreeNodes(node.children, level + 1));
+                }
+            }
+        }
+        
+        return flattened;
+    }
+
+    protected _updateVirtualScrollRange(): void {
+        if (!this.enableVirtualization) {
+            return;
+        }
+
+        const effectiveItemHeight = this._getEffectiveItemHeight();
+        
+        // If container height is not yet available, use a default or try to get it
+        let containerHeight = this._containerHeight;
+        if (!containerHeight && this._listContainer) {
+            containerHeight = this._listContainer.clientHeight || 400; // fallback height
+            this._containerHeight = containerHeight;
+        }
+        
+        if (!containerHeight) {
+            containerHeight = 400; // fallback for initial render
+        }
+
+        const visibleCount = Math.ceil(containerHeight / effectiveItemHeight);
+        const bufferSize = this.virtualBufferSize || 10;
+        
+        // Ensure we have flattened nodes before calculating range
+        if (this._flattenedNodes.length === 0) {
+            this._startIndex = 0;
+            this._endIndex = 0;
+            return;
+        }
+        
+        // Calculate which item should be at the top of the viewport
+        const firstVisibleIndex = Math.floor(this._scrollTop / effectiveItemHeight);
+        
+        // Calculate start and end indices with buffer
+        this._startIndex = Math.max(0, firstVisibleIndex - bufferSize);
+        this._endIndex = Math.min(
+            this._flattenedNodes.length,
+            firstVisibleIndex + visibleCount + (bufferSize * 2)
+        );
+
+        // Ensure we always have at least some items visible if available
+        if (this._endIndex <= this._startIndex && this._flattenedNodes.length > 0) {
+            this._startIndex = 0;
+            this._endIndex = Math.min(visibleCount + (bufferSize * 2), this._flattenedNodes.length);
+        }
+        
+        // Ensure end index is never less than start index and we have enough items to fill the screen
+        const minItemsToRender = Math.max(visibleCount + bufferSize, 20); // minimum 20 items
+        this._endIndex = Math.max(this._startIndex + minItemsToRender, this._endIndex);
+        
+        // Ensure we don't exceed the total length
+        this._endIndex = Math.min(this._endIndex, this._flattenedNodes.length);
+        
+
+    }
+
+    protected _updateFlattenedNodes(): void {
+        if (this._nodes) {
+            const previousLength = this._flattenedNodes.length;
+            this._flattenedNodes = this._flattenTreeNodes(this._nodes);
+            
+            // If the number of flattened nodes changed significantly, we may need to adjust scroll position
+            if (this._flattenedNodes.length !== previousLength) {
+                // Ensure scroll position is valid for the new content height
+                const effectiveItemHeight = this._getEffectiveItemHeight();
+                const maxScrollTop = Math.max(0, (this._flattenedNodes.length * effectiveItemHeight) - this._containerHeight);
+                if (this._scrollTop > maxScrollTop) {
+                    this._scrollTop = maxScrollTop;
+                    // Update the actual scroll position of the container
+                    if (this._listContainer) {
+                        this._listContainer.scrollTop = this._scrollTop;
+                    }
+                }
+            }
+            
+            this._updateVirtualScrollRange();
+        }
+    }
+
+    protected _renderTreeList(): TemplateResult {
+        if (!this.enableVirtualization || this._flattenedNodes.length < 50) {
+            // Use traditional rendering for small lists or when virtualization is disabled
+            return html`
+                <div id="list-container">
+                    <ol id="list">
+                        ${this._nodes!.map((treeNode) => this._treeNodeTemplate(treeNode, 0)).filter(t => !!t)}
+                        <li class="asset-list-element">    
+                            <div class="end-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"></div>
+                        </li>
+                    </ol>
+                </div>
+            `;
+        }
+
+        // Virtual scrolling rendering
+        const effectiveItemHeight = this._getEffectiveItemHeight();
+        const totalHeight = this._flattenedNodes.length * effectiveItemHeight;
+        
+        // Ensure we have valid indices first
+        const safeStartIndex = Math.max(0, Math.min(this._startIndex, this._flattenedNodes.length));
+        const safeEndIndex = Math.max(safeStartIndex, Math.min(this._endIndex, this._flattenedNodes.length));
+        
+        // Calculate offset based on the safe start index to avoid positioning issues
+        const offsetY = safeStartIndex * effectiveItemHeight;
+        
+        const visibleNodes = this._flattenedNodes.slice(safeStartIndex, safeEndIndex);
+
+
+
+        return html`
+            <div id="list-container" @scroll="${this._onScroll}">
+                ${totalHeight > 0 && visibleNodes.length > 0 ? html`
+                    <div style="height: ${totalHeight}px; position: relative; min-height: 100%;">
+                        <ol id="list" style="position: absolute; top: ${offsetY}px; left: 0; right: 0; margin: 0; padding: 0; min-height: ${visibleNodes.length * effectiveItemHeight}px;">
+                            ${visibleNodes.map((treeNode) => this._treeNodeTemplate(treeNode)).filter(t => !!t)}
+                            <li class="asset-list-element">    
+                                <div class="end-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"></div>
+                            </li>
+                        </ol>
+                    </div>
+                ` : totalHeight > 0 ? html`
+                    <div style="height: ${totalHeight}px; position: relative;">
+                        <div style="padding: 20px; text-align: center; color: #999;">Loading items...</div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    protected _onScroll = (event: Event): void => {
+        if (!this.enableVirtualization || this._scrollUpdatePending) return;
+        
+        const target = event.target as HTMLElement;
+        const newScrollTop = target.scrollTop;
+        
+        // Throttle updates using requestAnimationFrame
+        this._scrollUpdatePending = true;
+        requestAnimationFrame(() => {
+            this._scrollUpdatePending = false;
+            
+            // Re-measure height periodically during scroll
+            if (Math.floor(this._scrollTop / 100) !== Math.floor(newScrollTop / 100)) {
+                this._measureItemHeight();
+            }
+            
+            // Update scroll position
+            this._scrollTop = newScrollTop;
+            
+            this._updateVirtualScrollRange();
+            
+            // Request update to re-render visible items
+            this.requestUpdate();
+        });
+    };
+
+    protected _measureItemHeight(): void {
+        if (!this._listContainer) return;
+        
+        // Find the first rendered tree item (the full <li> element) to measure its actual height
+        const firstItem = this._listContainer.querySelector('.asset-list-element') as HTMLElement;
+        if (firstItem) {
+            const rect = firstItem.getBoundingClientRect();
+            const computedStyle = window.getComputedStyle(firstItem);
+            
+            // Include margins if any
+            const marginTop = parseFloat(computedStyle.marginTop) || 0;
+            const marginBottom = parseFloat(computedStyle.marginBottom) || 0;
+            
+            this._measuredItemHeight = rect.height + marginTop + marginBottom;
+            
+            // If the measured height is significantly different, update and re-render
+            const currentEffective = this._getEffectiveItemHeight();
+            if (Math.abs(this._measuredItemHeight - currentEffective) > 2) {
+                this._updateVirtualScrollRange();
+                this.requestUpdate();
+            }
+        }
+    }
+
+    protected _getEffectiveItemHeight(): number {
+        return this._measuredItemHeight || this.virtualItemHeight || 44;
+    }
+
+    protected _setupVirtualScrolling(): void {
+        if (!this.enableVirtualization) return;
+
+        this._listContainer = this.shadowRoot?.querySelector('#list-container') as HTMLElement;
+        
+        if (this._listContainer) {
+            // Setup resize observer to track container height changes
+            this._resizeObserver = new ResizeObserver((entries) => {
+                for (const entry of entries) {
+                    const newHeight = entry.contentRect.height;
+                    if (Math.abs(this._containerHeight - newHeight) > 5) {
+                        this._containerHeight = newHeight;
+                        this._updateVirtualScrollRange();
+                        this.requestUpdate();
+                    }
+                }
+            });
+            
+            this._resizeObserver.observe(this._listContainer);
+            this._containerHeight = this._listContainer.clientHeight;
+            
+            // Initial setup
+            this._scrollTop = this._listContainer.scrollTop;
+            
+            // Measure actual item height after first render
+            setTimeout(() => {
+                this._measureItemHeight();
+                this._updateVirtualScrollRange();
+                this.requestUpdate();
+            }, 100);
+            
+            this._updateVirtualScrollRange();
+            
+
+        }
+    }
+
+    protected _cleanupVirtualScrolling(): void {
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+            this._resizeObserver = undefined;
+        }
+        
+        this._listContainer = undefined;
+    }
+
     protected _buildTreeNodes(assets: Asset[], sortFunction: (a: UiAssetTreeNode, b: UiAssetTreeNode) => number) {
         if (!assets || assets.length === 0) {
             this._nodes = [];
@@ -1862,6 +2167,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         if (this.selectedIds && this.selectedIds.length > 0) {
             this._updateSelectedNodes();
         }
+
+        // Update flattened nodes for virtual scrolling
+        this._updateFlattenedNodes();
 
         if (this.expandAllNodes) {
             OrAssetTree._forEachNodeRecursive(this._nodes, (node) => {
@@ -1987,7 +2295,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         this._expandTimer = undefined;
     }
 
-    protected _treeNodeTemplate(treeNode: UiAssetTreeNode, level: number): TemplateResult | string | undefined {
+    protected _treeNodeTemplate(treeNode: UiAssetTreeNode, level?: number): TemplateResult | string | undefined {
+        // Use level from flattened structure if available, fallback to parameter
+        const nodeLevel = (treeNode as any).level !== undefined ? (treeNode as any).level : (level || 0);
+        const isVirtualized = this.enableVirtualization && this._flattenedNodes.length >= 100;
         const descriptor = AssetModelUtil.getAssetDescriptor(treeNode.asset!.type!);
 
         let parentCheckboxIcon;
@@ -2020,7 +2331,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         return html`
             <li class="asset-list-element" ?data-selected="${treeNode.selected}" ?data-expanded="${treeNode.expanded}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, treeNode)}">
                 <div class="in-between-element" node-asset-id="${treeNode.parent ? (treeNode.parent.asset ? treeNode.parent.asset.id : '' ) : undefined}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"></div>
-                <div class="node-container draggable" node-asset-id="${treeNode.asset ? treeNode.asset.id : ''}" draggable="${!this._isReadonly()}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragstart="${(ev: DragEvent) => this._onDragStart(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}" style="padding-left: ${level * 22}px">
+                <div class="node-container draggable" node-asset-id="${treeNode.asset ? treeNode.asset.id : ''}" draggable="${!this._isReadonly()}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragstart="${(ev: DragEvent) => this._onDragStart(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}" style="padding-left: ${nodeLevel * 22}px">
                     <div class="node-name">
                         <div class="expander" ?data-expandable="${treeNode.expandable}"></div>
                         ${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, (filterColorForNonMatchingAsset ? 'd3d3d3' : undefined))}
@@ -2039,9 +2350,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         : ``}
                     </div>
                 </div>
-                <ol>
-                    ${!treeNode.children || (treeNode.expandable && !treeNode.expanded)  ? `` : treeNode.children.map((childNode) => this._treeNodeTemplate(childNode, level + 1)).filter(t => !!t)}
-                </ol>
+                ${!isVirtualized ? html`
+                    <ol>
+                        ${!treeNode.children || (treeNode.expandable && !treeNode.expanded) ? `` : treeNode.children.map((childNode) => this._treeNodeTemplate(childNode, nodeLevel + 1)).filter(t => !!t)}
+                    </ol>
+                ` : ''}
             </li>
         `;
     }

@@ -92,6 +92,7 @@ export const style = css`
         flex: 1 1 auto;
         overflow: auto;
         font-size: 14px;
+        position: relative;
     }
     
     #list {
