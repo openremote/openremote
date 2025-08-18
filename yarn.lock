@@ -3905,15 +3905,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"console_loader@workspace:ui/app/console_loader":
-  version: 0.0.0-use.local
-  resolution: "console_loader@workspace:ui/app/console_loader"
-  dependencies:
-    "@openremote/or-app": "workspace:*"
-    "@openremote/util": "workspace:*"
-  languageName: unknown
-  linkType: soft
-
 "content-disposition@npm:0.5.4":
   version: 0.5.4
   resolution: "content-disposition@npm:0.5.4"
