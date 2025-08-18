@@ -105,9 +105,9 @@ public class Microservice {
     protected String label;
 
     /**
-     * URL/Path to the service's configuration page or user interface.
+     * URL to the service's configuration page or user interface.
      * 
-     * This URL/Path provides access to the service's web interface for configuration
+     * This URL provides access to the service's web interface for configuration
      * and management purposes (e.g.,
      * "https://openremote.app/services/energy-service/ui").
      *
