@@ -35,7 +35,7 @@ import java.io.Serializable;
  * <li>{@link ValueDescriptor#getFormat}</li>
  * </ol>
  */
-@JsonSchemaTitle("ValueFormat")
+@JsonSchemaTitle("Value Format")
 public class ValueFormat implements Serializable {
 
     public enum StyleRepresentation {

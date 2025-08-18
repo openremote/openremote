@@ -21,7 +21,7 @@ package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.*;
 
-import org.openremote.model.util.JSONSchemaUtil.JsonSchemaExamples;
+import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.Serializable;
@@ -40,6 +40,7 @@ import java.util.regex.PatternSyntaxException;
 /**
  * Represents a constraint to apply to a value; most are based on JSR-380 validation.
  */
+@JsonSchemaTitle("Constraints")
 @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME)
 @JsonSubTypes({
     @JsonSubTypes.Type(ValueConstraint.Size.class),

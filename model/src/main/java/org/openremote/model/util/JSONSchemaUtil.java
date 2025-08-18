@@ -90,6 +90,8 @@ public class JSONSchemaUtil {
     public @interface JsonSchemaTitle {
         String keyword() default "title";
         String value();
+        /* Whether to put the title on the root of the schema even when the class is wrapped in an array. */
+        boolean container() default true;
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -97,6 +99,7 @@ public class JSONSchemaUtil {
     public @interface JsonSchemaDescription {
         String keyword() default "description";
         String value();
+        boolean container() default true;
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -104,6 +107,7 @@ public class JSONSchemaUtil {
     public @interface JsonSchemaFormat {
         String keyword() default "format";
         String value();
+        boolean container() default true;
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -111,6 +115,7 @@ public class JSONSchemaUtil {
     public @interface JsonSchemaDefault {
         String keyword() default "default";
         String value();
+        boolean container() default true;
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -118,6 +123,7 @@ public class JSONSchemaUtil {
     public @interface JsonSchemaExamples {
         String keyword() default "examples";
         String[] value();
+        boolean container() default true;
     }
 
     public static class CustomModule implements Module {
@@ -203,7 +209,14 @@ public class JSONSchemaUtil {
                 ObjectNode schema,
                 ObjectMapper mapper
         ) {
-            A annotation = type.getDeclaredAnnotation(annotationClass);
+            A annotation;
+
+            if (type.isArray() && type.getComponentType() != null) {
+                annotation = type.getComponentType().getDeclaredAnnotation(annotationClass);
+            } else {
+                annotation = type.getDeclaredAnnotation(annotationClass);
+            }
+
             if (annotation != null) {
                 applyAnnotation(annotationClass, annotation, schema, mapper);
             }

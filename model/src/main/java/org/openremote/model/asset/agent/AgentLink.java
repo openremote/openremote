@@ -25,8 +25,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 //import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.query.filter.ValuePredicate;
-import org.openremote.model.util.JSONSchemaUtil.JsonSchemaDefault;
-import org.openremote.model.util.JSONSchemaUtil.JsonSchemaFormat;
+import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFilter;
@@ -40,6 +39,7 @@ import java.util.Optional;
  * own concrete implementation of this class or use {@link DefaultAgentLink} with fields describing each configuration
  * item and standard JSR-380 annotations should be used to provide validation logic.
  */
+@JsonSchemaTitle("Agent Link")
 @JsonSchemaDefault("{" +
         "\"id\": \"\"" +
         "\"type\": \"DefaultAgentLink\"" +
