@@ -72,7 +72,7 @@ signing {
 }
 
 def cacheDir = layout.projectDirectory.dir("cache").asFile
-def openMapTilesFontsVersion = "v1.1"
+def openMapTilesFontsVersion = "v2.0"
 def openMapTilesFontsZip = new File(cacheDir, "openmaptiles-fonts-${openMapTilesFontsVersion}.zip")
 def openMapTilesFontsZipSha256 = "3a7a6c2dcd940a840aa6ffac8f39758252a667a0b329945b071fb44bf00e7f47"
 
