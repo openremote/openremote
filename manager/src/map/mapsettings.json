@@ -1300,7 +1300,7 @@
       "type": "fill-extrusion",
       "source": "vector_tiles",
       "source-layer": "building",
-      "minzoom": 14,
+      "minzoom": 15,
       "paint": {
         "fill-extrusion-color": "hsl(35, 8%, 85%)",
         "fill-extrusion-height": {
