@@ -445,16 +445,17 @@ jobs:
           commitSha=$(git rev-parse HEAD)
           commitShaShort=$(git rev-parse --short HEAD)
 
+          if [ "$(uname -m)" == "aarch64" ]; then
+            PLATFORM=linux/aarch64
+            OTHER_PLATFORM=linux/amd64
+          fi
+
           if [ -n "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"#ref"* ]] || [ -n "$TEST_UI_CMD" ]; then
             if [ -n "$MANAGER_TAGS" ]; then
-              command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
+              command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath"
               echo "pushRequired=true" >> $GITHUB_OUTPUT
               echo "managerDockerImage=openremote/manager:$FIRST_MANAGER_TAG" >> $GITHUB_OUTPUT
             else
-              if [ "$(uname -m)" == "aarch64" ]; then
-                PLATFORM=linux/aarch64
-                OTHER_PLATFORM=linux/amd64
-              fi
               command="docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${OTHER_PLATFORM:-linux/aarch64} -t openremote/manager:$commitShaShort $buildPath"
               echo "managerDockerImage=openremote/manager:$commitShaShort" >> $GITHUB_OUTPUT
             fi
