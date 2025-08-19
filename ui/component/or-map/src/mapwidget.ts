@@ -3,6 +3,7 @@ import maplibregl,{
     AddLayerObject,
     IControl,
     GeolocateControl,
+    GeoJSONSource,
     LngLat,
     LngLatLike,
     Map as MapGL,
@@ -11,7 +12,7 @@ import maplibregl,{
     Marker as MarkerGL,
     NavigationControl,
     Style as StyleGL,
-    Popup
+    Popup,
     StyleSpecification,
     GeoJSONSourceSpecification,
 } from "maplibre-gl";
@@ -889,8 +890,10 @@ export class MapWidget {
                      */
 
                     let sourcePoints: GeoJSONSource = (this._mapGl.getSource('mapPoints') as GeoJSONSource);
-                    sourcePoints.getClusterLeaves(cluster.properties.cluster_id, cluster.properties.point_count, 0, (err, aFeatures) => {
-                        aFeatures.forEach((feature) => {
+                    sourcePoints.getClusterLeaves(cluster.properties.cluster_id, cluster.properties.point_count, 0)
+                        .then((aFeatures: any) => {
+                            if (aFeatures) {
+                                aFeatures.forEach((feature: any) => {
                             let assetType = feature.properties?.assetType;
 
                             if (assetType) {
@@ -945,13 +948,17 @@ export class MapWidget {
                                     color: this._assetTypesColors[prop.assetType]
                                 } ];
                             }
+                                });
+
+                                let donutChart = this.createDonutChart(props, totalCount);
+
+                                // @ts-ignore
+                                this._markers.push(new maplibregl.Marker({element: donutChart}).setLngLat(cluster.geometry['coordinates']).addTo(this._mapGl));
+                            }
+                        })
+                        .catch((err: any) => {
+                            console.error('Error getting cluster leaves:', err);
                         });
-
-                        let donutChart = this.createDonutChart(props, totalCount);
-
-                        // @ts-ignore
-                        this._markers.push(new maplibregl.Marker({element: donutChart}).setLngLat(cluster.geometry['coordinates']).addTo(this._mapGl));
-                    });
                 }
             });
         }
