@@ -118,7 +118,6 @@ public class KeyStoreServiceImpl implements KeyStoreService {
                             this.keyStore = KeyStore.getInstance(defaultKeyStorePath.toFile(), adminPassword.toCharArray());
                             if (this.keyStore != null) {
                                 this.keyStorePassword = adminPassword;
-                                keyStorePassword = adminPassword;
                                 LOG.log(Level.INFO, "Loaded KeyStore from " + defaultKeyStorePath.toAbsolutePath() +
                                         " using OR_ADMIN_PASSWORD as fallback. Make sure to set OR_KEYSTORE_PASSWORD " +
                                         "to OR_ADMIN_PASSWORD's value to get rid of this message.");
