@@ -19,7 +19,7 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.util.JSONSchemaUtil.*;
@@ -37,7 +37,8 @@ import java.io.Serializable;
 @JsonSchemaTitle("Forecast Configuration")
 public abstract class ForecastConfiguration implements Serializable {
 
-    @JsonProperty
+    // Ignore to ensure that the definitions merge
+    @JsonIgnore
     protected String type;
 
     protected ForecastConfiguration(String type) {
