@@ -45,11 +45,9 @@ const styling = css`
 
     font-size: clamp(14px, calc(18px * var(--k, 1)), 28px);
 
-    /* angenehme Zeilenhöhe + Abstand nach unten */
     line-height: 1.2;
     margin-block-end: clamp(4px, calc(10px * var(--k, 1)), 14px);
 
-    /* bricht lange Namen sauber um */
     hyphens: auto;
     word-break: break-word;
     padding-inline: 4px; /* kleiner Innenabstand links/rechts */

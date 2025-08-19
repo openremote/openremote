@@ -65,7 +65,7 @@ export class OrDashboardBrowser extends LitElement {
 
     protected renderGrid() {
         const sidebarElement = this.shadowRoot?.getElementById("sidebarElement");
-        const coords: Array<[number, number]> = new Array<[number, number]>([0,0],[2,0], [0,2], [2,2], [0,4], [2,4], [0,6], [2,6], [0,8], [2,8]) // TODO: make this unlimited possibilities with a formula
+        const coords: Array<[number, number]> = new Array<[number, number]>([0,0],[2,0], [0,2], [2,2], [0,4], [2,4], [0,6], [2,6], [0,8], [2,8], [0,10], [2,10], [0,12], [2,12]) // TODO: make this unlimited possibilities with a formula
         const sidebarItems: any[] = Array.from(widgetTypes)
             .sort((a, b) => a[1].displayName.localeCompare(b[1].displayName))
             .map((typeArr, index) => {

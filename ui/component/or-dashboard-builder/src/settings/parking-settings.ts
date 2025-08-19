@@ -3,7 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { ParkingWidgetConfig } from "../widgets/parking-widget";
 import { AttributesSelectEvent } from "../panels/attributes-panel";
 import { AssetWidgetSettings } from "../util/or-asset-widget";
-import { Attribute, AttributeRef } from "@openremote/model";
+import { Attribute } from "@openremote/model";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-icon";
 
@@ -34,7 +34,7 @@ export class ParkingSettings extends AssetWidgetSettings {
     };
 
     return html`
-      <div class="field" style="padding-inline-start:14px">
+      <div class="field" style="padding-inline-start:12px">
         <or-mwc-input
           .type=${InputType.TEXT}
           .value=${this.widgetConfig.parkingLabel ?? ""}

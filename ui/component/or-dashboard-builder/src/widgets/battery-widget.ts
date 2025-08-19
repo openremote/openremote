@@ -49,12 +49,9 @@ const styling = css`
     box-sizing: border-box;
     overflow: hidden;
     padding: 8px;
+    position: relative; /* <— WICHTIG: Bezugssystem für absolute Positionierung */
   }
-
-  /* Icon-Area */
-  .icon-container {
-    margin-bottom: 8px;
-  }
+    
   .icon-container or-icon {
     --or-icon-width: var(--icon-size);
     --or-icon-height: var(--icon-size);
@@ -67,8 +64,13 @@ const styling = css`
   }
 
   .attribute-timestamp {
-    font-size: 12px;
-    color: #777777ff;
+    position: absolute; /* <— WICHTIG */
+    left: 8px; /* unten links */
+    bottom: 8px;
+    font-size: 10px;
+    color: #9ca3af;
+    text-align: left;
+    pointer-events: none; /* optional: verhindert Hover/Klicks */
   }
 `;
 
@@ -201,7 +203,9 @@ export class BatteryWidget extends OrAssetWidget {
                   ></or-icon>
                 </div>
                 <div class="attribute-value">${attribute.value}%</div>
-                ${cfg.showHelperText ? html`<div class="attribute-timestamp">${this.formatUpdatedAt(attribute.timestamp)}</div>` : null}
+                ${cfg.showHelperText
+                  ? html`<div class="attribute-timestamp">${this.formatUpdatedAt(attribute.timestamp)}</div>`
+                  : null}
               </div>
             `;
           })

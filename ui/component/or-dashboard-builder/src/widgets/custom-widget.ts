@@ -61,13 +61,8 @@ const styling = css`
     justify-content: center;
     box-sizing: border-box;
     overflow: hidden;
-    padding: 8px;
   }
-
-  /* Icon-Area */
-  .icon-container {
-    margin-bottom: 8px;
-  }
+    
   .icon-container or-icon {
     --or-icon-width: var(--icon-size);
     --or-icon-height: var(--icon-size);
@@ -89,8 +84,12 @@ const styling = css`
   }
 
   .attribute-timestamp {
-    font-size: 12px;
-    color: #777777ff;
+    position: absolute; /* <— WICHTIG */
+    bottom: 13px;
+    font-size: 10px;
+    color: #9ca3af;
+    text-align: left;
+    pointer-events: none; /* optional: verhindert Hover/Klicks */
   }
 `;
 
