@@ -426,7 +426,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
 
         LOG.info("Enabling auth reverse proxy (passing requests through to Keycloak) on web context: /" + keycloakPath);
-        webService.getRequestHandlers().add(0, pathStartsWithHandler(
+        webService.getRequestHandlers().addFirst(pathStartsWithHandler(
             "Keycloak auth proxy",
             "/" + keycloakPath,
             authProxyHandler));
