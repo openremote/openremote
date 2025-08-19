@@ -85,7 +85,6 @@ public class JSONSchemaUtil {
         }
     }
 
-
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.TYPE, ElementType.FIELD})
     public @interface JsonSchemaTitle {
@@ -137,8 +136,8 @@ public class JSONSchemaUtil {
 
             // Class type remapping
             builder.forTypesInGeneral()
-                .withCustomDefinitionProvider((javaType, context) -> {
-                    Class<?> erasedType = javaType.getErasedType();
+                .withCustomDefinitionProvider((resolvedType, context) -> {
+                    Class<?> erasedType = resolvedType.getErasedType();
                     if (erasedType.equals(Object.class)) {
                         return new CustomDefinition(SchemaNodeFactory.getSchemaType(SchemaNodeFactory.TYPES_ALL));
                     }
@@ -169,8 +168,8 @@ public class JSONSchemaUtil {
             builder.forTypesInGeneral().withEnumResolver(typeScope -> null);
 
             // Custom annotations injection
-            builder.forTypesInGeneral().withTypeAttributeOverride((attrs, javaType, context) -> {
-                Class<?> erasedType = javaType.getType().getErasedType();
+            builder.forTypesInGeneral().withTypeAttributeOverride((attrs, typeScope, context) -> {
+                Class<?> erasedType = typeScope.getType().getErasedType();
                 ObjectMapper mapper = context.getGeneratorConfig().getObjectMapper();
 
                 ObjectNode targetNode;
