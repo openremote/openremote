@@ -212,11 +212,11 @@ function getLibName(componentName) {
     return "OR" + componentName.charAt(0).toUpperCase() + componentName.substring(1);
 }
 
-function ORExternals(context, request, callback) {
-    const match = request.match(/^@openremote\/([^\/]*)$/);
+function ORExternals(context, callback) {
+    const match = context.request.match(/^@openremote\/([^\/]*)$/);
     if (match) {
         let component = getLibName(match[1]);
-        console.log(request + " => " + component);
+        console.log(context.request + " => " + component);
         return callback(null, "umd " + component);
     }
     callback();
@@ -271,5 +271,6 @@ function generateExports(dirname) {
 module.exports = {
     getLibName: getLibName,
     generateExports: generateExports,
+    getStandardModuleRules: getStandardModuleRules,
     getAppConfig: getAppConfig
 };

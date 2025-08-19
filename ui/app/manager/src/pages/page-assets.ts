@@ -239,7 +239,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
                 <div class="multipleAssetsView hideMobile">
                     <div>
                         <or-translate value="multiAssetSelected" .options="${ { assetNbr: this._assetIds.length } }"></or-translate>
-                        <or-mwc-input .type="${InputType.BUTTON}" label="changeParent" @click="${() => this._onParentChangeClick()}" outlined></or-mwc-input>
+                        <or-mwc-input .type="${InputType.BUTTON}" label="changeParent" @or-mwc-input-changed="${() => this._onParentChangeClick()}" outlined></or-mwc-input>
                     </div>
                 </div>
             `;
