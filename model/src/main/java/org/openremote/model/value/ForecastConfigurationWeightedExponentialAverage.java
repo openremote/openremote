@@ -21,7 +21,6 @@ package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -51,7 +50,7 @@ public class ForecastConfigurationWeightedExponentialAverage extends ForecastCon
     @JsonSerialize(using = ToStringSerializer.class)
     @JsonDeserialize(converter = PeriodAndDurationConverter.class)
     // TODO: consider @JsonSchemaFormat("duration") requires new or-mwc-input type
-    @JsonTypeRemap(type = String.class)
+    @JsonSchemaTypeRemap(type = String.class)
     protected ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration pastPeriod;
     @NotNull
     @Positive
@@ -60,7 +59,7 @@ public class ForecastConfigurationWeightedExponentialAverage extends ForecastCon
     @JsonSerialize(using = ToStringSerializer.class)
     @JsonDeserialize(converter = PeriodAndDurationConverter.class)
     // TODO: consider @JsonSchemaFormat("duration") requires new or-mwc-input type
-    @JsonTypeRemap(type = String.class)
+    @JsonSchemaTypeRemap(type = String.class)
     protected ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration forecastPeriod;
     @NotNull
     @Positive
