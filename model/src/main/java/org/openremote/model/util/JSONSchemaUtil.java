@@ -25,10 +25,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.databind.node.*;
 import com.github.victools.jsonschema.generator.*;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
@@ -153,6 +150,13 @@ public class JSONSchemaUtil {
         @Override
         public void applyToConfigBuilder(SchemaGeneratorConfigBuilder builder) {
 
+            // Apply additionalProperties true to all object values
+            builder.forTypesInGeneral().withTypeAttributeOverride((attrs, typeScope, context) -> {
+                if (attrs.has("type") && Objects.equals(attrs.get("type").textValue(), "object")) {
+                    attrs.put("additionalProperties", Boolean.TRUE);
+                }
+            });
+
             // General direct class type remapping
             builder.forTypesInGeneral()
                 .withCustomDefinitionProvider((resolvedType, context) -> {
@@ -169,19 +173,14 @@ public class JSONSchemaUtil {
 
             // Field type remapping
             builder.forFields()
-                    // direct class to class mapping through annotations
-                    .withTargetTypeOverridesResolver(this::remapFieldType)
-                    // remapping using supplier through annotations
-                    .withCustomDefinitionProvider((fieldScope, context) -> {
-                        var ann = fieldScope.getAnnotation(JsonSchemaSupplier.class);
-                        if (ann != null) {
-                            String d = null;
-                            try {
-                                d = ann.getClass().getMethod("supplier").invoke(ann).toString();
-                            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                                throw new RuntimeException(e);
-                            }
-                            switch (d) {
+                // direct class to class mapping through annotations
+                .withTargetTypeOverridesResolver(this::remapFieldType)
+                // remapping using supplier through annotations
+                .withCustomDefinitionProvider((fieldScope, context) -> {
+                    var ann = fieldScope.getAnnotation(JsonSchemaSupplier.class);
+                    if (ann != null) {
+                        try {
+                            switch (ann.getClass().getMethod("supplier").invoke(ann).toString()) {
                                 case SchemaNodeFactory.SCHEMA_SUPPLIER_NAME_ANY_TYPE:
                                     return new CustomPropertyDefinition(SchemaNodeFactory.getSchemaType(SchemaNodeFactory.TYPES_ALL));
                                 case SchemaNodeFactory.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE:
@@ -189,9 +188,13 @@ public class JSONSchemaUtil {
                                 case SchemaNodeFactory.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_SIMPLE_KEY_ANY_TYPE:
                                     return new CustomPropertyDefinition(SchemaNodeFactory.getSchemaPatternPropertiesSimpleKeyAnyType());
                             }
+                        } catch (Exception e) {
+                            throw new RuntimeException("Failed to apply " + ann.getClass().getSimpleName(), e);
                         }
-                        return null;
-                    });
+
+                    }
+                    return null;
+                });
 
             // Class subtype resolver for abstract classes
             builder.forTypesInGeneral().withCustomDefinitionProvider((resolvedType, context) -> {
@@ -254,8 +257,8 @@ public class JSONSchemaUtil {
             if (ann != null) {
                 try {
                     return Collections.singletonList(fieldScope.getContext().resolve((Type) ann.getClass().getMethod("type").invoke(ann)));
-                } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-                    throw new RuntimeException(e);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to apply " + ann.getClass().getSimpleName(), e);
                 }
             }
             return null;
