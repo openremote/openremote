@@ -4,11 +4,13 @@
   "private": true,
   "workspaces": [
     "ui/util",
+    "ui/test",
     "ui/app/*",
     "ui/component/*",
     "ui/demo/*"
   ],
   "devDependencies": {
+    "@openremote/test": "workspace:*",
     "@openremote/util": "workspace:*"
   }
 }

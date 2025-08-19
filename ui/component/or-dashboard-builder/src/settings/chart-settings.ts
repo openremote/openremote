@@ -203,7 +203,6 @@ export class ChartSettings extends WidgetSettings {
                 <!-- Axis configuration -->
                 <settings-panel displayName="dashboard.axisConfig" expanded>
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 16px;">
-
                         <!-- Left axis configuration -->
                         <div>
                             ${when(isMultiAxis, () => html`
@@ -332,9 +331,11 @@ export class ChartSettings extends WidgetSettings {
                 this._toggleAttributeSetting("rightAxisAttributes", attributeRef);
                 break;
             case "chart-bell-curve-cumulative":
+                if(!action.active) { this._removeAttributeSetting("steppedAttributes", attributeRef); }
                 this._toggleAttributeSetting("smoothAttributes", attributeRef);
                 break;
             case "square-wave":
+                if(!action.active) { this._removeAttributeSetting("smoothAttributes", attributeRef); }
                 this._toggleAttributeSetting("steppedAttributes", attributeRef);
                 break;
             case "chart-areaspline-variant":
@@ -385,24 +386,63 @@ export class ChartSettings extends WidgetSettings {
      * @protected
      */
     protected _toggleAttributeSetting(setting: keyof ChartAttributeConfig, attributeRef: AttributeRef) {
+        const attributes = this.widgetConfig.attributeConfig?.[setting];
+        const index = attributes?.findIndex((item: AttributeRef) => item.id === attributeRef.id && item.name === attributeRef.name);
+        if (index == null || index < 0) {
+            this._addAttributeSetting(setting, attributeRef);
+        } else {
+            this._removeAttributeSetting(setting, attributeRef);
+        }
+        this.notifyConfigUpdate();
+    }
+
+    /**
+     * Internal function that adds an {@link AttributeRef} to a category of the {@link AttributeConfig}.
+     * For example, you can add an attribute to the array of 'rightAxisAttributes'.
+     * @param setting The key / category to add the attribute to. (for example, 'rightAxisAttributes')
+     * @param attributeRef The asset-attribute combination to add.
+     * @protected
+     */
+    protected _addAttributeSetting(setting: keyof ChartAttributeConfig, attributeRef: AttributeRef) {
         this.widgetConfig.attributeConfig ??= {};
         this.widgetConfig.attributeConfig[setting] ??= [];
         const attributes = this.widgetConfig.attributeConfig[setting]!;
-        const index = attributes.findIndex(
-            (item: AttributeRef) => item.id === attributeRef.id && item.name === attributeRef.name
-        );
-        if (index < 0) {
-            // Adding the attribute setting
+        const exists = !!attributes.find((item: AttributeRef) => item.id === attributeRef.id && item.name === attributeRef.name);
+        if(!exists) {
+            console.debug(`Adding attribute ${attributeRef.name} to setting ${setting} in widget config.`);
             attributes.push(attributeRef);
         } else {
-            // Removing the attribute setting
-            if (attributes.length === 1) {
-                delete this.widgetConfig.attributeConfig[setting];
-            } else {
-                attributes.splice(index, 1);
-            }
+            console.warn(`Could not add attribute ${attributeRef.name}; attribute already exists in attribute setting ${setting}.`, attributes);
         }
-        this.notifyConfigUpdate();
+    }
+
+    /**
+     * Internal function that removes an {@link AttributeRef} from a category of the {@link AttributeConfig}.
+     * For example, you can remove an attribute from the array of 'rightAxisAttributes'.
+     * @param setting The key / category to remove the attribute from. (for example, 'rightAxisAttributes')
+     * @param attributeRef The asset-attribute combination to remove.
+     * @protected
+     */
+    protected _removeAttributeSetting(setting: keyof ChartAttributeConfig, attributeRef: AttributeRef) {
+        const attributes = this.widgetConfig.attributeConfig?.[setting];
+        if(!attributes) {
+            console.warn(`Could not remove attribute; attribute setting ${setting} not found in widget config.`, attributes);
+            return;
+        }
+        // Check if attribute exists in the configuration for this setting
+        const index = attributes?.findIndex((item: AttributeRef) => item.id === attributeRef.id && item.name === attributeRef.name);
+        if(index == null || index < 0) {
+            console.warn(`Could not remove attribute; attribute ${attributeRef.name} not found in attribute setting ${setting}.`, attributes);
+            return;
+        }
+        // Remove attribute
+        console.debug(`Removing attribute ${attributeRef.name} from setting ${setting} in widget config.`);
+        if (attributes.length === 1) {
+            delete this.widgetConfig.attributeConfig![setting];
+        } else {
+            attributes.splice(index, 1);
+        }
+
     }
 
     protected removeFromAttributeColors(attributeRef: AttributeRef) {

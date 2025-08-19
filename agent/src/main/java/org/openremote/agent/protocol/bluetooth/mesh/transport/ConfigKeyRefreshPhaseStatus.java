@@ -54,7 +54,7 @@ public class ConfigKeyRefreshPhaseStatus extends ConfigStatusMessage {
         mStatusCodeName = getStatusCodeName(mStatusCode);
 
         final List<Integer> keyIndexes = decode(mParameters.length, 1);
-        mNetKeyIndex = keyIndexes.get(0);
+        mNetKeyIndex = keyIndexes.getFirst();
         transition = mParameters[3];
 
         LOG.info("Status code: " + mStatusCode);
