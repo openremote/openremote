@@ -21,6 +21,7 @@ package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -37,9 +38,9 @@ import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.regex.Pattern;
 
-//import static org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage.TYPE;
+import static org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage.TYPE;
 
-//@JsonTypeName(TYPE)
+@JsonTypeName(TYPE)
 public class ForecastConfigurationWeightedExponentialAverage extends ForecastConfiguration {
 
     public static final String TYPE = "wea";
