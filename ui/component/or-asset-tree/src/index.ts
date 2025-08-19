@@ -226,8 +226,8 @@ export class OrAssetTreeFilter {
     attribute: string[];
     attributeValue: string[];
 
-    constructor() {
-        this.asset = undefined;
+    constructor(asset?: string) {
+        this.asset = asset;
         this.assetType = [];
         this.attribute = [];
         this.attributeValue = [];
@@ -394,6 +394,24 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             }
         }
         return false;
+    }
+
+    /**
+     * A setter function for updating the list of nodes (assets) shown in the UI.
+     * @param filter - The {@link OrAssetTreeFilter} to apply.
+     * @param reflect - If the changes should be reflected in the filtering UI. (default: false)
+     */
+    public applyFilter(filter?: OrAssetTreeFilter | string, reflect = false) {
+        if(!filter || typeof filter === "string") {
+            filter = this.parseFromInputFilter(filter);
+            if (Util.objectsEqual(this._filter, filter)) {
+                return;
+            }
+        }
+        this._filter = filter;
+        if(reflect) {
+            this.updateComplete.finally(() => this._filterInput.value = this.formatFilter(filter));
+        }
     }
 
     protected mapDescriptors(descriptors: (AssetDescriptor)[], withNoneValue?: ListItem): ListItem[] {
@@ -563,7 +581,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
                                 this._assetTypeFilter = '';
 
-                                this._filter = new OrAssetTreeFilter();
+                                this.applyFilter(new OrAssetTreeFilter());
 
                                 // Call filtering
                                 this._doFiltering();
@@ -617,8 +635,17 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         if (_changedProperties.has("selectedIds")) {
-            if (!Util.objectsEqual(_changedProperties.get("selectedIds"), this.selectedIds)) {
+            const previous: string[] | undefined = _changedProperties.get("selectedIds");
+            if (!Util.objectsEqual(previous, this.selectedIds)) {
                 this._updateSelectedNodes();
+
+                // When selecting a different node than present in the Asset ID filter, it should be removed
+                if (previous?.length === 1 && this._filter.asset === previous[0]) {
+                    this.applyFilter(new OrAssetTreeFilter(), true);
+                    if (!this.selectedIds?.length) {
+                        this._doFiltering(); // Only update UI if there is no selection, to prevent flickering
+                    }
+                }
             }
         }
 
@@ -1059,7 +1086,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         let filterFromSearchInputWithSettings: OrAssetTreeFilter = this.applySettingFields(filterFromSearchInput);
 
-        this._filter = filterFromSearchInputWithSettings;
+        this.applyFilter(filterFromSearchInputWithSettings);
 
         let newFilterForSearchInput: string = this.formatFilter(this._filter);
 
@@ -1081,13 +1108,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected _onFilterInput(newValue: string | undefined, force: boolean): void {
-        let currentFilter: OrAssetTreeFilter = this.parseFromInputFilter(newValue);
-
-        if (Util.objectsEqual(this._filter, currentFilter,true)) {
-            return;
-        }
-
-        this._filter = currentFilter;
+        this.applyFilter(newValue);
 
         if (this._searchInputTimer) {
             clearTimeout(this._searchInputTimer);
