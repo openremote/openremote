@@ -162,7 +162,7 @@ public class KeyStoreServiceImpl implements KeyStoreService {
                             }
                         }
                     } else {
-                        LOG.log(Level.WARNING, "Failed to load KeyStore from " + defaultTrustStorePath.toAbsolutePath() + ": " + exception.getMessage(), exception);
+                        LOG.log(Level.WARNING, "Failed to load TrustStore from " + defaultTrustStorePath.toAbsolutePath() + ": " + exception.getMessage(), exception);
                     }
                 }
             } else {
