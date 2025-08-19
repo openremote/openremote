@@ -38,9 +38,12 @@ import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidatio
 import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidationOption;
 import org.reflections.Reflections;
 
+import javax.json.Json;
 import java.lang.annotation.*;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -126,6 +129,12 @@ public class JSONSchemaUtil {
         boolean container() default true;
     }
 
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.FIELD})
+    public @interface JsonTypeRemap {
+        Class<?> type();
+    }
+
     public static class CustomModule implements Module {
 
         private static final ConcurrentHashMap<Class<?>, List<ResolvedType>> subtypeCache = new ConcurrentHashMap<>();
@@ -146,6 +155,9 @@ public class JSONSchemaUtil {
                     }
                     return null;
                 });
+
+            // Field type remapping
+            builder.forFields().withTargetTypeOverridesResolver(this::remapFieldType);
 
             // Class subtype resolver for abstract classes
             builder.forTypesInGeneral().withCustomDefinitionProvider((resolvedType, context) -> {
@@ -203,6 +215,18 @@ public class JSONSchemaUtil {
             });
         }
 
+        private List<ResolvedType> remapFieldType(FieldScope fieldScope) {
+            JsonTypeRemap ann = fieldScope.getAnnotation(JsonTypeRemap.class);
+            if (ann != null) {
+                try {
+                    return Collections.singletonList(fieldScope.getContext().resolve((Type) ann.getClass().getMethod("type").invoke(ann)));
+                } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            return null;
+        }
+
         private static <A extends Annotation> void applyTypeAnnotation(
                 Class<?> type,
                 Class<A> annotationClass,
@@ -213,6 +237,8 @@ public class JSONSchemaUtil {
 
             if (type.isArray() && type.getComponentType() != null) {
                 annotation = type.getComponentType().getDeclaredAnnotation(annotationClass);
+
+                // TODO: handle titles separately here (make plural instead.)
             } else {
                 annotation = type.getDeclaredAnnotation(annotationClass);
             }
@@ -301,8 +327,11 @@ public class JSONSchemaUtil {
             Option.VALUES_FROM_CONSTANT_FIELDS,
             Option.PUBLIC_NONSTATIC_FIELDS,
             Option.NONPUBLIC_NONSTATIC_FIELDS_WITH_GETTERS,
+            Option.NONPUBLIC_NONSTATIC_FIELDS_WITHOUT_GETTERS,
             Option.ALLOF_CLEANUP_AT_THE_END,
             Option.ADDITIONAL_FIXED_TYPES,
+            // TODO: test
+//            Option.MAP_VALUES_AS_ADDITIONAL_PROPERTIES,
             // Option.DEFINITIONS_FOR_ALL_OBJECTS,
             Option.DUPLICATE_MEMBER_ATTRIBUTE_CLEANUP_AT_THE_END
         ))

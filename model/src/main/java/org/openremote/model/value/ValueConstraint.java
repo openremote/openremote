@@ -40,7 +40,7 @@ import java.util.regex.PatternSyntaxException;
 /**
  * Represents a constraint to apply to a value; most are based on JSR-380 validation.
  */
-@JsonSchemaTitle("Constraints")
+@JsonSchemaTitle("Constraint")
 @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME)
 @JsonSubTypes({
     @JsonSubTypes.Type(ValueConstraint.Size.class),
@@ -386,14 +386,6 @@ public abstract class ValueConstraint implements Serializable {
     public static class AllowedValues extends ValueConstraint {
         @jakarta.validation.constraints.NotNull
         Object[] allowedValues;
-        @JsonSchemaExamples({
-            "2025-04-18",
-            "2025-04-18T14:30:00Z",
-            "2025-04-18T14:30:00+02:00",
-            "2025-04-18T14:30:00.123Z",
-            "2025-04-18T14:30:00.456-05:00",
-            "1713442200456"
-        })
         String[] allowedValueNames;
 
         @JsonCreator
