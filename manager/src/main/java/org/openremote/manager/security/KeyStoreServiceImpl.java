@@ -158,7 +158,7 @@ public class KeyStoreServiceImpl implements KeyStoreService {
                                         " using OR_ADMIN_PASSWORD as fallback. Make sure to set OR_KEYSTORE_PASSWORD " +
                                         "to OR_ADMIN_PASSWORD's value to get rid of this message.");
                             } else {
-                                LOG.log(Level.WARNING, "Failed to load KeyStore from " + defaultTrustStorePath.toAbsolutePath() + ": " + e.getMessage(), e);
+                                LOG.log(Level.WARNING, "Failed to load TrustStore from " + defaultTrustStorePath.toAbsolutePath() + ": " + e.getMessage(), e);
                             }
                         }
                     } else {
