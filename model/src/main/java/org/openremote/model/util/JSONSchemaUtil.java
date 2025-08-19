@@ -50,11 +50,16 @@ public class JSONSchemaUtil {
 
     public static class SchemaNodeFactory {
 
-        private static final JsonNodeFactory NF = JsonNodeFactory.instance;
-
+        public static final String SCHEMA_SUPPLIER_NAME_ANY_TYPE = "anyType";
+        public static final String SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE = "patternPropertiesAnyKeyAnyType";
+        public static final String SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_SIMPLE_KEY_ANY_TYPE = "patternPropertiesSimpleKeyAnyType";
+        public static final String PATTERN_PROPERTIES_MATCH_ANY = ".+";
+        public static final String PATTERN_PROPERTIES_MATCH_SIMPLE = "^[a-zA-Z][a-zA-Z0-9]*";
         public static final String[] TYPES_ALL = {
             "null", "number", "integer", "boolean", "string", "array", "object"
         };
+
+        private static final JsonNodeFactory NF = JsonNodeFactory.instance;
 
         public static ObjectNode getSchemaPatternProperties(String keyPattern, String... types) {
             ObjectNode node = NF.objectNode();
@@ -65,11 +70,11 @@ public class JSONSchemaUtil {
         }
 
         public static ObjectNode getSchemaPatternPropertiesAnyKeyAnyType() {
-            return getSchemaPatternProperties(".+", TYPES_ALL);
+            return getSchemaPatternProperties(PATTERN_PROPERTIES_MATCH_ANY, TYPES_ALL);
         }
 
         public static ObjectNode getSchemaPatternPropertiesSimpleKeyAnyType() {
-            return getSchemaPatternProperties("^[a-zA-Z][a-zA-Z0-9]*", TYPES_ALL);
+            return getSchemaPatternProperties(PATTERN_PROPERTIES_MATCH_SIMPLE, TYPES_ALL);
         }
 
         public static JsonNode getTypesNode(List<String> types) {
@@ -133,6 +138,12 @@ public class JSONSchemaUtil {
         Class<?> type();
     }
 
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.FIELD})
+    public @interface JsonSchemaSupplier {
+        String supplier();
+    }
+
     public static class CustomModule implements Module {
 
         private static final ConcurrentHashMap<Class<?>, List<ResolvedType>> subtypeCache = new ConcurrentHashMap<>();
@@ -141,10 +152,11 @@ public class JSONSchemaUtil {
         @Override
         public void applyToConfigBuilder(SchemaGeneratorConfigBuilder builder) {
 
-            // Class type remapping
+            // General direct class type remapping
             builder.forTypesInGeneral()
                 .withCustomDefinitionProvider((resolvedType, context) -> {
                     Class<?> erasedType = resolvedType.getErasedType();
+                    // Does not behave like before where this is the fallback if a class could not be resolved
                     if (erasedType.equals(Object.class)) {
                         return new CustomDefinition(SchemaNodeFactory.getSchemaType(SchemaNodeFactory.TYPES_ALL));
                     }
@@ -155,7 +167,28 @@ public class JSONSchemaUtil {
                 });
 
             // Field type remapping
-            builder.forFields().withTargetTypeOverridesResolver(this::remapFieldType);
+            builder.forFields()
+                // direct class to class mapping through annotations
+                .withTargetTypeOverridesResolver(this::remapFieldType)
+                // remapping using supplier through annotations
+                .withCustomDefinitionProvider((fieldScope, context) -> {
+                    JsonSchemaSupplier ann = fieldScope.getAnnotation(JsonSchemaSupplier.class);
+                    if (ann != null) {
+                        try {
+                            switch (ann.getClass().getMethod("supplier").invoke(ann).toString()) {
+                                case SchemaNodeFactory.SCHEMA_SUPPLIER_NAME_ANY_TYPE:
+                                    return new CustomPropertyDefinition(SchemaNodeFactory.getSchemaType(SchemaNodeFactory.TYPES_ALL));
+                                case SchemaNodeFactory.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE:
+                                    return new CustomPropertyDefinition(SchemaNodeFactory.getSchemaPatternPropertiesAnyKeyAnyType());
+                                case SchemaNodeFactory.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_SIMPLE_KEY_ANY_TYPE:
+                                    return new CustomPropertyDefinition(SchemaNodeFactory.getSchemaPatternPropertiesSimpleKeyAnyType());
+                            }
+                        } catch (Exception e) {
+                            throw new RuntimeException("Failed to apply " + ann.getClass().getSimpleName(), e);
+                        }
+                    }
+                    return null;
+                });
 
             // Class subtype resolver for abstract classes
             builder.forTypesInGeneral().withCustomDefinitionProvider((resolvedType, context) -> {
