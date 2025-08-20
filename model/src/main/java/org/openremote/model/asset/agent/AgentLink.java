@@ -40,7 +40,7 @@ import java.util.Optional;
  */
 @JsonSchemaTitle("Agent Link")
 @JsonSchemaDefault("{" +
-        "\"id\": \"\"" +
+        "\"id\": \"\"," +
         "\"type\": \"DefaultAgentLink\"" +
         "}")
 @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, defaultImpl = DefaultAgentLink.class)

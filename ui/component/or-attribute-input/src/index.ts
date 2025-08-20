@@ -174,16 +174,6 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
         };
 
         const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
-            if (!value) {
-                // Need to have a value so that the agent ID picker is shown
-                if (valueDescriptor.name === "agentLink") {
-                    value = {
-                        id: "",
-                        type: "DefaultAgentLink"
-                    };
-                }
-            }
-
             // Schedule loading
             window.setTimeout(() => doLoad(value), 0);
 
