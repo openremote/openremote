@@ -730,7 +730,9 @@ jobs:
           ${{ steps.manager-docker-command.outputs.value }}
 
       - name: Run UI app tests
-        if: steps.test-ui-apps-command.outputs.value != ''
+        # Skip UI app tests for custom projects until we want to use them there.
+        # .ci_cd/host_init/healthy.sh is missing initially for custom projects .ci_cd/host_init/healthy.sh
+        if: steps.test-ui-apps-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
         run: |
           composeProfile='profile/dev-ui.yml'
 
