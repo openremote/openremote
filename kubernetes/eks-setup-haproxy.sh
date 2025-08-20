@@ -2,58 +2,11 @@
 
 . ./eks-common.sh
 
-# TODO: --name $CLUSTER_NAME -> in cluster.yaml
-# TODO: region is duplicated in cluster.yaml
-eksctl create cluster -f cluster.yaml --profile or
-
-# TODO: maybe extract cluster name after cluster creation so source of truth is in cluster.yaml, not other way around
-# Not straightforward
-
-# TODO: it might be possible to replace some of the operations below by configuration options in cluster.yaml
-oidc_id=$(aws eks describe-cluster --profile or --name $CLUSTER_NAME --query "cluster.identity.oidc.issuer" --output text | cut -d '/' -f 5)
-
-eksctl utils associate-iam-oidc-provider --profile or --cluster $CLUSTER_NAME --approve
-
-eksctl create iamserviceaccount --profile or \
-        --name ebs-csi-controller-sa \
-        --namespace kube-system \
-        --cluster $CLUSTER_NAME \
-        --role-name AmazonEKS_EBS_CSI_DriverRole \
-        --role-only \
-        --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
-        --approve
-
-eksctl create addon --profile or --cluster $CLUSTER_NAME --name aws-ebs-csi-driver --version latest \
-    --service-account-role-arn arn:aws:iam::$AWS_ACCOUNT_ID:role/AmazonEKS_EBS_CSI_DriverRole --force
+envsubst < cluster.yaml | eksctl create cluster -f - --profile or
 
 # [Installation Guide - AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/deploy/installation/)
 
-curl -O https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.11.0/docs/install/iam_policy.json
-
-POLICY_NAME="AWSLoadBalancerControllerIAMPolicy"
-POLICY_ARN="arn:aws:iam::$AWS_ACCOUNT_ID:policy/$POLICY_NAME"
-
-if ! aws iam get-policy --policy-arn "$POLICY_ARN" >/dev/null 2>&1; then
-    echo "Policy does not exist. Creating..."
-    aws iam create-policy \
-      --policy-name "$POLICY_NAME" \
-      --policy-document file://iam_policy.json
-fi
-
-rm -f iam_policy.json
-
-eksctl create iamserviceaccount --profile or \
-  --cluster=$CLUSTER_NAME \
-  --namespace=kube-system \
-  --name=aws-load-balancer-controller \
-  --role-name AmazonEKSLoadBalancerControllerRole \
-  --attach-policy-arn=arn:aws:iam::$AWS_ACCOUNT_ID:policy/AWSLoadBalancerControllerIAMPolicy \
-  --approve
-
-# [Install AWS Load Balancer Controller with Helm - Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/lbc-helm.html)
-
 helm repo add eks https://aws.github.io/eks-charts
-
 helm repo update eks
 
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
