@@ -235,6 +235,8 @@ public class JSONSchemaUtil {
 
             if (type.isArray() && type.getComponentType() != null) {
                 annotation = type.getComponentType().getDeclaredAnnotation(annotationClass);
+
+                // TODO: handle titles separately here (make plural instead.)
             } else {
                 annotation = type.getDeclaredAnnotation(annotationClass);
             }

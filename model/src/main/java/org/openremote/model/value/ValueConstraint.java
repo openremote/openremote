@@ -40,7 +40,7 @@ import java.util.regex.PatternSyntaxException;
 /**
  * Represents a constraint to apply to a value; most are based on JSR-380 validation.
  */
-@JsonSchemaTitle("Constraints")
+@JsonSchemaTitle("Constraint")
 @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME)
 @JsonSubTypes({
     @JsonSubTypes.Type(ValueConstraint.Size.class),
