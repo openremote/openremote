@@ -21,6 +21,7 @@ package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueFilter;
 
@@ -72,6 +73,7 @@ import static java.util.Objects.requireNonNull;
  * }</pre></blockquote>
  */
 //TODO: Somehow combine this with rules
+@JsonSchemaTitle("Attribute Link")
 public class AttributeLink implements Serializable {
 
     public enum ConverterType {

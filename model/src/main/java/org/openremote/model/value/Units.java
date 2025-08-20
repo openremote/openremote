@@ -24,7 +24,7 @@ import org.openremote.model.util.TsIgnore;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-@JsonSchemaTitle("Units")
+@JsonSchemaTitle("Unit")
 @TsIgnore
 public enum Units {
     PER("per"),
