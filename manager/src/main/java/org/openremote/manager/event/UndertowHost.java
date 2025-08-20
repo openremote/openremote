@@ -91,7 +91,7 @@ public class UndertowHost implements org.apache.camel.component.undertow.Underto
         websocketHttpHandler = pathStartsWithHandler(deploymentName, path, deploymentHandler);
 
         // Give web socket handler higher priority than any other handlers already added
-        container.getService(WebService.class).getRequestHandlers().add(0, websocketHttpHandler);
+        container.getService(WebService.class).getRequestHandlers().addFirst(websocketHttpHandler);
 
         // Caller expects a CamelWebSocketHandler instance
         camelHandler = handler;

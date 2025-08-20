@@ -203,8 +203,8 @@ jobs:
         if: steps.backend-files-changed.outputs.any_modified != 'true'
         run: echo "value=true" >> $GITHUB_OUTPUT
 
-      - name: Set skip UI tests
-        id: skip-ui-tests
+      - name: Set skip UI component tests
+        id: skip-ui-component-tests
         if: steps.ui-files-changed.outputs.any_modified != 'true'
         run: echo "value=true" >> $GITHUB_OUTPUT
 
@@ -427,10 +427,14 @@ jobs:
         if: ${{ steps.skip-backend-tests.outputs.value != 'true' }}
         run: echo "value=./gradlew -p test test" >> $GITHUB_OUTPUT
 
-      - name: Define UI test command
-        id: test-ui-command
-        if: ${{ steps.skip-ui-tests.outputs.value != 'true' }}
-        run: echo ""
+      - name: Define UI component test command
+        id: test-ui-components-command
+        if: ${{ steps.skip-ui-component-tests.outputs.value != 'true' }}
+        run: echo "value=./gradlew -p ui/component npmTest" >> $GITHUB_OUTPUT
+
+      - name: Define UI app test command
+        id: test-ui-apps-command
+        run: echo "value=./gradlew -p ui/app npmTest" >> $GITHUB_OUTPUT
 
       - name: Define manager docker build command
         id: manager-docker-command
@@ -441,13 +445,18 @@ jobs:
           commitSha=$(git rev-parse HEAD)
           commitShaShort=$(git rev-parse --short HEAD)
 
+          if [ "$(uname -m)" == "aarch64" ]; then
+            PLATFORM=linux/aarch64
+            OTHER_PLATFORM=linux/amd64
+          fi
+
           if [ -n "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"#ref"* ]] || [ -n "$TEST_UI_CMD" ]; then
             if [ -n "$MANAGER_TAGS" ]; then
-              command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
+              command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath"
               echo "pushRequired=true" >> $GITHUB_OUTPUT
               echo "managerDockerImage=openremote/manager:$FIRST_MANAGER_TAG" >> $GITHUB_OUTPUT
             else
-              command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
+              command="docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${OTHER_PLATFORM:-linux/aarch64} -t openremote/manager:$commitShaShort $buildPath"
               echo "managerDockerImage=openremote/manager:$commitShaShort" >> $GITHUB_OUTPUT
             fi
             echo "value=$command" >> $GITHUB_OUTPUT
@@ -458,7 +467,7 @@ jobs:
           FIRST_MANAGER_TAG: ${{ steps.ci-cd-output.outputs.firstDockerTag }}
           MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.dockerTags }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
-          TEST_UI_CMD: ${{ steps.test-ui-command.outputs.value }}
+          TEST_UI_CMD: ${{ steps.test-ui-apps-command.outputs.value }}
 
       - name: Define maven publish command
         id: maven-publish-command
@@ -571,7 +580,8 @@ jobs:
           echo 'Deployment commit SHA: ${{ steps.deployment-docker-command.outputs.refTag }}'
           echo 'Deployments: ${{ steps.deployments.outputs.value }}'
           echo 'Test backend command: ${{ steps.test-backend-command.outputs.value }}'
-          echo 'Test UI command: ${{ steps.test-ui-command.outputs.value }}'
+          echo 'Test UI components command: ${{ steps.test-ui-components-command.outputs.value }}'
+          echo 'End-To-End test command: ${{ steps.test-ui-apps-command.outputs.value }}'
           echo 'Manager docker build command: ${{ steps.manager-docker-command.outputs.value }}'
           echo 'Manager docker image: ${{ steps.manager-docker-command.outputs.managerDockerImage }}'
           echo 'Maven publish command: ${{ steps.maven-publish-command.outputs.value }}'
@@ -584,19 +594,10 @@ jobs:
           echo "************************************************************"
 
       - name: Pull docker images
-        if: ${{ steps.test-backend-command.outputs.value != '' || steps.test-ui-command.outputs.value != '' }}
+        if: ${{ steps.test-backend-command.outputs.value != '' || steps.test-ui-apps-command.outputs.value != '' }}
         run: |
-          # Only need keycloak and postgres services for backend testing
-          if [ -z $TEST_UI_COMMAND ]; then
-            composeProfile='profile/dev-testing.yml'
-          else
-            composeProfile='profile/dev-ui.yml'
-          fi
-
-          # Pull the images
-          docker compose -f $composeProfile pull
-        env:
-          TEST_UI_COMMAND: ${{ steps.test-ui-command.outputs.value }}
+          # Only need keycloak and postgres services for backend and end-to-end testing
+          docker compose -f profile/dev-testing.yml pull
 
       # Use docker layer caching to speed up image building
       - uses: jpribyl/action-docker-layer-caching@c632825d12ec837065f49726ea27ddd40bcc7894 # v0.1.1
@@ -664,28 +665,8 @@ jobs:
           path: test/build/reports/tests
 
       - name: Cleanup backend tests
-        if: ${{ steps.test-backend-command.outputs.value != '' && steps.test-ui-command.outputs.value != '' }}
+        if: ${{ steps.test-backend-command.outputs.value != '' }}
         run: ${{ steps.run-backend-tests.outputs.cleanup }}
-
-      - name: Run frontend tests
-        if: steps.test-ui-command.outputs.value != ''
-        run: |
-          composeProfile='profile/dev-ui.yml'
-
-          if [ $IS_MAIN_REPO == 'false' ]; then
-            composeProfile="openremote/$composeProfile"
-          fi
-
-          # Start the stack
-          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
-
-          # Run the tests
-          ${{ steps.test-ui-command.outputs.value }}
-        env:
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
-        timeout-minutes: 20
-        continue-on-error: true
 
       - name: Run install dist
         if: steps.install-command.outputs.value != ''
@@ -725,10 +706,60 @@ jobs:
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
         timeout-minutes: 20
 
+      - name: Run install playwright browser(s)
+        if: ${{ steps.test-ui-components-command.value != '' || steps.test-ui-apps-command.outputs.value != '' }}
+        run: npx playwright install --with-deps chromium
+        timeout-minutes: 20
+
+      - name: Run UI component tests
+        if: steps.test-ui-components-command.outputs.value != ''
+        run: ${{ steps.test-ui-components-command.outputs.value }}
+        timeout-minutes: 20
+        # continue-on-error: true
+
+      - name: Archive UI component test results
+        if: always()
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
+        with:
+          name: ui-component-test-results
+          path: ui/component/*/component-test-report/**
+
       - name: Run manager docker build command
         if: steps.manager-docker-command.outputs.value != ''
         run: |
           ${{ steps.manager-docker-command.outputs.value }}
+
+      - name: Run UI app tests
+        # Skip UI app tests for custom projects until we want to use them there.
+        # .ci_cd/host_init/healthy.sh is missing initially for custom projects .ci_cd/host_init/healthy.sh
+        if: steps.test-ui-apps-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
+        run: |
+          composeProfile='profile/dev-ui.yml'
+
+          if [ $IS_MAIN_REPO == 'false' ]; then
+            composeProfile="openremote/$composeProfile"
+          fi
+
+          # Start the stack
+          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
+
+          # Wait for services to be healthy
+          bash .ci_cd/host_init/healthy.sh profile
+
+          # Run the tests
+          ${{ steps.test-ui-apps-command.outputs.value }}
+        env:
+          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
+          MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
+        timeout-minutes: 20
+        # continue-on-error: true
+
+      - name: Archive UI app test results
+        if: always()
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
+        with:
+          name: ui-app-test-results
+          path: ui/app/*/app-test-report/**
 
       - name: Scan manager docker image
         if: steps.manager-docker-command.outputs.pushRequired == 'true'

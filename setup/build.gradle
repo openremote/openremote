@@ -17,7 +17,7 @@ dependencies {
     implementation project(":manager")
 }
 
-task (load1Jar, type: Jar) {
+tasks.register('load1Jar', Jar) {
     base {
         archivesName = "openremote-load1-${project.name}"
     }
@@ -26,7 +26,7 @@ task (load1Jar, type: Jar) {
 
 // Order of JAR tasks affects the name of the final jar but not the contents which is odd
 // So putting demo last
-task (demoJar, type: Jar) {
+tasks.register('demoJar', Jar) {
     base {
         archivesName = "openremote-demo-${project.name}"
     }
@@ -34,7 +34,7 @@ task (demoJar, type: Jar) {
 }
 
 // Use demo setup sourceset by default for jar
-task installDist(type: Copy) {
+tasks.register('installDist', Copy) {
     def setupTask = getTasksByName(project.hasProperty("SETUP_JAR") ? "${project.getProperties().get("SETUP_JAR")}Jar" : "demoJar", false)[0] as org.gradle.jvm.tasks.Jar
     System.out.println(setupTask.name)
     dependsOn setupTask

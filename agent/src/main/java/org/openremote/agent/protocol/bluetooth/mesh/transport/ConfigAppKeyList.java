@@ -51,7 +51,7 @@ public class ConfigAppKeyList extends ConfigStatusMessage  {
     final void parseStatusParameters() {
         mStatusCode = mParameters[0];
         mStatusCodeName = getStatusCodeName(mStatusCode);
-        mNetKeyIndex = decode(3, 1).get(0);
+        mNetKeyIndex = decode(3, 1).getFirst();
         LOG.info("NetKey Index: " + Integer.toHexString(mNetKeyIndex));
         mKeyIndexes.addAll(decode(mParameters.length, 3));
         for (Integer keyIndex : mKeyIndexes) {

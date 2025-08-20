@@ -412,7 +412,7 @@ export class OrConfRealmCard extends LitElement {
                     ${when(app.canRemove, () => html`
                         <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}"
                                       label="configuration.deleteRealmCustomization"
-                                      @click="${() => { app._showRemoveRealmDialog(); }}"
+                                      @or-mwc-input-changed="${() => { app._showRemoveRealmDialog(); }}"
                         ></or-mwc-input>
                     `)}
                 </div>
