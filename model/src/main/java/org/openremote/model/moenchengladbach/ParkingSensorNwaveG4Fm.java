@@ -65,6 +65,15 @@ public class ParkingSensorNwaveG4Fm extends Asset<ParkingSensorNwaveG4Fm> {
             ));
         }})
     );
+    public static final AttributeDescriptor<String> TAG_ID = new AttributeDescriptor<>("tagId", ValueType.TEXT,
+            new MetaItem<>(MetaItemType.READ_ONLY),
+            new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
+                putAll(Map.of(
+                        "uplinkPort", 10,
+                        "valueFilterJsonPath", "$.object.tag_id"
+                ));
+            }})
+    );
 
     public static final AttributeDescriptor<String> DEV_EUI = new AttributeDescriptor<>("devEUI", ValueType.TEXT, new MetaItem<>(MetaItemType.READ_ONLY));
     public static final AttributeDescriptor<String> VENDOR_ID = new AttributeDescriptor<>("vendorId", ValueType.TEXT, new MetaItem<>(MetaItemType.READ_ONLY));
@@ -102,5 +111,9 @@ public class ParkingSensorNwaveG4Fm extends Asset<ParkingSensorNwaveG4Fm> {
 
     public Optional<Integer> getHwHealthStatus() {
         return getAttributes().getValue(HW_HEALTH_STATUS);
+    }
+
+    public Optional<String> getTagId() {
+        return getAttributes().getValue(TAG_ID);
     }
 }
