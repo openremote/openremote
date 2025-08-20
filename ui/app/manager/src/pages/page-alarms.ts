@@ -28,6 +28,8 @@ import {
     OrMwcTableRowClickEvent,
     OrMwcTableRowSelectEvent
 } from "@openremote/or-mwc-components/or-mwc-table";
+
+import {OrAlarmsTableRowStatusChangeEvent} from "../components/alarms/or-alarms-table";
 import "../components/alarms/or-alarms-table";
 
 export interface PageAlarmsConfig {
@@ -533,6 +535,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
             <or-alarms-table .alarms=${this._data} .readonly=${!writeAlarms}
                              @or-mwc-table-row-select="${(e: OrMwcTableRowSelectEvent) => this._onRowSelect(e)}"
                              @or-mwc-table-row-click="${(e: OrMwcTableRowClickEvent) => this._onRowClick(e)}"
+                             @or-alarms-table-row-status-change="${(e: OrAlarmsTableRowStatusChangeEvent) => this._onAlarmSave(e)}"
             ></or-alarms-table>
         `;
     }
@@ -630,6 +633,32 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     }
             )}
         `;
+    }
+
+    private _saveAlarm(alarm: SentAlarm): void {
+        let error: { status?: number; text: string };
+
+        this._saveAlarmPromise = this._createUpdateAlarm(alarm, alarm.id ? "update" : "create")
+            .then(() => {
+                showSnackbar(undefined, i18next.t("alarm.saveAlarmSucceeded"));
+                this.reset();
+            }).catch((ex) => {
+                if (isAxiosError(ex)) {
+                    error = {
+                        status: ex.response.status,
+                        text: ex.response.status === 403
+                            ? i18next.t("alarm.alarmAlreadyExists")
+                            : i18next.t("errorOccurred"),
+                    };
+                }
+            }).finally(() => {
+                this._saveAlarmPromise = undefined;
+            });
+    }
+
+    private _onAlarmSave(e: OrAlarmsTableRowStatusChangeEvent) {
+        // Delegate the save operation to _saveAlarm using the alarm from the event
+        this._saveAlarm(e.detail.alarm);
     }
 
     protected getSingleAlarmTemplate(alarm: AlarmModel, readonly: boolean = true): TemplateResult {
@@ -767,23 +796,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                               raised class="alarm-input" disabled
                                               .label="${i18next.t(alarm.id ? "save" : "create")}"
                                               .type="${InputType.BUTTON}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                  let error: { status?: number; text: string };
-                                                  this._saveAlarmPromise = this._createUpdateAlarm(alarm, alarm.id ? "update" : "create")
-                                                          .then(() => {
-                                                              showSnackbar(undefined, i18next.t("alarm.saveAlarmSucceeded"));
-                                                              this.reset();
-                                                          }).catch((ex) => {
-                                                              if (isAxiosError(ex)) {
-                                                                  error = {
-                                                                      status: ex.response.status,
-                                                                      text: ex.response.status === 403 ? i18next.t("alarm.alarmAlreadyExists") : i18next.t("errorOccurred"),
-                                                                  };
-                                                              }
-                                                          }).finally(() => {
-                                                              this._saveAlarmPromise = undefined;
-                                                          });
-                                              }}"
+                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._saveAlarm(alarm)}"
                                 ></or-mwc-input>
                             </div>
                         </div>
