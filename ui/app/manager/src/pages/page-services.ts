@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { css, html, TemplateResult, PropertyValues } from "lit";
+import { css, html, PropertyValues, TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { Page, PageProvider, router } from "@openremote/or-app";
-import { AppStateKeyed } from "@openremote/or-app";
+import { AppStateKeyed, Page, PageProvider, router } from "@openremote/or-app";
 import { createSelector, Store } from "@reduxjs/toolkit";
 import { manager } from "@openremote/core";
 import "@openremote/or-services";
@@ -239,14 +238,45 @@ export class PageServices extends Page<AppStateKeyed> {
         }
 
         try {
-            const realmServices = await manager.rest.api.MicroserviceResource.getServices({ realm: this.realmName });
-            const globalServices = await manager.rest.api.MicroserviceResource.getGlobalServices();
+            // Use promise.allSettled to run both requests in parallel and wait for both to complete
+            // If we use Promise.all, we would not be able to handle the case where one request fails and the other succeeds
+            const [realmServicesResult, globalServicesResult] = await Promise.allSettled([
+                manager.rest.api.MicroserviceResource.getServices({
+                    realm: this.realmName,
+                }),
+                manager.rest.api.MicroserviceResource.getGlobalServices(),
+            ]);
 
-            if (realmServices.status === 200 && globalServices.status === 200) {
-                this.services = consolidateServices([...realmServices.data, ...globalServices.data]);
+            // Temporary array to store all retrieved services
+            const retrievedServices: Microservice[] = [];
+
+            const realmServicesRequestHasSucceeded =
+                realmServicesResult.status === "fulfilled" && realmServicesResult.value.status === 200;
+
+            // Handle realm services result
+            if (realmServicesRequestHasSucceeded) {
+                retrievedServices.push(...realmServicesResult.value.data);
+            } else {
+                console.error("Failed to load realm services:", realmServicesResult.status);
+                showSnackbar(undefined, i18next.t("services.realmServicesLoadError"));
+            }
+
+            // Handle global services result
+            const globalServicesRequestHasSucceeded =
+                globalServicesResult.status === "fulfilled" && globalServicesResult.value.status === 200;
+            if (globalServicesRequestHasSucceeded) {
+                retrievedServices.push(...globalServicesResult.value.data);
+            } else {
+                console.error("Failed to load global services:", globalServicesResult.status);
+                showSnackbar(undefined, i18next.t("services.globalServicesLoadError"));
+            }
+
+            // Update the services state if we able to retrieve any
+            if (retrievedServices.length > 0) {
+                this.services = consolidateServices(retrievedServices);
                 this.requestUpdate();
 
-                // Re-select service if necessary after loading services
+                // Re-select the service if serviceId is set and no service is selected
                 if (this.serviceId && !this.selectedService) {
                     const service = this.services.find((service) => service.serviceId === this.serviceId);
                     if (service) {
@@ -255,7 +285,7 @@ export class PageServices extends Page<AppStateKeyed> {
                 }
             }
         } catch (error) {
-            console.error("Failed to load services:", error);
+            console.error("Unexpected error loading services:", error);
             showSnackbar(undefined, i18next.t("services.servicesLoadError"));
         } finally {
             this._loading = false;

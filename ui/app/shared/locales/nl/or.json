@@ -929,6 +929,8 @@
     "title": "Services",
     "refresh": "Verversen",
     "servicesLoadError": "Er is iets misgegaan bij het ophalen van de services",
+    "realmServicesLoadError": "Er is iets misgegaan bij het ophalen van de realm services",
+    "globalServicesLoadError": "Er is iets misgegaan bij het ophalen van de globale services",
     "noServices": "Geen services gevonden, controleer de documentatie op hoe je services kunt toevoegen",
     "iframeLoadError": "De geselecteerde service kon niet worden geladen",
     "serviceUnavailable": "Service is niet beschikbaar",
