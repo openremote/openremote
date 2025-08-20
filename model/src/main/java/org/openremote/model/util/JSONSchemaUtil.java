@@ -41,6 +41,7 @@ import org.reflections.Reflections;
 import java.lang.annotation.*;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -126,6 +127,12 @@ public class JSONSchemaUtil {
         boolean container() default true;
     }
 
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.FIELD})
+    public @interface JsonSchemaTypeRemap {
+        Class<?> type();
+    }
+
     public static class CustomModule implements Module {
 
         private static final ConcurrentHashMap<Class<?>, List<ResolvedType>> subtypeCache = new ConcurrentHashMap<>();
@@ -146,6 +153,9 @@ public class JSONSchemaUtil {
                     }
                     return null;
                 });
+
+            // Field type remapping
+            builder.forFields().withTargetTypeOverridesResolver(this::remapFieldType);
 
             // Class subtype resolver for abstract classes
             builder.forTypesInGeneral().withCustomDefinitionProvider((resolvedType, context) -> {
@@ -201,6 +211,18 @@ public class JSONSchemaUtil {
                     applyFieldAnnotation(fieldScope, JsonSchemaExamples.class, attrs, mapper);
                 }
             });
+        }
+
+        private List<ResolvedType> remapFieldType(FieldScope fieldScope) {
+            JsonSchemaTypeRemap ann = fieldScope.getAnnotation(JsonSchemaTypeRemap.class);
+            if (ann != null) {
+                try {
+                    return Collections.singletonList(fieldScope.getContext().resolve((Type) ann.getClass().getMethod("type").invoke(ann)));
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to apply " + ann.getClass().getSimpleName(), e);
+                }
+            }
+            return null;
         }
 
         private static <A extends Annotation> void applyTypeAnnotation(
