@@ -405,9 +405,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         if(!filter || typeof filter === "string") {
             filter = this.parseFromInputFilter(filter);
             if (Util.objectsEqual(this._filter, filter)) {
+                console.debug("Tried to apply filter to the asset tree, but it is the same:", this._filter, filter);
                 return;
             }
         }
+        console.debug("Applying filter to the asset tree...", filter);
         this._filter = filter;
         if(reflect) {
             this.updateComplete.finally(() => this._filterInput.value = this.formatFilter(filter));
@@ -935,15 +937,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected parseFromInputFilter(inputValue?: string): OrAssetTreeFilter {
-        let searchValue: string | undefined = this._filterInput.value;
-        if (inputValue) {
-            searchValue = inputValue;
-        }
+        inputValue ??= this._filterInput.value;
         let resultingFilter: OrAssetTreeFilter = new OrAssetTreeFilter();
 
-        if (searchValue) {
-            let asset: string = searchValue;
-            let matchingResult: RegExpMatchArray | null = searchValue.match(/(attribute\:)(\"[^"]+\")\S*/g);
+        if (inputValue) {
+            let asset: string = inputValue;
+            let matchingResult: RegExpMatchArray | null = inputValue.match(/(attribute\:)(\"[^"]+\")\S*/g);
             if (matchingResult) {
                 if (matchingResult.length > 0) {
                     matchingResult.forEach((value: string, index: number) => {
@@ -961,7 +960,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 this._attributeValueFilter.disabled = false;
             }
 
-            matchingResult = searchValue.match(/(type\:)\S+/g);
+            matchingResult = inputValue.match(/(type\:)\S+/g);
             if (matchingResult) {
                 if (matchingResult.length > 0) {
                     matchingResult.forEach((value: string, index: number) => {
@@ -976,7 +975,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 }
             }
 
-            matchingResult = searchValue.match(/(\"[^\"]+\")\:(([^\"\s]+)|(\"[^\"]+\"))/g);
+            matchingResult = inputValue.match(/(\"[^\"]+\")\:(([^\"\s]+)|(\"[^\"]+\"))/g);
             if (matchingResult) {
                 if (matchingResult.length > 0) {
                     matchingResult.forEach((value: string, index: number) => {
@@ -1097,14 +1096,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         this._doFiltering();
     }
 
-    protected _onFilterInputEvent(e: KeyboardEvent) {
-        let value: string | undefined;
-
-        if (e.composedPath()) {
-            value = ((e.composedPath()[0] as HTMLInputElement).value) || undefined;
-        }
-
-        this._onFilterInput(value, false);
+    protected _onFilterInputEvent(_e: KeyboardEvent) {
+        this._onFilterInput(this._filterInput?.nativeValue, false);
     }
 
     protected _onFilterInput(newValue: string | undefined, force: boolean): void {
