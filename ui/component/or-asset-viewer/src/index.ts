@@ -772,7 +772,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                         opacity: 1;
                     }
                 </style>
-                <or-mwc-input .type="${InputType.BUTTON}" class="asset-group-add-remove-button" icon="pencil" @click="${() => attributePickerModalOpen()}"></or-mwc-input>
+                <or-mwc-input .type="${InputType.BUTTON}" class="asset-group-add-remove-button" icon="pencil" @or-mwc-input-changed="${() => attributePickerModalOpen()}"></or-mwc-input>
                 <or-mwc-table .columns="${headersAndRows[0]}" .rows="${headersAndRows[1]}" .id="${id}-attribute-table" .config="${{stickyFirstColumn: true}}"></or-mwc-table>
             `;
     }

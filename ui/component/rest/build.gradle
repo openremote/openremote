@@ -36,16 +36,24 @@ clean {
     doLast {
         def dir = new File("${projectDir}/dist")
         dir.deleteDir()
+        def libs = new File("${projectDir}/lib")
+        libs.deleteDir()
     }
+}
+
+tasks.register('npmBuild', Exec) {
+    mustRunAfter npmClean
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "run", "build"
 }
 
 build.dependsOn generateTypeScript, npmBuild
 npmBuild.dependsOn generateTypeScript
 
-task prepareUi() {
+tasks.register('prepareUi') {
     dependsOn clean, build, npmPrepare
 }
 
-task publishUi() {
+tasks.register('publishUi') {
     dependsOn clean, build, npmPublish
 }

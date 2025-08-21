@@ -1,6 +1,6 @@
 import {css, html, PropertyValues, TemplateResult } from "lit";
 import {OrAssetWidget} from "../util/or-asset-widget";
-import {WidgetConfig} from "../util/widget-config";
+import {AssetWidgetConfig} from "../util/widget-config";
 import {AttributeRef, WellknownMetaItems} from "@openremote/model";
 import {WidgetManifest} from "../util/or-widget";
 import {WidgetSettings} from "../util/widget-settings";
@@ -11,8 +11,7 @@ import {throttle} from "lodash";
 import {Util} from "@openremote/core";
 import "@openremote/or-attribute-input";
 
-export interface AttributeInputWidgetConfig extends WidgetConfig {
-    attributeRefs: AttributeRef[];
+export interface AttributeInputWidgetConfig extends AssetWidgetConfig {
     readonly: boolean,
     showHelperText: boolean
 }
@@ -68,13 +67,13 @@ export class AttributeInputWidget extends OrAssetWidget {
         return {
             displayName: "Attribute",
             displayIcon: "form-textbox",
-            getContentHtml(config: WidgetConfig): OrAssetWidget {
+            getContentHtml(config: AttributeInputWidgetConfig): OrAssetWidget {
                 return new AttributeInputWidget(config);
             },
-            getDefaultConfig(): WidgetConfig {
+            getDefaultConfig(): AttributeInputWidgetConfig {
                 return getDefaultWidgetConfig();
             },
-            getSettingsHtml(config: WidgetConfig): WidgetSettings {
+            getSettingsHtml(config: AttributeInputWidgetConfig): WidgetSettings {
                 return new AttributeInputSettings(config);
             }
 

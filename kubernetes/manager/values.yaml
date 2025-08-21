@@ -49,16 +49,23 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
-# This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
+# HTTP service is always active but its port can be adapted
+# MQTT(S) services values are for directly exposing the MQTT(S) ports of the manager,
+# set to false when using HA Proxy
 service:
-  # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-  type: ClusterIP
-  # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
-  port: 8080
+  http:
+    type: ClusterIP
+    port: 8080
+  mqtt:
+    enabled: false
+    annotations: {}
+  mqtts:
+    enabled: false
+    annotations: {}
 
-# This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
+# Expose an Ingress for direct HTTP(S) access to the manager, disable when using HA Proxy
 ingress:
-  enabled: true
+  enabled: false
   className: "nginx"
   annotations: {}
     # kubernetes.io/ingress.class: nginx
@@ -90,14 +97,21 @@ livenessProbe:
   httpGet:
     path: /
     port: 8080
-  initialDelaySeconds: 5
   periodSeconds: 5
 readinessProbe:
   httpGet:
     path: /
     port: 8080
-  initialDelaySeconds: 5
   periodSeconds: 5
+startupProbe:
+  httpGet:
+    path: /
+    port: 8080
+  failureThreshold: 30
+  periodSeconds: 5
+
+# Size of volume requested in PVC, must be aligned with available PV
+volumeSize: "1Gi"
 
 # Additional volumes on the output Deployment definition.
 volumes: []

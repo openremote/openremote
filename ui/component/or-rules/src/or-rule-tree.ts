@@ -127,7 +127,14 @@ export class OrRuleTree extends OrTreeMenu {
             if (!this.rules) {
                 this._loadRulesets(this.global).then(rulesets => this.rules = rulesets);
             } else {
-                this.nodes = [...this._getRuleNodes(this.rules), ...this._cachedEmptyGroupNodes];
+                // This stops a group from showing up twice after its first rule is added.
+                // It removes the old, empty version of the group from memory so only the new, updated one is displayed.
+                const ruleNodes = this._getRuleNodes(this.rules);
+                const ruleNodeIds = new Set(ruleNodes.map(node => node.id));
+                const emptyGroups = this._cachedEmptyGroupNodes
+                    .filter(cachedNode => !ruleNodeIds.has(cachedNode.id));
+                this.nodes = [...ruleNodes, ...emptyGroups];
+                this._cachedEmptyGroupNodes = emptyGroups;
             }
         }
         if (changedProps.has("nodes")) {
@@ -465,6 +472,19 @@ export class OrRuleTree extends OrTreeMenu {
             realm: realm,
             rules: undefined
         };
+
+        const selectedNodes = this._findSelectedTreeNodes() as RuleTreeNode[];
+        if (selectedNodes.length === 1 && selectedNodes[0].children) {
+            const selectedGroupNode = selectedNodes[0];
+            const groupId = selectedGroupNode.id;
+
+            if (groupId) {
+                ruleset.meta = {
+                    ...(ruleset.meta || {}),
+                    groupId: groupId
+                };
+            }
+        }
 
         if (this.config && this.config.rulesetAddHandler && !this.config.rulesetAddHandler(ruleset)) {
             return;

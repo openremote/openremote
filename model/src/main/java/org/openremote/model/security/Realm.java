@@ -19,7 +19,6 @@
  */
 package org.openremote.model.security;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -33,10 +32,8 @@ import jakarta.validation.constraints.Size;
 import org.openremote.model.persistence.PasswordPolicyConverter;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.*;
 
-import static org.openremote.model.Constants.MASTER_REALM;
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 
 /**

@@ -2,7 +2,7 @@ import {customElement, state} from "lit/decorators.js";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {css, html, PropertyValues, TemplateResult} from "lit";
 import {WidgetSettings} from "../util/widget-settings";
-import {WidgetConfig} from "../util/widget-config";
+import {AssetWidgetConfig, WidgetConfig} from "../util/widget-config";
 import {GatewaySettings} from "../settings/gateway-settings";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {GatewayTunnelInfo, GatewayTunnelInfoType} from "@openremote/model";
@@ -32,7 +32,7 @@ const styling = css`
     }
 `;
 
-export interface GatewayWidgetConfig extends WidgetConfig {
+export interface GatewayWidgetConfig extends AssetWidgetConfig {
     gatewayId?: string;
     type: GatewayTunnelInfoType;
     target: string;
@@ -41,6 +41,7 @@ export interface GatewayWidgetConfig extends WidgetConfig {
 
 function getDefaultWidgetConfig(): GatewayWidgetConfig {
     return {
+        attributeRefs: [],
         type: GatewayTunnelInfoType.HTTPS,
         target: "localhost",
         targetPort: 443
@@ -322,13 +323,15 @@ export class GatewayWidget extends OrWidget {
      * Internal function that requests the Manager API for the gatewayStatus of the gatewayId asset in {@link GatewayTunnelInfo}.
      * Returns undefined if there is misalignment in the linked asset id or unexpected http code.
      */
-   protected async _getGatewayStatus(info: GatewayTunnelInfo): Promise<string | undefined> {
-        const response =  await manager.rest.api.AssetResource.get(info.gatewayId!)
-        if (response.status === 200 && response.data && response.data.attributes && response.data.attributes.gatewayStatus) {
-            return response.data.attributes.gatewayStatus.value
-        } else {
-            return undefined;
-             }
+    protected async _getGatewayStatus(info: GatewayTunnelInfo): Promise<string | undefined> {
+        if(info.gatewayId) {
+            const promise = manager.rest.api.AssetResource.get(info.gatewayId);
+            promise.catch(err => console.error(err));
+            const response = await promise;
+            if (response.status === 200) {
+                return response.data.attributes?.gatewayStatus?.value;
+            }
+        }
     }
 
     /**
@@ -339,7 +342,7 @@ export class GatewayWidget extends OrWidget {
         //Check if the gateway is actually in a status to accept connections
         this._getGatewayStatus(tunnelInfo).then(status => {
             this._isReady = (status === "CONNECTED");
-            });
+        });
    }
 
     /**

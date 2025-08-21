@@ -30,6 +30,7 @@ import org.keycloak.representations.AccessTokenResponse
 import org.openremote.container.Container
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.persistence.PersistenceService
+import org.openremote.container.security.ClientCredentialsAuthForm
 import org.openremote.container.security.IdentityService
 import org.openremote.container.security.PasswordAuthForm
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
@@ -524,6 +525,11 @@ trait ContainerTrait {
     AccessTokenResponse authenticate(Container container, String realm, String clientId, String username, String password) {
         ((KeycloakIdentityProvider)container.getService(IdentityService.class).getIdentityProvider()).getKeycloak()
                 .getAccessToken(realm, new PasswordAuthForm(clientId, username, password))
+    }
+
+    AccessTokenResponse authenticate(Container container, String realm, String clientId, String clientSecret) {
+        ((KeycloakIdentityProvider)container.getService(IdentityService.class).getIdentityProvider()).getKeycloak()
+                .getAccessToken(realm, new ClientCredentialsAuthForm(clientId, clientSecret))
     }
 
     ProducerTemplate getMessageProducerTemplate(Container container) {

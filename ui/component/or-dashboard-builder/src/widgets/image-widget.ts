@@ -1,4 +1,4 @@
-import {WidgetConfig} from "../util/widget-config";
+import {AssetWidgetConfig} from "../util/widget-config";
 import {AssetModelUtil, Attribute, AttributeRef, WellknownValueTypes} from "@openremote/model";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import { customElement } from "lit/decorators.js";
@@ -53,8 +53,7 @@ export interface ImageAssetMarker {
     coordinates: [number, number]
 }
 
-export interface ImageWidgetConfig extends WidgetConfig {
-    attributeRefs: AttributeRef[];
+export interface ImageWidgetConfig extends AssetWidgetConfig {
     markers: ImageAssetMarker[];
     showTimestampControls: boolean;
     imagePath: string;

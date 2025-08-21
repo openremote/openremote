@@ -58,4 +58,11 @@ public class GatewayDisconnectEvent extends SharedEvent {
     public Reason getReason() {
         return reason;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "reason=" + reason +
+            '}';
+    }
 }

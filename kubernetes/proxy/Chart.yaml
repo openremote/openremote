@@ -1,0 +1,9 @@
+apiVersion: v2
+name: proxy
+description: A Helm chart for deploying OR HAProxy in Kubernetes
+
+type: application
+
+version: 0.1.0
+
+appVersion: "2.9.15.0"

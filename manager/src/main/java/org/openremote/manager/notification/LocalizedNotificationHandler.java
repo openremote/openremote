@@ -174,13 +174,13 @@ public class LocalizedNotificationHandler extends RouteBuilder implements Notifi
             else if (target.getType().equals(Notification.TargetType.ASSET)) {
                 List<UserAssetLink> links = assetStorageService.findUserAssetLinks(null, null, target.getId());
                 if (!links.isEmpty()) {
-                    user = identityService.getIdentityProvider().getUser(links.get(0).getId().getUserId());
+                    user = identityService.getIdentityProvider().getUser(links.getFirst().getId().getUserId());
                 }
             }
 
             // If user has configured their locale (through the user attribute), update the targetLocale
             if (user != null && user.getAttributeMap() != null && user.getAttributeMap().containsKey(LOCALE_ATTRIBUTE)) {
-                targetLocale = user.getAttributeMap().get(LOCALE_ATTRIBUTE).get(0);
+                targetLocale = user.getAttributeMap().get(LOCALE_ATTRIBUTE).getFirst();
             }
 
         }

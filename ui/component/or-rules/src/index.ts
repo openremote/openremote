@@ -1012,6 +1012,15 @@ export class OrRules extends translate(i18next)(LitElement) {
             const newRulesets = await this._rulesTree?.refresh();
             this._checkForViewerUpdate(undefined, newRulesets);
 
+            // After the tree has refreshed, check if the saved rule belongs to a group.
+            const savedRuleset = event.detail.ruleset;
+            const groupId = savedRuleset.meta?.groupId as string;
+
+            // If it has a group ID, expand tree component to show that group and rules that are inside.
+            if (groupId && this._rulesTree) {
+                this._rulesTree.expandGroup(groupId);
+            }
+
             // Select the ruleset if it's new
             if (event.detail.isNew) {
                 const ruleset = newRulesets?.find(r => r.id && r.id === event.detail.ruleset.id);

@@ -522,7 +522,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         List<Asset<?>> result = findAll(em, query);
         if (result.isEmpty())
             return null;
-        return result.get(0);
+        return result.getFirst();
     }
 
     public List<Asset<?>> findAll(AssetQuery query) {

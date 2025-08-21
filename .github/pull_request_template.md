@@ -1,3 +1,8 @@
+<!--
+  Use a clear and meaningful title for your pull request because the title will be used in the release notes.
+  If you have permission to manage labels, add a "Bug", "Enhancement", or "Feature" label if appropriate.
+-->
+
 ## Description
 <!--
   Please describe the changes and add a link to the related issue(s) #

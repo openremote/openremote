@@ -388,6 +388,7 @@ export class PageRealms extends Page<AppStateKeyed> {
       let okBtnRef: Ref<OrMwcInput> = createRef();
 
       const doDelete = async (dialog: OrMwcDialog) => {
+        if (okBtnRef.value.disabled) return;
         try {
             await manager.rest.api.RealmResource.delete(realm.name);
             this._realms = this._realms.filter(r => r !== realm);
@@ -411,7 +412,7 @@ export class PageRealms extends Page<AppStateKeyed> {
       const dialogActions: DialogAction[] = [
           {
               actionName: "ok",
-              content: html`<or-mwc-input .type="${InputType.BUTTON}" ${ref(okBtnRef)} @click="${(ev: MouseEvent) => {if ((ev.currentTarget as OrMwcInput).disabled) ev.stopPropagation()}}" disabled label="ok"></or-mwc-input>`,
+              content: html`<or-mwc-input .type="${InputType.BUTTON}" ${ref(okBtnRef)} disabled label="ok"></or-mwc-input>`,
               action: doDelete
           },
           {

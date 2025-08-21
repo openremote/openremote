@@ -330,48 +330,39 @@ ext.npmCommand = {
 }
 
 // Add yarn tasks
-task yarnInstall(type: Exec) {
+tasks.register('yarnInstall', Exec) {
     commandLine npmCommand("yarn"), "install"
 }
-task yarnInstallForce(type: Exec) {
+tasks.register('yarnInstallForce', Exec) {
     commandLine npmCommand("yarn"), "install", "--force"
 }
-task npmClean(type: Exec) {
+tasks.register('npmClean', Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "run", "clean"
 }
-task npmAnalyze(type: Exec) {
+tasks.register('npmAnalyze', Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "run", "analyze"
 }
-task npmBuild(type: Exec) {
-    mustRunAfter npmClean
-    dependsOn getYarnInstallTask()
-    commandLine npmCommand("yarn"), "run", "build"
-}
-task npmTest(type: Exec) {
-    dependsOn getYarnInstallTask()
-    commandLine npmCommand("yarn"), "run", "test"
-}
-task npmServe(type: Exec) {
+tasks.register('npmServe', Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "run", "serve"
 }
-task npmPrepare(type: Exec) {
+tasks.register('npmPrepare', Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "pack"
 }
-task npmPublish(type: Exec) {
+tasks.register('npmPublish', Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "npm", "publish", "--access", "public"
 }
-task npmServeProduction(type: Exec) {
+tasks.register('npmServeProduction', Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "run", "serveProduction"
 }
 
 // Add typescript tasks
-task tscWatch(type: Exec) {
+tasks.register('tscWatch', Exec) {
     commandLine npmCommand("npx"), "tsc", "-b", "--watch"
 }
 
@@ -393,7 +384,7 @@ plugins.withType(JavaPlugin).whenPluginAdded {
     }
 
     // Allow dependencyInsight checks across all projects
-    task allDependencyInsight(type: DependencyInsightReportTask) {}
+    tasks.register('allDependencyInsight', DependencyInsightReportTask) {}
 
     base {
         // JAR/ZIP base name is the fully qualified subproject name

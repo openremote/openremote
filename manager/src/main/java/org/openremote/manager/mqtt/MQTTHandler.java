@@ -44,6 +44,7 @@ import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.UserAssetLink;
+import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.util.ValueUtil;
 
 import javax.security.auth.Subject;
@@ -358,11 +359,11 @@ public abstract class MQTTHandler {
     }
 
     public static boolean topicTokenCountGreaterThan(Topic topic, int size) {
-        return topic.getTokens() != null && topic.getTokens().size() > size;
+        return topic.getTokens() != null && topic.getTokens().length > size;
     }
 
     public static String topicTokenIndexToString(Topic topic, int tokenNumber) {
-        return topicTokenCountGreaterThan(topic, tokenNumber) ? topic.getTokens().get(tokenNumber) : null;
+        return topicTokenCountGreaterThan(topic, tokenNumber) ? topic.getTokens()[tokenNumber] : null;
     }
 
     protected static Subject getSubjectFromConnection(RemotingConnection connection) {

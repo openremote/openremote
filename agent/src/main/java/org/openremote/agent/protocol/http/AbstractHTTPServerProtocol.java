@@ -260,7 +260,7 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
                     + "' for request path: "
                     + deploymentInfo.getContextPath());
             // Add the handler before the greedy deployment handler
-            webService.getRequestHandlers().add(0, requestHandler);
+            webService.getRequestHandlers().addFirst(requestHandler);
 
             deployment = new WebService.DeploymentInstance(deploymentInfo, requestHandler);
         } catch (ServletException e) {
