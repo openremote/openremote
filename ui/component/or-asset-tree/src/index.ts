@@ -406,10 +406,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             filter = this.parseFromInputFilter(filter);
         }
         if (Util.objectsEqual(this._filter, filter)) {
-            console.debug("Tried to apply filter to the asset tree, but it is the same:", this._filter, filter);
+            console.debug("Tried to apply filter to the asset tree, but it was the same.", filter);
             return;
         }
-        console.debug("Applying filter to the asset tree...", filter);
+        console.debug("Applying filter to the asset tree:", filter);
         this._filter = filter;
         if(reflect) {
             this.updateComplete.finally(() => this._filterInput.value = this.formatFilter(filter));
