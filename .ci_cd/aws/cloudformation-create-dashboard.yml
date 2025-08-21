@@ -50,7 +50,7 @@ Resources:
                   [ "...", "WebsocketClient", { "id": "m5", "yAxis": "left", "label": "Websocket" } ],
                   [ "...", "GatewayService", { "id": "m6", "yAxis": "left", "label": "Gateways" } ],
                   [ ".", "artemis_message_count", ".", ".", "queue", "*.*.writeattributevalue.#", { "id": "m7", "yAxis": "left", "label": "MQTT Backlog" } ],
-                  [ ".", "or_attributes_seconds_count", ".", ".", { "visible": false, "label": "total", "id": "m8" } ]
+                  [ ".", "or_attributes_seconds_count", ".", ".", { "visible": false, "label": "Total", "id": "m8" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
