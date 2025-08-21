@@ -41,6 +41,7 @@ import java.util.regex.Pattern;
 import static org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage.TYPE;
 
 @JsonTypeName(TYPE)
+@JsonSchemaTitle("Weighted Exponential Average")
 public class ForecastConfigurationWeightedExponentialAverage extends ForecastConfiguration {
 
     public static final String TYPE = "wea";
