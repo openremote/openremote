@@ -34,7 +34,7 @@ export function pageUsersProvider(store: Store<AppStateKeyed>): PageProvider<App
     };
 }
 
-interface UserModel extends User {
+export interface UserModel extends User {
     password?: string;
     loaded?: boolean;
     loading?: boolean;
@@ -1044,7 +1044,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                         <or-mwc-input style="margin: 0;" outlined ?disabled="${readonly}"
                                       .label="${i18next.t("delete")}"
                                       .type="${InputType.BUTTON}"
-                                      @click="${() => this._deleteUser(user)}"
+                                      @or-mwc-input-changed="${() => this._deleteUser(user)}"
                         ></or-mwc-input>
                     `)}
                     <div style="display: flex; align-items: center; gap: 16px; margin: 0 0 0 auto;">

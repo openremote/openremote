@@ -309,7 +309,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
                     .setParameter("realm", realm)
                     .setParameter("username", username)
                     .getResultList();
-            return result.size() > 0 ? result.get(0) : null;
+            return result.size() > 0 ? result.getFirst() : null;
         });
     }
 
@@ -319,7 +319,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
                 em.createQuery("select u from User u where u.id = :userId", User.class)
                     .setParameter("userId", userId)
                     .getResultList();
-            return result.size() > 0 ? result.get(0) : null;
+            return result.size() > 0 ? result.getFirst() : null;
         });
     }
 
