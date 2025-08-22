@@ -224,6 +224,16 @@ public class JSONSchemaUtil {
                 return new CustomDefinition(definition, CustomDefinition.DefinitionType.STANDARD, CustomDefinition.AttributeInclusion.NO);
             });
 
+            // Set the default keyword for subtypes so AJV in the frontend can tell jsonforms/core to consider the
+            // subtype schema valid
+            builder.forTypesInGeneral().withTypeAttributeOverride((attrs, typeScope, context) -> {
+                Class<?> erasedType = typeScope.getType().getErasedType();
+                if (erasedType.getSuperclass() == Object.class) {
+                    return;
+                }
+                addDefaultToDiscriminator(attrs, context);
+            });
+
             // Effectively disable const generation (on the root of subtypes)
             builder.forTypesInGeneral().withEnumResolver(typeScope -> null);
 
@@ -261,6 +271,36 @@ public class JSONSchemaUtil {
                     applyFieldAnnotation(fieldScope, JsonSchemaExamples.class, attrs, mapper);
                 }
             });
+        }
+
+        /**
+         * Find and modify the main subtype object under the {@code allOf} keyword of a subtype to add a {@code default}
+         * property alongside the {@code const} discriminator property.
+         * @param attrs The {@link ObjectNode} representation of the subtype
+         * @param context The schema generator {@link SchemaGenerationContext}
+         */
+        private void addDefaultToDiscriminator(ObjectNode attrs, SchemaGenerationContext context) {
+            JsonNode allOfNode = attrs.get(context.getKeyword(SchemaKeyword.TAG_ALLOF));
+            if (!(allOfNode instanceof ArrayNode allOf)) {
+                return;
+            }
+
+            for (JsonNode node : allOf) {
+                JsonNode props = node.get(context.getKeyword(SchemaKeyword.TAG_PROPERTIES));
+                if (!(props instanceof ObjectNode propsObj)) {
+                    continue;
+                }
+
+                JsonNode typeNode = propsObj.get(context.getKeyword(SchemaKeyword.TAG_TYPE));
+                if (typeNode instanceof ObjectNode typeProp) {
+
+                    String constKey = context.getKeyword(SchemaKeyword.TAG_CONST);
+                    String defaultKey = context.getKeyword(SchemaKeyword.TAG_DEFAULT);
+                    if (typeProp.has(constKey) && !typeProp.has(defaultKey)) {
+                        typeProp.put(defaultKey, typeProp.get(constKey).asText());
+                    }
+                }
+            }
         }
 
         private List<ResolvedType> remapFieldType(FieldScope fieldScope) {
