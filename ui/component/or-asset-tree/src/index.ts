@@ -620,7 +620,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected _isReadonly() {
-        return this.readonly || !manager.hasRole(ClientRole.WRITE_ASSETS);
+        return this.readonly || !manager.authenticated || !manager.hasRole(ClientRole.WRITE_ASSETS);
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
