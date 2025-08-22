@@ -33,6 +33,7 @@
     "@openremote/or-map": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-rules": "workspace:*",
+    "@openremote/or-services": "workspace:*",
     "@openremote/or-smart-notify": "workspace:*",
     "@openremote/or-timeline": "workspace:*",
     "@openremote/rest": "workspace:*",
