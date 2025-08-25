@@ -340,7 +340,7 @@ export class Manager {
     }
   }
 
-  protected getAppUrl(realm: string) {
+  getAppUrl(realm: string) {
     return `${new URL(this.baseURL).origin}/manager/?realm=${realm}`;
   }
 }

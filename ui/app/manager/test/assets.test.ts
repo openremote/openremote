@@ -1,7 +1,7 @@
 import { expect } from "@openremote/test";
 import { test, userStatePath } from "./fixtures/manager.js";
 import assets, { assetMap, assetPatches, thing } from "./fixtures/data/assets.js";
-import { WellknownMetaItems } from "@openremote/model";
+import {WellknownMetaItems} from "@openremote/model";
 import * as Util from "@openremote/core/lib/util";
 
 test.use({ storageState: userStatePath });
@@ -47,9 +47,49 @@ assets.forEach(({ type, name, attributes }) => {
     await manager.goToRealmStartPage("smartcity");
     await manager.navigateToTab("asset");
     await page.fill('#filterInput input[type="text"]', name);
+    await expect(page.locator(`#list-container > ol > li`)).toHaveCount(2);
     await page.click(`text=${name}`);
     await expect(page.locator(`#asset-header`, { hasText: name })).toBeVisible();
   });
+
+  /**
+   * @given Assets are set up in the "smartcity" realm
+   * @when Logging in to the OpenRemote "smartcity" realm
+   * @and Navigating to the "asset" tab
+   * @and Searching for the asset by ID
+   * @and Selecting the asset from the list
+   * @then The asset detail page is displayed
+   */
+  test(`Search by Asset ID and select the ${name} asset`, async ({ page, manager }) => {
+    await manager.setup("smartcity", { assets });
+    const id = manager.assets.find(asset => asset.name === name)?.id;
+    expect(id).toBeDefined();
+    await manager.goToRealmStartPage("smartcity");
+    await manager.navigateToTab("asset");
+    await page.fill('#filterInput input[type="text"]', id!);
+    await expect(page.locator(`#list-container > ol > li`)).toHaveCount(2); // It's 2 instead of 1, because of the "asset draggable area" on the bottom.
+    await page.click(`text=${name}`);
+    await expect(page.locator(`#asset-header`, { hasText: name })).toBeVisible();
+  })
+
+  /**
+   * @given Assets are set up in the "smartcity" realm
+   * @when Logging in to the OpenRemote "smartcity" realm
+   * @and Navigating to the "/assets/false/{id}" page directly
+   * @then The filter should contain the ID as input
+   * @and The asset list should contain the asset with the given ID
+   * @and The asset detail page is displayed
+   */
+  test(`Open browser tab directly to the ${name} asset`, async ({ page, manager, assetsPage }) => {
+    await manager.setup("smartcity", { assets });
+    const id = manager.assets.find(asset => asset.name === name)?.id;
+    expect(id).toBeDefined();
+    await assetsPage.gotoAssetId("smartcity", id!);
+    await expect(page.locator('#filterInput input[type="text"]')).toHaveValue(id!);
+    await expect(page.locator(`#list-container > ol > li`)).toHaveCount(2); // It's 2 instead of 1, because of the "asset draggable area" on the bottom.
+    await expect(page.locator(`#list-container > ol > li[data-selected]`)).toHaveCount(1);
+    await expect(page.locator(`#asset-header`, { hasText: name })).toBeVisible();
+  })
 
   /**
    * @given Assets are set up in the "smartcity" realm
