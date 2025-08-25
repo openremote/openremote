@@ -27,13 +27,13 @@ import org.openremote.protocol.zwave.model.commandclasses.channel.ChannelType;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.openremote.model.Constants.*;
+import static org.openremote.model.value.Units.*;
 
 public class TypeMapper {
 
     public static final class TypeInfo {
         private ValueDescriptor<?> valueDescriptor;
-        private String[] units;
+        private Units[] units;
         private ValueConstraint[] constraints;
         private ValueFormat valueFormat;
 
@@ -41,18 +41,18 @@ public class TypeMapper {
             this.valueDescriptor = valueDescriptor;
         }
 
-        public TypeInfo(ValueDescriptor<?> valueDescriptor, String[] units) {
+        public TypeInfo(ValueDescriptor<?> valueDescriptor, Units[] units) {
             this.valueDescriptor = valueDescriptor;
             this.units = units;
         }
 
-        public TypeInfo(ValueDescriptor<?> valueDescriptor, String[] units, ValueFormat valueFormat) {
+        public TypeInfo(ValueDescriptor<?> valueDescriptor, Units[] units, ValueFormat valueFormat) {
             this.valueDescriptor = valueDescriptor;
             this.units = units;
             this.valueFormat = valueFormat;
         }
 
-        public TypeInfo(ValueDescriptor<?> valueDescriptor, String[] units, ValueFormat valueFormat, ValueConstraint[] constraints) {
+        public TypeInfo(ValueDescriptor<?> valueDescriptor, Units[] units, ValueFormat valueFormat, ValueConstraint[] constraints) {
             this.valueDescriptor = valueDescriptor;
             this.units = units;
             this.constraints = constraints;
@@ -74,51 +74,51 @@ public class TypeMapper {
 
         // COMMAND_CLASS_SENSOR_MULTILEVEL
 
-        typeMap.put(ChannelType.TEMPERATURE_CELSIUS, new TypeInfo(ValueType.NUMBER, units(UNITS_CELSIUS), ValueFormat.NUMBER_1_DP()));
-        typeMap.put(ChannelType.TEMPERATURE_FAHRENHEIT, new TypeInfo(ValueType.NUMBER, units(UNITS_FAHRENHEIT), ValueFormat.NUMBER_1_DP()));
-        typeMap.put(ChannelType.PERCENTAGE, new TypeInfo(ValueType.NUMBER, units(UNITS_PERCENTAGE)));
-        typeMap.put(ChannelType.LUMINANCE_PERCENTAGE, new TypeInfo(ValueType.INTEGER, units(UNITS_PERCENTAGE), null, ValueConstraint.constraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100))));
-        typeMap.put(ChannelType.LUMINANCE_LUX, new TypeInfo(ValueType.INTEGER, units(UNITS_LUX)));
-        typeMap.put(ChannelType.POWER_WATT, new TypeInfo(ValueType.INTEGER, units(UNITS_WATT)));
-        typeMap.put(ChannelType.POWER_BTU_H, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_BTU, UNITS_PER, UNITS_HOUR)));
-        typeMap.put(ChannelType.HUMIDITY_PERCENTAGE, new TypeInfo(ValueType.INTEGER, units(UNITS_PERCENTAGE)));
-        typeMap.put(ChannelType.HUMIDITY_ABSOLUTE, new TypeInfo(ValueType.INTEGER.withUnits(UNITS_GRAM, UNITS_PER, UNITS_METRE, UNITS_CUBED)));
-        typeMap.put(ChannelType.SPEED_MS, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND)));
-        typeMap.put(ChannelType.SPEED_MPH, new TypeInfo(ValueType.INTEGER.withUnits(UNITS_MILE, UNITS_PER, UNITS_HOUR)));
-        typeMap.put(ChannelType.DIRECTION_DECIMAL_DEGREES, new TypeInfo(ValueType.INTEGER, units(UNITS_DEGREE)));
-        typeMap.put(ChannelType.PRESSURE_KPA, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_PASCAL)));
-        typeMap.put(ChannelType.PRESSURE_IN_HG, new TypeInfo(ValueType.NUMBER, units(UNITS_IN_HG)));
-        typeMap.put(ChannelType.SOLAR_RADIATION_WATT_M2, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_WATT, UNITS_PER, UNITS_METRE, UNITS_SQUARED)));
-        typeMap.put(ChannelType.DEW_POINT_CELSIUS, new TypeInfo(ValueType.NUMBER, units(UNITS_CELSIUS)));
-        typeMap.put(ChannelType.DEW_POINT_FAHRENHEIT, new TypeInfo(ValueType.NUMBER, units(UNITS_FAHRENHEIT)));
-        typeMap.put(ChannelType.RAINFALL_MMPH, new TypeInfo(ValueType.INTEGER.withUnits(UNITS_MILLI, UNITS_METRE, UNITS_PER, UNITS_HOUR)));
-        typeMap.put(ChannelType.RAINFALL_INPH, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_INCH, UNITS_PER, UNITS_HOUR)));
-        typeMap.put(ChannelType.TIDE_LEVEL_M, new TypeInfo(ValueType.NUMBER, units(UNITS_METRE)));
-        typeMap.put(ChannelType.TIDE_LEVEL_FT, new TypeInfo(ValueType.NUMBER, units(UNITS_FOOT)));
-        typeMap.put(ChannelType.WEIGHT_KG, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_GRAM)));
-        typeMap.put(ChannelType.WEIGHT_LB, new TypeInfo(ValueType.NUMBER, units(UNITS_MASS_POUND)));
-        typeMap.put(ChannelType.VOLTAGE_V, new TypeInfo(ValueType.NUMBER, units(UNITS_VOLT)));
-        typeMap.put(ChannelType.VOLTAGE_MV, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_MILLI, UNITS_VOLT)));
-        typeMap.put(ChannelType.CURRENT_A, new TypeInfo(ValueType.NUMBER, units(UNITS_AMP)));
-        typeMap.put(ChannelType.CURRENT_MA, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_MILLI, UNITS_AMP)));
-        typeMap.put(ChannelType.CO2_PPM, new TypeInfo(ValueType.INTEGER, units(UNITS_PART_PER_MILLION)));
-        typeMap.put(ChannelType.AIR_FLOW_CMPH, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_METRE, UNITS_CUBED, UNITS_PER, UNITS_MINUTE)));
-        typeMap.put(ChannelType.AIR_FLOW_CFTPM, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_FOOT, UNITS_CUBED, UNITS_PER, UNITS_MINUTE)));
-        typeMap.put(ChannelType.TANK_CAPACITY_L, new TypeInfo(ValueType.NUMBER, units(UNITS_LITRE)));
-        typeMap.put(ChannelType.TANK_CAPACITY_CBM, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_METRE, UNITS_CUBED)));
-        typeMap.put(ChannelType.TANK_CAPACITY_GAL, new TypeInfo(ValueType.NUMBER, units(UNITS_GALLON)));
-        typeMap.put(ChannelType.DISTANCE_M, new TypeInfo(ValueType.NUMBER, units(UNITS_METRE)));
-        typeMap.put(ChannelType.DISTANCE_CM, new TypeInfo(ValueType.POSITIVE_NUMBER.withUnits(UNITS_CENTI, UNITS_METRE)));
-        typeMap.put(ChannelType.DISTANCE_FT, new TypeInfo(ValueType.POSITIVE_NUMBER, units(UNITS_FOOT)));
-        typeMap.put(ChannelType.ANGLE_POSITION_PERCENT, new TypeInfo(ValueType.INTEGER, units(UNITS_PERCENTAGE), null, ValueConstraint.constraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100))));
-        typeMap.put(ChannelType.ANGLE_POSITION_DEGREE_NORTH_POLE, new TypeInfo(ValueType.INTEGER, units(UNITS_DEGREE)));
-        typeMap.put(ChannelType.ANGLE_POSITION_DEGREE_SOUTH_POLE, new TypeInfo(ValueType.INTEGER, units(UNITS_DEGREE)));
-        typeMap.put(ChannelType.ROTATION_HZ, new TypeInfo(ValueType.NUMBER, units(UNITS_HERTZ)));
-        typeMap.put(ChannelType.ROTATION_RPM, new TypeInfo(ValueType.NUMBER, units(UNITS_RPM)));
-        typeMap.put(ChannelType.WATER_TEMPERATURE_CELSIUS, new TypeInfo(ValueType.NUMBER, units(UNITS_CELSIUS)));
-        typeMap.put(ChannelType.WATER_TEMPERATURE_FAHRENHEIT, new TypeInfo(ValueType.NUMBER, units(UNITS_FAHRENHEIT)));
-        typeMap.put(ChannelType.SOIL_TEMPERATURE_CELSIUS, new TypeInfo(ValueType.NUMBER, units(UNITS_CELSIUS)));
-        typeMap.put(ChannelType.SOIL_TEMPERATURE_FAHRENHEIT, new TypeInfo(ValueType.NUMBER, units(UNITS_FAHRENHEIT)));
+        typeMap.put(ChannelType.TEMPERATURE_CELSIUS, new TypeInfo(ValueType.NUMBER, units(Units.CELSIUS), ValueFormat.NUMBER_1_DP()));
+        typeMap.put(ChannelType.TEMPERATURE_FAHRENHEIT, new TypeInfo(ValueType.NUMBER, units(Units.FAHRENHEIT), ValueFormat.NUMBER_1_DP()));
+        typeMap.put(ChannelType.PERCENTAGE, new TypeInfo(ValueType.NUMBER, units(Units.PERCENTAGE)));
+        typeMap.put(ChannelType.LUMINANCE_PERCENTAGE, new TypeInfo(ValueType.INTEGER, units(Units.PERCENTAGE), null, ValueConstraint.constraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100))));
+        typeMap.put(ChannelType.LUMINANCE_LUX, new TypeInfo(ValueType.INTEGER, units(Units.LUX)));
+        typeMap.put(ChannelType.POWER_WATT, new TypeInfo(ValueType.INTEGER, units(Units.WATT)));
+        typeMap.put(ChannelType.POWER_BTU_H, new TypeInfo(ValueType.NUMBER.withUnits(Units.BTU, Units.PER, Units.HOUR)));
+        typeMap.put(ChannelType.HUMIDITY_PERCENTAGE, new TypeInfo(ValueType.INTEGER, units(Units.PERCENTAGE)));
+        typeMap.put(ChannelType.HUMIDITY_ABSOLUTE, new TypeInfo(ValueType.INTEGER.withUnits(Units.GRAM, Units.PER, Units.METRE, Units.CUBED)));
+        typeMap.put(ChannelType.SPEED_MS, new TypeInfo(ValueType.NUMBER.withUnits(Units.METRE, Units.PER, Units.SECOND)));
+        typeMap.put(ChannelType.SPEED_MPH, new TypeInfo(ValueType.INTEGER.withUnits(Units.MILE, Units.PER, Units.HOUR)));
+        typeMap.put(ChannelType.DIRECTION_DECIMAL_DEGREES, new TypeInfo(ValueType.INTEGER, units(Units.DEGREE)));
+        typeMap.put(ChannelType.PRESSURE_KPA, new TypeInfo(ValueType.NUMBER.withUnits(Units.KILO, Units.PASCAL)));
+        typeMap.put(ChannelType.PRESSURE_IN_HG, new TypeInfo(ValueType.NUMBER, units(Units.IN_HG)));
+        typeMap.put(ChannelType.SOLAR_RADIATION_WATT_M2, new TypeInfo(ValueType.NUMBER.withUnits(Units.WATT, Units.PER, Units.METRE, Units.SQUARED)));
+        typeMap.put(ChannelType.DEW_POINT_CELSIUS, new TypeInfo(ValueType.NUMBER, units(Units.CELSIUS)));
+        typeMap.put(ChannelType.DEW_POINT_FAHRENHEIT, new TypeInfo(ValueType.NUMBER, units(Units.FAHRENHEIT)));
+        typeMap.put(ChannelType.RAINFALL_MMPH, new TypeInfo(ValueType.INTEGER.withUnits(Units.MILLI, Units.METRE, Units.PER, Units.HOUR)));
+        typeMap.put(ChannelType.RAINFALL_INPH, new TypeInfo(ValueType.NUMBER.withUnits(Units.INCH, Units.PER, Units.HOUR)));
+        typeMap.put(ChannelType.TIDE_LEVEL_M, new TypeInfo(ValueType.NUMBER, units(Units.METRE)));
+        typeMap.put(ChannelType.TIDE_LEVEL_FT, new TypeInfo(ValueType.NUMBER, units(Units.FOOT)));
+        typeMap.put(ChannelType.WEIGHT_KG, new TypeInfo(ValueType.NUMBER.withUnits(Units.KILO, Units.GRAM)));
+        typeMap.put(ChannelType.WEIGHT_LB, new TypeInfo(ValueType.NUMBER, units(Units.MASS_POUND)));
+        typeMap.put(ChannelType.VOLTAGE_V, new TypeInfo(ValueType.NUMBER, units(Units.VOLT)));
+        typeMap.put(ChannelType.VOLTAGE_MV, new TypeInfo(ValueType.NUMBER.withUnits(Units.MILLI, Units.VOLT)));
+        typeMap.put(ChannelType.CURRENT_A, new TypeInfo(ValueType.NUMBER, units(Units.AMP)));
+        typeMap.put(ChannelType.CURRENT_MA, new TypeInfo(ValueType.NUMBER.withUnits(Units.MILLI, Units.AMP)));
+        typeMap.put(ChannelType.CO2_PPM, new TypeInfo(ValueType.INTEGER, units(Units.PART_PER_MILLION)));
+        typeMap.put(ChannelType.AIR_FLOW_CMPH, new TypeInfo(ValueType.NUMBER.withUnits(Units.METRE, Units.CUBED, Units.PER, Units.MINUTE)));
+        typeMap.put(ChannelType.AIR_FLOW_CFTPM, new TypeInfo(ValueType.NUMBER.withUnits(Units.FOOT, Units.CUBED, Units.PER, Units.MINUTE)));
+        typeMap.put(ChannelType.TANK_CAPACITY_L, new TypeInfo(ValueType.NUMBER, units(Units.LITRE)));
+        typeMap.put(ChannelType.TANK_CAPACITY_CBM, new TypeInfo(ValueType.NUMBER.withUnits(Units.METRE, Units.CUBED)));
+        typeMap.put(ChannelType.TANK_CAPACITY_GAL, new TypeInfo(ValueType.NUMBER, units(Units.GALLON)));
+        typeMap.put(ChannelType.DISTANCE_M, new TypeInfo(ValueType.NUMBER, units(Units.METRE)));
+        typeMap.put(ChannelType.DISTANCE_CM, new TypeInfo(ValueType.POSITIVE_NUMBER.withUnits(Units.CENTI, Units.METRE)));
+        typeMap.put(ChannelType.DISTANCE_FT, new TypeInfo(ValueType.POSITIVE_NUMBER, units(Units.FOOT)));
+        typeMap.put(ChannelType.ANGLE_POSITION_PERCENT, new TypeInfo(ValueType.INTEGER, units(Units.PERCENTAGE), null, ValueConstraint.constraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100))));
+        typeMap.put(ChannelType.ANGLE_POSITION_DEGREE_NORTH_POLE, new TypeInfo(ValueType.INTEGER, units(Units.DEGREE)));
+        typeMap.put(ChannelType.ANGLE_POSITION_DEGREE_SOUTH_POLE, new TypeInfo(ValueType.INTEGER, units(Units.DEGREE)));
+        typeMap.put(ChannelType.ROTATION_HZ, new TypeInfo(ValueType.NUMBER, units(Units.HERTZ)));
+        typeMap.put(ChannelType.ROTATION_RPM, new TypeInfo(ValueType.NUMBER, units(Units.RPM)));
+        typeMap.put(ChannelType.WATER_TEMPERATURE_CELSIUS, new TypeInfo(ValueType.NUMBER, units(Units.CELSIUS)));
+        typeMap.put(ChannelType.WATER_TEMPERATURE_FAHRENHEIT, new TypeInfo(ValueType.NUMBER, units(Units.FAHRENHEIT)));
+        typeMap.put(ChannelType.SOIL_TEMPERATURE_CELSIUS, new TypeInfo(ValueType.NUMBER, units(Units.CELSIUS)));
+        typeMap.put(ChannelType.SOIL_TEMPERATURE_FAHRENHEIT, new TypeInfo(ValueType.NUMBER, units(Units.FAHRENHEIT)));
         typeMap.put(ChannelType.SEISMIC_INTENSITY_MERCALLI, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.SEISMIC_INTENSITY_EU_MACROSEISMIC, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.SEISMIC_INTENSITY_LIEDU, new TypeInfo(ValueType.NUMBER));
@@ -128,19 +128,19 @@ public class TypeMapper {
         typeMap.put(ChannelType.SEISMIC_MAGNITUDE_SURFACE_WAVE, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.SEISMIC_MAGNITUDE_BODY_WAVE, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.ULTRAVIOLET_UV_INDEX, new TypeInfo(ValueType.NUMBER));
-        typeMap.put(ChannelType.RESISTIVITY_OHM, new TypeInfo(ValueType.NUMBER, units(UNITS_OHM)));
+        typeMap.put(ChannelType.RESISTIVITY_OHM, new TypeInfo(ValueType.NUMBER, units(Units.OHM)));
         typeMap.put(ChannelType.CONDUCTIVITY_SPM, new TypeInfo(ValueType.NUMBER));
-        typeMap.put(ChannelType.LOUDNESS_DB, new TypeInfo(ValueType.NUMBER, units(UNITS_DECIBEL)));
-        typeMap.put(ChannelType.LOUDNESS_DBA, new TypeInfo(ValueType.NUMBER, units(UNITS_DECIBEL_ATTENUATED)));
-        typeMap.put(ChannelType.MOISTURE_PERCENTAGE, new TypeInfo(ValueType.NUMBER, units(UNITS_PERCENTAGE)));
+        typeMap.put(ChannelType.LOUDNESS_DB, new TypeInfo(ValueType.NUMBER, units(Units.DECIBEL)));
+        typeMap.put(ChannelType.LOUDNESS_DBA, new TypeInfo(ValueType.NUMBER, units(Units.DECIBEL_ATTENUATED)));
+        typeMap.put(ChannelType.MOISTURE_PERCENTAGE, new TypeInfo(ValueType.NUMBER, units(Units.PERCENTAGE)));
         typeMap.put(ChannelType.MOISTURE_VOLUME_WATER_CONTENT, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.MOISTURE_IMPEDANCE, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.MOISTURE_WATER_ACTIVITY, new TypeInfo(ValueType.NUMBER));
-        typeMap.put(ChannelType.FREQUENCY_HZ, new TypeInfo(ValueType.NUMBER, units(UNITS_HERTZ)));
-        typeMap.put(ChannelType.FREQUENCY_KHZ, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_HERTZ)));
-        typeMap.put(ChannelType.TIME_SECONDS, new TypeInfo(ValueType.NUMBER, units(UNITS_SECOND)));
-        typeMap.put(ChannelType.TARGET_TEMPERATUE_CELSIUS, new TypeInfo(ValueType.NUMBER, units(UNITS_CELSIUS)));
-        typeMap.put(ChannelType.TARGET_TEMPERATUE_FAHRENHEIT, new TypeInfo(ValueType.NUMBER, units(UNITS_FAHRENHEIT)));
+        typeMap.put(ChannelType.FREQUENCY_HZ, new TypeInfo(ValueType.NUMBER, units(Units.HERTZ)));
+        typeMap.put(ChannelType.FREQUENCY_KHZ, new TypeInfo(ValueType.NUMBER.withUnits(Units.KILO, Units.HERTZ)));
+        typeMap.put(ChannelType.TIME_SECONDS, new TypeInfo(ValueType.NUMBER, units(Units.SECOND)));
+        typeMap.put(ChannelType.TARGET_TEMPERATUE_CELSIUS, new TypeInfo(ValueType.NUMBER, units(Units.CELSIUS)));
+        typeMap.put(ChannelType.TARGET_TEMPERATUE_FAHRENHEIT, new TypeInfo(ValueType.NUMBER, units(Units.FAHRENHEIT)));
         typeMap.put(ChannelType.PARTICULATE_MATTER_2_5_MOLPCM, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.PARTICULATE_MATTER_2_5_MCGPCM, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.FORMALDEHYDE_LEVEL_MOLPCM, new TypeInfo(ValueType.NUMBER));
@@ -151,24 +151,24 @@ public class TypeMapper {
         typeMap.put(ChannelType.VOLATILE_ORGANIC_COMPOUND_PPM, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.CO_MOLPCM, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.CO_PPM, new TypeInfo(ValueType.NUMBER));
-        typeMap.put(ChannelType.SOIL_HUMIDITY_PERCENTAGE, new TypeInfo(ValueType.NUMBER, units(UNITS_PERCENTAGE)));
+        typeMap.put(ChannelType.SOIL_HUMIDITY_PERCENTAGE, new TypeInfo(ValueType.NUMBER, units(Units.PERCENTAGE)));
         typeMap.put(ChannelType.SOIL_REACTIVITY_PH, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.SOIL_SALINITY_MOLPCM, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.HEART_RATE_BPM, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.BLOOD_PRESSURE_SYSTOLIC, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.BLOOD_PRESSURE_DIASTOLIC, new TypeInfo(ValueType.NUMBER));
-        typeMap.put(ChannelType.MUSCLE_MASS_KG, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_GRAM)));
-        typeMap.put(ChannelType.FAT_MASS_KG, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_GRAM)));
-        typeMap.put(ChannelType.BONE_MASS_KG, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_GRAM)));
-        typeMap.put(ChannelType.TOTAL_BODY_WATER_KG, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_GRAM)));
-        typeMap.put(ChannelType.BASIC_METABOLIC_RATE_JOULE, new TypeInfo(ValueType.NUMBER, units(UNITS_JOULE)));
+        typeMap.put(ChannelType.MUSCLE_MASS_KG, new TypeInfo(ValueType.NUMBER.withUnits(Units.KILO, Units.GRAM)));
+        typeMap.put(ChannelType.FAT_MASS_KG, new TypeInfo(ValueType.NUMBER.withUnits(Units.KILO, Units.GRAM)));
+        typeMap.put(ChannelType.BONE_MASS_KG, new TypeInfo(ValueType.NUMBER.withUnits(Units.KILO, Units.GRAM)));
+        typeMap.put(ChannelType.TOTAL_BODY_WATER_KG, new TypeInfo(ValueType.NUMBER.withUnits(Units.KILO, Units.GRAM)));
+        typeMap.put(ChannelType.BASIC_METABOLIC_RATE_JOULE, new TypeInfo(ValueType.NUMBER, units(Units.JOULE)));
         typeMap.put(ChannelType.BODY_MASS_INDEX, new TypeInfo(ValueType.NUMBER));
-        typeMap.put(ChannelType.ACCELERATION_X_MPSS, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND, UNITS_SQUARED)));
-        typeMap.put(ChannelType.ACCELERATION_Y_MPSS, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND, UNITS_SQUARED)));
-        typeMap.put(ChannelType.ACCELERATION_Z_MPSS, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND, UNITS_SQUARED)));
-        typeMap.put(ChannelType.SMOKE_DENSITY_PERCENTAGE, new TypeInfo(ValueType.NUMBER, units(UNITS_PERCENTAGE)));
-        typeMap.put(ChannelType.WATER_FLOW_LPH, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_LITRE, UNITS_PER, UNITS_HOUR)));
-        typeMap.put(ChannelType.WATER_PRESSURE_KPA, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_PASCAL)));
+        typeMap.put(ChannelType.ACCELERATION_X_MPSS, new TypeInfo(ValueType.NUMBER.withUnits(Units.METRE, Units.PER, Units.SECOND, Units.SQUARED)));
+        typeMap.put(ChannelType.ACCELERATION_Y_MPSS, new TypeInfo(ValueType.NUMBER.withUnits(Units.METRE, Units.PER, Units.SECOND, Units.SQUARED)));
+        typeMap.put(ChannelType.ACCELERATION_Z_MPSS, new TypeInfo(ValueType.NUMBER.withUnits(Units.METRE, Units.PER, Units.SECOND, Units.SQUARED)));
+        typeMap.put(ChannelType.SMOKE_DENSITY_PERCENTAGE, new TypeInfo(ValueType.NUMBER, units(Units.PERCENTAGE)));
+        typeMap.put(ChannelType.WATER_FLOW_LPH, new TypeInfo(ValueType.NUMBER.withUnits(Units.LITRE, Units.PER, Units.HOUR)));
+        typeMap.put(ChannelType.WATER_PRESSURE_KPA, new TypeInfo(ValueType.NUMBER.withUnits(Units.KILO, Units.PASCAL)));
         typeMap.put(ChannelType.RF_SIGNAL_STRENGTH_RSSI, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.RF_SIGNAL_STRENGTH_DBM, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.PARTICULATE_MATTER_MOLPCM, new TypeInfo(ValueType.NUMBER));
@@ -178,25 +178,25 @@ public class TypeMapper {
         // COMMAND_CLASS_METER
 
         // Electric Meter
-        typeMap.put(ChannelType.ELECTRIC_METER_ENERGY_KWH, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_WATT, UNITS_PER, UNITS_HOUR)));
-        typeMap.put(ChannelType.ELECTRIC_METER_ENERGY_KVAH, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_WATT, UNITS_PER, UNITS_HOUR)));
-        typeMap.put(ChannelType.ELECTRIC_METER_POWER_W, new TypeInfo(ValueType.NUMBER, units(UNITS_WATT)));
+        typeMap.put(ChannelType.ELECTRIC_METER_ENERGY_KWH, new TypeInfo(ValueType.NUMBER.withUnits(Units.KILO, Units.WATT, Units.PER, Units.HOUR)));
+        typeMap.put(ChannelType.ELECTRIC_METER_ENERGY_KVAH, new TypeInfo(ValueType.NUMBER.withUnits(Units.KILO, Units.WATT, Units.PER, Units.HOUR)));
+        typeMap.put(ChannelType.ELECTRIC_METER_POWER_W, new TypeInfo(ValueType.NUMBER, Units.units(Units.WATT)));
         typeMap.put(ChannelType.ELECTRIC_METER_PULSE_COUNT, new TypeInfo(ValueType.NUMBER));
-        typeMap.put(ChannelType.ELECTRIC_METER_VOLTAGE_V, new TypeInfo(ValueType.NUMBER, units(UNITS_VOLT)));
-        typeMap.put(ChannelType.ELECTRIC_METER_CURRENT_A, new TypeInfo(ValueType.NUMBER, units(UNITS_AMP)));
+        typeMap.put(ChannelType.ELECTRIC_METER_VOLTAGE_V, new TypeInfo(ValueType.NUMBER, units(Units.VOLT)));
+        typeMap.put(ChannelType.ELECTRIC_METER_CURRENT_A, new TypeInfo(ValueType.NUMBER, units(Units.AMP)));
         typeMap.put(ChannelType.ELECTRIC_METER_POWER_FACTOR, new TypeInfo(ValueType.NUMBER));
-        typeMap.put(ChannelType.ELECTRIC_METER_POWER_KVAR, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_WATT)));
-        typeMap.put(ChannelType.ELECTRIC_METER_ENERGY_KVARH, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_WATT, UNITS_PER, UNITS_HOUR)));
+        typeMap.put(ChannelType.ELECTRIC_METER_POWER_KVAR, new TypeInfo(ValueType.NUMBER.withUnits(Units.KILO, Units.WATT)));
+        typeMap.put(ChannelType.ELECTRIC_METER_ENERGY_KVARH, new TypeInfo(ValueType.NUMBER.withUnits(Units.KILO, Units.WATT, Units.PER, Units.HOUR)));
 
         // Gas Meter
-        typeMap.put(ChannelType.GAS_METER_VOLUME_CM, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_METRE, UNITS_CUBED)));
-        typeMap.put(ChannelType.GAS_METER_VOLUME_CFT, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_FOOT, UNITS_CUBED)));
+        typeMap.put(ChannelType.GAS_METER_VOLUME_CM, new TypeInfo(ValueType.NUMBER.withUnits(Units.METRE, Units.CUBED)));
+        typeMap.put(ChannelType.GAS_METER_VOLUME_CFT, new TypeInfo(ValueType.NUMBER.withUnits(Units.FOOT, Units.CUBED)));
         typeMap.put(ChannelType.GAS_METER_PULSE_COUNT, new TypeInfo(ValueType.NUMBER));
 
         // Water Meter
-        typeMap.put(ChannelType.WATER_METER_VOLUME_CM, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_METRE, UNITS_CUBED)));
-        typeMap.put(ChannelType.WATER_METER_VOLUME_CFT, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_FOOT, UNITS_CUBED)));
-        typeMap.put(ChannelType.WATER_METER_VOLUME_GAL, new TypeInfo(ValueType.NUMBER, units(UNITS_GALLON)));
+        typeMap.put(ChannelType.WATER_METER_VOLUME_CM, new TypeInfo(ValueType.NUMBER.withUnits(Units.METRE, Units.CUBED)));
+        typeMap.put(ChannelType.WATER_METER_VOLUME_CFT, new TypeInfo(ValueType.NUMBER.withUnits(Units.FOOT, Units.CUBED)));
+        typeMap.put(ChannelType.WATER_METER_VOLUME_GAL, new TypeInfo(ValueType.NUMBER, units(Units.GALLON)));
         typeMap.put(ChannelType.WATER_METER_PULSE_COUNT, new TypeInfo(ValueType.NUMBER));
 
         // COMMAND_CLASS_COLOR_CONTROL
@@ -225,7 +225,7 @@ public class TypeMapper {
 
         // COMMAND_CLASS_BATTERY
 
-        typeMap.put(ChannelType.CHARGE_PERCENTAGE, new TypeInfo(ValueType.NUMBER, units(UNITS_PERCENTAGE)));
+        typeMap.put(ChannelType.CHARGE_PERCENTAGE, new TypeInfo(ValueType.NUMBER, units(Units.PERCENTAGE)));
 
         // COMMAND_CLASS_CLOCK
 
@@ -237,7 +237,7 @@ public class TypeMapper {
         ValueDescriptor<?> valueType = ValueType.TEXT;
         ValueConstraint[] constraints = null;
         ValueFormat format = null;
-        String[] units = null;
+        Units[] units = null;
 
         if (typeMap.containsKey(channelType)) {
             TypeInfo typeInfo = typeMap.get(channelType);

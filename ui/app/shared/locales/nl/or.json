@@ -227,7 +227,7 @@
   "fitView": "Pas beeld aan op project",
   "areYouSure": "Weet je het zeker?",
   "flowEditor": "Flow editor",
-  "flow":{
+  "flow": {
     "EQUALS_COMPARATOR": "Gelijk aan",
     "GREATER_THAN": "Groter dan",
     "LESS_THAN": "Kleiner dan",
@@ -252,9 +252,9 @@
     "INTEGRAL": "Attribuut integraal",
     "HISTORIC_VALUE": "Attribuut geschiedenis",
     "MAX_PROCESSOR": "Maximum",
-    "MIN_PROCESSOR":  "Minimum",
-    "AVERAGE_PROCESSOR":  "Gemiddelde",
-    "MEDIAN_PROCESSOR":  "Mediaan",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Gemiddelde",
+    "MEDIAN_PROCESSOR": "Mediaan",
     "SUM_OPERATOR": "Som",
     "max": "Max",
     "min": "Min",
@@ -347,14 +347,14 @@
   "realm": "Realm",
   "realm_plural": "Realms",
   "changeRealm": "Verander realm",
-  "displayName":"Vriendelijke naam",
+  "displayName": "Vriendelijke naam",
   "loginTheme": "Login thema",
   "emailTheme": "Email thema",
   "resetPasswordAllowed": "Wachtwoord kan hersteld worden",
   "resetPassword": "Wachtwoord herstellen",
   "resetPasswordConfirmation": "Er is een e-mail verzonden om je wachtwoord te herstellen.",
   "rememberMe": "Ingelogd blijven",
-  "deleteRealmConfirm":"Weet je zeker dat je deze realm wil verwijderen?",
+  "deleteRealmConfirm": "Weet je zeker dat je deze realm wil verwijderen?",
   "serviceUser": "Service gebruiker",
   "user_plural": "Gebruikers",
   "regularUser_plural": "Gebruikers",
@@ -370,16 +370,16 @@
   "role": "Rol",
   "role_plural": "Rollen",
   "description": "Omschrijving",
-  "username":"Gebruikersnaam",
+  "username": "Gebruikersnaam",
   "deleteUser": "Gebruiker verwijderen",
   "deleteRole": "Rol verwijderen",
-  "deleteUserConfirm":"De gebruiker '{{userName}}' verwijderen?",
-  "deleteRoleConfirm":"De rol '{{roleName}}' verwijderen?",
-  "passwordMismatch":"Wachtwoorden komen niet overeen",
+  "deleteUserConfirm": "De gebruiker '{{userName}}' verwijderen?",
+  "deleteRoleConfirm": "De rol '{{roleName}}' verwijderen?",
+  "passwordMismatch": "Wachtwoorden komen niet overeen",
   "twoFactorAuth": "Tweestapsverificatie",
   "twoFactorConfigure": "Configureer",
-  "firstName":"Voornaam",
-  "surname":"Achternaam",
+  "firstName": "Voornaam",
+  "surname": "Achternaam",
   "realmRules": "Realm",
   "globalRules": "Globaal",
   "recipients": "Ontvangers",
@@ -424,7 +424,7 @@
     "selectAsset": "Selecteer gateway asset",
     "closeSuccessful": "Tunnel gesloten",
     "closesAt": "Sluit op",
-		"offline": "Offline"												
+    "offline": "Offline"
   },
   "tunnels": "tunnels",
   "tunnel": "tunnel",
@@ -475,14 +475,14 @@
   "password-policy-not-username": "Het wachtwoord mag niet de gebruikersnaam zijn",
   "password-policy-not-email": "Het wachtwoord mag niet het emailadres zijn",
   "details": "Details",
-  "permissions":"Rechten",
-  "linkedAssets":"Gekoppelde assets",
-  "realm_role_plural":"Realm rollen",
-  "manager_role_plural":"Manager rollen",
+  "permissions": "Rechten",
+  "linkedAssets": "Gekoppelde assets",
+  "realm_role_plural": "Realm rollen",
+  "manager_role_plural": "Manager rollen",
   "restrictAccess": "Beperkte toegang",
   "selectRestrictedAssets": "{{number}} assets",
   "restrictedAccessToAssets": "Beperkte toegang tot",
-  "fullAccessLabel":"Admin: volledige toegang; gebruikers en rollen beheren",
+  "fullAccessLabel": "Admin: volledige toegang; gebruikers en rollen beheren",
   "noChildAssets": "Geen onderliggende assets",
   "account": "Account",
   "editAttribute": "Attribuut kiezen",
@@ -615,7 +615,7 @@
   "activeFromTo": "Actief van {{start}} tot {{end}}",
   "fromTo": "Van {{start}} tot {{end}}",
   "fromToDays": "van {{start}} tot {{days}} dagen later {{end}}",
-  "forDays":"voor {{days}} dagen",
+  "forDays": "voor {{days}} dagen",
   "scheduleRuleActivity": "Regelplanner",
   "allDay": "Hele dag",
   "apply": "toepassen",
@@ -663,7 +663,7 @@
   "autoProvisioning": "Auto provisioning",
   "provisioningConfigs": "Provisioning configuraties",
   "loadFailedProvisioningConfigs": "Provisioning configuraties ophalen mislukt",
-  "deleteProvisioningConfigConfirm":"Weet je zeker dat je deze provisioning configuratie wil verwijderen?\nClients die deze configuratie gebruiken kunnen niet langer verbinden.",
+  "deleteProvisioningConfigConfirm": "Weet je zeker dat je deze provisioning configuratie wil verwijderen?\nClients die deze configuratie gebruiken kunnen niet langer verbinden.",
   "assetTemplate": "Asset template",
   "createAsRestrictedUser": "Gebruiker met beperkte toegang maken",
   "ignoreExpiryDate": "Vervaldatum negeren",
@@ -675,6 +675,250 @@
     "anyOfPickerLabel": "{{label}} type",
     "title": {
       "indexedItem": "Item {{index}}"
+    },
+    "meta": {
+      "constraint.message": {
+        "label": "Validatiebericht",
+        "description": "Aangepast bericht dat wordt weergegeven wanneer deze beperking wordt geschonden."
+      }
+    },
+    "item": {
+      "forecastConfiguration": {
+        "pastPeriod": {
+          "label": "Verleden Periode",
+          "description": "De specifieke periode in het verleden die wordt gebruikt voor analyse."
+        },
+        "pastCount": {
+          "label": "Aantal in het Verleden",
+          "description": "Het aantal gegevenspunten of intervallen uit het verleden om mee te nemen."
+        },
+        "forecastPeriod": {
+          "label": "Voorspellingsperiode",
+          "description": "De tijdsperiode waarvoor voorspellingen worden gedaan."
+        },
+        "forecastCount": {
+          "label": "Aantal Voorspellingen",
+          "description": "Het aantal toekomstige gegevenspunten of intervallen om te voorspellen."
+        }
+      },
+      "valueFormat": {
+        "useGrouping": {
+          "label": "Gebruik Groepering",
+          "description": "Of duizendtallen met scheidingstekens worden weergegeven."
+        },
+        "minimumIntegerDigits": {
+          "label": "Minimale Cijfers vóór Komma",
+          "description": "Minimaal aantal cijfers vóór de decimale komma."
+        },
+        "minimumFractionDigits": {
+          "label": "Minimale Decimalen",
+          "description": "Minimaal aantal cijfers na de decimale komma."
+        },
+        "maximumFractionDigits": {
+          "label": "Maximale Decimalen",
+          "description": "Maximaal aantal cijfers na de decimale komma."
+        },
+        "minimumSignificantDigits": {
+          "label": "Minimale Significante Cijfers",
+          "description": "Minimaal aantal significante cijfers om weer te geven."
+        },
+        "maximumSignificantDigits": {
+          "label": "Maximale Significante Cijfers",
+          "description": "Maximaal aantal significante cijfers om weer te geven."
+        },
+        "asBoolean": {
+          "label": "Als Boolean",
+          "description": "Waarde weergeven als waar/onwaar."
+        },
+        "asDate": {
+          "label": "Als Datum",
+          "description": "Waarde opmaken als een datum."
+        },
+        "asSlider": {
+          "label": "Als Schuifregelaar",
+          "description": "Waarde weergeven met een schuifregelaar."
+        },
+        "resolution": {
+          "label": "Resolutie",
+          "description": "De nauwkeurigheid of stapgrootte voor opmaak."
+        },
+        "dateStyle": {
+          "label": "Datumnotatie",
+          "description": "Stijl voor het opmaken van datums (bijv. kort, gemiddeld)."
+        },
+        "timeStyle": {
+          "label": "Tijdnotatie",
+          "description": "Stijl voor het opmaken van tijden."
+        },
+        "dayPeriod": {
+          "label": "Dagperiode",
+          "description": "Of AM/PM of dagperiode wordt weergegeven."
+        },
+        "hour12": {
+          "label": "12-Uurs Formaat",
+          "description": "Of het 12-uurs formaat (AM/PM) wordt gebruikt."
+        },
+        "iso8601": {
+          "label": "ISO 8601",
+          "description": "Datum/tijd opmaken volgens de ISO 8601-standaard."
+        },
+        "weekday": {
+          "label": "Weekdag",
+          "description": "De naam van de weekdag opnemen in de datum."
+        },
+        "era": {
+          "label": "Tijdperk",
+          "description": "Het tijdperk (bijv. AD/BC) opnemen in de datum."
+        },
+        "year": {
+          "label": "Jaar",
+          "description": "Het jaargedeelte van de datum weergeven."
+        },
+        "month": {
+          "label": "Maand",
+          "description": "Het maandgedeelte van de datum weergeven."
+        },
+        "week": {
+          "label": "Week",
+          "description": "Het weeknummer van het jaar weergeven."
+        },
+        "day": {
+          "label": "Dag",
+          "description": "De dag van de maand weergeven."
+        },
+        "hour": {
+          "label": "Uur",
+          "description": "Het uur weergeven."
+        },
+        "minute": {
+          "label": "Minuut",
+          "description": "De minuut weergeven."
+        },
+        "second": {
+          "label": "Seconde",
+          "description": "De seconde weergeven."
+        },
+        "fractionalSecondDigits": {
+          "label": "Decimale Seconden",
+          "description": "Aantal cijfers voor decimale seconden weergeven."
+        },
+        "timeZoneName": {
+          "label": "Tijdzone Naam",
+          "description": "De naam van de tijdzone weergeven."
+        },
+        "momentJsFormat": {
+          "label": "Moment.js Notatie",
+          "description": "Aangepaste notatie met Moment.js-syntaxis."
+        },
+        "asNumber": {
+          "label": "Als Getal",
+          "description": "Waarde opmaken als een getal."
+        },
+        "asOnOff": {
+          "label": "Als Aan/Uit",
+          "description": "Waarde weergeven als aan of uit."
+        },
+        "asPressedReleased": {
+          "label": "Als Ingedrukt/Vrijgegeven",
+          "description": "Waarde weergeven als ingedrukt of vrijgegeven."
+        },
+        "asOpenClosed": {
+          "label": "Als Open/Gesloten",
+          "description": "Waarde weergeven als open of gesloten."
+        },
+        "asMomentary": {
+          "label": "Als Momentaan",
+          "description": "Waarde weergeven als een momentane toestand."
+        },
+        "multiline": {
+          "label": "Meerdere Regels",
+          "description": "Of meerdere regels worden toegestaan in de weergave."
+        }
+      },
+      "valueConstraint": {
+        "definitions": {
+          "size": {
+            "label": "Grootte",
+            "description": "De attribuutwaarde moet tussen de opgegeven grenzen liggen op basis van de eigenschappen `min` en `max`. Ondersteunde typen zijn JSON-compatibele strings, arrays en objecten. Null-waarden worden als geldig beschouwd.",
+            "min": {
+              "label": "Minimale waarde",
+              "description": "De attribuutwaarde moet groter dan of gelijk zijn aan dit getal. Null-waarden worden als geldig beschouwd."
+            },
+            "max": {
+              "label": "Maximale waarde",
+              "description": "De attribuutwaarde moet kleiner dan of gelijk zijn aan dit getal. Null-waarden worden als geldig beschouwd."
+            }
+          },
+          "min": {
+            "label": "Minimale waarde",
+            "description": "De attribuutwaarde moet groter dan of gelijk zijn aan dit getal. Null-waarden worden als geldig beschouwd.",
+            "min": {
+              "label": "Minimale waarde",
+              "description": "De attribuutwaarde moet groter dan of gelijk zijn aan dit getal. Null-waarden worden als geldig beschouwd."
+            }
+          },
+          "max": {
+            "label": "Maximale waarde",
+            "description": "De attribuutwaarde moet kleiner dan of gelijk zijn aan dit getal. Null-waarden worden als geldig beschouwd.",
+            "max": {
+              "label": "Maximale waarde",
+              "description": "De attribuutwaarde moet kleiner dan of gelijk zijn aan dit getal. Null-waarden worden als geldig beschouwd."
+            }
+          },
+          "allowedValues": {
+            "label": "Toegestane waarden",
+            "description": "Geaccepteerde waarden voor dit attribuut. Indien leeg of afwezig, wordt alleen null geaccepteerd. Maakt select-invoer mogelijk in de gebruikersinterface.",
+            "allowedValueNames": {
+              "label": "Weergavenamen",
+              "description": "Namen die worden weergegeven in plaats van de ruwe toegestane waarden. Moeten overeenkomen met het aantal te gebruiken toegestane waarden."
+            },
+            "allowedValues": {
+              "label": "Toegestane waarden",
+              "description": "Geaccepteerde waarden voor dit attribuut. Indien leeg of afwezig, wordt alleen null geaccepteerd. Maakt select-invoer mogelijk in de gebruikersinterface."
+            }
+          },
+          "past": {
+            "label": "Verleden",
+            "description": "De attribuutwaarde moet een Java tijdobject, Java datumobject, een string in ISO8601-formaat of een getal zijn dat epoch-milliseconden vertegenwoordigt; de waarde moet een tijd in het verleden vertegenwoordigen. Null-waarden worden als geldig beschouwd."
+          },
+          "pastOrPresent": {
+            "label": "Verleden of heden",
+            "description": "De attribuutwaarde moet een Java tijdobject, Java datumobject, een string in ISO8601-formaat of een getal zijn dat epoch-milliseconden vertegenwoordigt; de waarde moet een tijd in het verleden of heden vertegenwoordigen. Null-waarden worden als geldig beschouwd."
+          },
+          "future": {
+            "label": "Toekomst",
+            "description": "De attribuutwaarde moet een Java tijdobject, Java datumobject, een string in ISO8601-formaat of een getal zijn dat epoch-milliseconden vertegenwoordigt; de waarde moet een tijd in de toekomst vertegenwoordigen. Null-waarden worden als geldig beschouwd."
+          },
+          "futureOrPresent": {
+            "label": "Toekomst of heden",
+            "description": "De attribuutwaarde moet een Java tijdobject, Java datumobject, een string in ISO8601-formaat of een getal zijn dat epoch-milliseconden vertegenwoordigt; de waarde moet een tijd in de toekomst of heden vertegenwoordigen. Null-waarden worden als geldig beschouwd."
+          },
+          "notEmpty": {
+            "label": "Niet leeg",
+            "description": "De attribuutwaarde mag niet null of leeg zijn. Ondersteunde typen zijn JSON-compatibele strings, arrays en objecten die ten minste 1 teken, item of eigenschap bevatten."
+          },
+          "notBlank": {
+            "label": "Niet blanco",
+            "description": "De attribuutwaarde mag niet null zijn en moet ten minste 1 niet-witruimte-teken bevatten. Accepteert strings."
+          },
+          "notNull": {
+            "label": "Niet null",
+            "description": "De attribuutwaarde mag niet null zijn. Accepteert elk type."
+          },
+          "pattern": {
+            "label": "Patroon",
+            "description": "De attribuutwaarde moet overeenkomen met het reguliere expressiepatroon dat wordt beschreven in de eigenschap `regexp`. De reguliere expressie volgt de Java-reguliere-expressieconventies. Vlaggen kunnen worden opgegeven met behulp van de eigenschap `flags` met de waarden: CASE_INSENSITIVE, MULTILINE, DOTALL, UNIX_LINES, UNICODE_CASE, CANON_EQ en COMMENTS. Null-waarden worden als geldig beschouwd.",
+            "regexp": {
+              "label": "Reguliere expressie",
+              "description": "De attribuutwaarde moet overeenkomen met deze reguliere expressie. Volgt de Java-regex-syntaxis."
+            },
+            "flags": {
+              "label": "Regex-vlaggen",
+              "description": "Modificatoren die het gedrag van regex-overeenkoming beïnvloeden. Opties: CASE_INSENSITIVE, MULTILINE, DOTALL, enz."
+            }
+          }
+        }
+      }
     }
   },
   "rowsPerPage": "Rijen per pagina",
@@ -693,8 +937,8 @@
   "no": "Nee",
   "linked": "Gelinkt",
   "filter": {
-		"close": "Filter sluiten",
-    "open": "Filter openen",													
+    "close": "Filter sluiten",
+    "open": "Filter openen",
     "filter": "Filter",
     "clear": "LEEGMAKEN",
     "action": "FILTER",
@@ -707,7 +951,7 @@
   },
   "realmDeleteConfirm": "Let op! Hiermee verwijder je alles in deze realm, typ de realm naam '{{realmName}}' om te bevestigen.",
   "realmDeleteFailed": "Realm verwijderen mislukt",
-	"addRule": "Regel toevoegen",
+  "addRule": "Regel toevoegen",
   "rulesetStatus": {
     "DEPLOYED": "Succesvol aangemaakt",
     "NOSTATUS": "Uitgeschakeld",
@@ -727,12 +971,12 @@
   "layout": "Indeling",
   "display": "Weergave",
   "screen": "Scherm",
-  "uploadFile" : "Uploaden bestand",
-  "fileSelected" : "Bestand geselecteerd",
-  "fileSaved" : "Bestand opgeslagen",
+  "uploadFile": "Uploaden bestand",
+  "fileSelected": "Bestand geselecteerd",
+  "fileSaved": "Bestand opgeslagen",
   "thresholds": "Drempelwaardes",
   "threshold": "Drempelwaarde",
-	"addInsights": "Dashboard toevoegen",
+  "addInsights": "Dashboard toevoegen",
   "noDashboardSelected": "Selecteer een dashboard aan de linkerkant",
   "noDashboardSelected-mobile": "Selecteer een dashboard in het menu linksboven",
   "noDashboardFound": "Geen dashboard gevonden.",
@@ -782,7 +1026,7 @@
     "setToMobilePreset": "Stel mobiel preset in",
     "zoomPercent": "Zoom %",
     "presetSize": "Voorbeeld grootte",
-		"previewScreenSizes": "Preview schermformaten",
+    "previewScreenSizes": "Preview schermformaten",
     "renderingGrid": "Grid aan het renderen...",
     "deviceNotSupported": "Dit dashboard wordt niet ondersteund op dit apparaat.",
     "deletePermanentWarning": "Dit zal {{dashboard}} permanent verwijderen.",
@@ -824,13 +1068,13 @@
   "default": "Standaard",
   "appearance": "Weergave",
   "configuration": {
-    "" : "Weergave",
+    "": "Weergave",
     "main": "Algemeen",
     "realmStyling": "Realm stijl",
     "managerConfigNotFound": "Kon bestand met manager configuratie niet vinden.",
     "mapSettingsNotFound": "Kon bestand met kaart configuratie niet vinden.",
     "tryAgain": "Probeer opnieuw",
-    "addRealmCustomization" : "Voeg realm stijl toe",
+    "addRealmCustomization": "Voeg realm stijl toe",
     "realmTitle": "Manager app titel",
     "realmMapSettingsTitle": "Realm Kaart Stijl",
     "defaultLanguage": "Standaard taal",
@@ -847,16 +1091,16 @@
     "--or-app-color2": "Achtergrond: kleur achter panelen met oppervlakkleur",
     "--or-app-color3": "Tekst: pagina en panel titels",
     "--or-app-color8": "Tekst op primair: tekst op onderdelen met de primaire kleur",
-    "navigation" : "Navigatie",
+    "navigation": "Navigatie",
     "navigationDescription": "De primaire navigatie staat in de header, secundaire items kun je in het menu rechtsboven vinden.",
     "notificationLanguages": "Notificatie talen",
     "notificationLanguagesDesc": "Talen die hier ingesteld zijn kunnen gebruikt worden in notificaties voor gebruikers die hun taal hebben ingesteld.",
     "notificationLanguagesLabel": "Zoek naar andere talen...",
-    "primaryNavigation" : "Primair menu",
-    "secondaryNavigation" : "Secundair menu",
-    "reloadPage" : "Om de wijzigingen te zien die gemaakt zijn, herlaad de pagina",
+    "primaryNavigation": "Primair menu",
+    "secondaryNavigation": "Secundair menu",
+    "reloadPage": "Om de wijzigingen te zien die gemaakt zijn, herlaad de pagina",
     "deleteRealmCustomization": "Verwijder stijl",
-    "deleteRealmCustomizationConfirm":"Weet je zeker dat je deze realm stijl wilt verwijderen?",
+    "deleteRealmCustomizationConfirm": "Weet je zeker dat je deze realm stijl wilt verwijderen?",
     "mapBounds": "Randen",
     "mapBoundsDescription": "Overschrijf de standaard kaders van de kaart",
     "mapZoom": "Zoom",
@@ -867,8 +1111,8 @@
     "geoJson": "GeoJSON",
     "geoJsonDescription": "Bewerk de GeoJSON; voeg punten, lijnen, en andere vormen toe aan de kaart.",
     "deleteMapCustomization": "Kaartinstelling verwijderen",
-    "deleteMapCustomizationConfirm":"Weet je zeker dat je deze kaart wilt verwijderen",
-    "addMapCustomization" : "Voeg een Kaartinstelling toe",
+    "deleteMapCustomizationConfirm": "Weet je zeker dat je deze kaart wilt verwijderen",
+    "addMapCustomization": "Voeg een Kaartinstelling toe",
     "global": {
       "reset": "Resetten",
       "import": "Importeren",

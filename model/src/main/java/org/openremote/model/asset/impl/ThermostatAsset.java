@@ -22,24 +22,19 @@ package org.openremote.model.asset.impl;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueFormat;
-import org.openremote.model.value.ValueType;
+import org.openremote.model.value.*;
 
 import jakarta.persistence.Entity;
 import java.util.Optional;
-
-import static org.openremote.model.Constants.UNITS_CELSIUS;
 
 @Entity
 public class ThermostatAsset extends Asset<ThermostatAsset> {
 
     public static final AttributeDescriptor<Double> TEMPERATURE_SETPOINT = new AttributeDescriptor<>("temperatureSetpoint", ValueType.NUMBER)
-        .withUnits(UNITS_CELSIUS).withFormat(ValueFormat.NUMBER_1_DP());
+        .withUnits(Units.CELSIUS).withFormat(ValueFormat.NUMBER_1_DP());
     public static final AttributeDescriptor<Double> TEMPERATURE = new AttributeDescriptor<>("temperature", ValueType.NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY))
-        .withUnits(UNITS_CELSIUS).withFormat(ValueFormat.NUMBER_1_DP());
+        .withUnits(Units.CELSIUS).withFormat(ValueFormat.NUMBER_1_DP());
     public static final AttributeDescriptor<Boolean> COOLING = new AttributeDescriptor<>("cooling", ValueType.BOOLEAN);
 
     public static final AssetDescriptor<ThermostatAsset> DESCRIPTOR = new AssetDescriptor<>("thermostat", "f5b324", ThermostatAsset.class);
