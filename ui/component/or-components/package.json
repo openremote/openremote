@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-components",
-  "version": "1.7.0-snapshot",
+  "version": "1.8.0-snapshot",
   "description": "OpenRemote basic UI components",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -19,7 +19,7 @@
   "scripts": {
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "build": "npx tsc -b",
-    "test": "echo \"No tests\" && exit 0",
+    "test": "npx tsc -b && npx playwright test",
     "prepack": "npx tsc -b"
   },
   "author": "OpenRemote",
@@ -29,6 +29,7 @@
     "@openremote/core": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "lit": "^3.3.1",
+    "ace-builds": "^1.41.0",
     "simplebar": "^5.3.6"
   },
   "devDependencies": {
