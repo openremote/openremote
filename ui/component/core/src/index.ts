@@ -422,10 +422,10 @@ export class Manager implements EventProviderFactory {
 
         this.doIconInit();
 
-        // TODO: Reinstate this once websocket supports anonymous connections
-        // if (success) {
-        //     success = await this.doEventsSubscriptionInit();
-        // }
+        if (success) {
+            success = await this.doEventsSubscriptionInit();
+        }
+
         if (success) {
             if (this._readyCallback) {
                 await this._readyCallback();
