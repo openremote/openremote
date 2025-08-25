@@ -535,15 +535,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lit/reactive-element@npm:^2.1.0":
-  version: 2.1.1
-  resolution: "@lit/reactive-element@npm:2.1.1"
-  dependencies:
-    "@lit-labs/ssr-dom-shim": "npm:^1.4.0"
-  checksum: 10c0/200d72c3d1bb8babc88123f3684e52cf490ec20cc7974002d666b092afa18e4a7c1ca15883c84c0b8671361a9875905eb18c1f03d20ecbbbaefdaec6e0c7c4eb
-  languageName: node
-  linkType: hard
-
 "@lit/task@npm:^1.0.0":
   version: 1.0.0
   resolution: "@lit/task@npm:1.0.0"
@@ -1429,9 +1420,9 @@ __metadata:
   dependencies:
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
-    lit: "npm:^3.3.1"
     "@rspack/cli": "npm:^1.1.3"
     "@rspack/core": "npm:^1.1.3"
+    lit: "npm:^3.3.1"
     typescript: "npm:^5.3.3"
   languageName: unknown
   linkType: soft
@@ -1559,9 +1550,9 @@ __metadata:
     "@openremote/or-chart": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/util": "workspace:*"
-    lit: "npm:^3.3.1"
     chart.js: "npm:^3.6.0"
     chartjs-adapter-moment: "npm:^1.0.0"
+    lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"
   languageName: unknown
   linkType: soft
@@ -1636,8 +1627,8 @@ __metadata:
     "@openremote/util": "workspace:*"
     "@types/chart.js": "npm:^2.9.34"
     "@types/offscreencanvas": "npm:^2019.6.4"
-    lit: "npm:^3.3.1"
     echarts: "npm:~5.6.0"
+    lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"
   languageName: unknown
   linkType: soft
@@ -1650,8 +1641,8 @@ __metadata:
     "@openremote/core": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/util": "workspace:*"
-    lit: "npm:^3.3.1"
     ace-builds: "npm:^1.41.0"
+    lit: "npm:^3.3.1"
     simplebar: "npm:^5.3.6"
   languageName: unknown
   linkType: soft
@@ -6509,17 +6500,6 @@ __metadata:
   dependencies:
     "@types/trusted-types": "npm:^2.0.2"
   checksum: 10c0/0dfb645f35c2ae129a40c09550b4d0e60617b715af7f2e0b825cdfd0624118fc4bf16e9cfaabdfbe43469522e145057d3cc46c64ca1019681480e4b9ae8f52cd
-  languageName: node
-  linkType: hard
-
-"lit@npm:^3.3.1":
-  version: 3.3.1
-  resolution: "lit@npm:3.3.1"
-  dependencies:
-    "@lit/reactive-element": "npm:^2.1.0"
-    lit-element: "npm:^4.2.0"
-    lit-html: "npm:^3.3.0"
-  checksum: 10c0/9f3e171e211be7cd3e01693eac4ba4752fc7bafebc8298fc5b9cb70ff279dd4dc292f1cb425ca42f61c3767a75b7557295c2f6b16335719bc8cf1ca6f3622fb7
   languageName: node
   linkType: hard
 
