@@ -584,7 +584,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         () => html`<span id="noAssetsFound"><or-translate value="noAssetsFound"></or-translate></span>`,
                         () => {
                             const nodes = [
-                                ...this._nodes!.map(node => html`${this._treeNodeTemplate(node, 0)}`),
+                                ...this._nodes!.filter(n => !n.hidden).map(node => html`${this._treeNodeTemplate(node, 0)}`),
                                 html`<li class="asset-list-element"><div class="end-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"></div></li>
                             `];
                             return html`
@@ -1145,6 +1145,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         this.disabled = false;
                     }
                 });
+            }
+            // Scroll to top of list
+            let listElement = this.shadowRoot?.getElementById('list');
+            if(listElement) {
+                listElement.scrollTop = 0;
             }
         }
     }
