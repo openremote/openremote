@@ -134,6 +134,7 @@ public class JSONSchemaUtil {
         String value();
         /* Whether to put the title on the root of the schema even when the class is wrapped in an array. */
         boolean container() default true;
+        boolean i18n() default true;
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -142,6 +143,7 @@ public class JSONSchemaUtil {
         String keyword() default "description";
         String value();
         boolean container() default true;
+        boolean i18n() default true;
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -275,6 +277,10 @@ public class JSONSchemaUtil {
                         applyFieldAnnotation(fieldScope, JsonSchemaFormat.class, attrs);
                         applyFieldAnnotation(fieldScope, JsonSchemaDefault.class, attrs);
                         applyFieldAnnotation(fieldScope, JsonSchemaExamples.class, attrs);
+
+                        String key = fieldScope.getMember().getDeclaringType().getErasedType().getCanonicalName() + "." + fieldScope.getMember().getName();
+                        applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaTitle.class), JsonSchemaTitle.class, key, attrs);
+                        applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaDescription.class), JsonSchemaDescription.class, key, attrs);
                     }
                     String description = jacksonResolvers.resolveDescription(fieldScope);
                     if (description != null) {
@@ -355,6 +361,12 @@ public class JSONSchemaUtil {
                     applyTypeAnnotation(erasedType, JsonSchemaFormat.class, targetNode);
                     applyTypeAnnotation(erasedType, JsonSchemaDefault.class, targetNode);
                     applyTypeAnnotation(erasedType, JsonSchemaExamples.class, targetNode);
+
+                    // TODO: Is it possible to avoid object merging here?
+                    if (attrs.has("type")) {
+                        applyI18nAnnotation(erasedType.getAnnotation(JsonSchemaTitle.class), JsonSchemaTitle.class, erasedType.getCanonicalName(), attrs);
+                        applyI18nAnnotation(erasedType.getAnnotation(JsonSchemaDescription.class), JsonSchemaDescription.class, erasedType.getCanonicalName(), attrs);
+                    }
                 }
             });
 
@@ -621,6 +633,17 @@ public class JSONSchemaUtil {
                 return mapper.readTree(input);
             } catch (Exception e) {
                 return new TextNode(input);
+            }
+        }
+
+        // TODO: handle other annotations from Jackson (or replace existing annotations)
+        private static <A extends Annotation> void applyI18nAnnotation(A annotation, Class<?> annotationClass, String key, ObjectNode schema) {
+            try {
+                if (annotation != null && (boolean)annotationClass.getMethod("i18n").invoke(annotation)) {
+                    schema.set("i18n", new TextNode(key));
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to apply i18n annotation " + annotationClass.getSimpleName(), e);
             }
         }
 
