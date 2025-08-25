@@ -18,6 +18,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "@lit-labs/virtualizer": "^2.1.1",
     "@mdi/js": "^5.9.55",
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",

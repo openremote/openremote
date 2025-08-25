@@ -90,11 +90,11 @@ export const style = css`
 
     #list-container {
         flex: 1 1 auto;
-        overflow: auto;
         font-size: 14px;
     }
     
     #list {
+        height: 100%;
         margin: 0;
         color: var(--internal-or-asset-tree-text-color);
         padding: 0;
@@ -118,6 +118,10 @@ export const style = css`
     
     #list li[data-selected] > .node-container {
         border-left-color: var(--internal-or-asset-tree-selected-color);
+    }
+    
+    .asset-list-element {
+        width: 100%;
     }
           
     .asset-list-element .over {

@@ -33,6 +33,7 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-dialog";
+import {virtualize} from "@lit-labs/virtualizer/virtualize.js";
 
 import {
     OrMwcDialog,
@@ -576,22 +577,26 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 </div>
             `)}
             
-            ${!this._nodes
-                ? html`
-                    <span id="loading"><or-translate value="loading"></or-translate></span>`
-                : ((this._nodes.length === 0 || !this.atLeastOneNodeToBeShown())
-                            ? html `<span id="noAssetsFound"><or-translate value="noAssetsFound"></or-translate></span>` 
-                            : html`
-                    <div id="list-container">
-                        <ol id="list">
-                            ${this._nodes.map((treeNode) => this._treeNodeTemplate(treeNode, 0)).filter(t => !!t)}
-                            <li class="asset-list-element">    
-                                <div class="end-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"></div>
-                            </li>
-                        </ol>
-                    </div>
-                `)
-            }
+            ${when(!this._nodes, () => html`
+                <span id="loading"><or-translate value="loading"></or-translate></span>
+            `, () => html`
+                ${when(this._nodes!.length === 0 || !this.atLeastOneNodeToBeShown(),
+                        () => html`<span id="noAssetsFound"><or-translate value="noAssetsFound"></or-translate></span>`,
+                        () => {
+                            const nodes = [
+                                ...this._nodes!.map(node => html`${this._treeNodeTemplate(node, 0)}`),
+                                html`<li class="asset-list-element"><div class="end-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"></div></li>
+                            `];
+                            return html`
+                                <div id="list-container">
+                                    <ol id="list">
+                                        ${virtualize({items: nodes, renderItem: (n: TemplateResult) => html`${n}`, scroller: true})}
+                                    </ol>
+                                </div>
+                            `;
+                        }
+                )}
+            `)}
 
             <div id="footer">
             
