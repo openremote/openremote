@@ -936,8 +936,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         this._onNodeClicked(null, null);
     }
 
-    protected parseFromInputFilter(inputValue?: string): OrAssetTreeFilter {
-        inputValue ??= this._filterInput?.value;
+    protected parseFromInputFilter(inputValue = this._filterInput?.value): OrAssetTreeFilter {
         let resultingFilter: OrAssetTreeFilter = new OrAssetTreeFilter();
 
         if (inputValue) {
