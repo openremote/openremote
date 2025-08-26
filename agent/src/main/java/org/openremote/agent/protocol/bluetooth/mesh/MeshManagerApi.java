@@ -461,7 +461,7 @@ public class MeshManagerApi implements MeshMngrApi{
         final AllocatedGroupRange groupRange = new AllocatedGroupRange(0xC000, 0xCC9A);
         final AllocatedSceneRange sceneRange = new AllocatedSceneRange(0x0001, 0x3333);
         final Provisioner provisioner = network.createProvisioner("nRF Mesh Provisioner", unicastRange, groupRange, sceneRange);
-        final int unicast = provisioner.getAllocatedUnicastRanges().get(0).getLowAddress();
+        final int unicast = provisioner.getAllocatedUnicastRanges().getFirst().getLowAddress();
         provisioner.assignProvisionerAddress(unicast);
         network.selectProvisioner(provisioner);
         network.addProvisioner(provisioner);
@@ -997,7 +997,7 @@ public class MeshManagerApi implements MeshMngrApi{
         meshNetwork.setLastSelected(true);
         //If there is only one provisioner we default to the zeroth
         if (meshNetwork.provisioners.size() == 1) {
-            meshNetwork.provisioners.get(0).setLastSelected(true);
+            meshNetwork.provisioners.getFirst().setLastSelected(true);
         }
         /*
         mMeshNetworkDb.insertNetwork(mMeshNetworkDao,

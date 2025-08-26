@@ -1005,7 +1005,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             if (webhookAction.mediaType == null) {
                 Optional<Map.Entry<String, List<String>>> contentTypeHeader = webhook.getHeaders().entrySet().stream().filter((entry) -> entry.getKey().equalsIgnoreCase("content-type")).findFirst();
-                String contentType = contentTypeHeader.isPresent() ? contentTypeHeader.get().getValue().get(0) : MediaType.APPLICATION_JSON;
+                String contentType = contentTypeHeader.isPresent() ? contentTypeHeader.get().getValue().getFirst() : MediaType.APPLICATION_JSON;
                 webhookAction.mediaType = MediaType.valueOf(contentType);
             }
 
