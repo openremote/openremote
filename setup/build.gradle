@@ -26,7 +26,7 @@ tasks.register('load1Jar', Jar) {
     from sourceSets.load1.output
 }
 
-task (load2Jar, type: Jar) {
+tasks.register('load2Jar', Jar) {
     base {
         archivesName = "openremote-load2-${project.name}"
     }
