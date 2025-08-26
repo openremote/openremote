@@ -12,6 +12,7 @@ import { AssetsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages
 import { AssetViewer } from "../../../../component/or-asset-viewer/test/fixtures";
 import { CollapsiblePanel } from "../../../../component/or-components/test/fixtures";
 import { JsonForms } from "../../../../component/or-json-forms/test/fixtures";
+import { AssetTree } from "../../../../component/or-asset-tree/test/fixtures";
 
 export const adminStatePath = path.join(__dirname, "data/.auth/admin.json");
 export const userStatePath = path.join(__dirname, "data/.auth/user.json");
@@ -362,6 +363,7 @@ interface PageFixtures {
 
 interface ComponentFixtures extends ComponentTestFixtures {
   assetViewer: AssetViewer;
+  assetTree: AssetTree;
   collapsiblePanel: CollapsiblePanel;
   jsonForms: JsonForms;
 }
@@ -380,6 +382,7 @@ export const test = base.extend<Fixtures>({
   usersPage: withManager(UsersPage),
   // Components
   assetViewer: withPage(AssetViewer),
+  assetTree: withPage(AssetTree),
   collapsiblePanel: withPage(CollapsiblePanel),
   jsonForms: withPage(JsonForms),
 });

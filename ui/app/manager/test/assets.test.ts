@@ -42,12 +42,12 @@ assets.forEach(({ type, name, attributes }) => {
    * @and Selecting the asset from the list
    * @then The asset detail page is displayed
    */
-  test(`Search for and select a ${name} asset`, async ({ page, manager }) => {
+  test(`Search for and select a ${name} asset`, async ({ page, manager, assetTree }) => {
     await manager.setup("smartcity", { assets });
     await manager.goToRealmStartPage("smartcity");
     await manager.navigateToTab("asset");
-    await page.fill('#filterInput input[type="text"]', name);
-    await expect(page.locator(`#list-container > ol > li`)).toHaveCount(2);
+    await assetTree.fillFilterInput(name);
+    await expect(assetTree.getAssetNodes()).toHaveCount(1);
     await page.click(`text=${name}`);
     await expect(page.locator(`#asset-header`, { hasText: name })).toBeVisible();
   });
@@ -60,14 +60,14 @@ assets.forEach(({ type, name, attributes }) => {
    * @and Selecting the asset from the list
    * @then The asset detail page is displayed
    */
-  test(`Search by Asset ID and select the ${name} asset`, async ({ page, manager }) => {
+  test(`Search by Asset ID and select the ${name} asset`, async ({ page, manager, assetTree }) => {
     await manager.setup("smartcity", { assets });
     const id = manager.assets.find(asset => asset.name === name)?.id;
     expect(id).toBeDefined();
     await manager.goToRealmStartPage("smartcity");
     await manager.navigateToTab("asset");
-    await page.fill('#filterInput input[type="text"]', id!);
-    await expect(page.locator(`#list-container > ol > li`)).toHaveCount(2); // It's 2 instead of 1, because of the "asset draggable area" on the bottom.
+    await assetTree.fillFilterInput(id!);
+    await expect(assetTree.getAssetNodes()).toHaveCount(1);
     await page.click(`text=${name}`);
     await expect(page.locator(`#asset-header`, { hasText: name })).toBeVisible();
   })
@@ -80,14 +80,14 @@ assets.forEach(({ type, name, attributes }) => {
    * @and The asset list should contain the asset with the given ID
    * @and The asset detail page is displayed
    */
-  test(`Open browser tab directly to the ${name} asset`, async ({ page, manager, assetsPage }) => {
+  test(`Open browser tab directly to the ${name} asset`, async ({ page, manager, assetsPage, assetTree }) => {
     await manager.setup("smartcity", { assets });
     const id = manager.assets.find(asset => asset.name === name)?.id;
     expect(id).toBeDefined();
     await assetsPage.gotoAssetId("smartcity", id!);
-    await expect(page.locator('#filterInput input[type="text"]')).toHaveValue(id!);
-    await expect(page.locator(`#list-container > ol > li`)).toHaveCount(2); // It's 2 instead of 1, because of the "asset draggable area" on the bottom.
-    await expect(page.locator(`#list-container > ol > li[data-selected]`)).toHaveCount(1);
+    await expect(assetTree.getFilterInput()).toHaveValue(id!);
+    await expect(assetTree.getAssetNodes()).toHaveCount(1);
+    await expect(assetTree.getSelectedNodes()).toHaveCount(1);
     await expect(page.locator(`#asset-header`, { hasText: name })).toBeVisible();
   })
 
