@@ -19,10 +19,17 @@ export class RealmsPage implements BasePage {
       console.warn(`Realm "${name}" already present`);
     } else {
       await this.page.click("text=Add Realm");
-      await this.page.locator("#realm-row-1 label").filter({ hasText: "Realm" }).fill(name);
-      await this.page.locator("#realm-row-1 label").filter({ hasText: "Friendly name" }).fill(name);
+      await this.page.locator(".realm-row.expanded label").filter({ hasText: "Realm" }).fill(name);
+      await this.page.locator(".realm-row.expanded label").filter({ hasText: "Friendly name" }).fill(name);
       await this.page.getByRole("button", { name: "create" }).click();
     }
+  }
+
+  /**
+   * Retrieves a locator for the realm table.
+   */
+  getTableLocator() {
+    return this.page.locator("#table-roles");
   }
 
   /**
@@ -31,7 +38,7 @@ export class RealmsPage implements BasePage {
    */
   async deleteRealm(realm: string) {
     await this.page.getByRole("cell", { name: realm }).first().click();
-    await this.page.getByRole("button", { name: "Delete" }).click();
+    await this.page.locator('.realm-row.expanded').getByRole("button", { name: "Delete" }).click();
     await this.page.getByRole("alertdialog").getByRole("textbox", { name: "Realm" }).fill(realm);
     await this.page.getByRole("button", { name: "OK" }).click();
   }
