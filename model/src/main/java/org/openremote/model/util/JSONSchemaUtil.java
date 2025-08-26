@@ -91,7 +91,7 @@ public class JSONSchemaUtil {
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.TYPE, ElementType.FIELD})
     public @interface JsonSchemaTitle {
-        String keyword() default "title";
+        String keyword() default "label";
         String value();
         /* Whether to put the title on the root of the schema even when the class is wrapped in an array. */
         boolean container() default true;
@@ -416,26 +416,29 @@ public class JSONSchemaUtil {
     public static SchemaGeneratorConfig getJsonSchemaConfig(ObjectMapper mapper) {
         return new SchemaGeneratorConfigBuilder(mapper, SchemaVersion.DRAFT_7, new OptionPreset(
             Option.SCHEMA_VERSION_INDICATOR,
+            Option.ADDITIONAL_FIXED_TYPES,
             Option.FLATTENED_ENUMS,
             Option.VALUES_FROM_CONSTANT_FIELDS,
             Option.PUBLIC_NONSTATIC_FIELDS,
             Option.NONPUBLIC_NONSTATIC_FIELDS_WITH_GETTERS,
             Option.NONPUBLIC_NONSTATIC_FIELDS_WITHOUT_GETTERS,
+            // Does not seem to be working
+            // Option.ENUM_KEYWORD_FOR_SINGLE_VALUES,
             Option.ALLOF_CLEANUP_AT_THE_END,
-            Option.ADDITIONAL_FIXED_TYPES,
             // Option.DEFINITIONS_FOR_ALL_OBJECTS,
             Option.DUPLICATE_MEMBER_ATTRIBUTE_CLEANUP_AT_THE_END
         ))
         .with(new JacksonModule(
-            JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
             JacksonOption.ALWAYS_REF_SUBTYPES,
             // Disable subtype lookup in Jackson module, as we handle this ourselves to replace anyOf with oneOf
-            JacksonOption.SKIP_SUBTYPE_LOOKUP
+            JacksonOption.SKIP_SUBTYPE_LOOKUP,
+            JacksonOption.RESPECT_JSONPROPERTY_REQUIRED
         ))
         .with(new JakartaValidationModule(
             JakartaValidationOption.INCLUDE_PATTERN_EXPRESSIONS,
             JakartaValidationOption.NOT_NULLABLE_FIELD_IS_REQUIRED
         ))
-        .with(new CustomModule()).build();
+        .with(new CustomModule())
+        .build();
     }
 }

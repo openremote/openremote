@@ -660,6 +660,26 @@
     "invalidDate": "Datum ongeldig",
     "keyAlreadyExists": "Key bestaat reeds"
   },
+  "org.openremote.model": {
+    "value": {
+      "ForecastConfigurationWeightedExponentialAverage": {
+        "label": "Gewogen exponentieel gemiddelde",
+        "pastCount": {
+          "label": "Verleden aantal"
+        },
+        "forecastCount": {
+          "label": "Voorspellings aantal"
+        },
+        "pastPeriod": {
+          "label": "Verleden periode"
+        },
+        "forecastPeriod": {
+          "label": "Voorspellings periode"
+        }
+      }
+    }
+  },
+"org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage.label": "Gewogen exponentieel gemiddelde",
   "autoProvisioning": "Auto provisioning",
   "provisioningConfigs": "Provisioning configuraties",
   "loadFailedProvisioningConfigs": "Provisioning configuraties ophalen mislukt",

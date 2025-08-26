@@ -1,3 +1,5 @@
+import javax.tools.ToolProvider
+
 apply plugin: 'java'
 apply plugin: "maven-publish"
 apply plugin: "signing"
@@ -82,6 +84,42 @@ tasks.register('installDist', Copy) {
     mustRunAfter resolveTask(":manager:installDist")
     from layout.buildDirectory.dir("classes/main/org/openremote/web/${project.name}")
     into project(':manager').layout.buildDirectory.dir("install/manager/web/${project.name}")
+}
+
+tasks.register('runModelProcessor') {
+    dependsOn(":model:classes")
+    doLast {
+        def compiler = ToolProvider.systemJavaCompiler
+        def fileManager = compiler.getStandardFileManager(null, null, null)
+
+        // Sources to process (model sources)
+        def modelSources = project(":model").fileTree("src/main/java") {
+            include "**/*.java"
+        }.files
+        def units = fileManager.getJavaFileObjectsFromFiles(modelSources)
+
+        // Load processor class from :model’s output
+        def processorClassesDir = project(":model").layout.buildDirectory.dir("classes/java/main").get().asFile
+        def loader = new URLClassLoader([processorClassesDir.toURI().toURL()] as URL[], this.class.classLoader)
+        def processorClass = loader.loadClass("org.openremote.model.util.I18nAnnotationProcessor")
+        def processor = processorClass.getDeclaredConstructor().newInstance()
+
+        // Classpath: include compiled model classes + all dependencies
+        def modelClasspath = (project(":model").sourceSets.main.runtimeClasspath + project(":model").sourceSets.main.compileClasspath).asPath
+
+        // Pass classpath to compiler
+        def options = [
+            "-classpath", modelClasspath,
+            "-proc:only", // run processors, don’t emit .class files
+            "-Ashared=${project.getProjectDir()}".toString()
+        ]
+
+        // Run javac with processor
+        def task = compiler.getTask(null, fileManager, null, options, null, units)
+        task.setProcessors([processor])
+        def success = task.call()
+        println "Processor success: $success"
+    }
 }
 
 jar.dependsOn(generateSources)
