@@ -33,7 +33,7 @@ cleanup(`Delete the "smartcity" realm`, async ({ page, manager, realmsPage }) =>
   await manager.goToRealmStartPage("master");
   await manager.navigateToMenuItem("Realms");
   await realmsPage.deleteRealm("smartcity");
-  await expect(page.getByRole("cell", {name: "smartcity", exact: true})).toHaveCount(0);
+  await expect(page.getByRole("cell", { name: "smartcity", exact: true })).toHaveCount(0);
   await manager.goToRealmStartPage("master");
   await page.locator("#desktop-right").waitFor();
   const visible = await page.locator("#desktop-right #realm-picker").isVisible();
