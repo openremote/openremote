@@ -37,6 +37,7 @@ public class RegexValueFilter extends ValueFilter {
 
     public static final String NAME = "regex";
 
+    // TODO: this isn't being picked up by victools generator
     @JsonSerialize(using = ToStringSerializer.class)
     public Pattern pattern;
     public Integer matchGroup;
