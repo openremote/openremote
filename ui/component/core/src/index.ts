@@ -424,9 +424,7 @@ export class Manager implements EventProviderFactory {
 
         if (success) {
             success = await this.doEventsSubscriptionInit();
-        }
 
-        if (success) {
             if (this._readyCallback) {
                 await this._readyCallback();
             }
@@ -920,11 +918,6 @@ export class Manager implements EventProviderFactory {
 
     protected _onAuthenticated() {
         this._authenticated = true;
-
-        // TODO: Move events init logic once websocket supports anonymous connections
-        if (!this._events) {
-            this.doEventsSubscriptionInit();
-        }
     }
 
     protected async loadAndInitialiseKeycloak(): Promise<boolean> {
