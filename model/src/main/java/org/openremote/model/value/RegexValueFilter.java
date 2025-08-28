@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import org.openremote.model.util.JSONSchemaUtil.JsonSchemaTitle;
+import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.Optional;
@@ -37,8 +37,8 @@ public class RegexValueFilter extends ValueFilter {
 
     public static final String NAME = "regex";
 
-    // TODO: this isn't being picked up by victools generator
     @JsonSerialize(using = ToStringSerializer.class)
+    @JsonSchemaTypeRemap(type = String.class)
     public Pattern pattern;
     public Integer matchGroup;
     public Integer matchIndex;
