@@ -151,6 +151,12 @@ public class JSONSchemaUtil {
 
         @Override
         public void applyToConfigBuilder(SchemaGeneratorConfigBuilder builder) {
+            // Set title on root of schema
+            JSONSchemaTitleProvider titleProvider = new JSONSchemaTitleProvider();
+            builder.forTypesInGeneral()
+                .withCustomDefinitionProvider(titleProvider)
+                .withTypeAttributeOverride(titleProvider);
+
             // Primitive types cannot be null thus they are always required
             builder.forFields().withRequiredCheck((f) -> f.getType().getErasedType().isPrimitive());
 
@@ -278,6 +284,31 @@ public class JSONSchemaUtil {
                     applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaDescription.class), JsonSchemaDescription.class, key, attrs);
                 }
             });
+        }
+
+        private static class JSONSchemaTitleProvider implements CustomDefinitionProviderV2, TypeAttributeOverrideV2 {
+            private ResolvedType rootType;
+
+            @Override
+            public CustomDefinition provideCustomSchemaDefinition(ResolvedType javaType, SchemaGenerationContext context) {
+                if (this.rootType == null) {
+                    this.rootType = javaType;
+                }
+                return null;
+            }
+
+            @Override
+            public void overrideTypeAttributes(ObjectNode attrs, TypeScope scope, SchemaGenerationContext context) {
+                if (this.rootType == scope.getType()) {
+                    String rawName = rootType.getErasedType().getSimpleName();
+                    attrs.put(context.getKeyword(SchemaKeyword.TAG_TITLE), rawName.replaceAll("([a-z])([A-Z])", "$1 $2"));
+                }
+            }
+
+            @Override
+            public void resetAfterSchemaGenerationFinished() {
+                this.rootType = null;
+            }
         }
 
         /**
