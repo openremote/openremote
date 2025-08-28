@@ -281,6 +281,11 @@ public class JSONSchemaUtil {
         private void addDefaultToDiscriminator(ObjectNode attrs, SchemaGenerationContext context) {
             JsonNode allOfNode = attrs.get(context.getKeyword(SchemaKeyword.TAG_ALLOF));
             if (!(allOfNode instanceof ArrayNode allOf)) {
+                JsonNode props = attrs.get(context.getKeyword(SchemaKeyword.TAG_PROPERTIES));
+                if (props instanceof ObjectNode propsObj) {
+                    // Remove type property on type property for subtypes to enable definition merging
+                    propsObj.remove("type");
+                }
                 return;
             }
 
