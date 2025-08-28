@@ -73,7 +73,7 @@ import java.util.List;
  * <blockquote><pre>{@code
 {
     "start": 1441177200000,
-    "ends": 1441206000000,
+    "end": 1441206000000,
     "recurrence": "RRULE:FREQ=DAILY;INTERVAL=2;COUNT=4"
 }
  * }</pre></blockquote>
