@@ -151,9 +151,9 @@ public class JSONSchemaUtil {
         @Override
         public void applyToConfigBuilder(SchemaGeneratorConfigBuilder builder) {
 
-            // Apply additionalProperties true to all object values
+            // Apply additionalProperties true to all object values that haven't already set additionalProperties
             builder.forTypesInGeneral().withTypeAttributeOverride((attrs, typeScope, context) -> {
-                if (attrs.has("type") && Objects.equals(attrs.get("type").textValue(), "object")) {
+                if (attrs.has("type") && !attrs.has("additionalProperties") && Objects.equals(attrs.get("type").textValue(), "object")) {
                     attrs.put("additionalProperties", Boolean.TRUE);
                 }
             });
@@ -421,6 +421,7 @@ public class JSONSchemaUtil {
             Option.VALUES_FROM_CONSTANT_FIELDS,
             Option.PUBLIC_NONSTATIC_FIELDS,
             Option.NONPUBLIC_NONSTATIC_FIELDS_WITH_GETTERS,
+            Option.MAP_VALUES_AS_ADDITIONAL_PROPERTIES,
             Option.ALLOF_CLEANUP_AT_THE_END,
             Option.DUPLICATE_MEMBER_ATTRIBUTE_CLEANUP_AT_THE_END
         ))
