@@ -69,7 +69,7 @@ import java.util.List;
     }
 }
  * }</pre></blockquote>
- * Example 3 (8 hours starting 2nd September 2015 08:00am, repeat every day until 1st Feb 2018):
+ * Example 3 (8 hours starting 2nd September 2015 08:00am; repeat every other day, 4 occurrences):
  * <blockquote><pre>{@code
 {
     "start": 1441177200000,
