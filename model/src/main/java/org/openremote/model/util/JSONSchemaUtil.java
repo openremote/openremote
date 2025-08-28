@@ -421,11 +421,7 @@ public class JSONSchemaUtil {
             Option.VALUES_FROM_CONSTANT_FIELDS,
             Option.PUBLIC_NONSTATIC_FIELDS,
             Option.NONPUBLIC_NONSTATIC_FIELDS_WITH_GETTERS,
-            Option.NONPUBLIC_NONSTATIC_FIELDS_WITHOUT_GETTERS,
-            // Does not seem to be working
-            // Option.ENUM_KEYWORD_FOR_SINGLE_VALUES,
             Option.ALLOF_CLEANUP_AT_THE_END,
-            // Option.DEFINITIONS_FOR_ALL_OBJECTS,
             Option.DUPLICATE_MEMBER_ATTRIBUTE_CLEANUP_AT_THE_END
         ))
         .with(new JacksonModule(
