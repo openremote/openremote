@@ -13,7 +13,7 @@ import {
 } from "@openremote/or-asset-viewer";
 import {
     AssetTreeConfig, ChangeParentEventDetail,
-    OrAssetTree,
+    OrAssetTree, OrAssetTreeFilter,
     OrAssetTreeAddEvent,
     OrAssetTreeAssetEvent,
     OrAssetTreeChangeParentEvent, OrAssetTreeRequestAddEvent,
@@ -269,7 +269,17 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     stateChanged(state: AssetsStateKeyed) {
         this.getRealmState(state); // Order is important here!
         this._editMode = !!(state.app.params && state.app.params.editMode === "true");
-        this._assetIds = state.app.params && state.app.params.ids ? state.app.params.ids.split(",") : undefined;
+        if(state.app.params?.ids) {
+            const newIds = state.app.params.ids.split(",");
+            if(!Util.objectsEqual(this._assetIds, newIds, true)) {
+                this._assetIds = newIds;
+                if(this._assetIds.length === 1) {
+                    this.updateComplete.finally(() => this._tree?.applyFilter(new OrAssetTreeFilter(this._assetIds[0]), true));
+                }
+            }
+        } else {
+            this._assetIds = undefined;
+        }
     }
 
     protected _onParentChangeClick() {
