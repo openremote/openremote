@@ -161,6 +161,8 @@ public class JSONSchemaUtil {
 
         @Override
         public void applyToConfigBuilder(SchemaGeneratorConfigBuilder builder) {
+            // Primitive types cannot be null thus they are always required
+            builder.forFields().withRequiredCheck((f) -> f.getType().getErasedType().isPrimitive());
 
             // Apply additionalProperties true to all object values that haven't already set additionalProperties
             builder.forTypesInGeneral().withTypeAttributeOverride((attrs, typeScope, context) -> {
