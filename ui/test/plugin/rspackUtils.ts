@@ -8,7 +8,7 @@ import type { PlaywrightTestConfig as BasePlaywrightTestConfig } from "playwrigh
 import type { FullConfig } from "playwright/types/testReporter";
 import type { Configuration as RspackConfig } from "@rspack/core";
 
-export type CtConfig = BasePlaywrightTestConfig["use"] & {
+type CtConfig = BasePlaywrightTestConfig["use"] & {
   ct?: boolean;
   ctPort?: number;
   ctTemplateDir?: string;
@@ -55,10 +55,9 @@ export type ImportInfo = {
   importSource: string;
   remoteName: string | undefined;
 };
-export type ComponentRegistry = Map<string, ImportInfo>;
 
 export async function populateComponentsFromTests(
-  componentRegistry: ComponentRegistry,
+  componentRegistry: Map<string, ImportInfo>,
   componentsByImportingFile?: Map<string, string[]>
 ) {
   const importInfos: Map<string, ImportInfo[]> = await getUserData("playwright-ct-core");
