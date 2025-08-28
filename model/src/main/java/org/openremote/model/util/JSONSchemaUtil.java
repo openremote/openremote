@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.*;
 import com.github.victools.jsonschema.generator.*;
 import com.github.victools.jsonschema.generator.Module;
+import com.github.victools.jsonschema.generator.impl.module.SimpleTypeModule;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.jackson.JsonSubTypesResolver;
@@ -163,6 +164,9 @@ public class JSONSchemaUtil {
         public void applyToConfigBuilder(SchemaGeneratorConfigBuilder builder) {
             // Primitive types cannot be null thus they are always required
             builder.forFields().withRequiredCheck((f) -> f.getType().getErasedType().isPrimitive());
+
+            // Remap Byte to type integer, see https://github.com/victools/jsonschema-generator/blob/995a71eaf7a9a05cc2e335f8a7821b4a9019fa1b/CHANGELOG.md?plain=1#L530
+            builder.with(new SimpleTypeModule().withIntegerType(Byte.class));
 
             // Apply additionalProperties true to all object values that haven't already set additionalProperties
             builder.forTypesInGeneral().withTypeAttributeOverride((attrs, typeScope, context) -> {
