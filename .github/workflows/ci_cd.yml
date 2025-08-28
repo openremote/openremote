@@ -529,6 +529,10 @@ jobs:
           username: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_USER }}
           password: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_PASSWORD }}
 
+      - name: Login to private ECR
+        if: ${{ steps.manager-docker-command.outputs.pushRequired == 'false' }}
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076
+
       - name: set up QEMU
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3
