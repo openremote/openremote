@@ -529,6 +529,19 @@ jobs:
           username: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_USER }}
           password: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_PASSWORD }}
 
+      - name: Configure AWS Credentials
+        if: ${{ steps.manager-docker-command.outputs.pushRequired != 'true' }}
+        uses: aws-actions/configure-aws-credentials@v4.3.1
+        with:
+          aws-access-key-id: ${{ secrets._TEMP_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets._TEMP_AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+          role-to-assume: ${{ secrets._TEMP_AWS_ROLE_NAME }}
+          role-duration-seconds: 1200
+          role-session-name: PushToECR
+
+
+
       - name: Login to private ECR
         if: ${{ steps.manager-docker-command.outputs.pushRequired != 'true' }}
         uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
