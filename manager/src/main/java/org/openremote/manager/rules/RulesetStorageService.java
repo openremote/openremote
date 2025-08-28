@@ -115,7 +115,7 @@ public class RulesetStorageService implements ContainerService {
         if (result.size() > 1) {
             throw new IllegalArgumentException("Query returned more than one ruleset");
         }
-        return result.get(0);
+        return result.getFirst();
     }
 
     public <T extends Ruleset> List<T> findAll(Class<T> rulesetType, RulesetQuery query) {
