@@ -153,8 +153,10 @@ public class JSONSchemaUtil {
 
             // Apply additionalProperties true to all object values that haven't already set additionalProperties
             builder.forTypesInGeneral().withTypeAttributeOverride((attrs, typeScope, context) -> {
-                if (attrs.has("type") && !attrs.has("additionalProperties") && Objects.equals(attrs.get("type").textValue(), "object")) {
-                    attrs.put("additionalProperties", Boolean.TRUE);
+                String typeKey = context.getKeyword(SchemaKeyword.TAG_TYPE);
+                String additionalPropertiesKey = context.getKeyword(SchemaKeyword.TAG_ADDITIONAL_PROPERTIES);
+                if (attrs.has(typeKey) && !attrs.has(additionalPropertiesKey) && Objects.equals(attrs.get(typeKey).textValue(), "object")) {
+                    attrs.put(additionalPropertiesKey, Boolean.TRUE);
                 }
             });
 
@@ -234,7 +236,7 @@ public class JSONSchemaUtil {
                 ObjectNode targetNode;
 
                 // If there is an allOf array, inject into the first object inside it to allow for cleanup with `Option.ALLOF_CLEANUP_AT_THE_END`
-                JsonNode allOfNode = attrs.get("allOf");
+                JsonNode allOfNode = attrs.get(context.getKeyword(SchemaKeyword.TAG_ALLOF));
                 if (allOfNode instanceof ArrayNode allOf && !allOf.isEmpty()) {
                     targetNode = (ObjectNode) allOf.get(0);
                 } else {
@@ -248,7 +250,7 @@ public class JSONSchemaUtil {
                 applyTypeAnnotation(erasedType, JsonSchemaExamples.class, targetNode, mapper);
 
                 // TODO: Is it possible to avoid object merging here?
-                if (attrs.has("type")) {
+                if (attrs.has(context.getKeyword(SchemaKeyword.TAG_TYPE))) {
                     applyI18nAnnotation(erasedType.getAnnotation(JsonSchemaTitle.class), JsonSchemaTitle.class, erasedType.getCanonicalName(), attrs);
                     applyI18nAnnotation(erasedType.getAnnotation(JsonSchemaDescription.class), JsonSchemaDescription.class, erasedType.getCanonicalName(), attrs);
                 }
@@ -284,7 +286,7 @@ public class JSONSchemaUtil {
                 JsonNode props = attrs.get(context.getKeyword(SchemaKeyword.TAG_PROPERTIES));
                 if (props instanceof ObjectNode propsObj) {
                     // Remove type property on type property for subtypes to enable definition merging
-                    propsObj.remove("type");
+                    propsObj.remove(context.getKeyword(SchemaKeyword.TAG_TYPE));
                 }
                 return;
             }
