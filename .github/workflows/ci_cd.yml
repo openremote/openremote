@@ -530,8 +530,8 @@ jobs:
           password: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_PASSWORD }}
 
       - name: Login to private ECR
-        if: ${{ steps.manager-docker-command.outputs.pushRequired == 'false' }}
-        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076
+        if: ${{ steps.manager-docker-command.outputs.pushRequired != 'true' }}
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
       - name: set up QEMU
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
