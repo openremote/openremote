@@ -1422,8 +1422,7 @@ __metadata:
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/util": "workspace:*"
-    "@rspack/cli": "npm:^1.4.4"
-    "@rspack/core": "npm:^1.4.4"
+    "@rsbuild/core": "npm:^1.1.8"
     i18next: "npm:^21.5.3"
     lit: "npm:^3.3.1"
     typescript: "npm:^5.3.3"
@@ -2227,7 +2226,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rsbuild/core@npm:^1.5.1":
+"@rsbuild/core@npm:^1.1.8, @rsbuild/core@npm:^1.5.1":
   version: 1.5.1
   resolution: "@rsbuild/core@npm:1.5.1"
   dependencies:

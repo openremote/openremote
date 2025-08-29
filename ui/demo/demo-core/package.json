@@ -22,8 +22,7 @@
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",
-    "@rspack/cli": "^1.4.4",
-    "@rspack/core": "^1.4.4",
+    "@rsbuild/core": "^1.1.8",
     "typescript": "^5.3.3"
   }
 }
