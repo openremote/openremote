@@ -25,7 +25,7 @@ export interface AttributeAction {
 
 export class AttributeActionEvent extends CustomEvent<{ asset: Asset, attributeRef: AttributeRef, action: AttributeAction }> {
 
-    public static readonly NAME = "attribute-action"
+    public static readonly NAME = "attribute-action";
 
     constructor(asset: Asset, attributeRef: AttributeRef, action: AttributeAction) {
         super(AttributeActionEvent.NAME, {
@@ -145,12 +145,17 @@ const styling = css`
         visibility: visible;
     }
 
+    .button-action[disabled] {
+        opacity: 0.5;
+        cursor: initial;
+    }
+
     .button-action:hover {
         --or-icon-fill: var(--or-icon-fill--hover, var(--or-app-color4));
     }
-`
+`;
 
-@customElement('attributes-panel')
+@customElement("attributes-panel")
 export class AttributesPanel extends LitElement {
 
     @property({type: Array})
@@ -172,7 +177,7 @@ export class AttributesPanel extends LitElement {
     protected attributeLabelCallback?: (asset: Asset, attribute: Attribute<any>, attributeLabel: string) => TemplateResult;
 
     @property()
-    protected attributeActionCallback?: (attribute: AttributeRef) => AttributeAction[]
+    protected attributeActionCallback?: (attribute: AttributeRef) => AttributeAction[];
 
     @state()
     protected loadedAssets: Asset[] = [];
@@ -189,19 +194,19 @@ export class AttributesPanel extends LitElement {
             this.attributeRefs = [];
         }
         if (changedProps.has("attributeRefs") && this.attributeRefs) {
-            this.loadAssets().then((assets) => {
+            this.loadAssets().then(assets => {
 
                 // Only dispatch event when it CHANGED, so not from 'undefined' to [];
                 if(changedProps.get("attributeRefs")) {
-                    this.dispatchEvent(new AttributesSelectEvent(assets, this.attributeRefs))
+                    this.dispatchEvent(new AttributesSelectEvent(assets, this.attributeRefs));
                 }
 
-            })
+            });
         }
     }
 
     protected getLoadedAsset(attrRef: AttributeRef): Asset | undefined {
-        return this.loadedAssets?.find((asset) => asset.id === attrRef.id)
+        return this.loadedAssets?.find(asset => asset.id === attrRef.id);
     }
 
     protected removeWidgetAttribute(attributeRef: AttributeRef) {
@@ -232,7 +237,7 @@ export class AttributesPanel extends LitElement {
             }
         }).then(response => {
             assets = response.data;
-        }).catch((reason) => {
+        }).catch(reason => {
             console.error(reason);
             showSnackbar(undefined, "errorOccurred");
         });
@@ -248,11 +253,11 @@ export class AttributesPanel extends LitElement {
         if (attributeRefs != null) {
             dialog = showDialog(new OrAssetAttributePicker().setMultiSelect(multi).setSelectedAttributes(attributeRefs).setShowOnlyDatapointAttrs(onlyDataAttrs).setAttributeFilter(attributeFilter));
         } else {
-            dialog = showDialog(new OrAssetAttributePicker().setMultiSelect(multi).setShowOnlyDatapointAttrs(onlyDataAttrs))
+            dialog = showDialog(new OrAssetAttributePicker().setMultiSelect(multi).setShowOnlyDatapointAttrs(onlyDataAttrs));
         }
         dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
             this.attributeRefs = event.detail;
-        })
+        });
     }
 
     protected render(): TemplateResult {
@@ -316,7 +321,7 @@ export class AttributesPanel extends LitElement {
                         action => this._getAttributeActionTemplate(action, asset, attributeRef)
                 ))}
                 <!-- Remove attribute button -->
-                <button class="button-action" title="${i18next.t('delete')}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
+                <button class="button-action" title="${i18next.t("delete")}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
                     <or-icon icon="close-circle"></or-icon>
                 </button>
             </div>
@@ -325,7 +330,7 @@ export class AttributesPanel extends LitElement {
 
     protected _getAttributeActionTemplate(action: AttributeAction, asset: Asset, attributeRef: AttributeRef): TemplateResult {
         const styles = styleMap({
-            "--or-icon-fill": action.active ? action?.color || "inherit" : "inherit",
+            "--or-icon-fill": action.active ? action?.color ?? "inherit" : "inherit",
             "--or-icon-fill--hover": action?.color ?? "unset"
         });
         return html`
