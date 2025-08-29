@@ -38,7 +38,6 @@ public class RegexValueFilter extends ValueFilter {
     public static final String NAME = "regex";
 
     @JsonSerialize(using = ToStringSerializer.class)
-    @JsonSchemaTypeRemap(type = String.class)
     public Pattern pattern;
     public Integer matchGroup;
     public Integer matchIndex;

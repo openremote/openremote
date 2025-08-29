@@ -23,8 +23,9 @@ package org.openremote.model.util;
 import com.fasterxml.classmate.ResolvedType;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.jsonFormatVisitors.*;
 import com.fasterxml.jackson.databind.node.*;
 import com.github.victools.jsonschema.generator.*;
 import com.github.victools.jsonschema.generator.Module;
@@ -142,6 +143,10 @@ public class JSONSchemaUtil {
     @Target({ElementType.TYPE, ElementType.FIELD})
     public @interface JsonSchemaSupplier {
         String supplier();
+    }
+
+    private static void setFormat(ObjectNode node, String format) {
+        node.put("format", format);
     }
 
     public static class CustomModule implements Module {
@@ -283,6 +288,75 @@ public class JSONSchemaUtil {
                     applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaTitle.class), JsonSchemaTitle.class, key, attrs);
                     applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaDescription.class), JsonSchemaDescription.class, key, attrs);
                 }
+            });
+
+            // Apply Jackson serializers
+            builder.forTypesInGeneral().withCustomDefinitionProvider((resolvedType, context) -> {
+                ObjectNode node = JsonNodeFactory.instance.objectNode();
+                ObjectMapper mapper = builder.getObjectMapper();
+                JavaType javaType = mapper.constructType(resolvedType.getErasedType());
+
+                try {
+                    JsonFormatVisitorWrapper visitor = new JsonFormatVisitorWrapper.Base() {
+                        @Override
+                        public JsonStringFormatVisitor expectStringFormat(JavaType type) throws JsonMappingException {
+                            node.put("type", "string");
+                            return new JsonStringFormatVisitor() {
+                                public void format(JsonValueFormat format) {
+                                    setFormat(node, format.toString());
+                                }
+                                // TODO:
+                                public void enumTypes(Set<String> enums) {}
+                            };
+                        }
+
+                        @Override
+                        public JsonNumberFormatVisitor expectNumberFormat(JavaType type) throws JsonMappingException {
+                            node.put("type", "number");
+                            return new JsonNumberFormatVisitor() {
+                                public void numberType(JsonParser.NumberType numberType) {}
+                                public void format(JsonValueFormat format) {
+                                    setFormat(node, format.toString());
+                                }
+                                // TODO:
+                                public void enumTypes(Set<String> enums) {}
+                            };
+                        }
+
+                        @Override
+                        public JsonIntegerFormatVisitor expectIntegerFormat(JavaType type) throws JsonMappingException {
+                            node.put("type", "integer");
+                            return new JsonIntegerFormatVisitor() {
+                                public void numberType(JsonParser.NumberType numberType) {}
+                                public void format(JsonValueFormat format) {
+                                    setFormat(node, format.toString());
+                                }
+                                // TODO:
+                                public void enumTypes(Set<String> enums) {}
+                            };
+                        }
+
+                        @Override
+                        public JsonBooleanFormatVisitor expectBooleanFormat(JavaType type) throws JsonMappingException {
+                            node.put("type", "boolean");
+                            return new JsonBooleanFormatVisitor() {
+                                public void format(JsonValueFormat format) {
+                                    setFormat(node, format.toString());
+                                }
+                                // TODO:
+                                public void enumTypes(Set<String> enums) {}
+                            };
+                        }
+                    };
+
+                    // Let Jackson traverse the type and call the visitor
+                    mapper.acceptJsonFormatVisitor(javaType, visitor);
+
+                    if (node.has("type")) {
+                        return new CustomDefinition(node, CustomDefinition.DefinitionType.INLINE, CustomDefinition.AttributeInclusion.NO);
+                    }
+                } catch (Exception ignored) {}
+                return null;
             });
         }
 
@@ -490,7 +564,9 @@ public class JSONSchemaUtil {
             JacksonOption.ALWAYS_REF_SUBTYPES,
             // Disable subtype lookup in Jackson module, as we handle this ourselves to replace anyOf with oneOf
             JacksonOption.SKIP_SUBTYPE_LOOKUP,
-            JacksonOption.RESPECT_JSONPROPERTY_REQUIRED
+            JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
+            JacksonOption.FLATTENED_ENUMS_FROM_JSONPROPERTY,
+            JacksonOption.FLATTENED_ENUMS_FROM_JSONVALUE
         ))
         .with(new JakartaValidationModule(
             JakartaValidationOption.INCLUDE_PATTERN_EXPRESSIONS,
