@@ -19,9 +19,9 @@
     "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
-    "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rsbuild build --mode production",
-    "serve": "npx tsc -b --clean && npx shx rm -rf dist lib && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rsbuild dev --mode development",
-    "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rsbuild dev --mode development",
+    "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 yarn rsbuild build --mode production",
+    "serve": "npx tsc -b --clean && npx shx rm -rf dist lib && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 yarn rsbuild dev --mode development",
+    "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 yarn rsbuild dev --mode development",
     "test": "echo \"No tests\" && exit 0"
   },
   "dependencies": {

@@ -16,7 +16,7 @@
     "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
-    "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rsbuild build --mode production",
+    "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 yarn rsbuild build --mode production",
     "test": "echo \"No tests\" && exit 0",
     "prepack": "npx tsc -b"
   },

@@ -45,6 +45,8 @@ export function getAppConfig(options: AppConfigOptions): RsbuildConfig {
         vm: false,
         querystring: require.resolve('querystring-es3'),
       },
+      // Add extensions for TypeScript resolution
+      extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
     },
 
     output: {
@@ -183,6 +185,40 @@ export function createCopyPlugin(dirname: string): RsbuildPlugin {
         chain.plugin('copy').use(rspack.CopyRspackPlugin, [patterns]);
       });
     },
+  };
+}
+
+// Plugin for app version definition
+export function createAppVersionPlugin(appName: string, version: string): RsbuildPlugin {
+  return {
+    name: `${appName}-app-version`,
+    setup(api) {
+      api.modifyBundlerChain((chain) => {
+        const { rspack } = require('@rsbuild/core');
+        chain.plugin('define-app-version').use(rspack.DefinePlugin, [{
+          APP_VERSION: JSON.stringify(version)
+        }]);
+      });
+    },
+  };
+}
+
+// Simplified app configuration with all standard plugins
+export function createStandardAppConfig(options: AppConfigOptions & { 
+  appName: string; 
+  version: string; 
+}): RsbuildConfig {
+  const config = getAppConfig(options);
+  
+  const plugins = [
+    createDefinePlugin(options),
+    createCopyPlugin(options.dirname),
+    createAppVersionPlugin(options.appName, options.version),
+  ];
+
+  return {
+    ...config,
+    plugins: [...(config.plugins || []), ...plugins],
   };
 }
 
