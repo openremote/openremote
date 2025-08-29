@@ -105,7 +105,7 @@ public class JSONSchemaUtil {
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.TYPE, ElementType.FIELD})
     public @interface JsonSchemaTitle {
-        String keyword() default "label"; // Expected to be "label" by JSON Forms
+        String keyword() default "title";
         String value();
         /* Whether to put the title on the root of the schema even when the class is wrapped in an array. */
         boolean container() default true;
@@ -296,11 +296,28 @@ public class JSONSchemaUtil {
                 return null;
             }
 
+            /**
+             * Matches <a href="https://github.com/mbknor/mbknor-jackson-jsonSchema/blob/e370f80d5dd20eb9396455ab2ddfd7083d0e25fb/src/main/scala/com/kjetland/jackson/jsonSchema/JsonSchemaGenerator.scala#L1355">
+             *     mbknor-jackson-jsonSchema
+             * </a>
+             * @param attrs node to modify (the part that may be referenced multiple times)
+             * @param scope the type representation associated with the JSON Schema node
+             * @param context generation context
+             */
             @Override
             public void overrideTypeAttributes(ObjectNode attrs, TypeScope scope, SchemaGenerationContext context) {
                 if (this.rootType == scope.getType()) {
                     String rawName = rootType.getErasedType().getSimpleName();
-                    attrs.put(context.getKeyword(SchemaKeyword.TAG_TITLE), rawName.replaceAll("([a-z])([A-Z])", "$1 $2"));
+                    // Code found here: http://stackoverflow.com/questions/2559759/how-do-i-convert-camelcase-into-human-readable-names-in-java
+                    String v = rawName.replaceAll(
+                        String.format("%s|%s|%s",
+                            "(?<=[A-Z])(?=[A-Z][a-z])",
+                            "(?<=[^A-Z])(?=[A-Z])",
+                            "(?<=[A-Za-z])(?=[^A-Za-z])"
+                        ),
+                        " ");
+                    // Make the first letter uppercase
+                    attrs.put(context.getKeyword(SchemaKeyword.TAG_TITLE), v.substring(0,1).toUpperCase() + v.substring(1));
                 }
             }
 
