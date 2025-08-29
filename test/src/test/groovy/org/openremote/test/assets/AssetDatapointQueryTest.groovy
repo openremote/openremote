@@ -26,9 +26,9 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.time.LocalDateTime
+import java.time.Month
 import java.time.ZoneId
-
-import static java.util.concurrent.TimeUnit.HOURS
+import java.time.temporal.ChronoUnit
 
 class AssetDatapointQueryTest extends Specification implements ManagerContainerTrait {
 
@@ -223,7 +223,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
 
 
 
-    def "Interval query should be returned in chronological order"() {
+    def "Interval query should be returned correctly and in chronological order"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
@@ -247,7 +247,13 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
         then: "asset should exist and be correct"
         def assetName = "Light 1"
         def attributeName = "brightness"
-        def dateTime = LocalDateTime.now()
+        def dateTime = LocalDateTime.of(2025, Month.AUGUST, 7, 9, 00);
+        def queryTime30 = dateTime.minus(30, ChronoUnit.MINUTES)
+        def queryTime60 = dateTime.minus(60, ChronoUnit.MINUTES)
+        def queryTimeNow = dateTime
+        def time30 = queryTime30.atZone(ZoneId.systemDefault()).toInstant()
+        def time60 = queryTime60.atZone(ZoneId.systemDefault()).toInstant()
+        def timeNow = queryTimeNow.atZone(ZoneId.systemDefault()).toInstant()
         assert asset != null // light 1, 2 and 3
         assert asset.name == assetName
         assert asset.attributes.has(attributeName)
@@ -261,18 +267,13 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
 
         /* ------------------------- */
 
-        when: "the first datapoints are added to the asset"
-        assetDatapointService.upsertValue(asset.getId(), attributeName, 25d, dateTime.minusMinutes(10))
-        assetDatapointService.upsertValue(asset.getId(), attributeName, 30d, dateTime.minusMinutes(5))
-        assetDatapointService.upsertValue(asset.getId(), attributeName, 10d, dateTime.minusMinutes(30))
-
-        and: "the clock advances by an hour"
-        advancePseudoClock(1, HOURS, container)
-
-        and: "the other datapoints are added to the asset, using an timestamp earlier than the previous ones"
-        assetDatapointService.upsertValue(asset.getId(), attributeName, 90d, dateTime.minusMinutes(20))
-        assetDatapointService.upsertValue(asset.getId(), attributeName, 15d, dateTime.minusMinutes(25))
-        assetDatapointService.upsertValue(asset.getId(), attributeName, 20d, dateTime.minusMinutes(15))
+        when: "the first datapoints are added to the asset in random order"
+        assetDatapointService.upsertValue(asset.getId(), attributeName, 25d, dateTime.minus(10, ChronoUnit.MINUTES))
+        assetDatapointService.upsertValue(asset.getId(), attributeName, 30d, dateTime.minus(5, ChronoUnit.MINUTES))
+        assetDatapointService.upsertValue(asset.getId(), attributeName, 10d, dateTime.minus(30, ChronoUnit.MINUTES))
+        assetDatapointService.upsertValue(asset.getId(), attributeName, 90d, dateTime.minus(20, ChronoUnit.MINUTES))
+        assetDatapointService.upsertValue(asset.getId(), attributeName, 15d, dateTime.minus(25, ChronoUnit.MINUTES))
+        assetDatapointService.upsertValue(asset.getId(), attributeName, 20d, dateTime.minus(15, ChronoUnit.MINUTES))
 
         then: "datapoints should exist"
         def allDatapoints = new ArrayList<AssetDatapoint>()
@@ -287,7 +288,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
         def intervalDatapoints1 = assetDatapointService.queryDatapoints(
                 asset.getId(),
                 asset.getAttribute(attributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
-                new AssetDatapointIntervalQuery(dateTime.minusMinutes(60), dateTime, "1 minute", AssetDatapointIntervalQuery.Formula.AVG, false)
+                new AssetDatapointIntervalQuery(queryTime60, queryTimeNow, "1 minute", AssetDatapointIntervalQuery.Formula.AVG, false)
         )
         assert intervalDatapoints1.size() == 6
         def index = 0
@@ -302,9 +303,9 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
         def intervalDatapoints2 = assetDatapointService.queryDatapoints(
                 asset.getId(),
                 asset.getAttribute(attributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
-                new AssetDatapointIntervalQuery(dateTime.minusMinutes(60), dateTime, "1 minute", AssetDatapointIntervalQuery.Formula.AVG, true)
+                new AssetDatapointIntervalQuery(queryTime60, queryTimeNow, "1 minute", AssetDatapointIntervalQuery.Formula.AVG, true)
         )
-        assert intervalDatapoints2.size() == 61
+        assert intervalDatapoints2.size() == 61 // because 60/1=60, plus an extra datapoint for the spare milliseconds of time
         def index2 = 0
         intervalDatapoints2.toList().stream().forEach { dp -> {
             if(index2 > 0) {
@@ -313,6 +314,136 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
             index2++
         }}
 
+        when: "requesting interval datapoints using DIFFERENCE"
+        def diffDatapoints1 = assetDatapointService.queryDatapoints(
+                asset.getId(),
+                asset.getAttribute(attributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
+                new AssetDatapointIntervalQuery(queryTime30, queryTimeNow, "5 minutes", AssetDatapointIntervalQuery.Formula.DIFFERENCE, true)
+        )
+
+        then: "DIFFERENCE datapoints should be correct"
+        assert diffDatapoints1.size() == 7 // Because 30/5=6, plus an extra datapoint for the spare milliseconds of time.
+        assert diffDatapoints1[0].timestamp == time30.toEpochMilli()
+        assert diffDatapoints1[1].timestamp == time30.plus(5, ChronoUnit.MINUTES).toEpochMilli()
+        assert diffDatapoints1[2].timestamp == time30.plus(10, ChronoUnit.MINUTES).toEpochMilli()
+        assert diffDatapoints1[3].timestamp == time30.plus(15, ChronoUnit.MINUTES).toEpochMilli()
+        assert diffDatapoints1[4].timestamp == time30.plus(20, ChronoUnit.MINUTES).toEpochMilli()
+        assert diffDatapoints1[5].timestamp == time30.plus(25, ChronoUnit.MINUTES).toEpochMilli()
+        assert diffDatapoints1[6].timestamp == timeNow.toEpochMilli()
+        assert diffDatapoints1[0].value == 0 // Initial value was 10, nothing happened since
+        assert diffDatapoints1[1].value == 5 // First bump from 10 -> 15, so difference is 5.
+        assert diffDatapoints1[2].value == 75 // 15 -> 90
+        assert diffDatapoints1[3].value == -70 // 90 -> 20
+        assert diffDatapoints1[4].value == 5 // 20 -> 25
+        assert diffDatapoints1[5].value == 5 // 25 -> 30
+        assert diffDatapoints1[6].value == 0 // Because nothing happened the spare milliseconds of time
+
+        when: "requesting interval datapoints using COUNT"
+        def countDatapoints1 = assetDatapointService.queryDatapoints(
+                asset.getId(),
+                asset.getAttribute(attributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
+                new AssetDatapointIntervalQuery(queryTime60, queryTimeNow, "5 minutes", AssetDatapointIntervalQuery.Formula.COUNT, true)
+        )
+
+        then: "COUNT datapoints should be correct"
+        assert countDatapoints1.size() == 13 // Because 60/5=12, plus an extra datapoint for the spare milliseconds of time.
+        assert countDatapoints1[0].timestamp == time60.toEpochMilli()
+        assert countDatapoints1[1].timestamp == time60.plus(5, ChronoUnit.MINUTES).toEpochMilli()
+        assert countDatapoints1[2].timestamp == time60.plus(10, ChronoUnit.MINUTES).toEpochMilli()
+        assert countDatapoints1[3].timestamp == time60.plus(15, ChronoUnit.MINUTES).toEpochMilli()
+        assert countDatapoints1[4].timestamp == time60.plus(20, ChronoUnit.MINUTES).toEpochMilli()
+        assert countDatapoints1[5].timestamp == time60.plus(25, ChronoUnit.MINUTES).toEpochMilli()
+        assert countDatapoints1[6].timestamp == time60.plus(30, ChronoUnit.MINUTES).toEpochMilli()
+        assert countDatapoints1[7].timestamp == time60.plus(35, ChronoUnit.MINUTES).toEpochMilli()
+        assert countDatapoints1[8].timestamp == time60.plus(40, ChronoUnit.MINUTES).toEpochMilli()
+        assert countDatapoints1[9].timestamp == time60.plus(45, ChronoUnit.MINUTES).toEpochMilli()
+        assert countDatapoints1[10].timestamp == time60.plus(50, ChronoUnit.MINUTES).toEpochMilli()
+        assert countDatapoints1[11].timestamp == time60.plus(55, ChronoUnit.MINUTES).toEpochMilli()
+        assert countDatapoints1[12].timestamp == timeNow.toEpochMilli()
+        assert countDatapoints1[0].value == null
+        assert countDatapoints1[1].value == null
+        assert countDatapoints1[2].value == null
+        assert countDatapoints1[3].value == null
+        assert countDatapoints1[4].value == null
+        assert countDatapoints1[5].value == null
+        assert countDatapoints1[6].value == 1
+        assert countDatapoints1[7].value == 1
+        assert countDatapoints1[8].value == 1
+        assert countDatapoints1[9].value == 1
+        assert countDatapoints1[10].value == 1
+        assert countDatapoints1[11].value == 1
+        assert countDatapoints1[12].value == null // Spare milliseconds of time
+
+        when: "requesting interval datapoints using SUM"
+        def sumDatapoints1 = assetDatapointService.queryDatapoints(
+                asset.getId(),
+                asset.getAttribute(attributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
+                new AssetDatapointIntervalQuery(queryTime30, queryTimeNow, "10 minutes", AssetDatapointIntervalQuery.Formula.SUM, true)
+        )
+
+        then: "SUM datapoints should be correct"
+        assert sumDatapoints1.size() == 4 // Because 30/10=3, plus an extra datapoint for the spare milliseconds of time.
+        assert sumDatapoints1[0].timestamp == time30.toEpochMilli()
+        assert sumDatapoints1[1].timestamp == time30.plus(10, ChronoUnit.MINUTES).toEpochMilli()
+        assert sumDatapoints1[2].timestamp == time30.plus(20, ChronoUnit.MINUTES).toEpochMilli()
+        assert sumDatapoints1[3].timestamp == timeNow.toEpochMilli()
+        assert sumDatapoints1[0].value == (10 + 15)
+        assert sumDatapoints1[1].value == (90 + 20)
+        assert sumDatapoints1[2].value == (25 + 30)
+        assert sumDatapoints1[3].value == null // Spare milliseconds of time
+
+        when: "requesting interval datapoints using MODE"
+        def modeDatapoints1 = assetDatapointService.queryDatapoints(
+                asset.getId(),
+                asset.getAttribute(attributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
+                new AssetDatapointIntervalQuery(queryTime30, queryTimeNow, "5 minutes", AssetDatapointIntervalQuery.Formula.MODE, true)
+        )
+
+        then: "MODE datapoints should be correct"
+        assert modeDatapoints1.size() == 6
+        assert modeDatapoints1[0].timestamp == time30.toEpochMilli()
+        assert modeDatapoints1[1].timestamp == time30.plus(5, ChronoUnit.MINUTES).toEpochMilli()
+        assert modeDatapoints1[2].timestamp == time30.plus(10, ChronoUnit.MINUTES).toEpochMilli()
+        assert modeDatapoints1[3].timestamp == time30.plus(15, ChronoUnit.MINUTES).toEpochMilli()
+        assert modeDatapoints1[4].timestamp == time30.plus(20, ChronoUnit.MINUTES).toEpochMilli()
+        assert modeDatapoints1[5].timestamp == time30.plus(25, ChronoUnit.MINUTES).toEpochMilli()
+        assert modeDatapoints1[0].value == 10
+        assert modeDatapoints1[1].value == 15
+        assert modeDatapoints1[2].value == 90
+        assert modeDatapoints1[3].value == 20
+        assert modeDatapoints1[4].value == 25
+        assert modeDatapoints1[5].value == 30
+
+        when: "requesting interval datapoints using MEDIAN"
+        def medianDatapoints1 = assetDatapointService.queryDatapoints(
+                asset.getId(),
+                asset.getAttribute(attributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
+                new AssetDatapointIntervalQuery(queryTime30, queryTimeNow, "15 minutes", AssetDatapointIntervalQuery.Formula.MEDIAN, true)
+        )
+
+        then: "MEDIAN datapoints should be correct"
+        assert medianDatapoints1.size() == 3 // Because 30/15=2, plus an extra datapoint for the spare milliseconds of time.
+        assert medianDatapoints1[0].timestamp == time30.toEpochMilli()
+        assert medianDatapoints1[1].timestamp == time30.plus(15, ChronoUnit.MINUTES).toEpochMilli()
+        assert medianDatapoints1[2].timestamp == timeNow.toEpochMilli()
+        assert medianDatapoints1[0].value == 15
+        assert medianDatapoints1[1].value == 25
+        assert medianDatapoints1[2].value == null // Spare milliseconds of time
+
+        when: "adding an additional datapoint of 90"
+        assetDatapointService.upsertValue(asset.getId(), attributeName, 90d, dateTime.minus(1, ChronoUnit.MINUTES))
+
+        and: "requesting interval datapoints using MODE with a full interval"
+        def modeDatapoints2 = assetDatapointService.queryDatapoints(
+                asset.getId(),
+                asset.getAttribute(attributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
+                new AssetDatapointIntervalQuery(queryTime30, queryTimeNow, "60 minutes", AssetDatapointIntervalQuery.Formula.MODE, true)
+        )
+
+        then: "MODE datapoints should return 90, because it is most common within the interval"
+        assert modeDatapoints2.size() == 1
+        assert modeDatapoints2[0].timestamp == time60.toEpochMilli()
+        assert modeDatapoints2[0].value == 90
     }
 
     def "All query should return the correct data when the maximum is respected"() {

@@ -22,7 +22,7 @@
     "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack --mode production",
     "serve": "npx tsc -b --clean && npx shx rm -rf dist lib && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
     "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"No tests\" && exit 0"
   },
   "dependencies": {
     "@openremote/or-app": "workspace:*"
