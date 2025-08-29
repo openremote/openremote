@@ -11,6 +11,7 @@
   ],
   "devDependencies": {
     "@openremote/test": "workspace:*",
-    "@openremote/util": "workspace:*"
+    "@openremote/util": "workspace:*",
+    "@rsbuild/core": "^1.5.1"
   }
 }

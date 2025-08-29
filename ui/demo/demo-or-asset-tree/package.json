@@ -7,8 +7,8 @@
     "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
-    "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack --mode production",
-    "serve": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
+    "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rsbuild build --mode production",
+    "serve": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rsbuild dev --mode development",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "OpenRemote",
@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",
+    "@rsbuild/core": "^1.5.1",
     "@rspack/cli": "^1.4.4",
     "@rspack/core": "^1.4.4",
     "typescript": "^5.3.3"
