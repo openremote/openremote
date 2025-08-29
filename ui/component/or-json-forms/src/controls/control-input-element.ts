@@ -10,7 +10,7 @@ import {
     isNumberControl,
     isOneOfEnumControl,
     isStringControl,
-    JsonSchema
+    JsonSchema7
 } from "@jsonforms/core";
 import {isEnumArray} from "../standard-renderers";
 import {getSchemaConst} from "../util";
@@ -83,19 +83,19 @@ export class ControlInputElement extends ControlBaseElement {
                     return [JSON.stringify(enm), String(enm)];
                 });
             } else if (isOneOfEnumControl(uischema, schema, context)) {
-                options = (schema.oneOf as JsonSchema[]).map(s => {
+                options = schema.oneOf!.map(s => {
                     return [JSON.stringify(s.const), String(s.const)];
                 })
             } else {
 
                 multiple = true;
 
-                if ((schema.items! as JsonSchema).oneOf!) {
-                    options = (schema.items! as JsonSchema).oneOf!.map(s => {
+                if ((schema.items! as JsonSchema7).oneOf!) {
+                    options = (schema.items! as JsonSchema7).oneOf!.map(s => {
                         return [JSON.stringify(s.const), String(s.const)];
                     })
                 } else {
-                    options = (schema.items! as JsonSchema).enum!.map(enm => {
+                    options = (schema.items! as JsonSchema7).enum!.map(enm => {
                         return [JSON.stringify(enm), String(enm)];
                     })
                 }

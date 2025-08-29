@@ -1,7 +1,7 @@
 import {
     computeLabel,
     createDefaultValue,
-    JsonSchema,
+    JsonSchema7,
     mapDispatchToArrayControlProps,
     OwnPropsOfRenderer,
     Paths,
@@ -16,11 +16,12 @@ import {i18next} from "@openremote/or-translate";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {addItemOrParameterDialogStyle, baseStyle, panelStyle} from "../styles";
-import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
+import {ListItem, ListType, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
 import {DefaultColor4, DefaultColor5} from "@openremote/core";
 import {ControlBaseElement} from "./control-base-element";
 import {getTemplateWrapper} from "../index";
 import {AdditionalProps} from "../base-element";
+import { when } from "lit/directives/when.js";
 
 // language=CSS
 const style = css`
@@ -84,7 +85,7 @@ export class ControlArrayElement extends ControlBaseElement {
 
     @property()
     protected minimal?: boolean;
-    protected resolvedSchema!: JsonSchema;
+    protected resolvedSchema!: JsonSchema7;
     protected itemInfos: CombinatorInfo[] | undefined;
     protected addItem!: (value: any) => void;
     protected removeItem!: (index: number) => void;
@@ -99,14 +100,14 @@ export class ControlArrayElement extends ControlBaseElement {
     }
 
     shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (_changedProperties.has("schema")) {
+        if (_changedProperties.has("schema") || (_changedProperties.has("state") && _changedProperties.get("state").i18n.locale !== this.state.i18n?.locale)) {
             this.itemInfos = undefined;
-            this.resolvedSchema = Resolve.schema(this.schema, 'items', this.rootSchema);
+            this.resolvedSchema = Resolve.schema(this.schema, 'items', this.rootSchema) as JsonSchema7;
 
             if (Array.isArray(this.resolvedSchema.anyOf)) {
                 this.itemInfos = getCombinatorInfos(this.resolvedSchema.anyOf, this.rootSchema);
             } else if (Array.isArray(this.resolvedSchema.oneOf)) {
-                this.itemInfos = getCombinatorInfos(this.resolvedSchema.oneOf, this.rootSchema);
+                this.itemInfos = getCombinatorInfos(this.resolvedSchema.oneOf, this.rootSchema, { jsonforms: this.state });
             }
         }
 
@@ -137,7 +138,6 @@ export class ControlArrayElement extends ControlBaseElement {
     }
 
     render() {
-
         const maxItems = this.schema.maxItems ?? Number.MAX_SAFE_INTEGER;
         const itemCount = Array.isArray(this.data) ? (this.data as []).length : 0;
 
@@ -279,9 +279,8 @@ export class ControlArrayElement extends ControlBaseElement {
     protected showAddDialog() {
 
         let selectedItemInfo: CombinatorInfo | undefined;
-
-        const listItems: ListItem[] = this.itemInfos!.map((itemInfo, index) => {
-            const labelStr = itemInfo.title ? computeLabel(itemInfo.title, false, true) : "";
+        const listItems: ListItem[] = this.itemInfos!.filter(e => !this.data.find((f: any) => f?.[e.constProperty ?? ''] === (e.constValue))).map((itemInfo) => {
+            const labelStr = itemInfo.title;
             return {
                 text: labelStr,
                 value: labelStr,
@@ -291,22 +290,34 @@ export class ControlArrayElement extends ControlBaseElement {
 
         const onParamChanged = (itemInfo: CombinatorInfo) => {
             selectedItemInfo = itemInfo;
-            const descElem = dialog.shadowRoot!.getElementById("parameter-desc") as HTMLDivElement;
-            descElem.innerHTML = itemInfo.description || "";
+            // const descElem = dialog.shadowRoot!.getElementById("parameter-desc") as HTMLDivElement;
+            // descElem.innerHTML = itemInfo.description || "";
             (dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput).disabled = false;
+            dialog.requestUpdate();
         };
 
-        const dialog = showDialog(new OrMwcDialog()
-            .setContent(html`
+        const dialogContentProvider: () => TemplateResult = () => {
+            return html`
                 <div class="col">
                     <form id="mdc-dialog-form-add" class="row">
                         <div id="type-list" class="col">
                             <or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) onParamChanged((evt.detail[0] as ListItem).data as CombinatorInfo); }}" .listItems="${listItems.sort((a, b) => a.text!.localeCompare(b.text!))}" id="parameter-list"></or-mwc-list>
                         </div>
-                        <div id="parameter-desc" class="col"></div>
+                        <div id="parameter-desc" class="col">
+                            <or-translate id="parameter-title" value="${selectedItemInfo?.title}"></or-translate>
+                            <p>${selectedItemInfo?.description}</p>
+                            ${when(selectedItemInfo && selectedItemInfo.examples.length > 0, () => html`
+                                Examples
+                                <ul>${selectedItemInfo?.examples.map((s) => html`<li>${s}</li>`)}</ul>
+                            `)}
+                        </div>
                     </form>
                 </div>
-            `)
+            `;
+        };
+
+        const dialog = showDialog(new OrMwcDialog()
+            .setContent(dialogContentProvider)
             .setStyles(addItemOrParameterDialogStyle)
             .setHeading((this.label ? computeLabel(this.label, this.required, false) + " - " : "") + i18next.t("addItem"))
             .setActions([

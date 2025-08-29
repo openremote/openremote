@@ -20,114 +20,559 @@
 package org.openremote.model.util;
 
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
-import com.kjetland.jackson.jsonSchema.JsonSchemaConfig;
-import com.kjetland.jackson.jsonSchema.JsonSchemaDraft;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
+import com.fasterxml.classmate.ResolvedType;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.jsonFormatVisitors.*;
+import com.fasterxml.jackson.databind.node.*;
+import com.github.victools.jsonschema.generator.*;
+import com.github.victools.jsonschema.generator.Module;
+import com.github.victools.jsonschema.generator.impl.module.SimpleTypeModule;
+import com.github.victools.jsonschema.module.jackson.JacksonModule;
+import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import com.github.victools.jsonschema.module.jackson.JsonSubTypesResolver;
+import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidationModule;
+import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidationOption;
+import org.reflections.Reflections;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
+import java.lang.annotation.*;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class JSONSchemaUtil {
 
-    @JsonSchemaInject(jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
-    static class PatternPropertiesAnyKeyAnyType {}
-    @JsonSchemaInject(jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_SIMPLE_KEY_ANY_TYPE)
-    static class PatternPropertiesSimpleKeyAnyType {}
-    @JsonSchemaInject(jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_ANY_TYPE)
-    static class AnyType {}
+    public static class SchemaNodeFactory {
 
-    private JSONSchemaUtil() {}
+        public static final String SCHEMA_SUPPLIER_NAME_ANY_TYPE = "anyType";
+        public static final String SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE = "patternPropertiesAnyKeyAnyType";
+        public static final String SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_SIMPLE_KEY_ANY_TYPE = "patternPropertiesSimpleKeyAnyType";
+        public static final String PATTERN_PROPERTIES_MATCH_ANY = ".+";
+        public static final String PATTERN_PROPERTIES_MATCH_SIMPLE = "^[a-zA-Z][a-zA-Z0-9]*";
+        public static final String[] TYPES_ALL = {
+            "null", "number", "integer", "boolean", "string", "array", "object"
+        };
 
-    public static final String SCHEMA_SUPPLIER_NAME_ANY_TYPE = "anyType";
-    public static final String SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE = "patternPropertiesAnyKeyAnyType";
-    public static final String SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_SIMPLE_KEY_ANY_TYPE = "patternPropertiesSimpleKeyAnyType";
-    public static final String PATTERN_PROPERTIES_MATCH_ANY = ".+";
-    public static final String PATTERN_PROPERTIES_MATCH_SIMPLE = "^[a-zA-Z][a-zA-Z0-9]*";
-    public static final String TYPE_NULL = "null";
-    public static final String TYPE_NUMBER = "number";
-    public static final String TYPE_INTEGER = "integer";
-    public static final String TYPE_BOOLEAN = "boolean";
-    public static final String TYPE_STRING = "string";
-    public static final String TYPE_ARRAY = "array";
-    public static final String TYPE_OBJECT = "object";
-    public static final String[] TYPES_ALL = new String[]{
-        TYPE_NULL,
-        TYPE_NUMBER,
-        TYPE_INTEGER,
-        TYPE_BOOLEAN,
-        TYPE_STRING,
-        TYPE_ARRAY,
-        TYPE_OBJECT
-    };
+        private static final JsonNodeFactory NF = JsonNodeFactory.instance;
 
-    public static JsonNode getSchemaPatternPropertiesAnyKeyAnyType() {
-        return getSchemaPatternProperties(PATTERN_PROPERTIES_MATCH_ANY, TYPES_ALL);
-    }
-
-    public static JsonNode getSchemaPatternPropertiesSimpleKeyAnyType() {
-        return getSchemaPatternProperties(PATTERN_PROPERTIES_MATCH_SIMPLE, TYPES_ALL);
-    }
-
-    public static JsonNode getSchemaPatternPropertiesAnyType(String keyPattern) {
-        return getSchemaPatternProperties(keyPattern, TYPES_ALL);
-    }
-
-    public static JsonNode getSchemaPatternProperties(String keyPattern, String...types) {
-        ObjectNode node = ValueUtil.JSON.createObjectNode();
-        node.put("type", "object");
-        ObjectNode patternNode = node.putObject("patternProperties").putObject(keyPattern);
-        patternNode.set("type", getSchemaType(false, types));
-        return node;
-    }
-
-    public static JsonNode getSchemaType(boolean wrapped, String...types) {
-        JsonNode typesNode;
-
-        if (types.length == 1) {
-            typesNode = new TextNode(types[0]);
-        } else {
-            ArrayNode arrNode = ValueUtil.JSON.createArrayNode();
-            Arrays.stream(types).forEach(arrNode::add);
-            typesNode = arrNode;
+        public static ObjectNode getSchemaPatternProperties(String keyPattern, String... types) {
+            ObjectNode node = NF.objectNode();
+            node.put("type", "object");
+            ObjectNode patternNode = node.putObject("patternProperties").putObject(keyPattern);
+            patternNode.set("type", getTypesNode(Arrays.asList(types)));
+            return node;
         }
 
-        return wrapped ? ValueUtil.JSON.createObjectNode().set("type", typesNode) : typesNode;
+        public static ObjectNode getSchemaPatternPropertiesAnyKeyAnyType() {
+            return getSchemaPatternProperties(PATTERN_PROPERTIES_MATCH_ANY, TYPES_ALL);
+        }
+
+        public static ObjectNode getSchemaPatternPropertiesSimpleKeyAnyType() {
+            return getSchemaPatternProperties(PATTERN_PROPERTIES_MATCH_SIMPLE, TYPES_ALL);
+        }
+
+        public static JsonNode getTypesNode(List<String> types) {
+            if (types.size() == 1) {
+                return NF.textNode(types.getFirst());
+            }
+            ArrayNode arr = NF.arrayNode();
+            types.forEach(arr::add);
+            return arr;
+        }
+
+        public static ObjectNode getSchemaType(String... types) {
+            return NF.objectNode().set("type", getTypesNode(Arrays.asList(types)));
+        }
     }
 
-    public static JsonSchemaConfig getJsonSchemaConfig() {
-        return JsonSchemaConfig.create(
-            false,
-            Optional.empty(),
-            false,
-            false,
-            false,
-            false,
-            false,
-            false,
-            false,
-            Collections.emptyMap(),
-            false,
-            Collections.emptySet(),
-            Map.of(
-                Object.class, AnyType.class,
-                ObjectNode.class, PatternPropertiesSimpleKeyAnyType.class
-            ),
-            Map.of(
-                SCHEMA_SUPPLIER_NAME_ANY_TYPE, () -> getSchemaType(true, TYPES_ALL),
-                SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE, JSONSchemaUtil::getSchemaPatternPropertiesAnyKeyAnyType,
-                SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_SIMPLE_KEY_ANY_TYPE, JSONSchemaUtil::getSchemaPatternPropertiesSimpleKeyAnyType
-            ),
-            null,
-            false,
-            null,
-            null,
-            true
-        ).withJsonSchemaDraft(JsonSchemaDraft.DRAFT_07);
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.FIELD})
+    public @interface JsonSchemaTitle {
+        String keyword() default "title";
+        String value();
+        /* Whether to put the title on the root of the schema even when the class is wrapped in an array. */
+        boolean container() default true;
+        boolean i18n() default true;
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.FIELD})
+    public @interface JsonSchemaDescription {
+        String keyword() default "description";
+        String value();
+        boolean container() default true;
+        boolean i18n() default true;
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.FIELD})
+    public @interface JsonSchemaFormat {
+        String keyword() default "format";
+        String value();
+        boolean container() default true;
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.FIELD})
+    public @interface JsonSchemaDefault {
+        String keyword() default "default";
+        String value();
+        boolean container() default true;
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.FIELD})
+    public @interface JsonSchemaExamples {
+        String keyword() default "examples";
+        String[] value();
+        boolean container() default true;
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.FIELD})
+    public @interface JsonSchemaTypeRemap {
+        Class<?> type();
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.FIELD})
+    public @interface JsonSchemaSupplier {
+        String supplier();
+    }
+
+    private static void setFormat(ObjectNode node, String format) {
+        node.put("format", format);
+    }
+
+    public static class CustomModule implements Module {
+
+        private static final ConcurrentHashMap<Class<?>, List<ResolvedType>> subtypeCache = new ConcurrentHashMap<>();
+        private static final Reflections reflections = new Reflections("org.openremote");
+
+        @Override
+        public void applyToConfigBuilder(SchemaGeneratorConfigBuilder builder) {
+            // Set title on root of schema
+            JSONSchemaTitleProvider titleProvider = new JSONSchemaTitleProvider();
+            builder.forTypesInGeneral()
+                .withCustomDefinitionProvider(titleProvider)
+                .withTypeAttributeOverride(titleProvider);
+
+            // Primitive types cannot be null thus they are always required
+            builder.forFields().withRequiredCheck((f) -> f.getType().getErasedType().isPrimitive());
+
+            // Remap Byte to type integer, see https://github.com/victools/jsonschema-generator/blob/995a71eaf7a9a05cc2e335f8a7821b4a9019fa1b/CHANGELOG.md?plain=1#L530
+            builder.with(new SimpleTypeModule().withIntegerType(Byte.class));
+
+            // Apply additionalProperties true to all object values that haven't already set additionalProperties
+            builder.forTypesInGeneral().withTypeAttributeOverride((attrs, typeScope, context) -> {
+                String typeKey = context.getKeyword(SchemaKeyword.TAG_TYPE);
+                String additionalPropertiesKey = context.getKeyword(SchemaKeyword.TAG_ADDITIONAL_PROPERTIES);
+                if (attrs.has(typeKey) && !attrs.has(additionalPropertiesKey) && Objects.equals(attrs.get(typeKey).textValue(), "object")) {
+                    attrs.put(additionalPropertiesKey, Boolean.TRUE);
+                }
+            });
+
+            // General direct class type remapping
+            builder.forTypesInGeneral()
+                .withCustomDefinitionProvider((resolvedType, context) -> {
+                    Class<?> erasedType = resolvedType.getErasedType();
+                    // Does not behave like before where this is the fallback if a class could not be resolved
+                    if (erasedType.equals(Object.class)) {
+                        return new CustomDefinition(SchemaNodeFactory.getSchemaType(SchemaNodeFactory.TYPES_ALL));
+                    }
+                    if (erasedType.equals(ObjectNode.class)) {
+                        return new CustomDefinition(SchemaNodeFactory.getSchemaPatternPropertiesSimpleKeyAnyType());
+                    }
+                    return null;
+                });
+
+            // Field type remapping
+            builder.forFields()
+                // direct class to class mapping through annotations
+                .withTargetTypeOverridesResolver(this::remapFieldType)
+                // remapping using supplier through annotations
+                .withCustomDefinitionProvider((fieldScope, context) -> {
+                    JsonSchemaSupplier ann = fieldScope.getAnnotation(JsonSchemaSupplier.class);
+                    if (ann != null) {
+                        try {
+                            switch (ann.getClass().getMethod("supplier").invoke(ann).toString()) {
+                                case SchemaNodeFactory.SCHEMA_SUPPLIER_NAME_ANY_TYPE:
+                                    return new CustomPropertyDefinition(SchemaNodeFactory.getSchemaType(SchemaNodeFactory.TYPES_ALL));
+                                case SchemaNodeFactory.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE:
+                                    return new CustomPropertyDefinition(SchemaNodeFactory.getSchemaPatternPropertiesAnyKeyAnyType());
+                                case SchemaNodeFactory.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_SIMPLE_KEY_ANY_TYPE:
+                                    return new CustomPropertyDefinition(SchemaNodeFactory.getSchemaPatternPropertiesSimpleKeyAnyType());
+                            }
+                        } catch (Exception e) {
+                            throw new RuntimeException("Failed to apply " + ann.getClass().getSimpleName(), e);
+                        }
+                    }
+                    return null;
+                });
+
+            // Class subtype resolver for abstract classes
+            builder.forTypesInGeneral().withCustomDefinitionProvider((resolvedType, context) -> {
+                List<ResolvedType> subTypes = findSubtypes(resolvedType, context);
+                if (subTypes == null || subTypes.isEmpty()) {
+                    return null;
+                }
+
+                ObjectNode definition = context.getGeneratorConfig().createObjectNode();
+                ArrayNode oneOfArray = definition.withArray(context.getKeyword(SchemaKeyword.TAG_ONEOF));
+
+                for (ResolvedType subType : subTypes) {
+                    oneOfArray.add(context.createDefinitionReference(subType));
+                }
+
+                return new CustomDefinition(definition, CustomDefinition.DefinitionType.STANDARD, CustomDefinition.AttributeInclusion.NO);
+            });
+
+            // Set the default keyword for subtypes so AJV in the frontend can tell jsonforms/core to consider the
+            // subtype schema valid
+            builder.forTypesInGeneral().withTypeAttributeOverride((attrs, typeScope, context) -> {
+                Class<?> erasedType = typeScope.getType().getErasedType();
+                if (erasedType.getSuperclass() == Object.class) {
+                    return;
+                }
+                addDefaultToDiscriminator(attrs, context);
+            });
+
+            // Effectively disable const generation (on the root of subtypes)
+            builder.forTypesInGeneral().withEnumResolver(typeScope -> null);
+
+            // Custom annotations injection
+            builder.forTypesInGeneral().withTypeAttributeOverride((attrs, typeScope, context) -> {
+                Class<?> erasedType = typeScope.getType().getErasedType();
+                ObjectMapper mapper = context.getGeneratorConfig().getObjectMapper();
+
+                ObjectNode targetNode;
+
+                // If there is an allOf array, inject into the first object inside it to allow for cleanup with `Option.ALLOF_CLEANUP_AT_THE_END`
+                JsonNode allOfNode = attrs.get(context.getKeyword(SchemaKeyword.TAG_ALLOF));
+                if (allOfNode instanceof ArrayNode allOf && !allOf.isEmpty()) {
+                    targetNode = (ObjectNode) allOf.get(0);
+                } else {
+                    targetNode = attrs;
+                }
+
+                applyTypeAnnotation(erasedType, JsonSchemaTitle.class, targetNode, mapper);
+                applyTypeAnnotation(erasedType, JsonSchemaDescription.class, targetNode, mapper);
+                applyTypeAnnotation(erasedType, JsonSchemaFormat.class, targetNode, mapper);
+                applyTypeAnnotation(erasedType, JsonSchemaDefault.class, targetNode, mapper);
+                applyTypeAnnotation(erasedType, JsonSchemaExamples.class, targetNode, mapper);
+
+                // TODO: Is it possible to avoid object merging here?
+                if (attrs.has(context.getKeyword(SchemaKeyword.TAG_TYPE))) {
+                    applyI18nAnnotation(erasedType.getAnnotation(JsonSchemaTitle.class), JsonSchemaTitle.class, erasedType.getCanonicalName(), attrs);
+                    applyI18nAnnotation(erasedType.getAnnotation(JsonSchemaDescription.class), JsonSchemaDescription.class, erasedType.getCanonicalName(), attrs);
+                }
+            });
+
+            builder.forFields().withInstanceAttributeOverride((attrs, fieldScope, context) -> {
+                ObjectMapper mapper = context.getGeneratorConfig().getObjectMapper();
+
+                // Avoids annotation also being applied to the `items` in an array. See https://victools.github.io/jsonschema-generator/#generator-individual-configurations
+                if (!fieldScope.isFakeContainerItemScope()) {
+                    applyFieldAnnotation(fieldScope, JsonSchemaTitle.class, attrs, mapper);
+                    applyFieldAnnotation(fieldScope, JsonSchemaDescription.class, attrs, mapper);
+                    applyFieldAnnotation(fieldScope, JsonSchemaFormat.class, attrs, mapper);
+                    applyFieldAnnotation(fieldScope, JsonSchemaDefault.class, attrs, mapper);
+                    applyFieldAnnotation(fieldScope, JsonSchemaExamples.class, attrs, mapper);
+
+                    String key = fieldScope.getMember().getDeclaringType().getErasedType().getCanonicalName() + "." + fieldScope.getMember().getName();
+                    applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaTitle.class), JsonSchemaTitle.class, key, attrs);
+                    applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaDescription.class), JsonSchemaDescription.class, key, attrs);
+                }
+            });
+
+            // Apply Jackson serializers
+            builder.forTypesInGeneral().withCustomDefinitionProvider((resolvedType, context) -> {
+                ObjectNode node = JsonNodeFactory.instance.objectNode();
+                ObjectMapper mapper = builder.getObjectMapper();
+                JavaType javaType = mapper.constructType(resolvedType.getErasedType());
+
+                try {
+                    JsonFormatVisitorWrapper visitor = new JsonFormatVisitorWrapper.Base() {
+                        @Override
+                        public JsonStringFormatVisitor expectStringFormat(JavaType type) throws JsonMappingException {
+                            node.put("type", "string");
+                            return new JsonStringFormatVisitor() {
+                                public void format(JsonValueFormat format) {
+                                    setFormat(node, format.toString());
+                                }
+                                // TODO:
+                                public void enumTypes(Set<String> enums) {}
+                            };
+                        }
+
+                        @Override
+                        public JsonNumberFormatVisitor expectNumberFormat(JavaType type) throws JsonMappingException {
+                            node.put("type", "number");
+                            return new JsonNumberFormatVisitor() {
+                                public void numberType(JsonParser.NumberType numberType) {}
+                                public void format(JsonValueFormat format) {
+                                    setFormat(node, format.toString());
+                                }
+                                // TODO:
+                                public void enumTypes(Set<String> enums) {}
+                            };
+                        }
+
+                        @Override
+                        public JsonIntegerFormatVisitor expectIntegerFormat(JavaType type) throws JsonMappingException {
+                            node.put("type", "integer");
+                            return new JsonIntegerFormatVisitor() {
+                                public void numberType(JsonParser.NumberType numberType) {}
+                                public void format(JsonValueFormat format) {
+                                    setFormat(node, format.toString());
+                                }
+                                // TODO:
+                                public void enumTypes(Set<String> enums) {}
+                            };
+                        }
+
+                        @Override
+                        public JsonBooleanFormatVisitor expectBooleanFormat(JavaType type) throws JsonMappingException {
+                            node.put("type", "boolean");
+                            return new JsonBooleanFormatVisitor() {
+                                public void format(JsonValueFormat format) {
+                                    setFormat(node, format.toString());
+                                }
+                                // TODO:
+                                public void enumTypes(Set<String> enums) {}
+                            };
+                        }
+                    };
+
+                    // Let Jackson traverse the type and call the visitor
+                    mapper.acceptJsonFormatVisitor(javaType, visitor);
+
+                    if (node.has("type")) {
+                        return new CustomDefinition(node, CustomDefinition.DefinitionType.INLINE, CustomDefinition.AttributeInclusion.NO);
+                    }
+                } catch (Exception ignored) {}
+                return null;
+            });
+        }
+
+        private static class JSONSchemaTitleProvider implements CustomDefinitionProviderV2, TypeAttributeOverrideV2 {
+            private ResolvedType rootType;
+
+            @Override
+            public CustomDefinition provideCustomSchemaDefinition(ResolvedType javaType, SchemaGenerationContext context) {
+                if (this.rootType == null) {
+                    this.rootType = javaType;
+                }
+                return null;
+            }
+
+            /**
+             * Matches <a href="https://github.com/mbknor/mbknor-jackson-jsonSchema/blob/e370f80d5dd20eb9396455ab2ddfd7083d0e25fb/src/main/scala/com/kjetland/jackson/jsonSchema/JsonSchemaGenerator.scala#L1355">
+             *     mbknor-jackson-jsonSchema
+             * </a>
+             * @param attrs node to modify (the part that may be referenced multiple times)
+             * @param scope the type representation associated with the JSON Schema node
+             * @param context generation context
+             */
+            @Override
+            public void overrideTypeAttributes(ObjectNode attrs, TypeScope scope, SchemaGenerationContext context) {
+                if (this.rootType == scope.getType()) {
+                    String rawName = rootType.getErasedType().getSimpleName();
+                    // Code found here: http://stackoverflow.com/questions/2559759/how-do-i-convert-camelcase-into-human-readable-names-in-java
+                    String v = rawName.replaceAll(
+                        String.format("%s|%s|%s",
+                            "(?<=[A-Z])(?=[A-Z][a-z])",
+                            "(?<=[^A-Z])(?=[A-Z])",
+                            "(?<=[A-Za-z])(?=[^A-Za-z])"
+                        ),
+                        " ");
+                    // Make the first letter uppercase
+                    attrs.put(context.getKeyword(SchemaKeyword.TAG_TITLE), v.substring(0,1).toUpperCase() + v.substring(1));
+                }
+            }
+
+            @Override
+            public void resetAfterSchemaGenerationFinished() {
+                this.rootType = null;
+            }
+        }
+
+        /**
+         * Find and modify the main subtype object under the {@code allOf} keyword of a subtype to add a {@code default}
+         * property alongside the {@code const} discriminator property.
+         * @param attrs The {@link ObjectNode} representation of the subtype
+         * @param context The schema generator {@link SchemaGenerationContext}
+         */
+        private void addDefaultToDiscriminator(ObjectNode attrs, SchemaGenerationContext context) {
+            JsonNode allOfNode = attrs.get(context.getKeyword(SchemaKeyword.TAG_ALLOF));
+            if (!(allOfNode instanceof ArrayNode allOf)) {
+                JsonNode props = attrs.get(context.getKeyword(SchemaKeyword.TAG_PROPERTIES));
+                if (props instanceof ObjectNode propsObj) {
+                    // Remove type property on type property for subtypes to enable definition merging
+                    propsObj.remove(context.getKeyword(SchemaKeyword.TAG_TYPE));
+                }
+                return;
+            }
+
+            for (JsonNode node : allOf) {
+                JsonNode props = node.get(context.getKeyword(SchemaKeyword.TAG_PROPERTIES));
+                if (!(props instanceof ObjectNode propsObj)) {
+                    continue;
+                }
+
+                JsonNode typeNode = propsObj.get(context.getKeyword(SchemaKeyword.TAG_TYPE));
+                if (typeNode instanceof ObjectNode typeProp) {
+
+                    String constKey = context.getKeyword(SchemaKeyword.TAG_CONST);
+                    String defaultKey = context.getKeyword(SchemaKeyword.TAG_DEFAULT);
+                    if (typeProp.has(constKey) && !typeProp.has(defaultKey)) {
+                        typeProp.put(defaultKey, typeProp.get(constKey).asText());
+                    }
+                }
+            }
+        }
+
+        private List<ResolvedType> remapFieldType(FieldScope fieldScope) {
+            JsonSchemaTypeRemap ann = fieldScope.getAnnotation(JsonSchemaTypeRemap.class);
+            if (ann != null) {
+                try {
+                    return Collections.singletonList(fieldScope.getContext().resolve((Type) ann.getClass().getMethod("type").invoke(ann)));
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to apply " + ann.getClass().getSimpleName(), e);
+                }
+            }
+            return null;
+        }
+
+        private static <A extends Annotation> void applyTypeAnnotation(
+                Class<?> type,
+                Class<A> annotationClass,
+                ObjectNode schema,
+                ObjectMapper mapper
+        ) {
+            A annotation;
+
+            if (type.isArray() && type.getComponentType() != null) {
+                annotation = type.getComponentType().getDeclaredAnnotation(annotationClass);
+
+                // TODO: handle titles separately here (make plural instead.)
+            } else {
+                annotation = type.getDeclaredAnnotation(annotationClass);
+            }
+
+            if (annotation != null) {
+                applyAnnotation(annotationClass, annotation, schema, mapper);
+            }
+        }
+
+        private static <A extends Annotation> void applyFieldAnnotation(
+                FieldScope fieldScope,
+                Class<A> annotationClass,
+                ObjectNode schema,
+                ObjectMapper mapper
+        ) {
+            A annotation = fieldScope.getAnnotation(annotationClass);
+            if (annotation != null) {
+                applyAnnotation(annotationClass, annotation, schema, mapper);
+            };
+        }
+
+        private static <A extends Annotation> void applyAnnotation(Class<?> annotationClass, A annotation, ObjectNode schema, ObjectMapper mapper) {
+            try {
+                String keyword = (String) annotationClass.getMethod("keyword").invoke(annotation);
+                Method valueMethod = annotationClass.getMethod("value");
+                Class<?> returnType = valueMethod.getReturnType();
+                Object value = valueMethod.invoke(annotation);
+
+                if (returnType.isArray()) {
+                    ArrayNode arrayNode = schema.putArray(keyword);
+                    for (Object element : (Object[]) value) {
+                        arrayNode.add(parseJsonOrString(mapper, element.toString()));
+                    }
+                } else {
+                    schema.set(keyword, parseJsonOrString(mapper, value.toString()));
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to apply annotation " + annotationClass.getSimpleName(), e);
+            }
+        }
+
+        private static JsonNode parseJsonOrString(ObjectMapper mapper, String input) {
+            try {
+                return mapper.readTree(input);
+            } catch (Exception e) {
+                return new TextNode(input);
+            }
+        }
+
+        // TODO: handle other annotations from Jackson (or replace existing annotations)
+        private static <A extends Annotation> void applyI18nAnnotation(A annotation, Class<?> annotationClass, String key, ObjectNode schema) {
+            try {
+                if (annotation != null && (boolean)annotationClass.getMethod("i18n").invoke(annotation)) {
+                    schema.set("i18n", new TextNode(key));
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to apply i18n annotation " + annotationClass.getSimpleName(), e);
+            }
+        }
+
+        private static List<ResolvedType> findSubtypes(ResolvedType resolvedType, SchemaGenerationContext context) {
+            Class<?> rawType = resolvedType.getErasedType();
+
+            // Only attempt subtype discovery if @JsonTypeInfo is present
+            if (!rawType.isAnnotationPresent(JsonTypeInfo.class)) {
+                return null;
+            }
+
+            // Reuse Jackson Module JsonSubTypesResolver to get explicitly declared types
+            if (rawType.isAnnotationPresent(JsonSubTypes.class)) {
+                return new JsonSubTypesResolver().findSubtypes(resolvedType, context);
+            }
+
+            // Cached lookup
+            return subtypeCache.computeIfAbsent(rawType, baseType -> {
+                Set<Class<?>> found = reflections.getSubTypesOf(baseType)
+                    .stream()
+                    .filter(c -> !Modifier.isAbstract(c.getModifiers()))
+                    .collect(Collectors.toSet());
+
+                return found.stream()
+                    .map(sub -> context.getTypeContext().resolveSubtype(resolvedType, sub))
+                    .collect(Collectors.toList());
+            });
+        }
+    }
+
+    public static SchemaGeneratorConfig getJsonSchemaConfig(ObjectMapper mapper) {
+        return new SchemaGeneratorConfigBuilder(mapper, SchemaVersion.DRAFT_7, new OptionPreset(
+            Option.SCHEMA_VERSION_INDICATOR,
+            Option.ADDITIONAL_FIXED_TYPES,
+            Option.FLATTENED_ENUMS,
+            Option.VALUES_FROM_CONSTANT_FIELDS,
+            Option.PUBLIC_NONSTATIC_FIELDS,
+            Option.NONPUBLIC_NONSTATIC_FIELDS_WITH_GETTERS,
+            Option.MAP_VALUES_AS_ADDITIONAL_PROPERTIES,
+            Option.ALLOF_CLEANUP_AT_THE_END,
+            Option.DUPLICATE_MEMBER_ATTRIBUTE_CLEANUP_AT_THE_END
+        ))
+        .with(new JacksonModule(
+            JacksonOption.ALWAYS_REF_SUBTYPES,
+            // Disable subtype lookup in Jackson module, as we handle this ourselves to replace anyOf with oneOf
+            JacksonOption.SKIP_SUBTYPE_LOOKUP,
+            JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
+            JacksonOption.FLATTENED_ENUMS_FROM_JSONPROPERTY,
+            JacksonOption.FLATTENED_ENUMS_FROM_JSONVALUE
+        ))
+        .with(new JakartaValidationModule(
+            JakartaValidationOption.INCLUDE_PATTERN_EXPRESSIONS,
+            JakartaValidationOption.NOT_NULLABLE_FIELD_IS_REQUIRED
+        ))
+        .with(new CustomModule())
+        .build();
     }
 }

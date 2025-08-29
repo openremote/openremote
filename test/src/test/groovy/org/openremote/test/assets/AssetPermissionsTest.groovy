@@ -11,6 +11,7 @@ import org.openremote.model.attribute.*
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.ParentPredicate
 import org.openremote.model.query.filter.RealmPredicate
+import org.openremote.model.value.Units
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
@@ -647,7 +648,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         resultMeta.has(AGENT_LINK)
         resultMeta.getValue(ACCESS_RESTRICTED_READ).orElse(false)
         resultMeta.getValue(UNITS).isPresent()
-        resultMeta.getValue(UNITS).get()[0] == UNITS_CELSIUS
+        resultMeta.getValue(UNITS).get()[0] == Units.CELSIUS
 
         when: "an asset is retrieved by ID in a foreign realm"
         assetResource.get(null, managerTestSetup.thingId)
