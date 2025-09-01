@@ -90,6 +90,9 @@ on:
         SECRETS:
           required: false
 
+permissions:
+  id-token: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -533,14 +536,8 @@ jobs:
         if: ${{ steps.manager-docker-command.outputs.pushRequired != 'true' }}
         uses: aws-actions/configure-aws-credentials@v4.3.1
         with:
-          aws-access-key-id: ${{ secrets._TEMP_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets._TEMP_AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-1
-          role-to-assume: ${{ secrets._TEMP_AWS_ROLE_NAME }}
-          role-duration-seconds: 1200
-          role-session-name: PushToECR
-
-
+          role-to-assume: "arn:aws:iam::134517981306:role/GHActionECRPush"
 
       - name: Login to private ECR
         if: ${{ steps.manager-docker-command.outputs.pushRequired != 'true' }}
