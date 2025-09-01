@@ -44,8 +44,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
  * of external services and microservices through the OpenRemote manager.
  * 
  * Registered services are made available via the OpenRemote manager's Web UI
- * and API,
- * enabling centralized service management and monitoring.
+ * and API, enabling centralized service management and monitoring.
  */
 @Tag(name = "Services", description = "Registration and management of microservices/external services")
 @Path("service")
