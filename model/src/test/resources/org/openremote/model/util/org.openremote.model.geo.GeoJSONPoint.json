@@ -2,22 +2,9 @@
   "$schema" : "http://json-schema.org/draft-07/schema#",
   "title" : "Geo JSON Point",
   "type" : "object",
-  "additionalProperties" : true,
   "properties" : {
-    "type" : {
-      "type" : "string",
-      "enum" : [ "Point" ],
-      "default" : "Point"
-    },
     "coordinates" : {
-      "$ref" : "#/definitions/Coordinate"
-    }
-  },
-  "required" : [ "type" ],
-  "definitions" : {
-    "Coordinate" : {
       "type" : "object",
-      "additionalProperties" : true,
       "properties" : {
         "x" : {
           "type" : "number"
@@ -29,7 +16,14 @@
           "type" : "number"
         }
       },
-      "required" : [ "x", "y", "z" ]
+      "required" : [ "x", "y", "z" ],
+      "additionalProperties" : true
+    },
+    "type" : {
+      "const" : "Point",
+      "default" : "Point"
     }
-  }
+  },
+  "additionalProperties" : true,
+  "required" : [ "type" ]
 }

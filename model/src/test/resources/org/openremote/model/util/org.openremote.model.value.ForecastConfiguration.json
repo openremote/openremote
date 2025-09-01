@@ -1,39 +1,44 @@
 {
   "$schema" : "http://json-schema.org/draft-07/schema#",
-  "title" : "Forecast Configuration",
-  "oneOf" : [ {
-    "$ref" : "#/definitions/wea"
-  } ],
   "definitions" : {
-    "wea" : {
+    "ForecastConfigurationWeightedExponentialAverage" : {
+      "title" : "Weighted Exponential Average",
       "type" : "object",
-      "additionalProperties" : true,
       "properties" : {
-        "type" : {
-          "type" : "string",
-          "enum" : [ "wea" ],
-          "default" : "wea"
-        },
-        "pastPeriod" : {
-          "type" : "string"
-        },
-        "pastCount" : {
-          "type" : "integer"
+        "forecastCount" : {
+          "type" : "integer",
+          "exclusiveMinimum" : 0,
+          "title" : "Forecast count",
+          "i18n" : "org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage.forecastCount"
         },
         "forecastPeriod" : {
-          "type" : "string"
+          "type" : "string",
+          "title" : "Forecast period",
+          "i18n" : "org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage.forecastPeriod"
         },
-        "forecastCount" : {
-          "type" : "integer"
+        "pastCount" : {
+          "type" : "integer",
+          "exclusiveMinimum" : 0,
+          "title" : "Past count",
+          "i18n" : "org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage.pastCount"
+        },
+        "pastPeriod" : {
+          "type" : "string",
+          "title" : "Past period",
+          "i18n" : "org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage.pastPeriod"
+        },
+        "type" : {
+          "const" : "wea",
+          "default" : "wea"
         }
       },
-      "title" : "wea",
-      "required" : [ "type", "pastPeriod", "pastCount", "forecastPeriod", "forecastCount" ]
-    },
-    "ExtendedPeriodAndDuration" : {
-      "type" : "object",
+      "required" : [ "forecastCount", "forecastPeriod", "pastCount", "pastPeriod", "type" ],
       "additionalProperties" : true,
-      "properties" : { }
+      "i18n" : "org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage"
     }
-  }
+  },
+  "oneOf" : [ {
+    "$ref" : "#/definitions/ForecastConfigurationWeightedExponentialAverage"
+  } ],
+  "title" : "Forecast Configuration"
 }
