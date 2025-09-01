@@ -1,131 +1,9 @@
 {
   "$schema" : "http://json-schema.org/draft-07/schema#",
-  "title" : "Value Constraint",
-  "oneOf" : [ {
-    "$ref" : "#/definitions/size"
-  }, {
-    "$ref" : "#/definitions/pattern"
-  }, {
-    "$ref" : "#/definitions/min"
-  }, {
-    "$ref" : "#/definitions/max"
-  }, {
-    "$ref" : "#/definitions/allowedValues"
-  }, {
-    "$ref" : "#/definitions/past"
-  }, {
-    "$ref" : "#/definitions/pastOrPresent"
-  }, {
-    "$ref" : "#/definitions/future"
-  }, {
-    "$ref" : "#/definitions/futureOrPresent"
-  }, {
-    "$ref" : "#/definitions/notEmpty"
-  }, {
-    "$ref" : "#/definitions/notBlank"
-  }, {
-    "$ref" : "#/definitions/notNull"
-  } ],
   "definitions" : {
-    "size" : {
+    "AllowedValues" : {
       "type" : "object",
-      "additionalProperties" : true,
       "properties" : {
-        "type" : {
-          "type" : "string",
-          "enum" : [ "size" ],
-          "default" : "size"
-        },
-        "min" : {
-          "type" : "integer"
-        },
-        "max" : {
-          "type" : "integer"
-        },
-        "message" : {
-          "type" : "string",
-          "i18n" : "schema.meta.constraint.message"
-        }
-      },
-      "title" : "size",
-      "required" : [ "type", "min", "max" ]
-    },
-    "pattern" : {
-      "type" : "object",
-      "additionalProperties" : true,
-      "properties" : {
-        "type" : {
-          "type" : "string",
-          "enum" : [ "pattern" ],
-          "default" : "pattern"
-        },
-        "regexp" : {
-          "type" : "string"
-        },
-        "flags" : {
-          "type" : "array",
-          "items" : {
-            "type" : "string",
-            "enum" : [ "UNIX_LINES", "CASE_INSENSITIVE", "COMMENTS", "MULTILINE", "DOTALL", "UNICODE_CASE", "CANON_EQ" ]
-          }
-        },
-        "message" : {
-          "type" : "string",
-          "i18n" : "schema.meta.constraint.message"
-        }
-      },
-      "title" : "pattern",
-      "required" : [ "type", "regexp" ]
-    },
-    "min" : {
-      "type" : "object",
-      "additionalProperties" : true,
-      "properties" : {
-        "type" : {
-          "type" : "string",
-          "enum" : [ "min" ],
-          "default" : "min"
-        },
-        "min" : {
-          "type" : "number"
-        },
-        "message" : {
-          "type" : "string",
-          "i18n" : "schema.meta.constraint.message"
-        }
-      },
-      "title" : "min",
-      "required" : [ "type", "min" ]
-    },
-    "max" : {
-      "type" : "object",
-      "additionalProperties" : true,
-      "properties" : {
-        "type" : {
-          "type" : "string",
-          "enum" : [ "max" ],
-          "default" : "max"
-        },
-        "max" : {
-          "type" : "number"
-        },
-        "message" : {
-          "type" : "string",
-          "i18n" : "schema.meta.constraint.message"
-        }
-      },
-      "title" : "max",
-      "required" : [ "type", "max" ]
-    },
-    "allowedValues" : {
-      "type" : "object",
-      "additionalProperties" : true,
-      "properties" : {
-        "type" : {
-          "type" : "string",
-          "enum" : [ "allowedValues" ],
-          "default" : "allowedValues"
-        },
         "allowedValueNames" : {
           "type" : "array",
           "items" : {
@@ -135,144 +13,227 @@
         "allowedValues" : {
           "type" : "array",
           "items" : {
-            "$ref" : "#/definitions/AnyType"
+            "title" : "Any Type",
+            "type" : [ "null", "number", "integer", "boolean", "string", "array", "object" ],
+            "additionalProperties" : true
           }
         },
         "message" : {
-          "type" : "string",
-          "i18n" : "schema.meta.constraint.message"
-        }
-      },
-      "title" : "allowedValues",
-      "required" : [ "type", "allowedValues" ]
-    },
-    "AnyType" : {
-      "type" : [ "null", "number", "integer", "boolean", "string", "array", "object" ],
-      "additionalProperties" : true,
-      "properties" : { }
-    },
-    "past" : {
-      "type" : "object",
-      "additionalProperties" : true,
-      "examples" : [ "2025-04-18", "2025-04-18T14:30:00Z", "2025-04-18T14:30:00+02:00", "2025-04-18T14:30:00.123Z", "2025-04-18T14:30:00.456-05:00", "1713442200456" ],
-      "properties" : {
-        "type" : {
-          "type" : "string",
-          "enum" : [ "past" ],
-          "default" : "past"
+          "type" : "string"
         },
-        "message" : {
-          "type" : "string",
-          "i18n" : "schema.meta.constraint.message"
+        "type" : {
+          "const" : "allowedValues",
+          "default" : "allowedValues"
         }
       },
-      "title" : "past",
-      "required" : [ "type" ]
+      "required" : [ "allowedValues", "type" ],
+      "additionalProperties" : true
     },
-    "pastOrPresent" : {
+    "Future" : {
       "type" : "object",
-      "additionalProperties" : true,
-      "examples" : [ "2025-04-18", "2025-04-18T14:30:00Z", "2025-04-18T14:30:00+02:00", "2025-04-18T14:30:00.123Z", "2025-04-18T14:30:00.456-05:00", "1713442200456" ],
       "properties" : {
-        "type" : {
-          "type" : "string",
-          "enum" : [ "pastOrPresent" ],
-          "default" : "pastOrPresent"
+        "message" : {
+          "type" : "string"
         },
-        "message" : {
-          "type" : "string",
-          "i18n" : "schema.meta.constraint.message"
-        }
-      },
-      "title" : "pastOrPresent",
-      "required" : [ "type" ]
-    },
-    "future" : {
-      "type" : "object",
-      "additionalProperties" : true,
-      "examples" : [ "2025-04-18", "2025-04-18T14:30:00Z", "2025-04-18T14:30:00+02:00", "2025-04-18T14:30:00.123Z", "2025-04-18T14:30:00.456-05:00", "1713442200456" ],
-      "properties" : {
         "type" : {
-          "type" : "string",
-          "enum" : [ "future" ],
+          "const" : "future",
           "default" : "future"
-        },
-        "message" : {
-          "type" : "string",
-          "i18n" : "schema.meta.constraint.message"
         }
       },
-      "title" : "future",
-      "required" : [ "type" ]
-    },
-    "futureOrPresent" : {
-      "type" : "object",
       "additionalProperties" : true,
-      "examples" : [ "2025-04-18", "2025-04-18T14:30:00Z", "2025-04-18T14:30:00+02:00", "2025-04-18T14:30:00.123Z", "2025-04-18T14:30:00.456-05:00", "1713442200456" ],
+      "required" : [ "type" ],
+      "examples" : [ "2025-04-18", "2025-04-18T14:30:00Z", "2025-04-18T14:30:00+02:00", "2025-04-18T14:30:00.123Z", "2025-04-18T14:30:00.456-05:00", 1713442200456 ]
+    },
+    "FutureOrPresent" : {
+      "type" : "object",
       "properties" : {
+        "message" : {
+          "type" : "string"
+        },
         "type" : {
-          "type" : "string",
-          "enum" : [ "futureOrPresent" ],
+          "const" : "futureOrPresent",
           "default" : "futureOrPresent"
-        },
-        "message" : {
-          "type" : "string",
-          "i18n" : "schema.meta.constraint.message"
         }
       },
-      "title" : "futureOrPresent",
-      "required" : [ "type" ]
-    },
-    "notEmpty" : {
-      "type" : "object",
       "additionalProperties" : true,
+      "required" : [ "type" ],
+      "examples" : [ "2025-04-18", "2025-04-18T14:30:00Z", "2025-04-18T14:30:00+02:00", "2025-04-18T14:30:00.123Z", "2025-04-18T14:30:00.456-05:00", 1713442200456 ]
+    },
+    "Max" : {
+      "type" : "object",
       "properties" : {
-        "type" : {
-          "type" : "string",
-          "enum" : [ "notEmpty" ],
-          "default" : "notEmpty"
+        "max" : {
+          "type" : "number"
         },
         "message" : {
-          "type" : "string",
-          "i18n" : "schema.meta.constraint.message"
+          "type" : "string"
+        },
+        "type" : {
+          "const" : "max",
+          "default" : "max"
         }
       },
-      "title" : "notEmpty",
-      "required" : [ "type" ]
+      "required" : [ "max", "type" ],
+      "additionalProperties" : true
     },
-    "notBlank" : {
+    "Min" : {
       "type" : "object",
-      "additionalProperties" : true,
       "properties" : {
+        "message" : {
+          "type" : "string"
+        },
+        "min" : {
+          "type" : "number"
+        },
         "type" : {
-          "type" : "string",
-          "enum" : [ "notBlank" ],
+          "const" : "min",
+          "default" : "min"
+        }
+      },
+      "required" : [ "min", "type" ],
+      "additionalProperties" : true
+    },
+    "NotBlank" : {
+      "type" : "object",
+      "properties" : {
+        "message" : {
+          "type" : "string"
+        },
+        "type" : {
+          "const" : "notBlank",
           "default" : "notBlank"
-        },
-        "message" : {
-          "type" : "string",
-          "i18n" : "schema.meta.constraint.message"
         }
       },
-      "title" : "notBlank",
+      "additionalProperties" : true,
       "required" : [ "type" ]
     },
-    "notNull" : {
+    "NotEmpty" : {
       "type" : "object",
-      "additionalProperties" : true,
       "properties" : {
-        "type" : {
-          "type" : "string",
-          "enum" : [ "notNull" ],
-          "default" : "notNull"
-        },
         "message" : {
-          "type" : "string",
-          "i18n" : "schema.meta.constraint.message"
+          "type" : "string"
+        },
+        "type" : {
+          "const" : "notEmpty",
+          "default" : "notEmpty"
         }
       },
-      "title" : "notNull",
+      "additionalProperties" : true,
       "required" : [ "type" ]
+    },
+    "NotNull" : {
+      "type" : "object",
+      "properties" : {
+        "message" : {
+          "type" : "string"
+        },
+        "type" : {
+          "const" : "notNull",
+          "default" : "notNull"
+        }
+      },
+      "additionalProperties" : true,
+      "required" : [ "type" ]
+    },
+    "Past" : {
+      "type" : "object",
+      "properties" : {
+        "message" : {
+          "type" : "string"
+        },
+        "type" : {
+          "const" : "past",
+          "default" : "past"
+        }
+      },
+      "additionalProperties" : true,
+      "required" : [ "type" ],
+      "examples" : [ "2025-04-18", "2025-04-18T14:30:00Z", "2025-04-18T14:30:00+02:00", "2025-04-18T14:30:00.123Z", "2025-04-18T14:30:00.456-05:00", 1713442200456 ]
+    },
+    "PastOrPresent" : {
+      "type" : "object",
+      "properties" : {
+        "message" : {
+          "type" : "string"
+        },
+        "type" : {
+          "const" : "pastOrPresent",
+          "default" : "pastOrPresent"
+        }
+      },
+      "additionalProperties" : true,
+      "required" : [ "type" ],
+      "examples" : [ "2025-04-18", "2025-04-18T14:30:00Z", "2025-04-18T14:30:00+02:00", "2025-04-18T14:30:00.123Z", "2025-04-18T14:30:00.456-05:00", 1713442200456 ]
+    },
+    "Pattern" : {
+      "type" : "object",
+      "properties" : {
+        "flags" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string",
+            "enum" : [ "UNIX_LINES", "CASE_INSENSITIVE", "COMMENTS", "MULTILINE", "DOTALL", "UNICODE_CASE", "CANON_EQ" ]
+          }
+        },
+        "message" : {
+          "type" : "string"
+        },
+        "regexp" : {
+          "type" : "string"
+        },
+        "type" : {
+          "const" : "pattern",
+          "default" : "pattern"
+        }
+      },
+      "required" : [ "regexp", "type" ],
+      "additionalProperties" : true
+    },
+    "Size" : {
+      "type" : "object",
+      "properties" : {
+        "max" : {
+          "type" : "integer"
+        },
+        "message" : {
+          "type" : "string"
+        },
+        "min" : {
+          "type" : "integer"
+        },
+        "type" : {
+          "const" : "size",
+          "default" : "size"
+        }
+      },
+      "required" : [ "max", "min", "type" ],
+      "additionalProperties" : true
     }
-  }
+  },
+  "oneOf" : [ {
+    "$ref" : "#/definitions/Size"
+  }, {
+    "$ref" : "#/definitions/Pattern"
+  }, {
+    "$ref" : "#/definitions/Min"
+  }, {
+    "$ref" : "#/definitions/Max"
+  }, {
+    "$ref" : "#/definitions/AllowedValues"
+  }, {
+    "$ref" : "#/definitions/Past"
+  }, {
+    "$ref" : "#/definitions/PastOrPresent"
+  }, {
+    "$ref" : "#/definitions/Future"
+  }, {
+    "$ref" : "#/definitions/FutureOrPresent"
+  }, {
+    "$ref" : "#/definitions/NotEmpty"
+  }, {
+    "$ref" : "#/definitions/NotBlank"
+  }, {
+    "$ref" : "#/definitions/NotNull"
+  } ],
+  "title" : "Constraint"
 }
