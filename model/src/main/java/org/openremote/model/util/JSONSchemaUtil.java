@@ -271,7 +271,10 @@ public class JSONSchemaUtil {
                     oneOfArray.add(context.createDefinitionReference(subType));
                 }
 
-                return new CustomDefinition(definition, CustomDefinition.DefinitionType.STANDARD, CustomDefinition.AttributeInclusion.NO);
+                // Always inline the super class schema to avoid allOf wrapping, which cannot be cleaned up as
+                // JSON Schema draft-7 does not permit other properties alongside a $ref, see
+                // https://json-schema.org/draft-07/draft-handrews-json-schema-01#rfc.section.8.3
+                return new CustomDefinition(definition, CustomDefinition.DefinitionType.INLINE, CustomDefinition.AttributeInclusion.NO);
             });
 
             // Set the default keyword for subtypes so AJV in the frontend can tell jsonforms/core to consider the
@@ -509,7 +512,7 @@ public class JSONSchemaUtil {
             A annotation = fieldScope.getAnnotation(annotationClass);
             if (annotation != null) {
                 applyAnnotation(annotationClass, annotation, schema, mapper);
-            };
+            }
         }
 
         private static <A extends Annotation> void applyAnnotation(Class<?> annotationClass, A annotation, ObjectNode schema, ObjectMapper mapper) {
