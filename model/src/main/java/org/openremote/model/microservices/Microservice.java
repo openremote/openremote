@@ -62,8 +62,7 @@ public class Microservice {
      * The version of the service.
      * 
      * Can be optionally set, to determine the version of the service, and interpret
-     * which
-     * version of the service is running and registered.
+     * which version of the service is running and registered.
      */
     @Size(min = 3, max = 255, message = "{Microservice.version.Size}")
     @JsonProperty("version")
