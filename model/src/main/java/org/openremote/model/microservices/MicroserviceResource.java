@@ -40,8 +40,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
  * REST resource for managing microservices and external services.
  * 
  * This resource provides endpoints for service discovery, registration, and
- * management
- * of external services and microservices through the OpenRemote manager.
+ * management of external services through the manager.
  * 
  * Registered services are made available via the OpenRemote manager's Web UI
  * and API, enabling centralized service management and monitoring.
