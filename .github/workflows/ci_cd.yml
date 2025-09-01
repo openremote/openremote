@@ -456,7 +456,7 @@ jobs:
           if [ -n "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"#ref"* ]] || [ -n "$TEST_UI_CMD" ]; then
             if [ -n "$MANAGER_TAGS" ]; then
               command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath"
-              echo "pushRequired=true" >> $GITHUB_OUTPUT
+              echo "pushToDockerHub=true" >> $GITHUB_OUTPUT
               echo "managerDockerImage=openremote/manager:$FIRST_MANAGER_TAG" >> $GITHUB_OUTPUT
             else
               command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t 134517981306.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:SNAPSHOT-$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath"
@@ -526,21 +526,21 @@ jobs:
           DEPLOYMENT_DOCKER_CMD: ${{ steps.deployment-docker-command.outputs.value }}
 
       - name: Login to DockerHub
-        if: ${{ steps.manager-docker-command.outputs.pushRequired == 'true' }}
+        if: ${{ steps.manager-docker-command.outputs.pushToDockerHub == 'true' }}
         uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
         with:
           username: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_USER }}
           password: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_PASSWORD }}
 
       - name: Configure AWS Credentials
-        if: ${{ steps.manager-docker-command.outputs.pushRequired != 'true' }}
+        if: ${{ steps.manager-docker-command.outputs.pushToDockerHub != 'true' }}
         uses: aws-actions/configure-aws-credentials@v4.3.1
         with:
           aws-region: eu-west-1
           role-to-assume: "arn:aws:iam::134517981306:role/GHActionECRPush"
 
       - name: Login to private ECR
-        if: ${{ steps.manager-docker-command.outputs.pushRequired != 'true' }}
+        if: ${{ steps.manager-docker-command.outputs.pushToDockerHub != 'true' }}
         uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
       - name: set up QEMU
@@ -776,7 +776,7 @@ jobs:
           path: ui/app/*/app-test-report/**
 
       - name: Scan manager docker image
-        if: steps.manager-docker-command.outputs.pushRequired == 'true'
+        if: steps.manager-docker-command.outputs.pushToDockerHub == 'true'
         uses: anchore/scan-action@2c901ab7378897c01b8efaa2d0c9bf519cc64b9e # v6.2.0
         id: manager-anchore-scan
         with:
@@ -787,7 +787,7 @@ jobs:
       - name: Upload Anchore scan SARIF report
         if: |
           !cancelled() &&
-          steps.manager-docker-command.outputs.pushRequired == 'true'
+          steps.manager-docker-command.outputs.pushToDockerHub == 'true'
         uses: github/codeql-action/upload-sarif@e488e3c8239c26bf8e6704904a8cb59be658d450 # v3
         with:
           sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
@@ -795,7 +795,7 @@ jobs:
       - name: Inspect Anchore scan SARIF report
         if: |
           !cancelled() &&
-          steps.manager-docker-command.outputs.pushRequired == 'true'
+          steps.manager-docker-command.outputs.pushToDockerHub == 'true'
         run: cat ${{ steps.manager-anchore-scan.outputs.sarif }}
 
       - name: Run maven publish command
