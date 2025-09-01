@@ -223,8 +223,8 @@ public class JSONSchemaUtil {
                         && t.getActualTypeArguments()[1].equals(Object.class)
                     ) {
                         return new CustomDefinition(JsonNodeFactory.instance.objectNode()
-                            .put("type", "object")
-                            .set("additionalProperties", SchemaNodeFactory.getSchemaType(SchemaNodeFactory.TYPES_ALL))
+                            .put(context.getKeyword(SchemaKeyword.TAG_TYPE), "object")
+                            .set(context.getKeyword(SchemaKeyword.TAG_ADDITIONAL_PROPERTIES), SchemaNodeFactory.getSchemaType(SchemaNodeFactory.TYPES_ALL))
                         );
                     }
                     return null;
