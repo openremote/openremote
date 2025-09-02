@@ -238,7 +238,7 @@ jobs:
         with:
           repository: ${{ steps.is_main_repo.outputs.repository }}
           path: openremote
-          ref: ${{ github.action_ref || steps.is_main_repo.outputs.ref }}
+          ref: ${{ github.workflow_ref || steps.is_main_repo.outputs.ref }}
           sparse-checkout: |
             .ci_cd
             profile
