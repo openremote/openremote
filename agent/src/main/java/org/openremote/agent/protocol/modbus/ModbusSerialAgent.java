@@ -25,30 +25,49 @@ import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
+import java.util.Optional;
+
 /**
  * This Modbus serial agent is currently untested, due to difficulties in testing Modbus serial agents (especially the
  * absence of automated Modbus serial testing libraries)
  */
 @Entity
-public class ModbusSerialAgent extends ModbusAgent<ModbusSerialAgent, ModbusSerialProtocol>{
+public class ModbusSerialAgent extends Agent<ModbusSerialAgent, ModbusSerialProtocol, ModbusAgentLink> {
 
     public static final AttributeDescriptor<String> SERIAL_PORT = Agent.SERIAL_PORT.withOptional(false);
     public static final AttributeDescriptor<Integer> BAUD_RATE = Agent.SERIAL_BAUDRATE.withOptional(false);
     public static final AttributeDescriptor<Integer> DATA_BITS = new AttributeDescriptor<>("dataBits", ValueType.POSITIVE_INTEGER);
     public static final AttributeDescriptor<Integer> STOP_BITS = new AttributeDescriptor<>("stopBits", ValueType.POSITIVE_INTEGER);
-
-    //TODO: Doesn't work, getting a frontend error TypeError: Cannot read properties of undefined (reading 'units') at getValueFormatConstraintOrUnits
-//    public static final AttributeDescriptor<ModbusClientParity> PARITY = new AttributeDescriptor<ModbusClientParity>("parity",
-//            new ValueDescriptor<ModbusClientParity>("modbusClientParity", ModbusClientParity.class)
-//    );
+    public static final AttributeDescriptor<Integer> UNIT_ID = new AttributeDescriptor<>("unitId", ValueType.POSITIVE_INTEGER);
+    // Parity: 0=NONE, 1=ODD, 2=EVEN, 3=MARK, 4=SPACE (matches jSerialComm constants)
+    public static final AttributeDescriptor<Integer> PARITY = new AttributeDescriptor<>("parity", ValueType.POSITIVE_INTEGER);
 
 
     public enum ModbusClientParity {
-        NO_PARITY,
-        ODD_PARITY,
-        EVEN_PARITY,
-        MARK_PARITY,
-        SPACE_PARITY,
+        NO_PARITY(0),
+        ODD_PARITY(1),
+        EVEN_PARITY(2),
+        MARK_PARITY(3),
+        SPACE_PARITY(4);
+        
+        private final int value;
+        
+        ModbusClientParity(int value) {
+            this.value = value;
+        }
+        
+        public int getValue() {
+            return value;
+        }
+        
+        public static ModbusClientParity fromValue(int value) {
+            for (ModbusClientParity parity : values()) {
+                if (parity.value == value) {
+                    return parity;
+                }
+            }
+            return EVEN_PARITY; // Default for Modbus RTU
+        }
     }
 
     public static final AgentDescriptor<ModbusSerialAgent, ModbusSerialProtocol, ModbusAgentLink> DESCRIPTOR = new AgentDescriptor<>(
@@ -65,6 +84,10 @@ public class ModbusSerialAgent extends ModbusAgent<ModbusSerialAgent, ModbusSeri
         super(name);
     }
 
+    public Optional<String> getSerialPort() {
+        return getAttributes().getValue(SERIAL_PORT);
+    }
+
     public Integer getBaudRate() {
         return getAttribute(BAUD_RATE).get().getValue().get();
     }
@@ -76,10 +99,18 @@ public class ModbusSerialAgent extends ModbusAgent<ModbusSerialAgent, ModbusSeri
     public Integer getStopBits() {
         return getAttribute(STOP_BITS).get().getValue().get();
     }
-
-//    public ModbusClientParity getParity() {
-//        return getAttribute(PARITY).get().getValue().get();
-//    }
+    
+    public Integer getUnitId() {
+        return getAttribute(UNIT_ID).get().getValue().get();
+    }
+    
+    public Integer getParity() {
+        return getAttribute(PARITY).map(attr -> attr.getValue().orElse(2)).orElse(2); // Default to EVEN_PARITY (2)
+    }
+    
+    public ModbusClientParity getParityEnum() {
+        return ModbusClientParity.fromValue(getParity());
+    }
 
 
     @Override
