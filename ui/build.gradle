@@ -18,20 +18,3 @@ afterEvaluate {
 task modelWatch {
     dependsOn resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build")
 }
-
-// Finalize the gradle test task with the npmTest task so that all tests can be run with gradle test.
-// Runs backend tests first and then frontend tests. UI tests are registered under npmTest to avoid
-// complications when configuring the test task on projects w/o the Java plugin where the test task is
-// already defined. It also allows for easy exclusion using the `-x` argument (e.g. `gradle test -x npmTest`.)
-subprojects { subproj ->
-    subproj.tasks.matching { it.name == 'npmTest' }.all {
-        subproj.tasks.matching { it.name == 'test' }.all {
-            finalizedBy 'npmTest'
-        }
-        if (!subproj.tasks.findByName('test')) {
-            subproj.tasks.register('test') {
-                finalizedBy 'npmTest'
-            }
-        }
-    }
-}

@@ -136,3 +136,17 @@ subprojects {
         }
     }
 }
+
+// Finalize the gradle test task with the npmTest task so that all tests can be run with gradle test.
+// Runs backend tests first and then frontend tests. UI tests are registered under npmTest to avoid
+// complications when configuring the test task on projects w/o the Java plugin where the test task is
+// already defined. It also allows for easy exclusion using the `-x` argument (e.g. `gradle test -x npmTest`.)
+tasks.register('test') {
+    dependsOn subprojects.collect { it.tasks.matching { it.name == 'test' } }
+}
+tasks.register('npmTest') {
+    dependsOn subprojects.collect { it.tasks.matching { it.name == 'npmTest' } }
+}
+tasks.named('test') {
+    finalizedBy tasks.named('npmTest')
+}
