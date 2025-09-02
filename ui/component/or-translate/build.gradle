@@ -25,11 +25,7 @@ tasks.register('npmBuild', Exec) {
     commandLine npmCommand("yarn"), "run", "build"
 }
 
-tasks.register('test', Exec) {
-    finalizedBy('npmTest')
-}
 tasks.register('npmTest', Exec) {
-    mustRunAfter npmBuild
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "run", "test"
 }

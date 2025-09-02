@@ -75,9 +75,6 @@ tasks.register('npmBuild', Exec) {
     commandLine npmCommand("yarn"), "run", "build"
 }
 
-tasks.named('test') {
-    finalizedBy('npmTest')
-}
 tasks.register('npmTest', Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "run", "test"
