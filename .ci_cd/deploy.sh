@@ -401,9 +401,12 @@ TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" \
   -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" 2>/dev/null)
 
 if [ -n "$TOKEN" ]; then
-  PRIVATE_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" \
+  export PRIVATE_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" \
     -s http://169.254.169.254/latest/meta-data/local-ipv4 2>/dev/null)
+else
+  echo" Could not get token to query for private IP"
 fi
+echo "Private IP $PRIVATE_IP"
 
 # Start the stack
 echo "Starting the stack"
