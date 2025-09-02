@@ -920,9 +920,15 @@ Resources:
               Interval: 24
               IntervalUnit: HOURS
               Times:
-                - '05:00'
+                - '03:00'
             RetainRule:
-              Count: 1
+              Count: 7
+          - Name: Weekly Backup
+            CopyTags: true
+            CreateRule:
+              CronExpression: 'cron(0 3 * * MON)'
+            RetainRule:
+              Count: 4
       Tags:
         - Key: Name
           Value: !Ref Host
