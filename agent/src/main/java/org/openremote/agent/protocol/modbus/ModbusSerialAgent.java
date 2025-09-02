@@ -20,9 +20,11 @@
 package org.openremote.agent.protocol.modbus;
 
 import jakarta.persistence.Entity;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 
 import java.util.Optional;
@@ -39,16 +41,17 @@ public class ModbusSerialAgent extends Agent<ModbusSerialAgent, ModbusSerialProt
     public static final AttributeDescriptor<Integer> DATA_BITS = new AttributeDescriptor<>("dataBits", ValueType.POSITIVE_INTEGER);
     public static final AttributeDescriptor<Integer> STOP_BITS = new AttributeDescriptor<>("stopBits", ValueType.POSITIVE_INTEGER);
     public static final AttributeDescriptor<Integer> UNIT_ID = new AttributeDescriptor<>("unitId", ValueType.POSITIVE_INTEGER);
-    // Parity: 0=NONE, 1=ODD, 2=EVEN, 3=MARK, 4=SPACE (matches jSerialComm constants)
-    public static final AttributeDescriptor<Integer> PARITY = new AttributeDescriptor<>("parity", ValueType.POSITIVE_INTEGER);
+    
+    public static final ValueDescriptor<ModbusClientParity> VALUE_MODBUS_PARITY = new ValueDescriptor<>("ModbusParity", ModbusClientParity.class);
+    public static final AttributeDescriptor<ModbusClientParity> PARITY = new AttributeDescriptor<>("parity", VALUE_MODBUS_PARITY);
 
 
     public enum ModbusClientParity {
-        NO_PARITY(0),
-        ODD_PARITY(1),
-        EVEN_PARITY(2),
-        MARK_PARITY(3),
-        SPACE_PARITY(4);
+        NO(0),
+        ODD(1),
+        EVEN(2),
+        MARK(3),
+        SPACE(4);
         
         private final int value;
         
@@ -60,13 +63,18 @@ public class ModbusSerialAgent extends Agent<ModbusSerialAgent, ModbusSerialProt
             return value;
         }
         
+        @JsonValue
+        public String getJsonValue() {
+            return toString();
+        }
+        
         public static ModbusClientParity fromValue(int value) {
             for (ModbusClientParity parity : values()) {
                 if (parity.value == value) {
                     return parity;
                 }
             }
-            return EVEN_PARITY; // Default for Modbus RTU
+            return EVEN; // Default for Modbus RTU
         }
     }
 
@@ -104,12 +112,12 @@ public class ModbusSerialAgent extends Agent<ModbusSerialAgent, ModbusSerialProt
         return getAttribute(UNIT_ID).get().getValue().get();
     }
     
-    public Integer getParity() {
-        return getAttribute(PARITY).map(attr -> attr.getValue().orElse(2)).orElse(2); // Default to EVEN_PARITY (2)
+    public ModbusClientParity getParity() {
+        return getAttribute(PARITY).map(attr -> attr.getValue().orElse(ModbusClientParity.EVEN)).orElse(ModbusClientParity.EVEN);
     }
     
-    public ModbusClientParity getParityEnum() {
-        return ModbusClientParity.fromValue(getParity());
+    public Integer getParityValue() {
+        return getParity().getValue();
     }
 
 

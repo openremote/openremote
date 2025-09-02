@@ -71,7 +71,7 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
             int baudRate = agent.getBaudRate();
             int dataBits = agent.getDataBits();
             int stopBits = agent.getStopBits();
-            int parity = agent.getParity();
+            int parity = agent.getParityValue();
             
             connectionString = "modbus-rtu://" + portName + "?baud=" + baudRate + "&data=" + dataBits + "&stop=" + stopBits + "&parity=" + parity;
             
@@ -79,12 +79,12 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
             serialPort.setBaudRate(baudRate);
             serialPort.setNumDataBits(dataBits);
             serialPort.setNumStopBits(stopBits);
-            serialPort.setParity(mapParityToSerialPort(agent.getParity())); // Configurable parity
+            serialPort.setParity(mapParityToSerialPort(agent.getParityValue())); // Configurable parity
             serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 2000, 0);
             
             if (serialPort.openPort()) {
                 setConnectionStatus(ConnectionStatus.CONNECTED);
-                String parityName = agent.getParityEnum().name();
+                String parityName = agent.getParity().name();
                 LOG.info("Connected to Modbus RTU device on " + portName + " (" + baudRate + "," + dataBits + "," + parityName + "," + stopBits + ")");
             } else {
                 setConnectionStatus(ConnectionStatus.ERROR);
@@ -423,7 +423,7 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
             case 4:
                 return SerialPort.SPACE_PARITY;
             default:
-                LOG.warning("Unknown parity value " + parity + ", defaulting to EVEN_PARITY");
+                LOG.warning("Unknown parity value " + parity + ", defaulting to EVEN");
                 return SerialPort.EVEN_PARITY; // Default for Modbus RTU
         }
     }
