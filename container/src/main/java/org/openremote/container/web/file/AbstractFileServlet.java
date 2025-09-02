@@ -347,7 +347,7 @@ public abstract class AbstractFileServlet extends HttpServlet {
 		response.setHeader("Accept-Ranges", "bytes");
 
 		if (ranges.size() == 1) {
-			Range range = ranges.get(0);
+			Range range = ranges.getFirst();
 			response.setContentType(contentType);
 			response.setHeader("Content-Length", String.valueOf(range.length));
 
@@ -369,7 +369,7 @@ public abstract class AbstractFileServlet extends HttpServlet {
 		ServletOutputStream output = response.getOutputStream();
 
 		if (ranges.size() == 1) {
-			Range range = ranges.get(0);
+			Range range = ranges.getFirst();
 			stream(resource, output, range.start, range.length);
 		}
 		else {

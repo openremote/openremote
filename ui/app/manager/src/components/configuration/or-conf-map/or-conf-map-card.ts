@@ -303,7 +303,7 @@ export class OrConfMapCard extends LitElement {
                 ${when(this.canRemove, () => html`
                     <or-mwc-input outlined .type="${InputType.BUTTON}" id="remove-map"
                                     label="configuration.deleteMapCustomization"
-                                    @click="${() => { this._showRemoveMapDialog(); }}"
+                                    @or-mwc-input-changed="${() => { this._showRemoveMapDialog(); }}"
                     ></or-mwc-input>
                 `)}
         </div>`

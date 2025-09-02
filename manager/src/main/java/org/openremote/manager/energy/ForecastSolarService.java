@@ -393,8 +393,8 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
             return;
         }
 
-        ValueDatapoint<?> solarForecastDatapointMax = solarForecastDatapoints.get(0);
-        ValueDatapoint<?> solarForecastDatapointMin = solarForecastDatapoints.get(solarForecastDatapoints.size() - 1);
+        ValueDatapoint<?> solarForecastDatapointMax = solarForecastDatapoints.getFirst();
+        ValueDatapoint<?> solarForecastDatapointMin = solarForecastDatapoints.getLast();
 
         // Get current timestamp of power forecast attribute
         ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(electricityProducerSolarAsset.getId());
