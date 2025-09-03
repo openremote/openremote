@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.microservices;
+package org.openremote.model.services;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -27,14 +27,14 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
- * Represents a microservice or external service managed by the OpenRemote
- * microservice registry.
+ * Represents a external service managed by the OpenRemote
+ * external service registry.
  * 
  * This class encapsulates service metadata and the required information needed
  * to register, manage,
  * and track the lifecycle of external services within the OpenRemote system.
  */
-public class Microservice {
+public class ExternalService {
 
     /**
      * The unique identifier of the service (e.g., "energy-service").
@@ -42,8 +42,8 @@ public class Microservice {
      * This ID is used to group related service instances and must be consistent
      * across all instances of the same service type.
      */
-    @Size(min = 3, max = 255, message = "{Microservice.serviceId.Size}")
-    @NotEmpty(message = "{Microservice.serviceId.NotEmpty}")
+    @Size(min = 3, max = 255, message = "{ExternalService.serviceId.Size}")
+    @NotEmpty(message = "{ExternalService.serviceId.NotEmpty}")
     @JsonProperty("serviceId")
     protected String serviceId;
 
@@ -64,7 +64,7 @@ public class Microservice {
      * Can be optionally set, to determine the version of the service, and interpret
      * which version of the service is running and registered.
      */
-    @Size(min = 3, max = 255, message = "{Microservice.version.Size}")
+    @Size(min = 3, max = 255, message = "{ExternalService.version.Size}")
     @JsonProperty("version")
     protected String version;
 
@@ -76,8 +76,8 @@ public class Microservice {
      * across all realms. This is used to indicate that the service is a global
      * service.
      */
-    @Size(min = 3, max = 255, message = "{Microservice.realm.Size}")
-    @NotEmpty(message = "{Microservice.realm.NotEmpty}")
+    @Size(min = 3, max = 255, message = "{ExternalService.realm.Size}")
+    @NotEmpty(message = "{ExternalService.realm.NotEmpty}")
     @JsonProperty("realm")
     protected String realm;
 
@@ -98,8 +98,8 @@ public class Microservice {
      * This label is used in user interfaces to provide a friendly name
      * for the service.
      */
-    @NotEmpty(message = "{Microservice.label.NotEmpty}")
-    @Size(min = 1, max = 255, message = "{Microservice.label.Size}")
+    @NotEmpty(message = "{ExternalService.label.NotEmpty}")
+    @Size(min = 1, max = 255, message = "{ExternalService.label.Size}")
     @JsonProperty("label")
     protected String label;
 
@@ -111,8 +111,8 @@ public class Microservice {
      * "https://openremote.app/services/energy-service/ui").
      *
      */
-    @Size(min = 3, max = 512, message = "{Microservice.homepageUrl.Size}")
-    @NotEmpty(message = "{Microservice.homepageUrl.NotEmpty}")
+    @Size(min = 3, max = 512, message = "{ExternalService.homepageUrl.Size}")
+    @NotEmpty(message = "{ExternalService.homepageUrl.NotEmpty}")
     @JsonProperty("homepageUrl")
     protected String homepageUrl;
 
@@ -120,21 +120,21 @@ public class Microservice {
      * Current operational status of the service instance.
      * 
      * Indicates whether the service is available, unavailable, or in another state.
-     * The status is managed by the microservice registry based on lease expiration.
+     * The status is managed by the external service registry based on lease expiration.
      */
-    @NotNull(message = "{Microservice.status.NotNull}")
+    @NotNull(message = "{ExternalService.status.NotNull}")
     @JsonProperty("status")
-    protected MicroserviceStatus status;
+    protected ExternalServiceStatus status;
 
     /**
      * Internal lease management information for the service registration.
      * 
      * Contains timestamps for lease expiration, registration, and renewal.
-     * This information is used internally by the microservice registry to manage
+     * This information is used internally by the external service registry to manage
      * service lifecycle and availability.
      */
     @JsonIgnore
-    protected MicroserviceLeaseInfo leaseInfo;
+    protected ExternalServiceLeaseInfo leaseInfo;
 
     /**
      * Indicates whether this service is globally accessible across all realms.
@@ -142,17 +142,17 @@ public class Microservice {
      * Global services are available to all realms and typically use super admin
      * service users with system-wide access permissions.
      * 
-     * This is set automatically by the microservice registry when the service is
+     * This is set automatically by the external service registry when the service is
      * registered by a super admin service user and set to MASTER_REALM.
      */
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     protected boolean isGlobal = false;
 
-    public Microservice() {
+    public ExternalService() {
     }
 
     // Minimal constructor
-    public Microservice(String serviceId, String realm, String label, String homepageUrl, MicroserviceStatus status) {
+    public ExternalService(String serviceId, String realm, String label, String homepageUrl, ExternalServiceStatus status) {
         this.serviceId = serviceId;
         this.realm = realm;
         this.label = label;
@@ -217,19 +217,19 @@ public class Microservice {
         this.homepageUrl = homepageUrl;
     }
 
-    public MicroserviceStatus getStatus() {
+    public ExternalServiceStatus getStatus() {
         return status;
     }
 
-    public void setStatus(MicroserviceStatus status) {
+    public void setStatus(ExternalServiceStatus status) {
         this.status = status;
     }
 
-    public MicroserviceLeaseInfo getLeaseInfo() {
+    public ExternalServiceLeaseInfo getLeaseInfo() {
         return leaseInfo;
     }
 
-    public void setLeaseInfo(MicroserviceLeaseInfo leaseInfo) {
+    public void setLeaseInfo(ExternalServiceLeaseInfo leaseInfo) {
         this.leaseInfo = leaseInfo;
     }
 
@@ -243,7 +243,7 @@ public class Microservice {
 
     @Override
     public String toString() {
-        return "Microservice{" +
+        return "ExternalService{" +
                 "serviceId='" + serviceId + '\'' +
                 ", instanceId='" + instanceId + '\'' +
                 ", version='" + version + '\'' +

@@ -17,35 +17,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.microservices;
+package org.openremote.model.services;
 
 import org.openremote.model.event.shared.RealmScopedEvent;
 
-public class MicroserviceEvent extends RealmScopedEvent {
+public class ExternalServiceEvent extends RealmScopedEvent {
 
     public enum Cause {
         REGISTER, UPDATE, DEREGISTER
     }
 
-    protected Microservice microservice;
+    protected ExternalService service;
 
-    protected MicroserviceEvent.Cause cause;
+    protected ExternalServiceEvent.Cause cause;
 
-    public MicroserviceEvent(Microservice microservice, MicroserviceEvent.Cause cause) {
-        this.realm = microservice.getRealm();
+    public ExternalServiceEvent(ExternalService service, ExternalServiceEvent.Cause cause) {
+        this.realm = service.getRealm();
         this.cause = cause;
-        this.microservice = microservice;
+        this.service = service;
     }
 
-    public Microservice getMicroservice() {
-        return microservice;
+    public ExternalService getService() {
+        return service;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
                 "realm=" + realm +
-                ", microservice=" + microservice +
+                ", service=" + service +
                 ", cause=" + cause +
                 '}';
     }

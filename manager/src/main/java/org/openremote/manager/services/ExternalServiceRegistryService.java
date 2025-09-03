@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.microservices;
+package org.openremote.manager.services;
 
 import static org.openremote.model.Constants.MASTER_REALM;
 
@@ -38,33 +38,33 @@ import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.event.shared.EventSubscription;
-import org.openremote.model.microservices.Microservice;
-import org.openremote.model.microservices.MicroserviceEvent;
-import org.openremote.model.microservices.MicroserviceStatus;
+import org.openremote.model.services.ExternalService;
+import org.openremote.model.services.ExternalServiceEvent;
+import org.openremote.model.services.ExternalServiceStatus;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.UniqueIdentifierGenerator;
-import org.openremote.model.microservices.MicroserviceLeaseInfo;
+import org.openremote.model.services.ExternalServiceLeaseInfo;
 
 /**
- * Manages {@link org.openremote.model.microservices.Microservice} discovery and
+ * Manages {@link org.openremote.model.services.ExternalService} discovery and
  * registration with lease-based lifecycle management; supports both
  * global (multi-tenant) and realm-bound services, allowing multiple instances
  * per service ID for
  * horizontal scaling and high availability.
  * <p>
- * The service automatically manages microservice health through scheduled tasks
+ * The service automatically manages external service health through scheduled tasks
  * that mark expired
  * instances as unavailable and eventually deregister long-expired instances. It
  * registers a REST resource
- * ({@link MicroserviceResourceImpl}) for external access to the registry and
+ * ({@link ExternalServiceResourceImpl}) for external access to the registry and
  * adds event subscription
- * authorization to the {@link ClientEventService} to filter microservice events
+ * authorization to the {@link ClientEventService} to filter external service events
  * based on realm and user
- * roles, publishing microservice lifecycle events for external consumption.
+ * roles, publishing external service lifecycle events for external consumption.
  */
-public class MicroserviceRegistryService implements ContainerService {
+public class ExternalServiceRegistryService implements ContainerService {
 
-    private static final Logger LOG = Logger.getLogger(MicroserviceRegistryService.class.getName());
+    private static final Logger LOG = Logger.getLogger(ExternalServiceRegistryService.class.getName());
 
     // Lease duration is 60 seconds until expiration
     protected static final long DEFAULT_LEASE_DURATION_MS = 60000;
@@ -81,9 +81,9 @@ public class MicroserviceRegistryService implements ContainerService {
     protected ManagerIdentityService identityService;
     protected ClientEventService clientEventService;
 
-    // serviceId: <instanceId: Microservice>
+    // serviceId: <instanceId: ExternalService>
     // Nested ConcurrentHashMaps for segmenting, segment locks and fast lookups
-    protected ConcurrentHashMap<String, ConcurrentHashMap<String, Microservice>> registry;
+    protected ConcurrentHashMap<String, ConcurrentHashMap<String, ExternalService>> registry;
 
     // Scheduled future for the lease check task
     protected ScheduledFuture<?> markExpiredInstancesAsUnavailableFuture;
@@ -100,17 +100,17 @@ public class MicroserviceRegistryService implements ContainerService {
 
         this.registry = new ConcurrentHashMap<>();
 
-        // Register the microservice REST resource
+        // Register the external service REST resource
         container.getService(ManagerWebService.class).addApiSingleton(
-                new MicroserviceResourceImpl(timerService, identityService, this));
+                new ExternalServiceResourceImpl(timerService, identityService, this));
 
-        addMicroserviceEventSubscriptionAuthorizer();
+        addExternalServiceEventSubscriptionAuthorizer();
 
     }
 
-    protected void addMicroserviceEventSubscriptionAuthorizer() {
+    protected void addExternalServiceEventSubscriptionAuthorizer() {
         clientEventService.addSubscriptionAuthorizer((realm, authContext, eventSubscription) -> {
-            if (!eventSubscription.isEventType(MicroserviceEvent.class) || authContext == null) {
+            if (!eventSubscription.isEventType(ExternalServiceEvent.class) || authContext == null) {
                 return false;
             }
 
@@ -119,11 +119,11 @@ public class MicroserviceRegistryService implements ContainerService {
             }
 
             @SuppressWarnings("unchecked")
-            EventSubscription<MicroserviceEvent> subscription = (EventSubscription<MicroserviceEvent>) eventSubscription;
+            EventSubscription<ExternalServiceEvent> subscription = (EventSubscription<ExternalServiceEvent>) eventSubscription;
             subscription.setFilter(event -> {
-                Microservice eventMicroservice = event.getMicroservice();
-                boolean isGlobalService = eventMicroservice.getIsGlobal();
-                boolean realmMatches = Objects.equals(eventMicroservice.getRealm(),
+                ExternalService eventExternalService = event.getService();
+                boolean isGlobalService = eventExternalService.getIsGlobal();
+                boolean realmMatches = Objects.equals(eventExternalService.getRealm(),
                         authContext.getAuthenticatedRealmName());
 
                 return isGlobalService || realmMatches ? event : null;
@@ -160,70 +160,70 @@ public class MicroserviceRegistryService implements ContainerService {
     }
 
     /**
-     * Register a realm-bound microservice instance
+     * Register a realm-bound external service instance
      *
-     * @param microservice The microservice to register
+     * @param externalService The external service to register
      */
-    public Microservice registerService(Microservice microservice) {
-        return registerService(microservice, false);
+    public ExternalService registerService(ExternalService externalService) {
+        return registerService(externalService, false);
     }
 
     /**
-     * Register a microservice instance
+     * Register a external service instance
      *
-     * @param microservice The microservice to register
+     * @param externalService The external service to register
      * @param isGlobal     Whether the service should be available to all realms.
      *                     This should only be used for services that use a super
      *                     admin
      *                     service user with global access.
      */
-    public Microservice registerService(Microservice microservice, boolean isGlobal) {
-        LOG.info("Registering microservice: " + microservice.getServiceId() + ", instanceId: "
-                + microservice.getInstanceId());
+    public ExternalService registerService(ExternalService externalService, boolean isGlobal) {
+        LOG.info("Registering external service: " + externalService.getServiceId() + ", instanceId: "
+                + externalService.getInstanceId());
 
-        if (microservice.getInstanceId() == null) {
-            microservice.setInstanceId(UniqueIdentifierGenerator.generateId());
+        if (externalService.getInstanceId() == null) {
+            externalService.setInstanceId(UniqueIdentifierGenerator.generateId());
         }
 
         long now = timerService.getCurrentTimeMillis();
-        microservice.setLeaseInfo(new MicroserviceLeaseInfo(now + DEFAULT_LEASE_DURATION_MS, now, now));
-        microservice.setIsGlobal(isGlobal);
+        externalService.setLeaseInfo(new ExternalServiceLeaseInfo(now + DEFAULT_LEASE_DURATION_MS, now, now));
+        externalService.setIsGlobal(isGlobal);
 
-        // merge the microservice into the registry if it doesn't already exist
+        // merge the external service into the registry if it doesn't already exist
         registry.merge(
-                microservice.getServiceId(),
-                new ConcurrentHashMap<>(Map.of(microservice.getInstanceId(), microservice)),
+                externalService.getServiceId(),
+                new ConcurrentHashMap<>(Map.of(externalService.getInstanceId(), externalService)),
                 (existingMap, newMap) -> {
-                    Microservice existing = existingMap.putIfAbsent(microservice.getInstanceId(), microservice);
+                    ExternalService existing = existingMap.putIfAbsent(externalService.getInstanceId(), externalService);
                     if (existing != null) {
-                        throw new IllegalStateException("Microservice already registered: "
-                                + microservice.getServiceId() + ", instanceId: " + microservice.getInstanceId());
+                        throw new IllegalStateException("ExternalService already registered: "
+                                + externalService.getServiceId() + ", instanceId: " + externalService.getInstanceId());
                     }
                     return existingMap;
                 });
 
-        // publish the register event as a new microservice has been added to the
+        // publish the register event as a new external service has been added to the
         // registry
-        clientEventService.publishEvent(new MicroserviceEvent(microservice, MicroserviceEvent.Cause.REGISTER));
+        clientEventService.publishEvent(new ExternalServiceEvent(externalService, ExternalServiceEvent.Cause.REGISTER));
 
-        LOG.info("Successfully registered microservice: " + microservice.getServiceId() + ", instanceId: "
-                + microservice.getInstanceId() + ", isGlobal: " + microservice.getIsGlobal());
+        LOG.info("Successfully registered external service: " + externalService.getServiceId() + ", instanceId: "
+                + externalService.getInstanceId() + ", isGlobal: " + externalService.getIsGlobal());
 
-        return microservice;
+        return externalService;
     }
 
     /**
-     * Update the active registration lease info for the specified microservice.
-     * This is used to indicate that the microservice is still running and
+     * Update the active registration lease info for the specified external service.
+     * This is used to indicate that the external service is still running and
      * available.
-     * If the microservice is not found, a {@link NoSuchElementException} is
+     * If the external service is not found, a {@link NoSuchElementException} is
      * thrown.
      *
-     * @param serviceId  The serviceId of the microservice to send the heartbeat to
-     * @param instanceId The instanceId of the microservice to send the heartbeat to
+     * @param serviceId  The serviceId of the external service to send the heartbeat to
+     * @param instanceId The instanceId of the external service to send the heartbeat to
      */
     public void heartbeat(String serviceId, String instanceId) {
-        ConcurrentHashMap<String, Microservice> instanceMap = registry.get(serviceId);
+        ConcurrentHashMap<String, ExternalService> instanceMap = registry.get(serviceId);
         if (instanceMap == null) {
             throw new NoSuchElementException("Service not found: " + serviceId);
         }
@@ -236,25 +236,25 @@ public class MicroserviceRegistryService implements ContainerService {
             long now = timerService.getCurrentTimeMillis();
             entry.getLeaseInfo().setRenewalTimestamp(now);
             entry.getLeaseInfo().setExpirationTimestamp(now + DEFAULT_LEASE_DURATION_MS);
-            entry.setStatus(MicroserviceStatus.AVAILABLE);
+            entry.setStatus(ExternalServiceStatus.AVAILABLE);
 
             // publish the update event as the lease has been refreshed
-            clientEventService.publishEvent(new MicroserviceEvent(entry, MicroserviceEvent.Cause.UPDATE));
+            clientEventService.publishEvent(new ExternalServiceEvent(entry, ExternalServiceEvent.Cause.UPDATE));
 
             LOG.fine(
-                    "Successfully refreshed lease info for microservice: " + serviceId + ", instanceId: " + instanceId);
+                    "Successfully refreshed lease info for external service: " + serviceId + ", instanceId: " + instanceId);
             return entry;
         });
     }
 
     /**
-     * Deregister a microservice instance.
+     * Deregister a external service instance.
      * 
-     * If the microservice is not found, a {@link NoSuchElementException} is
+     * If the external service is not found, a {@link NoSuchElementException} is
      * thrown.
      *
-     * @param serviceId  The serviceId of the microservice to deregister
-     * @param instanceId The instanceId of the microservice to deregister
+     * @param serviceId  The serviceId of the external service to deregister
+     * @param instanceId The instanceId of the external service to deregister
      */
     public void deregisterService(String serviceId, String instanceId) {
         registry.compute(serviceId, (unused, instanceMap) -> {
@@ -263,7 +263,7 @@ public class MicroserviceRegistryService implements ContainerService {
                         "The given serviceId does not exist in the registry");
             }
 
-            Microservice removed = instanceMap.remove(instanceId);
+            ExternalService removed = instanceMap.remove(instanceId);
             if (removed == null) {
                 throw new NoSuchElementException(
                         "The given serviceId and instanceId combination does not exist in the registry");
@@ -271,9 +271,9 @@ public class MicroserviceRegistryService implements ContainerService {
 
             // Publish deregister event
             clientEventService.publishEvent(
-                    new MicroserviceEvent(removed, MicroserviceEvent.Cause.DEREGISTER));
+                    new ExternalServiceEvent(removed, ExternalServiceEvent.Cause.DEREGISTER));
 
-            LOG.info("Successfully de-registered microservice: " + serviceId + ", instanceId: " + instanceId);
+            LOG.info("Successfully de-registered external service: " + serviceId + ", instanceId: " + instanceId);
 
             // If the map is empty after removal, we can just return null to remove the
             // serviceId entry
@@ -287,42 +287,42 @@ public class MicroserviceRegistryService implements ContainerService {
     }
 
     /**
-     * Get all registered services and microservices and their instances for the
+     * Get all registered services and external services and their instances for the
      * given
      * realm.
      * 
      * @param realm The realm to filter services by
-     * @return An array of all registered microservices and their instances
+     * @return An array of all registered external services and their instances
      */
-    public Microservice[] getServices(String realm) {
+    public ExternalService[] getServices(String realm) {
         return registry.values().stream()
                 .flatMap(instanceMap -> instanceMap.values().stream())
                 .filter(entry -> entry.getRealm().equals(realm))
-                .toArray(Microservice[]::new);
+                .toArray(ExternalService[]::new);
     }
 
     /**
-     * Get all globally registered services and microservices and their instances.
+     * Get all globally registered services and external services and their instances.
      * A service is considered global if it is registered with the master realm and,
      * it has the isGlobal flag set to true.
      * 
-     * @return An array of all globally registered microservices and their instances
+     * @return An array of all globally registered external services and their instances
      */
-    public Microservice[] getGlobalServices() {
+    public ExternalService[] getGlobalServices() {
         return registry.values().stream()
                 .flatMap(instanceMap -> instanceMap.values().stream())
                 .filter(entry -> entry.getRealm().equals(MASTER_REALM) && entry.getIsGlobal())
-                .toArray(Microservice[]::new);
+                .toArray(ExternalService[]::new);
     }
 
     /**
-     * Get a specific microservice registration.
+     * Get a specific external service registration.
      * 
-     * @param serviceId  The serviceId of the microservice to get
-     * @param instanceId The instanceId of the microservice to get
-     * @return The microservice
+     * @param serviceId  The serviceId of the external service to get
+     * @param instanceId The instanceId of the external service to get
+     * @return The external service
      */
-    public Microservice getService(String serviceId, String instanceId) {
+    public ExternalService getService(String serviceId, String instanceId) {
         return registry.values().stream()
                 .flatMap(instanceMap -> instanceMap.values().stream())
                 .filter(entry -> entry.getServiceId().equals(serviceId) && entry.getInstanceId().equals(instanceId))
@@ -337,29 +337,29 @@ public class MicroserviceRegistryService implements ContainerService {
      */
     protected void markExpiredInstancesAsUnavailable() {
         long now = timerService.getCurrentTimeMillis();
-        LOG.fine("Marking expired microservice instances as unavailable");
+        LOG.fine("Marking expired external service instances as unavailable");
 
         registry.entrySet().stream()
                 .flatMap(serviceEntry -> serviceEntry.getValue().entrySet().stream())
                 .map(Map.Entry::getValue)
                 // filter by lease expired and current status is still available
                 .filter(ms -> ms.getLeaseInfo().isExpired(now)
-                        && ms.getStatus() == MicroserviceStatus.AVAILABLE)
+                        && ms.getStatus() == ExternalServiceStatus.AVAILABLE)
                 .forEach(ms -> {
-                    ms.setStatus(MicroserviceStatus.UNAVAILABLE);
-                    clientEventService.publishEvent(new MicroserviceEvent(ms, MicroserviceEvent.Cause.UPDATE));
-                    LOG.fine("Marked microservice as unavailable: "
+                    ms.setStatus(ExternalServiceStatus.UNAVAILABLE);
+                    clientEventService.publishEvent(new ExternalServiceEvent(ms, ExternalServiceEvent.Cause.UPDATE));
+                    LOG.fine("Marked external service as unavailable: "
                             + ms.getServiceId() + ", instanceId: " + ms.getInstanceId());
                 });
     }
 
     /**
-     * Deregister long expired microservices. This is used to remove microservice
+     * Deregister long expired external services. This is used to remove external service
      * instances that have been unavailable for longer than the configured
      * {@link #DEFAULT_DEREGISTER_UNAVAILABLE_MS} threshold.
      */
     protected void deregisterLongExpiredInstances() {
-        LOG.info("De-registering long expired microservice registrations");
+        LOG.info("De-registering long expired external service registrations");
 
         long now = timerService.getCurrentTimeMillis();
         long deregisterThreshold = now - DEFAULT_DEREGISTER_UNAVAILABLE_MS;
@@ -368,7 +368,7 @@ public class MicroserviceRegistryService implements ContainerService {
                 .flatMap(serviceEntry -> serviceEntry.getValue().entrySet().stream())
                 .map(Map.Entry::getValue)
                 // filter by unavailable + meets threshold
-                .filter(ms -> ms.getStatus() == MicroserviceStatus.UNAVAILABLE
+                .filter(ms -> ms.getStatus() == ExternalServiceStatus.UNAVAILABLE
                         && ms.getLeaseInfo().getExpirationTimestamp() < deregisterThreshold)
                 .forEach(ms -> {
                     try {

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { Microservice } from "@openremote/model";
+import { ExternalService } from "@openremote/model";
 
 
 
@@ -28,7 +28,7 @@ import { Microservice } from "@openremote/model";
  * @param isSuperUser - Whether the user is a super user
  * @returns The iframe src path
  */
-export function getServiceUrlPath(service: Microservice, realmName: string, isSuperUser: boolean): string {
+export function getServiceUrlPath(service: ExternalService, realmName: string, isSuperUser: boolean): string {
     // Replace {realm} param if provided, uses query param if not super user
     const homepageUrl = service.homepageUrl || "";
     return homepageUrl.replace("{realm}", isSuperUser ? realmName : `?realm=${realmName}`);

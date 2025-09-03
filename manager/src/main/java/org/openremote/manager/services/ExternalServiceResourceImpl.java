@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.microservices;
+package org.openremote.manager.services;
 
 import java.util.logging.Logger;
 
@@ -25,60 +25,60 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.microservices.Microservice;
-import org.openremote.model.microservices.MicroserviceResource;
+import org.openremote.model.services.ExternalService;
+import org.openremote.model.services.ExternalServiceResource;
 
 import static org.openremote.model.Constants.MASTER_REALM;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
-public class MicroserviceResourceImpl extends ManagerWebResource implements MicroserviceResource {
+public class ExternalServiceResourceImpl extends ManagerWebResource implements ExternalServiceResource {
 
-    protected MicroserviceRegistryService microserviceRegistry;
-    private static final Logger LOG = Logger.getLogger(MicroserviceResourceImpl.class.getName());
+    protected ExternalServiceRegistryService externalServiceRegistry;
+    private static final Logger LOG = Logger.getLogger(ExternalServiceResourceImpl.class.getName());
 
-    public MicroserviceResourceImpl(TimerService timerService, ManagerIdentityService identityService,
-            MicroserviceRegistryService serviceRegistry) {
+    public ExternalServiceResourceImpl(TimerService timerService, ManagerIdentityService identityService,
+            ExternalServiceRegistryService serviceRegistry) {
         super(timerService, identityService);
-        this.microserviceRegistry = serviceRegistry;
+        this.externalServiceRegistry = serviceRegistry;
     }
 
     @Override
-    public Microservice registerService(RequestParams requestParams, Microservice microservice) {
+    public ExternalService registerService(RequestParams requestParams, ExternalService externalService) {
         if (!isServiceAccount()) {
             LOG.warning("Service registration not allowed for non-service users");
             throw new WebApplicationException("Service registration not allowed for non-service users",
                     Response.Status.UNAUTHORIZED);
         }
 
-        if (!isRealmActiveAndAccessible(microservice.getRealm())) {
+        if (!isRealmActiveAndAccessible(externalService.getRealm())) {
             throw new WebApplicationException(
-                    "Realm '" + microservice.getRealm() + "' is nonexistent, inactive or inaccessible",
+                    "Realm '" + externalService.getRealm() + "' is nonexistent, inactive or inaccessible",
                     Response.Status.FORBIDDEN);
         }
 
         try {
-            Microservice registeredMicroservice = microserviceRegistry.registerService(microservice);
+            ExternalService registeredExternalService = externalServiceRegistry.registerService(externalService);
 
-            if (registeredMicroservice == null) {
-                LOG.severe("Failed to register service: " + microservice.getServiceId() + " with instanceId: "
-                        + microservice.getInstanceId() + " due to an unexpected error");
+            if (registeredExternalService == null) {
+                LOG.severe("Failed to register service: " + externalService.getServiceId() + " with instanceId: "
+                        + externalService.getInstanceId() + " due to an unexpected error");
                 throw new WebApplicationException("Failed to register service",
                         Response.Status.INTERNAL_SERVER_ERROR);
             }
 
-            return registeredMicroservice;
+            return registeredExternalService;
         } catch (IllegalStateException e) {
-            LOG.warning("Failed to register service: " + microservice.getServiceId() + " with instanceId: "
-                    + microservice.getInstanceId() + " due to conflict: " + e.getMessage());
+            LOG.warning("Failed to register service: " + externalService.getServiceId() + " with instanceId: "
+                    + externalService.getInstanceId() + " due to conflict: " + e.getMessage());
             throw new WebApplicationException(e.getMessage(), Response.Status.CONFLICT);
         }
 
     }
 
     @Override
-    public Microservice registerGlobalService(RequestParams requestParams, Microservice microservice) {
+    public ExternalService registerGlobalService(RequestParams requestParams, ExternalService externalService) {
         if (!isServiceAccount()) {
             LOG.warning("Service registration is only available for service users");
             throw new WebApplicationException("Service registration is only available for service users",
@@ -90,43 +90,43 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
                     Response.Status.FORBIDDEN);
         }
 
-        if (!microservice.getRealm().equals(MASTER_REALM)) {
+        if (!externalService.getRealm().equals(MASTER_REALM)) {
             throw new WebApplicationException("Global services must have the realm set to the master realm, got: "
-                    + microservice.getRealm(),
+                    + externalService.getRealm(),
                     Response.Status.BAD_REQUEST);
         }
 
         try {
-            Microservice registeredMicroservice = microserviceRegistry.registerService(microservice, true);
+            ExternalService registeredExternalService = externalServiceRegistry.registerService(externalService, true);
 
-            if (registeredMicroservice == null) {
-                LOG.severe("Failed to register global service: " + microservice.getServiceId() + " with instanceId: "
-                        + microservice.getInstanceId() + " due to an unexpected error");
+            if (registeredExternalService == null) {
+                LOG.severe("Failed to register global service: " + externalService.getServiceId() + " with instanceId: "
+                        + externalService.getInstanceId() + " due to an unexpected error");
                 throw new WebApplicationException("Failed to register global service",
                         Response.Status.INTERNAL_SERVER_ERROR);
             }
 
-            return registeredMicroservice;
+            return registeredExternalService;
         } catch (IllegalStateException e) {
-            LOG.warning("Failed to register global service: " + microservice.getServiceId() + " with instanceId: "
-                    + microservice.getInstanceId() + " due to conflict: " + e.getMessage());
+            LOG.warning("Failed to register global service: " + externalService.getServiceId() + " with instanceId: "
+                    + externalService.getInstanceId() + " due to conflict: " + e.getMessage());
             throw new WebApplicationException(e.getMessage(), Response.Status.CONFLICT);
         }
     }
 
     @Override
-    public Microservice[] getServices(RequestParams requestParams, String realm) {
+    public ExternalService[] getServices(RequestParams requestParams, String realm) {
         if (!isRealmActiveAndAccessible(realm)) {
             throw new WebApplicationException("Realm '" + realm + "' is nonexistent, inactive or inaccessible",
                     Response.Status.FORBIDDEN);
         }
 
-        return microserviceRegistry.getServices(realm);
+        return externalServiceRegistry.getServices(realm);
     }
 
     @Override
-    public Microservice getService(RequestParams requestParams, String serviceId, String instanceId) {
-        Microservice service = microserviceRegistry.getService(serviceId, instanceId);
+    public ExternalService getService(RequestParams requestParams, String serviceId, String instanceId) {
+        ExternalService service = externalServiceRegistry.getService(serviceId, instanceId);
 
         if (service == null) {
             throw new WebApplicationException("Service " + serviceId + " instance " + instanceId + " not found",
@@ -143,8 +143,8 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
     }
 
     @Override
-    public Microservice[] getGlobalServices(RequestParams requestParams) {
-        return microserviceRegistry.getGlobalServices();
+    public ExternalService[] getGlobalServices(RequestParams requestParams) {
+        return externalServiceRegistry.getGlobalServices();
     }
 
     @Override
@@ -155,7 +155,7 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
                     Response.Status.UNAUTHORIZED);
         }
 
-        Microservice service = microserviceRegistry.getService(serviceId, instanceId);
+        ExternalService service = externalServiceRegistry.getService(serviceId, instanceId);
 
         if (service == null) {
             throw new WebApplicationException("Service " + serviceId + " instance " + instanceId + " not found",
@@ -174,7 +174,7 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
                     Response.Status.FORBIDDEN);
         }
 
-        microserviceRegistry.heartbeat(serviceId, instanceId);
+        externalServiceRegistry.heartbeat(serviceId, instanceId);
     }
 
     @Override
@@ -185,7 +185,7 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
                     Response.Status.UNAUTHORIZED);
         }
 
-        Microservice service = microserviceRegistry.getService(serviceId, instanceId);
+        ExternalService service = externalServiceRegistry.getService(serviceId, instanceId);
 
         if (service == null) {
             throw new WebApplicationException("Service " + serviceId + " instance " + instanceId + " not found",
@@ -204,10 +204,10 @@ public class MicroserviceResourceImpl extends ManagerWebResource implements Micr
                     Response.Status.FORBIDDEN);
         }
 
-        microserviceRegistry.deregisterService(serviceId, instanceId);
+        externalServiceRegistry.deregisterService(serviceId, instanceId);
     }
 
-    protected boolean isServiceGlobalAndUserIsNotSuperUser(Microservice service) {
+    protected boolean isServiceGlobalAndUserIsNotSuperUser(ExternalService service) {
         return service.getIsGlobal() && !isSuperUser();
     }
 

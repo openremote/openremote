@@ -20,7 +20,7 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { manager } from "@openremote/core";
-import { Microservice } from "@openremote/model";
+import { ExternalService } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-components/or-iframe";
 import { OrIframe } from "@openremote/or-components/or-iframe";
@@ -158,10 +158,10 @@ export class OrServices extends LitElement {
     public realmName: string = manager.displayRealm;
 
     @property({ type: Array })
-    public services: Microservice[] = [];
+    public services: ExternalService[] = [];
 
     @property({ type: Object })
-    public selectedService: Microservice | null = null;
+    public selectedService: ExternalService | null = null;
 
     @property({ type: Boolean })
     public loading: boolean = false;
@@ -188,7 +188,7 @@ export class OrServices extends LitElement {
         }
     }
 
-    protected _selectService(service: Microservice): void {
+    protected _selectService(service: ExternalService): void {
         this.selectedService = service;
 
         // Dispatch event for parent components to handle navigation
@@ -216,7 +216,7 @@ export class OrServices extends LitElement {
         }
     }
 
-    protected _getServiceUrlPath(service: Microservice): string {
+    protected _getServiceUrlPath(service: ExternalService): string {
         const isSuperUser = manager.isSuperUser();
         return getServiceUrlPath(service, this.realmName, isSuperUser);
     }

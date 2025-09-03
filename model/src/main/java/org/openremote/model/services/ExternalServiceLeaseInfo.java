@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.microservices;
+package org.openremote.model.services;
 
 /**
- * Lease info for a microservice instance, contains timestamps for lease
+ * Lease info for a external service instance, contains timestamps for lease
  * expiration, registration and renewal.
  */
-public class MicroserviceLeaseInfo {
+public class ExternalServiceLeaseInfo {
 
 
     /**
@@ -41,7 +41,7 @@ public class MicroserviceLeaseInfo {
      */
     private long renewalTimestamp;
 
-    public MicroserviceLeaseInfo(long expirationTimestamp, long registrationTimestamp,
+    public ExternalServiceLeaseInfo(long expirationTimestamp, long registrationTimestamp,
             long renewalTimestamp) {
         this.expirationTimestamp = expirationTimestamp;
         this.registrationTimestamp = registrationTimestamp;
@@ -78,7 +78,7 @@ public class MicroserviceLeaseInfo {
 
     @Override
     public String toString() {
-        return "MicroserviceLeaseInfo{" +
+        return "ExternalServiceLeaseInfo{" +
                 ", expirationTimestamp=" + expirationTimestamp +
                 ", registrationTimestamp=" + registrationTimestamp +
                 ", renewalTimestamp=" + renewalTimestamp +

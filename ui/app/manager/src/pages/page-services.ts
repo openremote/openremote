@@ -23,7 +23,7 @@ import { AppStateKeyed, Page, PageProvider, router } from "@openremote/or-app";
 import { createSelector, Store } from "@reduxjs/toolkit";
 import { manager } from "@openremote/core";
 import "@openremote/or-services";
-import { Microservice, MicroserviceEvent, MicroserviceEventCause, MicroserviceStatus } from "@openremote/model";
+import { ExternalService, ExternalServiceEvent, ExternalServiceEventCause, ExternalServiceStatus } from "@openremote/model";
 import { getServicesRoute } from "../routes";
 
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -56,19 +56,19 @@ const serviceStyles = css`
  * @param services - Array of services to consolidate
  * @returns Consolidated array with unique serviceIds
  */
-function consolidateServices(services: Microservice[]): Microservice[] {
+function consolidateServices(services: ExternalService[]): ExternalService[] {
     return Object.values(
         services.reduce((acc, service) => {
             const serviceId = service.serviceId || "";
             const existing = acc[serviceId];
             if (
                 !existing ||
-                (service.status === MicroserviceStatus.AVAILABLE && existing.status !== MicroserviceStatus.AVAILABLE)
+                (service.status === ExternalServiceStatus.AVAILABLE && existing.status !== ExternalServiceStatus.AVAILABLE)
             ) {
                 acc[serviceId] = service;
             }
             return acc;
-        }, {} as Record<string, Microservice>)
+        }, {} as Record<string, ExternalService>)
     );
 }
 
@@ -89,10 +89,10 @@ export class PageServices extends Page<AppStateKeyed> {
     protected realmName: string = "";
 
     @state()
-    protected services: Microservice[] = [];
+    protected services: ExternalService[] = [];
 
     @state()
-    protected selectedService: Microservice | null = null;
+    protected selectedService: ExternalService | null = null;
 
     @state()
     protected _loading = false;
@@ -116,7 +116,7 @@ export class PageServices extends Page<AppStateKeyed> {
 
     protected async _subscribeEvents() {
         if (manager.events) {
-            this._eventSubscriptionId = await manager.events.subscribe<MicroserviceEvent>(
+            this._eventSubscriptionId = await manager.events.subscribe<ExternalServiceEvent>(
                 {
                     eventType: "microservice",
                 },
@@ -131,27 +131,27 @@ export class PageServices extends Page<AppStateKeyed> {
         }
     }
 
-    protected _onEvent(event: MicroserviceEvent) {
-        if (!event.microservice || !event.cause) {
+    protected _onEvent(event: ExternalServiceEvent) {
+        if (!event.service || !event.cause) {
             return;
         }
 
         // Super users receive all events, so we need to filter them out if they are not for the display realm or global
-        if (manager.isSuperUser && event.microservice.realm !== this.realmName && !event.microservice.isGlobal) {
+        if (manager.isSuperUser && event.service.realm !== this.realmName && !event.service.isGlobal) {
             return;
         }
 
         // Handle the event based on the cause
         switch (event.cause) {
-            case MicroserviceEventCause.REGISTER: {
+            case ExternalServiceEventCause.REGISTER: {
                 this._onServiceRegistered(event);
                 break;
             }
-            case MicroserviceEventCause.UPDATE: {
+            case ExternalServiceEventCause.UPDATE: {
                 this._onServiceUpdated(event);
                 break;
             }
-            case MicroserviceEventCause.DEREGISTER: {
+            case ExternalServiceEventCause.DEREGISTER: {
                 this._onServiceDeregistered(event);
                 break;
             }
@@ -162,37 +162,37 @@ export class PageServices extends Page<AppStateKeyed> {
         this.services = consolidateServices(this.services);
     }
 
-    protected _onServiceRegistered(event: MicroserviceEvent): void {
-        this.services.push(event.microservice);
+    protected _onServiceRegistered(event: ExternalServiceEvent): void {
+        this.services.push(event.service);
 
         // If the pushed service is the same as the selected service.serviceId and the current selected service is unvailable, refresh the iframe
         if (
             this._eventIsForSelectedServiceId(event) &&
-            this.selectedService?.status === MicroserviceStatus.UNAVAILABLE
+            this.selectedService?.status === ExternalServiceStatus.UNAVAILABLE
         ) {
-            this.selectedService = event.microservice;
+            this.selectedService = event.service;
             this._refreshIframe();
         }
     }
 
-    protected _onServiceUpdated(event: MicroserviceEvent): void {
+    protected _onServiceUpdated(event: ExternalServiceEvent): void {
         const existingServiceInstance = this.services.find(
             (service) =>
-                service.serviceId === event.microservice?.serviceId &&
-                service.instanceId === event.microservice?.instanceId
+                service.serviceId === event.service?.serviceId &&
+                service.instanceId === event.service?.instanceId
         );
 
         // Overwrite the existing service with the updated service object
         if (existingServiceInstance) {
-            Object.assign(existingServiceInstance, event.microservice);
+            Object.assign(existingServiceInstance, event.service);
         }
 
         // If the selected service instance is the one that was updated, and the status has changed, refresh the iframe
         if (
             this._eventIsForSelectedServiceInstance(event) &&
-            this.selectedService?.status !== event.microservice?.status
+            this.selectedService?.status !== event.service?.status
         ) {
-            this.selectedService = event.microservice;
+            this.selectedService = event.service;
             this._refreshIframe();
             return;
         }
@@ -200,19 +200,19 @@ export class PageServices extends Page<AppStateKeyed> {
         // If the selected serviceId is the same as the event serviceId and the current selected status is unavailable, refresh the iframe
         if (
             this._eventIsForSelectedServiceId(event) &&
-            this.selectedService?.status === MicroserviceStatus.UNAVAILABLE
+            this.selectedService?.status === ExternalServiceStatus.UNAVAILABLE
         ) {
-            this.selectedService = event.microservice;
+            this.selectedService = event.service;
             this._refreshIframe();
         }
     }
 
-    protected _onServiceDeregistered(event: MicroserviceEvent): void {
+    protected _onServiceDeregistered(event: ExternalServiceEvent): void {
         // Filter out the service instance that was deregistered
         this.services = this.services.filter(
             (service) =>
-                service.serviceId !== event.microservice?.serviceId &&
-                service.instanceId !== event.microservice?.instanceId
+                service.serviceId !== event.service?.serviceId &&
+                service.instanceId !== event.service?.instanceId
         );
 
         // If the selected service instance is the one that was deregistered, set the selected service to null
@@ -221,15 +221,15 @@ export class PageServices extends Page<AppStateKeyed> {
         }
     }
 
-    protected _eventIsForSelectedServiceInstance(event: MicroserviceEvent): boolean {
+    protected _eventIsForSelectedServiceInstance(event: ExternalServiceEvent): boolean {
         return (
-            this.selectedService?.serviceId === event.microservice?.serviceId &&
-            this.selectedService?.instanceId === event.microservice?.instanceId
+            this.selectedService?.serviceId === event.service?.serviceId &&
+            this.selectedService?.instanceId === event.service?.instanceId
         );
     }
 
-    protected _eventIsForSelectedServiceId(event: MicroserviceEvent): boolean {
-        return this.selectedService?.serviceId === event.microservice?.serviceId;
+    protected _eventIsForSelectedServiceId(event: ExternalServiceEvent): boolean {
+        return this.selectedService?.serviceId === event.service?.serviceId;
     }
 
     protected async _loadData(silent = false): Promise<void> {
@@ -241,14 +241,14 @@ export class PageServices extends Page<AppStateKeyed> {
             // Use promise.allSettled to run both requests in parallel and wait for both to complete
             // If we use Promise.all, we would not be able to handle the case where one request fails and the other succeeds
             const [realmServicesResult, globalServicesResult] = await Promise.allSettled([
-                manager.rest.api.MicroserviceResource.getServices({
+                manager.rest.api.ExternalServiceResource.getServices({
                     realm: this.realmName,
                 }),
-                manager.rest.api.MicroserviceResource.getGlobalServices(),
+                manager.rest.api.ExternalServiceResource.getGlobalServices(),
             ]);
 
             // Temporary array to store all retrieved services
-            const retrievedServices: Microservice[] = [];
+            const retrievedServices: ExternalService[] = [];
 
             const realmServicesRequestHasSucceeded =
                 realmServicesResult.status === "fulfilled" && realmServicesResult.value.status === 200;
@@ -319,7 +319,7 @@ export class PageServices extends Page<AppStateKeyed> {
     });
 
     protected _onServiceSelected(e: CustomEvent): void {
-        const service = e.detail as Microservice;
+        const service = e.detail as ExternalService;
 
         if (service && service.serviceId !== this.serviceId) {
             this.serviceId = service.serviceId;
