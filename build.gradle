@@ -99,11 +99,10 @@ subprojects {
     // Apply only if the project has a 'test' task
     tasks.withType(Test).configureEach { testTask ->
         outputs.upToDateWhen { false }
-        workingDir = findProject(":openremote") != null ? project("").projectDir : rootProject.projectDir
         useJUnitPlatform()
 
         testLogging {
-        
+
             // set options for log level LIFECYCLE
             events = [
                 TestLogEvent.FAILED,
@@ -146,6 +145,10 @@ subprojects {
     }
 
     afterEvaluate { proj ->
+        tasks.withType(Test).configureEach { testTask ->
+            workingDir = findProject(":openremote") != null ? project("").projectDir : rootProject.projectDir
+        }
+
         if (proj.plugins.hasPlugin('java')) {
             def entityAnnotation = 'Ljakarta/persistence/Entity;'
 
