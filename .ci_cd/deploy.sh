@@ -267,6 +267,18 @@ fi
 echo "Deleting existing deployment data volume"
 docker volume rm or_deployment-data 1>/dev/null
 
+# Get IP of interface on private subnet to expose metrics
+TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" \
+  -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" 2>/dev/null)
+
+if [ -n "$TOKEN" ]; then
+  export PRIVATE_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" \
+    -s http://169.254.169.254/latest/meta-data/local-ipv4 2>/dev/null)
+else
+  echo "Could not get token to query for private IP"
+fi
+echo "Private IP $PRIVATE_IP"
+
 # Start the stack
 echo "Starting the stack"
 docker-compose -f temp/docker-compose.yml -p or up -d
@@ -395,18 +407,6 @@ fi
 # Delete any deployment volume so we get the latest
 echo "Deleting existing deployment data volume"
 docker volume rm or_deployment-data 1>/dev/null
-
-# Get IP of interface on private subnet to expose metrics
-TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" \
-  -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" 2>/dev/null)
-
-if [ -n "$TOKEN" ]; then
-  export PRIVATE_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" \
-    -s http://169.254.169.254/latest/meta-data/local-ipv4 2>/dev/null)
-else
-  echo" Could not get token to query for private IP"
-fi
-echo "Private IP $PRIVATE_IP"
 
 # Start the stack
 echo "Starting the stack"

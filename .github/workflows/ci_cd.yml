@@ -829,15 +829,9 @@ jobs:
 
           # Determine deploy script to use
           deployScript = ".ci_cd/deploy.sh"
-          
-          os.system(f"echo 'deployScript {deployScript}...'")
 
           if not os.path.exists(deployScript) and not isMainRepo:
             deployScript = "openremote/.ci_cd/deploy.sh"
-            os.system(f"echo 'deployScript (2) {deployScript}...'")
-
-          os.system(f"ls -l {deployScript}")
-          os.system(f"cat {deployScript}")
 
           if not os.path.exists(deployScript):
             os.system(f"Deploy script not found '{deployScript}'")
