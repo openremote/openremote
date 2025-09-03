@@ -180,6 +180,16 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         }
 
         @Override
+        public List<String> getQualifierAnnotationNames() {
+            return null;
+        }
+
+        @Override
+        public String getScopeAnnotationName() {
+            return null;
+        }
+
+        @Override
         public ClassLoader getClassLoader() {
             return null;
         }

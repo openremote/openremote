@@ -160,6 +160,10 @@ repositories {
         url = "https://repo.osgeo.org/repository/release/"
     }
     mavenCentral()
+    // Additional repository for jgridshift dependency
+    maven {
+        url = "https://oss.sonatype.org/content/repositories/releases/"
+    }
     maven {
         url = "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"
     }

@@ -16,7 +16,10 @@ dependencies {
 
     api "org.keycloak:keycloak-core:$keycloakVersion"
 
-    api "org.geotools:gt-main:$geotoolsVersion"
+    api("org.geotools:gt-main:$geotoolsVersion") {
+        exclude group: 'jgridshift', module: 'jgridshift-core'
+        exclude group: 'javax.media', module: 'jai_core'
+    }
     api "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
 
     // The transitive dependency from com.jayway.jsonpath:json-path contains a vulnerability

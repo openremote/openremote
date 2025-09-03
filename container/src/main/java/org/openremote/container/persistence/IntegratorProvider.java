@@ -37,8 +37,7 @@ public class IntegratorProvider implements org.hibernate.jpa.boot.spi.Integrator
         return Collections.singletonList(this);
     }
 
-    @Override
-        public void integrate(Metadata metadata, SessionFactoryImplementor sessionFactory, SessionFactoryServiceRegistry serviceRegistry) {
+    public void integrate(Metadata metadata, SessionFactoryImplementor sessionFactory, SessionFactoryServiceRegistry serviceRegistry) {
         final EventListenerRegistry eventListenerRegistry = serviceRegistry.getService(EventListenerRegistry.class);
 
         // Replace the flush entity listeners which removes the standard DefaultFlushEntityEventListener
