@@ -22,7 +22,7 @@ package org.openremote.container.persistence;
 import jakarta.transaction.Status;
 import jakarta.transaction.Synchronization;
 import org.apache.camel.CamelExecutionException;
-import org.hibernate.CallbackException;
+
 import org.hibernate.Interceptor;
 import org.hibernate.Transaction;
 import org.hibernate.type.Type;
@@ -50,8 +50,7 @@ public class PersistenceEventInterceptor implements Interceptor {
     @Override
     public boolean onPersist(Object entity,
                           Object id,
-                          Object[] state, String[] propertyNames, Type[] types)
-        throws CallbackException {
+                          Object[] state, String[] propertyNames, Type[] types) {
         persistenceEvents.add(new PersistenceEvent<>(
             PersistenceEvent.Cause.CREATE,
             entity,
@@ -65,8 +64,7 @@ public class PersistenceEventInterceptor implements Interceptor {
     public boolean onFlushDirty(Object entity,
                                 Object id,
                                 Object[] currentState, Object[] previousState,
-                                String[] propertyNames, Type[] types)
-        throws CallbackException {
+                                String[] propertyNames, Type[] types) {
         persistenceEvents.add(new PersistenceEvent<>(
             PersistenceEvent.Cause.UPDATE,
             entity,

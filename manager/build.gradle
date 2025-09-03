@@ -20,7 +20,10 @@ dependencies {
 
     api "org.mnode.ical4j:ical4j:$ical4jVersion"
 
-    implementation "org.geotools:gt-main:$geotoolsVersion"
+    implementation("org.geotools:gt-main:$geotoolsVersion") {
+        exclude group: 'jgridshift', module: 'jgridshift-core'
+        exclude group: 'javax.media', module: 'jai_core'
+    }
     implementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
     implementation "org.eclipse.angus:angus-mail:$jakartaMailVersion"
     implementation "io.swagger.core.v3:swagger-jaxrs2-jakarta:$swaggerVersion"
