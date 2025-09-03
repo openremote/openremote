@@ -258,23 +258,30 @@ public class JSONSchemaUtil {
                 });
 
             // Class subtype resolver for abstract classes
-            builder.forTypesInGeneral().withCustomDefinitionProvider((resolvedType, context) -> {
-                List<ResolvedType> subTypes = findSubtypes(resolvedType, context);
-                if (subTypes == null || subTypes.isEmpty()) {
-                    return null;
-                }
+            builder.forTypesInGeneral()
+                .withCustomDefinitionProvider(new JsonSubTypesResolver(
+                    Arrays.asList(
+                        JacksonOption.ALWAYS_REF_SUBTYPES
+                    ))
+                )
+                .withCustomDefinitionProvider((resolvedType, context) -> {
+                    List<ResolvedType> subTypes = findSubtypes(resolvedType, context);
+                    if (subTypes == null || subTypes.isEmpty()) {
+                        return null;
+                    }
 
-                ObjectNode definition = context.getGeneratorConfig().createObjectNode();
-                ArrayNode oneOfArray = definition.withArray(context.getKeyword(SchemaKeyword.TAG_ONEOF));
+                    ObjectNode definition = context.getGeneratorConfig().createObjectNode();
+                    ArrayNode oneOfArray = definition.withArray(context.getKeyword(SchemaKeyword.TAG_ONEOF));
 
-                for (ResolvedType subType : subTypes) {
-                    oneOfArray.add(context.createDefinitionReference(subType));
-                }
+                    for (ResolvedType subType : subTypes) {
+                        oneOfArray.add(context.createDefinitionReference(subType));
+                    }
 
-                // Always inline the super class schema to avoid allOf wrapping, which cannot be cleaned up as
-                // JSON Schema draft-7 does not permit other properties alongside a $ref, see
-                // https://json-schema.org/draft-07/draft-handrews-json-schema-01#rfc.section.8.3
-                return new CustomDefinition(definition, CustomDefinition.DefinitionType.INLINE, CustomDefinition.AttributeInclusion.NO);
+                    System.out.println(definition);
+                    // Always inline the super class schema to avoid allOf wrapping, which cannot be cleaned up as
+                    // JSON Schema draft-7 does not permit other properties alongside a $ref, see
+                    // https://json-schema.org/draft-07/draft-handrews-json-schema-01#rfc.section.8.3
+                    return new CustomDefinition(definition, CustomDefinition.DefinitionType.INLINE, CustomDefinition.AttributeInclusion.YES);
             });
 
             // Set the default keyword for subtypes so AJV in the frontend can tell jsonforms/core to consider the
@@ -300,10 +307,10 @@ public class JSONSchemaUtil {
 
                 ObjectNode targetNode;
 
-                // If there is an allOf array, inject into the first object inside it to allow for cleanup with `Option.ALLOF_CLEANUP_AT_THE_END`
+                // If there is an allOf array, inject into the last object inside it to allow for cleanup with `Option.ALLOF_CLEANUP_AT_THE_END`
                 JsonNode allOfNode = attrs.get(context.getKeyword(SchemaKeyword.TAG_ALLOF));
                 if (allOfNode instanceof ArrayNode allOf && !allOf.isEmpty()) {
-                    targetNode = (ObjectNode) allOf.get(0);
+                    targetNode = (ObjectNode) allOf.get(allOf.size() - 1);
                 } else {
                     targetNode = attrs;
                 }
