@@ -137,11 +137,11 @@ public class ExternalServiceRegistryService implements ContainerService {
     @Override
     public void start(Container container) throws Exception {
         markExpiredInstancesAsUnavailableFuture = scheduledExecutorService.scheduleAtFixedRate(
-                this::markExpiredInstancesAsUnavailable, 0,
+                this::markExpiredInstancesAsUnavailable, MARK_EXPIRED_INSTANCES_INTERVAL_MS,
                 MARK_EXPIRED_INSTANCES_INTERVAL_MS, TimeUnit.MILLISECONDS);
 
         deregisterExpiredUnavailableInstancesFuture = scheduledExecutorService.scheduleAtFixedRate(
-                this::deregisterLongExpiredInstances, 0,
+                this::deregisterLongExpiredInstances, DEREGISTER_UNAVAILABLE_INTERVAL_MS,
                 DEREGISTER_UNAVAILABLE_INTERVAL_MS, TimeUnit.MILLISECONDS);
     }
 
