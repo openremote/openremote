@@ -9,6 +9,10 @@ export class AssetsPage implements BasePage {
     this.manager.navigateToTab("Assets");
   }
 
+  async gotoAssetId(realm: string, id: string, editor = false) {
+    this.page.goto(this.manager.getAppUrl(realm) + `#/assets/${editor}/${id}`);
+  }
+
   /**
    * Add asset of type and with name.
    *
