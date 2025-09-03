@@ -18,30 +18,30 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import { TreeNode } from "@openremote/or-tree-menu";
-import { Microservice } from "@openremote/model";
+import { ExternalService } from "@openremote/model";
 
-export enum MicroserviceStatusIcon {
+export enum ExternalServiceStatusIcon {
     AVAILABLE = "play",
     UNAVAILABLE = "alert-octagon",
 }
 
-export enum MicroserviceStatusColor {
+export enum ExternalServiceStatusColor {
     AVAILABLE = "iconfill-gray",
     UNAVAILABLE = "iconfill-red",
 }
 
 export interface ServiceTreeNode extends TreeNode {
-    service?: Microservice;
+    service?: ExternalService;
 }
 
 /**
  * Model for the SERVICE-SELECTED event that {@link OrServiceTree} can dispatch.
  * Once a service is selected, the selected service will be shared with the consumer elements.
  */
-export class OrServiceSelectedEvent extends CustomEvent<Microservice> {
+export class OrServiceSelectedEvent extends CustomEvent<ExternalService> {
     public static readonly NAME = "or-service-selected";
 
-    constructor(service: Microservice) {
+    constructor(service: ExternalService) {
         super(OrServiceSelectedEvent.NAME, {
             bubbles: true,
             composed: true,

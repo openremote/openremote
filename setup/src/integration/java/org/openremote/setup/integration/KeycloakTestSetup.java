@@ -88,7 +88,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
 
         // Realms
-        realmMaster = identityService.getIdentityProvider().getRealm(Constants.MASTER_REALM);
+        realmMaster = identityProvider.getRealm(Constants.MASTER_REALM);
         realmBuilding = createRealm("building", "Building", true);
         realmCity = createRealm("smartcity", "Smart City", true);
         realmEnergy = createRealm("energy", "Energy Test", true);

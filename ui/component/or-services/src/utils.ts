@@ -17,31 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { Microservice, MicroserviceStatus } from "@openremote/model";
+import { ExternalService } from "@openremote/model";
 
-/**
- * Consolidate services by serviceId, preferring AVAILABLE over UNAVAILABLE.
- *
- * This is used to ensure that only one service is displayed for a given serviceId.
- *
- * @param services - Array of services to consolidate
- * @returns Consolidated array with unique serviceIds
- */
-export function consolidateServices(services: Microservice[]): Microservice[] {
-    return Object.values(
-        services.reduce((acc, service) => {
-            const serviceId = service.serviceId || "";
-            const existing = acc[serviceId];
-            if (
-                !existing ||
-                (service.status === MicroserviceStatus.AVAILABLE && existing.status !== MicroserviceStatus.AVAILABLE)
-            ) {
-                acc[serviceId] = service;
-            }
-            return acc;
-        }, {} as Record<string, Microservice>)
-    );
-}
+
 
 /**
  * Get the iframe src path for a given service
@@ -50,7 +28,7 @@ export function consolidateServices(services: Microservice[]): Microservice[] {
  * @param isSuperUser - Whether the user is a super user
  * @returns The iframe src path
  */
-export function getServiceUrlPath(service: Microservice, realmName: string, isSuperUser: boolean): string {
+export function getServiceUrlPath(service: ExternalService, realmName: string, isSuperUser: boolean): string {
     // Replace {realm} param if provided, uses query param if not super user
     const homepageUrl = service.homepageUrl || "";
     return homepageUrl.replace("{realm}", isSuperUser ? realmName : `?realm=${realmName}`);

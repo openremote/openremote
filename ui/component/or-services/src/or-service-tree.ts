@@ -21,12 +21,12 @@ import { css, html, unsafeCSS, TemplateResult, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { DefaultColor3, DefaultColor5, DefaultColor6 } from "@openremote/core";
 import { OrTreeMenu, TreeMenuSelection, OrTreeNode, TreeMenuSorting } from "@openremote/or-tree-menu";
-import { Microservice, MicroserviceStatus } from "@openremote/model";
+import { ExternalService, ExternalServiceStatus } from "@openremote/model";
 import { Util } from "@openremote/core";
 import {
     ServiceTreeNode,
-    MicroserviceStatusIcon,
-    MicroserviceStatusColor,
+    ExternalServiceStatusIcon,
+    ExternalServiceStatusColor,
     OrServiceSelectedEvent,
 } from "./types";
 
@@ -65,10 +65,10 @@ export class OrServiceTree extends OrTreeMenu {
     }
 
     @property({ type: Array })
-    public services?: Microservice[];
+    public services?: ExternalService[];
 
     @property({ type: Object })
-    public selectedService?: Microservice;
+    public selectedService?: ExternalService;
 
     @property({ type: Boolean })
     public readonly = false;
@@ -122,25 +122,25 @@ export class OrServiceTree extends OrTreeMenu {
         return super._dispatchSelectEvent(nodes);
     }
 
-    protected _getServiceNodes(services: Microservice[]): ServiceTreeNode[] {
+    protected _getServiceNodes(services: ExternalService[]): ServiceTreeNode[] {
         return services.map((service) => ({
             id: service.serviceId || "",
             label: service.label || "",
             service,
-            disabled: service.status === MicroserviceStatus.UNAVAILABLE,
+            disabled: service.status === ExternalServiceStatus.UNAVAILABLE,
         }));
     }
 
     protected _getSingleNodeSlotTemplate(node: ServiceTreeNode): TemplateResult {
         const service = node.service!;
         const statusIcon =
-            service.status && MicroserviceStatusIcon[service.status]
-                ? MicroserviceStatusIcon[service.status]
-                : MicroserviceStatusIcon.UNAVAILABLE;
+            service.status && ExternalServiceStatusIcon[service.status]
+                ? ExternalServiceStatusIcon[service.status]
+                : ExternalServiceStatusIcon.UNAVAILABLE;
         const statusColor =
-            service.status && MicroserviceStatusColor[service.status]
-                ? MicroserviceStatusColor[service.status]
-                : MicroserviceStatusColor.UNAVAILABLE;
+            service.status && ExternalServiceStatusColor[service.status]
+                ? ExternalServiceStatusColor[service.status]
+                : ExternalServiceStatusColor.UNAVAILABLE;
 
    
 

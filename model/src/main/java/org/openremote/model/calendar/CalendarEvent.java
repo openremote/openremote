@@ -47,7 +47,7 @@ import java.util.List;
  * be obtained from the associated {@link Asset}; {@link #start} and {@link #end} are required but {@link #recurrence}
  * is optional:
  * <ul>
- * <li><a href="https://tools.ietf.org/id/draft-jenkins-jscalendar-01.html">JSCalendar</a></li>
+ * <li><a href="https://datatracker.ietf.org/doc/draft-ietf-calext-jscalendarbis/">JSCalendar</a></li>
  * </ul>
  * <p>
  * Example 1 (One day, one time only):
@@ -69,11 +69,11 @@ import java.util.List;
     }
 }
  * }</pre></blockquote>
- * Example 3 (8 hours starting 2nd September 2015 08:00am, repeat every day until 1st Feb 2018):
+ * Example 3 (8 hours starting 2nd September 2015 08:00am; repeat every other day, 4 occurrences):
  * <blockquote><pre>{@code
 {
     "start": 1441177200000,
-    "ends": 1441206000000,
+    "end": 1441206000000,
     "recurrence": "RRULE:FREQ=DAILY;INTERVAL=2;COUNT=4"
 }
  * }</pre></blockquote>
