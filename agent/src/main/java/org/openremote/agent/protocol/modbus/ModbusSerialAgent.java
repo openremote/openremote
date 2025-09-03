@@ -30,8 +30,7 @@ import org.openremote.model.value.ValueType;
 import java.util.Optional;
 
 /**
- * This Modbus serial agent is currently untested, due to difficulties in testing Modbus serial agents (especially the
- * absence of automated Modbus serial testing libraries)
+ * This Modbus serial agent has been tested with USB-UART-RS485 converters with chips CH341 and CP2104. RS232 remains untested.
  */
 @Entity
 public class ModbusSerialAgent extends Agent<ModbusSerialAgent, ModbusSerialProtocol, ModbusAgentLink> {

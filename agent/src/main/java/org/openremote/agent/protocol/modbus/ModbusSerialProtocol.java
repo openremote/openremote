@@ -79,7 +79,7 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
             serialPort.setBaudRate(baudRate);
             serialPort.setNumDataBits(dataBits);
             serialPort.setNumStopBits(stopBits);
-            serialPort.setParity(mapParityToSerialPort(agent.getParityValue())); // Configurable parity
+            serialPort.setParity(mapParityToSerialPort(agent.getParityValue()));
             serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 2000, 0);
             
             if (serialPort.openPort()) {
