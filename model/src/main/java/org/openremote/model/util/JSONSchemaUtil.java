@@ -254,7 +254,10 @@ public class JSONSchemaUtil {
                             throw new RuntimeException("Failed to apply " + ann.getClass().getSimpleName(), e);
                         }
                     }
-                    return null;
+                    // TODO: handle allOf wrapping in JSON Forms instead
+                    // Inline definitions in member scope to avoid $ref collisions
+                    // We also ignore this custom definition provider to avoid infinite recursion
+                    return new CustomPropertyDefinition(context.createStandardDefinition(fieldScope.getType(), builder.forTypesInGeneral().getCustomDefinitionProviders().getFirst()));
                 });
 
             // Class subtype resolver for abstract classes
@@ -592,9 +595,10 @@ public class JSONSchemaUtil {
             Option.DUPLICATE_MEMBER_ATTRIBUTE_CLEANUP_AT_THE_END
         ))
         .with(new JacksonModule(
-            JacksonOption.ALWAYS_REF_SUBTYPES,
             // Disable subtype lookup in Jackson module, as we handle this ourselves to replace anyOf with oneOf
             JacksonOption.SKIP_SUBTYPE_LOOKUP,
+            // Ignore type transform to omit all custom schema definition providers from the JacksonModule
+            JacksonOption.IGNORE_TYPE_INFO_TRANSFORM,
             JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
             JacksonOption.FLATTENED_ENUMS_FROM_JSONPROPERTY,
             JacksonOption.FLATTENED_ENUMS_FROM_JSONVALUE
