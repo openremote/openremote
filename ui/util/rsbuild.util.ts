@@ -44,9 +44,26 @@ export function getAppConfig(options: AppConfigOptions): RsbuildConfig {
         // Webpack fallbacks for Node.js modules
         vm: false,
         querystring: require.resolve('querystring-es3'),
+        // Workspace aliases for proper resolution
+        '@openremote/model': path.resolve(dirname, '../../component/model/src'),
+        '@openremote/rest': path.resolve(dirname, '../../component/rest/src'),
+        '@openremote/core': path.resolve(dirname, '../../component/core/src'),
+        '@openremote/or-app': path.resolve(dirname, '../../component/or-app/src'),
+        '@openremote/or-translate': path.resolve(dirname, '../../component/or-translate/src'),
+        '@openremote/or-components': path.resolve(dirname, '../../component/or-components/src'),
+        '@openremote/or-mwc-components': path.resolve(dirname, '../../component/or-mwc-components/src'),
+        '@openremote/or-asset-tree': path.resolve(dirname, '../../component/or-asset-tree/src'),
+        '@openremote/or-chart': path.resolve(dirname, '../../component/or-chart/src'),
+        '@openremote/or-icon': path.resolve(dirname, '../../component/or-icon/src'),
+        '@openremote/or-input': path.resolve(dirname, '../../component/or-input/src'),
+        '@openremote/or-map': path.resolve(dirname, '../../component/or-map/src'),
+        '@openremote/or-rules': path.resolve(dirname, '../../component/or-rules/src'),
+        '@openremote/util': path.resolve(dirname, '../../util'),
       },
       // Add extensions for TypeScript resolution
       extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
+      // Enable symlinks resolution for workspace packages
+      symlinks: true,
     },
 
     output: {
