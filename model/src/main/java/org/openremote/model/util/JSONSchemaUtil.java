@@ -259,11 +259,7 @@ public class JSONSchemaUtil {
 
             // Class subtype resolver for abstract classes
             builder.forTypesInGeneral()
-                .withCustomDefinitionProvider(new JsonSubTypesResolver(
-                    Arrays.asList(
-                        JacksonOption.ALWAYS_REF_SUBTYPES
-                    ))
-                )
+                .withCustomDefinitionProvider(new JsonSubTypesResolver(List.of(JacksonOption.ALWAYS_REF_SUBTYPES, JacksonOption.SKIP_SUBTYPE_LOOKUP)))
                 .withCustomDefinitionProvider((resolvedType, context) -> {
                     List<ResolvedType> subTypes = findSubtypes(resolvedType, context);
                     if (subTypes == null || subTypes.isEmpty()) {
