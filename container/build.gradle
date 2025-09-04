@@ -26,11 +26,11 @@ dependencies {
     api "org.jboss.resteasy:resteasy-multipart-provider:$resteasyVersion"
     api "org.jboss.resteasy:resteasy-validator-provider:$resteasyVersion"
 
-    api "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
-    // This is the generic keycloak adapter that isn't kept up to date - deprecated possibly?
-    // They now only develop keycloak-jboss-adapter-core which is wildfly specific and would need some work to integrate
-    api "org.keycloak:keycloak-adapter-core:$keycloakVersion"
-    api "org.keycloak:keycloak-policy-enforcer:$keycloakVersion"
+    api "jakarta.security.enterprise:jakarta.security.enterprise-api:4.0.0"
+    api "org.glassfish.soteria:jakarta.security.enterprise:3.0.4"
+    api "com.nimbusds:nimbus-jose-jwt:10.4.2"
+
+
     api "org.keycloak:keycloak-admin-client:$keycloakVersion"
 
     api "org.postgresql:postgresql:$postgresJdbcVersion"

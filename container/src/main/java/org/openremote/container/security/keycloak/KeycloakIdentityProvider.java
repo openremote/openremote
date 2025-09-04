@@ -110,17 +110,11 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     protected int sessionTimeoutSeconds;
     protected int sessionMaxSeconds;
     protected int sessionOfflineTimeoutSeconds;
-    // This will pass authentication ("NOT ATTEMPTED" state), but later fail any role authorization
-    final protected KeycloakDeployment notAuthenticatedKeycloakDeployment = new KeycloakDeployment();
     // The client we use to access Keycloak
     protected ResteasyClient httpClient;
     protected ResteasyWebTarget keycloakTarget;
     protected OAuthGrant oAuthGrant;
     protected ConcurrentLinkedQueue<RealmsResource> realmsResourcePool = new ConcurrentLinkedQueue<>();
-    // Cache Keycloak deployment per realm/client so we don't have to access Keycloak for every token validation
-    protected LoadingCache<KeycloakRealmClient, KeycloakDeployment> keycloakDeploymentCache;
-    // The configuration for the Keycloak servlet extension, looks up the openremote client application per realm
-    protected KeycloakConfigResolver keycloakConfigResolver;
     // Optional reverse proxy that listens to KEYCLOAK_AUTH_PATH and forwards requests to Keycloak (used in dev mode to allow same url to be used for manager and keycloak) - handled by proxy in production
     protected HttpHandler authProxyHandler;
 
