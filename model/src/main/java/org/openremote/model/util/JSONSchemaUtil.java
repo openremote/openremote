@@ -21,6 +21,7 @@ package org.openremote.model.util;
 
 
 import com.fasterxml.classmate.ResolvedType;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonParser;
@@ -178,9 +179,6 @@ public class JSONSchemaUtil {
                 .withCustomDefinitionProvider(titleProvider)
                 .withTypeAttributeOverride(titleProvider);
 
-            // Primitive types cannot be null thus they are always required
-            builder.forFields().withRequiredCheck((f) -> f.getType().getErasedType().isPrimitive());
-
             // Remap Byte to type integer, see https://github.com/victools/jsonschema-generator/blob/995a71eaf7a9a05cc2e335f8a7821b4a9019fa1b/CHANGELOG.md?plain=1#L530
             builder.with(new SimpleTypeModule().withIntegerType(Byte.class));
 
@@ -195,6 +193,7 @@ public class JSONSchemaUtil {
 
             // General direct class type remapping
             builder.forTypesInGeneral()
+                // TODO: consider using withTargetTypeOverridesResolver instead
                 .withDefinitionNamingStrategy(new DefaultSchemaDefinitionNamingStrategy() {
                     @Override
                     public String getDefinitionNameForKey(DefinitionKey key, SchemaGenerationContext generationContext) {
@@ -233,6 +232,8 @@ public class JSONSchemaUtil {
 
             // Field type remapping
             builder.forFields()
+                // Primitive types cannot be null thus they are always required
+                .withRequiredCheck((f) -> f.getType().getErasedType().isPrimitive())
                 // direct class to class mapping through annotations
                 .withTargetTypeOverridesResolver(this::remapFieldType)
                 // remapping using supplier through annotations
@@ -252,10 +253,29 @@ public class JSONSchemaUtil {
                             throw new RuntimeException("Failed to apply " + ann.getClass().getSimpleName(), e);
                         }
                     }
+                    // We ignore this custom definition provider to avoid infinite recursion
+                    ObjectNode attrs = context.createStandardDefinition(fieldScope.getType(), builder.forTypesInGeneral().getCustomDefinitionProviders().getFirst());
+                    // Avoids annotation also being applied to the `items` in an array. See https://victools.github.io/jsonschema-generator/#generator-individual-configurations
+                    if (!fieldScope.isFakeContainerItemScope()) {
+                        ObjectMapper mapper = context.getGeneratorConfig().getObjectMapper();
+                        applyFieldAnnotation(fieldScope, JsonSchemaTitle.class, attrs, mapper);
+                        applyFieldAnnotation(fieldScope, JsonSchemaDescription.class, attrs, mapper);
+                        applyFieldAnnotation(fieldScope, JsonSchemaFormat.class, attrs, mapper);
+                        applyFieldAnnotation(fieldScope, JsonSchemaDefault.class, attrs, mapper);
+                        applyFieldAnnotation(fieldScope, JsonSchemaExamples.class, attrs, mapper);
+
+                        // TODO: ADD CUSTOM HANDLING
+//                        applyFieldAnnotation(fieldScope, JsonPropertyDescription.class, attrs, mapper);
+
+                        String key = fieldScope.getMember().getDeclaringType().getErasedType().getCanonicalName() + "." + fieldScope.getMember().getName();
+                        applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaTitle.class), JsonSchemaTitle.class, key, attrs);
+                        applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaDescription.class), JsonSchemaDescription.class, key, attrs);
+                    }
                     // TODO: handle allOf wrapping in JSON Forms instead
                     // Inline definitions in member scope to avoid $ref collisions
-                    // We also ignore this custom definition provider to avoid infinite recursion
-                    return new CustomPropertyDefinition(context.createStandardDefinition(fieldScope.getType(), builder.forTypesInGeneral().getCustomDefinitionProviders().getFirst()), CustomDefinition.AttributeInclusion.NO);
+                    var f = new CustomPropertyDefinition(attrs, CustomDefinition.AttributeInclusion.YES);
+                    System.out.println(f);
+                    return f;
                 });
 
             // Class subtype resolver for abstract classes
@@ -311,6 +331,7 @@ public class JSONSchemaUtil {
                     targetNode = attrs;
                 }
 
+                // These will be overwritten by member scope when colliding
                 applyTypeAnnotation(erasedType, JsonSchemaTitle.class, targetNode, mapper);
                 applyTypeAnnotation(erasedType, JsonSchemaDescription.class, targetNode, mapper);
                 applyTypeAnnotation(erasedType, JsonSchemaFormat.class, targetNode, mapper);
@@ -321,23 +342,6 @@ public class JSONSchemaUtil {
                 if (attrs.has(context.getKeyword(SchemaKeyword.TAG_TYPE))) {
                     applyI18nAnnotation(erasedType.getAnnotation(JsonSchemaTitle.class), JsonSchemaTitle.class, erasedType.getCanonicalName(), attrs);
                     applyI18nAnnotation(erasedType.getAnnotation(JsonSchemaDescription.class), JsonSchemaDescription.class, erasedType.getCanonicalName(), attrs);
-                }
-            });
-
-            builder.forFields().withInstanceAttributeOverride((attrs, fieldScope, context) -> {
-                ObjectMapper mapper = context.getGeneratorConfig().getObjectMapper();
-
-                // Avoids annotation also being applied to the `items` in an array. See https://victools.github.io/jsonschema-generator/#generator-individual-configurations
-                if (!fieldScope.isFakeContainerItemScope()) {
-                    applyFieldAnnotation(fieldScope, JsonSchemaTitle.class, attrs, mapper);
-                    applyFieldAnnotation(fieldScope, JsonSchemaDescription.class, attrs, mapper);
-                    applyFieldAnnotation(fieldScope, JsonSchemaFormat.class, attrs, mapper);
-                    applyFieldAnnotation(fieldScope, JsonSchemaDefault.class, attrs, mapper);
-                    applyFieldAnnotation(fieldScope, JsonSchemaExamples.class, attrs, mapper);
-
-                    String key = fieldScope.getMember().getDeclaringType().getErasedType().getCanonicalName() + "." + fieldScope.getMember().getName();
-                    applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaTitle.class), JsonSchemaTitle.class, key, attrs);
-                    applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaDescription.class), JsonSchemaDescription.class, key, attrs);
                 }
             });
 
@@ -612,15 +616,6 @@ public class JSONSchemaUtil {
             Option.MAP_VALUES_AS_ADDITIONAL_PROPERTIES,
             Option.ALLOF_CLEANUP_AT_THE_END,
             Option.DUPLICATE_MEMBER_ATTRIBUTE_CLEANUP_AT_THE_END
-        ))
-        .with(new JacksonModule(
-            // Disable subtype lookup in Jackson module, as we handle this ourselves to replace anyOf with oneOf
-            JacksonOption.SKIP_SUBTYPE_LOOKUP,
-            // Ignore type transform to omit all custom schema definition providers from the JacksonModule
-            JacksonOption.IGNORE_TYPE_INFO_TRANSFORM,
-            JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
-            JacksonOption.FLATTENED_ENUMS_FROM_JSONPROPERTY,
-            JacksonOption.FLATTENED_ENUMS_FROM_JSONVALUE
         ))
         .with(new JakartaValidationModule(
             JakartaValidationOption.INCLUDE_PATTERN_EXPRESSIONS,
