@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.jsonFormatVisitors.*;
 import com.fasterxml.jackson.databind.node.*;
 import com.github.victools.jsonschema.generator.*;
 import com.github.victools.jsonschema.generator.Module;
+import com.github.victools.jsonschema.generator.impl.AttributeCollector;
 import com.github.victools.jsonschema.generator.impl.DefinitionKey;
 import com.github.victools.jsonschema.generator.impl.module.SimpleTypeModule;
 import com.github.victools.jsonschema.generator.naming.DefaultSchemaDefinitionNamingStrategy;
@@ -254,7 +255,7 @@ public class JSONSchemaUtil {
                     // TODO: handle allOf wrapping in JSON Forms instead
                     // Inline definitions in member scope to avoid $ref collisions
                     // We also ignore this custom definition provider to avoid infinite recursion
-                    return new CustomPropertyDefinition(context.createStandardDefinition(fieldScope.getType(), builder.forTypesInGeneral().getCustomDefinitionProviders().getFirst()));
+                    return new CustomPropertyDefinition(context.createStandardDefinition(fieldScope.getType(), builder.forTypesInGeneral().getCustomDefinitionProviders().getFirst()), CustomDefinition.AttributeInclusion.NO);
                 });
 
             // Class subtype resolver for abstract classes
