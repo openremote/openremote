@@ -237,7 +237,7 @@ public class JSONSchemaUtil {
                 .withReadOnlyCheck(jacksonResolvers::getReadOnlyCheck)
                 .withWriteOnlyCheck(jacksonResolvers::getWriteOnlyCheck)
                 .withPropertyNameOverrideResolver(jacksonResolvers::getPropertyNameOverrideBasedOnJsonPropertyAnnotation)
-                // Primitive types cannot be null thus they are always required and handle Jackson required properties
+                // Primitive types cannot be null, thus they are always required and handle Jackson required properties
                 .withRequiredCheck((f) -> f.getType().getErasedType().isPrimitive() || jacksonResolvers.getRequiredCheckBasedOnJsonPropertyAnnotation(f))
                 // direct class to class mapping through annotations
                 .withTargetTypeOverridesResolver(this::remapFieldType)
@@ -318,9 +318,14 @@ public class JSONSchemaUtil {
                 if (erasedType.getSuperclass() == Object.class) {
                     return;
                 }
-                String key = Optional.ofNullable(erasedType.getSuperclass())
-                    .map(c -> c.getAnnotation(JsonTypeInfo.class))
-                    .map(JsonTypeInfo::property).orElse(null);
+                String key = null;
+                Class<?> current = erasedType;
+                while(current != null && current.getSuperclass() != Object.class && key == null) {
+                    current = current.getSuperclass();
+                    key = Optional.ofNullable(current)
+                        .map(c -> c.getAnnotation(JsonTypeInfo.class))
+                        .map(JsonTypeInfo::property).orElse(null);
+                }
                 addDefaultToDiscriminator(attrs, context, key);
             });
 
@@ -486,14 +491,15 @@ public class JSONSchemaUtil {
          * @param attrs The {@link ObjectNode} representation of the subtype
          * @param context The schema generator {@link SchemaGenerationContext}
          */
-        private void addDefaultToDiscriminator(ObjectNode attrs, SchemaGenerationContext context, String key) {
-            String typeKey = key != null ? key : context.getKeyword(SchemaKeyword.TAG_TYPE);
+        private void addDefaultToDiscriminator(ObjectNode attrs, SchemaGenerationContext context, String customTypeKey) {
+            String typeKey = context.getKeyword(SchemaKeyword.TAG_TYPE);
             JsonNode allOfNode = attrs.get(context.getKeyword(SchemaKeyword.TAG_ALLOF));
             if (!(allOfNode instanceof ArrayNode allOf)) {
                 JsonNode props = attrs.get(context.getKeyword(SchemaKeyword.TAG_PROPERTIES));
                 if (props instanceof ObjectNode propsObj) {
                     // Remove type property on type property for subtypes to enable definition merging
                     propsObj.remove(typeKey);
+                    propsObj.remove(customTypeKey);
                 }
                 return;
             }
@@ -502,6 +508,21 @@ public class JSONSchemaUtil {
                 JsonNode props = node.get(context.getKeyword(SchemaKeyword.TAG_PROPERTIES));
                 if (!(props instanceof ObjectNode propsObj)) {
                     continue;
+                }
+
+                // Rename custom type key with normal type key
+                if (!propsObj.has(typeKey) && propsObj.has(customTypeKey)) {
+                    propsObj.set(typeKey, propsObj.get(customTypeKey));
+                    propsObj.remove(customTypeKey);
+                }
+
+                if (customTypeKey != null && node.get(context.getKeyword(SchemaKeyword.TAG_REQUIRED)) instanceof ArrayNode arr) {
+                    for (int i = 0; i < arr.size(); i++) {
+                        if (arr.get(i).textValue().equals(customTypeKey)) {
+                            arr.remove(i);
+                            arr.add(context.getKeyword(SchemaKeyword.TAG_TYPE));
+                        };
+                    }
                 }
 
                 JsonNode typeNode = propsObj.get(typeKey);
