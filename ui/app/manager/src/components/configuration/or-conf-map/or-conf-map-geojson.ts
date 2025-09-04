@@ -4,6 +4,7 @@ import { html, LitElement } from "lit";
 import { customElement, property, state, query } from "lit/decorators.js";
 import "@openremote/or-components/or-ace-editor";
 import { OrAceEditorChangedEvent } from "@openremote/or-components/or-ace-editor";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 
 @customElement("or-conf-map-geojson")
 export class OrConfMapGeoJson extends LitElement {
@@ -68,7 +69,7 @@ export class OrConfMapGeoJson extends LitElement {
             </style>
         `
         return html`
-            <or-mwc-input type="button" label="geoJson" outlined icon="pencil" @click="${() => {this.openJsonEditor()}}"></or-mwc-input>
+            <or-mwc-input type="${InputType.BUTTON}" label="geoJson" outlined icon="pencil" @or-mwc-input-changed="${() => {this.openJsonEditor()}}"></or-mwc-input>
             <or-mwc-dialog id="geojson-modal" .heading="${heading}" .content="${content}" .actions="${actions}" .styles="${styles}" .dismissAction="${null}"></or-mwc-dialog>
         `
     }

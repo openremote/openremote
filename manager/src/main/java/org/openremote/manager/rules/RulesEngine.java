@@ -47,6 +47,7 @@ import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -116,6 +117,7 @@ public class RulesEngine<T extends Ruleset> {
     final protected AbstractRulesEngine engine;
 
     protected boolean running;
+    protected AtomicBoolean executing = new AtomicBoolean(false);
     protected boolean previouslyFired;
     protected long lastFireTimestamp;
     protected boolean trackLocationPredicates;
@@ -427,8 +429,18 @@ public class RulesEngine<T extends Ruleset> {
                 if (!running) {
                     return;
                 }
-                // Process rules for all deployments
-                fireAllDeployments();
+
+                // If we're not already executing rules, process rules for all deployments
+                if (executing.compareAndSet(false, true)) {
+                    fireAllDeployments();
+                    executing.set(false);
+                }
+
+                if (Thread.currentThread().isInterrupted()) {
+                    LOG.finest("Timer interrupted during rules execution - not scheduling next fire");
+                    return;
+                }
+
                 fireTimer = null;
                 scheduleFire(false);
             },

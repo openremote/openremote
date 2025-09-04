@@ -19,7 +19,7 @@
   "scripts": {
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "build": "npx tsc -b",
-    "test": "echo \"No tests\" && exit 0",
+    "test": "npx tsc -b && npx playwright test",
     "prepack": "npx tsc -b"
   },
   "author": "OpenRemote",
@@ -47,9 +47,10 @@
     "@openremote/core": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "lit": "^2.0.2"
+    "lit": "^3.3.1"
   },
   "devDependencies": {
+    "@openremote/test": "workspace:*",
     "@openremote/util": "workspace:*"
   },
   "publishConfig": {

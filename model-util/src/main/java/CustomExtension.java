@@ -59,7 +59,7 @@ public class CustomExtension extends Extension {
             new TransformerDefinition(ModelCompiler.TransformationPhase.AfterDeclarationSorting, (TsModelTransformer) (context, model) -> {
                 TsBeanModel provBean = model.getBean(X509ProvisioningConfig.class);
                 if (provBean != null) {
-                    provBean.getExtendsList().remove(0);
+                    provBean.getExtendsList().removeFirst();
                     provBean.getExtendsList().add(provBean.getParent());
                 }
                 return model;

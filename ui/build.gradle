@@ -18,3 +18,19 @@ afterEvaluate {
 task modelWatch {
     dependsOn resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build")
 }
+
+// Finalize gradle test tasks with npmTest tasks so that gradle :ui:test can also be used to run
+// UI tests. The tests are registered under npmTest to avoid complications when configuring the
+// test task on projects w/o the Java plugin where the test task is already defined.
+subprojects { subproj ->
+    subproj.tasks.matching { it.name == 'npmTest' }.all {
+        subproj.tasks.matching { it.name == 'test' }.all {
+            finalizedBy 'npmTest'
+        }
+        if (!subproj.tasks.findByName('test')) {
+            subproj.tasks.register('test') {
+                finalizedBy 'npmTest'
+            }
+        }
+    }
+}

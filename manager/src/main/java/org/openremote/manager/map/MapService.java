@@ -249,7 +249,7 @@ public class MapService implements ContainerService {
                 proxyHandler.handleRequest(exchange);
             };
 
-            webService.getRequestHandlers().add(0, pathStartsWithHandler("Raster Map Tile Proxy", RASTER_MAP_TILE_PATH, proxyWrapper));
+            webService.getRequestHandlers().addFirst(pathStartsWithHandler("Raster Map Tile Proxy", RASTER_MAP_TILE_PATH, proxyWrapper));
         }
     }
 

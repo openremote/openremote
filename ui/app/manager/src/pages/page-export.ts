@@ -267,8 +267,8 @@ export class PageExport extends Page<AppStateKeyed> {
                         <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("to"))}" .value="${moment(this.latestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.latestTimestamp = evt.detail.value}"></or-mwc-input>
                     </div>
                     <div class="export-btn-wrapper">
-                        <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="clearTable" @click="${() => this.clearSelection()}"></or-mwc-input>
-                        <or-mwc-input .disabled="${this.isExportBtnDisabled}" class="button" raised .type="${InputType.BUTTON}" label="export" @click="${() => this.export()}"></or-mwc-input>
+                        <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="clearTable" @or-mwc-input-changed="${() => this.clearSelection()}"></or-mwc-input>
+                        <or-mwc-input .disabled="${this.isExportBtnDisabled}" class="button" raised .type="${InputType.BUTTON}" label="export" @or-mwc-input-changed="${() => this.export()}"></or-mwc-input>
                     </div>
                 </div>
             </div>
