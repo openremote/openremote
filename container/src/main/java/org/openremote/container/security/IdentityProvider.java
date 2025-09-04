@@ -35,6 +35,4 @@ public interface IdentityProvider {
     void start(Container container) throws Exception;
 
     void stop(Container container) throws Exception;
-
-    void secureDeployment(DeploymentInfo deploymentInfo);
 }
