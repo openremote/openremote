@@ -21,16 +21,13 @@ package org.openremote.model.util;
 
 
 import com.fasterxml.classmate.ResolvedType;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.jsonFormatVisitors.*;
 import com.fasterxml.jackson.databind.node.*;
 import com.github.victools.jsonschema.generator.*;
 import com.github.victools.jsonschema.generator.Module;
-import com.github.victools.jsonschema.generator.impl.AttributeCollector;
 import com.github.victools.jsonschema.generator.impl.DefinitionKey;
 import com.github.victools.jsonschema.generator.impl.module.SimpleTypeModule;
 import com.github.victools.jsonschema.generator.naming.DefaultSchemaDefinitionNamingStrategy;
@@ -168,6 +165,7 @@ public class JSONSchemaUtil {
 
     public static class CustomModule implements Module {
 
+        private final JacksonResolvers jacksonResolvers = new JacksonResolvers();
         private static final ConcurrentHashMap<Class<?>, List<ResolvedType>> subtypeCache = new ConcurrentHashMap<>();
         private static final Reflections reflections = new Reflections("org.openremote");
 
@@ -232,8 +230,12 @@ public class JSONSchemaUtil {
 
             // Field type remapping
             builder.forFields()
-                // Primitive types cannot be null thus they are always required
-                .withRequiredCheck((f) -> f.getType().getErasedType().isPrimitive())
+                // Handle Jackson annotations
+                .withReadOnlyCheck(jacksonResolvers::getReadOnlyCheck)
+                .withWriteOnlyCheck(jacksonResolvers::getWriteOnlyCheck)
+                .withPropertyNameOverrideResolver(jacksonResolvers::getPropertyNameOverrideBasedOnJsonPropertyAnnotation)
+                // Primitive types cannot be null thus they are always required and handle Jackson required properties
+                .withRequiredCheck((f) -> f.getType().getErasedType().isPrimitive() || jacksonResolvers.getRequiredCheckBasedOnJsonPropertyAnnotation(f))
                 // direct class to class mapping through annotations
                 .withTargetTypeOverridesResolver(this::remapFieldType)
                 // remapping using supplier through annotations
@@ -264,18 +266,24 @@ public class JSONSchemaUtil {
                         applyFieldAnnotation(fieldScope, JsonSchemaDefault.class, attrs, mapper);
                         applyFieldAnnotation(fieldScope, JsonSchemaExamples.class, attrs, mapper);
 
-                        // TODO: ADD CUSTOM HANDLING
-//                        applyFieldAnnotation(fieldScope, JsonPropertyDescription.class, attrs, mapper);
-
                         String key = fieldScope.getMember().getDeclaringType().getErasedType().getCanonicalName() + "." + fieldScope.getMember().getName();
                         applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaTitle.class), JsonSchemaTitle.class, key, attrs);
                         applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaDescription.class), JsonSchemaDescription.class, key, attrs);
                     }
+                    String description = jacksonResolvers.resolveDescription(fieldScope);
+                    if (description != null) {
+                        ObjectNode targetNode;
+                        JsonNode allOfNode = attrs.get(context.getKeyword(SchemaKeyword.TAG_ALLOF));
+                        if (allOfNode instanceof ArrayNode allOf && !allOf.isEmpty()) {
+                            targetNode = (ObjectNode) allOf.get(0);
+                        } else {
+                            targetNode = attrs;
+                        }
+                        targetNode.put(context.getKeyword(SchemaKeyword.TAG_DESCRIPTION), description);
+                    }
                     // TODO: handle allOf wrapping in JSON Forms instead
                     // Inline definitions in member scope to avoid $ref collisions
-                    var f = new CustomPropertyDefinition(attrs, CustomDefinition.AttributeInclusion.YES);
-                    System.out.println(f);
-                    return f;
+                    return new CustomPropertyDefinition(attrs, CustomDefinition.AttributeInclusion.YES);
                 });
 
             // Class subtype resolver for abstract classes
@@ -323,7 +331,7 @@ public class JSONSchemaUtil {
 
                 ObjectNode targetNode;
 
-                // If there is an allOf array, inject into the last object inside it to allow for cleanup with `Option.ALLOF_CLEANUP_AT_THE_END`
+                // If there is an allOf array, inject into the first object inside it to allow for cleanup with `Option.ALLOF_CLEANUP_AT_THE_END`
                 JsonNode allOfNode = attrs.get(context.getKeyword(SchemaKeyword.TAG_ALLOF));
                 if (allOfNode instanceof ArrayNode allOf && !allOf.isEmpty()) {
                     targetNode = (ObjectNode) allOf.get(0);
@@ -414,6 +422,24 @@ public class JSONSchemaUtil {
                 } catch (Exception ignored) {}
                 return null;
             });
+        }
+
+        private static class JacksonResolvers extends JacksonModule {
+            protected String resolveDescription(MemberScope<?, ?> member) {
+                return super.resolveDescription(member);
+            }
+            protected String getPropertyNameOverrideBasedOnJsonPropertyAnnotation(MemberScope<?, ?> member) {
+                return super.getPropertyNameOverrideBasedOnJsonPropertyAnnotation(member);
+            }
+            protected boolean getReadOnlyCheck(MemberScope<?, ?> member) {
+                return super.getRequiredCheckBasedOnJsonPropertyAnnotation(member);
+            }
+            protected boolean getWriteOnlyCheck(MemberScope<?, ?> member) {
+                return super.getRequiredCheckBasedOnJsonPropertyAnnotation(member);
+            }
+            protected boolean getRequiredCheckBasedOnJsonPropertyAnnotation(MemberScope<?, ?> member) {
+                return super.getRequiredCheckBasedOnJsonPropertyAnnotation(member);
+            }
         }
 
         private static class JSONSchemaTitleProvider implements CustomDefinitionProviderV2, TypeAttributeOverrideV2 {
