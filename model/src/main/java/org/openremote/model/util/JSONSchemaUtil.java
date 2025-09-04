@@ -262,7 +262,7 @@ public class JSONSchemaUtil {
 
             // Class subtype resolver for abstract classes
             builder.forTypesInGeneral()
-                .withCustomDefinitionProvider(new JsonSubTypesResolver(List.of(JacksonOption.ALWAYS_REF_SUBTYPES, JacksonOption.SKIP_SUBTYPE_LOOKUP)))
+                .withCustomDefinitionProvider(new JsonSubTypesResolver(List.of(JacksonOption.ALWAYS_REF_SUBTYPES, JacksonOption.INLINE_TRANSFORMED_SUBTYPES)))
                 .withCustomDefinitionProvider((resolvedType, context) -> {
                     List<ResolvedType> subTypes = findSubtypes(resolvedType, context);
                     if (subTypes == null || subTypes.isEmpty()) {
@@ -276,7 +276,6 @@ public class JSONSchemaUtil {
                         oneOfArray.add(context.createDefinitionReference(subType));
                     }
 
-                    System.out.println(definition);
                     // Always inline the super class schema to avoid allOf wrapping, which cannot be cleaned up as
                     // JSON Schema draft-7 does not permit other properties alongside a $ref, see
                     // https://json-schema.org/draft-07/draft-handrews-json-schema-01#rfc.section.8.3
@@ -309,7 +308,7 @@ public class JSONSchemaUtil {
                 // If there is an allOf array, inject into the last object inside it to allow for cleanup with `Option.ALLOF_CLEANUP_AT_THE_END`
                 JsonNode allOfNode = attrs.get(context.getKeyword(SchemaKeyword.TAG_ALLOF));
                 if (allOfNode instanceof ArrayNode allOf && !allOf.isEmpty()) {
-                    targetNode = (ObjectNode) allOf.get(allOf.size() - 1);
+                    targetNode = (ObjectNode) allOf.get(0);
                 } else {
                     targetNode = attrs;
                 }
