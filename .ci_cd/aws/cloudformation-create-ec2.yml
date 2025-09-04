@@ -926,7 +926,7 @@ Resources:
           - Name: Weekly Backup
             CopyTags: true
             CreateRule:
-              CronExpression: 'cron(0 5 ? * MON * )'
+              CronExpression: 'cron(0 3 ? * MON * )'
             RetainRule:
               Count: 4
       Tags:
