@@ -28,20 +28,24 @@ import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.Constants
-import org.openremote.model.asset.Asset
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.model.asset.impl.BuildingAsset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
+import org.openremote.model.datapoint.query.AssetDatapointAllQuery
+import org.openremote.model.datapoint.query.AssetDatapointQuery
 import org.openremote.model.simulator.SimulatorReplayDatapoint
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
+
+import java.time.Instant
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 import static java.util.concurrent.TimeUnit.DAYS
 import static java.util.concurrent.TimeUnit.HOURS
@@ -58,10 +62,19 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         startContainer(defaultConfig(), defaultServices())
     }
 
+    private getDataPoints = { def now = Instant.ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.systemDefault()).toLocalDateTime();
+        new AssetDatapointAllQuery(
+            now.minus(1, ChronoUnit.HOURS),
+            now.plus(1, ChronoUnit.HOURS),
+    ) }
+
     def "Check Simulator Agent protocol scheduling"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 60, delay: 0.2)
+
+        and: "clock"
+        stopPseudoClock()
 
         and: "the container starts"
         def assetStorageService = container.getService(AssetStorageService.class)
@@ -92,27 +105,45 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         conditions.eventually {
             agent = assetStorageService.find(agent.getId(), Agent.class)
             assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert agentService.protocolInstanceMap.get(agent.getId()) != null
+            assert ((SimulatorProtocol) agentService.protocolInstanceMap.get(agent.getId())).linkedAttributes.size() == 1
         }
 
         and : "nothing happens"
-        def attribute = agent.getAttribute(ThingAsset.NOTES).get()
-        assert assetDatapointService.getDatapoints(new AttributeRef(asset.getId(), attribute.getName())).size() == 0
+        def attribute = asset.getAttribute(ThingAsset.NOTES).get()
+        def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
+        assert assetDatapointService.getDatapoints(attributeRef).size() == 0
 
         // ------------------------------------
         // Test replay data of the simulator
         // ------------------------------------
 
         when: "replayData is configured to replay in 1hr"
+        // starting at 1970-01-01T00:00:00.000Z
         attribute.addOrReplaceMeta(
             new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-                new SimulatorReplayDatapoint(1000, "test")
+                new SimulatorReplayDatapoint(1, "test")
             ))
         )
-        // expect from 1970-01-01T00:00:00.000Z
+        assetStorageService.merge(asset)
+
         then: "no datapoint is present up until 1hr"
+        advancePseudoClock(59, MINUTES, container)
         // expect from 1970-01-01T00:59:99.999Z
+        assert assetDatapointService.queryDatapoints(
+            asset.getId(),
+            attribute.getName(),
+            getDataPoints.call()
+        ).size() == 0
+
         and : "1 datapoint is present after 1hr"
-        // expect at   1970-01-01T23:59:99.999Z
+        advancePseudoClock(4, HOURS, container)
+        // expect at   1970-01-01T01:00:00.000Z
+        assert assetDatapointService.queryDatapoints(
+            asset.getId(),
+            attribute.getName(),
+            getDataPoints.call()
+        ).size() == 1
 
         // ------------------------------------
         // Test start date of the simulator
