@@ -284,7 +284,10 @@ public class JSONSchemaUtil {
                 if (erasedType.getSuperclass() == Object.class) {
                     return;
                 }
-                addDefaultToDiscriminator(attrs, context);
+                String key = Optional.ofNullable(erasedType.getSuperclass())
+                    .map(c -> c.getAnnotation(JsonTypeInfo.class))
+                    .map(JsonTypeInfo::property).orElse(null);
+                addDefaultToDiscriminator(attrs, context, key);
             });
 
             // Effectively disable const generation (on the root of subtypes)
@@ -443,13 +446,14 @@ public class JSONSchemaUtil {
          * @param attrs The {@link ObjectNode} representation of the subtype
          * @param context The schema generator {@link SchemaGenerationContext}
          */
-        private void addDefaultToDiscriminator(ObjectNode attrs, SchemaGenerationContext context) {
+        private void addDefaultToDiscriminator(ObjectNode attrs, SchemaGenerationContext context, String key) {
+            String typeKey = key != null ? key : context.getKeyword(SchemaKeyword.TAG_TYPE);
             JsonNode allOfNode = attrs.get(context.getKeyword(SchemaKeyword.TAG_ALLOF));
             if (!(allOfNode instanceof ArrayNode allOf)) {
                 JsonNode props = attrs.get(context.getKeyword(SchemaKeyword.TAG_PROPERTIES));
                 if (props instanceof ObjectNode propsObj) {
                     // Remove type property on type property for subtypes to enable definition merging
-                    propsObj.remove("type");
+                    propsObj.remove(typeKey);
                 }
                 return;
             }
@@ -460,7 +464,7 @@ public class JSONSchemaUtil {
                     continue;
                 }
 
-                JsonNode typeNode = propsObj.get(context.getKeyword(SchemaKeyword.TAG_TYPE));
+                JsonNode typeNode = propsObj.get(typeKey);
                 if (typeNode instanceof ObjectNode typeProp) {
 
                     String constKey = context.getKeyword(SchemaKeyword.TAG_CONST);
