@@ -177,6 +177,7 @@ public class JSONSchemaUtil {
         @Override
         public void applyToConfigBuilder(SchemaGeneratorConfigBuilder builder) {
             // Set title on root of schema
+            // TODO: resolve titles for all custom types
             JSONSchemaTitleProvider titleProvider = new JSONSchemaTitleProvider();
             builder.forTypesInGeneral()
                 .withCustomDefinitionProvider(titleProvider)
