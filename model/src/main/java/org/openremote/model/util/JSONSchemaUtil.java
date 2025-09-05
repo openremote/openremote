@@ -149,6 +149,12 @@ public class JSONSchemaUtil {
         node.put("format", format);
     }
 
+    private static void setEnum(ObjectNode node, Set<String> enums) {
+        var d = JsonNodeFactory.instance.arrayNode();
+        enums.forEach(d::add);
+        node.set("enum", d);
+    }
+
     public static class CustomModule implements Module {
 
         private static final ConcurrentHashMap<Class<?>, List<ResolvedType>> subtypeCache = new ConcurrentHashMap<>();
@@ -305,8 +311,9 @@ public class JSONSchemaUtil {
                                 public void format(JsonValueFormat format) {
                                     setFormat(node, format.toString());
                                 }
-                                // TODO:
-                                public void enumTypes(Set<String> enums) {}
+                                public void enumTypes(Set<String> enums) {
+                                    setEnum(node, enums);
+                                }
                             };
                         }
 
