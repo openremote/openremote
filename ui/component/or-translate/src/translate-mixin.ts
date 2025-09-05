@@ -14,6 +14,7 @@ export const translate = (i18next: i18n) => <T extends Constructor<CustomElement
         class extends base {
 
             _i18nextJustInitialized = false;
+            _language: string = i18next.language;
 
             connectedCallback() {
                 if (!i18next.language) {
@@ -58,8 +59,9 @@ export const translate = (i18next: i18n) => <T extends Constructor<CustomElement
             public langChangedCallback = () => {
                 // @ts-ignore
                 if (this.requestUpdate) {
+                    this._language = i18next.language;
                     // @ts-ignore
-                    this.requestUpdate();
+                    this.requestUpdate("_language");
                 }
             }
         };

@@ -32,7 +32,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.kjetland.jackson.jsonSchema.JsonSchemaGenerator;
+import com.github.victools.jsonschema.generator.*;
 import jakarta.persistence.Entity;
 import jakarta.validation.ConstraintValidatorContext;
 import jakarta.validation.ConstraintViolation;
@@ -159,7 +159,7 @@ public class ValueUtil {
     protected static Map<String, MetaItemDescriptor<?>> metaItemDescriptors = new HashMap<>();
     protected static Map<String, ValueDescriptor<?>> valueDescriptors = new HashMap<>();
     protected static Validator validator;
-    protected static JsonSchemaGenerator generator;
+    protected static SchemaGenerator generator;
 
     public static ObjectMapper configureObjectMapper(ObjectMapper objectMapper) {
         objectMapper
@@ -922,7 +922,7 @@ public class ValueUtil {
     }
 
     protected static void doSchemaInit() {
-        generator = new JsonSchemaGenerator(JSON, JSONSchemaUtil.getJsonSchemaConfig());
+        generator = new SchemaGenerator(JSONSchemaUtil.getJsonSchemaConfig(JSON));
     }
 
 
@@ -1029,7 +1029,7 @@ public class ValueUtil {
         if (generator == null) {
             return JSON.createObjectNode();
         }
-        return generator.generateJsonSchema(clazz);
+        return generator.generateSchema(clazz);
     }
 
     public static void initialiseAssetAttributes(Asset<?> asset) throws IllegalStateException {
