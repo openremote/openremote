@@ -302,11 +302,6 @@ services:
       # The maximum number of threads that will be used to process incoming auto provisioning messages
       OR_AUTO_PROVISIONING_THREADS_MAX:
 
-      # When asset attributes are enabled for rule events, each value update will be a temporary
-      # fact in rules. You can set the global default expiration time span used when no other
-      # attribute-level configuration exists. Default is 1 hour.
-      OR_RULE_EVENT_EXPIRES: ${OR_RULE_EVENT_EXPIRES:-PT1H}
-
       # The identity provider implementation to use for managing user identities, roles, and
       # access authorization. The default is 'keycloak' which requires a separate service but
       # provides full multi-tenancy identity, role permissions, and user session timeouts.
