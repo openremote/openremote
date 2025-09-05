@@ -99,7 +99,12 @@ public class JSONSchemaUtil {
         }
 
         public static ObjectNode getSchemaType(String... types) {
-            return NF.objectNode().set("type", getTypesNode(Arrays.asList(types)));
+            ObjectNode node = NF.objectNode();
+            node.put("title", "Any Type");
+            node.set("type", getTypesNode(Arrays.asList(types)));
+            node.put("additionalProperties", true);
+            node.set("properties", NF.objectNode());
+            return node;
         }
     }
 
@@ -380,7 +385,7 @@ public class JSONSchemaUtil {
              */
             @Override
             public void overrideTypeAttributes(ObjectNode attrs, TypeScope scope, SchemaGenerationContext context) {
-                if (this.rootType == scope.getType()) {
+                if (this.rootType == scope.getType() && !attrs.has(context.getKeyword(SchemaKeyword.TAG_TITLE))) {
                     String rawName = rootType.getErasedType().getSimpleName();
                     // Code found here: http://stackoverflow.com/questions/2559759/how-do-i-convert-camelcase-into-human-readable-names-in-java
                     String v = rawName.replaceAll(
