@@ -238,8 +238,7 @@ jobs:
         with:
           repository: ${{ steps.is_main_repo.outputs.repository }}
           path: openremote
-          ref:  "feature/expose_metrics"
-#          ref: ${{ steps.is_main_repo.outputs.ref }}
+          ref: ${{ steps.is_main_repo.outputs.ref }}
           sparse-checkout: |
             .ci_cd
             profile
