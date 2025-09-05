@@ -42,6 +42,7 @@ import org.reflections.Reflections;
 import java.lang.annotation.*;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -94,7 +95,6 @@ public class JSONSchemaUtil {
             node.put("title", "Any Type");
             node.set("type", getTypesNode(Arrays.asList(types)));
             node.put("additionalProperties", true);
-            node.set("properties", NF.objectNode());
             return node;
         }
     }
@@ -214,6 +214,18 @@ public class JSONSchemaUtil {
                     }
                     if (erasedType.equals(ObjectNode.class)) {
                         return new CustomDefinition(SchemaNodeFactory.getSchemaPatternPropertiesSimpleKeyAnyType());
+                    }
+                    // Value type parameter "Object" is not handled on HashMap<String,Object> by MAP_VALUES_AS_ADDITIONAL_PROPERTIES
+                    // TODO: ideally we add a reference to the AnyType definition rather than always inlining
+                    if (erasedType.getSuperclass() != null
+                        && erasedType.getSuperclass().equals(HashMap.class)
+                        && erasedType.getGenericSuperclass() instanceof ParameterizedType t
+                        && t.getActualTypeArguments()[1].equals(Object.class)
+                    ) {
+                        return new CustomDefinition(JsonNodeFactory.instance.objectNode()
+                            .put("type", "object")
+                            .set("additionalProperties", SchemaNodeFactory.getSchemaType(SchemaNodeFactory.TYPES_ALL))
+                        );
                     }
                     return null;
                 });
