@@ -59,16 +59,8 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
         }
 
         try {
-            ExternalService registeredExternalService = externalServiceRegistry.registerService(externalService);
-
-            if (registeredExternalService == null) {
-                LOG.severe("Failed to register service: " + externalService.getServiceId() + " with instanceId: "
-                        + externalService.getInstanceId() + " due to an unexpected error");
-                throw new WebApplicationException("Failed to register service",
-                        Response.Status.INTERNAL_SERVER_ERROR);
-            }
-
-            return registeredExternalService;
+            externalServiceRegistry.registerService(externalService);
+            return externalService;
         } catch (IllegalStateException e) {
             LOG.warning("Failed to register service: " + externalService.getServiceId() + " with instanceId: "
                     + externalService.getInstanceId() + " due to conflict: " + e.getMessage());
@@ -96,17 +88,11 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
                     Response.Status.BAD_REQUEST);
         }
 
+        externalService.setIsGlobal(true);
+
         try {
-            ExternalService registeredExternalService = externalServiceRegistry.registerService(externalService, true);
-
-            if (registeredExternalService == null) {
-                LOG.severe("Failed to register global service: " + externalService.getServiceId() + " with instanceId: "
-                        + externalService.getInstanceId() + " due to an unexpected error");
-                throw new WebApplicationException("Failed to register global service",
-                        Response.Status.INTERNAL_SERVER_ERROR);
-            }
-
-            return registeredExternalService;
+            externalServiceRegistry.registerService(externalService);
+            return externalService;
         } catch (IllegalStateException e) {
             LOG.warning("Failed to register global service: " + externalService.getServiceId() + " with instanceId: "
                     + externalService.getInstanceId() + " due to conflict: " + e.getMessage());

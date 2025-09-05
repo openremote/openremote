@@ -118,7 +118,7 @@ export class PageServices extends Page<AppStateKeyed> {
         if (manager.events) {
             this._eventSubscriptionId = await manager.events.subscribe<ExternalServiceEvent>(
                 {
-                    eventType: "microservice",
+                    eventType: "external-service",
                 },
                 (ev) => this._onEvent(ev)
             );

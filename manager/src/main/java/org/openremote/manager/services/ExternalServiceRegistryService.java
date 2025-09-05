@@ -24,6 +24,7 @@ import static org.openremote.model.Constants.MASTER_REALM;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -159,14 +160,7 @@ public class ExternalServiceRegistryService implements ContainerService {
         registry.clear();
     }
 
-    /**
-     * Register a realm-bound external service instance
-     *
-     * @param externalService The external service to register
-     */
-    public ExternalService registerService(ExternalService externalService) {
-        return registerService(externalService, false);
-    }
+
 
     /**
      * Register a external service instance
@@ -177,17 +171,16 @@ public class ExternalServiceRegistryService implements ContainerService {
      *                     admin
      *                     service user with global access.
      */
-    public ExternalService registerService(ExternalService externalService, boolean isGlobal) {
-        LOG.info("Registering external service: " + externalService.getServiceId() + ", instanceId: "
-                + externalService.getInstanceId());
-
+    public void registerService(ExternalService externalService) {
         if (externalService.getInstanceId() == null) {
             externalService.setInstanceId(UniqueIdentifierGenerator.generateId());
         }
 
+        LOG.info("Registering external service: " + externalService.getServiceId() + ", instanceId: "
+        + externalService.getInstanceId());
+
         long now = timerService.getCurrentTimeMillis();
         externalService.setLeaseInfo(new ExternalServiceLeaseInfo(now + DEFAULT_LEASE_DURATION_MS, now, now));
-        externalService.setIsGlobal(isGlobal);
 
         // merge the external service into the registry if it doesn't already exist
         registry.merge(
@@ -208,8 +201,6 @@ public class ExternalServiceRegistryService implements ContainerService {
 
         LOG.info("Successfully registered external service: " + externalService.getServiceId() + ", instanceId: "
                 + externalService.getInstanceId() + ", isGlobal: " + externalService.getIsGlobal());
-
-        return externalService;
     }
 
     /**
@@ -295,8 +286,8 @@ public class ExternalServiceRegistryService implements ContainerService {
      * @return An array of all registered external services and their instances
      */
     public ExternalService[] getServices(String realm) {
-        return registry.values().stream()
-                .flatMap(instanceMap -> instanceMap.values().stream())
+        return registry.entrySet().stream()
+                .flatMap(serviceEntry -> serviceEntry.getValue().values().stream())
                 .filter(entry -> entry.getRealm().equals(realm))
                 .toArray(ExternalService[]::new);
     }
@@ -309,8 +300,8 @@ public class ExternalServiceRegistryService implements ContainerService {
      * @return An array of all globally registered external services and their instances
      */
     public ExternalService[] getGlobalServices() {
-        return registry.values().stream()
-                .flatMap(instanceMap -> instanceMap.values().stream())
+        return registry.entrySet().stream()
+                .flatMap(serviceEntry -> serviceEntry.getValue().values().stream())
                 .filter(entry -> entry.getRealm().equals(MASTER_REALM) && entry.getIsGlobal())
                 .toArray(ExternalService[]::new);
     }
@@ -323,10 +314,8 @@ public class ExternalServiceRegistryService implements ContainerService {
      * @return The external service
      */
     public ExternalService getService(String serviceId, String instanceId) {
-        return registry.values().stream()
-                .flatMap(instanceMap -> instanceMap.values().stream())
-                .filter(entry -> entry.getServiceId().equals(serviceId) && entry.getInstanceId().equals(instanceId))
-                .findFirst()
+        return Optional.ofNullable(registry.get(serviceId))
+                .map(instanceMap -> instanceMap.get(instanceId))
                 .orElse(null);
     }
 
