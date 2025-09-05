@@ -1,0 +1,120 @@
+{
+  "$schema" : "http://json-schema.org/draft-07/schema#",
+  "title" : "Value Format",
+  "type" : "object",
+  "additionalProperties" : true,
+  "properties" : {
+    "useGrouping" : {
+      "type" : "boolean"
+    },
+    "minimumIntegerDigits" : {
+      "type" : "integer"
+    },
+    "minimumFractionDigits" : {
+      "type" : "integer"
+    },
+    "maximumFractionDigits" : {
+      "type" : "integer"
+    },
+    "minimumSignificantDigits" : {
+      "type" : "integer"
+    },
+    "maximumSignificantDigits" : {
+      "type" : "integer"
+    },
+    "asBoolean" : {
+      "type" : "boolean"
+    },
+    "asDate" : {
+      "type" : "boolean"
+    },
+    "asSlider" : {
+      "type" : "boolean"
+    },
+    "resolution" : {
+      "type" : "number"
+    },
+    "dateStyle" : {
+      "type" : "string",
+      "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+    },
+    "timeStyle" : {
+      "type" : "string",
+      "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+    },
+    "dayPeriod" : {
+      "type" : "string",
+      "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+    },
+    "hour12" : {
+      "type" : "boolean"
+    },
+    "iso8601" : {
+      "type" : "boolean"
+    },
+    "weekday" : {
+      "type" : "string",
+      "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+    },
+    "era" : {
+      "type" : "string",
+      "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+    },
+    "year" : {
+      "type" : "string",
+      "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+    },
+    "month" : {
+      "type" : "string",
+      "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+    },
+    "week" : {
+      "type" : "string",
+      "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+    },
+    "day" : {
+      "type" : "string",
+      "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+    },
+    "hour" : {
+      "type" : "string",
+      "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+    },
+    "minute" : {
+      "type" : "string",
+      "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+    },
+    "second" : {
+      "type" : "string",
+      "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+    },
+    "fractionalSecondDigits" : {
+      "type" : "integer"
+    },
+    "timeZoneName" : {
+      "type" : "string",
+      "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+    },
+    "momentJsFormat" : {
+      "type" : "string"
+    },
+    "asNumber" : {
+      "type" : "boolean"
+    },
+    "asOnOff" : {
+      "type" : "boolean"
+    },
+    "asPressedReleased" : {
+      "type" : "boolean"
+    },
+    "asOpenClosed" : {
+      "type" : "boolean"
+    },
+    "asMomentary" : {
+      "type" : "boolean"
+    },
+    "multiline" : {
+      "type" : "boolean"
+    }
+  }
+}

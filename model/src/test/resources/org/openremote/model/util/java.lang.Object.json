@@ -1,0 +1,7 @@
+{
+  "$schema" : "http://json-schema.org/draft-07/schema#",
+  "title" : "Any Type",
+  "type" : [ "null", "number", "integer", "boolean", "string", "array", "object" ],
+  "additionalProperties" : true,
+  "properties" : { }
+}

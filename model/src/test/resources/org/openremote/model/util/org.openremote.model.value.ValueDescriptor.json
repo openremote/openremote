@@ -1,0 +1,431 @@
+{
+  "$schema" : "http://json-schema.org/draft-07/schema#",
+  "title" : "Value Descriptor",
+  "type" : "object",
+  "additionalProperties" : true,
+  "properties" : {
+    "name" : {
+      "type" : "string",
+      "pattern" : "^\\w+(\\[\\])?$"
+    },
+    "type" : {
+      "type" : "string"
+    },
+    "constraints" : {
+      "type" : "array",
+      "items" : {
+        "oneOf" : [ {
+          "$ref" : "#/definitions/size"
+        }, {
+          "$ref" : "#/definitions/pattern"
+        }, {
+          "$ref" : "#/definitions/min"
+        }, {
+          "$ref" : "#/definitions/max"
+        }, {
+          "$ref" : "#/definitions/allowedValues"
+        }, {
+          "$ref" : "#/definitions/past"
+        }, {
+          "$ref" : "#/definitions/pastOrPresent"
+        }, {
+          "$ref" : "#/definitions/future"
+        }, {
+          "$ref" : "#/definitions/futureOrPresent"
+        }, {
+          "$ref" : "#/definitions/notEmpty"
+        }, {
+          "$ref" : "#/definitions/notBlank"
+        }, {
+          "$ref" : "#/definitions/notNull"
+        } ]
+      }
+    },
+    "format" : {
+      "$ref" : "#/definitions/ValueFormat"
+    },
+    "units" : {
+      "type" : "array",
+      "items" : {
+        "type" : "string",
+        "enum" : [ "per", "squared", "cubed", "peak", "mega", "kilo", "centi", "hecto", "micro", "milli", "percentage", "acre", "hectare", "decibel", "decibel_attenuated", "knot", "celsius", "kelvin", "fahrenheit", "year", "month", "week", "day", "hour", "minute", "second", "metre", "inch", "foot", "yard", "mile", "mile_scandinavian", "gram", "ounce", "pound", "stone", "degree", "radian", "litre", "gallon", "fluid_ounce", "joule", "btu", "watt", "lux", "lumen", "pascal", "bar", "inch_mercury", "volt", "ohm", "amp", "hertz", "rpm", "ppm", "carbon", "eur", "var" ]
+      }
+    },
+    "arrayDimensions" : {
+      "type" : "integer"
+    },
+    "metaUseOnly" : {
+      "type" : "boolean"
+    },
+    "jsonType" : {
+      "type" : "string"
+    }
+  },
+  "definitions" : {
+    "size" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "enum" : [ "size" ],
+          "default" : "size"
+        },
+        "min" : {
+          "type" : "integer"
+        },
+        "max" : {
+          "type" : "integer"
+        },
+        "message" : {
+          "type" : "string",
+          "i18n" : "schema.meta.constraint.message"
+        }
+      },
+      "title" : "size",
+      "required" : [ "type", "min", "max" ]
+    },
+    "pattern" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "enum" : [ "pattern" ],
+          "default" : "pattern"
+        },
+        "regexp" : {
+          "type" : "string"
+        },
+        "flags" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string",
+            "enum" : [ "UNIX_LINES", "CASE_INSENSITIVE", "COMMENTS", "MULTILINE", "DOTALL", "UNICODE_CASE", "CANON_EQ" ]
+          }
+        },
+        "message" : {
+          "type" : "string",
+          "i18n" : "schema.meta.constraint.message"
+        }
+      },
+      "title" : "pattern",
+      "required" : [ "type", "regexp" ]
+    },
+    "min" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "enum" : [ "min" ],
+          "default" : "min"
+        },
+        "min" : {
+          "type" : "number"
+        },
+        "message" : {
+          "type" : "string",
+          "i18n" : "schema.meta.constraint.message"
+        }
+      },
+      "title" : "min",
+      "required" : [ "type", "min" ]
+    },
+    "max" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "enum" : [ "max" ],
+          "default" : "max"
+        },
+        "max" : {
+          "type" : "number"
+        },
+        "message" : {
+          "type" : "string",
+          "i18n" : "schema.meta.constraint.message"
+        }
+      },
+      "title" : "max",
+      "required" : [ "type", "max" ]
+    },
+    "allowedValues" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "enum" : [ "allowedValues" ],
+          "default" : "allowedValues"
+        },
+        "allowedValueNames" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
+        },
+        "allowedValues" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/AnyType"
+          }
+        },
+        "message" : {
+          "type" : "string",
+          "i18n" : "schema.meta.constraint.message"
+        }
+      },
+      "title" : "allowedValues",
+      "required" : [ "type", "allowedValues" ]
+    },
+    "AnyType" : {
+      "type" : [ "null", "number", "integer", "boolean", "string", "array", "object" ],
+      "additionalProperties" : true,
+      "properties" : { }
+    },
+    "past" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "examples" : [ "2025-04-18", "2025-04-18T14:30:00Z", "2025-04-18T14:30:00+02:00", "2025-04-18T14:30:00.123Z", "2025-04-18T14:30:00.456-05:00", "1713442200456" ],
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "enum" : [ "past" ],
+          "default" : "past"
+        },
+        "message" : {
+          "type" : "string",
+          "i18n" : "schema.meta.constraint.message"
+        }
+      },
+      "title" : "past",
+      "required" : [ "type" ]
+    },
+    "pastOrPresent" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "examples" : [ "2025-04-18", "2025-04-18T14:30:00Z", "2025-04-18T14:30:00+02:00", "2025-04-18T14:30:00.123Z", "2025-04-18T14:30:00.456-05:00", "1713442200456" ],
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "enum" : [ "pastOrPresent" ],
+          "default" : "pastOrPresent"
+        },
+        "message" : {
+          "type" : "string",
+          "i18n" : "schema.meta.constraint.message"
+        }
+      },
+      "title" : "pastOrPresent",
+      "required" : [ "type" ]
+    },
+    "future" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "examples" : [ "2025-04-18", "2025-04-18T14:30:00Z", "2025-04-18T14:30:00+02:00", "2025-04-18T14:30:00.123Z", "2025-04-18T14:30:00.456-05:00", "1713442200456" ],
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "enum" : [ "future" ],
+          "default" : "future"
+        },
+        "message" : {
+          "type" : "string",
+          "i18n" : "schema.meta.constraint.message"
+        }
+      },
+      "title" : "future",
+      "required" : [ "type" ]
+    },
+    "futureOrPresent" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "examples" : [ "2025-04-18", "2025-04-18T14:30:00Z", "2025-04-18T14:30:00+02:00", "2025-04-18T14:30:00.123Z", "2025-04-18T14:30:00.456-05:00", "1713442200456" ],
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "enum" : [ "futureOrPresent" ],
+          "default" : "futureOrPresent"
+        },
+        "message" : {
+          "type" : "string",
+          "i18n" : "schema.meta.constraint.message"
+        }
+      },
+      "title" : "futureOrPresent",
+      "required" : [ "type" ]
+    },
+    "notEmpty" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "enum" : [ "notEmpty" ],
+          "default" : "notEmpty"
+        },
+        "message" : {
+          "type" : "string",
+          "i18n" : "schema.meta.constraint.message"
+        }
+      },
+      "title" : "notEmpty",
+      "required" : [ "type" ]
+    },
+    "notBlank" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "enum" : [ "notBlank" ],
+          "default" : "notBlank"
+        },
+        "message" : {
+          "type" : "string",
+          "i18n" : "schema.meta.constraint.message"
+        }
+      },
+      "title" : "notBlank",
+      "required" : [ "type" ]
+    },
+    "notNull" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "enum" : [ "notNull" ],
+          "default" : "notNull"
+        },
+        "message" : {
+          "type" : "string",
+          "i18n" : "schema.meta.constraint.message"
+        }
+      },
+      "title" : "notNull",
+      "required" : [ "type" ]
+    },
+    "ValueFormat" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "useGrouping" : {
+          "type" : "boolean"
+        },
+        "minimumIntegerDigits" : {
+          "type" : "integer"
+        },
+        "minimumFractionDigits" : {
+          "type" : "integer"
+        },
+        "maximumFractionDigits" : {
+          "type" : "integer"
+        },
+        "minimumSignificantDigits" : {
+          "type" : "integer"
+        },
+        "maximumSignificantDigits" : {
+          "type" : "integer"
+        },
+        "asBoolean" : {
+          "type" : "boolean"
+        },
+        "asDate" : {
+          "type" : "boolean"
+        },
+        "asSlider" : {
+          "type" : "boolean"
+        },
+        "resolution" : {
+          "type" : "number"
+        },
+        "dateStyle" : {
+          "type" : "string",
+          "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+        },
+        "timeStyle" : {
+          "type" : "string",
+          "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+        },
+        "dayPeriod" : {
+          "type" : "string",
+          "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+        },
+        "hour12" : {
+          "type" : "boolean"
+        },
+        "iso8601" : {
+          "type" : "boolean"
+        },
+        "weekday" : {
+          "type" : "string",
+          "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+        },
+        "era" : {
+          "type" : "string",
+          "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+        },
+        "year" : {
+          "type" : "string",
+          "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+        },
+        "month" : {
+          "type" : "string",
+          "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+        },
+        "week" : {
+          "type" : "string",
+          "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+        },
+        "day" : {
+          "type" : "string",
+          "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+        },
+        "hour" : {
+          "type" : "string",
+          "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+        },
+        "minute" : {
+          "type" : "string",
+          "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+        },
+        "second" : {
+          "type" : "string",
+          "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+        },
+        "fractionalSecondDigits" : {
+          "type" : "integer"
+        },
+        "timeZoneName" : {
+          "type" : "string",
+          "enum" : [ "numeric", "2-digit", "full", "long", "medium", "short", "narrow" ]
+        },
+        "momentJsFormat" : {
+          "type" : "string"
+        },
+        "asNumber" : {
+          "type" : "boolean"
+        },
+        "asOnOff" : {
+          "type" : "boolean"
+        },
+        "asPressedReleased" : {
+          "type" : "boolean"
+        },
+        "asOpenClosed" : {
+          "type" : "boolean"
+        },
+        "asMomentary" : {
+          "type" : "boolean"
+        },
+        "multiline" : {
+          "type" : "boolean"
+        }
+      }
+    }
+  }
+}

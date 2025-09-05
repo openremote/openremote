@@ -1,0 +1,502 @@
+{
+  "$schema" : "http://json-schema.org/draft-07/schema#",
+  "title" : "Asset Query",
+  "type" : "object",
+  "additionalProperties" : true,
+  "properties" : {
+    "recursive" : {
+      "type" : "boolean"
+    },
+    "select" : {
+      "$ref" : "#/definitions/Select"
+    },
+    "access" : {
+      "type" : "string",
+      "enum" : [ "PRIVATE", "PROTECTED", "PUBLIC" ]
+    },
+    "ids" : {
+      "type" : "array",
+      "items" : {
+        "type" : "string"
+      }
+    },
+    "names" : {
+      "type" : "array",
+      "items" : {
+        "$ref" : "#/definitions/StringPredicate"
+      }
+    },
+    "parents" : {
+      "type" : "array",
+      "items" : {
+        "$ref" : "#/definitions/ParentPredicate"
+      }
+    },
+    "paths" : {
+      "type" : "array",
+      "items" : {
+        "$ref" : "#/definitions/PathPredicate"
+      }
+    },
+    "realm" : {
+      "$ref" : "#/definitions/RealmPredicate"
+    },
+    "userIds" : {
+      "type" : "array",
+      "items" : {
+        "type" : "string"
+      }
+    },
+    "types" : {
+      "type" : "array",
+      "items" : {
+        "type" : "string"
+      }
+    },
+    "attributes" : {
+      "$ref" : "#/definitions/LogicGroup(AttributePredicate)"
+    },
+    "orderBy" : {
+      "$ref" : "#/definitions/OrderBy"
+    },
+    "limit" : {
+      "type" : "integer"
+    }
+  },
+  "required" : [ "recursive", "limit" ],
+  "definitions" : {
+    "Select" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "attributes" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
+        }
+      }
+    },
+    "StringPredicate" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "description" : "Predicate for string values; will match based on configured options.",
+      "properties" : {
+        "predicateType" : {
+          "type" : "string",
+          "enum" : [ "string" ],
+          "default" : "string"
+        },
+        "match" : {
+          "type" : "string",
+          "enum" : [ "EXACT", "BEGIN", "END", "CONTAINS" ]
+        },
+        "caseSensitive" : {
+          "type" : "boolean"
+        },
+        "value" : {
+          "type" : "string"
+        },
+        "negate" : {
+          "type" : "boolean"
+        }
+      },
+      "title" : "string",
+      "required" : [ "predicateType", "caseSensitive", "negate" ]
+    },
+    "ParentPredicate" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "id" : {
+          "type" : "string"
+        }
+      }
+    },
+    "PathPredicate" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "path" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
+        }
+      }
+    },
+    "RealmPredicate" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "name" : {
+          "type" : "string"
+        }
+      }
+    },
+    "LogicGroup(AttributePredicate)" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "operator" : {
+          "type" : "string",
+          "enum" : [ "AND", "OR" ]
+        },
+        "items" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/AttributePredicate"
+          }
+        },
+        "groups" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/LogicGroup(AttributePredicate)"
+          }
+        }
+      }
+    },
+    "AttributePredicate" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "name" : {
+          "$ref" : "#/definitions/StringPredicate"
+        },
+        "negated" : {
+          "type" : "boolean"
+        },
+        "path" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/AnyType"
+          }
+        },
+        "value" : {
+          "oneOf" : [ {
+            "$ref" : "#/definitions/StringPredicate"
+          }, {
+            "$ref" : "#/definitions/BooleanPredicate"
+          }, {
+            "$ref" : "#/definitions/DateTimePredicate"
+          }, {
+            "$ref" : "#/definitions/NumberPredicate"
+          }, {
+            "$ref" : "#/definitions/RadialGeofencePredicate"
+          }, {
+            "$ref" : "#/definitions/RectangularGeofencePredicate"
+          }, {
+            "$ref" : "#/definitions/ArrayPredicate"
+          }, {
+            "$ref" : "#/definitions/ValueAnyPredicate"
+          }, {
+            "$ref" : "#/definitions/ValueEmptyPredicate"
+          }, {
+            "$ref" : "#/definitions/CalendarEventPredicate"
+          } ]
+        },
+        "meta" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/NameValuePredicate"
+          }
+        },
+        "previousValue" : {
+          "oneOf" : [ {
+            "$ref" : "#/definitions/StringPredicate"
+          }, {
+            "$ref" : "#/definitions/BooleanPredicate"
+          }, {
+            "$ref" : "#/definitions/DateTimePredicate"
+          }, {
+            "$ref" : "#/definitions/NumberPredicate"
+          }, {
+            "$ref" : "#/definitions/RadialGeofencePredicate"
+          }, {
+            "$ref" : "#/definitions/RectangularGeofencePredicate"
+          }, {
+            "$ref" : "#/definitions/ArrayPredicate"
+          }, {
+            "$ref" : "#/definitions/ValueAnyPredicate"
+          }, {
+            "$ref" : "#/definitions/ValueEmptyPredicate"
+          }, {
+            "$ref" : "#/definitions/CalendarEventPredicate"
+          } ]
+        },
+        "timestampOlderThan" : {
+          "type" : "string"
+        }
+      },
+      "required" : [ "negated" ]
+    },
+    "AnyType" : {
+      "type" : [ "null", "number", "integer", "boolean", "string", "array", "object" ],
+      "additionalProperties" : true,
+      "properties" : { }
+    },
+    "BooleanPredicate" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "description" : "Predicate for boolean values; will evaluate the value as a boolean and match against this predicates value, any value that is not a boolean will not match",
+      "properties" : {
+        "predicateType" : {
+          "type" : "string",
+          "enum" : [ "boolean" ],
+          "default" : "boolean"
+        },
+        "value" : {
+          "type" : "boolean"
+        }
+      },
+      "title" : "boolean",
+      "required" : [ "predicateType", "value" ]
+    },
+    "DateTimePredicate" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "description" : "Predicate for date time values; provided values should be valid ISO 8601 datetime strings (e.g. yyyy-MM-dd'T'HH:mm:ssZ or yyyy-MM-dd'T'HH:mm:ss±HH:mm), offset and time are optional, if no offset information is supplied then UTC is assumed.",
+      "properties" : {
+        "predicateType" : {
+          "type" : "string",
+          "enum" : [ "datetime" ],
+          "default" : "datetime"
+        },
+        "value" : {
+          "type" : "string"
+        },
+        "rangeValue" : {
+          "type" : "string"
+        },
+        "operator" : {
+          "type" : "string",
+          "enum" : [ "EQUALS", "GREATER_THAN", "GREATER_EQUALS", "LESS_THAN", "LESS_EQUALS", "BETWEEN" ]
+        },
+        "negate" : {
+          "type" : "boolean"
+        }
+      },
+      "title" : "datetime",
+      "required" : [ "predicateType", "negate" ]
+    },
+    "NumberPredicate" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "description" : "Predicate for number values; will match based on configured options.",
+      "properties" : {
+        "predicateType" : {
+          "type" : "string",
+          "enum" : [ "number" ],
+          "default" : "number"
+        },
+        "value" : {
+          "type" : "number"
+        },
+        "rangeValue" : {
+          "type" : "number"
+        },
+        "operator" : {
+          "type" : "string",
+          "enum" : [ "EQUALS", "GREATER_THAN", "GREATER_EQUALS", "LESS_THAN", "LESS_EQUALS", "BETWEEN" ]
+        },
+        "negate" : {
+          "type" : "boolean"
+        }
+      },
+      "title" : "number",
+      "required" : [ "predicateType", "negate" ]
+    },
+    "RadialGeofencePredicate" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "description" : "Predicate for GEO JSON point values; will return true if the point is within the specified radius of the specified latitude and longitude unless negated.",
+      "title" : "Radial geofence",
+      "properties" : {
+        "predicateType" : {
+          "type" : "string",
+          "enum" : [ "radial" ],
+          "default" : "radial"
+        },
+        "radius" : {
+          "type" : "integer"
+        },
+        "lat" : {
+          "type" : "number"
+        },
+        "lng" : {
+          "type" : "number"
+        },
+        "negated" : {
+          "type" : "boolean"
+        }
+      },
+      "required" : [ "predicateType", "radius", "lat", "lng", "negated" ]
+    },
+    "RectangularGeofencePredicate" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "description" : "Predicate for GEO JSON point values; will return true if the point is within the specified rectangle specified as latitude and longitude values of two corners unless negated.",
+      "title" : "Rectangular geofence",
+      "properties" : {
+        "predicateType" : {
+          "type" : "string",
+          "enum" : [ "rect" ],
+          "default" : "rect"
+        },
+        "latMin" : {
+          "type" : "number"
+        },
+        "lngMin" : {
+          "type" : "number"
+        },
+        "latMax" : {
+          "type" : "number"
+        },
+        "lngMax" : {
+          "type" : "number"
+        },
+        "negated" : {
+          "type" : "boolean"
+        }
+      },
+      "required" : [ "predicateType", "latMin", "lngMin", "latMax", "lngMax", "negated" ]
+    },
+    "ArrayPredicate" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "description" : "Predicate for array values; will match based on configured options.",
+      "properties" : {
+        "predicateType" : {
+          "type" : "string",
+          "enum" : [ "array" ],
+          "default" : "array"
+        },
+        "value" : {
+          "$ref" : "#/definitions/AnyType"
+        },
+        "index" : {
+          "type" : "integer"
+        },
+        "lengthEquals" : {
+          "type" : "integer"
+        },
+        "lengthGreaterThan" : {
+          "type" : "integer"
+        },
+        "lengthLessThan" : {
+          "type" : "integer"
+        },
+        "negated" : {
+          "type" : "boolean"
+        }
+      },
+      "title" : "array",
+      "required" : [ "predicateType", "negated" ]
+    },
+    "ValueAnyPredicate" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "description" : "Predicate that matches any value including null.",
+      "title" : "Any value",
+      "properties" : {
+        "predicateType" : {
+          "type" : "string",
+          "enum" : [ "value-any" ],
+          "default" : "value-any"
+        }
+      },
+      "required" : [ "predicateType" ]
+    },
+    "ValueEmptyPredicate" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "description" : "Predicate that matches any empty/null value; unless negated.",
+      "title" : "Empty value",
+      "properties" : {
+        "predicateType" : {
+          "type" : "string",
+          "enum" : [ "value-empty" ],
+          "default" : "value-empty"
+        },
+        "negate" : {
+          "type" : "boolean"
+        }
+      },
+      "required" : [ "predicateType", "negate" ]
+    },
+    "CalendarEventPredicate" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "description" : "Predicate for calendar event values; will match based on whether the calendar event is active for the specified time.",
+      "title" : "Calendar",
+      "properties" : {
+        "predicateType" : {
+          "type" : "string",
+          "enum" : [ "calendar-event" ],
+          "default" : "calendar-event"
+        },
+        "timestamp" : {
+          "type" : "integer",
+          "format" : "utc-millisec"
+        }
+      },
+      "required" : [ "predicateType" ]
+    },
+    "NameValuePredicate" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "name" : {
+          "$ref" : "#/definitions/StringPredicate"
+        },
+        "negated" : {
+          "type" : "boolean"
+        },
+        "path" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/AnyType"
+          }
+        },
+        "value" : {
+          "oneOf" : [ {
+            "$ref" : "#/definitions/StringPredicate"
+          }, {
+            "$ref" : "#/definitions/BooleanPredicate"
+          }, {
+            "$ref" : "#/definitions/DateTimePredicate"
+          }, {
+            "$ref" : "#/definitions/NumberPredicate"
+          }, {
+            "$ref" : "#/definitions/RadialGeofencePredicate"
+          }, {
+            "$ref" : "#/definitions/RectangularGeofencePredicate"
+          }, {
+            "$ref" : "#/definitions/ArrayPredicate"
+          }, {
+            "$ref" : "#/definitions/ValueAnyPredicate"
+          }, {
+            "$ref" : "#/definitions/ValueEmptyPredicate"
+          }, {
+            "$ref" : "#/definitions/CalendarEventPredicate"
+          } ]
+        }
+      },
+      "required" : [ "negated" ]
+    },
+    "OrderBy" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "property" : {
+          "type" : "string",
+          "enum" : [ "CREATED_ON", "NAME", "ASSET_TYPE", "PARENT_ID", "REALM" ]
+        },
+        "descending" : {
+          "type" : "boolean"
+        }
+      },
+      "required" : [ "descending" ]
+    }
+  }
+}

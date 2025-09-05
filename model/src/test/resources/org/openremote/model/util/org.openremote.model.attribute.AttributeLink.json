@@ -1,0 +1,133 @@
+{
+  "$schema" : "http://json-schema.org/draft-07/schema#",
+  "title" : "Attribute Link",
+  "type" : "object",
+  "additionalProperties" : true,
+  "properties" : {
+    "ref" : {
+      "$ref" : "#/definitions/AttributeRef"
+    },
+    "converter" : {
+      "type" : "object",
+      "additionalProperties" : {
+        "$ref" : "#/definitions/AnyType"
+      }
+    },
+    "filters" : {
+      "type" : "array",
+      "items" : {
+        "oneOf" : [ {
+          "$ref" : "#/definitions/regex"
+        }, {
+          "$ref" : "#/definitions/substring"
+        }, {
+          "$ref" : "#/definitions/jsonPath"
+        }, {
+          "$ref" : "#/definitions/mathExpression"
+        } ]
+      }
+    }
+  },
+  "definitions" : {
+    "AttributeRef" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "id" : {
+          "type" : "string",
+          "pattern" : "^[0-9A-Za-z]{22}$"
+        },
+        "name" : {
+          "type" : "string",
+          "pattern" : "^\\w+$",
+          "minLength" : 1
+        }
+      },
+      "required" : [ "name" ]
+    },
+    "AnyType" : {
+      "type" : [ "null", "number", "integer", "boolean", "string", "array", "object" ],
+      "additionalProperties" : true,
+      "properties" : { }
+    },
+    "regex" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "title" : "Regex",
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "enum" : [ "regex" ],
+          "default" : "regex"
+        },
+        "pattern" : {
+          "type" : "string"
+        },
+        "matchGroup" : {
+          "type" : "integer"
+        },
+        "matchIndex" : {
+          "type" : "integer"
+        }
+      },
+      "required" : [ "type" ]
+    },
+    "substring" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "title" : "Substring",
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "enum" : [ "substring" ],
+          "default" : "substring"
+        },
+        "beginIndex" : {
+          "type" : "integer"
+        },
+        "endIndex" : {
+          "type" : "integer"
+        }
+      },
+      "required" : [ "type", "beginIndex" ]
+    },
+    "jsonPath" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "title" : "JSON Path",
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "enum" : [ "jsonPath" ],
+          "default" : "jsonPath"
+        },
+        "path" : {
+          "type" : "string"
+        },
+        "returnFirst" : {
+          "type" : "boolean"
+        },
+        "returnLast" : {
+          "type" : "boolean"
+        }
+      },
+      "required" : [ "type", "path", "returnFirst", "returnLast" ]
+    },
+    "mathExpression" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "title" : "Mathematical Expression",
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "enum" : [ "mathExpression" ],
+          "default" : "mathExpression"
+        },
+        "expression" : {
+          "type" : "string"
+        }
+      },
+      "required" : [ "type" ]
+    }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "$schema" : "http://json-schema.org/draft-07/schema#",
+  "title" : "Console Providers",
+  "type" : "object",
+  "additionalProperties" : {
+    "$ref" : "#/definitions/ConsoleProvider"
+  },
+  "definitions" : {
+    "ConsoleProvider" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "version" : {
+          "type" : "string"
+        },
+        "requiresPermission" : {
+          "type" : "boolean"
+        },
+        "hasPermission" : {
+          "type" : "boolean"
+        },
+        "success" : {
+          "type" : "boolean"
+        },
+        "enabled" : {
+          "type" : "boolean"
+        },
+        "disabled" : {
+          "type" : "boolean"
+        },
+        "data" : {
+          "type" : "object",
+          "additionalProperties" : {
+            "$ref" : "#/definitions/AnyType"
+          }
+        }
+      },
+      "required" : [ "requiresPermission", "hasPermission", "success", "enabled", "disabled" ]
+    },
+    "AnyType" : {
+      "type" : [ "null", "number", "integer", "boolean", "string", "array", "object" ],
+      "additionalProperties" : true,
+      "properties" : { }
+    }
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "$schema" : "http://json-schema.org/draft-07/schema#",
+  "title" : "Calendar Event",
+  "type" : "object",
+  "additionalProperties" : true,
+  "properties" : {
+    "start" : {
+      "type" : "integer",
+      "format" : "utc-millisec"
+    },
+    "end" : {
+      "type" : "integer",
+      "format" : "utc-millisec"
+    },
+    "recurrence" : {
+      "$ref" : "#/definitions/Recur(LocalDateTime)"
+    }
+  },
+  "definitions" : {
+    "Recur(LocalDateTime)" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "frequency" : {
+          "type" : "string",
+          "enum" : [ "SECONDLY", "MINUTELY", "HOURLY", "DAILY", "WEEKLY", "MONTHLY", "YEARLY" ]
+        },
+        "skip" : {
+          "type" : "string",
+          "enum" : [ "OMIT", "BACKWARD", "FORWARD" ]
+        },
+        "until" : {
+          "$ref" : "#/definitions/TemporalAdapter(LocalDateTime)"
+        },
+        "rscale" : {
+          "type" : "string",
+          "enum" : [ "JAPANESE", "BUDDHIST", "ROC", "ISLAMIC", "ISO8601", "CHINESE", "ETHIOPIC", "HEBREW", "GREGORIAN" ]
+        },
+        "count" : {
+          "type" : "integer"
+        },
+        "interval" : {
+          "type" : "integer"
+        },
+        "secondList" : {
+          "type" : "array",
+          "items" : {
+            "type" : "integer"
+          }
+        },
+        "minuteList" : {
+          "type" : "array",
+          "items" : {
+            "type" : "integer"
+          }
+        },
+        "hourList" : {
+          "type" : "array",
+          "items" : {
+            "type" : "integer"
+          }
+        },
+        "dayList" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/WeekDay"
+          }
+        },
+        "monthDayList" : {
+          "type" : "array",
+          "items" : {
+            "type" : "integer"
+          }
+        },
+        "yearDayList" : {
+          "type" : "array",
+          "items" : {
+            "type" : "integer"
+          }
+        },
+        "weekNoList" : {
+          "type" : "array",
+          "items" : {
+            "type" : "integer"
+          }
+        },
+        "monthList" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/Month"
+          }
+        },
+        "setPosList" : {
+          "type" : "array",
+          "items" : {
+            "type" : "integer"
+          }
+        },
+        "weekStartDay" : {
+          "$ref" : "#/definitions/WeekDay"
+        },
+        "experimentalValues" : {
+          "type" : "object",
+          "additionalProperties" : {
+            "type" : "string"
+          }
+        },
+        "calIncField" : {
+          "$ref" : "#/definitions/TemporalUnit"
+        }
+      }
+    },
+    "TemporalAdapter(LocalDateTime)" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "valueString" : {
+          "type" : "string"
+        },
+        "tzId" : {
+          "$ref" : "#/definitions/TzId"
+        }
+      }
+    },
+    "TzId" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "name" : {
+          "type" : "string"
+        },
+        "value" : {
+          "type" : "string"
+        }
+      }
+    },
+    "WeekDay" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "day" : {
+          "type" : "string",
+          "enum" : [ "SU", "MO", "TU", "WE", "TH", "FR", "SA" ]
+        },
+        "offset" : {
+          "type" : "integer"
+        }
+      },
+      "required" : [ "offset" ]
+    },
+    "Month" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "monthOfYear" : {
+          "type" : "integer"
+        },
+        "leapMonth" : {
+          "type" : "boolean"
+        }
+      },
+      "required" : [ "monthOfYear", "leapMonth" ]
+    },
+    "TemporalUnit" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "durationEstimated" : {
+          "type" : "boolean"
+        },
+        "duration" : {
+          "type" : "integer",
+          "format" : "utc-millisec"
+        },
+        "timeBased" : {
+          "type" : "boolean"
+        },
+        "dateBased" : {
+          "type" : "boolean"
+        }
+      },
+      "required" : [ "durationEstimated", "timeBased", "dateBased" ]
+    }
+  }
+}

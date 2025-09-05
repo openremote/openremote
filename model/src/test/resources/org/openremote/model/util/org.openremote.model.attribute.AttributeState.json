@@ -1,0 +1,37 @@
+{
+  "$schema" : "http://json-schema.org/draft-07/schema#",
+  "title" : "Attribute State",
+  "type" : "object",
+  "additionalProperties" : true,
+  "properties" : {
+    "ref" : {
+      "$ref" : "#/definitions/AttributeRef"
+    },
+    "value" : {
+      "$ref" : "#/definitions/AnyType"
+    }
+  },
+  "definitions" : {
+    "AttributeRef" : {
+      "type" : "object",
+      "additionalProperties" : true,
+      "properties" : {
+        "id" : {
+          "type" : "string",
+          "pattern" : "^[0-9A-Za-z]{22}$"
+        },
+        "name" : {
+          "type" : "string",
+          "pattern" : "^\\w+$",
+          "minLength" : 1
+        }
+      },
+      "required" : [ "name" ]
+    },
+    "AnyType" : {
+      "type" : [ "null", "number", "integer", "boolean", "string", "array", "object" ],
+      "additionalProperties" : true,
+      "properties" : { }
+    }
+  }
+}

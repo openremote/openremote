@@ -43,6 +43,8 @@ dependencies {
     api "fr.neolegal:exp4j:$exp4jVersion"
 
     dependencies {
+        testImplementation 'org.skyscreamer:jsonassert:1.5.3'
+        testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.0'
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
         testImplementation 'org.mockito:mockito-core:5.18.0'
         testRuntimeOnly 'org.glassfish:jakarta.el:4.0.2'
