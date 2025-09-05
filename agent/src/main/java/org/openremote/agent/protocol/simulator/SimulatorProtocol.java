@@ -24,10 +24,15 @@ import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.Pair;
+import org.openremote.model.value.AbstractNameValueHolder;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoField;
 import java.util.*;
@@ -38,6 +43,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS;
 
 public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, SimulatorAgentLink> {
 
@@ -134,6 +140,19 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         updateLinkedAttribute(attributeRef, value, timestamp);
     }
 
+    public void updateLinkedAttributePredictedDataPoints(AttributeRef attributeRef, Object value, long timestamp) {
+        Attribute<?> attribute = linkedAttributes.get(attributeRef);
+
+        if (attribute == null) {
+            LOG.log(Level.WARNING, () -> "Update linked attribute predicted data points called for un-linked attribute: " + attributeRef);
+            return;
+        }
+
+        if (attribute.hasMeta("hasPredictedDataPoints") && attribute.getMeta().get(HAS_PREDICTED_DATA_POINTS).flatMap(AbstractNameValueHolder::getValue).get()) {
+            predictedDatapointService.updateValue(attributeRef, value, LocalDateTime.ofInstant(Instant.ofEpochSecond(timestamp), TimeZone.getDefault().toZoneId()));
+        }
+    }
+
     public Map<AttributeRef, ScheduledFuture<?>> getReplayMap() {
         return replayMap;
     }
@@ -163,6 +182,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             LOG.fine("Updating asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " with value " + nextDatapoint.value.toString());
             try {
                 updateLinkedAttribute(attributeRef, nextDatapoint.value);
+                updateLinkedAttributePredictedDataPoints(attributeRef, nextDatapoint.value, now + nextRunRelative);
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
             } finally {
