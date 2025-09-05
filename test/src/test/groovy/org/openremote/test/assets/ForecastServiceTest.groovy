@@ -13,6 +13,7 @@ import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.datapoint.AssetPredictedDatapoint
 import org.openremote.model.datapoint.ValueDatapoint
+import org.openremote.model.util.TimeUtil
 import org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
@@ -47,9 +48,9 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
     static TimerService timerService
     @Shared
     static ForecastConfigurationWeightedExponentialAverage forecastConfig = new ForecastConfigurationWeightedExponentialAverage(
-            new ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration("P7D"),
+            new TimeUtil.ExtendedPeriodAndDuration("P7D"),
             3,
-            new ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration("PT1H"),
+            new TimeUtil.ExtendedPeriodAndDuration("PT1H"),
             4
     )
     @Shared

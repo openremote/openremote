@@ -19,19 +19,18 @@
  */
 package org.openremote.agent.protocol.simulator;
 
+import net.fortuna.ical4j.model.Recur;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.Pair;
 import org.openremote.model.value.AbstractNameValueHolder;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoField;
@@ -144,7 +143,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         Attribute<?> attribute = linkedAttributes.get(attributeRef);
 
         if (attribute == null) {
-            LOG.log(Level.WARNING, () -> "Update linked attribute predicted data points called for un-linked attribute: " + attributeRef);
+            LOG.warning("Update linked attribute predicted data points called for un-linked attribute: " + attributeRef);
             return;
         }
 
@@ -158,9 +157,17 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     }
 
     protected ScheduledFuture<?> scheduleReplay(AttributeRef attributeRef, SimulatorReplayDatapoint[] simulatorReplayDatapoints) {
+        Attribute<?> attribute = linkedAttributes.get(attributeRef);
+        SimulatorAgentLink agentLink = this.agent.getAgentLink(attribute);
+        Duration duration = agentLink.getDuration().get();
+        Recur<LocalDateTime> recurrence = agentLink.getRecurrence().get();
+
         LOG.finest("Scheduling linked attribute replay update");
 
-        long now = LocalDateTime.now().get(ChronoField.SECOND_OF_DAY);
+//        if (agentLink.getDuration().)
+
+        // TODO: Should be affected by the duration
+        long now = agentLink.getStartDate().orElse(LocalDateTime.now()).get(ChronoField.SECOND_OF_DAY);
 
         SimulatorReplayDatapoint nextDatapoint = Arrays.stream(simulatorReplayDatapoints)
             .filter(replaySimulatorDatapoint -> replaySimulatorDatapoint.timestamp > now)
