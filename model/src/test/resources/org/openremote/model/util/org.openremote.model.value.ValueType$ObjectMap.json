@@ -3,13 +3,7 @@
   "title" : "Object Map",
   "type" : "object",
   "additionalProperties" : {
-    "$ref" : "#/definitions/AnyType"
-  },
-  "definitions" : {
-    "AnyType" : {
-      "type" : [ "null", "number", "integer", "boolean", "string", "array", "object" ],
-      "additionalProperties" : true,
-      "properties" : { }
-    }
+    "type" : [ "null", "number", "integer", "boolean", "string", "array", "object" ],
+    "additionalProperties" : true
   }
 }
