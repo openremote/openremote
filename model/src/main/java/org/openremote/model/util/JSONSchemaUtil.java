@@ -41,10 +41,13 @@ public class JSONSchemaUtil {
     static class PatternPropertiesSimpleKeyAnyType {}
     @JsonSchemaInject(jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_ANY_TYPE)
     static class AnyType {}
+    @JsonSchemaInject(jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_STRING_TYPE)
+    static class StringType {}
 
     private JSONSchemaUtil() {}
 
     public static final String SCHEMA_SUPPLIER_NAME_ANY_TYPE = "anyType";
+    public static final String SCHEMA_SUPPLIER_NAME_STRING_TYPE = "stringType";
     public static final String SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE = "patternPropertiesAnyKeyAnyType";
     public static final String SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_SIMPLE_KEY_ANY_TYPE = "patternPropertiesSimpleKeyAnyType";
     public static final String PATTERN_PROPERTIES_MATCH_ANY = ".+";
@@ -120,6 +123,7 @@ public class JSONSchemaUtil {
             ),
             Map.of(
                 SCHEMA_SUPPLIER_NAME_ANY_TYPE, () -> getSchemaType(true, TYPES_ALL),
+                SCHEMA_SUPPLIER_NAME_STRING_TYPE, () -> getSchemaType(true, TYPE_STRING),
                 SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE, JSONSchemaUtil::getSchemaPatternPropertiesAnyKeyAnyType,
                 SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_SIMPLE_KEY_ANY_TYPE, JSONSchemaUtil::getSchemaPatternPropertiesSimpleKeyAnyType
             ),
