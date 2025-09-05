@@ -33,4 +33,6 @@ public interface ProtocolPredictedDatapointService extends ContainerService {
     void updateValue(String assetId, String attributeName, Object value, LocalDateTime timestamp);
 
     void updateValues(String assetId, String attributeName, List<ValueDatapoint<?>> valuesAndTimestamps);
+
+    void purgeValues(String assetId, String attributeName);
 }
