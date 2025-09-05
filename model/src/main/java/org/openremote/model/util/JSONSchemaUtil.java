@@ -29,7 +29,9 @@ import com.fasterxml.jackson.databind.jsonFormatVisitors.*;
 import com.fasterxml.jackson.databind.node.*;
 import com.github.victools.jsonschema.generator.*;
 import com.github.victools.jsonschema.generator.Module;
+import com.github.victools.jsonschema.generator.impl.DefinitionKey;
 import com.github.victools.jsonschema.generator.impl.module.SimpleTypeModule;
+import com.github.victools.jsonschema.generator.naming.DefaultSchemaDefinitionNamingStrategy;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.jackson.JsonSubTypesResolver;
@@ -48,6 +50,8 @@ import java.util.stream.Collectors;
 public class JSONSchemaUtil {
 
     public static class SchemaNodeFactory {
+
+        public static class AnyType {}
 
         public static final String SCHEMA_SUPPLIER_NAME_ANY_TYPE = "anyType";
         public static final String SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE = "patternPropertiesAnyKeyAnyType";
@@ -190,6 +194,18 @@ public class JSONSchemaUtil {
 
             // General direct class type remapping
             builder.forTypesInGeneral()
+                .withDefinitionNamingStrategy(new DefaultSchemaDefinitionNamingStrategy() {
+                    @Override
+                    public String getDefinitionNameForKey(DefinitionKey key, SchemaGenerationContext generationContext) {
+                        TypeContext typeContext = generationContext.getTypeContext();
+                        ResolvedType type = key.getType();
+                        Class<?> erasedType = type.getErasedType();
+                        if (erasedType.equals(Object.class)) {
+                            return typeContext.getSimpleTypeDescription(typeContext.resolve(SchemaNodeFactory.AnyType.class));
+                        }
+                        return typeContext.getSimpleTypeDescription(type);
+                    }
+                })
                 .withCustomDefinitionProvider((resolvedType, context) -> {
                     Class<?> erasedType = resolvedType.getErasedType();
                     // Does not behave like before where this is the fallback if a class could not be resolved
