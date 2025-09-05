@@ -51,6 +51,7 @@ public class ForecastConfigurationWeightedExponentialAverage extends ForecastCon
     @NotNull
     @JsonSerialize(using = ToStringSerializer.class)
     @JsonDeserialize(converter = PeriodAndDurationConverter.class)
+    @JsonSchemaTypeRemap(type = String.class)
     // TODO: consider @JsonSchemaFormat("duration") requires new or-mwc-input type
     @JsonSchemaTitle("Past period")
     protected ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration pastPeriod;
@@ -61,6 +62,7 @@ public class ForecastConfigurationWeightedExponentialAverage extends ForecastCon
     @NotNull
     @JsonSerialize(using = ToStringSerializer.class)
     @JsonDeserialize(converter = PeriodAndDurationConverter.class)
+    @JsonSchemaTypeRemap(type = String.class)
     // TODO: consider @JsonSchemaFormat("duration") requires new or-mwc-input type
     @JsonSchemaTitle("Forecast period")
     protected ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration forecastPeriod;
