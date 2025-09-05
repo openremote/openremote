@@ -20,16 +20,44 @@
 package org.openremote.agent.protocol.simulator;
 
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import net.fortuna.ical4j.model.Recur;
 import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
+import org.openremote.model.util.TimeUtil;
+import org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.Optional;
 
 public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
 
-    @JsonPropertyDescription("Used to store 24h dataset of values that should be replayed (i.e. written to the" +
-        " linked attribute) in a continuous loop.")
+    @JsonPropertyDescription("Used to store a dataset of values that should be replayed (i.e. written to the" +
+        " linked attribute) in a continuous loop based on a schedule (default replays every 24h).")
     protected SimulatorReplayDatapoint[] replayData;
+
+    @JsonPropertyDescription("Set always a date, no time information, considered to be 00:00 on that day; if not provided, starts immediately")
+    protected Date startDate;
+
+    @JsonPropertyDescription("\n" +
+            "    uses ISO 8601 duration format\n" +
+            "    if not provided, 24h\n" +
+            "    defines the length of the replay loop (and of the filled-in predicted data points if applicable), if replayData contains data points after this duration, those values are ignored and never used\n1")
+    @JsonSerialize(using = ToStringSerializer.class)
+    @JsonDeserialize(converter = TimeUtil.PeriodAndDurationConverter.class)
+    protected Duration duration;
+
+    @JsonPropertyDescription("recurrence:\n" +
+            "\n" +
+            "    recurrence rule, following RFC 5545 RRULE format\n" +
+            "    if not provided, repeats indefinitely daily\n")
+    @JsonSerialize(converter = CalendarEvent.RecurStringConverter.class)
+    protected Recur<LocalDateTime> recurrence;
 
     // For Hydrators
     protected SimulatorAgentLink() {
@@ -45,6 +73,33 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
 
     public SimulatorAgentLink setReplayData(SimulatorReplayDatapoint[] replayData) {
         this.replayData = replayData;
+        return this;
+    }
+
+    public Optional<Date> getStartDate() {
+        return Optional.ofNullable(startDate);
+    }
+
+    public SimulatorAgentLink setStartDate(Date startDate) {
+        this.startDate = startDate;
+        return this;
+    }
+
+    public Optional<Duration> getDuration() {
+        return Optional.ofNullable(duration);
+    }
+
+    public SimulatorAgentLink setDuration(Duration duration) {
+        this.duration = duration;
+        return this;
+    }
+
+    public Optional<Recur<LocalDateTime>> getRecurrence() {
+        return Optional.ofNullable(recurrence);
+    }
+
+    public SimulatorAgentLink setRecurrence(Recur<LocalDateTime> recurrence) {
+        this.recurrence = recurrence;
         return this;
     }
 }
