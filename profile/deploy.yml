@@ -112,6 +112,8 @@ services:
       - "${OR_SSL_PORT:-443}:443" # HTTPS /auth directs to keycloak and other paths direct to manager
       - "8883:8883" # MQTTS
       - "127.0.0.1:8404:8404" # Localhost metrics access
+      - "${PRIVATE_IP:-127.0.0.1}:8404:8404" # Allows to also expose metrics on a given IP address,
+                                             # intended to be IP of the interface of the private subnet of the EC2 VM
 
   # The OpenRemote Manager
   manager:
@@ -137,6 +139,8 @@ services:
     #  - "8000:8000" # Remote debugging port - NOT FOR PRODUCTION USE!!!
     #  - "8085:8085" # JMX port - FOR DIAGNOSTICS ONLY!!!
     #  - "127.0.0.1:8405:8405" # Localhost metrics access
+    #  - "${PRIVATE_IP:-127.0.0.1}:8405:8405" # Allows to also expose metrics on a given IP address,
+                                              # intended to be IP of the interface of the private subnet of the EC2 VM
     logging:
       options:
         # Use very little logging for container STDOUT, this is
