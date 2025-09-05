@@ -174,11 +174,6 @@ or:
   # manager's map, as well as other style details and colours.
   mapSettingsPath: /deployment/map/mapsettings.json
 
-  # When asset attributes are enabled for rule events, each value update will be a temporary
-  # fact in rules. You can set the global default expiration time span used when no other
-  # attribute-level configuration exists. Default is 1 hour.
-  ruleEventExpires: "PT1H"
-
   # The identity provider implementation to use for managing user identities, roles, and
   # access authorization. The default is 'keycloak' which requires a separate service but
   # provides full multi-tenancy identity, role permissions, and user session timeouts.
