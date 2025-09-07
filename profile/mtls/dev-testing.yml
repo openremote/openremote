@@ -1,0 +1,48 @@
+# OpenRemote v3
+#
+# Profile for doing IDE development work and running build tests.
+#
+# Please see profile/../deploy.yml for configuration details for each service.
+#
+volumes:
+  postgresql-data:
+services:
+
+  keycloak:
+    extends:
+      file: ../deploy.yml
+      service: keycloak
+    volumes:
+      - ../mtls/try2/mtls:/opt/keycloak/certs:ro
+    ports:
+      - "8081:8080"
+      - "8443:8443"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    environment:
+      KC_HOSTNAME_STRICT_HTTPS: 'false'
+      KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT:-8080}
+      KC_LOG_CONSOLE_FORMAT: '%-5p [%c] (%t) %s%e%n'
+      # Prevent theme caching during dev
+      KEYCLOAK_START_OPTS: --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
+      # mTLS settings
+      KC_HTTPS_CLIENT_AUTH: request
+      KC_HTTPS_KEY_STORE_FILE: /opt/keycloak/certs/server-keystore.p12
+      KC_HTTPS_KEY_STORE_PASSWORD: secret
+      KC_HTTPS_TRUST_STORE_FILE: /opt/keycloak/certs/server-truststore.p12
+      KC_HTTPS_TRUST_STORE_PASSWORD: secret
+
+  #      KC_HTTPS_TRUST_STORE_FILE: "/etc/keycloak/truststore.p12"
+#      KC_HTTPS_TRUST_STORE_PASSWORD: "secret"
+
+  postgresql:
+    extends:
+      file: ../deploy.yml
+      service: postgresql
+    volumes:
+      - ../../tmp:/storage
+      - postgresql-data:/var/lib/postgresql/data
+    # Access directly if needed on localhost
+    ports:
+      - "5432:5432"
