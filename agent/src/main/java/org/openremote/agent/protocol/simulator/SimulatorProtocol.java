@@ -167,7 +167,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 //        if (agentLink.getDuration().)
 
         // TODO: Should be affected by the duration
-        long now = agentLink.getStartDate().orElse(LocalDateTime.now()).get(ChronoField.SECOND_OF_DAY);
+        long now = agentLink.getStartDate().map(t -> (long)t.get(ChronoField.SECOND_OF_DAY)).orElse(timerService.getNow().getEpochSecond());
 
         SimulatorReplayDatapoint nextDatapoint = Arrays.stream(simulatorReplayDatapoints)
             .filter(replaySimulatorDatapoint -> replaySimulatorDatapoint.timestamp > now)

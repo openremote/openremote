@@ -26,7 +26,6 @@ import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
-import org.openremote.manager.setup.SetupService
 import org.openremote.model.Constants
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.ConnectionStatus
@@ -35,10 +34,7 @@ import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.datapoint.query.AssetDatapointAllQuery
-import org.openremote.model.datapoint.query.AssetDatapointQuery
 import org.openremote.model.simulator.SimulatorReplayDatapoint
-import org.openremote.setup.integration.KeycloakTestSetup
-import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -60,9 +56,10 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
     def setupSpec() {
         startContainer(defaultConfig(), defaultServices())
+        stopPseudoClockAt(Instant.parse("1970-01-01T00:00:00.000Z").toEpochMilli())
     }
 
-    private getDataPoints = { def now = Instant.ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.systemDefault()).toLocalDateTime();
+    private getDataPoints = { def now = Instant.ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.of("UTC")).toLocalDateTime();
         new AssetDatapointAllQuery(
             now.minus(1, ChronoUnit.HOURS),
             now.plus(1, ChronoUnit.HOURS),
@@ -72,9 +69,6 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 60, delay: 0.2)
-
-        and: "clock"
-        stopPseudoClock()
 
         and: "the container starts"
         def assetStorageService = container.getService(AssetStorageService.class)
@@ -115,17 +109,17 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         // ------------------------------------
 
         when: "replayData is configured to replay in 1hr"
-        // starting at 1970-01-01T00:00:00.000Z
+        // starting at 1970-01-01T00:00:00.010Z
         attribute.addOrReplaceMeta(
             new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-                new SimulatorReplayDatapoint(1, "test")
+                new SimulatorReplayDatapoint(3600, "test")
             ))
         )
         assetStorageService.merge(asset)
 
         then: "no datapoint is present up until 1hr"
         advancePseudoClock(59, MINUTES, container)
-        // expect from 1970-01-01T00:59:99.999Z
+        // expect from 1970-01-01T00:59:00.010Z
         assert assetDatapointService.queryDatapoints(
             asset.getId(),
             attribute.getName(),
@@ -133,8 +127,8 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         ).size() == 0
 
         and : "1 datapoint is present after 1hr"
-        advancePseudoClock(4, HOURS, container)
-        // expect at   1970-01-01T01:00:00.000Z
+        advancePseudoClock(1, MINUTES, container)
+        // expect at   1970-01-01T01:00:00.010Z
         assert assetDatapointService.queryDatapoints(
             asset.getId(),
             attribute.getName(),
