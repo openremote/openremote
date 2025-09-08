@@ -81,12 +81,11 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         def assetDatapointService = container.getService(AssetDatapointService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
-        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
-        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
 
         and: "setup agent"
         def agent = new SimulatorAgent("Test agent")
                 .setRealm(Constants.MASTER_REALM)
+        agent = assetStorageService.merge(agent)
 
         and: "setup linked asset"
         def asset = new ThingAsset("Test asset")
@@ -94,9 +93,6 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                 .addAttributes(new Attribute<>(ThingAsset.NOTES, null)
                         .addMeta(new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId())))
                 )
-
-        and: "the agent and asset are added to the asset service"
-        agent = assetStorageService.merge(agent)
         asset = assetStorageService.merge(asset)
 
         when: "nothing is configured"

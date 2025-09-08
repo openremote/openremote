@@ -159,8 +159,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     protected ScheduledFuture<?> scheduleReplay(AttributeRef attributeRef, SimulatorReplayDatapoint[] simulatorReplayDatapoints) {
         Attribute<?> attribute = linkedAttributes.get(attributeRef);
         SimulatorAgentLink agentLink = this.agent.getAgentLink(attribute);
-        Duration duration = agentLink.getDuration().get();
-        Recur<LocalDateTime> recurrence = agentLink.getRecurrence().get();
+//        Duration duration = agentLink.getDuration().get();
+//        Recur<LocalDateTime> recurrence = agentLink.getRecurrence().get();
 
         LOG.finest("Scheduling linked attribute replay update");
 
