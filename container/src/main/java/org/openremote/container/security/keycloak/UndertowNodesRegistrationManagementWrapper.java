@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2023, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,24 +17,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container.security;
+package org.openremote.container.security.keycloak;
 
-import io.undertow.servlet.api.DeploymentInfo;
-import org.openremote.model.Container;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import org.keycloak.adapters.NodesRegistrationManagement;
 
 /**
- * SPI for implementations used by {@link IdentityService}.
+ * This is a copy of the same class from the now obsolete keycloak-undertow-adapter but for jakarta EE.
+ *
  */
-public interface IdentityProvider {
+// TODO: Move to a standard OIDC adapter
+public class UndertowNodesRegistrationManagementWrapper implements ServletContextListener {
 
-    String OR_ADMIN_PASSWORD = "OR_ADMIN_PASSWORD";
-    String OR_ADMIN_PASSWORD_DEFAULT = "secret";
+    private final NodesRegistrationManagement delegate;
 
-    void init(Container container) throws Exception;
+    public UndertowNodesRegistrationManagementWrapper(NodesRegistrationManagement delegate) {
+        this.delegate = delegate;
+    }
 
-    void start(Container container) throws Exception;
-
-    void stop(Container container) throws Exception;
-
-    void secureDeployment(DeploymentInfo deploymentInfo);
+    @Override
+    public void contextDestroyed(ServletContextEvent sce) {
+        delegate.stop();
+    }
 }
