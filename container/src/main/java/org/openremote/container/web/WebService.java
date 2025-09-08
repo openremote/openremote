@@ -21,8 +21,15 @@ package org.openremote.container.web;
 
 import com.google.common.collect.Lists;
 import io.undertow.Undertow;
+import io.undertow.security.api.AuthenticationMechanism;
+import io.undertow.security.api.AuthenticationMode;
 import io.undertow.security.api.SecurityContext;
+import io.undertow.security.handlers.AuthenticationCallHandler;
+import io.undertow.security.handlers.AuthenticationConstraintHandler;
+import io.undertow.security.handlers.AuthenticationMechanismsHandler;
+import io.undertow.security.handlers.SecurityInitialHandler;
 import io.undertow.security.idm.Account;
+import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.RequestDumpingHandler;
@@ -40,8 +47,7 @@ import org.jboss.resteasy.core.ResteasyDeploymentImpl;
 import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.json.JacksonConfig;
-import org.openremote.container.security.CORSFilter;
-import org.openremote.container.security.IdentityService;
+import org.openremote.container.security.*;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -433,4 +439,18 @@ public abstract class WebService implements ContainerService {
 
         return allowedOrigins;
     }
+
+    public static HttpHandler wrapWithJwtAuth(HttpHandler next,
+                                              JwtValidator validator,
+                                              String realmHeader) {
+        IdentityManager idm = new PassthroughIdentityManager();
+        AuthenticationMechanism mech = new JwtBearerAuthenticationMechanism(validator, realmHeader);
+
+        HttpHandler handler = new AuthenticationCallHandler(next);
+        handler = new AuthenticationConstraintHandler(handler);
+        handler = new AuthenticationMechanismsHandler(handler, List.of(mech));
+        handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE, idm, handler);
+        return handler;
+    }
+
 }
