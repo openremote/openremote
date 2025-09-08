@@ -22,10 +22,18 @@ import org.jetbrains.gradle.ext.JUnit
 configurations.all {
     resolutionStrategy {
 
+        // Force using a newer version to prevent vulnerabilities of the Bouncy Castle transitive dependencies of Keycloak
+        force "org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion"
+        force "org.bouncycastle:bcprov-jdk18on:$bouncyCastleVersion"
+        force "org.bouncycastle:bcutil-jdk18on:$bouncyCastleVersion"
+
         //failOnVersionConflict()
 
         // This has been replaced with eclipse angus implementation
         exclude group: "com.sun.activation", module: "jakarta.activation"
+
+        // This has been replaced with org.bouncycastle bcpkix-jdk18on
+        exclude group: "org.bouncycastle", module: "bcpkix-jdk15on"
 
         // This has been replaced with org.bouncycastle bcprov-jdk18on
         exclude group: "org.bouncycastle", module: "bcprov-jdk15on"

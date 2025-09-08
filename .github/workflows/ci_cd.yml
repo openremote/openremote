@@ -425,7 +425,7 @@ jobs:
       - name: Define backend test command
         id: test-backend-command
         if: ${{ steps.skip-backend-tests.outputs.value != 'true' }}
-        run: echo "value=./gradlew -p test test" >> $GITHUB_OUTPUT
+        run: echo "value=./gradlew test -x npmTest" >> $GITHUB_OUTPUT
 
       - name: Define UI component test command
         id: test-ui-components-command
@@ -707,7 +707,7 @@ jobs:
         timeout-minutes: 20
 
       - name: Run install playwright browser(s)
-        if: ${{ steps.test-ui-components-command.value != '' || steps.test-ui-apps-command.outputs.value != '' }}
+        if: (steps.test-ui-components-command.outputs.value != '' || steps.test-ui-apps-command.outputs.value != '') && steps.is_main_repo.outputs.value == 'true'
         run: npx playwright install --with-deps chromium
         timeout-minutes: 20
 

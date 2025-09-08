@@ -2,17 +2,32 @@ apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 
 metadata:
-  name: testcluster
-  region: eu-west-1
+  name: ${CLUSTER_NAME}
+  region: ${AWS_REGION}
   # Kubernetes version to use for cluster, good idea to keep up to date
   version: "1.33"
 
 availabilityZones:
-  - eu-west-1a
-  - eu-west-1b
+  - ${AWS_REGION}a
+  - ${AWS_REGION}b
+
+iam:
+  withOIDC: true
+  serviceAccounts:
+    - metadata:
+        name: aws-load-balancer-controller
+        namespace: kube-system
+      wellKnownPolicies:
+        awsLoadBalancerController: true
 
 nodeGroups:
   - name: ng-1
     instanceType: t2.large
     volumeSize: 32
     desiredCapacity: 2
+
+addons:
+  - name: aws-ebs-csi-driver
+    version: latest
+    wellKnownPolicies:
+      ebsCSIController: true
