@@ -42,6 +42,9 @@ import spock.util.concurrent.PollingConditions
 import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.DAYS
 import static java.util.concurrent.TimeUnit.HOURS
@@ -53,6 +56,12 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK
  * Also see {@link org.openremote.test.assets.AssetDatapointTest} for usage of {@link SimulatorProtocol}.
  */
 class SimulatorProtocolTest extends Specification implements ManagerContainerTrait {
+
+//    agent
+//    asset
+//    protocol
+//    delay
+//    task
 
     def setupSpec() {
         startContainer(defaultConfig(), defaultServices())
@@ -77,11 +86,11 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         def agentService = container.getService(AgentService.class)
 
         and: "setup agent"
-        def agent = new SimulatorAgent("Test agent")
-                .setRealm(Constants.MASTER_REALM)
+        def agent = new SimulatorAgent("Test agent").setRealm(Constants.MASTER_REALM)
         agent = assetStorageService.merge(agent)
 
         and: "setup linked asset"
+
         def asset = new ThingAsset("Test asset")
                 .setRealm(Constants.MASTER_REALM)
                 .addAttributes(new Attribute<>(ThingAsset.NOTES, null)
@@ -92,12 +101,15 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         when: "nothing is configured"
 
         then: "the protocol should connect and the agent status should become CONNECTED"
+        SimulatorProtocol protocol
         conditions.eventually {
-            agent = assetStorageService.find(agent.getId(), Agent.class)
+            agent = (SimulatorAgent)assetStorageService.find(agent.getId(), Agent.class)
             assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
             assert agentService.protocolInstanceMap.get(agent.getId()) != null
-            assert ((SimulatorProtocol) agentService.protocolInstanceMap.get(agent.getId())).linkedAttributes.size() == 1
+            protocol = (SimulatorProtocol) agentService.protocolInstanceMap.get(agent.getId())
+            assert protocol.linkedAttributes.size() == 1
         }
+        assert protocol != null
 
         and : "nothing happens"
         def attribute = asset.getAttribute(ThingAsset.NOTES).get()
@@ -109,6 +121,17 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         // ------------------------------------
 
         when: "replayData is configured to replay in 1hr"
+        def unresolvedTask = null
+        def calculatedDelay = null
+        def executor = Mock(ScheduledExecutorService)
+        executor.schedule(_ as Runnable, _ as Long, _ as TimeUnit) >> { args ->
+            unresolvedTask = args[0]
+            calculatedDelay = args[1]
+            println("TEST: "  + args[1])
+            return args[0]
+        }
+        protocol.scheduledExecutorService = executor
+
         // starting at 1970-01-01T00:00:00.010Z
         attribute.addOrReplaceMeta(
             new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
@@ -118,8 +141,10 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         assetStorageService.merge(asset)
 
         then: "no datapoint is present up until 1hr"
-        advancePseudoClock(59, MINUTES, container)
-        // expect from 1970-01-01T00:59:00.010Z
+//        assert protocol.replayMap.get(attributeRef) == null
+        conditions.eventually {
+            assert calculatedDelay == 3600
+        }
         assert assetDatapointService.queryDatapoints(
             asset.getId(),
             attribute.getName(),
@@ -127,7 +152,9 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         ).size() == 0
 
         and : "1 datapoint is present after 1hr"
-        advancePseudoClock(1, MINUTES, container)
+        advancePseudoClock(1, HOURS, container)
+        protocol.replayMap.get(attributeRef) != null
+        unresolvedTask.run()
         // expect at   1970-01-01T01:00:00.010Z
         assert assetDatapointService.queryDatapoints(
             asset.getId(),
