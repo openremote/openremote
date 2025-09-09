@@ -534,7 +534,7 @@ jobs:
 
       - name: Configure AWS Credentials
         if: ${{ steps.manager-docker-command.outputs.pushToDockerHub != 'true' }}
-        uses: aws-actions/configure-aws-credentials@v4.3.1
+        uses: aws-actions/configure-aws-credentials@a03048d87541d1d9fcf2ecf528a4a65ba9bd7838 # v5.0.0
         with:
           aws-region: eu-west-1
           role-to-assume: "arn:aws:iam::${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ secrets.OR_GH_AWS_ECR_PUSH_ROLE }}"
