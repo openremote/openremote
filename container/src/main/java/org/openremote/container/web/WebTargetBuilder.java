@@ -32,7 +32,6 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
-import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpClient43Engine;
 import org.jboss.resteasy.client.jaxrs.internal.BasicAuthentication;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.openremote.container.json.JacksonConfig;
@@ -185,10 +184,8 @@ public class WebTargetBuilder {
         HttpClient apacheClient = HttpClientBuilder.create()
             .setDefaultRequestConfig(requestConfig)
             .build();
-        ApacheHttpClient43Engine engine = new ApacheHttpClient43Engine(apacheClient);
 
         ResteasyClientBuilderImpl clientBuilder = new ResteasyClientBuilderImpl()
-            .httpEngine(engine)
             .connectionPoolSize(connectionPoolSize)
             .connectionCheckoutTimeout(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
             .readTimeout(overrideSocketTimeout, TimeUnit.MILLISECONDS)
