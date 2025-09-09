@@ -917,10 +917,7 @@ Resources:
           - Name: Daily Backup
             CopyTags: true
             CreateRule:
-              Interval: 24
-              IntervalUnit: HOURS
-              Times:
-                - '03:00'
+              CronExpression: 'cron(0 3 * * ? * )'
             RetainRule:
               Count: 7
           - Name: Weekly Backup

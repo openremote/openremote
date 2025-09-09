@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------------------------------------------------
-# Creates an alarm for Route53 HealthCheck - must be run in the us-east-1 region
+# Creates an alarm for Route53 Health Check - must be run in the us-east-1 region
 # ---------------------------------------------------------------------------------------------------------------------
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Route53 Health Check alarm'
