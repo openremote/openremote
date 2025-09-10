@@ -140,7 +140,7 @@ Alternatively, if you do not enable a service, you can use manual port forwardin
 
 #### Running a custom project
 
-Unliked what's done with docker compose, it's not (yet) possible to mount the custom project specific resources via an image
+Unlike what's done with docker compose, it's not (yet) possible to mount the custom project specific resources via an image
 in a pod running an otherwise standard OpenRemote controller image.  
 The way to a run custom project under kubernetes is to create a project specific image, with the project specific resources baked in.  
 This is easily achieved by modifying the Dockerfile for the custom project to use openremote/manager:\<version> 
