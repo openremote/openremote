@@ -97,50 +97,49 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         assetDatapointService = container.getService(AssetDatapointService.class)
         agentService = container.getService(AgentService.class)
 
+        // Create and link asset to agent
+        agent = new SimulatorAgent("Test agent").setRealm(Constants.MASTER_REALM)
+        agent = assetStorageService.merge(agent)
+        asset = new ThingAsset("Test asset").setRealm(Constants.MASTER_REALM)
+                .addAttributes(new Attribute<>(ThingAsset.NOTES, null)
+                        .addMeta(new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId())))
+                )
+        asset = assetStorageService.merge(asset)
+
         // Must use boxed Long type in Spock closures, so avoiding parameter expansion so it doesn't silently fail.
         executor.schedule(_ as Runnable, _ as Long, _ as TimeUnit) >> { args ->
             delay = args[1] as Long
+            println("Delay: " + delay)
             // Mock get method on ScheduledFuture to resolve the future manually
             future.get() >> {
-                args[0].run()
+                (args[0] as Runnable).run()
                 return true
             }
             return future
         }
-        agent = new SimulatorAgent("Test agent").setRealm(Constants.MASTER_REALM)
-        agent = assetStorageService.merge(agent)
+
+        agent = (SimulatorAgent) assetStorageService.find(agent.getId(), Agent.class)
+        protocol = (SimulatorProtocol) agentService.protocolInstanceMap.get(agent.getId())
+        protocol.scheduledExecutorService = executor
     }
 
-    private getDataPoints = { def now = Instant.ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.of("UTC")).toLocalDateTime();
+    private getDataPoints = {
+        def now = Instant
+                .ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.of("UTC")).toLocalDateTime();
         new AssetDatapointAllQuery(
             now.minus(1, ChronoUnit.HOURS),
             now.plus(1, ChronoUnit.HOURS),
     ) }
 
-    private waitForAgentConnection() {
-        agent = (SimulatorAgent) assetStorageService.find(agent.getId(), Agent.class)
-        assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
-        assert agentService.protocolInstanceMap.get(agent.getId()) != null
-        protocol = (SimulatorProtocol) agentService.protocolInstanceMap.get(agent.getId())
-        protocol.scheduledExecutorService = executor
-        return protocol.linkedAttributes.size() == 1
-    }
-
     def "Check Simulator Agent protocol without replay"() {
-        given: ""
-        asset = new ThingAsset("Test asset").setRealm(Constants.MASTER_REALM)
-                .addAttributes(new Attribute<>(ThingAsset.NOTES, null)
-                    .addMeta(new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId())))
-                )
-        asset = assetStorageService.merge(asset)
-
         when: "nothing is configured"
         def attribute = asset.getAttribute(ThingAsset.NOTES).get()
         def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
 
         then: "the protocol should connect and the agent status should become CONNECTED"
         conditions.eventually {
-            waitForAgentConnection()
+            assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert protocol.linkedAttributes.size() == 1
         }
 
         and: "nothing happens"
@@ -148,35 +147,22 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     }
 
     def "Check Simulator Agent protocol with replay"() {
-        given: ""
-        asset = new ThingAsset("Test asset").setRealm(Constants.MASTER_REALM)
-                .addAttributes(new Attribute<>(ThingAsset.NOTES, null)
-                    .addMeta(
-                        new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-                            new SimulatorReplayDatapoint(3600, "test")
-                        ))
-                    )
-                )
-        asset = assetStorageService.merge(asset)
-
         when: "replayData is configured to replay in 1hr"
         def attribute = asset.getAttribute(ThingAsset.NOTES).get()
+        attribute.addOrReplaceMeta(
+            new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+                new SimulatorReplayDatapoint(3600, "test")
+            ))
+        )
+        assetStorageService.merge(asset)
 
         then: "the protocol should connect and the agent status should become CONNECTED"
         conditions.eventually {
-            def agent = (SimulatorAgent) assetStorageService.find(agent.getId(), Agent.class)
             assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
-            assert agentService.protocolInstanceMap.get(agent.getId()) != null
-            def protocol = (SimulatorProtocol) agentService.protocolInstanceMap.get(agent.getId())
             assert protocol.linkedAttributes.size() == 1
         }
 
-        when: ""
-        agent = (SimulatorAgent) assetStorageService.find(agent.getId(), Agent.class)
-        protocol = (SimulatorProtocol) agentService.protocolInstanceMap.get(agent.getId())
-        protocol.scheduledExecutorService = executor
-
-        then: "no datapoint is present up until 1hr"
+        and: "no datapoint is present up until 1hr"
         conditions.eventually {
             assert delay == 3600
             assert assetDatapointService.queryDatapoints(
