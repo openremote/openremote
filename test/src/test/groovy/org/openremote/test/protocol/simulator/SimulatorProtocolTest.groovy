@@ -40,6 +40,8 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.ScheduledExecutorService
@@ -186,6 +188,30 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     }
 
     def "Check Simulator Agent protocol with replay startDate"() {
+        when: "replayData is configured to replay in 1hr"
+        def attribute = asset.getAttribute(ThingAsset.NOTES).get()
+        attribute.addOrReplaceMeta(
+                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+                    new SimulatorReplayDatapoint(3600, "test")
+                ).setStartDate(LocalDate.ofInstant(Instant.parse("1970-01-02T00:00:00.000Z"), ZoneId.of("UTC"))))
+        )
+        assetStorageService.merge(asset)
+
+        then: "the protocol should connect and the agent status should become CONNECTED"
+        conditions.eventually {
+            assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert protocol.linkedAttributes.size() == 1
+        }
+
+        and: "no datapoint is present up until 1hr"
+        conditions.eventually {
+            assert delay == 90000
+            assert assetDatapointService.queryDatapoints(
+                    asset.getId(),
+                    attribute.getName(),
+                    getDataPoints.call()
+            ).size() == 0
+        }
     }
 
     def "Check Simulator Agent protocol with custom replay duration"() {

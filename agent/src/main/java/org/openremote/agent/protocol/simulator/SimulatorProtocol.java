@@ -30,9 +30,7 @@ import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.AbstractNameValueHolder;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -164,10 +162,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
         LOG.finest("Scheduling linked attribute replay update");
 
-//        if (agentLink.getDuration().)
-
-        // TODO: Should be affected by the duration
-        long now = agentLink.getStartDate().map(t -> (long)t.get(ChronoField.SECOND_OF_DAY)).orElse(timerService.getNow().getEpochSecond());
+        long now = timerService.getNow().getEpochSecond();
 
         SimulatorReplayDatapoint nextDatapoint = Arrays.stream(simulatorReplayDatapoints)
             .filter(replaySimulatorDatapoint -> replaySimulatorDatapoint.timestamp > now)
@@ -181,6 +176,13 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         long nextRun = nextDatapoint.timestamp;
         if (nextRun <= now) { //now is after so nextRun is next day
             nextRun += 86400; //day in seconds
+        }
+        long startDate = agentLink
+            .getStartDate()
+            .map(t -> t.toEpochSecond(LocalTime.of(0, 0), ZoneOffset.UTC) - now)
+            .orElse(0L);
+        if (startDate > 0) {
+            nextRun += startDate - now;
         }
         long nextRunRelative = nextRun - now;
 

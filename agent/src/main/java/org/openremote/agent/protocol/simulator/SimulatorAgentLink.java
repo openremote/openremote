@@ -33,6 +33,7 @@ import org.openremote.model.util.TimeUtil;
 import org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Optional;
@@ -44,7 +45,7 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
     protected SimulatorReplayDatapoint[] replayData;
 
     @JsonPropertyDescription("Set always a date, no time information, considered to be 00:00 on that day; if not provided, starts immediately")
-    protected LocalDateTime startDate;
+    protected LocalDate startDate;
 
     @JsonPropertyDescription(" uses ISO 8601 duration format; if not provided, 24h; defines the length of the replay loop (and of the filled-in predicted data points if applicable), if replayData contains data points after this duration, those values are ignored and never used\n1")
     @JsonSerialize(using = ToStringSerializer.class)
@@ -74,11 +75,11 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         return this;
     }
 
-    public Optional<LocalDateTime> getStartDate() {
+    public Optional<LocalDate> getStartDate() {
         return Optional.ofNullable(startDate);
     }
 
-    public SimulatorAgentLink setStartDate(LocalDateTime startDate) {
+    public SimulatorAgentLink setStartDate(LocalDate startDate) {
         this.startDate = startDate;
         return this;
     }
