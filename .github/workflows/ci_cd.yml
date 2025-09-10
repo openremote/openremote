@@ -844,6 +844,7 @@ jobs:
           # Clean-up AWS credentials related variable that might have been set by Configure AWS Credentials for ECR upload
           del os.environ["AWS_ACCESS_KEY_ID"]
           del os.environ["AWS_SECRET_ACCESS_KEY"]
+          del os.environ["AWS_SESSION_TOKEN"]
 
           # Determine deploy script to use
           deployScript = ".ci_cd/deploy.sh"
