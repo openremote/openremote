@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaFormat;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
 import net.fortuna.ical4j.model.Recur;
 import org.openremote.model.asset.agent.AgentLink;
@@ -41,20 +42,27 @@ import java.util.Optional;
 public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
 
     @JsonPropertyDescription("Used to store a dataset of values that should be replayed (i.e. written to the" +
-        " linked attribute) in a continuous loop based on a schedule (default replays every 24h).")
+        " linked attribute) in a continuous loop based on a schedule (by default replays every 24h)." +
+        " Predicted datapoints can be added by configuring 'Store predicted datapoints' which will insert the datapoints" +
+        " immediately as determined by the schedule.")
     protected SimulatorReplayDatapoint[] replayData;
 
-    @JsonPropertyDescription("Set always a date, no time information, considered to be 00:00 on that day; if not provided, starts immediately")
+    @JsonPropertyDescription("Set a start date, if not provided, starts immediately." +
+        " When replay datapoint timestamp is 0 it starts at 00:00.")
+    @JsonSchemaFormat("date")
     protected LocalDate startDate;
 
-    @JsonPropertyDescription(" uses ISO 8601 duration format; if not provided, 24h; defines the length of the replay loop (and of the filled-in predicted data points if applicable), if replayData contains data points after this duration, those values are ignored and never used\n1")
+    @JsonPropertyDescription("Defines the length of the replay loop (and if configured the predicted datapoints to add)." +
+        " Specify an ISO 8601 duration formatted string. If not provided defaults to 24 hours." +
+        " If replayData contains data points after this duration, those values are ignored and never used.")
     @JsonSerialize(using = ToStringSerializer.class)
     @JsonDeserialize(converter = TimeUtil.PeriodAndDurationConverter.class)
     // TODO: consider @JsonSchemaFormat("duration") requires new or-mwc-input type
     @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_STRING_TYPE)
-    protected Duration duration;
+    protected TimeUtil.ExtendedPeriodAndDuration duration;
 
-    @JsonPropertyDescription(" recurrence rule, following RFC 5545 RRULE format; if not provided, repeats indefinitely daily")
+    @JsonPropertyDescription("How the replay period is  recurrence rule, following RFC 5545 RRULE format;" +
+        " if not provided, repeats indefinitely daily")
     @JsonSerialize(converter = CalendarEvent.RecurStringConverter.class)
     protected Recur<LocalDateTime> recurrence;
 
@@ -84,11 +92,11 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         return this;
     }
 
-    public Optional<Duration> getDuration() {
+    public Optional<TimeUtil.ExtendedPeriodAndDuration> getDuration() {
         return Optional.ofNullable(duration);
     }
 
-    public SimulatorAgentLink setDuration(Duration duration) {
+    public SimulatorAgentLink setDuration(TimeUtil.ExtendedPeriodAndDuration duration) {
         this.duration = duration;
         return this;
     }

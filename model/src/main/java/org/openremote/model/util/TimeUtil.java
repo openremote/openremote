@@ -125,7 +125,7 @@ public class TimeUtil {
             return duration.plus(durationFromPeriod(period)).toMillis();
         }
 
-        private Duration durationFromPeriod(Period period) {
+        public Duration durationFromPeriod(Period period) {
             Duration years = ChronoUnit.YEARS.getDuration().multipliedBy(period.getYears());
             Duration months = ChronoUnit.MONTHS.getDuration().multipliedBy(period.getMonths());
             Duration days = ChronoUnit.DAYS.getDuration().multipliedBy(period.getDays());

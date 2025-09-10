@@ -34,6 +34,7 @@ import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.datapoint.query.AssetDatapointAllQuery
 import org.openremote.model.simulator.SimulatorReplayDatapoint
+import org.openremote.model.util.TimeUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -41,7 +42,6 @@ import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.ScheduledExecutorService
@@ -50,7 +50,6 @@ import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.DAYS
 import static java.util.concurrent.TimeUnit.HOURS
-import static java.util.concurrent.TimeUnit.MINUTES
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
 
 
@@ -174,9 +173,11 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
             ).size() == 0
         }
 
-        and: "1 datapoint is present after 1hr"
+        when: "fast forward 1 hour"
         advancePseudoClock(1, HOURS, container)
-        future.get() // resolve future manually, because delay == 3600
+        future.get() // resolve future manually, because we surpassed the delay (of 3600s)
+
+        then: "1 datapoint is present"
         conditions.eventually {
             assert delay == 86400
             assert assetDatapointService.queryDatapoints(
@@ -188,7 +189,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     }
 
     def "Check Simulator Agent protocol with replay startDate"() {
-        when: "replayData is configured to replay in 1hr"
+        when: "replayData is configured to replay in 1day and 1hr"
         def attribute = asset.getAttribute(ThingAsset.NOTES).get()
         attribute.addOrReplaceMeta(
                 new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
@@ -212,47 +213,79 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                     getDataPoints.call()
             ).size() == 0
         }
+
+        when: "fast forward 1 day and 1 hour"
+        advancePseudoClock(1, DAYS, container)
+        advancePseudoClock(1, HOURS, container)
+        future.get() // resolve future manually, because we surpassed the delay (of 90000s)
+
+        then: "1 datapoint is present"
+        conditions.eventually {
+            assert delay == 86400
+            assert assetDatapointService.queryDatapoints(
+                    asset.getId(),
+                    attribute.getName(),
+                    getDataPoints.call()
+            ).size() == 1
+        }
     }
 
     def "Check Simulator Agent protocol with custom replay duration"() {
+        when: "replayData is configured to replay in 1hr"
+        def attribute = asset.getAttribute(ThingAsset.NOTES).get()
+        attribute.addOrReplaceMeta(
+                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+                        new SimulatorReplayDatapoint(3600, "test")
+                ).setDuration(new TimeUtil.ExtendedPeriodAndDuration("P2D")))
+        )
+        assetStorageService.merge(asset)
+
+        then: "the protocol should connect and the agent status should become CONNECTED"
+        conditions.eventually {
+            assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert protocol.linkedAttributes.size() == 1
+        }
+
+        and: "no datapoint is present up until 1hr"
+        conditions.eventually {
+            assert delay == 3600
+            assert assetDatapointService.queryDatapoints(
+                    asset.getId(),
+                    attribute.getName(),
+                    getDataPoints.call()
+            ).size() == 0
+        }
+
+        when: "fast forward 1 hour"
+        advancePseudoClock(1, HOURS, container)
+        future.get() // resolve future manually, because we surpassed the delay (of 3600s)
+
+        then: "1 datapoint is present"
+        conditions.eventually {
+            assert delay == 86400 * 2
+            assert assetDatapointService.queryDatapoints(
+                    asset.getId(),
+                    attribute.getName(),
+                    getDataPoints.call()
+            ).size() == 1
+        }
+
+        when: "fast forward 2 days"
+        advancePseudoClock(2, DAYS, container)
+        future.get() // resolve future manually, because we surpassed the delay (of 86400 * 2s)
+
+        then: "2 datapoints are present"
+        conditions.eventually {
+            assert delay == 86400 * 2
+            assert assetDatapointService.queryDatapoints(
+                    asset.getId(),
+                    attribute.getName(),
+                    getDataPoints.call()
+            ).size() == 1 // TODO: test both datapoints are present
+        }
     }
 
     def "Check Simulator Agent protocol with custom recurrence schedule"() {
-    }
-
-    def "Check Simulator Agent protocol scheduling"() {
-
-
-        // ------------------------------------
-        // Test start date of the simulator
-        // ------------------------------------
-
-        when: "startDate is configured for the next day"
-        then: "no datapoint is present up until 1day and 1hr"
-        advancePseudoClock(1, DAYS, container)
-        advancePseudoClock(59, MINUTES, container)
-        // expect at   1970-01-01T23:59:00.000Z
-        and : "1 datapoint is added after 1hr"
-        advancePseudoClock(1, MINUTES, container)
-        // expect at   1970-01-02T00:00:00.000Z
-
-        // ------------------------------------
-        // Test duration of the simulator
-        // ------------------------------------
-
-        when: "duration is not set"
-        then: "1 datapoint is added after 1hr"
-        // expect at   1970-01-03T00:00:00.000Z
-        when: "duration is set to 2 days"
-        then: "1 datapoint should be added"
-        // expect at   1970-01-04T00:00:00.000Z
-        and : "1 datapoint should be added"
-        // expect at   1970-01-05T00:00:00.000Z
-        and : "no datapoint should be added"
-        // expect at   1970-01-06T00:00:00.000Z
-
-//        defines the length of the replay loop (and of the filled-in predicted data points if applicable), if replayData contains data points after this duration, those values are ignored and never used
-
         // ------------------------------------
         // Test recurrence of the simulator
         // ------------------------------------
@@ -266,5 +299,9 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 //        recurrence:
 //        recurrence rule, following RFC 5545 RRULE format
 //        if not provided, repeats indefinitely daily
+    }
+
+    def "Check Simulator Agent protocol scheduling"() {
+
     }
 }
