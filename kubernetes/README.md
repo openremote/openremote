@@ -146,7 +146,7 @@ The way to a run custom project under kubernetes is to create a project specific
 This is easily achieved by modifying the Dockerfile for the custom project to use openremote/manager:\<version> 
 instead of alpine:latest as its base docker image.  
 
-Once this image is created, use the image.reporitory and image.tag entries in your values file to reference the desired image.  
+Once this image is created, use the image.repository and image.tag entries in your values file to reference the desired image.  
 
 ##### Example
 
