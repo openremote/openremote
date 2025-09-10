@@ -450,7 +450,6 @@ jobs:
 
           if [ "$(uname -m)" == "aarch64" ]; then
             PLATFORM=linux/aarch64
-            OTHER_PLATFORM=linux/amd64
           fi
 
           if [ -n "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"#ref"* ]] || [ -n "$TEST_UI_CMD" ]; then
