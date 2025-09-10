@@ -92,7 +92,7 @@ on:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
   security-events: write
 
 concurrency:
