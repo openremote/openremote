@@ -43,6 +43,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.DAYS
@@ -73,7 +74,10 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     @Shared
     ThingAsset asset
 
-    // Mock executor and rely on the delay argument to determine scheduling
+    @Shared
+    ScheduledFuture<?> future = Mock(ScheduledFuture)
+
+    // Mock executor and rely on the delay argument to determine schedule
     @Shared
     ScheduledExecutorService executor = Mock(ScheduledExecutorService)
 
@@ -81,10 +85,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     SimulatorProtocol protocol
 
     @Shared
-    Runnable task = null
-
-    @Shared
-    Long delay = null
+    Long delay
 
     def setupSpec() {
         given: "xxx"
@@ -98,8 +99,13 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         // Must use boxed Long type in Spock closures, so avoiding parameter expansion so it doesn't silently fail.
         executor.schedule(_ as Runnable, _ as Long, _ as TimeUnit) >> { args ->
-            task = args[0] as Runnable; delay = args[1] as Long
-            return args[0]
+            delay = args[1] as Long
+            // Mock get method on ScheduledFuture to resolve the future manually
+            future.get() >> {
+                args[0].run()
+                return true
+            }
+            return future
         }
         agent = new SimulatorAgent("Test agent").setRealm(Constants.MASTER_REALM)
         agent = assetStorageService.merge(agent)
@@ -124,7 +130,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         given: ""
         asset = new ThingAsset("Test asset").setRealm(Constants.MASTER_REALM)
                 .addAttributes(new Attribute<>(ThingAsset.NOTES, null)
-                        .addMeta(new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId())))
+                    .addMeta(new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId())))
                 )
         asset = assetStorageService.merge(asset)
 
@@ -145,11 +151,11 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         given: ""
         asset = new ThingAsset("Test asset").setRealm(Constants.MASTER_REALM)
                 .addAttributes(new Attribute<>(ThingAsset.NOTES, null)
-                        .addMeta(
-                                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-                                        new SimulatorReplayDatapoint(3600, "test")
-                                ))
-                        )
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+                            new SimulatorReplayDatapoint(3600, "test")
+                        ))
+                    )
                 )
         asset = assetStorageService.merge(asset)
 
@@ -158,30 +164,38 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         then: "the protocol should connect and the agent status should become CONNECTED"
         conditions.eventually {
-            waitForAgentConnection()
+            def agent = (SimulatorAgent) assetStorageService.find(agent.getId(), Agent.class)
+            assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert agentService.protocolInstanceMap.get(agent.getId()) != null
+            def protocol = (SimulatorProtocol) agentService.protocolInstanceMap.get(agent.getId())
+            assert protocol.linkedAttributes.size() == 1
         }
 
-        and: "no datapoint is present up until 1hr"
+        when: ""
+        agent = (SimulatorAgent) assetStorageService.find(agent.getId(), Agent.class)
+        protocol = (SimulatorProtocol) agentService.protocolInstanceMap.get(agent.getId())
+        protocol.scheduledExecutorService = executor
+
+        then: "no datapoint is present up until 1hr"
         conditions.eventually {
             assert delay == 3600
+            assert assetDatapointService.queryDatapoints(
+                asset.getId(),
+                attribute.getName(),
+                getDataPoints.call()
+            ).size() == 0
         }
-        assert assetDatapointService.queryDatapoints(
-            asset.getId(),
-            attribute.getName(),
-            getDataPoints.call()
-        ).size() == 0
 
         and: "1 datapoint is present after 1hr"
         advancePseudoClock(1, HOURS, container)
-        task.run()
-        // expect at 1970-01-01T01:00:00.010Z
-        assert assetDatapointService.queryDatapoints(
-            asset.getId(),
-            attribute.getName(),
-            getDataPoints.call()
-        ).size() == 1
+        future.get() // resolve future manually, because delay == 3600
         conditions.eventually {
-            assert delay == 90000
+            assert delay == 86400
+            assert assetDatapointService.queryDatapoints(
+                asset.getId(),
+                attribute.getName(),
+                getDataPoints.call()
+            ).size() == 1
         }
     }
 
