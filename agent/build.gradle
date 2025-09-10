@@ -44,18 +44,6 @@ dependencies {
     implementation "org.eclipse.angus:angus-mail:$jakartaMailVersion"
 
     implementation "org.jdom:jdom2:$jdomVersion"
-
-    dependencies {
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-        testImplementation 'org.mockito:mockito-core:5.18.0'
-        testRuntimeOnly 'org.glassfish:jakarta.el:4.0.2'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
-        testImplementation 'org.jmockit:jmockit:1.49'
-    }
-}
-
-test {
-    jvmArgs "-javaagent:${classpath.find { it.name.contains("jmockit") }.absolutePath}"
 }
 
 base {
