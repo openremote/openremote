@@ -92,7 +92,7 @@ on:
 
 permissions:
   id-token: write
-  contents: write
+  contents: read
   security-events: write
 
 concurrency:
@@ -840,6 +840,10 @@ jobs:
           ipv6 = os.getenv("IPV6")
 
           failure = False
+
+          # Clean-up AWS credentials related variable that might have been set by Configure AWS Credentials for ECR upload
+          del os.environ['$AWS_ACCESS_KEY_ID']
+          del os.environ['$AWS_SECRET_ACCESS_KEY']
 
           # Determine deploy script to use
           deployScript = ".ci_cd/deploy.sh"
