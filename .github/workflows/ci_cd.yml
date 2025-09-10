@@ -93,6 +93,7 @@ on:
 permissions:
   id-token: write
   contents: read
+  security-events: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -459,7 +460,7 @@ jobs:
               echo "pushToDockerHub=true" >> $GITHUB_OUTPUT
               echo "managerDockerImage=openremote/manager:$FIRST_MANAGER_TAG" >> $GITHUB_OUTPUT
             else
-              command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t ${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:SNAPSHOT-$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath"
+              command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t ${{ steps.inputs-and-secrets.outputs.OR_AWS_DEVELOPERS_ACCOUNT_ID }}.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:SNAPSHOT-$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath"
               echo "managerDockerImage=openremote/manager:$commitShaShort" >> $GITHUB_OUTPUT
             fi
             echo "value=$command" >> $GITHUB_OUTPUT
@@ -537,7 +538,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@a03048d87541d1d9fcf2ecf528a4a65ba9bd7838 # v5.0.0
         with:
           aws-region: eu-west-1
-          role-to-assume: "arn:aws:iam::${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ secrets.OR_GH_AWS_ECR_PUSH_ROLE }}"
+          role-to-assume: "arn:aws:iam::${{ steps.inputs-and-secrets.outputs.OR_AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ steps.inputs-and-secrets.outputs.OR_GH_AWS_ECR_PUSH_ROLE }}"
 
       - name: Login to private ECR
         if: ${{ steps.manager-docker-command.outputs.pushToDockerHub != 'true' }}
