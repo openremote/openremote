@@ -149,7 +149,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
             MASTER_REALM,
             superServiceUser.getId(),
             Constants.KEYCLOAK_CLIENT_ID,
-            Stream.of(ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES, ClientRole.WRITE_SERVICES, ClientRole.READ_SERVICES).map(ClientRole::getValue).toArray(String[]::new)
+            Stream.of(ClientRole.WRITE_SERVICES, ClientRole.READ_SERVICES).map(ClientRole::getValue).toArray(String[]::new)
         );
         // Add SUPER_USER_REALM_ROLE to superServiceUser
         identityProvider.updateUserRealmRoles(MASTER_REALM, superServiceUser.getId(), identityProvider.addUserRealmRoles(MASTER_REALM, superServiceUser.getId(), SUPER_USER_REALM_ROLE));

@@ -79,7 +79,6 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
         def buildingExternalService = new ExternalService(
                 serviceId: "building-energy-management",
                 label: "Building Energy Management Service",
-                realm: keycloakTestSetup.realmBuilding.getName(),
                 homepageUrl: "https://local.test/services/building-energy-management/ui",
                 status: ExternalServiceStatus.AVAILABLE,
         )
@@ -136,20 +135,6 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
         ex = thrown(WebApplicationException)
         assert ex.response.status == Response.Status.NOT_FOUND.getStatusCode()
 
-        when: "the building service user tries to register the external service with an inaccessible realm"
-        def buildingExternalServiceWithInaccessibleRealm = new ExternalService(
-                serviceId: "building-energy-management",
-                label: "Building Energy Management Service",
-                realm: MASTER_REALM,
-                homepageUrl: "https://local.test/services/building-energy-management/ui",
-                status: ExternalServiceStatus.AVAILABLE,
-        )
-        buildingExternalServiceResource.registerService(null, buildingExternalServiceWithInaccessibleRealm)
-
-        then: "the building service user should receive a 403 forbidden response"
-        ex = thrown(WebApplicationException)
-        assert ex.response.status == Response.Status.FORBIDDEN.getStatusCode()
-
         when: "the building service user tries to retrieve the external services from an inaccessible realm"
         buildingExternalServiceResource.getServices(null, MASTER_REALM)
 
@@ -163,7 +148,6 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
         def globalExternalService = new ExternalService(
                 serviceId: "forecasting-service",
                 label: "Forecasting Service",
-                realm: MASTER_REALM,
                 homepageUrl: "https://local.test/services/forecasting-service/ui",
                 status: ExternalServiceStatus.AVAILABLE,
         )
@@ -194,21 +178,6 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
         assert globalServiceAfterHeartbeat.status == ExternalServiceStatus.AVAILABLE
 
 
-        when: "the super user tries to register a global external service with a non-master realm"
-        def globalExternalService2 = new ExternalService(
-                serviceId: "forecasting-service-2",
-                label: "Forecasting Service 2",
-                realm: keycloakTestSetup.realmBuilding.getName(),
-                homepageUrl: "https://local.test/services/forecasting-service-2/ui",
-                status: ExternalServiceStatus.AVAILABLE,
-        )
-        superServiceUserExternalServiceResource.registerGlobalService(null, globalExternalService2)
-
-        then: "the super user should receive a 400 bad request response"
-        ex = thrown(WebApplicationException)
-        assert ex.response.status == Response.Status.BAD_REQUEST.getStatusCode()
-
-
         // === Tests related to interacting with global services as a service user from a realm different from the master realm ===
         
         when: "the building service user tries to retrieve the global services"
@@ -223,7 +192,6 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
         def buildingExternalService2 = new ExternalService(
                 serviceId: "building-energy-management-2",
                 label: "Building Energy Management Service 2",
-                realm: keycloakTestSetup.realmBuilding.getName(),
                 homepageUrl: "https://local.test/services/building-energy-management-2/ui",
                 status: ExternalServiceStatus.AVAILABLE,
         )
@@ -306,7 +274,6 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
         def regularUserNewService = new ExternalService(
                 serviceId: "regular-user-new-service",
                 label: "Regular User New Service",
-                realm: keycloakTestSetup.realmBuilding.getName(),
                 homepageUrl: "https://local.test/services/regular-user-new-service/ui",
                 status: ExternalServiceStatus.AVAILABLE,
         )

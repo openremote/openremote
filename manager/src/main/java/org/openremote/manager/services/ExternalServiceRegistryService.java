@@ -171,16 +171,16 @@ public class ExternalServiceRegistryService implements ContainerService {
      *                     admin
      *                     service user with global access.
      */
-    public void registerService(ExternalService externalService) {
+    public void registerService(String registrarUsername, ExternalService externalService) {
         if (externalService.getInstanceId() == null) {
             externalService.setInstanceId(UniqueIdentifierGenerator.generateId());
         }
 
         LOG.info("Registering external service: " + externalService.getServiceId() + ", instanceId: "
-        + externalService.getInstanceId());
+        + externalService.getInstanceId() + ", isGlobal: " + externalService.getIsGlobal() + ", registrarUsername: " + registrarUsername);
 
         long now = timerService.getCurrentTimeMillis();
-        externalService.setLeaseInfo(new ExternalServiceLeaseInfo(now + DEFAULT_LEASE_DURATION_MS, now, now));
+        externalService.setLeaseInfo(new ExternalServiceLeaseInfo(registrarUsername, now + DEFAULT_LEASE_DURATION_MS, now, now));
 
         // merge the external service into the registry if it doesn't already exist
         registry.merge(
@@ -200,7 +200,7 @@ public class ExternalServiceRegistryService implements ContainerService {
         clientEventService.publishEvent(new ExternalServiceEvent(externalService, ExternalServiceEvent.Cause.REGISTER));
 
         LOG.info("Successfully registered external service: " + externalService.getServiceId() + ", instanceId: "
-                + externalService.getInstanceId() + ", isGlobal: " + externalService.getIsGlobal());
+                + externalService.getInstanceId() + ", isGlobal: " + externalService.getIsGlobal() + ", registrarUsername: " + registrarUsername);
     }
 
     /**

@@ -71,14 +71,11 @@ public class ExternalService {
     /**
      * The realm identifier where this service is registered.
      * 
-     * Services are typically scoped to a specific realm. When set to MASTER_REALM
-     * and registered by a super admin service user, the service becomes available
-     * across all realms. This is used to indicate that the service is a global
-     * service.
+     * Services are typically scoped to a specific realm. When
+     * registered by a super admin service user, the realm must be MASTER, the service then becomes available
+     * across all realms if the isGlobal flag is also set to true.
      */
-    @Size(min = 3, max = 255, message = "{ExternalService.realm.Size}")
-    @NotEmpty(message = "{ExternalService.realm.NotEmpty}")
-    @JsonProperty("realm")
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     protected String realm;
 
     /**
@@ -155,6 +152,13 @@ public class ExternalService {
     public ExternalService(String serviceId, String realm, String label, String homepageUrl, ExternalServiceStatus status) {
         this.serviceId = serviceId;
         this.realm = realm;
+        this.label = label;
+        this.homepageUrl = homepageUrl;
+        this.status = status;
+    }
+
+    public ExternalService(String serviceId, String label, String homepageUrl, ExternalServiceStatus status) {
+        this.serviceId = serviceId;
         this.label = label;
         this.homepageUrl = homepageUrl;
         this.status = status;

@@ -52,14 +52,14 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
                     Response.Status.UNAUTHORIZED);
         }
 
-        if (!isRealmActiveAndAccessible(externalService.getRealm())) {
-            throw new WebApplicationException(
-                    "Realm '" + externalService.getRealm() + "' is nonexistent, inactive or inaccessible",
-                    Response.Status.FORBIDDEN);
+        if (getRequestRealm() == null) {
+            throw new WebApplicationException("Invalid realm", Response.Status.BAD_REQUEST);
         }
 
+        externalService.setRealm(getRequestRealmName());
+
         try {
-            externalServiceRegistry.registerService(externalService);
+            externalServiceRegistry.registerService(getUsername(), externalService);
             return externalService;
         } catch (IllegalStateException e) {
             LOG.warning("Failed to register service: " + externalService.getServiceId() + " with instanceId: "
@@ -82,16 +82,23 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
                     Response.Status.FORBIDDEN);
         }
 
-        if (!externalService.getRealm().equals(MASTER_REALM)) {
+        if (getRequestRealm() == null) {
+            throw new WebApplicationException("Invalid realm", Response.Status.BAD_REQUEST);
+        }
+
+        externalService.setRealm(getRequestRealmName());
+
+        if (!getRequestRealmName().equals(MASTER_REALM)) {
             throw new WebApplicationException("Global services must have the realm set to the master realm, got: "
-                    + externalService.getRealm(),
+                    + getRequestRealmName(),
                     Response.Status.BAD_REQUEST);
         }
 
         externalService.setIsGlobal(true);
+        
 
         try {
-            externalServiceRegistry.registerService(externalService);
+            externalServiceRegistry.registerService(getUsername(), externalService);
             return externalService;
         } catch (IllegalStateException e) {
             LOG.warning("Failed to register global service: " + externalService.getServiceId() + " with instanceId: "
@@ -151,6 +158,11 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
         if (!isRealmActiveAndAccessible(service.getRealm())) {
             throw new WebApplicationException(
                     "Realm '" + service.getRealm() + "' is nonexistent, inactive or inaccessible",
+                    Response.Status.FORBIDDEN);
+        }
+
+        if (service.getLeaseInfo().getRegistrarUsername() != getUsername()) {
+            throw new WebApplicationException("Heartbeats for services can only be performed by the user who registered the service",
                     Response.Status.FORBIDDEN);
         }
 
