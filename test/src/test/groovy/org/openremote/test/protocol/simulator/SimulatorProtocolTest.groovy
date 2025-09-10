@@ -23,7 +23,6 @@ import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.manager.agent.AgentService
-import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.model.Constants
@@ -36,6 +35,7 @@ import org.openremote.model.attribute.MetaItem
 import org.openremote.model.datapoint.query.AssetDatapointAllQuery
 import org.openremote.model.simulator.SimulatorReplayDatapoint
 import org.openremote.test.ManagerContainerTrait
+import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -43,7 +43,6 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.DAYS
@@ -57,15 +56,53 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK
  */
 class SimulatorProtocolTest extends Specification implements ManagerContainerTrait {
 
-//    agent
-//    asset
-//    protocol
-//    delay
-//    task
+    static final PollingConditions conditions = new PollingConditions(timeout: 60, delay: 0.2)
+
+    @Shared
+    AssetStorageService assetStorageService
+
+    @Shared
+    AssetDatapointService assetDatapointService
+
+    @Shared
+    AgentService agentService
+
+    @Shared
+    SimulatorAgent agent
+
+    @Shared
+    ThingAsset asset
+
+    // Mock executor and rely on the delay argument to determine scheduling
+    @Shared
+    ScheduledExecutorService executor = Mock(ScheduledExecutorService)
+
+    @Shared
+    SimulatorProtocol protocol
+
+    @Shared
+    Runnable task = null
+
+    @Shared
+    Long delay = null
 
     def setupSpec() {
+        given: "xxx"
         startContainer(defaultConfig(), defaultServices())
         stopPseudoClockAt(Instant.parse("1970-01-01T00:00:00.000Z").toEpochMilli())
+
+        // Setup services
+        assetStorageService = container.getService(AssetStorageService.class)
+        assetDatapointService = container.getService(AssetDatapointService.class)
+        agentService = container.getService(AgentService.class)
+
+        // Must use boxed Long type in Spock closures, so avoiding parameter expansion so it doesn't silently fail.
+        executor.schedule(_ as Runnable, _ as Long, _ as TimeUnit) >> { args ->
+            task = args[0] as Runnable; delay = args[1] as Long
+            return args[0]
+        }
+        agent = new SimulatorAgent("Test agent").setRealm(Constants.MASTER_REALM)
+        agent = assetStorageService.merge(agent)
     }
 
     private getDataPoints = { def now = Instant.ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.of("UTC")).toLocalDateTime();
@@ -74,76 +111,59 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
             now.plus(1, ChronoUnit.HOURS),
     ) }
 
-    def "Check Simulator Agent protocol scheduling"() {
+    private waitForAgentConnection() {
+        agent = (SimulatorAgent) assetStorageService.find(agent.getId(), Agent.class)
+        assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+        assert agentService.protocolInstanceMap.get(agent.getId()) != null
+        protocol = (SimulatorProtocol) agentService.protocolInstanceMap.get(agent.getId())
+        protocol.scheduledExecutorService = executor
+        return protocol.linkedAttributes.size() == 1
+    }
 
-        given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 60, delay: 0.2)
-
-        and: "the container starts"
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def assetDatapointService = container.getService(AssetDatapointService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
-        def agentService = container.getService(AgentService.class)
-
-        and: "setup agent"
-        def agent = new SimulatorAgent("Test agent").setRealm(Constants.MASTER_REALM)
-        agent = assetStorageService.merge(agent)
-
-        and: "setup linked asset"
-
-        def asset = new ThingAsset("Test asset")
-                .setRealm(Constants.MASTER_REALM)
+    def "Check Simulator Agent protocol without replay"() {
+        given: ""
+        asset = new ThingAsset("Test asset").setRealm(Constants.MASTER_REALM)
                 .addAttributes(new Attribute<>(ThingAsset.NOTES, null)
                         .addMeta(new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId())))
                 )
         asset = assetStorageService.merge(asset)
 
         when: "nothing is configured"
-
-        then: "the protocol should connect and the agent status should become CONNECTED"
-        SimulatorProtocol protocol
-        conditions.eventually {
-            agent = (SimulatorAgent)assetStorageService.find(agent.getId(), Agent.class)
-            assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
-            assert agentService.protocolInstanceMap.get(agent.getId()) != null
-            protocol = (SimulatorProtocol) agentService.protocolInstanceMap.get(agent.getId())
-            assert protocol.linkedAttributes.size() == 1
-        }
-        assert protocol != null
-
-        and : "nothing happens"
         def attribute = asset.getAttribute(ThingAsset.NOTES).get()
         def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
-        assert assetDatapointService.getDatapoints(attributeRef).size() == 0
 
-        // ------------------------------------
-        // Test replay data of the simulator
-        // ------------------------------------
+        then: "the protocol should connect and the agent status should become CONNECTED"
+        conditions.eventually {
+            waitForAgentConnection()
+        }
+
+        and: "nothing happens"
+        assert assetDatapointService.getDatapoints(attributeRef).size() == 0
+    }
+
+    def "Check Simulator Agent protocol with replay"() {
+        given: ""
+        asset = new ThingAsset("Test asset").setRealm(Constants.MASTER_REALM)
+                .addAttributes(new Attribute<>(ThingAsset.NOTES, null)
+                        .addMeta(
+                                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+                                        new SimulatorReplayDatapoint(3600, "test")
+                                ))
+                        )
+                )
+        asset = assetStorageService.merge(asset)
 
         when: "replayData is configured to replay in 1hr"
-        def unresolvedTask = null
-        def calculatedDelay = null
-        def executor = Mock(ScheduledExecutorService)
-        executor.schedule(_ as Runnable, _ as Long, _ as TimeUnit) >> { args ->
-            unresolvedTask = args[0]
-            calculatedDelay = args[1]
-            println("TEST: "  + args[1])
-            return args[0]
-        }
-        protocol.scheduledExecutorService = executor
+        def attribute = asset.getAttribute(ThingAsset.NOTES).get()
 
-        // starting at 1970-01-01T00:00:00.010Z
-        attribute.addOrReplaceMeta(
-            new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-                new SimulatorReplayDatapoint(3600, "test")
-            ))
-        )
-        assetStorageService.merge(asset)
-
-        then: "no datapoint is present up until 1hr"
-//        assert protocol.replayMap.get(attributeRef) == null
+        then: "the protocol should connect and the agent status should become CONNECTED"
         conditions.eventually {
-            assert calculatedDelay == 3600
+            waitForAgentConnection()
+        }
+
+        and: "no datapoint is present up until 1hr"
+        conditions.eventually {
+            assert delay == 3600
         }
         assert assetDatapointService.queryDatapoints(
             asset.getId(),
@@ -151,16 +171,31 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
             getDataPoints.call()
         ).size() == 0
 
-        and : "1 datapoint is present after 1hr"
+        and: "1 datapoint is present after 1hr"
         advancePseudoClock(1, HOURS, container)
-        protocol.replayMap.get(attributeRef) != null
-        unresolvedTask.run()
-        // expect at   1970-01-01T01:00:00.010Z
+        task.run()
+        // expect at 1970-01-01T01:00:00.010Z
         assert assetDatapointService.queryDatapoints(
             asset.getId(),
             attribute.getName(),
             getDataPoints.call()
         ).size() == 1
+        conditions.eventually {
+            assert delay == 90000
+        }
+    }
+
+    def "Check Simulator Agent protocol with replay startDate"() {
+    }
+
+    def "Check Simulator Agent protocol with custom replay duration"() {
+    }
+
+    def "Check Simulator Agent protocol with custom recurrence schedule"() {
+    }
+
+    def "Check Simulator Agent protocol scheduling"() {
+
 
         // ------------------------------------
         // Test start date of the simulator
