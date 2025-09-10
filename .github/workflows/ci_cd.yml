@@ -842,9 +842,9 @@ jobs:
           failure = False
 
           # Clean-up AWS credentials related variable that might have been set by Configure AWS Credentials for ECR upload
-          del os.environ["AWS_ACCESS_KEY_ID"]
-          del os.environ["AWS_SECRET_ACCESS_KEY"]
-          del os.environ["AWS_SESSION_TOKEN"]
+          os.environ.pop("AWS_ACCESS_KEY_ID", None)
+          os.environ.pop("AWS_SECRET_ACCESS_KEY", None)
+          os.environ.pop("AWS_SESSION_TOKEN", None)
 
           # Determine deploy script to use
           deployScript = ".ci_cd/deploy.sh"
