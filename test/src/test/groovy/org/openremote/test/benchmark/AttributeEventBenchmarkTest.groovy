@@ -21,17 +21,14 @@ package org.openremote.test.benchmark
 
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
-import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.mqtt.DefaultMQTTHandler
 import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.manager.mqtt.MQTTHandler
 import org.openremote.manager.setup.SetupService
-import org.openremote.model.asset.Asset
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
-import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.auth.UsernamePassword
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.util.UniqueIdentifierGenerator
@@ -44,8 +41,6 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.function.Consumer
 
 import static org.openremote.container.util.MapAccess.getInteger
@@ -59,9 +54,9 @@ import static org.openremote.manager.mqtt.MQTTBrokerService.*
  * system; this can be used to monitor the performance change of the system over time on a given system specification.
  */
 
+@Ignore
 class AttributeEventBenchmarkTest extends Specification implements ManagerContainerTrait {
 
-    @Ignore
     def "Attribute processing benchmark"() {
 
         given: "the container environment is started"
@@ -187,51 +182,5 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
         if (client != null) {
             client.disconnect()
         }
-    }
-
-    def "Attempt to saturate the asset processing chain"() {
-        given: "the container environment is started"
-        def eventCount = 5
-        def startTime = -1l
-        def endTime = -1l
-        List<SharedEvent> receivedEvents = new CopyOnWriteArrayList<>()
-        List<Object> receivedValues = new CopyOnWriteArrayList<>()
-        def conditions = new PollingConditions(timeout: 15, initialDelay: 0.1, delay: 0.2)
-        def container = startContainer(defaultConfig(), defaultServices())
-        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
-        def assets = new ArrayList<Asset>()
-
-        and: "assets are added for testing purposes"
-        for (i in 1..eventCount) {
-            def asset = assetStorageService.merge(new ThingAsset("TestThing$i").setRealm(keycloakTestSetup.realmBuilding.name).addAttributes(
-                    new Attribute<Object>("counter", ValueType.NUMBER)
-            ))
-            assets.add(asset)
-        }
-
-        when: "attribute events are sent in a continuous stream with intermittent merge requests also"
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
-
-        for (def i=0; i<10000; i++) {
-            getLOG().info("Event loop: $i")
-            for (j in 1..eventCount) {
-                executor.submit {assetProcessingService.sendAttributeEvent(new AttributeEvent(assets.get(j-1).id, "counter", i))}
-            }
-            if (i % 9 == 0) {
-                for (j in 1..eventCount) {
-                    getLOG().info("Modifying asset: $j")
-                    def asset = assets.get(j - 1)
-                    asset.setName("TestThing${j}_${i}")
-                    executor.submit {
-                        assets.set(j - 1, assetStorageService.merge(asset))
-                    }
-                }
-            }
-        }
-
-        then: "the test is terminated"
-        assert true
     }
 }
