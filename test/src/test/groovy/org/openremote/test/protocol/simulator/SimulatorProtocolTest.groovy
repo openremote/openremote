@@ -134,6 +134,14 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
             now.plus(1, ChronoUnit.HOURS),
     ) }
 
+    private long getDatapointTimestamp(Attribute attribute) {
+        return Math.round(assetDatapointService.queryDatapoints(
+                asset.getId(),
+                attribute.getName(),
+                getDataPoints.call()
+        ).get(0).getTimestamp() / 1000)
+    }
+
     def "Check Simulator Agent protocol without replay"() {
         when: "nothing is configured"
         def attribute = asset.getAttribute(ThingAsset.NOTES).get()
@@ -233,57 +241,67 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     }
 
     def "Check Simulator Agent protocol with custom replay duration"() {
-        when: "replayData is configured to replay in 1hr"
+        when: "replayData is configured to replay in 1hr, 25hrs, and 48hrs every other day"
         def attribute = asset.getAttribute(ThingAsset.NOTES).get()
         attribute.addOrReplaceMeta(
                 new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-                        new SimulatorReplayDatapoint(3600, "test")
+                        new SimulatorReplayDatapoint(3600, "test"),
+                        new SimulatorReplayDatapoint(3600 * 25, "test"),
+                        new SimulatorReplayDatapoint(3600 * 48, "test")
                 ).setDuration(new TimeUtil.ExtendedPeriodAndDuration("P2D")))
         )
         assetStorageService.merge(asset)
 
-        then: "the protocol should connect and the agent status should become CONNECTED"
+        then: "the agent status should become CONNECTED and the attribute linked to the protocol"
         conditions.eventually {
-            assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
-            assert protocol.linkedAttributes.size() == 1
+            agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            protocol.linkedAttributes.size() == 1
         }
 
-        and: "no datapoint is present up until 1hr"
-        conditions.eventually {
-            assert delay == 3600
-            assert assetDatapointService.queryDatapoints(
-                    asset.getId(),
-                    attribute.getName(),
-                    getDataPoints.call()
-            ).size() == 0
-        }
+        (0..1).each { i ->
+            def days = i * 3600 * 48 // Starts at 0 days, increments with 2 days
 
-        when: "fast forward 1 hour"
-        advancePseudoClock(1, HOURS, container)
-        future.get() // resolve future manually, because we surpassed the delay (of 3600s)
+            then: "the delay is 1 hour"
+            conditions.eventually {
+                delay == 3600
+            }
 
-        then: "1 datapoint is present"
-        conditions.eventually {
-            assert delay == 86400 * 2
-            assert assetDatapointService.queryDatapoints(
-                    asset.getId(),
-                    attribute.getName(),
-                    getDataPoints.call()
-            ).size() == 1
-        }
+            when: "fast forward 1 hour"
+            advancePseudoClock(1, HOURS, container)
+            future.get() // resolve future manually, because we surpassed the delay
 
-        when: "fast forward 2 days"
-        advancePseudoClock(2, DAYS, container)
-        future.get() // resolve future manually, because we surpassed the delay (of 86400 * 2s)
+            then: "datapoint is present"
+            conditions.eventually {
+                getDatapointTimestamp(attribute) == days + 3600
+            }
 
-        then: "2 datapoints are present"
-        conditions.eventually {
-            assert delay == 86400 * 2
-            assert assetDatapointService.queryDatapoints(
-                    asset.getId(),
-                    attribute.getName(),
-                    getDataPoints.call()
-            ).size() == 1 // TODO: test both datapoints are present
+            and: "the next delay is in 24 hours"
+            conditions.eventually {
+                delay == 3600 * 24
+            }
+
+            when: "fast forward 24 hours"
+            advancePseudoClock(24, HOURS, container)
+            future.get() // resolve future manually, because we surpassed the delay
+
+            then: "datapoint is present"
+            conditions.eventually {
+                getDatapointTimestamp(attribute) == days + 3600 * 25
+            }
+
+            and: "the next delay is in 23 hours"
+            conditions.eventually {
+                delay == 3600 * 23
+            }
+
+            when: "fast forward 23 hour"
+            advancePseudoClock(23, HOURS, container)
+            future.get() // resolve future manually, because we surpassed the delay
+
+            then: "datapoints are present"
+            conditions.eventually {
+                getDatapointTimestamp(attribute) == days + 3600 * 48
+            }
         }
     }
 
@@ -326,7 +344,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         then: "1 datapoint is present"
         conditions.eventually {
-            assert delay == 7200
+            assert delay == 3600
             assert assetDatapointService.queryDatapoints(
                     asset.getId(),
                     attribute.getName(),
@@ -355,7 +373,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         then: "1 datapoint is present"
         conditions.eventually {
-            assert delay == 7200
+            assert delay == 3600
             assert assetDatapointService.queryDatapoints(
                     asset.getId(),
                     attribute.getName(),

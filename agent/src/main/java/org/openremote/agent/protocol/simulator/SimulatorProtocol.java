@@ -208,8 +208,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 LocalDateTime.ofEpochSecond(now, 0, ZoneOffset.UTC).minusSeconds(duration)
             );
             LocalDateTime nextOccurrenceStart = recur.getNextDate(
-                    agentLink.getStartDate().map(LocalDate::atStartOfDay).orElse(linkedDateTime),
-                    LocalDateTime.ofEpochSecond(now, 0, ZoneOffset.UTC)
+                agentLink.getStartDate().map(LocalDate::atStartOfDay).orElse(linkedDateTime),
+                LocalDateTime.ofEpochSecond(now, 0, ZoneOffset.UTC)
             );
 
             if (nextOccurrenceStart == null) {
@@ -222,8 +222,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 nextRun += nextOccurrenceStart.toEpochSecond(ZoneOffset.UTC) - now;
             // Or when the first occurrence is after the seed date and now is before the first occurrence
             } else if (
-                    firstOccurrenceStart.toEpochSecond(ZoneOffset.UTC) > linkedDateTime.toEpochSecond(ZoneOffset.UTC)
-                    && now < firstOccurrenceStart.toEpochSecond(ZoneOffset.UTC)
+                firstOccurrenceStart.toEpochSecond(ZoneOffset.UTC) > linkedDateTime.toEpochSecond(ZoneOffset.UTC)
+                && now < firstOccurrenceStart.toEpochSecond(ZoneOffset.UTC)
             ) {
                 nextRun += currentOccurrenceStart.toEpochSecond(ZoneOffset.UTC) - now;
             }
@@ -232,6 +232,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         // Add remaining cycle time
         if (nextRun <= timeSinceCycleStarted) {
             nextRun += timeUntilNextCycle;
+        } {
+            nextRun -= timeSinceCycleStarted;
         }
 
         // TODO: think through what happens when startDate and recur are configured
