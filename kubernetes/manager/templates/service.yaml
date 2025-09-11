@@ -17,12 +17,6 @@ spec:
       targetPort: 1883
       protocol: TCP
     {{- end }}
-    {{- if .Values.or.metricsEnabled }}
-    - name: metrics
-      port: {{ .Values.or.metricsPort }}
-      targetPort: {{ .Values.or.metricsPort }}
-      protocol: TCP
-    {{- end }}
   selector:
     {{- include "manager.selectorLabels" . | nindent 4 }}
 ---
@@ -71,3 +65,25 @@ spec:
       targetPort: 1883
       protocol: TCP
 {{- end }}
+---
+{{- if and (.Values.or.metricsEnabled) (.Values.service.metrics.enabled) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: manager-metrics
+  {{- with .Values.service.metrics.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.metrics.type }}
+  ports:
+    - name: metrics
+      port: {{ .Values.service.metrics.port }}
+      targetPort: {{ .Values.or.metricsPort }}
+      protocol: TCP
+  selector:
+    {{- include "manager.selectorLabels" . | nindent 4 }}
+{{- end }}
+
+
