@@ -288,6 +288,10 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 String topic = notification.getProperties().getSimpleStringProperty(ManagementHelper.HDR_ADDRESS).toString();
                 ServerSession session = server.getActiveMQServer().getSessionByID(sessionId);
 
+                if (session == null) {
+                    return;
+                }
+
                 // Ignore internal subscriptions
                 boolean isInternal = session.getRemotingConnection().getTransportConnection() instanceof InVMConnection;
                 if (isInternal) {
