@@ -147,7 +147,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         def attribute = asset.getAttribute(ThingAsset.NOTES).get()
         def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
 
-        then: "the protocol should connect and the agent status should become CONNECTED"
+        then: "the agent status should become CONNECTED and the attribute linked to the protocol"
         conditions.eventually {
             assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
             assert protocol.linkedAttributes.size() == 1
@@ -158,43 +158,67 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     }
 
     def "Check Simulator Agent protocol with replay"() {
-        when: "replayData is configured to replay in 1hr"
+        when: "replayData is configured to add a datapoint in 1hr, 12hrs, and 24hrs every day"
         def attribute = asset.getAttribute(ThingAsset.NOTES).get()
         attribute.addOrReplaceMeta(
-            new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-                new SimulatorReplayDatapoint(3600, "test")
-            ))
+                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+                        new SimulatorReplayDatapoint(3600, "test"),
+                        new SimulatorReplayDatapoint(3600 * 12, "test"),
+                        new SimulatorReplayDatapoint(3600 * 24, "test")
+                ))
         )
         assetStorageService.merge(asset)
 
-        then: "the protocol should connect and the agent status should become CONNECTED"
+        then: "the agent status should become CONNECTED and the attribute linked to the protocol"
         conditions.eventually {
             assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
             assert protocol.linkedAttributes.size() == 1
         }
 
-        and: "no datapoint is present up until 1hr"
-        conditions.eventually {
-            assert delay == 3600
-            assert assetDatapointService.queryDatapoints(
-                asset.getId(),
-                attribute.getName(),
-                getDataPoints.call()
-            ).size() == 0
-        }
+        (0..1).each { i ->
+            def days = i * 3600 * 24 // Starts at 0 days, increments with 1 days
 
-        when: "fast forward 1 hour"
-        advancePseudoClock(1, HOURS, container)
-        future.get() // resolve future manually, because we surpassed the delay (of 3600s)
+            then: "the delay is 1 hour"
+            conditions.eventually {
+                delay == 3600
+            }
 
-        then: "1 datapoint is present"
-        conditions.eventually {
-            assert delay == 86400
-            assert assetDatapointService.queryDatapoints(
-                asset.getId(),
-                attribute.getName(),
-                getDataPoints.call()
-            ).size() == 1
+            when: "fast forward 1 hour"
+            advancePseudoClock(1, HOURS, container)
+            future.get() // resolve future manually, because we surpassed the delay
+
+            then: "datapoint is present"
+            conditions.eventually {
+                getDatapointTimestamp(attribute) == days + 3600
+            }
+
+            and: "the delay is 11 hours"
+            conditions.eventually {
+                delay == 3600 * 11
+            }
+
+            when: "fast forward 11 hours"
+            advancePseudoClock(11, HOURS, container)
+            future.get() // resolve future manually, because we surpassed the delay
+
+            then: "datapoint is present"
+            conditions.eventually {
+                getDatapointTimestamp(attribute) == days + 3600 * 12
+            }
+
+            and: "the delay is 12 hours"
+            conditions.eventually {
+                delay == 3600 * 12
+            }
+
+            when: "fast forward 12 hour"
+            advancePseudoClock(12, HOURS, container)
+            future.get() // resolve future manually, because we surpassed the delay
+
+            then: "datapoints are present"
+            conditions.eventually {
+                getDatapointTimestamp(attribute) == days + 3600 * 24
+            }
         }
     }
 
@@ -208,40 +232,34 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         )
         assetStorageService.merge(asset)
 
-        then: "the protocol should connect and the agent status should become CONNECTED"
+        then: "the agent status should become CONNECTED and the attribute linked to the protocol"
         conditions.eventually {
             assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
             assert protocol.linkedAttributes.size() == 1
         }
 
-        and: "no datapoint is present up until 1hr"
+        and: "the delay is 25 hours"
         conditions.eventually {
-            assert delay == 90000
-            assert assetDatapointService.queryDatapoints(
-                    asset.getId(),
-                    attribute.getName(),
-                    getDataPoints.call()
-            ).size() == 0
+            delay == 3600 * 25
         }
 
-        when: "fast forward 1 day and 1 hour"
-        advancePseudoClock(1, DAYS, container)
-        advancePseudoClock(1, HOURS, container)
-        future.get() // resolve future manually, because we surpassed the delay (of 90000s)
+        when: "fast forward 25 hours"
+        advancePseudoClock(25, HOURS, container)
+        future.get() // resolve future manually, because we surpassed the delay
 
-        then: "1 datapoint is present"
+        then: "datapoint is present"
         conditions.eventually {
-            assert delay == 86400
-            assert assetDatapointService.queryDatapoints(
-                    asset.getId(),
-                    attribute.getName(),
-                    getDataPoints.call()
-            ).size() == 1
+            getDatapointTimestamp(attribute) == 3600 * 25
+        }
+
+        and: "the delay is 24 hours"
+        conditions.eventually {
+            delay == 3600 * 24
         }
     }
 
     def "Check Simulator Agent protocol with custom replay duration"() {
-        when: "replayData is configured to replay in 1hr, 25hrs, and 48hrs every other day"
+        when: "replayData is configured to add a datapoint in 1hr, 25hrs, and 48hrs every other day"
         def attribute = asset.getAttribute(ThingAsset.NOTES).get()
         attribute.addOrReplaceMeta(
                 new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
@@ -275,7 +293,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                 getDatapointTimestamp(attribute) == days + 3600
             }
 
-            and: "the next delay is in 24 hours"
+            and: "the delay is 24 hours"
             conditions.eventually {
                 delay == 3600 * 24
             }
@@ -289,7 +307,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                 getDatapointTimestamp(attribute) == days + 3600 * 25
             }
 
-            and: "the next delay is in 23 hours"
+            and: "the delay is 23 hours"
             conditions.eventually {
                 delay == 3600 * 23
             }
@@ -321,7 +339,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         )
         assetStorageService.merge(asset)
 
-        then: "the protocol should connect and the agent status should become CONNECTED"
+        then: "the agent status should become CONNECTED and the attribute linked to the protocol"
         conditions.eventually {
             assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
             assert protocol.linkedAttributes.size() == 1

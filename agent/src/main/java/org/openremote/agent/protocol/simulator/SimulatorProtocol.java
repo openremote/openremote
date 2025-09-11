@@ -232,7 +232,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         // Add remaining cycle time
         if (nextRun <= timeSinceCycleStarted) {
             nextRun += timeUntilNextCycle;
-        } {
+        } else {
             nextRun -= timeSinceCycleStarted;
         }
 
