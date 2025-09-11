@@ -104,7 +104,8 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         agent = assetStorageService.merge(agent)
         asset = new ThingAsset("Test asset").setRealm(Constants.MASTER_REALM)
                 .addAttributes(new Attribute<>(ThingAsset.NOTES, null)
-                        .addMeta(new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId())))
+                        .addMeta(new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()))),
+//                        new Attribute<String>("test", null)
                 )
         asset = assetStorageService.merge(asset)
 
@@ -220,6 +221,66 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
             }
         }
     }
+
+    // Won't work because the mocks will overwrite each other
+//    def "Check Simulator Agent protocol adds predicted datapoints for multiple attributes"() {
+//        when: "replayData is configured for both attributes to add a datapoint in 1hr every day"
+//        def attribute1 = asset.getAttribute(ThingAsset.NOTES).get()
+//        attribute1.addOrReplaceMeta(
+//                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+//                        new SimulatorReplayDatapoint(3600, "test"),
+//                ))
+//        )
+//        def attribute2 = asset.getAttribute("test").get()
+//        attribute2.addOrReplaceMeta(
+//                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+//                        new SimulatorReplayDatapoint(3600 * 2, "test"),
+//                ))
+//        )
+//        assetStorageService.merge(asset)
+//
+//        then: "the agent status should become CONNECTED and the attribute linked to the protocol"
+//        conditions.eventually {
+//            assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+//            assert protocol.linkedAttributes.size() == 1
+//        }
+//
+//        (0..1).each { i ->
+//            def days = i * 3600 * 24 // Starts at 0 days, increments with 1 days
+//
+//            then: "the delay is 1 hour for attribute 1"
+//            conditions.eventually {
+//                delay == 3600
+//            }
+//
+//            when: "fast forward 1 hour"
+//            advancePseudoClock(1, HOURS, container)
+//            future.get() // resolve future manually, because we surpassed the delay
+//
+//            then: "datapoint is present"
+//            conditions.eventually {
+//                getDatapointTimestamp(attribute1) == days + 3600
+//            }
+//
+//            and: "the delay is 1 more hour for attribute 2"
+//            conditions.eventually {
+//                delay == 3600
+//            }
+//
+//            when: "fast forward 1 hour"
+//            advancePseudoClock(1, HOURS, container)
+//            future.get() // resolve future manually, because we surpassed the delay
+//
+//            then: "datapoint is present"
+//            conditions.eventually {
+//                getDatapointTimestamp(attribute2) == days + 3600 * 2
+//            }
+//
+//            when: "fast forward 22 hours"
+//            advancePseudoClock(22, HOURS, container)
+//        }
+//        then: ""
+//    }
 
     def "Check Simulator Agent protocol with replay startDate"() {
         when: "replayData is configured to replay in 1day and 1hr"

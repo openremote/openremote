@@ -47,9 +47,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     public static final String PROTOCOL_DISPLAY_NAME = "Simulator";
 
     protected final Map<AttributeRef, ScheduledFuture<?>> replayMap = new ConcurrentHashMap<>();
-
-    // TODO: should be map with keyof attributeRef
-    protected LocalDateTime linkedDateTime;
+    protected final Map<AttributeRef, LocalDateTime> linkedAtMap = new ConcurrentHashMap<>();
 
     public SimulatorProtocol(SimulatorAgent agent) {
         super(agent);
@@ -90,8 +88,10 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 LOG.info("Simulator replay data found for linked attribute: " + attribute);
                 AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
                 // Seed date for recurrence rule for when startDate is not specified
-                linkedDateTime = LocalDateTime.ofInstant(timerService.getNow(), ZoneId.of("UTC"));
-                ScheduledFuture<?> updateValueFuture = scheduleReplay(attributeRef, simulatorReplayDatapoints);
+                LocalDateTime linkedAt = linkedAtMap.put(
+                        attributeRef, LocalDateTime.ofInstant(timerService.getNow(), ZoneId.of("UTC"))
+                );
+                ScheduledFuture<?> updateValueFuture = scheduleReplay(attributeRef, simulatorReplayDatapoints, linkedAt);
                 if (updateValueFuture != null) {
                     replayMap.put(attributeRef, updateValueFuture);
                 } else {
@@ -165,7 +165,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         return replayMap;
     }
 
-    protected ScheduledFuture<?> scheduleReplay(AttributeRef attributeRef, SimulatorReplayDatapoint[] simulatorReplayDatapoints) {
+    protected ScheduledFuture<?> scheduleReplay(AttributeRef attributeRef, SimulatorReplayDatapoint[] simulatorReplayDatapoints, LocalDateTime linkedAt) {
         Attribute<?> attribute = linkedAttributes.get(attributeRef);
         SimulatorAgentLink agentLink = this.agent.getAgentLink(attribute);
 
@@ -197,18 +197,14 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
         if (agentLink.getRecurrence().isPresent()) {
             Recur<LocalDateTime> recur = agentLink.getRecurrence().get();
+            LocalDateTime seedDate = agentLink.getStartDate().map(LocalDate::atStartOfDay).orElse(linkedAt);
 
-            LocalDateTime firstOccurrenceStart = recur.getNextDate(
-                agentLink.getStartDate().map(LocalDate::atStartOfDay).orElse(linkedDateTime),
-                linkedDateTime
-            );
-            LocalDateTime currentOccurrenceStart = recur.getNextDate(
-                agentLink.getStartDate().map(LocalDate::atStartOfDay).orElse(linkedDateTime),
+            LocalDateTime firstOccurrenceStart = recur.getNextDate(seedDate, linkedAt);
+            LocalDateTime currentOccurrenceStart = recur.getNextDate(seedDate,
                 // Minus duration to ensure that we get the current occurrence start time
                 LocalDateTime.ofEpochSecond(now, 0, ZoneOffset.UTC).minusSeconds(duration)
             );
-            LocalDateTime nextOccurrenceStart = recur.getNextDate(
-                agentLink.getStartDate().map(LocalDate::atStartOfDay).orElse(linkedDateTime),
+            LocalDateTime nextOccurrenceStart = recur.getNextDate(seedDate,
                 LocalDateTime.ofEpochSecond(now, 0, ZoneOffset.UTC)
             );
 
@@ -222,7 +218,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 nextRun += nextOccurrenceStart.toEpochSecond(ZoneOffset.UTC) - now;
             // Or when the first occurrence is after the seed date and now is before the first occurrence
             } else if (
-                firstOccurrenceStart.toEpochSecond(ZoneOffset.UTC) > linkedDateTime.toEpochSecond(ZoneOffset.UTC)
+                firstOccurrenceStart.toEpochSecond(ZoneOffset.UTC) > linkedAt.toEpochSecond(ZoneOffset.UTC)
                 && now < firstOccurrenceStart.toEpochSecond(ZoneOffset.UTC)
             ) {
                 nextRun += currentOccurrenceStart.toEpochSecond(ZoneOffset.UTC) - now;
@@ -254,7 +250,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
             } finally {
-                replayMap.put(attributeRef, scheduleReplay(attributeRef, simulatorReplayDatapoints));
+                replayMap.put(attributeRef, scheduleReplay(attributeRef, simulatorReplayDatapoints, linkedAt));
             }
         }, nextRun, TimeUnit.SECONDS);
     }
