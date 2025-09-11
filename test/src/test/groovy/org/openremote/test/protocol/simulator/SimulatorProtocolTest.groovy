@@ -60,7 +60,7 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK
  */
 class SimulatorProtocolTest extends Specification implements ManagerContainerTrait {
 
-    static final PollingConditions conditions = new PollingConditions(timeout: 60, delay: 0.2)
+    static final PollingConditions conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
     @Shared
     AssetStorageService assetStorageService
@@ -292,7 +292,8 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         def attribute = asset.getAttribute(ThingAsset.NOTES).get()
         attribute.addOrReplaceMeta(
                 new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-                        new SimulatorReplayDatapoint(3600, "test")
+                        new SimulatorReplayDatapoint(3600, "test"),
+                        new SimulatorReplayDatapoint(7200, "test")
                 )
 //                .setStartDate(LocalDate.ofInstant(Instant.parse("1970-01-05T00:00:00.000Z"), ZoneId.of("UTC")))
                 .setDuration(new TimeUtil.ExtendedPeriodAndDuration("PT2H"))
@@ -325,7 +326,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         then: "1 datapoint is present"
         conditions.eventually {
-            assert delay == 3600
+            assert delay == 7200
             assert assetDatapointService.queryDatapoints(
                     asset.getId(),
                     attribute.getName(),
@@ -354,7 +355,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         then: "1 datapoint is present"
         conditions.eventually {
-            assert delay == 3600
+            assert delay == 7200
             assert assetDatapointService.queryDatapoints(
                     asset.getId(),
                     attribute.getName(),

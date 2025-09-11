@@ -195,7 +195,6 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
         long nextRun = nextDatapoint.timestamp;
 
-        boolean waitForOccurrence = false;
         if (agentLink.getRecurrence().isPresent()) {
             Recur<LocalDateTime> recur = agentLink.getRecurrence().get();
 
@@ -213,7 +212,6 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                     LocalDateTime.ofEpochSecond(now, 0, ZoneOffset.UTC)
             );
 
-            // TODO: fix this should be moved down to the next occurrence, because add the next value if present
             if (nextOccurrenceStart == null) {
                 LOG.fine("Next recurrence not found so replay cancelled: " + attributeRef);
                 return null;
@@ -222,19 +220,17 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             // Add time until next occurrence if current cycle has ended
             if (now >= currentOccurrenceStart.toEpochSecond(ZoneOffset.UTC) + duration) {
                 nextRun += nextOccurrenceStart.toEpochSecond(ZoneOffset.UTC) - now;
-                waitForOccurrence = true;
             // Or when the first occurrence is after the seed date and now is before the first occurrence
             } else if (
                     firstOccurrenceStart.toEpochSecond(ZoneOffset.UTC) > linkedDateTime.toEpochSecond(ZoneOffset.UTC)
                     && now < firstOccurrenceStart.toEpochSecond(ZoneOffset.UTC)
             ) {
                 nextRun += currentOccurrenceStart.toEpochSecond(ZoneOffset.UTC) - now;
-                waitForOccurrence = true;
             }
         }
 
         // Add remaining cycle time
-        if (nextRun <= timeSinceCycleStarted && waitForOccurrence) {
+        if (nextRun <= timeSinceCycleStarted) {
             nextRun += timeUntilNextCycle;
         }
 
