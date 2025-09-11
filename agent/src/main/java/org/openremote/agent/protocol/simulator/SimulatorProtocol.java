@@ -19,21 +19,17 @@
  */
 package org.openremote.agent.protocol.simulator;
 
-import net.fortuna.ical4j.model.Recur;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.TimeUtil;
 import org.openremote.model.value.AbstractNameValueHolder;
 
 import java.time.*;
-import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
@@ -50,6 +46,9 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     public static final String PROTOCOL_DISPLAY_NAME = "Simulator";
 
     protected final Map<AttributeRef, ScheduledFuture<?>> replayMap = new ConcurrentHashMap<>();
+
+    // TODO: should be map with keyof attributeRef
+    protected LocalDateTime linkedDateTime;
 
     public SimulatorProtocol(SimulatorAgent agent) {
         super(agent);
@@ -89,6 +88,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             .ifPresent(simulatorReplayDatapoints -> {
                 LOG.info("Simulator replay data found for linked attribute: " + attribute);
                 AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
+                // Seed date for recurrence rule for when startDate is not specified
+                linkedDateTime = LocalDateTime.ofInstant(timerService.getNow(), ZoneId.of("UTC"));
                 ScheduledFuture<?> updateValueFuture = scheduleReplay(attributeRef, simulatorReplayDatapoints);
                 if (updateValueFuture != null) {
                     replayMap.put(attributeRef, updateValueFuture);
@@ -97,7 +98,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                     replayMap.put(attributeRef, null);
                 }
 
-                // TODO: Insert all replay datapoints directly into the predicted datapoints based on upcoming replay period
+                // TODO: Insert current and next duration predicted datapoints
                 // This should depend on the duration value and startdate to compute the next range of replay datapoints to include
                 // Also purge any existing predicted datapoints
 //                updateLinkedAttributePredictedDataPoints(attributeRef, nextDatapoint.value, now + nextRunRelative);
@@ -166,7 +167,6 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     protected ScheduledFuture<?> scheduleReplay(AttributeRef attributeRef, SimulatorReplayDatapoint[] simulatorReplayDatapoints) {
         Attribute<?> attribute = linkedAttributes.get(attributeRef);
         SimulatorAgentLink agentLink = this.agent.getAgentLink(attribute);
-//        Recur<LocalDateTime> recurrence = agentLink.getRecurrence().get();
 
         LOG.finest("Scheduling linked attribute replay update");
 
@@ -194,11 +194,44 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
         long nextRun = nextDatapoint.timestamp;
 
+        boolean waitForOccurrence = false;
+        if (agentLink.getRecurrence().isPresent()) {
+            LocalDateTime occurrenceStart = agentLink
+                    .getRecurrence()
+                    .get()
+                    .getNextDate(
+                            agentLink.getStartDate().map(LocalDate::atStartOfDay).orElse(linkedDateTime),
+                            // Minus duration to ensure that we get the current occurrence start time
+                            LocalDateTime.ofEpochSecond(now, 0, ZoneOffset.UTC).minusSeconds(duration)
+                    );
+            // TODO: fix this should be moved down to the next occurrence, because add the next value if present
+            if (occurrenceStart == null) {
+                LOG.fine("Next recurrence not found so replay cancelled: " + attributeRef);
+                return null;
+            }
+
+            // Add time until next occurrence if current cycle has ended
+            if (now >= occurrenceStart.toEpochSecond(ZoneOffset.UTC) + duration) {
+                nextRun += agentLink
+                        .getRecurrence()
+                        .get()
+                        .getNextDate(
+                                agentLink.getStartDate().map(LocalDate::atStartOfDay).orElse(linkedDateTime),
+                                LocalDateTime.ofEpochSecond(now, 0, ZoneOffset.UTC)
+                        ).toEpochSecond(ZoneOffset.UTC) - now;
+                waitForOccurrence = true;
+            } else if (occurrenceStart.toEpochSecond(ZoneOffset.UTC) > now) { // TODO: what if
+                nextRun += occurrenceStart.toEpochSecond(ZoneOffset.UTC) - now;
+                waitForOccurrence = true;
+            }
+        }
+
         // Add remaining cycle time
-        if (nextRun <= timeSinceCycleStarted) {
+        if (nextRun <= timeSinceCycleStarted && waitForOccurrence) {
             nextRun += timeUntilNextCycle;
         }
 
+        // TODO: think through what happens when startDate and recur are configured
         // If the current time is before the start date compute how many additional seconds to add until the next run
         long timeUntilStartDate = agentLink
             .getStartDate()

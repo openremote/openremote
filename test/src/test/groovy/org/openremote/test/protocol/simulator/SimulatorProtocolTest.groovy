@@ -19,6 +19,7 @@
  */
 package org.openremote.test.protocol.simulator
 
+import net.fortuna.ical4j.model.Recur
 import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
@@ -42,6 +43,7 @@ import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.ScheduledExecutorService
@@ -286,22 +288,82 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     }
 
     def "Check Simulator Agent protocol with custom recurrence schedule"() {
-        // ------------------------------------
-        // Test recurrence of the simulator
-        // ------------------------------------
+        when: "replayData is configured to replay weekly"
+        def attribute = asset.getAttribute(ThingAsset.NOTES).get()
+        attribute.addOrReplaceMeta(
+                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+                        new SimulatorReplayDatapoint(3600, "test")
+                )
+//                .setStartDate(LocalDate.ofInstant(Instant.parse("1970-01-05T00:00:00.000Z"), ZoneId.of("UTC")))
+                .setDuration(new TimeUtil.ExtendedPeriodAndDuration("PT2H"))
+                // Recur every Monday until 1970-01-31
+                // First day should be 1970-01-05 (in 4 days) a Monday
+                .setRecurrence(new Recur<LocalDateTime>("FREQ=WEEKLY;UNTIL=19700131T000000Z;BYDAY=MO")))
+        )
+        assetStorageService.merge(asset)
 
-        when: ""
-        then: ""
+        then: "the protocol should connect and the agent status should become CONNECTED"
+        conditions.eventually {
+            assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert protocol.linkedAttributes.size() == 1
+        }
 
-        when: ""
-        then: ""
+        and: "no datapoint is present up until 4 days and 1hr"
+        conditions.eventually {
+            assert delay == 86400 * 4 + 3600
+            assert assetDatapointService.queryDatapoints(
+                    asset.getId(),
+                    attribute.getName(),
+                    getDataPoints.call()
+            ).size() == 0
+        }
 
-//        recurrence:
-//        recurrence rule, following RFC 5545 RRULE format
-//        if not provided, repeats indefinitely daily
+        when: "fast forward 4 days and 1 hour"
+        advancePseudoClock(4, DAYS, container)
+        advancePseudoClock(1, HOURS, container)
+        future.get() // resolve future manually, because we surpassed the delay (of 4 days and 1 hour)
+
+        then: "1 datapoint is present"
+        conditions.eventually {
+            assert delay == 3600
+            assert assetDatapointService.queryDatapoints(
+                    asset.getId(),
+                    attribute.getName(),
+                    getDataPoints.call()
+            ).size() == 1
+        }
+
+        when: "fast forward 1 hour"
+        advancePseudoClock(1, HOURS, container)
+        future.get() // resolve future manually, because we surpassed the delay (of 1 hour)
+
+        then: "1 datapoint is present"
+        conditions.eventually {
+            assert delay == 86400 * 7 - 3600
+            assert assetDatapointService.queryDatapoints(
+                    asset.getId(),
+                    attribute.getName(),
+                    getDataPoints.call()
+            ).size() == 1
+        }
+
+        when: "fast forward 1 hour"
+        advancePseudoClock(4, DAYS, container)
+        advancePseudoClock(-1, HOURS, container)
+        future.get() // resolve future manually, because we surpassed the delay (of 4 days -1 hour)
+
+        then: "1 datapoint is present"
+        conditions.eventually {
+            assert delay == 3600
+            assert assetDatapointService.queryDatapoints(
+                    asset.getId(),
+                    attribute.getName(),
+                    getDataPoints.call()
+            ).size() == 1
+        }
     }
 
-    def "Check Simulator Agent protocol scheduling"() {
+    def "Check Simulator Agent protocol adds predicted datapoints for the current and next cycle"() {
 
     }
 }
