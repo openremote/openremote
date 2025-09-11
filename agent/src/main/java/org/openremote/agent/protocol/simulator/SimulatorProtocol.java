@@ -19,6 +19,7 @@
  */
 package org.openremote.agent.protocol.simulator;
 
+import net.fortuna.ical4j.model.Recur;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -196,32 +197,38 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
         boolean waitForOccurrence = false;
         if (agentLink.getRecurrence().isPresent()) {
-            LocalDateTime occurrenceStart = agentLink
-                    .getRecurrence()
-                    .get()
-                    .getNextDate(
-                            agentLink.getStartDate().map(LocalDate::atStartOfDay).orElse(linkedDateTime),
-                            // Minus duration to ensure that we get the current occurrence start time
-                            LocalDateTime.ofEpochSecond(now, 0, ZoneOffset.UTC).minusSeconds(duration)
-                    );
+            Recur<LocalDateTime> recur = agentLink.getRecurrence().get();
+
+            LocalDateTime firstOccurrenceStart = recur.getNextDate(
+                agentLink.getStartDate().map(LocalDate::atStartOfDay).orElse(linkedDateTime),
+                linkedDateTime
+            );
+            LocalDateTime currentOccurrenceStart = recur.getNextDate(
+                agentLink.getStartDate().map(LocalDate::atStartOfDay).orElse(linkedDateTime),
+                // Minus duration to ensure that we get the current occurrence start time
+                LocalDateTime.ofEpochSecond(now, 0, ZoneOffset.UTC).minusSeconds(duration)
+            );
+            LocalDateTime nextOccurrenceStart = recur.getNextDate(
+                    agentLink.getStartDate().map(LocalDate::atStartOfDay).orElse(linkedDateTime),
+                    LocalDateTime.ofEpochSecond(now, 0, ZoneOffset.UTC)
+            );
+
             // TODO: fix this should be moved down to the next occurrence, because add the next value if present
-            if (occurrenceStart == null) {
+            if (nextOccurrenceStart == null) {
                 LOG.fine("Next recurrence not found so replay cancelled: " + attributeRef);
                 return null;
             }
 
             // Add time until next occurrence if current cycle has ended
-            if (now >= occurrenceStart.toEpochSecond(ZoneOffset.UTC) + duration) {
-                nextRun += agentLink
-                        .getRecurrence()
-                        .get()
-                        .getNextDate(
-                                agentLink.getStartDate().map(LocalDate::atStartOfDay).orElse(linkedDateTime),
-                                LocalDateTime.ofEpochSecond(now, 0, ZoneOffset.UTC)
-                        ).toEpochSecond(ZoneOffset.UTC) - now;
+            if (now >= currentOccurrenceStart.toEpochSecond(ZoneOffset.UTC) + duration) {
+                nextRun += nextOccurrenceStart.toEpochSecond(ZoneOffset.UTC) - now;
                 waitForOccurrence = true;
-            } else if (occurrenceStart.toEpochSecond(ZoneOffset.UTC) > now) { // TODO: what if
-                nextRun += occurrenceStart.toEpochSecond(ZoneOffset.UTC) - now;
+            // Or when the first occurrence is after the seed date and now is before the first occurrence
+            } else if (
+                    firstOccurrenceStart.toEpochSecond(ZoneOffset.UTC) > linkedDateTime.toEpochSecond(ZoneOffset.UTC)
+                    && now < firstOccurrenceStart.toEpochSecond(ZoneOffset.UTC)
+            ) {
+                nextRun += currentOccurrenceStart.toEpochSecond(ZoneOffset.UTC) - now;
                 waitForOccurrence = true;
             }
         }
