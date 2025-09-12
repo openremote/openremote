@@ -39,7 +39,7 @@ public class LockByKey {
     }
 
     public void lock(String key) {
-        LockWrapper lockWrapper = locks.compute(key, (k, v) -> v == null ? new LockWrapper() : v.addThreadInQueue());
+        LockWrapper lockWrapper = locks.compute(key, (k, v) -> v == null ? createLockWrapper() : v.addThreadInQueue());
         try {
             lockWrapper.lock.acquire();
             LOG.log(System.Logger.Level.TRACE, () -> "Lock acquired: key=" + key);
