@@ -159,9 +159,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             return;
         }
 
-        if (attribute.getMeta().get(HAS_PREDICTED_DATA_POINTS).flatMap(AbstractNameValueHolder::getValue).orElse(false)) {
-            predictedDatapointService.updateValues(attributeRef.getId(), attribute.getName(), values);
-        }
+        predictedDatapointService.updateValues(attributeRef.getId(), attribute.getName(), values);
     }
 
     public Map<AttributeRef, ScheduledFuture<?>> getReplayMap() {
@@ -203,19 +201,23 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 //        }
 
         try {
-            updateLinkedAttributePredictedDataPoints(attributeRef,
-                    // TODO: also include all next occurrence datapoints
-                    Arrays.stream(simulatorReplayDatapoints)
-                            .map(d -> {
-                                try {
-                                    return d.setTimestamp(schedule.getDelay(d).getTimestamp().get() + now);
-                                } catch (Exception e) {
-                                    throw new RuntimeException(e);
-                                }
-                            })
-                            .map(SimulatorReplayDatapoint::toValueDatapoint)
-                            .collect(Collectors.toList())
-            );
+            if (attribute.getMeta().get(HAS_PREDICTED_DATA_POINTS).flatMap(AbstractNameValueHolder::getValue).orElse(false)) {
+                updateLinkedAttributePredictedDataPoints(attributeRef,
+                        // TODO: also include all next occurrence datapoints
+                        Arrays.stream(simulatorReplayDatapoints)
+                                .map(d -> {
+                                    try {
+                                        return new SimulatorReplayDatapoint(
+                                            schedule.getDelay(d).getTimestamp().get() + now, d.value
+                                        );
+                                    } catch (Exception e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                })
+                                .map(SimulatorReplayDatapoint::toValueDatapoint)
+                                .collect(Collectors.toList())
+                );
+            }
         // Error from getDelay can be ignored as this will never be reached.
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);

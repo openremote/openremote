@@ -162,7 +162,7 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         }
 
         public SimulatorReplayDatapoint getDelay(SimulatorReplayDatapoint point) throws Exception {
-            return point.setTimestamp(getDelay(point.timestamp));
+            return new SimulatorReplayDatapoint(getDelay(point.timestamp), point.value);
         }
 
         public boolean hasRecurRule() {

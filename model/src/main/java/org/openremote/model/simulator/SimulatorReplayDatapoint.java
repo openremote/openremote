@@ -48,11 +48,6 @@ public class SimulatorReplayDatapoint implements Serializable {
         return Optional.of(timestamp);
     }
 
-    public SimulatorReplayDatapoint setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
-        return this;
-    }
-
     public Optional<Object> getValue() {
         return Optional.ofNullable(value);
     }
