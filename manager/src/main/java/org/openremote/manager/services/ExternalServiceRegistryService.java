@@ -84,7 +84,6 @@ public class ExternalServiceRegistryService implements ContainerService {
     protected ClientEventService clientEventService;
 
     // serviceId: <instanceId: ExternalService>
-    // Outer ConcurrentHashMap provides thread safety, inner HashMap is accessed within atomic operations
     protected ConcurrentHashMap<String, HashMap<String, ExternalService>> registry;
     
 
