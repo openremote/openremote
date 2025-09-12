@@ -212,7 +212,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         if (allowed) {
             // Only allow if there is no existing subscription for this topic
             RemotingConnection existingConnection = responseSubscribedConnections.get(topic.toString());
-            if (existingConnection != null) {
+            if (existingConnection != null && existingConnection.getTransportConnection().isOpen()) {
                 LOG.warning("Subscription already exists possible eavesdropping");
                 allowed = false;
             }
