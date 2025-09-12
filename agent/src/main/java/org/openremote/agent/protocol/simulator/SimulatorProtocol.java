@@ -26,6 +26,7 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.AbstractNameValueHolder;
@@ -37,6 +38,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS;
@@ -87,22 +89,16 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             .ifPresent(simulatorReplayDatapoints -> {
                 LOG.info("Simulator replay data found for linked attribute: " + attribute);
                 AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
+
                 // Seed date for recurrence rule for when startDate is not specified
-                LocalDateTime linkedAt = linkedAtMap.put(
-                        attributeRef, LocalDateTime.ofInstant(timerService.getNow(), ZoneId.of("UTC"))
-                );
-                ScheduledFuture<?> updateValueFuture = scheduleReplay(attributeRef, simulatorReplayDatapoints, linkedAt);
+                linkedAtMap.put(attributeRef, LocalDateTime.ofInstant(timerService.getNow(), ZoneId.of("UTC")));
+                ScheduledFuture<?> updateValueFuture = scheduleReplay(attributeRef, simulatorReplayDatapoints, linkedAtMap.get(attributeRef));
                 if (updateValueFuture != null) {
                     replayMap.put(attributeRef, updateValueFuture);
                 } else {
                     LOG.warning("Failed to schedule replay update value for simulator replay attribute: " + attribute);
                     replayMap.put(attributeRef, null);
                 }
-
-                // TODO: Insert current and next duration predicted datapoints
-                // This should depend on the duration value and startdate to compute the next range of replay datapoints to include
-                // Also purge any existing predicted datapoints
-//                updateLinkedAttributePredictedDataPoints(attributeRef, nextDatapoint.value, now + nextRunRelative);
             });
     }
 
@@ -114,6 +110,9 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         if (updateValueFuture != null) {
             updateValueFuture.cancel(true);
         }
+
+        // Purge previously configured predicted datapoints // TODO: does this always get triggered when changing agentLinks?
+        predictedDatapointService.purgeValues(attributeRef.getId(), attribute.getName());
     }
 
     @Override
@@ -146,8 +145,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         updateLinkedAttribute(attributeRef, value, timestamp);
     }
 
-    // TODO: use list of objects to insert
-    public void updateLinkedAttributePredictedDataPoints(AttributeRef attributeRef, List<Object> values, long timestamp) {
+    public void updateLinkedAttributePredictedDataPoints(AttributeRef attributeRef, List<ValueDatapoint<?>> values) {
         Attribute<?> attribute = linkedAttributes.get(attributeRef);
 
         if (attribute == null) {
@@ -155,9 +153,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             return;
         }
 
-        if (attribute.hasMeta("hasPredictedDataPoints") && attribute.getMeta().get(HAS_PREDICTED_DATA_POINTS).flatMap(AbstractNameValueHolder::getValue).get()) {
-            predictedDatapointService.updateValue(attributeRef, values, LocalDateTime.ofInstant(Instant.ofEpochSecond(timestamp), TimeZone.getDefault().toZoneId()));
-//            predictedDatapointService.updateValues();
+        if (attribute.getMeta().get(HAS_PREDICTED_DATA_POINTS).flatMap(AbstractNameValueHolder::getValue).orElse(false)) {
+            predictedDatapointService.updateValues(attributeRef.getId(), attribute.getName(), values);
         }
     }
 
@@ -172,14 +169,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         LOG.finest("Scheduling linked attribute replay update");
 
         long now = timerService.getNow().getEpochSecond();
-        long duration = agentLink.getDuration().map(d ->
-                Optional.ofNullable(d.getDuration()).map(Duration::getSeconds).orElse(
-                        Optional.ofNullable(d.getPeriod()).map(p -> d.durationFromPeriod(p).getSeconds()).orElse(86400L)
-                )
-        ).orElse(86400L); // defaults to day in seconds
-
-        long timeSinceCycleStarted = now % duration;
-        long timeUntilNextCycle = duration - timeSinceCycleStarted;
+        long timeSinceCycleStarted = now % agentLink.getDurationSeconds();
 
         // Get the next datapoint by checking if its timestamp is after the duration remainder of the current time
         // For duration 1 hour if the remainder of the current time is 20 minutes then get the datapoint after
@@ -193,53 +183,36 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             return null;
         }
 
-        long nextRun = nextDatapoint.timestamp;
+        SimulatorAgentLink.Schedule schedule = agentLink.getSchedule(now, linkedAt);
 
-        if (agentLink.getRecurrence().isPresent()) {
-            Recur<LocalDateTime> recur = agentLink.getRecurrence().get();
-            LocalDateTime seedDate = agentLink.getStartDate().map(LocalDate::atStartOfDay).orElse(linkedAt);
-
-            LocalDateTime firstOccurrenceStart = recur.getNextDate(seedDate, linkedAt);
-            LocalDateTime currentOccurrenceStart = recur.getNextDate(seedDate,
-                // Minus duration to ensure that we get the current occurrence start time
-                LocalDateTime.ofEpochSecond(now, 0, ZoneOffset.UTC).minusSeconds(duration)
-            );
-            LocalDateTime nextOccurrenceStart = recur.getNextDate(seedDate,
-                LocalDateTime.ofEpochSecond(now, 0, ZoneOffset.UTC)
-            );
-
-            if (nextOccurrenceStart == null) {
-                LOG.fine("Next recurrence not found so replay cancelled: " + attributeRef);
-                return null;
-            }
-
-            // Add time until next occurrence if current cycle has ended
-            if (now >= currentOccurrenceStart.toEpochSecond(ZoneOffset.UTC) + duration) {
-                nextRun += nextOccurrenceStart.toEpochSecond(ZoneOffset.UTC) - now;
-            // Or when the first occurrence is after the seed date and now is before the first occurrence
-            } else if (
-                firstOccurrenceStart.toEpochSecond(ZoneOffset.UTC) > linkedAt.toEpochSecond(ZoneOffset.UTC)
-                && now < firstOccurrenceStart.toEpochSecond(ZoneOffset.UTC)
-            ) {
-                nextRun += currentOccurrenceStart.toEpochSecond(ZoneOffset.UTC) - now;
-            }
+        long nextRun;
+        try {
+            nextRun = schedule.getDelay(nextDatapoint.timestamp);
+        } catch (Exception e) {
+            LOG.warning(e.getMessage() + attributeRef);
+            return null;
         }
 
-        // Add remaining cycle time
-        if (nextRun <= timeSinceCycleStarted) {
-            nextRun += timeUntilNextCycle;
-        } else {
-            nextRun -= timeSinceCycleStarted;
-        }
+//        if ((timeSinceCycleStarted == 0 && !schedule.hasRecurRule()) || (schedule.hasRecurRule() && >)) {
+//        }
 
-        // TODO: think through what happens when startDate and recur are configured
-        // If the current time is before the start date compute how many additional seconds to add until the next run
-        long timeUntilStartDate = agentLink
-            .getStartDate()
-            .map(t -> t.toEpochSecond(LocalTime.of(0, 0), ZoneOffset.UTC) - now)
-            .orElse(0L);
-        if (timeUntilStartDate > 0) {
-            nextRun += timeUntilStartDate;
+        try {
+            updateLinkedAttributePredictedDataPoints(attributeRef,
+                    // TODO: also include all next occurrence datapoints
+                    Arrays.stream(simulatorReplayDatapoints)
+                            .map(d -> {
+                                try {
+                                    return d.setTimestamp(schedule.getDelay(d).getTimestamp().get() + now);
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
+                            })
+                            .map(SimulatorReplayDatapoint::toValueDatapoint)
+                            .collect(Collectors.toList())
+            );
+        // Error from getDelay can be ignored as this will never be reached.
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
         }
 
         LOG.fine("Next update for asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " in " + nextRun + " second(s)");

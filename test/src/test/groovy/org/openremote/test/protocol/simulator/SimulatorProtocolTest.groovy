@@ -26,6 +26,7 @@ import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
+import org.openremote.manager.datapoint.AssetPredictedDatapointService
 import org.openremote.model.Constants
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.ConnectionStatus
@@ -52,6 +53,7 @@ import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.HOURS
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
+import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS
 
 
 /**
@@ -66,6 +68,9 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
     @Shared
     AssetDatapointService assetDatapointService
+
+    @Shared
+    AssetPredictedDatapointService assetPredictedDatapointService
 
     @Shared
     AgentService agentService
@@ -97,6 +102,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         // Setup services
         assetStorageService = container.getService(AssetStorageService.class)
         assetDatapointService = container.getService(AssetDatapointService.class)
+        assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
         agentService = container.getService(AgentService.class)
 
         // Create and link asset to agent
@@ -472,6 +478,71 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     }
 
     def "Check Simulator Agent protocol adds predicted datapoints for the current and next cycle"() {
+        when: "replayData is configured for both attributes to add a datapoint in 1 and 2 hours every day"
+        def attribute = asset.getAttribute(ThingAsset.NOTES).get()
+        def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
+        attribute.addOrReplaceMeta(
+                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+                        new SimulatorReplayDatapoint(3600, "test"),
+                        new SimulatorReplayDatapoint(3600 * 2, "test"),
+                )),
+                new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true)
+        )
+        assetStorageService.merge(asset)
 
+        then: "the agent status should become CONNECTED and the attribute linked to the protocol"
+        conditions.eventually {
+            assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert protocol.linkedAttributes.size() == 1
+        }
+
+        and: "the delay is 1 hour"
+        conditions.eventually {
+            delay == 3600
+        }
+
+        and: "the predicted datapoints are present"
+        def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+        datapoints.get(1).getTimestamp() == 3600
+        datapoints.get(0).getTimestamp() == 3600 * 2
+
+        when: "fast forward 1 hour"
+        advancePseudoClock(1, HOURS, container)
+        future.get() // resolve future manually, because we surpassed the delay
+
+        then: "datapoint is present"
+        conditions.eventually {
+            getDatapointTimestamp(attribute) == 3600
+        }
+
+        and: "the delay is 1 hour"
+        conditions.eventually {
+            delay == 3600
+        }
+
+        when: "fast forward 1 hour"
+        advancePseudoClock(1, HOURS, container)
+        future.get() // resolve future manually, because we surpassed the delay
+
+        then: "datapoint is present"
+        conditions.eventually {
+            getDatapointTimestamp(attribute) == 3600 * 2
+        }
+
+        and: "the predicted datapoints are present"
+        def datapoints1 = assetPredictedDatapointService.getDatapoints(attributeRef)
+        datapoints1.get(3).getTimestamp() == 3600
+        datapoints1.get(2).getTimestamp() == 3600 * 2
+        datapoints1.get(1).getTimestamp() == 3600 * 25
+        datapoints1.get(0).getTimestamp() == 3600 * 26
+
+        when: "reset agentLink"
+        attribute.addOrReplaceMeta(
+                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId())),
+        )
+        assetStorageService.merge(asset)
+
+        then: "purge datapoints"
+        assetPredictedDatapointService.getDatapoints(attributeRef).size() == 0
     }
 }
