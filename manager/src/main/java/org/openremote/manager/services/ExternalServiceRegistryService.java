@@ -21,6 +21,7 @@ package org.openremote.manager.services;
 
 import static org.openremote.model.Constants.MASTER_REALM;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -42,8 +43,8 @@ import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.services.ExternalService;
 import org.openremote.model.services.ExternalServiceEvent;
 import org.openremote.model.services.ExternalServiceStatus;
-import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.UniqueIdentifierGenerator;
+import org.openremote.model.security.ClientRole;
 import org.openremote.model.services.ExternalServiceLeaseInfo;
 
 /**
@@ -83,8 +84,9 @@ public class ExternalServiceRegistryService implements ContainerService {
     protected ClientEventService clientEventService;
 
     // serviceId: <instanceId: ExternalService>
-    // Nested ConcurrentHashMaps for segmenting, segment locks and fast lookups
-    protected ConcurrentHashMap<String, ConcurrentHashMap<String, ExternalService>> registry;
+    // Outer ConcurrentHashMap provides thread safety, inner HashMap is accessed within atomic operations
+    protected ConcurrentHashMap<String, HashMap<String, ExternalService>> registry;
+    
 
     // Scheduled future for the lease check task
     protected ScheduledFuture<?> markExpiredInstancesAsUnavailableFuture;
@@ -165,27 +167,24 @@ public class ExternalServiceRegistryService implements ContainerService {
     /**
      * Register a external service instance
      *
+     * @param registrarUserId The userId of the user who registered the service
      * @param externalService The external service to register
-     * @param isGlobal     Whether the service should be available to all realms.
-     *                     This should only be used for services that use a super
-     *                     admin
-     *                     service user with global access.
      */
-    public void registerService(String registrarUsername, ExternalService externalService) {
+    public void registerService(String registrarUserId, ExternalService externalService) {
         if (externalService.getInstanceId() == null) {
             externalService.setInstanceId(UniqueIdentifierGenerator.generateId());
         }
 
         LOG.info("Registering external service: " + externalService.getServiceId() + ", instanceId: "
-        + externalService.getInstanceId() + ", isGlobal: " + externalService.getIsGlobal() + ", registrarUsername: " + registrarUsername);
+        + externalService.getInstanceId() + ", isGlobal: " + externalService.getIsGlobal() + ", registrarUserId: " + registrarUserId);
 
         long now = timerService.getCurrentTimeMillis();
-        externalService.setLeaseInfo(new ExternalServiceLeaseInfo(registrarUsername, now + DEFAULT_LEASE_DURATION_MS, now, now));
+        externalService.setLeaseInfo(new ExternalServiceLeaseInfo(registrarUserId, now + DEFAULT_LEASE_DURATION_MS, now, now));
 
         // merge the external service into the registry if it doesn't already exist
         registry.merge(
                 externalService.getServiceId(),
-                new ConcurrentHashMap<>(Map.of(externalService.getInstanceId(), externalService)),
+                new HashMap<>(Map.of(externalService.getInstanceId(), externalService)),
                 (existingMap, newMap) -> {
                     ExternalService existing = existingMap.putIfAbsent(externalService.getInstanceId(), externalService);
                     if (existing != null) {
@@ -200,7 +199,7 @@ public class ExternalServiceRegistryService implements ContainerService {
         clientEventService.publishEvent(new ExternalServiceEvent(externalService, ExternalServiceEvent.Cause.REGISTER));
 
         LOG.info("Successfully registered external service: " + externalService.getServiceId() + ", instanceId: "
-                + externalService.getInstanceId() + ", isGlobal: " + externalService.getIsGlobal() + ", registrarUsername: " + registrarUsername);
+                + externalService.getInstanceId() + ", isGlobal: " + externalService.getIsGlobal() + ", registrarUserId: " + registrarUserId);
     }
 
     /**
@@ -214,7 +213,7 @@ public class ExternalServiceRegistryService implements ContainerService {
      * @param instanceId The instanceId of the external service to send the heartbeat to
      */
     public void heartbeat(String serviceId, String instanceId) {
-        ConcurrentHashMap<String, ExternalService> instanceMap = registry.get(serviceId);
+        Map<String, ExternalService> instanceMap = registry.get(serviceId);
         if (instanceMap == null) {
             throw new NoSuchElementException("Service not found: " + serviceId);
         }
@@ -353,20 +352,24 @@ public class ExternalServiceRegistryService implements ContainerService {
         long now = timerService.getCurrentTimeMillis();
         long deregisterThreshold = now - DEFAULT_DEREGISTER_UNAVAILABLE_MS;
 
-        registry.entrySet().stream()
+        // Collect services to deregister first
+        var servicesToDeregister = registry.entrySet().stream()
                 .flatMap(serviceEntry -> serviceEntry.getValue().entrySet().stream())
                 .map(Map.Entry::getValue)
                 // filter by unavailable + meets threshold
                 .filter(ms -> ms.getStatus() == ExternalServiceStatus.UNAVAILABLE
-                        && ms.getLeaseInfo().getExpirationTimestamp() < deregisterThreshold)
-                .forEach(ms -> {
-                    try {
-                        deregisterService(ms.getServiceId(), ms.getInstanceId());
-                    } catch (NoSuchElementException e) {
-                        LOG.warning("Service was already deregistered: " + ms.getServiceId()
-                                + ", instanceId: " + ms.getInstanceId() + " - " + e.getMessage());
-                    }
-                });
+                        && ms.getLeaseInfo().isExpired(deregisterThreshold))
+                .collect(java.util.stream.Collectors.toList());
+
+        // Now deregister the collected services
+        servicesToDeregister.forEach(ms -> {
+            try {
+                deregisterService(ms.getServiceId(), ms.getInstanceId());
+            } catch (NoSuchElementException e) {
+                LOG.warning("Service was already deregistered: " + ms.getServiceId()
+                        + ", instanceId: " + ms.getInstanceId() + " - " + e.getMessage());
+            }
+        });
     }
 
 }

@@ -27,9 +27,9 @@ public class ExternalServiceLeaseInfo {
 
 
     /**
-     * The user's username that registered the service
+     * The user's userId that registered the service
      */
-    private String registrarUsername;
+    private String registrarUserId;
     
 
     /**
@@ -47,9 +47,9 @@ public class ExternalServiceLeaseInfo {
      */
     private long renewalTimestamp;
 
-    public ExternalServiceLeaseInfo(String registrarUsername, long expirationTimestamp, long registrationTimestamp,
+    public ExternalServiceLeaseInfo(String registrarUserId, long expirationTimestamp, long registrationTimestamp,
             long renewalTimestamp) {
-        this.registrarUsername = registrarUsername;
+        this.registrarUserId = registrarUserId;
         this.expirationTimestamp = expirationTimestamp;
         this.registrationTimestamp = registrationTimestamp;
         this.renewalTimestamp = renewalTimestamp;
@@ -83,18 +83,18 @@ public class ExternalServiceLeaseInfo {
         return expirationTimestamp < currentTime;
     }
 
-    public String getRegistrarUsername() {
-        return registrarUsername;
+    public String getRegistrarUserId() {
+        return registrarUserId;
     }
 
-    public void setRegistrarUsername(String registrarUsername) {
-        this.registrarUsername = registrarUsername;
+    public void setRegistrarUserId(String registrarUserId) {
+        this.registrarUserId = registrarUserId;
     }
 
     @Override
     public String toString() {
         return "ExternalServiceLeaseInfo{" +
-                ", registrarUsername=" + registrarUsername +
+                ", registrarUserId=" + registrarUserId +
                 ", expirationTimestamp=" + expirationTimestamp +
                 ", registrationTimestamp=" + registrationTimestamp +
                 ", renewalTimestamp=" + renewalTimestamp +

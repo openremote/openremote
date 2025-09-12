@@ -56,10 +56,11 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
             throw new WebApplicationException("Invalid realm", Response.Status.BAD_REQUEST);
         }
 
+        // Set the realm for the service based on the request realm
         externalService.setRealm(getRequestRealmName());
 
         try {
-            externalServiceRegistry.registerService(getUsername(), externalService);
+            externalServiceRegistry.registerService(getUserId(), externalService);
             return externalService;
         } catch (IllegalStateException e) {
             LOG.warning("Failed to register service: " + externalService.getServiceId() + " with instanceId: "
@@ -86,19 +87,22 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
             throw new WebApplicationException("Invalid realm", Response.Status.BAD_REQUEST);
         }
 
-        externalService.setRealm(getRequestRealmName());
-
+        // Restrict global services to the master realm
         if (!getRequestRealmName().equals(MASTER_REALM)) {
             throw new WebApplicationException("Global services must have the realm set to the master realm, got: "
                     + getRequestRealmName(),
                     Response.Status.BAD_REQUEST);
         }
 
+        // Set the realm for the service based on the request realm
+        externalService.setRealm(getRequestRealmName());
+
+        // Set the global flag for the service since it is a global service
         externalService.setIsGlobal(true);
         
 
         try {
-            externalServiceRegistry.registerService(getUsername(), externalService);
+            externalServiceRegistry.registerService(getUserId(), externalService);
             return externalService;
         } catch (IllegalStateException e) {
             LOG.warning("Failed to register global service: " + externalService.getServiceId() + " with instanceId: "
@@ -161,7 +165,9 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
                     Response.Status.FORBIDDEN);
         }
 
-        if (service.getLeaseInfo().getRegistrarUsername() != getUsername()) {
+        // Restrict heartbeats to the user who registered the service
+        if (!isServiceRegistrarCurrentUser(service)) {
+            LOG.warning("User " + getUserId() + " tried to heartbeat service " + serviceId + " instance " + instanceId + " expected to be performed by user " + service.getLeaseInfo().getRegistrarUserId());
             throw new WebApplicationException("Heartbeats for services can only be performed by the user who registered the service",
                     Response.Status.FORBIDDEN);
         }
@@ -196,6 +202,13 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
                     Response.Status.FORBIDDEN);
         }
 
+        // Restrict de-registering a service to the user who registered the service
+        if (!isServiceRegistrarCurrentUser(service)) {
+            LOG.warning("User " + getUserId() + " tried to de-register service " + serviceId + " instance " + instanceId + " expected to be performed by user " + service.getLeaseInfo().getRegistrarUserId());
+            throw new WebApplicationException("De-registering a service can only be performed by the user who registered the service",
+                    Response.Status.FORBIDDEN);
+        }
+
         // Restrict global service mutations to superusers
         if (isServiceGlobalAndUserIsNotSuperUser(service)) {
             throw new WebApplicationException("Global services can only be de-registered by super users",
@@ -207,6 +220,10 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
 
     protected boolean isServiceGlobalAndUserIsNotSuperUser(ExternalService service) {
         return service.getIsGlobal() && !isSuperUser();
+    }
+
+    protected boolean isServiceRegistrarCurrentUser(ExternalService service) {
+        return service.getLeaseInfo().getRegistrarUserId().equals(getUserId());
     }
 
 }

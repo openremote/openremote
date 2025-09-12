@@ -145,7 +145,7 @@ public interface ExternalServiceResource {
         ExternalService[] getGlobalServices(@BeanParam RequestParams requestParams);
 
         /**
-         * Send a heartbeat to refresh the active registration lease for a external service.
+         * Send a heartbeat to refresh the active registration lease for an external service.
          * 
          * This endpoint is used by external services to indicate they are still running
          * and available. It extends the service's lease duration and maintains its
@@ -166,7 +166,7 @@ public interface ExternalServiceResource {
                         @PathParam("instanceId") @NotNull @Size(min = 1) String instanceId);
 
         /**
-         * Deregister a external service from the registry.
+         * Deregister an external service from the registry.
          * 
          * Removes the active registration for the specified service, causing it to
          * no longer be available through the external service registry. This is typically
