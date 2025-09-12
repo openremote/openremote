@@ -20,6 +20,8 @@
 package org.openremote.model.simulator;
 
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
+import org.openremote.model.datapoint.ValueDatapoint;
+
 import java.io.Serializable;
 import java.util.Optional;
 
@@ -48,5 +50,9 @@ public class SimulatorReplayDatapoint implements Serializable {
 
     public Optional<Object> getValue() {
         return Optional.ofNullable(value);
+    }
+
+    public ValueDatapoint<Object> toValueDatapoint() {
+        return new ValueDatapoint<>(timestamp, value);
     }
 }
