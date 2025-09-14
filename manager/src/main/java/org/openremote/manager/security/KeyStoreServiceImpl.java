@@ -29,10 +29,13 @@ import org.openremote.model.security.KeyStoreService;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.KeyStore;
-import java.security.UnrecoverableKeyException;
+import java.security.*;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Optional;
@@ -99,9 +102,11 @@ public class KeyStoreServiceImpl implements KeyStoreService {
         String keyStorePassword = getString(container.getConfig(), OR_SSL_CLIENT_KEYSTORE_PASSWORD, String.valueOf(getKeyStorePassword()));
         String trustStorePassword = getString(container.getConfig(), OR_SSL_CLIENT_TRUSTSTORE_PASSWORD, String.valueOf(getKeyStorePassword()));
 
+        char[] usedKeystorePassword = getKeyStorePassword();
 
         if (keyStorePath.isPresent()) {
             this.keyStore = KeyStore.getInstance(keyStorePath.get().toFile(), keyStorePassword.toCharArray());
+            this.keyStorePath = keyStorePath.get();
         } else {
             Path defaultKeyStorePath = persistenceService.resolvePath(Paths.get("keystores").resolve("client_keystore.p12"));
             if (new File(defaultKeyStorePath.toUri()).exists()) {
@@ -118,6 +123,7 @@ public class KeyStoreServiceImpl implements KeyStoreService {
                             this.keyStore = KeyStore.getInstance(defaultKeyStorePath.toFile(), adminPassword.toCharArray());
                             if (this.keyStore != null) {
                                 this.keyStorePassword = adminPassword;
+                                usedKeystorePassword = adminPassword.toCharArray();
                                 LOG.log(Level.INFO, "Loaded KeyStore from " + defaultKeyStorePath.toAbsolutePath() +
                                         " using OR_ADMIN_PASSWORD as fallback. Make sure to set OR_KEYSTORE_PASSWORD " +
                                         "to OR_ADMIN_PASSWORD's value to get rid of this message.");
@@ -170,6 +176,36 @@ public class KeyStoreServiceImpl implements KeyStoreService {
             }
             this.trustStorePath = defaultTrustStorePath;
         }
+
+        String keyStorePasswordEnv = getString(container.getConfig(), OR_KEYSTORE_PASSWORD, "");
+
+
+        // We know that the used password to unlock the keystore is in usedKeystorePassword, but the keypairs inside of the keystore could use different passwords.
+        // Below are potential passwords that we are going to try to unlock the keypairs with, so that we can then migrate them to the current default password.
+        List<char[]> potentialPasswords = new ArrayList<char[]>();
+        potentialPasswords.add(getString(container.getConfig(), OR_ADMIN_PASSWORD, "").toCharArray());
+        potentialPasswords.add(keyStorePasswordEnv.toCharArray());
+        potentialPasswords.add("secret".toCharArray());
+        potentialPasswords.add(getKeyStorePassword());
+
+        // Migrate any key entry passwords from "secret" (which was the default before #2018) to the current default password
+        boolean changed = rewriteKeystoreWithUniformPasswords(
+                this.keyStore,
+                potentialPasswords,
+                keyStorePasswordEnv.toCharArray()
+        );
+
+        // Optionally log a post-reload verification for one known alias (fresh instance — no cache):
+        if (changed) {
+            try {
+                this.keyStore.getKey("master.testalias", "secret".toCharArray());
+                LOG.warning("Post-rewrite check: old entry password still works for master.testalias (unexpected).");
+            } catch (UnrecoverableKeyException expected) {
+                LOG.info("Post-rewrite check: old entry password rejected for master.testalias.");
+            }
+            // Should succeed with new password:
+            this.keyStore.getKey("master.testalias", safeChars(keyStorePasswordEnv.toCharArray()));
+        }
     }
 
     private KeyStore getKeyStore() {
@@ -197,6 +233,20 @@ public class KeyStoreServiceImpl implements KeyStoreService {
         }
     }
 
+    private void storeKeyStore(KeyStore ks, char[] newStorePwd) throws IOException, GeneralSecurityException {
+        Path tmp = Files.createTempFile(this.keyStorePath.getParent(), "keystore-rewrite", ".p12");
+        try (OutputStream os = new FileOutputStream(tmp.toFile())) {
+            ks.store(os, safeChars(newStorePwd));
+        }
+        try {
+            java.nio.file.Files.move(tmp, this.keyStorePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                    java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException ex) {
+            // Fallback if fs does not support ATOMIC_MOVE
+            java.nio.file.Files.move(tmp, this.keyStorePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
     private void storeTrustStore(KeyStore truststore) {
         try {
             this.trustStore = truststore;
@@ -214,6 +264,8 @@ public class KeyStoreServiceImpl implements KeyStoreService {
     public KeyManagerFactory getKeyManagerFactory(String alias) throws Exception {
         KeyManagerFactory keyManagerFactory = new CustomKeyManagerFactory(alias);
         try {
+            this.keyStore = null;
+            this.keyStore = getKeyStore();
             keyManagerFactory.init(this.keyStore, getKeyStorePassword());
         } catch (Exception e) {
             throw new Exception("Could not retrieve KeyManagerFactory: " + e.getMessage());
@@ -261,5 +313,89 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 
     private Logger getLogger() {
         return LOG;
+    }
+
+    private static char[] safeChars(char[] pwd) {
+        return (pwd == null || pwd.length == 0) ? new char[0] : pwd;
+    }
+
+    /** Rewrites the keystore into a fresh PKCS12 with:
+     *  - per-entry password = newEntryPwd
+     *  - store password = newStorePwd
+     *  Candidate oldEntryPwds are tried to recover keys.
+     *  Cert entries are copied as-is.
+     */
+    private boolean rewriteKeystoreWithUniformPasswords(
+            KeyStore source,
+            List<char[]> oldEntryPwds,
+            char[] newPwd
+    ) throws Exception {
+
+        KeyStore target = KeyStore.getInstance("PKCS12");
+        // initialize empty keystore with the intended STORE password
+        target.load(null, safeChars(newPwd));
+
+        boolean changed = false;
+
+        Enumeration<String> aliases = source.aliases();
+        while (aliases.hasMoreElements()) {
+            String alias = aliases.nextElement();
+
+            if (source.isCertificateEntry(alias)) {
+                target.setCertificateEntry(alias, source.getCertificate(alias));
+                continue;
+            }
+
+            if (source.isKeyEntry(alias)) {
+                // First try with the intended NEW entry password: if it already works, just copy
+                try {
+                    Key k = source.getKey(alias, safeChars(newPwd));
+                    java.security.cert.Certificate[] chain = source.getCertificateChain(alias);
+                    target.setEntry(alias, new KeyStore.PrivateKeyEntry((PrivateKey) k, chain),
+                            new KeyStore.PasswordProtection(safeChars(newPwd)));
+                    continue;
+                } catch (UnrecoverableKeyException ignore) {}
+
+                // Otherwise try the list of legacy passwords
+                boolean recovered = false;
+                for (char[] oldPwd : oldEntryPwds) {
+                    try {
+                        Key k = source.getKey(alias, safeChars(oldPwd));
+                        java.security.cert.Certificate[] chain = source.getCertificateChain(alias);
+                        target.setEntry(alias, new KeyStore.PrivateKeyEntry((PrivateKey) k, chain),
+                                new KeyStore.PasswordProtection(safeChars(newPwd)));
+                        changed = true;
+                        recovered = true;
+                        break;
+                    } catch (UnrecoverableKeyException ignore) {
+                        // try next
+                    }
+                }
+
+                if (!recovered) {
+                    // if we can't recover this key with any candidate, do NOT drop it silently
+                    throw new UnrecoverableKeyException("Could not unlock key alias \"" + alias + "\" with any provided password");
+                }
+            }
+        }
+
+        // Atomically replace original file
+        Path tmp = Files.createTempFile(this.keyStorePath.getParent(), "keystore-rewrite-", ".p12");
+        try (OutputStream os = new FileOutputStream(tmp.toFile())) {
+            target.store(os, safeChars(newPwd));
+        }
+        try {
+            Files.move(tmp, this.keyStorePath,
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                    java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException ex) {
+            Files.move(tmp, this.keyStorePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        // reload to avoid PKCS12 key caching on the old object
+        this.keyStorePassword = new String(newPwd);
+        this.keyStore = KeyStore.getInstance(this.keyStorePath.toFile(), safeChars(newPwd));
+
+        return changed;
     }
 }

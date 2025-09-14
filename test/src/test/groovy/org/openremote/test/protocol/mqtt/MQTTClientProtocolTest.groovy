@@ -723,7 +723,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
     *
     * If the test cannot reach the host, then the test is passed.
     * */
-    @Ignore
+//    @Ignore
     @SuppressWarnings("GroovyAccessibility")
     def "Check MQTT client protocol mTLS support"() {
 
@@ -752,8 +752,8 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         def keyStoreService = container.getService(KeyStoreServiceImpl.class)
         def mqttHost = "test.mosquitto.org"
         def mqttPort = 8884
-        def keystorePassword = "secret"
-        def keyPassword = "secret"
+        def keystorePassword = keyStoreService.getKeyStorePassword()
+        def keyPassword = keyStoreService.getKeyStorePassword()
         def aliasName = "testalias"
         def keyAlias = Constants.MASTER_REALM + "." + aliasName
 
