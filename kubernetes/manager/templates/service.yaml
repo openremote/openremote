@@ -85,5 +85,3 @@ spec:
   selector:
     {{- include "manager.selectorLabels" . | nindent 4 }}
 {{- end }}
-
-
