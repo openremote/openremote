@@ -33,6 +33,10 @@ helm install postgresql postgresql -f postgresql/values-eks.yaml
 # AWS LB Controller only creates an Network LB if there's a service
 
 CLUSTER_VPC_ID=$(aws eks describe-cluster --profile or --name $CLUSTER_NAME --query 'cluster.resourcesVpcConfig.vpcId' --output text)
+if [ -z "$CLUSTER_VPC_ID" ] || [ "$CLUSTER_VPC_ID" = "None" ]; then
+  echo "Error: Failed to retrieve VPC ID for cluster '$CLUSTER_NAME'. Aborting."
+  exit 1
+fi
 
 while ! aws elbv2 describe-load-balancers  --profile or --query "LoadBalancers[?VpcId=='$CLUSTER_VPC_ID' && Type=='network']" 2>/dev/null | grep '"Code": "active"'; do
   echo "Waiting for load balancer to be created..."
