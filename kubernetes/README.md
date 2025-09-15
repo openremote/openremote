@@ -101,6 +101,15 @@ or:
       value: "false"
  ```
 
+### Metrics
+
+Both the manager and HAProxy expose Prometheus metrics.  
+By defaults the metrics are exposed on a dedicated ClusterIP service.  
+The manager configuration has 2 different flags that related to metrics:
+- `or.metricsEnabled` indicating if the manager container exposes metrics
+- `service.metrics.enabled` indicating if a metrics service for the manager should be exposed  
+  This is only effective if the manager exposes metrics i.e. both flags must be true for the service to be created.
+
 ### When using HAProxy
 
 #### Accessing MQTT

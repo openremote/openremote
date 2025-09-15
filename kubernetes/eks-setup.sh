@@ -24,7 +24,6 @@ kubectl rollout status deployment aws-load-balancer-controller -n kube-system --
 helm install or-setup or-setup --set aws.enabled=true --set aws.managerVolumeId=$MANAGER_VOLUMEID --set aws.psqlVolumeId=$PSQL_VOLUMEID
 
 CERTIFICATE_ARN=$(aws acm request-certificate --domain-name $FQDN --subject-alternative-names $MQTTS_FQDN --validation-method DNS --profile or --query "CertificateArn" --output text)
-aws acm describe-certificate --certificate-arn $CERTIFICATE_ARN --profile or
 
 helm install postgresql postgresql -f postgresql/values-eks.yaml
 helm install keycloak keycloak -f keycloak/values-eks.yaml \
@@ -58,17 +57,23 @@ aws route53 change-resource-record-sets \
      --profile dnschg
 
 # AWS LB Controller only creates an Application LB if there's an ingress
-# Following logic is assuming there is the only (application) LB in the account
-while ! aws elbv2 describe-load-balancers  --profile or --query "LoadBalancers[?Type=='application']" 2>/dev/null | grep '"Code": "active"'; do
+
+CLUSTER_VPC_ID=$(aws eks describe-cluster --profile or --name $CLUSTER_NAME --query 'cluster.resourcesVpcConfig.vpcId' --output text)
+if [ -z "$CLUSTER_VPC_ID" ] || [ "$CLUSTER_VPC_ID" = "None" ]; then
+  echo "Error: Failed to retrieve VPC ID for cluster '$CLUSTER_NAME'. Aborting."
+  exit 1
+fi
+
+while ! aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?VpcId=='$CLUSTER_VPC_ID' && Type=='application']" 2>/dev/null | grep '"Code": "active"'; do
   echo "Waiting for application load balancer to be created..."
   sleep 10
 done
 
 # We're re-directing the FQDN to the application LB (web interface)
-until DNS_NAME=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='application'].DNSName | [0]") && [ -n "$DNS_NAME" ]; do
+until DNS_NAME=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?VpcId=='$CLUSTER_VPC_ID' && Type=='application'].DNSName | [0]") && [ -n "$DNS_NAME" ]; do
   echo "Waiting for LoadBalancer DNS..."; sleep 5
 done
-HOSTED_ZONE_ID=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?Type=='application'].CanonicalHostedZoneId | [0]")
+HOSTED_ZONE_ID=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?VpcId=='$CLUSTER_VPC_ID' && Type=='application'].CanonicalHostedZoneId | [0]")
 
 aws route53 change-resource-record-sets \
     --hosted-zone-id /hostedzone/Z08751721JH0NB6LLCB4V \
