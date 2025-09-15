@@ -162,7 +162,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             subscribeFailures.add(topic)
             LOG.info("device1Client failed to subscribe to topic: ${topic}")
         }
-        Consumer<String> deviceNSubscribeFailureCallback = {String topic ->
+        Consumer<String> deviceNSubscribeFailureCallback = { String topic ->
             subscribeFailures.add(topic)
             LOG.info("deviceNClient failed to subscribe to topic: ${topic}")
         }
