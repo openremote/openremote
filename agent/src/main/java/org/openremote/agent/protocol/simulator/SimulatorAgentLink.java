@@ -44,7 +44,7 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
     protected SimulatorReplayDatapoint[] replayData;
 
     @JsonPropertyDescription("Set a start date, if not provided, starts immediately." +
-        " When replay datapoint timestamp is 0 it starts at 00:00.")
+        " When the replay datapoint timestamp is 0 it will insert it at 00:00.")
     @JsonSchemaFormat("date")
     protected LocalDate startDate;
 
@@ -57,8 +57,8 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
     @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_STRING_TYPE)
     protected TimeUtil.ExtendedPeriodAndDuration duration;
 
-    @JsonPropertyDescription("How the replay period is  recurrence rule, following RFC 5545 RRULE format;" +
-        " if not provided, repeats indefinitely daily")
+    @JsonPropertyDescription("How the replay duration should recur. The recurrence schedule follows the RFC 5545 RRULE format;" +
+        " if not provided, repeats indefinitely daily.")
     @JsonSerialize(converter = CalendarEvent.RecurStringConverter.class)
     protected Recur<LocalDateTime> recurrence;
 
