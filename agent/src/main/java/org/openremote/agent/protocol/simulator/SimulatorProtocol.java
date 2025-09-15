@@ -204,8 +204,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 long nextRecurrenceDelay = schedule.getNextRecurrenceDelay();
                 for (SimulatorReplayDatapoint d : simulatorReplayDatapoints) {
                     long timestamp = schedule.getDelay(d).getTimestamp().get() + now;
-                    current.add(new SimulatorReplayDatapoint(timestamp, d.value).toValueDatapoint());
-                    next.add(new SimulatorReplayDatapoint(timestamp + nextRecurrenceDelay, d.value).toValueDatapoint());
+                    current.add(new SimulatorReplayDatapoint(timestamp*1000, d.value).toValueDatapoint());
+                    next.add(new SimulatorReplayDatapoint((timestamp + nextRecurrenceDelay)*1000, d.value).toValueDatapoint());
                 }
                 current.addAll(next);
                 updateLinkedAttributePredictedDataPoints(attributeRef, current);

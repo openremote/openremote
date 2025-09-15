@@ -519,10 +519,10 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         and: "the predicted datapoints are present"
         conditions.eventually {
             def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
-            datapoints.get(3).getTimestamp() == 3600
-            datapoints.get(2).getTimestamp() == 3600 * 2
-            datapoints.get(1).getTimestamp() == 3600 * 25
-            datapoints.get(0).getTimestamp() == 3600 * 26
+            datapoints.get(3).getTimestamp()/1000 == 3600
+            datapoints.get(2).getTimestamp()/1000 == 3600 * 2
+            datapoints.get(1).getTimestamp()/1000 == 3600 * 25
+            datapoints.get(0).getTimestamp()/1000 == 3600 * 26
         }
 
         when: "fast forward 1 hour"
@@ -550,12 +550,12 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         and: "the predicted datapoints are present"
         def datapoints1 = assetPredictedDatapointService.getDatapoints(attributeRef)
-        datapoints1.get(5).getTimestamp() == 3600
-        datapoints1.get(4).getTimestamp() == 3600 * 2
-        datapoints1.get(3).getTimestamp() == 3600 * 25
-        datapoints1.get(2).getTimestamp() == 3600 * 26
-        datapoints1.get(1).getTimestamp() == 3600 * 49
-        datapoints1.get(0).getTimestamp() == 3600 * 50
+        datapoints1.get(5).getTimestamp()/1000 == 3600
+        datapoints1.get(4).getTimestamp()/1000 == 3600 * 2
+        datapoints1.get(3).getTimestamp()/1000 == 3600 * 25
+        datapoints1.get(2).getTimestamp()/1000 == 3600 * 26
+        datapoints1.get(1).getTimestamp()/1000 == 3600 * 49
+        datapoints1.get(0).getTimestamp()/1000 == 3600 * 50
 
         when: "reset agentLink"
         attribute.addOrReplaceMeta(
