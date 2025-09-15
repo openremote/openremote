@@ -197,28 +197,20 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             return null;
         }
 
-//        if ((timeSinceCycleStarted == 0 && !schedule.hasRecurRule()) || (schedule.hasRecurRule() && >)) {
-//        }
-
         try {
             if (attribute.getMeta().get(HAS_PREDICTED_DATA_POINTS).flatMap(AbstractNameValueHolder::getValue).orElse(false)) {
-                updateLinkedAttributePredictedDataPoints(attributeRef,
-                        // TODO: also include all next occurrence datapoints
-                        Arrays.stream(simulatorReplayDatapoints)
-                                .map(d -> {
-                                    try {
-                                        return new SimulatorReplayDatapoint(
-                                            schedule.getDelay(d).getTimestamp().get() + now, d.value
-                                        );
-                                    } catch (Exception e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                })
-                                .map(SimulatorReplayDatapoint::toValueDatapoint)
-                                .collect(Collectors.toList())
-                );
+                List<ValueDatapoint<?>> current = new ArrayList<>();
+                List<ValueDatapoint<?>> next = new ArrayList<>();
+                long nextRecurrenceDelay = schedule.getNextRecurrenceDelay();
+                for (SimulatorReplayDatapoint d : simulatorReplayDatapoints) {
+                    long timestamp = schedule.getDelay(d).getTimestamp().get() + now;
+                    current.add(new SimulatorReplayDatapoint(timestamp, d.value).toValueDatapoint());
+                    next.add(new SimulatorReplayDatapoint(timestamp + nextRecurrenceDelay, d.value).toValueDatapoint());
+                }
+                current.addAll(next);
+                updateLinkedAttributePredictedDataPoints(attributeRef, current);
             }
-        // Error from getDelay can be ignored as this will never be reached.
+        // Error from getDelay can be ignored as this error should already be handled for 'nextRun'
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
         }

@@ -28,7 +28,6 @@ import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
 import net.fortuna.ical4j.model.Recur;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.calendar.CalendarEvent;
-import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.util.JSONSchemaUtil;
 import org.openremote.model.util.TimeUtil;
@@ -163,6 +162,18 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
 
         public SimulatorReplayDatapoint getDelay(SimulatorReplayDatapoint point) throws Exception {
             return new SimulatorReplayDatapoint(getDelay(point.timestamp), point.value);
+        }
+
+        public long getNextRecurrenceDelay() {
+            boolean hasRecurRule = agentLink.getRecurrence().isPresent();
+            if (hasRecurRule) {
+                Recur<LocalDateTime> recur = agentLink.getRecurrence().get();
+                LocalDateTime seedDate = agentLink.getStartDate().map(LocalDate::atStartOfDay).orElse(linkedAt);
+                return recur.getNextDate(seedDate,
+                        LocalDateTime.ofEpochSecond(now, 0, ZoneOffset.UTC)
+                ).toEpochSecond(ZoneOffset.UTC) - now;
+            }
+            return duration;
         }
 
         public boolean hasRecurRule() {
