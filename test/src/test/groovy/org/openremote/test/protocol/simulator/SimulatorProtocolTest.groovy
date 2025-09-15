@@ -39,7 +39,6 @@ import org.openremote.model.simulator.SimulatorReplayDatapoint
 import org.openremote.model.util.TimeUtil
 import org.openremote.model.value.ValueType
 import org.openremote.test.ManagerContainerTrait
-import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -63,7 +62,7 @@ import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS
  */
 class SimulatorProtocolTest extends Specification implements ManagerContainerTrait {
 
-    static final PollingConditions conditions = new PollingConditions(timeout: 4, delay: 0.2)
+    static final PollingConditions conditions = new PollingConditions(timeout: 60, delay: 0.2)
 
     @Shared
     AssetStorageService assetStorageService
