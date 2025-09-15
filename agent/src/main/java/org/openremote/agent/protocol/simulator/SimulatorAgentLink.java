@@ -62,6 +62,8 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
 
     @JsonPropertyDescription("How the replay duration should recur. The recurrence schedule follows the RFC 5545 RRULE format;" +
         " if not provided, repeats indefinitely daily.")
+    @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_STRING_TYPE)
+    @JsonSerialize(converter = CalendarEvent.RecurStringConverter.class)
     protected Recur<LocalDateTime> recurrence;
 
     // For Hydrators
