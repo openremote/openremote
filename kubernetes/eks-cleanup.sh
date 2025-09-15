@@ -61,6 +61,24 @@ helm uninstall manager
 helm uninstall keycloak
 helm uninstall postgresql
 
+echo "Delete VPC peerings"
+
+CLUSTER_VPC_ID=$(aws eks describe-cluster --name $CLUSTER_NAME --query 'cluster.resourcesVpcConfig.vpcId' --output text --profile or)
+if [ -z "$CLUSTER_VPC_ID" ] || [ "$CLUSTER_VPC_ID" = "None" ]; then
+  echo "Error: Failed to retrieve VPC ID for cluster '$CLUSTER_NAME'. Aborting."
+  exit 1
+fi
+VPC_PEERING_IDS=$(aws ec2 describe-vpc-peering-connections \
+  --filters "Name=accepter-vpc-info.vpc-id,Values=$CLUSTER_VPC_ID" "Name=status-code,Values=active" \
+  --query 'VpcPeeringConnections[*].VpcPeeringConnectionId' \
+  --profile or \
+  --output text)
+
+for peering_id in $VPC_PEERING_IDS; do
+  echo "Deleting peering $peering_id"
+  aws ec2 delete-vpc-peering-connection --vpc-peering-connection-id $peering_id --profile or
+done
+
 # Give the AWS LB Controller time to delete the ALB and NLB after the Service is deleted
 while aws elbv2 describe-load-balancers --profile or --query "LoadBalancers" --output text 2>/dev/null | grep -q .; do
   echo "Waiting for load balancer to be deleted..."
