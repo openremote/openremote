@@ -162,6 +162,10 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             subscribeFailures.add(topic)
             LOG.info("device1Client failed to subscribe to topic: ${topic}")
         }
+        Consumer<String> deviceNSubscribeFailureCallback = { String topic ->
+            subscribeFailures.add(topic)
+            LOG.info("deviceNClient failed to subscribe to topic: ${topic}")
+        }
         device1Client = new MQTT_IOClient(mqttDevice1ClientId, mqttHost, mqttPort, false, false, null, null, null)
         device1SnoopClient = new MQTT_IOClient(mqttDevice1SnoopClientId, mqttHost, mqttPort, false, false, null, null, null)
         device1Client.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
@@ -471,7 +475,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def deviceNResponseTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$RESPONSE_TOKEN".toString()
         def mqttDeviceNClientId = UniqueIdentifierGenerator.generateId("deviceN")
         deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
-        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
+        deviceNClient.setTopicSubscribeFailureConsumer(deviceNSubscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"
@@ -524,7 +528,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         deviceNRequestTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$REQUEST_TOKEN".toString()
         deviceNResponseTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$RESPONSE_TOKEN".toString()
         deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
-        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
+        deviceNClient.setTopicSubscribeFailureConsumer(deviceNSubscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"
@@ -573,7 +577,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         deviceNRequestTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$REQUEST_TOKEN".toString()
         deviceNResponseTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$RESPONSE_TOKEN".toString()
         deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
-        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
+        deviceNClient.setTopicSubscribeFailureConsumer(deviceNSubscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"
@@ -657,7 +661,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         when: "another device re-connects"
         deviceNResponses.clear()
         deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
-        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
+        deviceNClient.setTopicSubscribeFailureConsumer(deviceNSubscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"
@@ -757,7 +761,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         when: "a device with disabled user account connects"
         deviceNResponses.clear()
         deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
-        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
+        deviceNClient.setTopicSubscribeFailureConsumer(deviceNSubscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"
