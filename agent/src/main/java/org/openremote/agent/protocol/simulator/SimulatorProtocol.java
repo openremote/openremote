@@ -231,7 +231,12 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
             } finally {
-                replayMap.put(attributeRef, scheduleReplay(attributeRef, simulatorReplayDatapoints, linkedAt));
+                ScheduledFuture<?> future = scheduleReplay(attributeRef, simulatorReplayDatapoints, linkedAt);
+                if (future != null) {
+                    replayMap.put(attributeRef, future);
+                } else {
+                    replayMap.remove(attributeRef);
+                }
             }
         }, nextRun, TimeUnit.SECONDS);
     }
