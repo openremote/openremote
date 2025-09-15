@@ -46,20 +46,22 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
     @JsonPropertyDescription("Set a start date, if not provided, starts immediately." +
         " When the replay datapoint timestamp is 0 it will insert it at 00:00.")
     @JsonSchemaFormat("date")
+    @JsonSerialize(using = ToStringSerializer.class)
+    @JsonSchemaInject(jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_STRING_TYPE)
     protected LocalDate startDate;
 
-    @JsonPropertyDescription("Defines the length of the replay loop (and if configured the predicted datapoints to add)." +
-        " Specify an ISO 8601 duration formatted string. If not provided defaults to 24 hours." +
-        " If replayData contains data points after this duration, those values are ignored and never used.")
     @JsonSerialize(using = ToStringSerializer.class)
     @JsonDeserialize(converter = TimeUtil.PeriodAndDurationConverter.class)
     // TODO: consider @JsonSchemaFormat("duration") requires new or-mwc-input type
-    @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_STRING_TYPE)
+    // Current generator cannot handle injecting custom type and description at the same time
+    @JsonSchemaInject(merge = false, json = "{\"type\":\"string\",\"description\":\"Defines the length of the replay" +
+        " loop (and if configured the predicted datapoints to add). Specify an ISO 8601 duration formatted string." +
+        " If not provided defaults to 24 hours. If replayData contains data points after this duration," +
+        " those values are ignored and never used.\"}")
     protected TimeUtil.ExtendedPeriodAndDuration duration;
 
     @JsonPropertyDescription("How the replay duration should recur. The recurrence schedule follows the RFC 5545 RRULE format;" +
         " if not provided, repeats indefinitely daily.")
-    @JsonSerialize(converter = CalendarEvent.RecurStringConverter.class)
     protected Recur<LocalDateTime> recurrence;
 
     // For Hydrators
