@@ -2,8 +2,14 @@
 
 . ./eks-common.sh
 
-DNS_NAME=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[0].DNSName")
-HOSTED_ZONE_ID=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[0].CanonicalHostedZoneId")
+CLUSTER_VPC_ID=$(aws eks describe-cluster --name $CLUSTER_NAME --query 'cluster.resourcesVpcConfig.vpcId' --output text --profile or)
+if [ -z "$CLUSTER_VPC_ID" ] || [ "$CLUSTER_VPC_ID" = "None" ]; then
+  echo "Error: Failed to retrieve VPC ID for cluster '$CLUSTER_NAME'. Aborting."
+  exit 1
+fi
+
+DNS_NAME=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?VpcId=='$CLUSTER_VPC_ID' && Type=='network' && Scheme=='internet-facing'].DNSName | [0]")
+HOSTED_ZONE_ID=$(aws elbv2 describe-load-balancers --profile or --query "LoadBalancers[?VpcId=='$CLUSTER_VPC_ID' && Type=='network' && Scheme=='internet-facing'].CanonicalHostedZoneId | [0]")
 
 echo "Delete DNS record $FQDN"
 
@@ -20,11 +26,6 @@ helm uninstall proxy
 
 echo "Delete VPC peerings"
 
-CLUSTER_VPC_ID=$(aws eks describe-cluster --name $CLUSTER_NAME --query 'cluster.resourcesVpcConfig.vpcId' --output text --profile or)
-if [ -z "$CLUSTER_VPC_ID" ] || [ "$CLUSTER_VPC_ID" = "None" ]; then
-  echo "Error: Failed to retrieve VPC ID for cluster '$CLUSTER_NAME'. Aborting."
-  exit 1
-fi
 VPC_PEERING_IDS=$(aws ec2 describe-vpc-peering-connections \
   --filters "Name=accepter-vpc-info.vpc-id,Values=$CLUSTER_VPC_ID" "Name=status-code,Values=active" \
   --query 'VpcPeeringConnections[*].VpcPeeringConnectionId' \
