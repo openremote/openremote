@@ -180,9 +180,14 @@ export class OrIframe extends LitElement {
                 this.loading = false;
                 break;
             case OrIFrameEventType.ERROR:
+                this.error = true;
+                this.loading = false;
+                console.error(`Error event loading iframe for src: ${this.src}`, event);
+                break;
             case OrIFrameEventType.TIMEOUT:
                 this.error = true;
                 this.loading = false;
+                console.error(`Timeout event loading iframe for src: ${this.src}`, event);
                 break;
         }
     };
