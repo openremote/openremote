@@ -274,6 +274,7 @@ public class ExternalServiceRegistryService implements ContainerService {
             // serviceId entry
             if (instanceMap.isEmpty()) {
                 LOG.info("No instances left for service: " + serviceId + ", removed from registry");
+                serviceIdCounters.remove(serviceId);
                 return null;
             }
 
