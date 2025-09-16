@@ -39,7 +39,7 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
     private static final Logger LOG = Logger.getLogger(ExternalServiceResourceImpl.class.getName());
 
     public ExternalServiceResourceImpl(TimerService timerService, ManagerIdentityService identityService,
-            ExternalServiceRegistryService serviceRegistry) {
+                                       ExternalServiceRegistryService serviceRegistry) {
         super(timerService, identityService);
         this.externalServiceRegistry = serviceRegistry;
     }
@@ -52,23 +52,16 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
                     Response.Status.UNAUTHORIZED);
         }
 
-        if (!isRealmActiveAndAccessible(externalService.getRealm())) {
-            throw new WebApplicationException(
-                    "Realm '" + externalService.getRealm() + "' is nonexistent, inactive or inaccessible",
-                    Response.Status.FORBIDDEN);
+        if (getRequestRealm() == null) {
+            throw new WebApplicationException("Invalid realm", Response.Status.BAD_REQUEST);
         }
 
+        // Set the realm for the service based on the request realm
+        externalService.setRealm(getRequestRealmName());
+
         try {
-            ExternalService registeredExternalService = externalServiceRegistry.registerService(externalService);
-
-            if (registeredExternalService == null) {
-                LOG.severe("Failed to register service: " + externalService.getServiceId() + " with instanceId: "
-                        + externalService.getInstanceId() + " due to an unexpected error");
-                throw new WebApplicationException("Failed to register service",
-                        Response.Status.INTERNAL_SERVER_ERROR);
-            }
-
-            return registeredExternalService;
+            externalServiceRegistry.registerService(getUserId(), externalService);
+            return externalService;
         } catch (IllegalStateException e) {
             LOG.warning("Failed to register service: " + externalService.getServiceId() + " with instanceId: "
                     + externalService.getInstanceId() + " due to conflict: " + e.getMessage());
@@ -90,23 +83,27 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
                     Response.Status.FORBIDDEN);
         }
 
-        if (!externalService.getRealm().equals(MASTER_REALM)) {
+        if (getRequestRealm() == null) {
+            throw new WebApplicationException("Invalid realm", Response.Status.BAD_REQUEST);
+        }
+
+        // Restrict global services to the master realm
+        if (!getRequestRealmName().equals(MASTER_REALM)) {
             throw new WebApplicationException("Global services must have the realm set to the master realm, got: "
-                    + externalService.getRealm(),
+                    + getRequestRealmName(),
                     Response.Status.BAD_REQUEST);
         }
 
+        // Set the realm for the service based on the request realm
+        externalService.setRealm(getRequestRealmName());
+
+        // Set the global flag for the service since it is a global service
+        externalService.setIsGlobal(true);
+
+
         try {
-            ExternalService registeredExternalService = externalServiceRegistry.registerService(externalService, true);
-
-            if (registeredExternalService == null) {
-                LOG.severe("Failed to register global service: " + externalService.getServiceId() + " with instanceId: "
-                        + externalService.getInstanceId() + " due to an unexpected error");
-                throw new WebApplicationException("Failed to register global service",
-                        Response.Status.INTERNAL_SERVER_ERROR);
-            }
-
-            return registeredExternalService;
+            externalServiceRegistry.registerService(getUserId(), externalService);
+            return externalService;
         } catch (IllegalStateException e) {
             LOG.warning("Failed to register global service: " + externalService.getServiceId() + " with instanceId: "
                     + externalService.getInstanceId() + " due to conflict: " + e.getMessage());
@@ -125,7 +122,7 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
     }
 
     @Override
-    public ExternalService getService(RequestParams requestParams, String serviceId, String instanceId) {
+    public ExternalService getService(RequestParams requestParams, String serviceId, int instanceId) {
         ExternalService service = externalServiceRegistry.getService(serviceId, instanceId);
 
         if (service == null) {
@@ -148,7 +145,7 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
     }
 
     @Override
-    public void heartbeat(RequestParams requestParams, String serviceId, String instanceId) {
+    public void heartbeat(RequestParams requestParams, String serviceId, int instanceId) {
         if (!isServiceAccount()) {
             LOG.warning("Service heartbeat is only available for service users");
             throw new WebApplicationException("Service heartbeat is only available for service users",
@@ -168,6 +165,13 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
                     Response.Status.FORBIDDEN);
         }
 
+        // Restrict heartbeats to the user who registered the service
+        if (!isServiceRegistrarCurrentUser(service)) {
+            LOG.warning("User " + getUserId() + " tried to heartbeat service " + serviceId + " instance " + instanceId + " expected to be performed by user " + service.getLeaseInfo().getRegistrarUserId());
+            throw new WebApplicationException("Heartbeats for services can only be performed by the user who registered the service",
+                    Response.Status.FORBIDDEN);
+        }
+
         // Restrict global service mutations to superusers
         if (isServiceGlobalAndUserIsNotSuperUser(service)) {
             throw new WebApplicationException("Heartbeats for global services can only be performed by super users",
@@ -178,7 +182,7 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
     }
 
     @Override
-    public void deregisterService(RequestParams requestParams, String serviceId, String instanceId) {
+    public void deregisterService(RequestParams requestParams, String serviceId, int instanceId) {
         if (!isServiceAccount()) {
             LOG.warning("De-registering a service is only available for service users");
             throw new WebApplicationException("De-registering a service is only available for service users",
@@ -198,6 +202,13 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
                     Response.Status.FORBIDDEN);
         }
 
+        // Restrict de-registering a service to the user who registered the service
+        if (!isServiceRegistrarCurrentUser(service)) {
+            LOG.warning("User " + getUserId() + " tried to de-register service " + serviceId + " instance " + instanceId + " expected to be performed by user " + service.getLeaseInfo().getRegistrarUserId());
+            throw new WebApplicationException("De-registering a service can only be performed by the user who registered the service",
+                    Response.Status.FORBIDDEN);
+        }
+
         // Restrict global service mutations to superusers
         if (isServiceGlobalAndUserIsNotSuperUser(service)) {
             throw new WebApplicationException("Global services can only be de-registered by super users",
@@ -209,6 +220,10 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
 
     protected boolean isServiceGlobalAndUserIsNotSuperUser(ExternalService service) {
         return service.getIsGlobal() && !isSuperUser();
+    }
+
+    protected boolean isServiceRegistrarCurrentUser(ExternalService service) {
+        return service.getLeaseInfo().getRegistrarUserId().equals(getUserId());
     }
 
 }

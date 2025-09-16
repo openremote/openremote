@@ -38,10 +38,10 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * REST resource for managing external services.
- * 
+ * <p>
  * This resource provides endpoints for service discovery, registration, and
  * management of external services through the manager.
- * 
+ * <p>
  * Registered services are made available via the OpenRemote manager's Web UI
  * and API, enabling centralized service management and monitoring.
  */
@@ -51,10 +51,10 @@ public interface ExternalServiceResource {
 
         /**
          * Register a new external service with the OpenRemote manager.
-         * 
+         * <p>
          * Creates a new registration entry and returns the registered external service
          * with its generated instanceId and initial status.
-         * 
+         * <p>
          * This service will be made available only to the realm it is registered for.
          * 
          * @param service The external service to register
@@ -75,7 +75,7 @@ public interface ExternalServiceResource {
         /**
          * Register a new global external service with the OpenRemote
          * manager. This service will be made available to all realms.
-         * 
+         * <p>
          * Creates a new registration entry and returns the registered external service
          * with its generated instanceId and initial status.
          * 
@@ -128,7 +128,7 @@ public interface ExternalServiceResource {
         })
         ExternalService getService(@BeanParam RequestParams requestParams,
                         @PathParam("serviceId") @NotNull @Size(min = 1) String serviceId,
-                        @PathParam("instanceId") @NotNull @Size(min = 1) String instanceId);
+                        @PathParam("instanceId") int instanceId);
 
         /**
          * Retrieve all external services that are globally registered
@@ -145,8 +145,8 @@ public interface ExternalServiceResource {
         ExternalService[] getGlobalServices(@BeanParam RequestParams requestParams);
 
         /**
-         * Send a heartbeat to refresh the active registration lease for a external service.
-         * 
+         * Send a heartbeat to refresh the active registration lease for an external service.
+         * <p>
          * This endpoint is used by external services to indicate they are still running
          * and available. It extends the service's lease duration and maintains its
          * active status in the registry.
@@ -163,11 +163,11 @@ public interface ExternalServiceResource {
         })
         void heartbeat(@BeanParam RequestParams requestParams,
                         @PathParam("serviceId") @NotNull @Size(min = 1) String serviceId,
-                        @PathParam("instanceId") @NotNull @Size(min = 1) String instanceId);
+                        @PathParam("instanceId") int instanceId);
 
         /**
-         * Deregister a external service from the registry.
-         * 
+         * Deregister an external service from the registry.
+         * <p>
          * Removes the active registration for the specified service, causing it to
          * no longer be available through the external service registry. This is typically
          * called when a service shuts down or needs to be removed from the system.
@@ -183,6 +183,6 @@ public interface ExternalServiceResource {
                         @ApiResponse(responseCode = "404", description = "Service instance not found"),
         })
         void deregisterService(@BeanParam RequestParams requestParams, @PathParam("serviceId") String serviceId,
-                        @PathParam("instanceId") String instanceId);
+                        @PathParam("instanceId") int instanceId);
 
 }

@@ -86,7 +86,7 @@ export class PageServices extends Page<AppStateKeyed> {
     protected serviceId: string | null = null;
 
     @state()
-    protected realmName: string = "";
+    protected realmName = "";
 
     @state()
     protected services: ExternalService[] = [];
@@ -118,7 +118,7 @@ export class PageServices extends Page<AppStateKeyed> {
         if (manager.events) {
             this._eventSubscriptionId = await manager.events.subscribe<ExternalServiceEvent>(
                 {
-                    eventType: "microservice",
+                    eventType: "external-service",
                 },
                 (ev) => this._onEvent(ev)
             );

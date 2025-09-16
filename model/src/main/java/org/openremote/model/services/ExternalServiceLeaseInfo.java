@@ -20,11 +20,17 @@
 package org.openremote.model.services;
 
 /**
- * Lease info for a external service instance, contains timestamps for lease
+ * Lease info for an external service instance, contains timestamps for lease
  * expiration, registration and renewal.
  */
 public class ExternalServiceLeaseInfo {
 
+
+    /**
+     * The user's userId that registered the service
+     */
+    private String registrarUserId;
+    
 
     /**
      * The timestamp when the lease expires.
@@ -41,8 +47,9 @@ public class ExternalServiceLeaseInfo {
      */
     private long renewalTimestamp;
 
-    public ExternalServiceLeaseInfo(long expirationTimestamp, long registrationTimestamp,
+    public ExternalServiceLeaseInfo(String registrarUserId, long expirationTimestamp, long registrationTimestamp,
             long renewalTimestamp) {
+        this.registrarUserId = registrarUserId;
         this.expirationTimestamp = expirationTimestamp;
         this.registrationTimestamp = registrationTimestamp;
         this.renewalTimestamp = renewalTimestamp;
@@ -76,9 +83,18 @@ public class ExternalServiceLeaseInfo {
         return expirationTimestamp < currentTime;
     }
 
+    public String getRegistrarUserId() {
+        return registrarUserId;
+    }
+
+    public void setRegistrarUserId(String registrarUserId) {
+        this.registrarUserId = registrarUserId;
+    }
+
     @Override
     public String toString() {
         return "ExternalServiceLeaseInfo{" +
+                ", registrarUserId=" + registrarUserId +
                 ", expirationTimestamp=" + expirationTimestamp +
                 ", registrationTimestamp=" + registrationTimestamp +
                 ", renewalTimestamp=" + renewalTimestamp +

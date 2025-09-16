@@ -27,9 +27,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
- * Represents a external service managed by the OpenRemote
+ * Represents an external service managed by the OpenRemote
  * external service registry.
- * 
+ * <p>
  * This class encapsulates service metadata and the required information needed
  * to register, manage,
  * and track the lifecycle of external services within the OpenRemote system.
@@ -38,7 +38,7 @@ public class ExternalService {
 
     /**
      * The unique identifier of the service (e.g., "energy-service").
-     * 
+     * <p>
      * This ID is used to group related service instances and must be consistent
      * across all instances of the same service type.
      */
@@ -48,19 +48,18 @@ public class ExternalService {
     protected String serviceId;
 
     /**
-     * Unique identifier for this specific instance within the scope of the
+     * Identifier for this specific instance within the scope of the
      * serviceId.
-     * 
-     * Each running instance of a service must have a unique instanceId to
-     * distinguish
-     * it from other instances of the same service type.
+     * <p>
+     * This instanceId is an incremental integer assigned by the external service
+     * registry when the service is registered.
      */
     @JsonProperty(value = "instanceId")
-    protected String instanceId;
+    protected int instanceId;
 
     /**
      * The version of the service.
-     * 
+     * <p>
      * Can be optionally set, to determine the version of the service, and interpret
      * which version of the service is running and registered.
      */
@@ -70,23 +69,20 @@ public class ExternalService {
 
     /**
      * The realm identifier where this service is registered.
-     * 
-     * Services are typically scoped to a specific realm. When set to MASTER_REALM
-     * and registered by a super admin service user, the service becomes available
-     * across all realms. This is used to indicate that the service is a global
-     * service.
+     * <p>
+     * Services are typically scoped to a specific realm. When
+     * registered by a super admin service user, the realm must be MASTER, the service then becomes available
+     * across all realms if the isGlobal flag is also set to true.
      */
-    @Size(min = 3, max = 255, message = "{ExternalService.realm.Size}")
-    @NotEmpty(message = "{ExternalService.realm.NotEmpty}")
-    @JsonProperty("realm")
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     protected String realm;
 
     /**
      * The icon to display for the service.
-     * 
+     * <p>
      * This icon is used in user interfaces to provide a visual representation
      * of the service. The default icon is "puzzle" which is a generic service icon.
-     * 
+     * <p>
      * Should be a valid icon name from the Material Design Icons library.
      */
     @JsonProperty("icon")
@@ -94,7 +90,7 @@ public class ExternalService {
 
     /**
      * Human-readable display name for the service (e.g., "Energy Service").
-     * 
+     * <p>
      * This label is used in user interfaces to provide a friendly name
      * for the service.
      */
@@ -105,7 +101,7 @@ public class ExternalService {
 
     /**
      * URL to the service's configuration page or user interface.
-     * 
+     * <p>
      * This URL provides access to the service's web interface for configuration
      * and management purposes (e.g.,
      * "https://openremote.app/services/energy-service/ui").
@@ -118,7 +114,7 @@ public class ExternalService {
 
     /**
      * Current operational status of the service instance.
-     * 
+     * <p>
      * Indicates whether the service is available, unavailable, or in another state.
      * The status is managed by the external service registry based on lease expiration.
      */
@@ -128,7 +124,7 @@ public class ExternalService {
 
     /**
      * Internal lease management information for the service registration.
-     * 
+     * <p>
      * Contains timestamps for lease expiration, registration, and renewal.
      * This information is used internally by the external service registry to manage
      * service lifecycle and availability.
@@ -138,10 +134,10 @@ public class ExternalService {
 
     /**
      * Indicates whether this service is globally accessible across all realms.
-     * 
+     * <p>
      * Global services are available to all realms and typically use super admin
      * service users with system-wide access permissions.
-     * 
+     * <p>
      * This is set automatically by the external service registry when the service is
      * registered by a super admin service user and set to MASTER_REALM.
      */
@@ -160,6 +156,13 @@ public class ExternalService {
         this.status = status;
     }
 
+    public ExternalService(String serviceId, String label, String homepageUrl, ExternalServiceStatus status) {
+        this.serviceId = serviceId;
+        this.label = label;
+        this.homepageUrl = homepageUrl;
+        this.status = status;
+    }
+
     // Getters and setters in property order
     public String getServiceId() {
         return serviceId;
@@ -169,11 +172,11 @@ public class ExternalService {
         this.serviceId = serviceId;
     }
 
-    public String getInstanceId() {
+    public int getInstanceId() {
         return instanceId;
     }
 
-    public void setInstanceId(String instanceId) {
+    public void setInstanceId(int instanceId) {
         this.instanceId = instanceId;
     }
 
