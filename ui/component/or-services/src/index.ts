@@ -1,3 +1,4 @@
+/* eslint-disable import/no-duplicates */
 /*
  * Copyright 2025, OpenRemote Inc.
  *
@@ -23,6 +24,7 @@ import { manager } from "@openremote/core";
 import { ExternalService } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import { OrIframe } from "@openremote/or-components/or-iframe";
+import "@openremote/or-components/or-iframe";
 import "@openremote/or-icon";
 import "./or-service-tree";
 import { getServiceUrlPath } from "./utils";
