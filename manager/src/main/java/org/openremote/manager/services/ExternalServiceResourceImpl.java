@@ -39,7 +39,7 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
     private static final Logger LOG = Logger.getLogger(ExternalServiceResourceImpl.class.getName());
 
     public ExternalServiceResourceImpl(TimerService timerService, ManagerIdentityService identityService,
-            ExternalServiceRegistryService serviceRegistry) {
+                                       ExternalServiceRegistryService serviceRegistry) {
         super(timerService, identityService);
         this.externalServiceRegistry = serviceRegistry;
     }
@@ -99,7 +99,7 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
 
         // Set the global flag for the service since it is a global service
         externalService.setIsGlobal(true);
-        
+
 
         try {
             externalServiceRegistry.registerService(getUserId(), externalService);
@@ -122,7 +122,7 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
     }
 
     @Override
-    public ExternalService getService(RequestParams requestParams, String serviceId, String instanceId) {
+    public ExternalService getService(RequestParams requestParams, String serviceId, int instanceId) {
         ExternalService service = externalServiceRegistry.getService(serviceId, instanceId);
 
         if (service == null) {
@@ -145,7 +145,7 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
     }
 
     @Override
-    public void heartbeat(RequestParams requestParams, String serviceId, String instanceId) {
+    public void heartbeat(RequestParams requestParams, String serviceId, int instanceId) {
         if (!isServiceAccount()) {
             LOG.warning("Service heartbeat is only available for service users");
             throw new WebApplicationException("Service heartbeat is only available for service users",
@@ -182,7 +182,7 @@ public class ExternalServiceResourceImpl extends ManagerWebResource implements E
     }
 
     @Override
-    public void deregisterService(RequestParams requestParams, String serviceId, String instanceId) {
+    public void deregisterService(RequestParams requestParams, String serviceId, int instanceId) {
         if (!isServiceAccount()) {
             LOG.warning("De-registering a service is only available for service users");
             throw new WebApplicationException("De-registering a service is only available for service users",

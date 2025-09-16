@@ -86,7 +86,7 @@ export class PageServices extends Page<AppStateKeyed> {
     protected serviceId: string | null = null;
 
     @state()
-    protected realmName: string = "";
+    protected realmName = "";
 
     @state()
     protected services: ExternalService[] = [];

@@ -20,7 +20,7 @@
 package org.openremote.model.services;
 
 /**
- * Lease info for a external service instance, contains timestamps for lease
+ * Lease info for an external service instance, contains timestamps for lease
  * expiration, registration and renewal.
  */
 public class ExternalServiceLeaseInfo {

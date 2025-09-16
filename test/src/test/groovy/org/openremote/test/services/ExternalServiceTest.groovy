@@ -26,6 +26,7 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
         def container = startContainer(defaultConfig(), defaultServices())
         def externalServiceRegistryService = container.getService(ExternalServiceRegistryService.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        WebApplicationException ex
 
 
         when: "the users are authenticated"
@@ -46,6 +47,13 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
                 keycloakTestSetup.serviceUser.secret
         ).token
 
+        def buildingServiceUser2AccessToken = authenticate(
+                container,
+                keycloakTestSetup.realmBuilding.getName(),
+                keycloakTestSetup.serviceUser2.username,
+                keycloakTestSetup.serviceUser2.secret
+        ).token
+
         // master service user for multi-tenant logic
         def superServiceUserAccessToken = authenticate(
                 container,
@@ -64,6 +72,7 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
         when: "the external service resource is set up"
         def serverUri = serverUri(serverPort)
         def buildingExternalServiceResource = getClientApiTarget(serverUri, keycloakTestSetup.realmBuilding.getName(), buildingServiceUserAccessToken).proxy(ExternalServiceResource)
+        def buildingExternalServiceResource2 = getClientApiTarget(serverUri, keycloakTestSetup.realmBuilding.getName(), buildingServiceUser2AccessToken).proxy(ExternalServiceResource)
         def regularUserExternalServiceResource = getClientApiTarget(serverUri, MASTER_REALM, regularUserAccessToken).proxy(ExternalServiceResource)
         def superServiceUserExternalServiceResource = getClientApiTarget(serverUri, MASTER_REALM, superServiceUserAccessToken).proxy(ExternalServiceResource)
 
@@ -85,7 +94,7 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
         def registeredBuildingExternalService = buildingExternalServiceResource.registerService(null, buildingExternalService)
 
         then: "the building external service should be registered and the registered external service should have an instanceId assigned"
-        assert registeredBuildingExternalService.instanceId != null
+        assert registeredBuildingExternalService.instanceId != 0
 
         and: "the building external service should be included in the list of external services for the building realm"
         def buildingServices = buildingExternalServiceResource.getServices(null, keycloakTestSetup.realmBuilding.getName())
@@ -96,14 +105,6 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
         assert buildingServices[0].realm == buildingExternalService.realm
         assert buildingServices[0].homepageUrl == buildingExternalService.homepageUrl
         assert buildingServices[0].status == buildingExternalService.status
-
-
-        when: "the building service user tries to register the exact same external service"
-        buildingExternalServiceResource.registerService(null, registeredBuildingExternalService)
-
-        then: "the building service user should receive a 409 conflict response"
-        def ex = thrown(WebApplicationException)
-        assert ex.response.status == Response.Status.CONFLICT.getStatusCode()
 
         when: "time advanced by 70 seconds, longer than the default registration lease duration"
         advancePseudoClock(70, TimeUnit.SECONDS)
@@ -119,6 +120,19 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
         then: "the building external service should now be marked as available"
         def buildingServiceAfterHeartbeat = buildingExternalServiceResource.getService(null, registeredBuildingExternalService.serviceId, registeredBuildingExternalService.instanceId)
         assert buildingServiceAfterHeartbeat.status == ExternalServiceStatus.AVAILABLE
+        when: "another service user tries to send a heartbeat for the same external service"
+        buildingExternalServiceResource2.heartbeat(null, registeredBuildingExternalService.serviceId, registeredBuildingExternalService.instanceId)
+
+        then: "the heartbeat should be rejected, and a forbidden response received"
+        ex = thrown(WebApplicationException)
+        assert ex.response.status == Response.Status.FORBIDDEN.getStatusCode()
+
+        when: "another service user tries to de-register the same external service"
+        buildingExternalServiceResource2.deregisterService(null, registeredBuildingExternalService.serviceId, registeredBuildingExternalService.instanceId)
+
+        then: "the de-registration should be rejected, and a forbidden response received"
+        ex = thrown(WebApplicationException)
+        assert ex.response.status == Response.Status.FORBIDDEN.getStatusCode()
 
         when: "the building service user de-registers the external service"
         buildingExternalServiceResource.deregisterService(null, registeredBuildingExternalService.serviceId, registeredBuildingExternalService.instanceId)

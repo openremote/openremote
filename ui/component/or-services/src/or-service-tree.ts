@@ -19,10 +19,9 @@
  */
 import { css, html, unsafeCSS, TemplateResult, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { DefaultColor3, DefaultColor5, DefaultColor6 } from "@openremote/core";
+import { DefaultColor3, DefaultColor5, DefaultColor6 , Util } from "@openremote/core";
 import { OrTreeMenu, TreeMenuSelection, OrTreeNode, TreeMenuSorting } from "@openremote/or-tree-menu";
 import { ExternalService, ExternalServiceStatus } from "@openremote/model";
-import { Util } from "@openremote/core";
 import {
     ServiceTreeNode,
     ExternalServiceStatusIcon,

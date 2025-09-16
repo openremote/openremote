@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 import org.openremote.container.timer.TimerService;
@@ -43,7 +44,8 @@ import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.services.ExternalService;
 import org.openremote.model.services.ExternalServiceEvent;
 import org.openremote.model.services.ExternalServiceStatus;
-import org.openremote.model.util.UniqueIdentifierGenerator;
+
+
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.services.ExternalServiceLeaseInfo;
 
@@ -84,8 +86,10 @@ public class ExternalServiceRegistryService implements ContainerService {
     protected ClientEventService clientEventService;
 
     // serviceId: <instanceId: ExternalService>
-    protected ConcurrentHashMap<String, HashMap<String, ExternalService>> registry;
-    
+    protected ConcurrentHashMap<String, HashMap<Integer, ExternalService>> registry;
+
+    // Track next available instanceId for each serviceId
+    protected ConcurrentHashMap<String, AtomicInteger> serviceIdCounters;
 
     // Scheduled future for the lease check task
     protected ScheduledFuture<?> markExpiredInstancesAsUnavailableFuture;
@@ -101,13 +105,13 @@ public class ExternalServiceRegistryService implements ContainerService {
         this.clientEventService = container.getService(ClientEventService.class);
 
         this.registry = new ConcurrentHashMap<>();
+        this.serviceIdCounters = new ConcurrentHashMap<>();
 
         // Register the external service REST resource
         container.getService(ManagerWebService.class).addApiSingleton(
                 new ExternalServiceResourceImpl(timerService, identityService, this));
 
         addExternalServiceEventSubscriptionAuthorizer();
-
     }
 
     protected void addExternalServiceEventSubscriptionAuthorizer() {
@@ -157,25 +161,27 @@ public class ExternalServiceRegistryService implements ContainerService {
             deregisterExpiredUnavailableInstancesFuture.cancel(true);
         }
 
-        // clear the registry
+        // clear the registry and counters
         registry.clear();
+        serviceIdCounters.clear();
     }
 
 
-
     /**
-     * Register a external service instance
+     * Register an external service instance
      *
      * @param registrarUserId The userId of the user who registered the service
      * @param externalService The external service to register
      */
     public void registerService(String registrarUserId, ExternalService externalService) {
-        if (externalService.getInstanceId() == null) {
-            externalService.setInstanceId(UniqueIdentifierGenerator.generateId());
-        }
+
+        // Set the instanceId based on the incremental counter for this serviceId
+        int nextInstanceId = serviceIdCounters.computeIfAbsent(externalService.getServiceId(),
+                k -> new AtomicInteger(0)).incrementAndGet();
+        externalService.setInstanceId(nextInstanceId);
 
         LOG.info("Registering external service: " + externalService.getServiceId() + ", instanceId: "
-        + externalService.getInstanceId() + ", isGlobal: " + externalService.getIsGlobal() + ", registrarUserId: " + registrarUserId);
+                + externalService.getInstanceId() + ", isGlobal: " + externalService.getIsGlobal() + ", registrarUserId: " + registrarUserId);
 
         long now = timerService.getCurrentTimeMillis();
         externalService.setLeaseInfo(new ExternalServiceLeaseInfo(registrarUserId, now + DEFAULT_LEASE_DURATION_MS, now, now));
@@ -211,8 +217,8 @@ public class ExternalServiceRegistryService implements ContainerService {
      * @param serviceId  The serviceId of the external service to send the heartbeat to
      * @param instanceId The instanceId of the external service to send the heartbeat to
      */
-    public void heartbeat(String serviceId, String instanceId) {
-        Map<String, ExternalService> instanceMap = registry.get(serviceId);
+    public void heartbeat(String serviceId, int instanceId) {
+        Map<Integer, ExternalService> instanceMap = registry.get(serviceId);
         if (instanceMap == null) {
             throw new NoSuchElementException("Service not found: " + serviceId);
         }
@@ -237,15 +243,15 @@ public class ExternalServiceRegistryService implements ContainerService {
     }
 
     /**
-     * Deregister a external service instance.
-     * 
+     * Deregister an external service instance.
+     * <p>
      * If the external service is not found, a {@link NoSuchElementException} is
      * thrown.
      *
      * @param serviceId  The serviceId of the external service to deregister
      * @param instanceId The instanceId of the external service to deregister
      */
-    public void deregisterService(String serviceId, String instanceId) {
+    public void deregisterService(String serviceId, int instanceId) {
         registry.compute(serviceId, (unused, instanceMap) -> {
             if (instanceMap == null) {
                 throw new NoSuchElementException(
@@ -279,7 +285,7 @@ public class ExternalServiceRegistryService implements ContainerService {
      * Get all registered services and external services and their instances for the
      * given
      * realm.
-     * 
+     *
      * @param realm The realm to filter services by
      * @return An array of all registered external services and their instances
      */
@@ -294,7 +300,7 @@ public class ExternalServiceRegistryService implements ContainerService {
      * Get all globally registered services and external services and their instances.
      * A service is considered global if it is registered with the master realm and,
      * it has the isGlobal flag set to true.
-     * 
+     *
      * @return An array of all globally registered external services and their instances
      */
     public ExternalService[] getGlobalServices() {
@@ -306,12 +312,12 @@ public class ExternalServiceRegistryService implements ContainerService {
 
     /**
      * Get a specific external service registration.
-     * 
+     *
      * @param serviceId  The serviceId of the external service to get
      * @param instanceId The instanceId of the external service to get
      * @return The external service
      */
-    public ExternalService getService(String serviceId, String instanceId) {
+    public ExternalService getService(String serviceId, int instanceId) {
         return Optional.ofNullable(registry.get(serviceId))
                 .map(instanceMap -> instanceMap.get(instanceId))
                 .orElse(null);
@@ -358,9 +364,9 @@ public class ExternalServiceRegistryService implements ContainerService {
                 // filter by unavailable + meets threshold
                 .filter(ms -> ms.getStatus() == ExternalServiceStatus.UNAVAILABLE
                         && ms.getLeaseInfo().isExpired(deregisterThreshold))
-                .collect(java.util.stream.Collectors.toList());
+                .toList();
 
-        // Now deregister the collected services
+        // Deregister the collected services
         servicesToDeregister.forEach(ms -> {
             try {
                 deregisterService(ms.getServiceId(), ms.getInstanceId());

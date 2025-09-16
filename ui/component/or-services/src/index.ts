@@ -22,7 +22,6 @@ import { customElement, property, state } from "lit/decorators.js";
 import { manager } from "@openremote/core";
 import { ExternalService } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
-import "@openremote/or-components/or-iframe";
 import { OrIframe } from "@openremote/or-components/or-iframe";
 import "@openremote/or-icon";
 import "./or-service-tree";
@@ -164,10 +163,10 @@ export class OrServices extends LitElement {
     public selectedService: ExternalService | null = null;
 
     @property({ type: Boolean })
-    public loading: boolean = false;
+    public loading = false;
 
     @state()
-    protected showServiceTree: boolean = true;
+    protected showServiceTree = true;
 
     connectedCallback(): void {
         super.connectedCallback();
