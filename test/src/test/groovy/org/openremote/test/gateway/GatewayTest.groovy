@@ -53,6 +53,7 @@ import java.util.function.Consumer
 import java.util.stream.Collectors
 import java.util.stream.IntStream
 
+import static org.apache.camel.builder.RouteBuilder.addRoutes
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.gateway.GatewayConnector.mapAssetId
 import static org.openremote.manager.gateway.GatewayService.getGatewayClientId
@@ -1459,6 +1460,31 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert newValueUpdateTimestamp == lightBrightnessTimestamp2
             assert newValueUpdateTimestamp == lightColorTimestamp2
         }
-    }
 
+        when: "we send an update to the two attributes"
+
+        newValueUpdateTimestamp = timerService.getClock().getCurrentTimeMillis()
+
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light1Id, LightAsset.BRIGHTNESS, 80, newValueUpdateTimestamp))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light1Id, LightAsset.COLOUR_TEMPERATURE, 4500, newValueUpdateTimestamp))
+
+        and: "Advance time for 10s"
+
+        advancePseudoClock(10, TimeUnit.SECONDS)
+
+        then: "the attributeEvents should be sent to the gateway as the values have changed, and the timestamps should equal the event timestamp"
+
+        conditions.eventually {
+            def mirroredLight = assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.light1Id, false))
+            assert mirroredLight != null
+            assert mirroredLight.getAttributes().get(LightAsset.BRIGHTNESS).get().getValue().orElse(0) == 80
+            assert mirroredLight.getAttribute(LightAsset.COLOUR_TEMPERATURE).get().getValue().orElse(0) == 4500
+
+            Long lightBrightnessTimestamp3 = mirroredLight.getAttributes().get(LightAsset.BRIGHTNESS).get().getTimestamp().orElse(0L)
+            Long lightColorTimestamp3 = mirroredLight.getAttributes().get(LightAsset.COLOUR_TEMPERATURE).get().getTimestamp().orElse(0L)
+
+            assert newValueUpdateTimestamp == lightBrightnessTimestamp3
+            assert newValueUpdateTimestamp == lightColorTimestamp3
+        }
+    }
 }
