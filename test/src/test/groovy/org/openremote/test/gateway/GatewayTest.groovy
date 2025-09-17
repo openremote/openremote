@@ -1256,4 +1256,209 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert mirroredLight.getAttribute(Asset.NOTES).isPresent()
         }
     }
+
+    def "Debug GatewayAssetSyncRules"() {
+
+        given: "the container environment is started"
+        def conditions = new PollingConditions(timeout: 30, delay: 0.2)
+        def delayedConditions = new PollingConditions(initialDelay: 1, delay: 1, timeout: 10)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def timerService = container.getService(TimerService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def gatewayService = container.getService(GatewayService.class)
+        def gatewayClientService = container.getService(GatewayClientService.class)
+        def agentService = container.getService(AgentService.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def clientEventService = container.getService(ClientEventService.class)
+
+        and: "an authenticated admin user"
+        def accessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
+
+        and: "the gateway client resource"
+        def gatewayClientResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(GatewayClientResource.class)
+
+        expect: "the system should settle down"
+        conditions.eventually {
+            assert noEventProcessedIn(assetProcessingService, 300)
+        }
+
+        when: "a gateway asset is provisioned in this manager in the building realm"
+        GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Test gateway")
+                .setRealm(managerTestSetup.realmBuildingName))
+
+        then: "a set of credentials should have been created for this gateway and be stored against the gateway for easy reference"
+        conditions.eventually {
+            gateway = assetStorageService.find(gateway.getId(), true) as GatewayAsset
+            assert !isNullOrEmpty(gateway.getClientId().orElse(null))
+            assert !isNullOrEmpty(gateway.getClientSecret().orElse(null))
+        }
+
+        and: "a gateway connector should have been created for this gateway"
+        conditions.eventually {
+            assert gatewayService.gatewayConnectorMap.size() == 1
+            assert gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT)).gatewayId == gateway.getId()
+        }
+
+        when: "a gateway client connection is created to connect the city realm to the gateway in the building realm"
+        def gatewayConnection = new GatewayConnection(
+                managerTestSetup.realmCityName,
+                "127.0.0.1",
+                serverPort,
+                managerTestSetup.realmBuildingName,
+                gateway.getClientId().orElse(""),
+                gateway.getClientSecret().orElse(""),
+                false,
+                [
+//                        new GatewayAttributeFilter().setMatcher(
+//                        new AssetQuery()
+//                                .recursive(false)
+//                                .realm(new RealmPredicate("master"))
+//                                .types(ElectricVehicleAsset.class)
+//                                .attributes(
+//                                        new LogicGroup<AttributePredicate>(LogicGroup.Operator.OR,[
+//                                                new AttributePredicate().name(new StringPredicate(AssetQuery.Match.EXACT, true, ElectricVehicleAsset.ENERGY_LEVEL.getName()).negate(false)),
+//                                                new AttributePredicate().name(new StringPredicate(AssetQuery.Match.EXACT, true, ElectricVehicleAsset.MILEAGE_CHARGED.getName()).negate(false))
+//                                        ])
+//                                )
+//                )
+//                .setValueChange(true).setDuration(null),
+                ValueUtil.JSON.readValue("""{
+                "matcher": {
+                  "recursive": false,
+                  "realm": {
+                    "name": "master"
+                  },
+                  "types": [
+                    "LightAsset"
+                  ],
+                  "attributes": {
+                    "operator": "OR",
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "caseSensitive": true,
+                          "value": "brightness",
+                          "negate": false
+                        },
+                        "negated": false
+                      },
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "caseSensitive": true,
+                          "value": "colourTemperature",
+                          "negate": false
+                        },
+                        "negated": false
+                      }
+                    ]
+                  },
+                  "limit": 0
+                },
+                "valueChange": true,
+                "durationParsedMillis": null
+              }""", GatewayAttributeFilter.class)
+                ] as List<GatewayAttributeFilter>,
+                null,
+                false
+        )
+        gatewayClientResource.setConnection(null, managerTestSetup.realmCityName, gatewayConnection)
+
+        then: "the gateway client should become connected"
+        conditions.eventually {
+            assert gatewayClientService.clientRealmMap.get(managerTestSetup.realmCityName) != null
+        }
+
+        and: "the gateway asset connection status should become CONNECTED"
+        conditions.eventually {
+            gateway = assetStorageService.find(gateway.getId())
+            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
+        }
+
+        and: "the assets should have been created under the gateway asset"
+        conditions.eventually {
+            def gatewayAssets = assetStorageService.findAll(new AssetQuery().parents(gateway.id).recursive(true))
+            def cityAssets = assetStorageService.findAll(new AssetQuery().realm(new RealmPredicate(managerTestSetup.realmCityName)))
+            assert gatewayAssets.size() == cityAssets.size()
+        }
+
+        when: "We update the light asset according to the attribute filter"
+
+        def lightAsset = assetStorageService.find(managerTestSetup.light1Id)
+        lightAsset.addAttributes(
+                new Attribute<>(LightAsset.BRIGHTNESS, 50),
+                new Attribute<>(LightAsset.COLOUR_TEMPERATURE, 3500)
+        )
+
+        assetStorageService.merge(lightAsset)
+
+        then: "the new attributes should be mirrored to the gateway"
+
+        long lightBrightnessTimestamp1 = -1;
+        long lightColorTimestamp1 = -1;
+
+        conditions.eventually {
+            def mirroredLight = assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.light1Id, false))
+            assert mirroredLight != null
+            assert mirroredLight.getAttributes().get(LightAsset.BRIGHTNESS).get().getValue().orElse(0) == 50
+            assert mirroredLight.getAttribute(LightAsset.COLOUR_TEMPERATURE).get().getValue().orElse(0) == 3500
+
+            lightBrightnessTimestamp1 = mirroredLight.getAttributes().get(LightAsset.BRIGHTNESS).get().getTimestamp().orElse(0L)
+            lightColorTimestamp1 = mirroredLight.getAttributes().get(LightAsset.COLOUR_TEMPERATURE).get().getTimestamp().orElse(0L)
+        }
+
+
+        when: "We update the light asset with the same values on the two attributes"
+
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light1Id, LightAsset.BRIGHTNESS, 50))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light1Id, LightAsset.COLOUR_TEMPERATURE, 3500))
+
+        then: "the attributeEvents should not be sent to the gateway as the values have not changed"
+        conditions.eventually {
+            def mirroredLight = assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.light1Id, false))
+            assert mirroredLight != null
+            assert mirroredLight.getAttributes().get(LightAsset.BRIGHTNESS).get().getValue().orElse(0) == 50
+            assert mirroredLight.getAttribute(LightAsset.COLOUR_TEMPERATURE).get().getValue().orElse(0) == 3500
+
+            long lightBrightnessTimestamp2 = mirroredLight.getAttributes().get(LightAsset.BRIGHTNESS).get().getTimestamp().orElse(0L)
+            long lightColorTimestamp2 = mirroredLight.getAttributes().get(LightAsset.COLOUR_TEMPERATURE).get().getTimestamp().orElse(0L)
+
+            assert lightBrightnessTimestamp1 == lightBrightnessTimestamp2
+            assert lightColorTimestamp1 == lightColorTimestamp2
+        }
+
+
+        when: "We update the light asset with new values on the two attributes"
+
+        long newValueUpdateTimestamp = timerService.getClock().getCurrentTimeMillis()
+
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light1Id, LightAsset.BRIGHTNESS, 75, newValueUpdateTimestamp))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light1Id, LightAsset.COLOUR_TEMPERATURE, 4000, newValueUpdateTimestamp))
+
+        then: "the attributeEvents should be sent to the gateway as the values have changed, and the timestamps should equal the event timestamp"
+
+        conditions.eventually {
+            def mirroredLight = assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.light1Id, false))
+            assert mirroredLight != null
+            assert mirroredLight.getAttributes().get(LightAsset.BRIGHTNESS).get().getValue().orElse(0) == 75
+            assert mirroredLight.getAttribute(LightAsset.COLOUR_TEMPERATURE).get().getValue().orElse(0) == 4000
+
+            Long lightBrightnessTimestamp2 = mirroredLight.getAttributes().get(LightAsset.BRIGHTNESS).get().getTimestamp().orElse(0L)
+            Long lightColorTimestamp2 = mirroredLight.getAttributes().get(LightAsset.COLOUR_TEMPERATURE).get().getTimestamp().orElse(0L)
+
+            assert newValueUpdateTimestamp == lightBrightnessTimestamp2
+            assert newValueUpdateTimestamp == lightColorTimestamp2
+        }
+    }
+
 }
