@@ -8,7 +8,7 @@ if [ -z "$AWS_ACCOUNT_ID" ]; then
     exit 1
 fi
 if [ -z "$AWS_DEVELOPERS_ACCOUNT_ID" ]; then
-    echo "Error: AWS_ACCOUNT_ID environment variable is not set"
+    echo "Error: $AWS_DEVELOPERS_ACCOUNT_ID environment variable is not set"
     echo "Please set it to the ID of the OpenRemote developers root account with: export AWS_DEVELOPERS_ACCOUNT_ID=dev-account-id"
     exit 1
 fi
