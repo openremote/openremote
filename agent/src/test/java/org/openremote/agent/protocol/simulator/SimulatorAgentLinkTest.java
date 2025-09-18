@@ -47,23 +47,6 @@ public class SimulatorAgentLinkTest {
         assertEquals(86400, schedule.getTimeSinceOccurrenceStarted(now + 86400*2));
     }
 
-//    @Test
-//    public void getDelayDefaultLinkConfig() throws Exception {
-//        SimulatorAgentLink link = new SimulatorAgentLink("1");
-//        SimulatorAgentLink.Schedule schedule = link.getSchedule(LocalDateTime.of(2000, 1, 1, 0, 0).toEpochSecond(ZoneOffset.UTC), LocalDateTime.of(2000, 1, 1, 0, 0));
-//        assertEquals(100, schedule.getDelay(100));
-//        schedule = link.getSchedule(LocalDateTime.of(2000, 1, 1, 0, 1).toEpochSecond(ZoneOffset.UTC), LocalDateTime.of(2000, 1, 1, 0, 0));
-//        assertEquals(40, schedule.getDelay(100));
-//        schedule = link.getSchedule(LocalDateTime.of(2000, 1, 1, 0, 2).toEpochSecond(ZoneOffset.UTC), LocalDateTime.of(2000, 1, 1, 0, 0));
-//        assertEquals(86_380, schedule.getDelay(100));
-//    }
-
-
-    @Test
-    public void get() throws Exception {
-
-    }
-
     @Test
     public void getDelayInfiniteCustomRecurring() throws Exception {
         SimulatorAgentLink agentLink = new SimulatorAgentLink("1");

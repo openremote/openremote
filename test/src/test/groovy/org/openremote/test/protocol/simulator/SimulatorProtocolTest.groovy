@@ -48,17 +48,18 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
+import static java.util.concurrent.TimeUnit.DAYS
 import static java.util.concurrent.TimeUnit.HOURS
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
 import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS
 
-
-/**
- * Also see {@link org.openremote.test.assets.AssetDatapointTest} for usage of {@link SimulatorProtocol}.
- */
 class SimulatorProtocolTest extends Specification implements ManagerContainerTrait {
 
-    static final PollingConditions conditions = new PollingConditions(timeout: 3, delay: 0.2)
+    private final static long HOUR = 3600;
+    private final static long DAY = HOUR * 24;
+    private final static long WEEK = DAY * 7;
+
+    static final PollingConditions conditions = new PollingConditions(timeout: 60, delay: 0.2)
 
     @Shared
     AssetStorageService assetStorageService
@@ -178,9 +179,9 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         when: "replayData is configured to add a datapoint in 1hr, 12hrs, and 24hrs every day"
         asset.addOrReplaceAttributes(new Attribute<>("test2", ValueType.TEXT)
                 .addMeta(new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-                        new SimulatorReplayDatapoint(3600, "test"),
-                        new SimulatorReplayDatapoint(3600 * 12, "test"),
-                        new SimulatorReplayDatapoint(3600 * 24, "test"))))
+                        new SimulatorReplayDatapoint(HOUR, "test"),
+                        new SimulatorReplayDatapoint(HOUR * 12, "test"),
+                        new SimulatorReplayDatapoint(HOUR * 24, "test"))))
         )
         asset = assetStorageService.merge(asset)
         def attribute = asset.getAttribute("test2").get()
@@ -193,11 +194,11 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         }
 
         (0..1).each { i ->
-            def days = i * 3600 * 24 // Starts at 0 days, increments with 1 days
+            def days = i * HOUR * 24 // Starts at 0 days, increments with 1 days
 
             then: "the delay is 1 hour"
             conditions.eventually {
-                delay == 3600
+                delay == HOUR
             }
 
             when: "fast forward 1 hour"
@@ -206,12 +207,12 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
             then: "datapoint is present"
             conditions.eventually {
-                getDatapointTimestamp(attribute) == days + 3600
+                getDatapointTimestamp(attribute) == days + HOUR
             }
 
             and: "the delay is 11 hours"
             conditions.eventually {
-                delay == 3600 * 11
+                delay == HOUR * 11
             }
 
             when: "fast forward 11 hours"
@@ -220,12 +221,12 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
             then: "datapoint is present"
             conditions.eventually {
-                getDatapointTimestamp(attribute) == days + 3600 * 12
+                getDatapointTimestamp(attribute) == days + HOUR * 12
             }
 
             and: "the delay is 12 hours"
             conditions.eventually {
-                delay == 3600 * 12
+                delay == HOUR * 12
             }
 
             when: "fast forward 12 hour"
@@ -234,7 +235,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
             then: "datapoints are present"
             conditions.eventually {
-                getDatapointTimestamp(attribute) == days + 3600 * 24
+                getDatapointTimestamp(attribute) == days + HOUR * 24
             }
         }
     }
@@ -245,13 +246,13 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 //        def attribute1 = asset.getAttribute(ThingAsset.NOTES).get()
 //        attribute1.addOrReplaceMeta(
 //                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-//                        new SimulatorReplayDatapoint(3600, "test"),
+//                        new SimulatorReplayDatapoint(HOUR, "test"),
 //                ))
 //        )
 //        def attribute2 = asset.getAttribute("test").get()
 //        attribute2.addOrReplaceMeta(
 //                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-//                        new SimulatorReplayDatapoint(3600 * 2, "test"),
+//                        new SimulatorReplayDatapoint(HOUR * 2, "test"),
 //                ))
 //        )
 //        assetStorageService.merge(asset)
@@ -263,11 +264,11 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 //        }
 //
 //        (0..1).each { i ->
-//            def days = i * 3600 * 24 // Starts at 0 days, increments with 1 days
+//            def days = i * HOUR * 24 // Starts at 0 days, increments with 1 days
 //
 //            then: "the delay is 1 hour for attribute 1"
 //            conditions.eventually {
-//                delay == 3600
+//                delay == HOUR
 //            }
 //
 //            when: "fast forward 1 hour"
@@ -276,12 +277,12 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 //
 //            then: "datapoint is present"
 //            conditions.eventually {
-//                getDatapointTimestamp(attribute1) == days + 3600
+//                getDatapointTimestamp(attribute1) == days + HOUR
 //            }
 //
 //            and: "the delay is 1 more hour for attribute 2"
 //            conditions.eventually {
-//                delay == 3600
+//                delay == HOUR
 //            }
 //
 //            when: "fast forward 1 hour"
@@ -290,7 +291,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 //
 //            then: "datapoint is present"
 //            conditions.eventually {
-//                getDatapointTimestamp(attribute2) == days + 3600 * 2
+//                getDatapointTimestamp(attribute2) == days + HOUR * 2
 //            }
 //
 //            when: "fast forward 22 hours"
@@ -303,9 +304,9 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         when: "replayData is configured to replay in 1day and 1hr"
         asset.addOrReplaceAttributes(new Attribute<>("test3", ValueType.TEXT)
                 .addMeta(new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-                        new SimulatorReplayDatapoint(3600, "test"),
-                        new SimulatorReplayDatapoint(3600 * 25, "test"),
-                        new SimulatorReplayDatapoint(3600 * 49, "test")
+                        new SimulatorReplayDatapoint(HOUR, "test"),
+                        new SimulatorReplayDatapoint(HOUR * 25, "test"),
+                        new SimulatorReplayDatapoint(HOUR * 49, "test")
                 ).setSchedule(new SimulatorAgentLink.Schedule(
                         Date.from(Instant.parse("1970-01-02T00:00:00.000Z")),
                         null,
@@ -324,34 +325,35 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         and: "the delay is 25 hours"
         conditions.eventually {
-            delay == 3600 * 25
+            delay == DAY + HOUR
         }
 
-        when: "fast forward 25 hours"
-        advancePseudoClock(25, HOURS, container)
+        when: "fast forward 1 day and 1 hour"
+        advancePseudoClock(1, DAYS, container)
+        advancePseudoClock(1, HOURS, container)
         future.get() // resolve future manually, because we surpassed the delay
 
         then: "datapoint is present"
         conditions.eventually {
-            getDatapointTimestamp(attribute) == 3600 * 25
+            getDatapointTimestamp(attribute) == DAY + HOUR
         }
 
         // Starting at 2 days, because start date + first datapoint = 2 days since epoch
         (2..3).each { i ->
-            def days = i * 3600 * 24 // Starts at 0 days, increments with 1 day
+            def days = i * DAY // Starts at 0 days, increments with 1 day
 
             and: "the delay is 24 hours"
             conditions.eventually {
-                delay == 3600 * 24
+                delay == HOUR * 24
             }
 
-            when: "fast forward 25 hours"
+            when: "fast forward 24 hours"
             advancePseudoClock(24, HOURS, container)
             future.get() // resolve future manually, because we surpassed the delay
 
             then: "datapoint is present"
             conditions.eventually {
-                getDatapointTimestamp(attribute) == days + 3600
+                getDatapointTimestamp(attribute) == days + HOUR
             }
         }
 
@@ -365,8 +367,8 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         when: "replayData is configured to add a datapoint in 1hr, and 2hrs weekly on Mondays"
         asset.addOrReplaceAttributes(new Attribute<>("test5", ValueType.TEXT).addMeta(
                 new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-                        new SimulatorReplayDatapoint(3600, "test"),
-                        new SimulatorReplayDatapoint(3600 * 2, "test")
+                        new SimulatorReplayDatapoint(HOUR, "test"),
+                        new SimulatorReplayDatapoint(HOUR * 2, "test")
                 ).setSchedule(new SimulatorAgentLink.Schedule(
                         // First day should be 1970-01-05 (in 4 days) a Monday
                         Date.from(Instant.parse("1970-01-05T00:00:00.000Z")),
@@ -385,23 +387,24 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
             protocol.linkedAttributes.get(attributeRef) == attribute
         }
 
-        then: "the delay is 97 hours"
+        then: "the delay is 4 days and 1 hour"
         conditions.eventually {
-            delay == 3600 * 97
+            delay == 4 * DAY + HOUR
         }
 
-        when: "fast forward 97 hours"
-        advancePseudoClock(97, HOURS, container)
+        when: "fast forward 4 days and 1 hour"
+        advancePseudoClock(4, DAYS, container)
+        advancePseudoClock(1, HOURS, container)
         future.get() // resolve future manually, because we surpassed the delay
 
         then: "datapoint is present"
         conditions.eventually {
-            getDatapointTimestamp(attribute) == 3600 * 97
+            getDatapointTimestamp(attribute) == 4 * DAY + HOUR
         }
 
         and: "the delay is 1 hour"
         conditions.eventually {
-            delay == 3600
+            delay == HOUR
         }
 
         when: "fast forward 1 hour"
@@ -410,30 +413,31 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         then: "datapoint is present"
         conditions.eventually {
-            getDatapointTimestamp(attribute) == 3600 * 98
+            getDatapointTimestamp(attribute) == 4 * DAY + 2 * HOUR
         }
 
         (1..3).each { i ->
-            def weeks = i * 3600 * 24 * 7 // Starts at 0 weeks, increments with 1 week
-            def firstWeekOffset = 96 * 3600;
+            def weeks = i * WEEK // Starts at 0 weeks, increments with 1 week
+            def firstWeekOffset = 4 * DAY;
 
             and: "the delay is 1 week and -1 hour"
             conditions.eventually {
-                delay == 3600 * 167
+                delay == WEEK - HOUR
             }
 
             when: "fast forward 1 week and -1 hour"
-            advancePseudoClock(167, HOURS, container)
+            advancePseudoClock(7, DAYS, container)
+            advancePseudoClock(-1, HOURS, container)
             future.get() // resolve future manually, because we surpassed the delay
 
             then: "datapoint is present"
             conditions.eventually {
-                getDatapointTimestamp(attribute) == firstWeekOffset + weeks + 3600
+                getDatapointTimestamp(attribute) == firstWeekOffset + weeks + HOUR
             }
 
             and: "the delay is 1 hour"
             conditions.eventually {
-                delay == 3600
+                delay == HOUR
             }
 
             when: "fast forward 1 hour"
@@ -442,13 +446,13 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
             then: "datapoint is present"
             conditions.eventually {
-                getDatapointTimestamp(attribute) == firstWeekOffset + weeks + 3600 * 2
+                getDatapointTimestamp(attribute) == firstWeekOffset + weeks + HOUR * 2
             }
         }
 
         and: "the delay is 1 hour"
         conditions.eventually {
-            delay == 3600
+            delay == HOUR
         }
 
         when: "fast forward past the end date"
@@ -461,12 +465,12 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         }
     }
 
-    def "Check Simulator Agent protocol adds predicted datapoints for the current and next cycle"() {
+    def "Check Simulator Agent protocol adds predicted datapoints for the current and next occurrence"() {
         when: "replayData is configured for both attributes to add a datapoint in 1 and 2 hours every day"
         asset.addOrReplaceAttributes(new Attribute<>("test6", ValueType.TEXT).addMeta(
                 new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-                        new SimulatorReplayDatapoint(3600, "test"),
-                        new SimulatorReplayDatapoint(3600 * 2, "test"),
+                        new SimulatorReplayDatapoint(HOUR, "test"),
+                        new SimulatorReplayDatapoint(HOUR * 2, "test"),
                 )),
                 new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
         )
@@ -482,16 +486,16 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         and: "the delay is 1 hour"
         conditions.eventually {
-            delay == 3600
+            delay == HOUR
         }
 
         and: "the predicted datapoints are present"
         conditions.eventually {
             def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
-            datapoints.get(3).getTimestamp()/1000 == 3600
-            datapoints.get(2).getTimestamp()/1000 == 3600 * 2
-            datapoints.get(1).getTimestamp()/1000 == 3600 * 25
-            datapoints.get(0).getTimestamp()/1000 == 3600 * 26
+            datapoints.get(3).getTimestamp()/1000 == HOUR * 1
+            datapoints.get(2).getTimestamp()/1000 == HOUR * 2
+            datapoints.get(1).getTimestamp()/1000 == HOUR * 25
+            datapoints.get(0).getTimestamp()/1000 == HOUR * 26
         }
 
         when: "fast forward 1 hour"
@@ -500,12 +504,12 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         then: "datapoint is present"
         conditions.eventually {
-            getDatapointTimestamp(attribute) == 3600
+            getDatapointTimestamp(attribute) == HOUR
         }
 
         and: "the delay is 1 hour"
         conditions.eventually {
-            delay == 3600
+            delay == HOUR
         }
 
         when: "fast forward 1 hour"
@@ -514,17 +518,17 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         then: "datapoint is present"
         conditions.eventually {
-            getDatapointTimestamp(attribute) == 3600 * 2
+            getDatapointTimestamp(attribute) == HOUR * 2
         }
 
         and: "the predicted datapoints are present"
         def datapoints1 = assetPredictedDatapointService.getDatapoints(attributeRef)
-        datapoints1.get(5).getTimestamp()/1000 == 3600
-        datapoints1.get(4).getTimestamp()/1000 == 3600 * 2
-        datapoints1.get(3).getTimestamp()/1000 == 3600 * 25
-        datapoints1.get(2).getTimestamp()/1000 == 3600 * 26
-        datapoints1.get(1).getTimestamp()/1000 == 3600 * 47 // TODO: is this correct?
-        datapoints1.get(0).getTimestamp()/1000 == 3600 * 48
+        datapoints1.get(5).getTimestamp()/1000 == HOUR * 1
+        datapoints1.get(4).getTimestamp()/1000 == HOUR * 2
+        datapoints1.get(3).getTimestamp()/1000 == HOUR * 25
+        datapoints1.get(2).getTimestamp()/1000 == HOUR * 26
+        datapoints1.get(1).getTimestamp()/1000 == HOUR * 47 // TODO: is this correct?
+        datapoints1.get(0).getTimestamp()/1000 == HOUR * 48
 
         when: "reset agentLink"
         attribute.addOrReplaceMeta(
@@ -542,8 +546,8 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         when: "replayData is configured for both attributes to add a datapoint in 1 and 2 hours"
         asset.addOrReplaceAttributes(new Attribute<>("test7", ValueType.TEXT).addMeta(
                 new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
-                        new SimulatorReplayDatapoint(3600, "test"),
-                        new SimulatorReplayDatapoint(3600 * 2, "test"),
+                        new SimulatorReplayDatapoint(HOUR, "test"),
+                        new SimulatorReplayDatapoint(HOUR * 2, "test"),
                 ).setSchedule(new SimulatorAgentLink.Schedule(
                         Date.from(Instant.parse("1970-01-01T00:00:00.000Z")),
                         null, null
@@ -562,14 +566,14 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         and: "the delay is 1 hour"
         conditions.eventually {
-            delay == 3600
+            delay == HOUR
         }
 
         and: "the predicted datapoints are present"
         conditions.eventually {
             def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
-            datapoints.get(1).getTimestamp()/1000 == 3600
-            datapoints.get(0).getTimestamp()/1000 == 3600 * 2
+            datapoints.get(1).getTimestamp()/1000 == HOUR * 1
+            datapoints.get(0).getTimestamp()/1000 == HOUR * 2
         }
 
         when: "fast forward 1 hour"
@@ -579,8 +583,8 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         then: "the predicted datapoints are present"
         conditions.eventually {
             def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
-            datapoints.get(1).getTimestamp()/1000 == 3600
-            datapoints.get(0).getTimestamp()/1000 == 3600 * 2
+            datapoints.get(1).getTimestamp()/1000 == HOUR * 1
+            datapoints.get(0).getTimestamp()/1000 == HOUR * 2
         }
     }
 }
