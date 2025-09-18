@@ -31,7 +31,7 @@ allprojects {
 // Each file must be explicitly added to .gitignore otherwise git commit will fail
 // When using encryption the the GFE_PASSWORD environment variable must be set or the build will fail
 // use ./gradlew encryptFiles to encrypt files
-apply plugin: 'com.cherryperry.gradle-file-encrypt'
+apply plugin: 'io.openremote.com.cherryperry.gradle-file-encrypt'
 gradleFileEncrypt {
     // files to encrypt
     plainFiles.from('deployment/manager/fcm.json')
