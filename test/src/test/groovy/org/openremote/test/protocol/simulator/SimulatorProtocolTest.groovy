@@ -527,8 +527,8 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         datapoints1.get(4).getTimestamp()/1000 == HOUR * 2
         datapoints1.get(3).getTimestamp()/1000 == HOUR * 25
         datapoints1.get(2).getTimestamp()/1000 == HOUR * 26
-        datapoints1.get(1).getTimestamp()/1000 == HOUR * 47 // TODO: is this correct?
-        datapoints1.get(0).getTimestamp()/1000 == HOUR * 48
+        datapoints1.get(1).getTimestamp()/1000 == HOUR * 49
+        datapoints1.get(0).getTimestamp()/1000 == HOUR * 50
 
         when: "reset agentLink"
         attribute.addOrReplaceMeta(

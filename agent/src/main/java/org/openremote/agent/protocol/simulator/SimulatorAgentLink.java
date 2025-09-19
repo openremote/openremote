@@ -90,6 +90,14 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         return point - timeSinceOccurrenceStarted;
     }
 
+    public long getOccurrenceDuration() {
+        LocalDateTime start = LocalDateTime.ofEpochSecond(schedule.startTime, 0, ZoneOffset.UTC);
+        LocalDateTime current = LocalDateTime.ofEpochSecond(schedule.currentOccurrence, 0, ZoneOffset.UTC);
+        LocalDateTime next = schedule.getRecurrence().getNextDate(start, current);
+
+        return next.toEpochSecond(ZoneOffset.UTC) - schedule.currentOccurrence;
+    }
+
     /**
      * Calculates the time in seconds until the next occurrence starts.
      * <p>
@@ -135,6 +143,7 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
             Recur<LocalDateTime> recurrence = super.getRecurrence();
 
             if (recurrence == null || epoch < startTime) {
+                currentOccurrence = startTime;
                 return epoch - startTime;
             }
 

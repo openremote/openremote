@@ -197,21 +197,21 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             if (attribute.getMeta().get(HAS_PREDICTED_DATA_POINTS).flatMap(AbstractNameValueHolder::getValue).orElse(false)) {
                 List<ValueDatapoint<?>> current = new ArrayList<>();
                 List<ValueDatapoint<?>> next = new ArrayList<>();
-                long nextOccurrenceDelay = 0;
+                long occurrenceDuration = 0;
                 if (!singleOccurrence) {
-                    nextOccurrenceDelay = agentLink.getTimeUntilNextOccurrence(timeSinceOccurrenceStarted);
+                    occurrenceDuration = agentLink.getOccurrenceDuration();
                 }
                 for (SimulatorReplayDatapoint d : simulatorReplayDatapoints) {
                     long timestamp = agentLink.getDelay(d.timestamp, timeSinceOccurrenceStarted) + now;
                     current.add(new SimulatorReplayDatapoint(timestamp*1000, d.value).toValueDatapoint());
                     if (!singleOccurrence) {
-                        next.add(new SimulatorReplayDatapoint((timestamp + nextOccurrenceDelay)*1000, d.value).toValueDatapoint());
+                        // TODO: until next startdate will cause this value to be way further into the future
+                        next.add(new SimulatorReplayDatapoint((timestamp+occurrenceDuration)*1000, d.value).toValueDatapoint());
                     }
                 }
                 current.addAll(next);
                 updateLinkedAttributePredictedDataPoints(attributeRef, current);
             }
-        // Error from getDelay can be ignored as this error should already be handled for 'nextRun'
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
         }
