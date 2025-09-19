@@ -1,6 +1,3 @@
-import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.gradle.api.tasks.testing.logging.TestLogEvent
-
 plugins {
     id 'com.adarshr.test-logger' version '4.0.0'
 }
@@ -45,53 +42,7 @@ tasks.withType(Test) {
     environment("OR_LOGGING_CONFIG_FILE", "logging-dev.properties")
 }
 
-test {
-    outputs.upToDateWhen { false }
-    workingDir = findProject(":openremote") != null ? project("").projectDir : rootProject.projectDir
-    useJUnitPlatform()
-
-    testLogging {
-
-        // set options for log level LIFECYCLE
-        events = [
-                TestLogEvent.FAILED,
-                TestLogEvent.PASSED,
-                TestLogEvent.SKIPPED
-        ]
-        exceptionFormat = TestExceptionFormat.FULL
-        showExceptions = true
-        showCauses = true
-        showStackTraces = true
-
-        // set options for log level DEBUG and INFO
-        debug {
-            events = [
-                    TestLogEvent.STARTED,
-                    TestLogEvent.FAILED,
-                    TestLogEvent.PASSED,
-                    TestLogEvent.SKIPPED,
-                    TestLogEvent.STANDARD_OUT,
-                    TestLogEvent.STANDARD_ERROR
-            ]
-            exceptionFormat = TestExceptionFormat.FULL
-        }
-        info.events = debug.events
-        info.exceptionFormat = debug.exceptionFormat
-
-        afterTest { desc, result ->
-            logger.lifecycle "${desc.className} > ${desc.name} took: ${(result.endTime - result.startTime)}ms"
-        }
-
-        afterSuite { desc, result ->
-            if (!desc.parent) { // will match the outermost suite
-                def output = "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
-                def startItem = '|  ', endItem = '  |'
-                def repeatLength = startItem.length() + output.length() + endItem.length()
-                println('\n' + ('-' * repeatLength) + '\n' + startItem + output + endItem + '\n' + ('-' * repeatLength))
-            }
-        }
-    }
-}
+test {}
 
 javadoc {
     failOnError = false

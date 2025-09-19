@@ -51,9 +51,11 @@ dependencies {
     }
 }
 
-test {
-    useJUnitPlatform()
+tasks.withType(Test) {
+    environment("OR_LOGGING_CONFIG_FILE", "logging-dev.properties")
 }
+
+test {}
 
 base {
     archivesName = "openremote-${project.name}"

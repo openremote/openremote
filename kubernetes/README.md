@@ -101,6 +101,15 @@ or:
       value: "false"
  ```
 
+### Metrics
+
+Both the manager and HAProxy expose Prometheus metrics.  
+By defaults the metrics are exposed on a dedicated ClusterIP service.  
+The manager configuration has 2 different flags that related to metrics:
+- `or.metricsEnabled` indicating if the manager container exposes metrics
+- `service.metrics.enabled` indicating if a metrics service for the manager should be exposed  
+  This is only effective if the manager exposes metrics i.e. both flags must be true for the service to be created.
+
 ### When using HAProxy
 
 #### Accessing MQTT
@@ -137,6 +146,46 @@ If, in the manager values files, you enable the MQTT/MQTTS services, you can dir
 
 Alternatively, if you do not enable a service, you can use manual port forwarding to the pod e.g.  
 `kubectl port-forward manager-…  1883:1883`
+
+#### Running a custom project
+
+Unlike what's done with docker compose, it's not (yet) possible to mount the custom project specific resources via an image
+in a pod running an otherwise standard OpenRemote controller image.  
+The way to a run custom project under kubernetes is to create a project specific image, with the project specific resources baked in.  
+This is easily achieved by modifying the Dockerfile for the custom project to use openremote/manager:\<version> 
+instead of alpine:latest as its base docker image.  
+
+Once this image is created, use the image.repository and image.tag entries in your values file to reference the desired image.  
+
+##### Example
+
+Having the following Dockerfile in your `myprj` custom project deployment folder
+```dockerfile
+FROM openremote/manager:1.7.0
+
+RUN mkdir -p /deployment/manager/extensions
+ADD ./build/image /deployment
+```
+
+You can locally build a project specific image using
+`docker buildx build --load -t openremote/myprj:1.7.0 -f Dockerfile .`
+
+And use the following snippet in your manager values files
+```yaml
+image:
+  repository: openremote/myprj
+  tag: "1.7.0"
+```
+to have the pod run the built image.
+
+##### Additional information
+
+Also see the "Running demo under EKS" section in the README-AWS.md file for related information.  
+
+[Kubernetes Documentation - Use an Image Volume With a Pod](https://kubernetes.io/docs/tasks/configure-pod-container/image-volumes/)
+is an upcoming kubernetes feature that would allow using a mechanism similar to what's currently done in docker compose
+with kubernetes, using a separate image for project specific resources.  
+It is however currently (Aug-2025) in beta and disabled by default.
 
 #### Using with IDE for development
 
