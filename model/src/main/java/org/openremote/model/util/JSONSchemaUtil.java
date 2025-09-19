@@ -269,10 +269,6 @@ public class JSONSchemaUtil {
                         applyFieldAnnotation(fieldScope, JsonSchemaFormat.class, attrs, mapper);
                         applyFieldAnnotation(fieldScope, JsonSchemaDefault.class, attrs, mapper);
                         applyFieldAnnotation(fieldScope, JsonSchemaExamples.class, attrs, mapper);
-
-                        String key = fieldScope.getMember().getDeclaringType().getErasedType().getCanonicalName() + "." + fieldScope.getMember().getName();
-                        applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaTitle.class), JsonSchemaTitle.class, key, attrs);
-                        applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaDescription.class), JsonSchemaDescription.class, key, attrs);
                     }
                     String description = jacksonResolvers.resolveDescription(fieldScope);
                     if (description != null) {
@@ -371,7 +367,6 @@ public class JSONSchemaUtil {
                                 public void format(JsonValueFormat format) {
                                     setFormat(node, format.toString());
                                 }
-                                // TODO:
                                 public void enumTypes(Set<String> enums) {}
                             };
                         }
@@ -606,16 +601,6 @@ public class JSONSchemaUtil {
                 return mapper.readTree(input);
             } catch (Exception e) {
                 return new TextNode(input);
-            }
-        }
-
-        private static <A extends Annotation> void applyI18nAnnotation(A annotation, Class<?> annotationClass, String key, ObjectNode schema) {
-            try {
-                if (annotation != null && (boolean)annotationClass.getMethod("i18n").invoke(annotation)) {
-                    schema.set("i18n", new TextNode(key));
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to apply i18n annotation " + annotationClass.getSimpleName(), e);
             }
         }
 

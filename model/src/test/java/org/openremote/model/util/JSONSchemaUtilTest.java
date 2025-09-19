@@ -227,8 +227,7 @@ public class JSONSchemaUtilTest {
                         "description":"test",
                         "default": false,
                         "format":"test",
-                        "examples":["test"],
-                        "i18n":"org.openremote.model.util.JSONSchemaUtilTest.AnnotationsForFields.all"
+                        "examples":["test"]
                     }
                 },
                 "title": "Annotations For Fields",
@@ -261,8 +260,7 @@ public class JSONSchemaUtilTest {
                 "default": {},
                 "examples": [
                     "test"
-                ],
-                "i18n": "org.openremote.model.util.JSONSchemaUtilTest.AnnotationsForTypes"
+                ]
             }"""
         );
 
