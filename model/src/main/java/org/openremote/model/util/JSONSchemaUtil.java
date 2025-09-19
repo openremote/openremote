@@ -388,7 +388,6 @@ public class JSONSchemaUtil {
                                 public void format(JsonValueFormat format) {
                                     setFormat(node, format.toString());
                                 }
-                                // TODO:
                                 public void enumTypes(Set<String> enums) {}
                             };
                         }
@@ -401,7 +400,6 @@ public class JSONSchemaUtil {
                                 public void format(JsonValueFormat format) {
                                     setFormat(node, format.toString());
                                 }
-                                // TODO:
                                 public void enumTypes(Set<String> enums) {}
                             };
                         }
@@ -413,7 +411,6 @@ public class JSONSchemaUtil {
                                 public void format(JsonValueFormat format) {
                                     setFormat(node, format.toString());
                                 }
-                                // TODO:
                                 public void enumTypes(Set<String> enums) {}
                             };
                         }
@@ -615,7 +612,6 @@ public class JSONSchemaUtil {
             }
         }
 
-        // TODO: handle other annotations from Jackson (or replace existing annotations)
         private static <A extends Annotation> void applyI18nAnnotation(A annotation, Class<?> annotationClass, String key, ObjectNode schema) {
             try {
                 if (annotation != null && (boolean)annotationClass.getMethod("i18n").invoke(annotation)) {
