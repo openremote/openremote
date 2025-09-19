@@ -1,7 +1,0 @@
-{
-  "$schema" : "http://json-schema.org/draft-07/schema#",
-  "type" : "string",
-  "enum" : [ "per", "squared", "cubed", "peak", "mega", "kilo", "centi", "hecto", "micro", "milli", "percentage", "acre", "hectare", "decibel", "decibel_attenuated", "knot", "celsius", "kelvin", "fahrenheit", "year", "month", "week", "day", "hour", "minute", "second", "metre", "inch", "foot", "yard", "mile", "mile_scandinavian", "gram", "ounce", "pound", "stone", "degree", "radian", "litre", "gallon", "fluid_ounce", "joule", "btu", "watt", "lux", "lumen", "pascal", "bar", "inch_mercury", "volt", "ohm", "amp", "hertz", "rpm", "ppm", "carbon", "eur", "var" ],
-  "title" : "Unit",
-  "i18n" : "org.openremote.model.value.Units"
-}
