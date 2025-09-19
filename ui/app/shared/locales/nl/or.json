@@ -963,5 +963,17 @@
     "source": "Bron"
   },
   "expandAll": "Alles uitklappen",
-  "collapseAll": "Alles inklappen"
+  "collapseAll": "Alles inklappen",
+  "services": {
+    "noServiceSelected": "Selecteer een service aan de linkerkant",
+    "title": "Services",
+    "refresh": "Verversen",
+    "servicesLoadError": "Er is iets misgegaan bij het ophalen van de services",
+    "realmServicesLoadError": "Er is iets misgegaan bij het ophalen van de realm services",
+    "globalServicesLoadError": "Er is iets misgegaan bij het ophalen van de globale services",
+    "noServices": "Geen services gevonden, controleer de documentatie op hoe je services kunt toevoegen",
+    "iframeLoadError": "De geselecteerde service kon niet worden geladen",
+    "serviceUnavailable": "Service is niet beschikbaar",
+    "servicesReloaded": "{{count}} service(s) opgehaald"
+  }
 }
