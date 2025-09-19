@@ -1079,6 +1079,21 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         return getRealms(realmsResource -> realmsResource.realm(realm).identityProviders().importFrom(importData));
     }
 
+    public List<IdentityProviderRepresentation> getIdentityProviders(String realm) {
+        return getRealms(realmsResource -> {
+            IdentityProvidersResource identityProvidersResource = realmsResource.realm(realm).identityProviders();
+            return identityProvidersResource.findAll();
+        });
+    }
+
+    public void deleteIdentityProvider(String realm, String alias) {
+        getRealms(realmsResource -> {
+            IdentityProvidersResource identityProvidersResource = realmsResource.realm(realm).identityProviders();
+            identityProvidersResource.get(alias).remove();
+            return null;
+        });
+    }
+
     public void createUpdateIdentityProvider(String realm, String alias, String providerId, String displayName, Map<String, String> config) {
         IdentityProviderRepresentation representation = new IdentityProviderRepresentation();
         representation.setAlias(alias);
@@ -1115,6 +1130,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
             Optional<IdentityProviderMapperRepresentation> existingMapper = idpResource.getMappers().stream().filter(m -> mapperName.equals(m.getName())).findFirst();
             if (existingMapper.isPresent()) {
+                mapper.setId(existingMapper.get().getId());
                 idpResource.update(existingMapper.get().getId(), mapper);
             } else {
                 try (Response response = idpResource.addMapper(mapper)) {
