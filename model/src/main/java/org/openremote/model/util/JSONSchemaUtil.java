@@ -384,7 +384,6 @@ public class JSONSchemaUtil {
                                 public void format(JsonValueFormat format) {
                                     setFormat(node, format.toString());
                                 }
-                                // TODO:
                                 public void enumTypes(Set<String> enums) {}
                             };
                         }
@@ -397,7 +396,6 @@ public class JSONSchemaUtil {
                                 public void format(JsonValueFormat format) {
                                     setFormat(node, format.toString());
                                 }
-                                // TODO:
                                 public void enumTypes(Set<String> enums) {}
                             };
                         }
@@ -409,7 +407,6 @@ public class JSONSchemaUtil {
                                 public void format(JsonValueFormat format) {
                                     setFormat(node, format.toString());
                                 }
-                                // TODO:
                                 public void enumTypes(Set<String> enums) {}
                             };
                         }
@@ -609,10 +606,15 @@ public class JSONSchemaUtil {
             }
         }
 
-//        private void applyTranslations() {
-//            // TODO: apply translations on the schema using the FQCN as translation key and extract the keys to the
-//            // translation files during compilation by implementing an i18n processor.
-//        }
+        private static <A extends Annotation> void applyI18nAnnotation(A annotation, Class<?> annotationClass, String key, ObjectNode schema) {
+            try {
+                if (annotation != null && (boolean)annotationClass.getMethod("i18n").invoke(annotation)) {
+                    schema.set("i18n", new TextNode(key));
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to apply i18n annotation " + annotationClass.getSimpleName(), e);
+            }
+        }
 
         private static List<ResolvedType> findSubtypes(ResolvedType resolvedType, SchemaGenerationContext context) {
             Class<?> rawType = resolvedType.getErasedType();
