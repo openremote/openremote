@@ -21,6 +21,7 @@ dependencies {
 
     api "net.sf.saxon:Saxon-HE:$saxonHEVersion"
 
+    // PLC4X dependencies - TCP Modbus uses PLC4X, RTU uses jSerialComm directly
     implementation "org.apache.plc4x:plc4j-api:$plc4xVersion"
     runtimeOnly "org.apache.plc4x:plc4j-driver-modbus:$plc4xVersion"
 
