@@ -109,6 +109,22 @@ public class JSONSchemaUtil {
             node.put("additionalProperties", true);
             return node;
         }
+
+        public static ObjectNode getSuppliedNode(FieldScope fieldScope, JsonSchemaSupplier annotation) throws RuntimeException {
+            try {
+                switch (annotation.getClass().getMethod("supplier").invoke(annotation).toString()) {
+                    case SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_ANY_TYPE:
+                        return SchemaNodeMapper.getSchemaType(SchemaNodeMapper.TYPES_ALL);
+                    case SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE:
+                        return SchemaNodeMapper.getSchemaPatternPropertiesAnyKeyAnyType();
+                    case SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_SIMPLE_KEY_ANY_TYPE:
+                        return SchemaNodeMapper.getSchemaPatternPropertiesSimpleKeyAnyType();
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to apply " + annotation.getClass().getSimpleName(), e);
+            }
+            return null;
+        }
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -244,23 +260,13 @@ public class JSONSchemaUtil {
                 .withTargetTypeOverridesResolver(this::remapFieldType)
                 // remapping using supplier through annotations
                 .withCustomDefinitionProvider((fieldScope, context) -> {
-                    JsonSchemaSupplier ann = fieldScope.getAnnotation(JsonSchemaSupplier.class);
-                    if (ann != null) {
-                        try {
-                            switch (ann.getClass().getMethod("supplier").invoke(ann).toString()) {
-                                case SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_ANY_TYPE:
-                                    return new CustomPropertyDefinition(SchemaNodeMapper.getSchemaType(SchemaNodeMapper.TYPES_ALL));
-                                case SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE:
-                                    return new CustomPropertyDefinition(SchemaNodeMapper.getSchemaPatternPropertiesAnyKeyAnyType());
-                                case SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_SIMPLE_KEY_ANY_TYPE:
-                                    return new CustomPropertyDefinition(SchemaNodeMapper.getSchemaPatternPropertiesSimpleKeyAnyType());
-                            }
-                        } catch (Exception e) {
-                            throw new RuntimeException("Failed to apply " + ann.getClass().getSimpleName(), e);
-                        }
-                    }
                     // We ignore this custom definition provider to avoid infinite recursion
                     ObjectNode attrs = context.createStandardDefinition(fieldScope.getType(), builder.forTypesInGeneral().getCustomDefinitionProviders().getFirst());
+                    // Apply supplied definition
+                    JsonSchemaSupplier ann = fieldScope.getAnnotation(JsonSchemaSupplier.class);
+                    if (ann != null) {
+                        attrs = SchemaNodeMapper.getSuppliedNode(fieldScope, ann);
+                    }
                     // Avoids annotation also being applied to the `items` in an array. See https://victools.github.io/jsonschema-generator/#generator-individual-configurations
                     if (!fieldScope.isFakeContainerItemScope()) {
                         ObjectMapper mapper = context.getGeneratorConfig().getObjectMapper();
