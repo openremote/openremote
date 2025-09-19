@@ -175,8 +175,8 @@ public class JSONSchemaUtil {
             // TODO: resolve titles for all custom types
             JSONSchemaTitleProvider titleProvider = new JSONSchemaTitleProvider();
             builder.forTypesInGeneral()
-                .withCustomDefinitionProvider(titleProvider)
-                .withTypeAttributeOverride(titleProvider);
+                    .withCustomDefinitionProvider(titleProvider)
+                    .withTypeAttributeOverride(titleProvider);
 
             // Remap Byte to type integer, see https://github.com/victools/jsonschema-generator/blob/995a71eaf7a9a05cc2e335f8a7821b4a9019fa1b/CHANGELOG.md?plain=1#L530
             builder.with(new SimpleTypeModule().withIntegerType(Byte.class));
@@ -466,10 +466,13 @@ public class JSONSchemaUtil {
              */
             @Override
             public void overrideTypeAttributes(ObjectNode attrs, TypeScope scope, SchemaGenerationContext context) {
-                if (this.rootType == scope.getType() && !attrs.has(context.getKeyword(SchemaKeyword.TAG_TITLE))) {
-                    String rawName = rootType.getErasedType().getSimpleName();
+                if ((this.rootType == scope.getType() && !attrs.has(context.getKeyword(SchemaKeyword.TAG_TITLE))) ||
+                    (!attrs.has(context.getKeyword(SchemaKeyword.TAG_TITLE))
+                    && attrs.has(context.getKeyword(SchemaKeyword.TAG_TYPE))
+                    && attrs.get(context.getKeyword(SchemaKeyword.TAG_TYPE)).textValue().equals("object"))
+                ) {
                     // Code found here: http://stackoverflow.com/questions/2559759/how-do-i-convert-camelcase-into-human-readable-names-in-java
-                    String v = rawName.replaceAll(
+                    String title = scope.getType().getErasedType().getSimpleName().replaceAll(
                         String.format("%s|%s|%s",
                             "(?<=[A-Z])(?=[A-Z][a-z])",
                             "(?<=[^A-Z])(?=[A-Z])",
@@ -477,7 +480,7 @@ public class JSONSchemaUtil {
                         ),
                         " ");
                     // Make the first letter uppercase
-                    attrs.put(context.getKeyword(SchemaKeyword.TAG_TITLE), v.substring(0,1).toUpperCase() + v.substring(1));
+                    attrs.put(context.getKeyword(SchemaKeyword.TAG_TITLE), title.substring(0,1).toUpperCase() + title.substring(1));
                 }
             }
 
