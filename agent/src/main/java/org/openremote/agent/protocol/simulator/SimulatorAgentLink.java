@@ -91,6 +91,10 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
     }
 
     public long getOccurrenceDuration() {
+        if (getSchedule().isEmpty()) {
+            return 86400;
+        }
+
         LocalDateTime start = LocalDateTime.ofEpochSecond(schedule.startTime, 0, ZoneOffset.UTC);
         LocalDateTime current = LocalDateTime.ofEpochSecond(schedule.currentOccurrence, 0, ZoneOffset.UTC);
         LocalDateTime next = schedule.getRecurrence().getNextDate(start, current);
