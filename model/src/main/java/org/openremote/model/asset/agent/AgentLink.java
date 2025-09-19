@@ -57,10 +57,10 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
         " will be converted to JSON and if this string matches a key in the converter then the value of that key will be" +
         " pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but" +
         " you want to connect this to a Boolean attribute")
-    @JsonSchemaSupplier(supplier = SchemaNodeFactory.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
+    @JsonSchemaSupplier(supplier = SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
     protected Map<String, Object> valueConverter;
     @JsonPropertyDescription("Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion")
-    @JsonSchemaSupplier(supplier = SchemaNodeFactory.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
+    @JsonSchemaSupplier(supplier = SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
     protected Map<String, Object> writeValueConverter;
     @JsonPropertyDescription("String to be used for attribute writes and can contain dynamic placeholders to allow dyanmic" +
             " value and/or time injection with formatting (see documentation for details) into the string or alternatively" +

@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
 
 public class JSONSchemaUtil {
 
-    public static class SchemaNodeFactory {
+    public static class SchemaNodeMapper {
 
         public static class AnyType {}
 
@@ -200,7 +200,7 @@ public class JSONSchemaUtil {
                         ResolvedType type = key.getType();
                         Class<?> erasedType = type.getErasedType();
                         if (erasedType.equals(Object.class)) {
-                            return typeContext.getSimpleTypeDescription(typeContext.resolve(SchemaNodeFactory.AnyType.class));
+                            return typeContext.getSimpleTypeDescription(typeContext.resolve(SchemaNodeMapper.AnyType.class));
                         }
                         return typeContext.getSimpleTypeDescription(type);
                     }
@@ -209,10 +209,10 @@ public class JSONSchemaUtil {
                     Class<?> erasedType = resolvedType.getErasedType();
                     // Does not behave like before where this is the fallback if a class could not be resolved
                     if (erasedType.equals(Object.class)) {
-                        return new CustomDefinition(SchemaNodeFactory.getSchemaType(SchemaNodeFactory.TYPES_ALL));
+                        return new CustomDefinition(SchemaNodeMapper.getSchemaType(SchemaNodeMapper.TYPES_ALL));
                     }
                     if (erasedType.equals(ObjectNode.class)) {
-                        return new CustomDefinition(SchemaNodeFactory.getSchemaPatternPropertiesSimpleKeyAnyType());
+                        return new CustomDefinition(SchemaNodeMapper.getSchemaPatternPropertiesSimpleKeyAnyType());
                     }
                     // Value type parameter "Object" is not handled on HashMap<String,Object> by MAP_VALUES_AS_ADDITIONAL_PROPERTIES
                     // TODO: ideally we add a reference to the AnyType definition rather than always inlining
@@ -223,7 +223,7 @@ public class JSONSchemaUtil {
                     ) {
                         return new CustomDefinition(JsonNodeFactory.instance.objectNode()
                             .put(context.getKeyword(SchemaKeyword.TAG_TYPE), "object")
-                            .set(context.getKeyword(SchemaKeyword.TAG_ADDITIONAL_PROPERTIES), SchemaNodeFactory.getSchemaType(SchemaNodeFactory.TYPES_ALL))
+                            .set(context.getKeyword(SchemaKeyword.TAG_ADDITIONAL_PROPERTIES), SchemaNodeMapper.getSchemaType(SchemaNodeMapper.TYPES_ALL))
                         );
                     }
                     return null;
@@ -245,12 +245,12 @@ public class JSONSchemaUtil {
                     if (ann != null) {
                         try {
                             switch (ann.getClass().getMethod("supplier").invoke(ann).toString()) {
-                                case SchemaNodeFactory.SCHEMA_SUPPLIER_NAME_ANY_TYPE:
-                                    return new CustomPropertyDefinition(SchemaNodeFactory.getSchemaType(SchemaNodeFactory.TYPES_ALL));
-                                case SchemaNodeFactory.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE:
-                                    return new CustomPropertyDefinition(SchemaNodeFactory.getSchemaPatternPropertiesAnyKeyAnyType());
-                                case SchemaNodeFactory.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_SIMPLE_KEY_ANY_TYPE:
-                                    return new CustomPropertyDefinition(SchemaNodeFactory.getSchemaPatternPropertiesSimpleKeyAnyType());
+                                case SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_ANY_TYPE:
+                                    return new CustomPropertyDefinition(SchemaNodeMapper.getSchemaType(SchemaNodeMapper.TYPES_ALL));
+                                case SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE:
+                                    return new CustomPropertyDefinition(SchemaNodeMapper.getSchemaPatternPropertiesAnyKeyAnyType());
+                                case SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_SIMPLE_KEY_ANY_TYPE:
+                                    return new CustomPropertyDefinition(SchemaNodeMapper.getSchemaPatternPropertiesSimpleKeyAnyType());
                             }
                         } catch (Exception e) {
                             throw new RuntimeException("Failed to apply " + ann.getClass().getSimpleName(), e);
