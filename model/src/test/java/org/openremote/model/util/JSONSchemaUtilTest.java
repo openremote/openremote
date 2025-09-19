@@ -34,7 +34,6 @@ public class JSONSchemaUtilTest {
         return JSONSchemaUtilTest.class.getResource("/org/openremote/model/util/" + resourcePath + ".json");
     }
 
-    // TODO: expand this with subtypes
     static class Title {}
 
     @Test
@@ -49,14 +48,14 @@ public class JSONSchemaUtilTest {
         );
 
         JsonNode actual = ValueUtil.getSchema(Title.class);
-        assertEquals(expected.toString(), actual.toString(), false);
+        assertEquals(expected.toString(), actual.toString(), true);
     }
 
     @Test
     public void shouldRemapByte() throws IOException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree(loadResource(java.lang.Byte.class.getName()));
         JsonNode actual = ValueUtil.getSchema(java.lang.Byte.class);
-        assertEquals(expected.toString(), actual.toString(), false);
+        assertEquals(expected.toString(), actual.toString(), true);
     }
 
     static class AdditionalProperties {}
@@ -73,7 +72,7 @@ public class JSONSchemaUtilTest {
         );
 
         JsonNode actual = ValueUtil.getSchema(AdditionalProperties.class);
-        assertEquals(expected.toString(), actual.toString(), false);
+        assertEquals(expected.toString(), actual.toString(), true);
     }
 
     static class RemapTypes {
@@ -106,7 +105,6 @@ public class JSONSchemaUtilTest {
         );
 
         JsonNode actual = ValueUtil.getSchema(RemapTypes.class);
-        System.out.println(actual);
         assertEquals(expected.toString(), actual.toString(), false);
     }
 
@@ -122,7 +120,7 @@ public class JSONSchemaUtilTest {
     public void shouldHandleMapTypes() throws IOException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree(loadResource(java.lang.Byte.class.getName()));
         JsonNode actual = ValueUtil.getSchema(java.lang.Byte.class);
-        assertEquals(expected.toString(), actual.toString(), false);
+        assertEquals(expected.toString(), actual.toString(), true);
     }
 
     static class JacksonAnnotations {
@@ -135,7 +133,7 @@ public class JSONSchemaUtilTest {
     }
 
     @Test
-    public void shouldHandleJacksonResolvers() throws JsonProcessingException, JSONException {
+    public void shouldHandleJacksonAnnotations() throws JsonProcessingException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -145,7 +143,9 @@ public class JSONSchemaUtilTest {
                         "type": "boolean"
                     },
                     "renamed1": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "readOnly": true,
+                        "writeOnly": true
                     },
                     "test1": {
                         "type": "boolean",
@@ -159,7 +159,7 @@ public class JSONSchemaUtilTest {
         );
 
         JsonNode actual = ValueUtil.getSchema(JacksonAnnotations.class);
-        assertEquals(expected.toString(), actual.toString(), false);
+        assertEquals(expected.toString(), actual.toString(), true);
     }
 
     static class Primitives {
@@ -202,7 +202,7 @@ public class JSONSchemaUtilTest {
         );
 
         JsonNode actual = ValueUtil.getSchema(Primitives.class);
-        assertEquals(expected.toString(), actual.toString(), false);
+        assertEquals(expected.toString(), actual.toString(), true);
     }
 
     static class AnnotationsForFields {
@@ -237,7 +237,7 @@ public class JSONSchemaUtilTest {
         );
 
         JsonNode actual = ValueUtil.getSchema(AnnotationsForFields.class);
-        assertEquals(expected.toString(), actual.toString(), false);
+        assertEquals(expected.toString(), actual.toString(), true);
     }
 
     @JsonSchemaTitle("test")
@@ -267,7 +267,7 @@ public class JSONSchemaUtilTest {
         );
 
         JsonNode actual = ValueUtil.getSchema(AnnotationsForTypes.class);
-        assertEquals(expected.toString(), actual.toString(), false);
+        assertEquals(expected.toString(), actual.toString(), true);
     }
 
     @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY)
@@ -295,6 +295,7 @@ public class JSONSchemaUtilTest {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "definitions": {
                     "TestAgentLinkAnnotationResolving": {
+                        "title": "Test Agent Link Annotation Resolving",
                         "type": "object",
                         "additionalProperties": true,
                         "properties": {
@@ -308,6 +309,7 @@ public class JSONSchemaUtilTest {
                         ]
                     },
                     "TestAgentLinkSuperclassAnnotationResolving": {
+                        "title": "Test Agent Link Superclass Annotation Resolving",
                         "type": "object",
                         "additionalProperties": true,
                         "properties": {
@@ -330,7 +332,7 @@ public class JSONSchemaUtilTest {
         );
 
         JsonNode actual = ValueUtil.getSchema(TestAgentLink.class);
-        assertEquals(expected.toString(), actual.toString(), false);
+        assertEquals(expected.toString(), actual.toString(), true);
     }
 
     @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY)
@@ -353,6 +355,7 @@ public class JSONSchemaUtilTest {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "definitions": {
                     "TestAgentLinkReflectionResolving": {
+                        "title": "Test Agent Link Reflection Resolving",
                         "type": "object",
                         "additionalProperties": true,
                         "properties": {
@@ -366,15 +369,26 @@ public class JSONSchemaUtilTest {
                         ]
                     }
                 },
+                "title": "Test Agent Link Reflections",
                 "oneOf": [
                     { "$ref": "#/definitions/TestAgentLinkReflectionResolving" }
                 ],
-                "title": "Test Agent Link Reflections"
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "const": "JSONSchemaUtilTest$TestAgentLinkReflections"
+                    }
+                },
+                "required": [
+                    "type"
+                ]
             }"""
         );
 
+
+
         JsonNode actual = ValueUtil.getSchema(TestAgentLinkReflections.class);
-        assertEquals(expected.toString(), actual.toString(), false);
+        assertEquals(expected.toString(), actual.toString(), true);
     }
 
     static class JavaTimeJacksonModule {
@@ -389,7 +403,7 @@ public class JSONSchemaUtilTest {
         public YearMonth yearMonth;
         public ZoneId zoneId;
         public ZoneOffset zoneOffset;
-        // instant variants
+        // Instant variants
         public Instant instant;
         public OffsetDateTime offsetDateTime;
         public ZonedDateTime zonedDateTime;
@@ -414,6 +428,7 @@ public class JSONSchemaUtilTest {
                     "localDateTime": { "type": "string" },
                     "localTime": { "type": "string" },
                     "monthDay": {
+                        "title": "Month Day",
                         "type": "object",
                         "properties": {
                             "month": {
@@ -433,6 +448,7 @@ public class JSONSchemaUtilTest {
                     "period": { "type": "string" },
                     "year": { "type": "integer" },
                     "yearMonth": {
+                        "title": "Year Month",
                         "type": "object",
                         "properties": {
                             "month": {
@@ -461,6 +477,6 @@ public class JSONSchemaUtilTest {
         );
 
         JsonNode actual = ValueUtil.getSchema(JavaTimeJacksonModule.class);
-        assertEquals(expected.toString(), actual.toString(), false);
+        assertEquals(expected.toString(), actual.toString(), true);
     }
 }
