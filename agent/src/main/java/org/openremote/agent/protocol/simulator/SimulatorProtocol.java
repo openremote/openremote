@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaFormat;
@@ -101,7 +100,11 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 LOG.info("Simulator replay data found for linked attribute: " + attribute);
                 AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
 
-                ScheduledFuture<?> updateValueFuture = scheduleReplay(attributeRef, simulatorReplayDatapoints);
+                // Sorting so we can assume positioning
+                SimulatorReplayDatapoint[] sorted = Arrays.stream(simulatorReplayDatapoints)
+                        .sorted(Comparator.comparingLong(SimulatorReplayDatapoint::getTimestamp))
+                        .toArray(SimulatorReplayDatapoint[]::new);
+                ScheduledFuture<?> updateValueFuture = scheduleReplay(attributeRef, sorted);
                 if (updateValueFuture != null) {
                     replayMap.put(attributeRef, updateValueFuture);
                 } else {
@@ -189,11 +192,6 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             .findFirst()
             .orElse(simulatorReplayDatapoints[0]);
 
-        boolean singleOccurrence = schedule
-                .map(s -> s.getStart() != null && s.getRecurrence() == null)
-                .orElse(false);
-        boolean lastDatapoint = singleOccurrence && Arrays.stream(simulatorReplayDatapoints)
-                .allMatch(n -> n.timestamp <= nextDatapoint.timestamp);
         if (nextDatapoint == null) {
             LOG.warning("Next datapoint not found so replay cancelled: " + attributeRef);
             return null;
@@ -209,7 +207,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }
 
         if (attribute.getMeta().get(HAS_PREDICTED_DATA_POINTS).flatMap(AbstractNameValueHolder::getValue).orElse(false)) {
-            createPredictedDatapoints(attributeRef, simulatorReplayDatapoints, schedule.orElse(null), now, timeSinceOccurrenceStarted, singleOccurrence);
+            createPredictedDatapoints(attributeRef, simulatorReplayDatapoints, schedule.orElse(null), now, timeSinceOccurrenceStarted);
         }
 
         LOG.fine("Next update for asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " in " + nextRun + " second(s)");
@@ -221,7 +219,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
             }
 
-            if (lastDatapoint) {
+            boolean isLastDatapoint = nextDatapoint.timestamp == simulatorReplayDatapoints[simulatorReplayDatapoints.length - 1].timestamp;
+            if (isLastDatapoint) {
                 LOG.warning("Last datapoint in single occurrence event");
                 replayMap.remove(attributeRef);
                 return;
@@ -236,7 +235,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }, nextRun, TimeUnit.SECONDS);
     }
 
-    public void createPredictedDatapoints(AttributeRef attributeRef, SimulatorReplayDatapoint[] simulatorReplayDatapoints, Schedule schedule, long now, long timeSinceOccurrenceStarted, boolean isSingleOccurrence) {
+    public void createPredictedDatapoints(AttributeRef attributeRef, SimulatorReplayDatapoint[] simulatorReplayDatapoints, Schedule schedule, long now, long timeSinceOccurrenceStarted) {
+        boolean isSingleOccurrence = schedule.getIsSingleOccurrence();
         try {
             List<ValueDatapoint<?>> current = new ArrayList<>();
             List<ValueDatapoint<?>> next = new ArrayList<>();
@@ -311,7 +311,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }
 
         @JsonIgnore
-        private long startTime;
+        private final long startTime;
         @JsonIgnore
         private long count;
         @JsonIgnore
@@ -375,6 +375,10 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
             long duration = next.toEpochSecond(ZoneOffset.UTC) - currentOccurrence;
             return duration - timeSinceOccurrenceStarted;
+        }
+
+        public boolean getIsSingleOccurrence() {
+            return Optional.ofNullable(start).map(s -> recurrence != null).orElse(false);
         }
     }
 
