@@ -19,17 +19,35 @@
  */
 package org.openremote.agent.protocol.simulator;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import net.fortuna.ical4j.model.Recur;
 import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 
+import java.time.*;
+import java.time.chrono.ChronoLocalDateTime;
+import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
 
-    @JsonPropertyDescription("Used to store 24h dataset of values that should be replayed (i.e. written to the" +
-        " linked attribute) in a continuous loop.")
+    @JsonPropertyDescription("Used to store a dataset of values that should be replayed (i.e. written to the" +
+        " linked attribute) in a continuous loop based on a schedule (by default replays every 24h)." +
+        " Predicted datapoints can be added by configuring 'Store predicted datapoints' which will insert the datapoints" +
+        " immediately as determined by the schedule.")
     protected SimulatorReplayDatapoint[] replayData;
+
+    // TODO: consider implementing @JsonSchemaFormat("calendar-event") to reuse the `or-rule-validity` component.
+    // Current generator cannot handle injecting custom type and description at the same time
+    @JsonPropertyDescription("When defined overwrites the possible dataset length and when it is replayed." +
+        " This could be once when only a start- (and end) date are defined," +
+        " or a recurring event following the RFC 5545 RRULE format." +
+        " If not provided defaults to 24 hours. If the replay data contains datapoints scheduled after the" +
+        " default 24 hours or the recurrence rule the datapoints will be ignored.")
+    protected SimulatorProtocol.Schedule schedule;
 
     // For Hydrators
     protected SimulatorAgentLink() {
@@ -45,6 +63,15 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
 
     public SimulatorAgentLink setReplayData(SimulatorReplayDatapoint[] replayData) {
         this.replayData = replayData;
+        return this;
+    }
+
+    public Optional<SimulatorProtocol.Schedule> getSchedule() {
+        return Optional.ofNullable(schedule);
+    }
+
+    public SimulatorAgentLink setSchedule(SimulatorProtocol.Schedule schedule) {
+        this.schedule = schedule;
         return this;
     }
 }
