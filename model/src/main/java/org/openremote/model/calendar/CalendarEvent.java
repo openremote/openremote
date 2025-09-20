@@ -85,19 +85,9 @@ import java.util.List;
  */
 public class CalendarEvent implements Serializable {
 
-    @JsonPropertyDescription("Set a start date, if not provided, starts immediately." +
-            " When the replay datapoint timestamp is 0 it will insert it at 00:00.")
-    @JsonSchemaFormat("date-time")
-    @JsonSchemaInject(jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_STRING_TYPE)
     protected Date start;
-
-    @JsonPropertyDescription("Not implemented, within the recurrence rule you can specify an end date.")
-    @JsonSchemaFormat("date-time")
-    @JsonSchemaInject(jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_STRING_TYPE)
     protected Date end;
 
-    @JsonPropertyDescription("The recurrence schedule follows the RFC 5545 RRULE format.")
-    @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_STRING_TYPE)
     @JsonSerialize(converter = RecurStringConverter.class)
     protected Recur<LocalDateTime> recurrence;
 

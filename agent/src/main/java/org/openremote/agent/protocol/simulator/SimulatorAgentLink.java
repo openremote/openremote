@@ -47,7 +47,7 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         " or a recurring event following the RFC 5545 RRULE format." +
         " If not provided defaults to 24 hours. If the replay data contains datapoints scheduled after the" +
         " default 24 hours or the recurrence rule the datapoints will be ignored.")
-    protected Schedule schedule;
+    protected SimulatorProtocol.Schedule schedule;
 
     // For Hydrators
     protected SimulatorAgentLink() {
@@ -66,129 +66,12 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         return this;
     }
 
-    public Optional<Schedule> getSchedule() {
+    public Optional<SimulatorProtocol.Schedule> getSchedule() {
         return Optional.ofNullable(schedule);
     }
 
-    public SimulatorAgentLink setSchedule(Schedule schedule) {
+    public SimulatorAgentLink setSchedule(SimulatorProtocol.Schedule schedule) {
         this.schedule = schedule;
         return this;
-    }
-
-    /**
-     * Calculates the delay in seconds until the {@link SimulatorReplayDatapoint} should be played.
-     *
-     * @param point The {@link SimulatorReplayDatapoint#timestamp} to calculate the delay for.
-     * @param timeSinceOccurrenceStarted The time since the occurrence started in seconds.
-     * @return The delay in seconds until the {@link SimulatorReplayDatapoint} should be replayed.
-     * @throws Exception If the one-time occurrence or recurring schedule has ended.
-     */
-    public long getDelay(long point, long timeSinceOccurrenceStarted) throws Exception {
-        if (point <= timeSinceOccurrenceStarted) {
-            return point + getTimeUntilNextOccurrence(timeSinceOccurrenceStarted);
-        }
-        return point - timeSinceOccurrenceStarted;
-    }
-
-    public long getOccurrenceDuration() {
-        if (getSchedule().isEmpty()) {
-            return 86400;
-        }
-
-        LocalDateTime start = LocalDateTime.ofEpochSecond(schedule.startTime, 0, ZoneOffset.UTC);
-        LocalDateTime current = LocalDateTime.ofEpochSecond(schedule.currentOccurrence, 0, ZoneOffset.UTC);
-        LocalDateTime next = schedule.getRecurrence().getNextDate(start, current);
-
-        return next.toEpochSecond(ZoneOffset.UTC) - schedule.currentOccurrence;
-    }
-
-    /**
-     * Calculates the time in seconds until the next occurrence starts.
-     * <p>
-     * If no schedule has been defined uses the default 1-day schedule.
-     *
-     * @param timeSinceOccurrenceStarted The time since the occurrence started in seconds.
-     * @return The delay in seconds until the {@link SimulatorReplayDatapoint} should be replayed.
-     * @throws Exception If the one-time occurrence or recurring schedule has ended.
-     */
-    public long getTimeUntilNextOccurrence(long timeSinceOccurrenceStarted) throws Exception {
-        if (getSchedule().isPresent()) {
-            return getSchedule().get().getTimeUntilNextOccurrence(timeSinceOccurrenceStarted);
-        }
-        return 86400L - timeSinceOccurrenceStarted;
-    }
-
-    public static class Schedule extends CalendarEvent {
-
-        @JsonIgnore
-        private final long startTime = super.start.getTime() / 1000;
-        @JsonIgnore
-        private long count;
-        @JsonIgnore
-        private long currentOccurrence;
-
-        public Schedule(Date start, Date end, String recurrence) {
-            super(start, end, recurrence);
-        }
-
-        /**
-         * Gets the time in seconds from when the occurrence starts relative to the current epoch time.
-         * <p>
-         * An occurrence can be a single event or part of a recurring event. If no recurrence rule has been configured,
-         * the start time is used, or if the occurrence hasn't started yet.
-         * <p>
-         * If a recurrence rule has been configured, the start of the current occurrence is used. If the recurrence rule
-         * specifies {@code UNTIL} or {@code COUNT} the previous occurrence start time is used.
-         *
-         * @param epoch Seconds since the epoch
-         * @return Seconds since the occurrence started
-         */
-        public long getTimeSinceOccurrenceStarted(long epoch) {
-            Recur<LocalDateTime> recurrence = super.getRecurrence();
-
-            if (recurrence == null || epoch < startTime) {
-                currentOccurrence = startTime;
-                return epoch - startTime;
-            }
-
-            LocalDateTime start = LocalDateTime.ofEpochSecond(startTime, 0, ZoneOffset.UTC);
-            LocalDateTime prev = LocalDateTime.ofEpochSecond(currentOccurrence, 0, ZoneOffset.UTC);
-            LocalDateTime now = LocalDateTime.ofEpochSecond(epoch, 0, ZoneOffset.UTC);
-
-            List<LocalDateTime> dates = recurrence.getDates(start, prev, now);
-            if ((recurrence.getUntil() != null && now.isAfter(ChronoLocalDateTime.from(recurrence.getUntil()))) || count == recurrence.getCount()) {
-                return epoch - currentOccurrence;
-            }
-            if (dates.size() > 1 || count == 0) count++;
-
-            currentOccurrence = dates.getLast().toEpochSecond(ZoneOffset.UTC);
-            return epoch - currentOccurrence;
-        }
-
-        /**
-         * Gets the time until the next occurrence starts.
-         *
-         * @param timeSinceOccurrenceStarted Seconds since the current occurrence started
-         * @return Seconds until the next occurrence starts
-         * @throws Exception If this is a one-time event or if the recurrence rule has ended
-         */
-        protected long getTimeUntilNextOccurrence(long timeSinceOccurrenceStarted) throws Exception {
-            Recur<LocalDateTime> recurrence = super.getRecurrence();
-
-            if (recurrence == null) {
-                throw new Exception("Single event schedule has ended");
-            }
-
-            LocalDateTime start = LocalDateTime.ofEpochSecond(startTime, 0, ZoneOffset.UTC);
-            LocalDateTime current = LocalDateTime.ofEpochSecond(currentOccurrence, 0, ZoneOffset.UTC);
-            LocalDateTime next = recurrence.getNextDate(start, current);
-
-            if (next == null) {
-                throw new Exception("Recurring event schedule has ended");
-            }
-
-            long duration = next.toEpochSecond(ZoneOffset.UTC) - currentOccurrence;
-            return duration - timeSinceOccurrenceStarted;
-        }
     }
 }

@@ -59,7 +59,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     private final static long DAY = HOUR * 24;
     private final static long WEEK = DAY * 7;
 
-    static final PollingConditions conditions = new PollingConditions(timeout: 60, delay: 0.2)
+    static final PollingConditions conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
     @Shared
     AssetStorageService assetStorageService
@@ -307,7 +307,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                         new SimulatorReplayDatapoint(HOUR, "test"),
                         new SimulatorReplayDatapoint(HOUR * 25, "test"),
                         new SimulatorReplayDatapoint(HOUR * 49, "test")
-                ).setSchedule(new SimulatorAgentLink.Schedule(
+                ).setSchedule(new SimulatorProtocol.Schedule(
                         Date.from(Instant.parse("1970-01-02T00:00:00.000Z")),
                         null,
                         null
@@ -369,7 +369,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                 new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
                         new SimulatorReplayDatapoint(HOUR, "test"),
                         new SimulatorReplayDatapoint(HOUR * 2, "test")
-                ).setSchedule(new SimulatorAgentLink.Schedule(
+                ).setSchedule(new SimulatorProtocol.Schedule(
                         // First day should be 1970-01-05 (in 4 days) a Monday
                         Date.from(Instant.parse("1970-01-05T00:00:00.000Z")),
                         null,
@@ -548,7 +548,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                 new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
                         new SimulatorReplayDatapoint(HOUR, "test"),
                         new SimulatorReplayDatapoint(HOUR * 2, "test"),
-                ).setSchedule(new SimulatorAgentLink.Schedule(
+                ).setSchedule(new SimulatorProtocol.Schedule(
                         Date.from(Instant.parse("1970-01-01T00:00:00.000Z")),
                         null, null
                 ))),
