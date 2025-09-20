@@ -208,27 +208,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             return null;
         }
 
-        try {
-            if (attribute.getMeta().get(HAS_PREDICTED_DATA_POINTS).flatMap(AbstractNameValueHolder::getValue).orElse(false)) {
-                List<ValueDatapoint<?>> current = new ArrayList<>();
-                List<ValueDatapoint<?>> next = new ArrayList<>();
-                long occurrenceDuration = 0;
-                if (!singleOccurrence) {
-                    occurrenceDuration = getOccurrenceDuration(schedule.orElse(null));
-                }
-                for (SimulatorReplayDatapoint d : simulatorReplayDatapoints) {
-                    long timestamp = getDelay(d.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null)) + now;
-                    current.add(new SimulatorReplayDatapoint(timestamp*1000, d.value).toValueDatapoint());
-                    if (!singleOccurrence) {
-                        // TODO: until next startdate will cause this value to be way further into the future
-                        next.add(new SimulatorReplayDatapoint((timestamp+occurrenceDuration)*1000, d.value).toValueDatapoint());
-                    }
-                }
-                current.addAll(next);
-                updateLinkedAttributePredictedDataPoints(attributeRef, current);
-            }
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
+        if (attribute.getMeta().get(HAS_PREDICTED_DATA_POINTS).flatMap(AbstractNameValueHolder::getValue).orElse(false)) {
+            createPredictedDatapoints(attributeRef, simulatorReplayDatapoints, schedule.orElse(null), now, timeSinceOccurrenceStarted, singleOccurrence);
         }
 
         LOG.fine("Next update for asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " in " + nextRun + " second(s)");
@@ -253,6 +234,28 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 replayMap.remove(attributeRef);
             }
         }, nextRun, TimeUnit.SECONDS);
+    }
+
+    public void createPredictedDatapoints(AttributeRef attributeRef, SimulatorReplayDatapoint[] simulatorReplayDatapoints, Schedule schedule, long now, long timeSinceOccurrenceStarted, boolean isSingleOccurrence) {
+        try {
+            List<ValueDatapoint<?>> current = new ArrayList<>();
+            List<ValueDatapoint<?>> next = new ArrayList<>();
+            long occurrenceDuration = 0;
+            if (!isSingleOccurrence) {
+                occurrenceDuration = getOccurrenceDuration(schedule);
+            }
+            for (SimulatorReplayDatapoint d : simulatorReplayDatapoints) {
+                long timestamp = getDelay(d.timestamp, timeSinceOccurrenceStarted, schedule) + now;
+                current.add(new SimulatorReplayDatapoint(timestamp*1000, d.value).toValueDatapoint());
+                if (!isSingleOccurrence) {
+                    next.add(new SimulatorReplayDatapoint((timestamp+occurrenceDuration)*1000, d.value).toValueDatapoint());
+                }
+            }
+            current.addAll(next);
+            updateLinkedAttributePredictedDataPoints(attributeRef, current);
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
+        }
     }
 
     public static class Schedule implements Serializable {
