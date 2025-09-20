@@ -100,7 +100,11 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 LOG.info("Simulator replay data found for linked attribute: " + attribute);
                 AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
 
-                ScheduledFuture<?> updateValueFuture = scheduleReplay(attributeRef, simulatorReplayDatapoints);
+                // Sorting so we can assume positioning
+                SimulatorReplayDatapoint[] sorted = Arrays.stream(simulatorReplayDatapoints)
+                        .sorted(Comparator.comparingLong(SimulatorReplayDatapoint::getTimestamp))
+                        .toArray(SimulatorReplayDatapoint[]::new);
+                ScheduledFuture<?> updateValueFuture = scheduleReplay(attributeRef, sorted);
                 if (updateValueFuture != null) {
                     replayMap.put(attributeRef, updateValueFuture);
                 } else {
@@ -188,9 +192,6 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             .findFirst()
             .orElse(simulatorReplayDatapoints[0]);
 
-        boolean singleOccurrence = schedule
-                .map(s -> s.getStart() != null && s.getRecurrence() == null)
-                .orElse(false);
         if (nextDatapoint == null) {
             LOG.warning("Next datapoint not found so replay cancelled: " + attributeRef);
             return null;
@@ -204,10 +205,12 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
         try {
             if (attribute.getMeta().get(HAS_PREDICTED_DATA_POINTS).flatMap(AbstractNameValueHolder::getValue).orElse(false)) {
+                boolean isSingleOccurrence = schedule.map(Schedule::getIsSingleOccurrence).orElse(false);
+
                 List<ValueDatapoint<?>> current = new ArrayList<>();
                 List<ValueDatapoint<?>> next = new ArrayList<>();
                 long occurrenceDuration = 0;
-                if (!singleOccurrence) {
+                if (!isSingleOccurrence) {
                     occurrenceDuration = getOccurrenceDuration(schedule.orElse(null));
                 }
                 for (SimulatorReplayDatapoint d : simulatorReplayDatapoints) {
@@ -216,7 +219,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                     long timestamp = delay.getAsLong() + now;
 
                     current.add(new SimulatorReplayDatapoint(timestamp*1000, d.value).toValueDatapoint());
-                    if (!singleOccurrence) {
+                    if (!isSingleOccurrence) {
                         // TODO: until next startdate will cause this value to be way further into the future
                         next.add(new SimulatorReplayDatapoint((timestamp+occurrenceDuration)*1000, d.value).toValueDatapoint());
                     }
@@ -366,6 +369,10 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
             long duration = next.toEpochSecond(ZoneOffset.UTC) - currentOccurrence;
             return OptionalLong.of(duration - timeSinceOccurrenceStarted);
+        }
+
+        public boolean getIsSingleOccurrence() {
+            return Optional.ofNullable(start).map(s -> recurrence == null).orElse(false);
         }
     }
 
