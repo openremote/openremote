@@ -191,8 +191,6 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         boolean singleOccurrence = schedule
                 .map(s -> s.getStart() != null && s.getRecurrence() == null)
                 .orElse(false);
-        boolean lastDatapoint = singleOccurrence && Arrays.stream(simulatorReplayDatapoints)
-                .allMatch(n -> n.timestamp <= nextDatapoint.timestamp);
         if (nextDatapoint == null) {
             LOG.warning("Next datapoint not found so replay cancelled: " + attributeRef);
             return null;
@@ -237,12 +235,6 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 updateLinkedAttribute(attributeRef, nextDatapoint.value);
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
-            }
-
-            if (lastDatapoint) {
-                LOG.warning("Last datapoint in single occurrence event");
-                replayMap.remove(attributeRef);
-                return;
             }
 
             ScheduledFuture<?> future = scheduleReplay(attributeRef, simulatorReplayDatapoints);
