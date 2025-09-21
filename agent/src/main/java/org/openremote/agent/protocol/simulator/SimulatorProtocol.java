@@ -307,7 +307,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }
 
         @JsonIgnore
-        private long startTime;
+        private final long startTime;
         @JsonIgnore
         private long count;
         @JsonIgnore
