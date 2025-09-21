@@ -120,7 +120,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             updateValueFuture.cancel(true);
         }
 
-        // Purge previously configured predicted datapoints // TODO: does this always get triggered when changing agentLinks?
+        // Purge previously configured predicted datapoints
         predictedDatapointService.purgeValues(attributeRef.getId(), attribute.getName());
     }
 
