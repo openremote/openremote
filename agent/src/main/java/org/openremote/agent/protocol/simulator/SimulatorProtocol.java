@@ -196,12 +196,9 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             return null;
         }
 
-        long nextRun = nextDatapoint.timestamp;
-
-        try {
-            nextRun = getDelay(nextRun, timeSinceOccurrenceStarted, schedule.orElse(null));
-        } catch (Exception e) {
-            LOG.warning(e.getMessage() + attributeRef);
+        OptionalLong nextRun = getDelay(nextDatapoint.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
+        if (nextRun.isEmpty()) {
+            LOG.warning("Replay schedule has ended for: " + attributeRef);
             return null;
         }
 
@@ -214,7 +211,10 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                     occurrenceDuration = getOccurrenceDuration(schedule.orElse(null));
                 }
                 for (SimulatorReplayDatapoint d : simulatorReplayDatapoints) {
-                    long timestamp = getDelay(d.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null)) + now;
+                    OptionalLong delay = getDelay(d.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
+                    if (delay.isEmpty()) break;
+                    long timestamp = delay.getAsLong() + now;
+
                     current.add(new SimulatorReplayDatapoint(timestamp*1000, d.value).toValueDatapoint());
                     if (!singleOccurrence) {
                         // TODO: until next startdate will cause this value to be way further into the future
@@ -243,7 +243,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             } else {
                 replayMap.remove(attributeRef);
             }
-        }, nextRun, TimeUnit.SECONDS);
+        }, nextRun.getAsLong(), TimeUnit.SECONDS);
     }
 
     public static class Schedule implements Serializable {
@@ -343,26 +343,29 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
          * Gets the time until the next occurrence starts.
          *
          * @param timeSinceOccurrenceStarted Seconds since the current occurrence started
-         * @return Seconds until the next occurrence starts
-         * @throws Exception If this is a one-time event or if the recurrence rule has ended
+         * @return Seconds until the next occurrence starts.
+         * <p>
+         * If this is a one-time event, or if the recurrence rule has ended returns {@code null} instead.
          */
-        protected long getTimeUntilNextOccurrence(long timeSinceOccurrenceStarted) throws Exception {
+        protected OptionalLong getTimeUntilNextOccurrence(long timeSinceOccurrenceStarted) {
             Recur<LocalDateTime> recurrence = getRecurrence();
 
+            // Single event schedule has ended
             if (recurrence == null) {
-                throw new Exception("Single event schedule has ended");
+                return OptionalLong.empty();
             }
 
             LocalDateTime start = LocalDateTime.ofEpochSecond(startTime, 0, ZoneOffset.UTC);
             LocalDateTime current = LocalDateTime.ofEpochSecond(currentOccurrence, 0, ZoneOffset.UTC);
             LocalDateTime next = recurrence.getNextDate(start, current);
 
+            // Recurring event schedule has ended
             if (next == null) {
-                throw new Exception("Recurring event schedule has ended");
+                return OptionalLong.empty();
             }
 
             long duration = next.toEpochSecond(ZoneOffset.UTC) - currentOccurrence;
-            return duration - timeSinceOccurrenceStarted;
+            return OptionalLong.of(duration - timeSinceOccurrenceStarted);
         }
     }
 
@@ -372,13 +375,17 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
      * @param point The {@link SimulatorReplayDatapoint#timestamp} to calculate the delay for.
      * @param timeSinceOccurrenceStarted The time since the occurrence started in seconds.
      * @return The delay in seconds until the {@link SimulatorReplayDatapoint} should be replayed.
-     * @throws Exception If the one-time occurrence or recurring schedule has ended.
+     * <p>
+     * If this is a one-time event, or if the recurrence rule has ended returns {@code null} instead.
      */
-    public static long getDelay(long point, long timeSinceOccurrenceStarted, Schedule schedule) throws Exception {
+    public static OptionalLong getDelay(long point, long timeSinceOccurrenceStarted, Schedule schedule) {
         if (point <= timeSinceOccurrenceStarted) {
-            return point + getTimeUntilNextOccurrence(timeSinceOccurrenceStarted, schedule);
+            return getTimeUntilNextOccurrence(timeSinceOccurrenceStarted, schedule)
+                    .stream()
+                    .map(n -> point + n)
+                    .findFirst();
         }
-        return point - timeSinceOccurrenceStarted;
+        return OptionalLong.of(point - timeSinceOccurrenceStarted);
     }
 
     public static long getOccurrenceDuration(Schedule schedule) {
@@ -400,12 +407,13 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
      *
      * @param timeSinceOccurrenceStarted The time since the occurrence started in seconds.
      * @return The delay in seconds until the {@link SimulatorReplayDatapoint} should be replayed.
-     * @throws Exception If the one-time occurrence or recurring schedule has ended.
+     * <p>
+     * If this is a one-time event, or if the recurrence rule has ended returns {@code null} instead.
      */
-    public static long getTimeUntilNextOccurrence(long timeSinceOccurrenceStarted, Schedule schedule) throws Exception {
+    public static OptionalLong getTimeUntilNextOccurrence(long timeSinceOccurrenceStarted,  Schedule schedule) {
         if (schedule != null) {
             return schedule.getTimeUntilNextOccurrence(timeSinceOccurrenceStarted);
         }
-        return 86400L - timeSinceOccurrenceStarted;
+        return OptionalLong.of(86400L - timeSinceOccurrenceStarted);
     }
 }

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.OptionalLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -50,7 +51,7 @@ public class SimulatorAgentProtocolScheduleTest {
     }
 
     @Test
-    public void getDelayInfiniteCustomRecurring() throws Exception {
+    public void getDelayInfiniteCustomRecurring() {
         SimulatorProtocol.Schedule schedule = new SimulatorProtocol.Schedule(
                 Date.from(Instant.parse("2000-01-01T00:00:00.000Z")),
                 null,
@@ -59,19 +60,19 @@ public class SimulatorAgentProtocolScheduleTest {
 
         long now = Instant.parse("2000-01-01T00:00:00.000Z").getEpochSecond();
         long timeSinceOccurrenceStarted = schedule.getTimeSinceOccurrenceStarted(now);
-        assertEquals(100, SimulatorProtocol.getDelay(100, timeSinceOccurrenceStarted, schedule));
+        assertEquals(100, SimulatorProtocol.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
 
         now = Instant.parse("2000-01-01T00:01:00.000Z").getEpochSecond();
         timeSinceOccurrenceStarted = schedule.getTimeSinceOccurrenceStarted(now);
-        assertEquals(40, SimulatorProtocol.getDelay(100, timeSinceOccurrenceStarted, schedule));
+        assertEquals(40, SimulatorProtocol.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
 
         now = Instant.parse("2000-01-01T00:02:00.000Z").getEpochSecond();
         timeSinceOccurrenceStarted = schedule.getTimeSinceOccurrenceStarted(now);
-        assertEquals(3580, SimulatorProtocol.getDelay(100, timeSinceOccurrenceStarted, schedule));
+        assertEquals(3580, SimulatorProtocol.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
     }
 
     @Test
-    public void getDelayCustomRecurringWithEndDate() throws Exception {
+    public void getDelayCustomRecurringWithEndDate() {
         SimulatorProtocol.Schedule schedule = new SimulatorProtocol.Schedule(
                 Date.from(Instant.parse("2000-01-01T00:00:00.000Z")),
                 null,
@@ -80,26 +81,26 @@ public class SimulatorAgentProtocolScheduleTest {
 
         long now = Instant.parse("2000-01-01T00:00:00.000Z").getEpochSecond();
         long timeSinceOccurrenceStarted = schedule.getTimeSinceOccurrenceStarted(now);
-        assertEquals(100, SimulatorProtocol.getDelay(100, timeSinceOccurrenceStarted, schedule));
+        assertEquals(100, SimulatorProtocol.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
 
         now = Instant.parse("2000-01-01T00:01:00.000Z").getEpochSecond();
         timeSinceOccurrenceStarted = schedule.getTimeSinceOccurrenceStarted(now);
-        assertEquals(40, SimulatorProtocol.getDelay(100, timeSinceOccurrenceStarted, schedule));
+        assertEquals(40, SimulatorProtocol.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
 
         now = Instant.parse("2000-01-01T00:02:00.000Z").getEpochSecond();
         timeSinceOccurrenceStarted = schedule.getTimeSinceOccurrenceStarted(now);
-        assertEquals(3580, SimulatorProtocol.getDelay(100, timeSinceOccurrenceStarted, schedule));
+        assertEquals(3580, SimulatorProtocol.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
 
         now = Instant.parse("2000-01-01T01:00:00.000Z").getEpochSecond();
         timeSinceOccurrenceStarted = schedule.getTimeSinceOccurrenceStarted(now);
-        assertEquals(100, SimulatorProtocol.getDelay(100, timeSinceOccurrenceStarted, schedule));
+        assertEquals(100, SimulatorProtocol.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
 
         now = Instant.parse("2000-01-01T01:01:00.000Z").getEpochSecond();
         timeSinceOccurrenceStarted = schedule.getTimeSinceOccurrenceStarted(now);
-        assertEquals(40, SimulatorProtocol.getDelay(100, timeSinceOccurrenceStarted, schedule));
+        assertEquals(40, SimulatorProtocol.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
 
         now = Instant.parse("2000-01-01T01:02:00.000Z").getEpochSecond();
-        long finalTimeSinceOccurrenceStarted = schedule.getTimeSinceOccurrenceStarted(now);
-        assertThrows(Exception.class, () -> SimulatorProtocol.getDelay(100, finalTimeSinceOccurrenceStarted, schedule));
+        timeSinceOccurrenceStarted = schedule.getTimeSinceOccurrenceStarted(now);
+        assertEquals(OptionalLong.empty(), SimulatorProtocol.getDelay(100, timeSinceOccurrenceStarted, schedule));
     }
 }
