@@ -43,10 +43,10 @@ dependencies {
     api "fr.neolegal:exp4j:$exp4jVersion"
 
     dependencies {
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.12.2'
-        testImplementation 'org.mockito:mockito-core:5.12.0'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testImplementation 'org.mockito:mockito-core:5.19.0'
         testRuntimeOnly 'org.glassfish:jakarta.el:4.0.2'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.12.2'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
         testRuntimeOnly "org.junit.platform:junit-platform-launcher"
     }
 }
