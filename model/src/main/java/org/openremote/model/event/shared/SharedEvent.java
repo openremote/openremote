@@ -25,6 +25,7 @@ import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.Event;
 import org.openremote.model.gateway.*;
+import org.openremote.model.services.ExternalServiceEvent;
 import org.openremote.model.rules.RulesEngineStatusEvent;
 import org.openremote.model.rules.RulesetChangedEvent;
 import org.openremote.model.simulator.RequestSimulatorState;
@@ -38,6 +39,7 @@ import org.openremote.model.alarm.AlarmEvent;
 @JsonSubTypes({
     // Events used on client and server (serializable)
     @JsonSubTypes.Type(value = AlarmEvent.class, name = "alarm"),
+    @JsonSubTypes.Type(value = ExternalServiceEvent.class, name = "external-service"),
     @JsonSubTypes.Type(value = SyslogEvent.class, name = "syslog"),
     @JsonSubTypes.Type(value = AttributeEvent.class, name = "attribute"),
     @JsonSubTypes.Type(value = AssetEvent.class, name = "asset"),
