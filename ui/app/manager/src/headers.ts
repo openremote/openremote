@@ -19,6 +19,15 @@ export function headerItemAssets<S extends AppStateKeyed, A extends AnyAction>(o
     };
 }
 
+export function headerItemServices<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+    return {
+        icon: "puzzle",
+        href: "services",
+        text: "services.title",
+        roles: ["read:services"]
+    };
+}
+
 export function headerItemRules<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "state-machine",
