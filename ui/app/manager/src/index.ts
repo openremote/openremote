@@ -11,6 +11,7 @@ import {
     headerItemGatewayConnection,
     headerItemGatewayTunnel,
     headerItemInsights,
+    headerItemServices,
     headerItemLanguage,
     headerItemLogout,
     headerItemLogs,
@@ -29,6 +30,8 @@ import "./pages/page-gateway";
 import {pageGatewayProvider} from "./pages/page-gateway";
 import "./pages/page-insights";
 import {PageInsightsConfig, pageInsightsProvider} from "./pages/page-insights";
+import "./pages/page-services";
+import {pageServicesProvider} from "./pages/page-services";
 import "./pages/page-rules";
 import {PageRulesConfig, pageRulesProvider} from "./pages/page-rules";
 import "./pages/page-logs";
@@ -70,6 +73,7 @@ export const DefaultPagesConfig: PageProvider<any>[] = [
     pageGatewayTunnelProvider(store),
     pageLogsProvider(store),
     pageInsightsProvider(store),
+    pageServicesProvider(store),
     pageRulesProvider(store),
     pageAccountProvider(store),
     pageRolesProvider(store),
@@ -85,7 +89,8 @@ export const DefaultHeaderMainMenu: {[name: string]: HeaderItem} = {
     map: headerItemMap(orApp),
     assets: headerItemAssets(orApp),
     rules: headerItemRules(orApp),
-    insights: headerItemInsights(orApp)
+    services: headerItemServices(orApp),
+    insights: headerItemInsights(orApp),
 };
 
 export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
