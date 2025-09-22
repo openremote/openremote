@@ -60,6 +60,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     public static final String PROTOCOL_DISPLAY_NAME = "Simulator";
 
     protected final Map<AttributeRef, ScheduledFuture<?>> replayMap = new ConcurrentHashMap<>();
+    protected final Map<AttributeRef, PredictedDatapointWindow> predictedDatapointWindowMap = new ConcurrentHashMap<>();
 
     public SimulatorProtocol(SimulatorAgent agent) {
         super(agent);
@@ -99,6 +100,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             .ifPresent(simulatorReplayDatapoints -> {
                 LOG.info("Simulator replay data found for linked attribute: " + attribute);
                 AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
+                predictedDatapointWindowMap.put(attributeRef, PredictedDatapointWindow.BOTH);
 
                 // Sorting so we can assume positioning
                 SimulatorReplayDatapoint[] sorted = Arrays.stream(simulatorReplayDatapoints)
@@ -204,12 +206,18 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }
 
         if (attribute.getMeta().get(HAS_PREDICTED_DATA_POINTS).flatMap(AbstractNameValueHolder::getValue).orElse(false)) {
+            PredictedDatapointWindow status = predictedDatapointWindowMap.get(attributeRef);
             List<ValueDatapoint<?>> predictedDatapoints =
-                    calculatePredictedDatapoints(simulatorReplayDatapoints, schedule, timeSinceOccurrenceStarted, now);
+                    calculatePredictedDatapoints(simulatorReplayDatapoints, schedule, status, timeSinceOccurrenceStarted, now);
             try {
                 updateLinkedAttributePredictedDataPoints(attributeRef, predictedDatapoints);
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
+            }
+            if (status.equals(PredictedDatapointWindow.BOTH) || status.equals(PredictedDatapointWindow.NEXT)) {
+                predictedDatapointWindowMap.put(attributeRef, PredictedDatapointWindow.NONE);
+            } else if (simulatorReplayDatapoints[simulatorReplayDatapoints.length - 1] == nextDatapoint) {
+                predictedDatapointWindowMap.put(attributeRef, PredictedDatapointWindow.NEXT);
             }
         }
 
@@ -234,26 +242,33 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     public List<ValueDatapoint<?>> calculatePredictedDatapoints(
             SimulatorReplayDatapoint[] simulatorReplayDatapoints,
             Optional<Schedule> schedule,
+            PredictedDatapointWindow status,
             long timeSinceOccurrenceStarted,
             long now
     ) {
+        List<ValueDatapoint<?>> predictedDatapoints = new ArrayList<>();
+        if (status.equals(PredictedDatapointWindow.NONE)) return predictedDatapoints;
+
         long occurrenceDuration = 0;
         boolean isSingleOccurrence = schedule.map(Schedule::getIsSingleOccurrence).orElse(false);
         if (!isSingleOccurrence) occurrenceDuration = getOccurrenceDuration(schedule.orElse(null));
 
-        List<ValueDatapoint<?>> currentAndMaybeNextWindow = new ArrayList<>();
-
         for (SimulatorReplayDatapoint d : simulatorReplayDatapoints) {
             OptionalLong delay = getDelay(d.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
-            if (delay.isEmpty()) return currentAndMaybeNextWindow;
+            if (delay.isEmpty()) return predictedDatapoints;
             long timestamp = delay.getAsLong() + now;
 
-            currentAndMaybeNextWindow.add(new SimulatorReplayDatapoint(timestamp*1000, d.value).toValueDatapoint());
-            if (!isSingleOccurrence) currentAndMaybeNextWindow.add(
-                new SimulatorReplayDatapoint((timestamp+occurrenceDuration)*1000, d.value).toValueDatapoint()
-            );
+            if (status.equals(PredictedDatapointWindow.BOTH)) {
+                predictedDatapoints.add(new SimulatorReplayDatapoint(timestamp*1000, d.value).toValueDatapoint());
+            }
+            if (!isSingleOccurrence
+                    && (status.equals(PredictedDatapointWindow.BOTH)
+                    || status.equals(PredictedDatapointWindow.NEXT))
+            ) {
+                predictedDatapoints.add(new SimulatorReplayDatapoint((timestamp+occurrenceDuration)*1000, d.value).toValueDatapoint());
+            }
         }
-        return currentAndMaybeNextWindow;
+        return predictedDatapoints;
     }
 
     public static class Schedule implements Serializable {
@@ -429,5 +444,14 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             return schedule.getTimeUntilNextOccurrence(timeSinceOccurrenceStarted);
         }
         return OptionalLong.of(86400L - timeSinceOccurrenceStarted);
+    }
+
+    /**
+     * Determines for what occurrence window to create predicted datapoints
+     */
+    public enum PredictedDatapointWindow {
+        BOTH,
+        NONE,
+        NEXT
     }
 }

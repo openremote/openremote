@@ -484,45 +484,50 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
             protocol.linkedAttributes.get(attributeRef) == attribute
         }
 
-        and: "the delay is 1 hour"
-        conditions.eventually {
-            delay == HOUR
+        (1..2).each { i ->
+            and: "the delay is 1 hour"
+            conditions.eventually {
+                delay == HOUR
+            }
+
+            and: "the predicted datapoints are present"
+            conditions.eventually {
+                def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+                datapoints.size() == 4
+                datapoints.get(3).getTimestamp() / 1000 == HOUR * 1
+                datapoints.get(2).getTimestamp() / 1000 == HOUR * 2
+                datapoints.get(1).getTimestamp() / 1000 == HOUR * 25
+                datapoints.get(0).getTimestamp() / 1000 == HOUR * 26
+            }
+
+            when: "fast forward 1 hour"
+            advancePseudoClock(1, HOURS, container)
+            future.get() // resolve future manually, because we surpassed the delay
+
+            then: "datapoint is present"
+            conditions.eventually {
+                getDatapointTimestamp(attribute) == i * HOUR
+            }
         }
 
-        and: "the predicted datapoints are present"
+        and: "the delay is 1 day and -1 hour"
         conditions.eventually {
-            def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
-            datapoints.get(3).getTimestamp()/1000 == HOUR * 1
-            datapoints.get(2).getTimestamp()/1000 == HOUR * 2
-            datapoints.get(1).getTimestamp()/1000 == HOUR * 25
-            datapoints.get(0).getTimestamp()/1000 == HOUR * 26
+            delay == DAY - HOUR
         }
 
         when: "fast forward 1 hour"
-        advancePseudoClock(1, HOURS, container)
+        advancePseudoClock(1, DAYS, container)
+        advancePseudoClock(-1, HOURS, container)
         future.get() // resolve future manually, because we surpassed the delay
 
         then: "datapoint is present"
         conditions.eventually {
-            getDatapointTimestamp(attribute) == HOUR
-        }
-
-        and: "the delay is 1 hour"
-        conditions.eventually {
-            delay == HOUR
-        }
-
-        when: "fast forward 1 hour"
-        advancePseudoClock(1, HOURS, container)
-        future.get() // resolve future manually, because we surpassed the delay
-
-        then: "datapoint is present"
-        conditions.eventually {
-            getDatapointTimestamp(attribute) == HOUR * 2
+            getDatapointTimestamp(attribute) == DAY + HOUR
         }
 
         and: "the predicted datapoints are present"
         def datapoints1 = assetPredictedDatapointService.getDatapoints(attributeRef)
+        datapoints1.size() == 6
         datapoints1.get(5).getTimestamp()/1000 == HOUR * 1
         datapoints1.get(4).getTimestamp()/1000 == HOUR * 2
         datapoints1.get(3).getTimestamp()/1000 == HOUR * 25
