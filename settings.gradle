@@ -10,7 +10,7 @@ pluginManagement {
     repositories {
         gradlePluginPortal()
         maven {
-            url "https://jitpack.io"
+            url = "https://jitpack.io"
         }
     }
 }
