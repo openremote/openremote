@@ -185,7 +185,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         long defaultReplayLoopDuration = 86400; // 1 day in seconds
         long now = timerService.getNow().getEpochSecond(); // UTC
 
-        long timeSinceOccurrenceStarted = schedule.map(s -> s.getTimeSinceOccurrenceStarted(now))
+        long timeSinceOccurrenceStarted = schedule.map(s -> s.advanceToNextOccurrence(now))
             .orElse(now % defaultReplayLoopDuration); // Remainder since 00:00
 
         // Find datapoint with timestamp after the current occurrence
@@ -331,7 +331,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         private long currentOccurrence;
 
         /**
-         * Gets the time in seconds from when the occurrence starts relative to the current epoch time.
+         * Advance to next occurrence relative to the current epoch time.
          * <p>
          * An occurrence can be a single event or part of a recurring event. If no recurrence rule has been configured,
          * the start time is used, or if the occurrence hasn't started yet.
@@ -342,7 +342,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
          * @param epoch Seconds since the epoch
          * @return Seconds since the occurrence started
          */
-        public long getTimeSinceOccurrenceStarted(long epoch) {
+        public long advanceToNextOccurrence(long epoch) {
             Recur<LocalDateTime> recurrence = getRecurrence();
 
             if (recurrence == null || epoch < startTime) {
