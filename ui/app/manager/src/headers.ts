@@ -23,7 +23,7 @@ export function headerItemServices<S extends AppStateKeyed, A extends AnyAction>
     return {
         icon: "puzzle",
         href: "services",
-        text: "services.title",
+        text: "services",
         roles: ["read:services"]
     };
 }
