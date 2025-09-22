@@ -230,20 +230,20 @@ export class OrServices extends LitElement {
         // If no services available, show a single consistent message
         if (this.services.length === 0) {
             return html`<div class="msg">
-                <or-translate value="services.noServices"></or-translate>
+                <or-translate value="service.noServices"></or-translate>
             </div>`;
         }
 
         // If services exist but none selected, show selection prompt
         if (!this.selectedService) {
             return html`<div class="msg">
-                <or-translate value="services.noServiceSelected"></or-translate>
+                <or-translate value="service.noServiceSelected"></or-translate>
             </div>`;
         }
 
         // Service selected - render iframe
         return html`<or-iframe id="service-iframe" .src="${this._getServiceUrlPath(this.selectedService)}">
-            <span slot="onerror">${i18next.t("services.iframeLoadError")}</span>
+            <span slot="onerror">${i18next.t("service.iframeLoadError")}</span>
         </or-iframe>`;
     }
 
@@ -283,7 +283,7 @@ export class OrServices extends LitElement {
                                           <or-icon
                                               class="hideMobile"
                                               icon="${this.selectedService.icon ?? "puzzle"}"
-                                              title="${i18next.t("services.services")}"
+                                              title="${i18next.t("services")}"
                                           ></or-icon>
                                           <span>${this.selectedService.label || this.selectedService.serviceId}</span>
                                       </div>
