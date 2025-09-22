@@ -128,7 +128,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
             return future
         }
 
-        agent = (SimulatorAgent) assetStorageService.find(agent.getId(), Agent.class)
+        
         protocol = (SimulatorProtocol) agentService.protocolInstanceMap.get(agent.getId())
         protocol.scheduledExecutorService = executor
     }
@@ -167,7 +167,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         then: "the agent status should become CONNECTED and the attribute linked to the protocol"
         conditions.eventually {
-            agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assetStorageService.find(agent.getId(), Agent.class).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
             protocol.linkedAttributes.get(attributeRef) == attribute
         }
 
@@ -189,7 +189,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         then: "the agent status should become CONNECTED and the attribute linked to the protocol"
         conditions.eventually {
-            agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assetStorageService.find(agent.getId(), Agent.class).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
             protocol.linkedAttributes.get(attributeRef) == attribute
         }
 
@@ -259,7 +259,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 //
 //        then: "the agent status should become CONNECTED and the attribute linked to the protocol"
 //        conditions.eventually {
-//            agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+//            assetStorageService.find(agent.getId(), Agent.class).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
 //            protocol.linkedAttributes.size() == 1
 //        }
 //
@@ -319,7 +319,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         then: "the agent status should become CONNECTED and the attribute linked to the protocol"
         conditions.eventually {
-            agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assetStorageService.find(agent.getId(), Agent.class).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
             protocol.linkedAttributes.get(attributeRef) == attribute
         }
 
@@ -383,7 +383,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         then: "the agent status should become CONNECTED and the attribute linked to the protocol"
         conditions.eventually {
-            agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assetStorageService.find(agent.getId(), Agent.class).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
             protocol.linkedAttributes.get(attributeRef) == attribute
         }
 
@@ -480,7 +480,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         then: "the agent status should become CONNECTED and the attribute linked to the protocol"
         conditions.eventually {
-            agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assetStorageService.find(agent.getId(), Agent.class).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
             protocol.linkedAttributes.get(attributeRef) == attribute
         }
 
@@ -565,7 +565,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         then: "the agent status should become CONNECTED and the attribute linked to the protocol"
         conditions.eventually {
-            agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assetStorageService.find(agent.getId(), Agent.class).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
             protocol.linkedAttributes.get(attributeRef) == attribute
         }
 
