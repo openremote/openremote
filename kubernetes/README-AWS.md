@@ -157,7 +157,7 @@ helm install manager manager -f manager/values-haproxy-eks.yaml \
 with
 ```bash
 helm install manager manager -f manager/values-haproxy-eks.yaml -f manager/values-demo.yaml \
-  --set-string or.hostname=$FQDN
+  --set-string or.hostname=$FQDN --set-string image.repository=$AWS_DEVELOPERS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager
 ```
 
 This values file does two things:
