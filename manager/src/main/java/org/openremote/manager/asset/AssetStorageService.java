@@ -1487,6 +1487,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         sb.append(buildOrderByString(query));
         sb.append(buildLimitString(query));
+        sb.append(buildOffsetString(query));
         return new Pair<>(new PreparedAssetQuery(sb.toString(), binders), containsCalendarPredicate);
     }
 
@@ -1602,6 +1603,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected static String buildLimitString(AssetQuery query) {
         if (query.limit > 0) {
             return " LIMIT " + query.limit;
+        }
+        return "";
+    }
+
+    protected static String buildOffsetString(AssetQuery query) {
+        if (query.offset > 0) {
+            return " OFFSET " + query.offset;
         }
         return "";
     }
