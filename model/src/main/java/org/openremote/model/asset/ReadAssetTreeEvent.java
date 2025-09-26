@@ -23,9 +23,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.query.AssetQuery;
 
-
 /**
- * A client sends this event to the server to query assets that are optimized for tree display, expecting
+ * A client sends this event to the server to query assets that are optimized
+ * for tree display, expecting
  * the server to answer "soon" with an {@link AssetTreeEvent} with the results.
  */
 public class ReadAssetTreeEvent extends ReadAssetsEvent {

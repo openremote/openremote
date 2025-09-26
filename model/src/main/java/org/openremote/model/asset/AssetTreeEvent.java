@@ -42,7 +42,7 @@ public class AssetTreeEvent extends SharedEvent {
     @Override
     public String toString() {
         return AssetTreeEvent.class.getSimpleName() + "{" +
-            ", assetTree=" + assetTree.toString() +
-            '}';
+                ", assetTree=" + assetTree.toString() +
+                '}';
     }
 }

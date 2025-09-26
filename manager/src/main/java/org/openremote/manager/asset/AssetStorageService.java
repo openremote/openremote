@@ -1010,6 +1010,26 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }));
     }
 
+    /**
+     * Returns a map of asset IDs with the respective hasChildren flag.
+     */
+    public Map<String, Boolean> hasChildren(List<String> assetIds) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            // Get all parent IDs that have children
+            List<String> parentsWithChildren = entityManager.createQuery(
+                "select distinct a.parentId from Asset a where a.parentId in :assetIds", String.class)
+                .setParameter("assetIds", assetIds)
+                .getResultList();
+            
+            // Build map: assetId -> hasChildren
+            return assetIds.stream()
+                .collect(Collectors.toMap(
+                    id -> id,
+                    parentsWithChildren::contains
+                ));
+        });
+    }
+
     public List<UserAssetLink> findUserAssetLinks(String realm, String userId, String assetId) {
         return findUserAssetLinks(
             realm,
@@ -2111,7 +2131,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         if (assetQuery.limit > 0) {
             int originalLimit = assetQuery.limit;
             assetQuery.limit++;
-            
+
             assets = findAll(assetQuery);
 
             // Check if there are assets outside of the original limit
@@ -2124,8 +2144,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             assets = findAll(assetQuery);
         }
 
+        // Get the hasChildren flag for each asset
+        Map<String, Boolean> hasChildren = hasChildren(assets.stream().map(Asset::getId).collect(Collectors.toList()));
+
         // Create the asset tree and event
-        AssetTree assetTree = new AssetTree(assets, assetQuery.limit, assetQuery.offset, hasMore);
+        AssetTree assetTree = new AssetTree(assets, assetQuery.limit, assetQuery.offset, hasMore, hasChildren);
         response = new AssetTreeEvent(assetTree);
 
         // Respond to the read asset tree request

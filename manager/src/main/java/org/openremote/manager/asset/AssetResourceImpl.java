@@ -52,6 +52,7 @@ import org.openremote.model.util.ValueUtil;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static jakarta.ws.rs.core.Response.Status.*;
@@ -580,8 +581,11 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             assets = assetStorageService.findAll(query);
         }
 
-        // Convert the assets to its optimized structure for tree display
-        AssetTree assetTree = new AssetTree(assets, query.limit, query.offset, hasMore);
+        // Check whether the assets have children, and set the flag accordingly
+        Map<String, Boolean> hasChildren = assetStorageService.hasChildren(assets.stream().map(Asset::getId).collect(Collectors.toList()));
+
+        // Create the optimized asset tree response
+        AssetTree assetTree = new AssetTree(assets, query.limit, query.offset, hasMore, hasChildren);
         return assetTree;
     }
 

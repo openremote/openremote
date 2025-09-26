@@ -11,14 +11,14 @@ public class AssetTreeAsset {
     String name;
     String type;
 
-    boolean isParent;
+    boolean hasChildren;
     Date createdOn;
 
-    public AssetTreeAsset(String id, String name, String type, boolean isParent, Date createdOn) {
+    public AssetTreeAsset(String id, String name, String type, boolean hasChildren, Date createdOn) {
         this.id = id;
         this.name = name;
         this.type = type;
-        this.isParent = isParent;
+        this.hasChildren = hasChildren;
         this.createdOn = createdOn;
     }
 
@@ -45,13 +45,13 @@ public class AssetTreeAsset {
     public void setType(String type) {
         this.type = type;
     }
-    
-    public boolean isParent() {
-        return isParent;
+
+    public boolean hasChildren() {
+        return hasChildren;
     }
 
-    public void setParent(boolean isParent) {
-        this.isParent = isParent;
+    public void setHasChildren(boolean hasChildren) {
+        this.hasChildren = hasChildren;
     }
 
     public Date getCreatedOn() {
@@ -62,22 +62,19 @@ public class AssetTreeAsset {
         this.createdOn = createdOn;
     }
 
-
-    public static AssetTreeAsset fromAsset(Asset<?> asset) {
-        // TODO: How do we best detect whether this asset is a parent? E.g. has children.
-        return new AssetTreeAsset(asset.getId(), asset.getName(), asset.getType(), asset.getParentId() == null, asset.getCreatedOn());
+    public static AssetTreeAsset fromAsset(Asset<?> asset, Boolean hasChildren) {
+        return new AssetTreeAsset(asset.getId(), asset.getName(), asset.getType(), hasChildren, asset.getCreatedOn());
     }
-
 
     @Override
     public String toString() {
         return "AssetTreeAsset{" +
-            "id='" + id + '\'' +
-            ", name='" + name + '\'' +
-            ", type='" + type + '\'' +
-            ", isParent=" + isParent +
-            ", createdOn=" + createdOn +
-            '}';
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", type='" + type + '\'' +
+                ", hasChildren=" + hasChildren +
+                ", createdOn=" + createdOn +
+                '}';
     }
-    
+
 }
