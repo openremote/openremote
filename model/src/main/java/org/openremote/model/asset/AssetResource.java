@@ -335,8 +335,8 @@ public interface AssetResource {
     @Path("tree")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @Operation(operationId = "treeQueryAssets", summary = "Retrieve assets using a query, returning an optimized structure for tree display")
-    Asset<?>[] treeQueryAssets(@BeanParam RequestParams requestParams, AssetQuery query);
+    @Operation(operationId = "queryAssetTree", summary = "Retrieve part of the asset tree using a query, returns an optimized structure for tree display")
+    AssetTree queryAssetTree(@BeanParam RequestParams requestParams, AssetQuery query);
 
     /**
      * Change parent for a set of asset

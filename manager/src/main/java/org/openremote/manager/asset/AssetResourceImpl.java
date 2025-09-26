@@ -38,6 +38,8 @@ import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetResource;
+import org.openremote.model.asset.AssetTree;
+import org.openremote.model.asset.AssetTreeAsset;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.attribute.*;
 import org.openremote.model.http.RequestParams;
@@ -559,15 +561,28 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public Asset<?>[] treeQueryAssets(RequestParams requestParams, AssetQuery query) {
-        // Collect the assets from the existing queryAssets endpoint
-        var assets = queryAssets(requestParams, query);
+    public AssetTree queryAssetTree(RequestParams requestParams, AssetQuery query) {
+        List<Asset<?>> assets = Collections.emptyList();
+        boolean hasMore = false;
+
+        // determine `hasMore` flag (extend limit by 1, with size comparison to check if there are more assets outside of the limit)
+        if (query.limit > 0) {
+            int originalLimit = query.limit;
+            query.limit++;
+            
+            assets = assetStorageService.findAll(query);
+            
+            hasMore = assets.size() > originalLimit;
+            if (hasMore) {
+                assets.remove(assets.size() - 1);
+            }
+        } else {
+            assets = assetStorageService.findAll(query);
+        }
 
         // Convert the assets to its optimized structure for tree display
-
-
-
-        return assets;
+        AssetTree assetTree = new AssetTree(assets, query.limit, query.offset, hasMore);
+        return assetTree;
     }
 
     protected AttributeWriteResult doAttributeWrite(AttributeEvent event) {

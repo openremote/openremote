@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 /**
  * This class is used to encapsulate the result of a read asset tree request.
- * It contains the assets, the limit, the offset, and whether there are more assets to fetch.
+ * It contains the optimized assets {@link AssetTreeAsset}, the limit, the offset, and whether there are more assets to fetch.
  */
 public class AssetTree {
 
