@@ -625,7 +625,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                             }}></or-mwc-input>
                                         </div>
                                     </li>
-                                    ${''/*virtualize({items: nodes, renderItem: (n: TemplateResult) => html`${n}`, scroller: true})*/}
                                 </ol>
                             </div>
                         `;
@@ -644,6 +643,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
+        console.debug(_changedProperties);
         const result = super.shouldUpdate(_changedProperties);
         if (_changedProperties.has("assets")
             || _changedProperties.has("rootAssets")
@@ -765,7 +765,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
             // Update HTML attributes of the now 'expanded' node
             const elem = expander.parentElement!.parentElement!.parentElement!;
-            elem.toggleAttribute("data-expanded");
+            elem.toggleAttribute("data-expanded", node.expanded);
             if (!silent) {
                 this.dispatchEvent(new OrAssetTreeToggleExpandEvent({node: node}));
             }
@@ -1190,10 +1190,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
             // Scroll to top of list after filtering
             // TODO: Should this code be here? Or is this from a previous commit?
-            let listElement = this.shadowRoot?.getElementById('list');
+            /*let listElement = this.shadowRoot?.getElementById('list');
             if(listElement) {
                 listElement.scrollTop = 0;
-            }
+            }*/
         }
     }
 
@@ -2124,6 +2124,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         if (treeNode.expanded && treeNode.children.length === 0) {
+            console.warn("Tree node has no children, collapsing it...");
             treeNode.expanded = false;
         }
 
