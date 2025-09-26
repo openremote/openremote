@@ -242,19 +242,6 @@ declare global {
     }
 }
 
-export const getAssetTypes = async () => {
-    const response = await manager.rest.api.AssetResource.queryAssets({
-        select: {
-            attributes: []
-        },
-        recursive: true
-    });
-
-    if(response && response.data) {
-        return response.data.map(asset => asset.type!);
-    }
-}
-
 @customElement("or-asset-tree")
 export class OrAssetTree extends subscribe(manager)(LitElement) {
 
@@ -1255,6 +1242,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             select: {
                 attributes: attributeCond ? undefined : []
             },
+            orderBy: {
+                property: this._getOrderBy(this.sortBy)
+            },
             names: assetCond,
             types: assetTypeCond,
             attributes: attributeCond
@@ -1703,6 +1693,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
     }
 
+    protected _getOrderBy(sortBy?: string): AssetQueryOrderBy$Property {
+        switch (sortBy) {
+            case "createdOn": return AssetQueryOrderBy$Property.CREATED_ON;
+            case "type": return AssetQueryOrderBy$Property.ASSET_TYPE;
+            default: return AssetQueryOrderBy$Property.NAME;
+        }
+    }
+
     /**
      * Main function to load assets and populate the tree.
      * Based on the HTML attributes of this component, it either fetches using a WebSocket connection or using a dataProvider.
@@ -1745,13 +1743,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             });
 
         } else {
-
-            let orderBy: AssetQueryOrderBy$Property;
-            switch (this.sortBy) {
-                case "type": orderBy = AssetQueryOrderBy$Property.ASSET_TYPE; break;
-                case "createdOn": orderBy = AssetQueryOrderBy$Property.CREATED_ON; break;
-                default: orderBy = AssetQueryOrderBy$Property.NAME; break;
-            }
             const query: AssetQuery = {
                 realm: {
                     name: manager.displayRealm
@@ -1761,7 +1752,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     attributes: []
                 },
                 orderBy: {
-                    property: orderBy
+                    property: this._getOrderBy(this.sortBy)
                 },
                 offset: offset,
                 limit: 500
