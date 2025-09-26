@@ -558,6 +558,18 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         return result.toArray(new Asset[0]);
     }
 
+    @Override
+    public Asset<?>[] treeQueryAssets(RequestParams requestParams, AssetQuery query) {
+        // Collect the assets from the existing queryAssets endpoint
+        var assets = queryAssets(requestParams, query);
+
+        // Convert the assets to its optimized structure for tree display
+
+
+
+        return assets;
+    }
+
     protected AttributeWriteResult doAttributeWrite(AttributeEvent event) {
         AttributeWriteFailure failure = null;
 
@@ -620,4 +632,6 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             assetStorageService.merge(asset);
         }
     }
+
+
 }

@@ -351,6 +351,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         clientEventService.addSubscription(ReadAssetEvent.class, this::onReadRequest);
         clientEventService.addSubscription(ReadAssetsEvent.class, this::onReadRequest);
         clientEventService.addSubscription(ReadAttributeEvent.class, this::onReadRequest);
+        clientEventService.addSubscription(ReadAssetTreeEvent.class, this::onReadAssetTreeRequest);
 
         container.getService(ManagerWebService.class).addApiSingleton(
             new AssetResourceImpl(
@@ -2090,6 +2091,22 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         throw new IllegalArgumentException("Unsupported operator: " + operator);
+    }
+
+    protected <T extends HasAssetQuery & RespondableEvent> void onReadAssetTreeRequest(ReadAssetTreeEvent event) {
+        AssetQuery assetQuery = event.getAssetQuery();
+
+        // // Collect the assets based on the query
+        // List<Asset<?>> assets = findAll(assetQuery);
+
+        // // Create the asset tree
+        // AssetTree assetTree = new AssetTree(assets, assetQuery.limit, assetQuery.offset, assetQuery.hasMore());
+
+        // // Create the event
+        // AssetTreeEvent event = new AssetTreeEvent(assetTree);
+
+        // // Respond to the event
+        // event.getResponseConsumer().accept(event);
     }
 
     protected <T extends HasAssetQuery & RespondableEvent> void onReadRequest(T event) {
