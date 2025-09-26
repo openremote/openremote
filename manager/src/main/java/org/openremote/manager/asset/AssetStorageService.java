@@ -1032,28 +1032,36 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
 
     public AssetTree queryAssetTree(AssetQuery query) {
-        List<Asset<?>> assets = Collections.emptyList();
+        List<Asset<?>> assets;
         boolean hasMore = false;
     
-        // determine `hasMore` flag (extend limit by 1, with size comparison to check if there are more assets outside of the limit)
+        // determine `hasMore` flag
         if (query.limit > 0) {
             int originalLimit = query.limit;
-            query.limit++;
+            query.limit = originalLimit + 1; // extend by 1
             
-            assets = findAll(query);
-            
+            // Get the assets
+            try {
+                assets = findAll(query);
+            } finally {
+                query.limit = originalLimit; // restore limit
+            }
+
+            // hasMore is if there are more assets than the original limit
             hasMore = assets.size() > originalLimit;
             if (hasMore) {
-                assets.remove(assets.size() - 1);
+                // keep only the assets within the original limit
+                assets = assets.subList(0, originalLimit);
             }
         } else {
             assets = findAll(query);
         }
     
-        // Check whether the assets have children, and set the flag accordingly
-        Map<String, Boolean> hasChildren = hasChildren(assets.stream().map(Asset::getId).collect(Collectors.toList()));
-    
-        // Create the optimized asset tree response
+        // Get the hasChildren flag
+        Map<String, Boolean> hasChildren = assets.isEmpty()
+        ? Collections.emptyMap()
+        : hasChildren(assets.stream().map(Asset::getId).collect(Collectors.toList()));
+
         return new AssetTree(assets, query.limit, query.offset, hasMore, hasChildren);
     }
     

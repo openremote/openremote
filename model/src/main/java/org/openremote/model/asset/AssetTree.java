@@ -27,7 +27,9 @@ public class AssetTree {
      */
     public AssetTree(List<Asset<?>> assets, int limit, int offset, boolean hasMore, Map<String, Boolean> hasChildren) {
         // Map the assets to asset tree assets
-        this.assets = assets.stream().map(asset -> AssetTreeAsset.fromAsset(asset, hasChildren.get(asset.getId())))
+        this.assets = assets.stream()
+                .map(asset -> AssetTreeAsset.fromAsset(asset,
+                        hasChildren != null ? hasChildren.getOrDefault(asset.getId(), false) : false))
                 .collect(Collectors.toList());
         this.limit = limit;
         this.offset = offset;
