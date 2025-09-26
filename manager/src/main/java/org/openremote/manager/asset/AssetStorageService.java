@@ -351,6 +351,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         clientEventService.addSubscription(ReadAssetEvent.class, this::onReadRequest);
         clientEventService.addSubscription(ReadAssetsEvent.class, this::onReadRequest);
         clientEventService.addSubscription(ReadAttributeEvent.class, this::onReadRequest);
+        clientEventService.addSubscription(ReadAssetTreeEvent.class, this::onReadAssetTreeRequest);
 
         container.getService(ManagerWebService.class).addApiSingleton(
             new AssetResourceImpl(
@@ -1009,6 +1010,61 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }));
     }
 
+    /**
+     * Returns a map of asset IDs with the respective hasChildren flag.
+     */
+    public Map<String, Boolean> hasChildren(List<String> assetIds) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            // Get all parent IDs that have children
+            List<String> parentsWithChildren = entityManager.createQuery(
+                "select distinct a.parentId from Asset a where a.parentId in :assetIds", String.class)
+                .setParameter("assetIds", assetIds)
+                .getResultList();
+            
+            // Build map: assetId -> hasChildren
+            return assetIds.stream()
+                .collect(Collectors.toMap(
+                    id -> id,
+                    parentsWithChildren::contains
+                ));
+        });
+    }
+
+
+    public AssetTree queryAssetTree(AssetQuery query) {
+        List<Asset<?>> assets;
+        boolean hasMore = false;
+    
+        // determine `hasMore` flag
+        if (query.limit > 0) {
+            int originalLimit = query.limit;
+            query.limit = originalLimit + 1; // extend by 1
+            
+            // Get the assets
+            try {
+                assets = findAll(query);
+            } finally {
+                query.limit = originalLimit; // restore limit
+            }
+
+            // hasMore is if there are more assets than the original limit
+            hasMore = assets.size() > originalLimit;
+            if (hasMore) {
+                // keep only the assets within the original limit
+                assets = assets.subList(0, originalLimit);
+            }
+        } else {
+            assets = findAll(query);
+        }
+    
+        // Get the hasChildren flag
+        Map<String, Boolean> hasChildren = assets.isEmpty()
+        ? Collections.emptyMap()
+        : hasChildren(assets.stream().map(Asset::getId).collect(Collectors.toList()));
+
+        return new AssetTree(assets, query.limit, query.offset, hasMore, hasChildren);
+    }
+    
     public List<UserAssetLink> findUserAssetLinks(String realm, String userId, String assetId) {
         return findUserAssetLinks(
             realm,
@@ -2098,6 +2154,22 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         throw new IllegalArgumentException("Unsupported operator: " + operator);
+    }
+
+    protected <T extends HasAssetQuery & RespondableEvent> void onReadAssetTreeRequest(ReadAssetTreeEvent event) {
+        Event response = null;
+
+        // Create the asset tree and event
+        AssetTree assetTree = queryAssetTree(event.getAssetQuery());
+        response = new AssetTreeEvent(assetTree);
+
+        // Respond to the read asset tree request
+        if (response != null) {
+            if (!isNullOrEmpty(((SharedEvent) event).getMessageID())) {
+                response.setMessageID(((SharedEvent) event).getMessageID());
+            }
+            event.getResponseConsumer().accept(response);
+        }
     }
 
     protected <T extends HasAssetQuery & RespondableEvent> void onReadRequest(T event) {

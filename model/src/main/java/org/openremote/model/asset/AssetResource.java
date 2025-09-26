@@ -320,6 +320,24 @@ public interface AssetResource {
     @Operation(operationId = "queryAssets", summary = "Retrieve assets using a query")
     Asset<?>[] queryAssets(@BeanParam RequestParams requestParams, AssetQuery query);
 
+
+    /**
+     * Retrieve assets using an {@link AssetQuery}, returning an optimized structure for tree display.
+     * This wraps the existing {@link #queryAssets} endpoint, but returns an optimized structure for tree display.
+     * <p>
+     * If the authenticated user is the superuser then assets referenced in the query or returned by the query can be in
+     * any realm. Otherwise assets must be in the same realm as the authenticated user, and for a restricted user, the
+     * assets must be linked to the user. An empty result is returned if the user does not have access to the assets.
+     * What is populated on the returned assets is determined by the
+     * {@link AssetQuery#select} value.
+     */
+    @POST
+    @Path("tree")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Operation(operationId = "queryAssetTree", summary = "Retrieve part of the asset tree using a query, returns an optimized structure for tree display")
+    AssetTree queryAssetTree(@BeanParam RequestParams requestParams, AssetQuery query);
+
     /**
      * Change parent for a set of asset
      */

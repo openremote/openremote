@@ -38,6 +38,8 @@ import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetResource;
+import org.openremote.model.asset.AssetTree;
+import org.openremote.model.asset.AssetTreeAsset;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.attribute.*;
 import org.openremote.model.http.RequestParams;
@@ -50,6 +52,7 @@ import org.openremote.model.util.ValueUtil;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static jakarta.ws.rs.core.Response.Status.*;
@@ -556,6 +559,19 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
 
         return result.toArray(new Asset[0]);
+    }
+
+    @Override
+    public AssetTree queryAssetTree(RequestParams requestParams, AssetQuery query) {
+        if (query == null) {
+            query = new AssetQuery();
+        }
+
+        if (!assetStorageService.authorizeAssetQuery(query, getAuthContext(), getRequestRealmName())) {
+            throw new ForbiddenException("User not authorized to execute specified query");
+        }
+        
+        return assetStorageService.queryAssetTree(query);
     }
 
     protected AttributeWriteResult doAttributeWrite(AttributeEvent event) {
