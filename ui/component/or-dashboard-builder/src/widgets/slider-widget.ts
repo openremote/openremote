@@ -177,7 +177,7 @@ export class SliderWidget extends OrAssetWidget {
       displayName: "Slider",
       displayIcon: "tune-variant",
       minColumnWidth: 2,
-      minColumnHeight: 3,
+      minColumnHeight: 2,
       getContentHtml: (config: SliderWidgetConfig): OrAssetWidget => new SliderWidget(config),
       getSettingsHtml: (config: SliderWidgetConfig): WidgetSettings => new SliderSettings(config),
       getDefaultConfig: (): SliderWidgetConfig => getDefaultWidgetConfig(),
@@ -196,7 +196,6 @@ export class SliderWidget extends OrAssetWidget {
       this.loadAssets(attributeRefs);
     }
     if (!this._resizeObserver && this._wrapper) {
-      // falls du ihn noch brauchst
       this._resizeObserver = new ResizeObserver(throttle(() => window.dispatchEvent(new Event("resize")), 200));
       this._resizeObserver.observe(this._wrapper);
     }
@@ -223,7 +222,6 @@ export class SliderWidget extends OrAssetWidget {
   }
 
   public refreshContent(_force: boolean): void {
-    // sorgt dafür, dass Lit Änderungen im verschachtelten Objekt mitbekommt
     this.widgetConfig = JSON.parse(JSON.stringify(this.widgetConfig)) as SliderWidgetConfig;
   }
 

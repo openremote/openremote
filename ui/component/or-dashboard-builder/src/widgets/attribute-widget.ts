@@ -6,13 +6,13 @@ import { throttle } from "lodash";
 import { WidgetManifest } from "../util/or-widget";
 import { OrAssetWidget } from "../util/or-asset-widget";
 import { AssetWidgetConfig } from "../util/widget-config";
-import { CustomSettings } from "../settings/custom-settings";
+import { AttributeSettings } from "../settings/attribute-settings";
 import { AttributeRef } from "@openremote/model";
 import "@openremote/or-icon";
 import "@openremote/or-attribute-input";
-import type { ValueMappingUnion, TextMapping } from "../settings/custom-settings";
+import type { ValueMappingUnion, TextMapping } from "../settings/attribute-settings";
 
-export interface CustomWidgetConfig extends AssetWidgetConfig {
+export interface AttributeWidgetConfig extends AssetWidgetConfig {
   customFieldTwo: number;
   readonly: boolean;
   showHelperText: boolean;
@@ -26,7 +26,7 @@ export interface CustomWidgetConfig extends AssetWidgetConfig {
   iconColor: string;
 }
 
-function getDefaultWidgetConfig(): CustomWidgetConfig {
+function getDefaultWidgetConfig(): AttributeWidgetConfig {
   return {
     attributeRefs: [],
     customFieldTwo: 0,
@@ -93,9 +93,9 @@ const styling = css`
   }
 `;
 
-@customElement("custom-widget")
-export class CustomWidget extends OrAssetWidget {
-  protected widgetConfig!: CustomWidgetConfig;
+@customElement("attribute-widget")
+export class AttributeWidget extends OrAssetWidget {
+  protected widgetConfig!: AttributeWidgetConfig;
 
   @state() private _loading = false;
   @state() protected _error?: string;
@@ -105,12 +105,12 @@ export class CustomWidget extends OrAssetWidget {
 
   static getManifest(): WidgetManifest {
     return {
-      displayName: "Custom widget",
+      displayName: "Attribute widget",
       displayIcon: "emoticon",
       minColumnWidth: 1,
       minColumnHeight: 1,
-      getContentHtml: (cfg: CustomWidgetConfig) => new CustomWidget(cfg),
-      getSettingsHtml: (cfg: CustomWidgetConfig) => new CustomSettings(cfg),
+      getContentHtml: (cfg: AttributeWidgetConfig) => new AttributeWidget(cfg),
+      getSettingsHtml: (cfg: AttributeWidgetConfig) => new AttributeSettings(cfg),
       getDefaultConfig: () => getDefaultWidgetConfig(),
     };
   }
@@ -156,18 +156,15 @@ export class CustomWidget extends OrAssetWidget {
       });
   }
 
-  //  Daten (Assets) neu laden, wenn sich attributeRefs ändern
   public refreshContent(force: boolean): void {
-    this.widgetConfig = JSON.parse(JSON.stringify(this.widgetConfig)) as CustomWidgetConfig;
+    this.widgetConfig = JSON.parse(JSON.stringify(this.widgetConfig)) as AttributeWidgetConfig;
   }
 
-  // Cleanup
   disconnectedCallback(): void {
     this._resizeObserver?.disconnect();
     super.disconnectedCallback();
   }
 
-  // Responsive Icon-Größe
   protected firstUpdated(changed: PropertyValues): void {
     super.firstUpdated(changed);
     let lastSize = 0;
@@ -175,10 +172,8 @@ export class CustomWidget extends OrAssetWidget {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
         const newSize = Math.min(width, height) * 0.4;
-        // Nur bei echtem Unterschied (z.B. >0.5px) updaten
         if (Math.abs(newSize - lastSize) > 0.5) {
           lastSize = newSize;
-          // Asynchron setzen, um den Resize‑Loop zu unterbrechen
           requestAnimationFrame(() => {
             this.style.setProperty("--icon-size", `${newSize}px`);
           });

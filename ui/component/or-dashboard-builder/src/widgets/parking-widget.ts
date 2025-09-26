@@ -150,7 +150,6 @@ function getDefaultWidgetConfig(): ParkingWidgetConfig {
 
 @customElement("parking-widget")
 export class ParkingWidget extends OrAssetWidget {
-  // Override of widgetConfig with extended type
   protected widgetConfig!: ParkingWidgetConfig;
 
   @state()
@@ -203,7 +202,7 @@ export class ParkingWidget extends OrAssetWidget {
       }
     }
 
-    // dein Resize-Observer bleibt
+
     if (!this._resizeObserver && this._wrapper) {
       this._resizeObserver = new ResizeObserver(throttle(() => window.dispatchEvent(new Event("resize")), 200));
       this._resizeObserver.observe(this._wrapper);
@@ -236,10 +235,9 @@ export class ParkingWidget extends OrAssetWidget {
 
   private _getAttrValue(asset: any, ref?: AttributeRef) {
     const raw = asset?.attributes?.[ref?.name ?? ""];
-    return raw?.value !== undefined ? raw.value : raw; // deckt {value: ...} und Direktwerte ab
+    return raw?.value !== undefined ? raw.value : raw; 
   }
 
-  //  Daten (Assets) neu laden, wenn sich attributeRefs ändern
   public refreshContent(force: boolean): void {
     this.widgetConfig = JSON.parse(JSON.stringify(this.widgetConfig)) as ParkingWidgetConfig;
   }
@@ -250,27 +248,23 @@ export class ParkingWidget extends OrAssetWidget {
     super.disconnectedCallback();
   }
 
-  // Responsive Icon-Größe
   protected firstUpdated(changed: PropertyValues): void {
     super.firstUpdated(changed);
 
-    const BASE = 240; // „Entwurfsbreite“ deiner Card; dient nur zur Normierung
+    const BASE = 240; 
 
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
 
-        // Skalar 0.5…3.0 – je nach Platz
         const k = Math.max(0.5, Math.min(3, Math.min(width, height) / BASE));
         this.style.setProperty("--k", `${k}`);
 
-        // Icon proportional skalieren (mit Min/Max-Klammer)
         const icon = Math.max(32, Math.min(96, 56 * k));
         this.style.setProperty("--icon-size", `${icon}px`);
       }
     });
 
-    // Das Host-Element beobachten reicht, weil es die Kachelgröße erhält
     ro.observe(this);
     this._resizeObserver = ro;
   }

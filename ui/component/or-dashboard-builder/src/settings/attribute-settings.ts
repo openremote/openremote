@@ -1,6 +1,6 @@
 import { css, html, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { CustomWidgetConfig } from "../widgets/custom-widget";
+import { AttributeWidgetConfig } from "../widgets/attribute-widget";
 import { AttributesSelectEvent } from "../panels/attributes-panel";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { AssetWidgetSettings } from "../util/or-asset-widget";
@@ -76,7 +76,7 @@ const styling = css`
   }
 
   .error-message {
-    color: #b00020; /* sattes Rot */
+    color: #b00020; 
     font-size: 0.8rem;
     margin-top: 0.25rem;
     /* optional: links einrücken, damit sie unter den Inputs sitzt */
@@ -84,7 +84,7 @@ const styling = css`
   }
 
   .mapping-actions {
-    position: relative; /* Bezug für das absolute Dropdown */
+    position: relative; 
     display: inline-block;
   }
 
@@ -141,9 +141,9 @@ const styling = css`
   }
 `;
 
-@customElement("custom-settings")
-export class CustomSettings extends AssetWidgetSettings {
-  protected readonly widgetConfig!: CustomWidgetConfig;
+@customElement("attribute-settings")
+export class AttributeSettings extends AssetWidgetSettings {
+  protected readonly widgetConfig!: AttributeWidgetConfig;
   @property({ type: Boolean }) private showMenu = false;
 
   @state() private rangeErrors: Record<number, string> = {};
@@ -531,9 +531,6 @@ export class CustomSettings extends AssetWidgetSettings {
     const map = new Map<string, Array<{ mapping: ValueMappingUnion; idx: number }>>();
 
     (this.widgetConfig.valueMappings ?? []).forEach((m, idx) => {
-      // m.type ist jetzt eines der Literale "value" | "range" | "regex" | "special"
-      // Du kannst hier auch eine Übersetzung machen, z.B. "Allgemein" für "value"
-      // const key = m.type === "value" ? "Allgemein" : m.type;
       const key = m.type;
 
       if (!map.has(key)) {

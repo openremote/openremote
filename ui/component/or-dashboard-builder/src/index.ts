@@ -31,7 +31,7 @@ import {MapWidget} from "./widgets/map-widget";
 import {AttributeInputWidget} from "./widgets/attribute-input-widget";
 import {TableWidget} from "./widgets/table-widget";
 import {GatewayWidget} from "./widgets/gateway-widget";
-import {CustomWidget} from "./widgets/custom-widget";
+import {AttributeWidget} from "./widgets/attribute-widget";
 import { BatteryWidget } from "./widgets/battery-widget";
 import { ParkingWidget } from "./widgets/parking-widget";
 import { SliderWidget } from "./widgets/slider-widget";
@@ -222,7 +222,7 @@ export function registerWidgetTypes() {
     widgetTypes.set("attributeinput", AttributeInputWidget.getManifest());
     widgetTypes.set("table", TableWidget.getManifest());
     widgetTypes.set("gateway", GatewayWidget.getManifest());
-    widgetTypes.set("custom", CustomWidget.getManifest());
+    widgetTypes.set("attribute", AttributeWidget.getManifest());
     widgetTypes.set("battery", BatteryWidget.getManifest());
     widgetTypes.set("parking", ParkingWidget.getManifest());
     widgetTypes.set("slider", SliderWidget.getManifest());

@@ -43,13 +43,13 @@ const styling = css`
     height: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center; /* Icon+Input mittig */
+    align-items: center; 
     text-align: center;
     justify-content: center;
     box-sizing: border-box;
     overflow: hidden;
     padding: 8px;
-    position: relative; /* <— WICHTIG: Bezugssystem für absolute Positionierung */
+    position: relative; 
   }
     
   .icon-container or-icon {
@@ -70,7 +70,7 @@ const styling = css`
     font-size: 10px;
     color: #9ca3af;
     text-align: left;
-    pointer-events: none; /* optional: verhindert Hover/Klicks */
+    pointer-events: none; 
   }
 `;
 
@@ -121,7 +121,7 @@ export class BatteryWidget extends OrAssetWidget {
       this._resizeObserver.observe(this._wrapper);
     }
 
-    return super.willUpdate(changed); // oder super.willUpdate(...) retour geben, je nach Basis‑Implementierung
+    return super.willUpdate(changed); 
   }
 
   protected loadAssets(attributeRefs: AttributeRef[]) {
@@ -143,7 +143,7 @@ export class BatteryWidget extends OrAssetWidget {
       });
   }
 
-  //  Daten (Assets) neu laden, wenn sich attributeRefs ändern
+
   public refreshContent(force: boolean): void {
     this.widgetConfig = JSON.parse(JSON.stringify(this.widgetConfig)) as BatteryWidgetConfig;
   }
@@ -154,7 +154,6 @@ export class BatteryWidget extends OrAssetWidget {
     super.disconnectedCallback();
   }
 
-  // Responsive Icon-Größe
   protected firstUpdated(changed: PropertyValues): void {
     super.firstUpdated(changed);
     let lastSize = 0;
@@ -162,10 +161,8 @@ export class BatteryWidget extends OrAssetWidget {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
         const newSize = Math.min(width, height) * 0.4;
-        // Nur bei echtem Unterschied (z.B. >0.5px) updaten
         if (Math.abs(newSize - lastSize) > 0.5) {
           lastSize = newSize;
-          // Asynchron setzen, um den Resize‑Loop zu unterbrechen
           requestAnimationFrame(() => {
             this.style.setProperty("--icon-size", `${newSize}px`);
           });

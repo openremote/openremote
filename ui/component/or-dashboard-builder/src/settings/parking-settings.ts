@@ -26,6 +26,7 @@ export class ParkingSettings extends AssetWidgetSettings {
         "bigInteger",
         "bigNumber",
         "integerByte",
+        "text"
       ].includes(attr.type!);
     };
 
