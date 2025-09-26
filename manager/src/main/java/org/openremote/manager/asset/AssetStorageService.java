@@ -2103,18 +2103,38 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     protected <T extends HasAssetQuery & RespondableEvent> void onReadAssetTreeRequest(ReadAssetTreeEvent event) {
         AssetQuery assetQuery = event.getAssetQuery();
+        Event response = null;
+        List<Asset<?>> assets = Collections.emptyList();
+        boolean hasMore = false;
 
-        // // Collect the assets based on the query
-        // List<Asset<?>> assets = findAll(assetQuery);
+        // When provided a limit, we need to check if there are more assets outside of its bounds
+        if (assetQuery.limit > 0) {
+            int originalLimit = assetQuery.limit;
+            assetQuery.limit++;
+            
+            assets = findAll(assetQuery);
 
-        // // Create the asset tree
-        // AssetTree assetTree = new AssetTree(assets, assetQuery.limit, assetQuery.offset, assetQuery.hasMore());
+            // Check if there are assets outside of the original limit
+            hasMore = assets.size() > originalLimit;
+            if (hasMore) {
+                // Drop the extra asset
+                assets.remove(assets.size() - 1);
+            }
+        } else {
+            assets = findAll(assetQuery);
+        }
 
-        // // Create the event
-        // AssetTreeEvent event = new AssetTreeEvent(assetTree);
+        // Create the asset tree and event
+        AssetTree assetTree = new AssetTree(assets, assetQuery.limit, assetQuery.offset, hasMore);
+        response = new AssetTreeEvent(assetTree);
 
-        // // Respond to the event
-        // event.getResponseConsumer().accept(event);
+        // Respond to the read asset tree request
+        if (response != null) {
+            if (!isNullOrEmpty(((SharedEvent) event).getMessageID())) {
+                response.setMessageID(((SharedEvent) event).getMessageID());
+            }
+            event.getResponseConsumer().accept(response);
+        }
     }
 
     protected <T extends HasAssetQuery & RespondableEvent> void onReadRequest(T event) {

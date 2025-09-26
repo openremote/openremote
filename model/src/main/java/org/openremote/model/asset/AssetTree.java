@@ -1,27 +1,19 @@
 package org.openremote.model.asset;
 
-import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
+
+/**
+ * This class is used to encapsulate the result of a read asset tree request.
+ * It contains the assets, the limit, the offset, and whether there are more assets to fetch.
+ */
 public class AssetTree {
 
-    private AssetTreeAsset[] assets;
+    private List<AssetTreeAsset> assets;
     private int limit;
     private int offset;
     private boolean hasMore;
-
-    /**
-     * Construct an asset tree using a list of mapped asset tree assets.
-     * @param assets
-     * @param limit
-     * @param offset
-     * @param hasMore
-     */
-    public AssetTree(AssetTreeAsset[] assets, int limit, int offset, boolean hasMore) {
-        this.assets = assets;
-        this.limit = limit;
-        this.offset = offset;
-        this.hasMore = hasMore;
-    }
 
     /**
      * Construct an asset tree using a list of unmapped assets.
@@ -30,15 +22,15 @@ public class AssetTree {
      * @param offset
      * @param hasMore
      */
-    public AssetTree(Asset<?>[] assets, int limit, int offset, boolean hasMore) {
+    public AssetTree(List<Asset<?>> assets, int limit, int offset, boolean hasMore) {
         // Map the assets to asset tree assets
-        this.assets = Arrays.stream(assets).map(AssetTreeAsset::fromAsset).toArray(AssetTreeAsset[]::new);
+        this.assets = assets.stream().map(AssetTreeAsset::fromAsset).collect(Collectors.toList());
         this.limit = limit;
         this.offset = offset;
         this.hasMore = hasMore;
     }
 
-    public AssetTreeAsset[] getAssets() {
+    public List<AssetTreeAsset> getAssets() {
         return assets;
     }
     
@@ -57,7 +49,7 @@ public class AssetTree {
     @Override
     public String toString() {
         return "AssetTree{" +
-            "assets=" + Arrays.toString(assets) +
+            "assets=" + assets.stream().map(AssetTreeAsset::toString).collect(Collectors.joining(", ")) +
             ", limit=" + limit +
             ", offset=" + offset +
             ", hasMore=" + hasMore +

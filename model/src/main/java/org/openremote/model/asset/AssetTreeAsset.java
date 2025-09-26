@@ -10,6 +10,7 @@ public class AssetTreeAsset {
     String id;
     String name;
     String type;
+
     boolean isParent;
     Date createdOn;
 
@@ -63,6 +64,7 @@ public class AssetTreeAsset {
 
 
     public static AssetTreeAsset fromAsset(Asset<?> asset) {
+        // TODO: How do we best detect whether this asset is a parent? E.g. has children.
         return new AssetTreeAsset(asset.getId(), asset.getName(), asset.getType(), asset.getParentId() == null, asset.getCreatedOn());
     }
 
