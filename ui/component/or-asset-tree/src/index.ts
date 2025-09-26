@@ -13,7 +13,6 @@ import {
     AssetQueryMatch,
     AssetsEvent,
     AssetTreeNode,
-    AssetTypeInfo,
     Attribute,
     AttributePredicate,
     ClientRole,
@@ -33,6 +32,7 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-dialog";
+import {virtualize} from "@lit-labs/virtualizer/virtualize.js"; // TODO: Seems a bit unstable with the asset tree layout; might reconsider to remove this.
 
 import {
     OrMwcDialog,
@@ -272,13 +272,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
      * Allows arbitrary assets to be displayed using a tree
      */
     @property({type: Array, reflect: false})
-    public assets?: Asset[];
-
-    @property({type: Object})
-    public assetInfos?: AssetTypeInfo[];
-
-    @property({type: Array})
-    public _assetIdsOverride?: string[];
+    public readonly assets?: Asset[];
 
     @property({type: Array})
     public rootAssets?: Asset[];
@@ -324,7 +318,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     protected config?: AssetTreeConfig;
 
-    @property({attribute: false})
+    @state()
     protected _nodes?: UiAssetTreeNode[];
 
     protected _loading: boolean = false;
@@ -595,26 +589,35 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     </div>
                 </div>
             `)}
-            
-            ${!this._nodes
-                ? html`
-                    <span id="loading"><or-translate value="loading"></or-translate></span>`
-                : ((this._nodes.length === 0 || !this.atLeastOneNodeToBeShown())
-                            ? html `<span id="noAssetsFound"><or-translate value="noAssetsFound"></or-translate></span>` 
-                            : html`
-                    <div id="list-container">
-                        <ol id="list">
-                            ${this._nodes.map((treeNode) => this._treeNodeTemplate(treeNode, 0)).filter(t => !!t)}
-                            <li class="asset-list-element">    
-                                <div class="end-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"></div>
+
+            ${when(!this._nodes, () => html`
+                <span id="loading"><or-translate value="loading"></or-translate></span>
+            `, () => html`
+                ${when(this._nodes!.length === 0 || !this.atLeastOneNodeToBeShown(),
+                    () => html`<span id="noAssetsFound"><or-translate value="noAssetsFound"></or-translate></span>`,
+                    () => {
+                        const nodes = [
+                            ...this._nodes!.filter(n => !n.hidden).map(node => html`${this._treeNodeTemplate(node, 0)}`),
+                            html`<li class="asset-list-element">
+                                <div class="end-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }}
+                                     @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}"
+                                     @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"
+                                ></div>
                             </li>
-                        </ol>
-                    </div>
-                `)
-            }
+                        `];
+                        return html`
+                            <div id="list-container">
+                                <ol id="list">
+                                    ${virtualize({items: nodes, renderItem: (n: TemplateResult) => html`${n}`, scroller: true})}
+                                </ol>
+                            </div>
+                        `;
+                    }
+                )}
+            `)}
 
             <div id="footer">
-            
+
             </div>
         `;
     }
@@ -632,7 +635,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         if (!this._nodes) {
-            this._loadAssets();
+            this._loadAssets().catch(e => console.warn(e));
             return true;
         }
 
@@ -722,16 +725,28 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         nodes.forEach((node) => this._updateSort(node.children, sortFunction));
     }
 
-    protected _toggleExpander(expander: HTMLElement, node: UiAssetTreeNode | null, silent: boolean = false) {
+    protected async _toggleExpander(expander: HTMLElement, node: UiAssetTreeNode | null, silent: boolean = false) {
         if (node && node.expandable) {
             node.expanded = !node.expanded;
 
             if (node.expanded) {
                 this._expandedNodes.push(node);
+
+                // Load children (from cache or using WebSocket) of the now 'expanded' node
+                const hasCachedChildren = node.children?.length;
+                if(hasCachedChildren) {
+                    console.debug(`Reusing cache for loading children of asset ${node.asset?.id}...`);
+                } else {
+                    const cache: Asset[] = [];
+                    OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => n.asset && cache.push(n.asset));
+                    await this._loadAssets(node.asset?.id, cache).catch(e => console.warn(e));
+                }
+
             } else {
                 this._expandedNodes = this._expandedNodes.filter(n => n !== node);
             }
 
+            // Update HTML attributes of the now 'expanded' node
             const elem = expander.parentElement!.parentElement!.parentElement!;
             elem.toggleAttribute("data-expanded");
             if (!silent) {
@@ -1154,6 +1169,13 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     }
                 });
             }
+
+            // Scroll to top of list
+            // TODO: Should this code be here? Or is this from a previous commit?
+            /*let listElement = this.shadowRoot?.getElementById('list');
+            if(listElement) {
+                listElement.scrollTop = 0;
+            }*/
         }
     }
 
@@ -1667,66 +1689,91 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
     }
 
-    protected _loadAssets() {
+    /**
+     * Main function to load assets and populate the tree.
+     * Based on the HTML attributes of this component, it either fetches using a WebSocket connection or using a dataProvider.
+     * Once retrieved, these assets will be passed along to the {@link _buildTreeNodes} to construct the tree nodes.
+     * If the user has applied a filter, it will also be taken into count using {@link _doFiltering}.
+     *
+     * @param parentId - The parent ID an asset MUST be a child of during WebSocket retrieval. This is useful for pagination.
+     * @param cache - An array of assets to populate the tree with alongside the retrieved nodes.
+     * @protected
+     */
+    protected async _loadAssets(parentId?: string, cache?: Asset[]): Promise<AssetsEvent | undefined> {
+        console.debug(`Loading assets with ${parentId ? `parent ${parentId}` : `no parents`}...`);
 
-        const sortFunction = this._getSortFunction();
-
-        if (!this.assets) {
-
-            if (!this._connected) {
-                return;
-            }
-
-            if (this._loading) {
-                return;
-            }
-
-            this._loading = true;
-
-            if(this.dataProvider) {
-                this.dataProvider().then(assets => {
-                    this._loading = false;
-                    this._buildTreeNodes(assets, sortFunction);
-                    if(this._filterInput?.value) {
-                        this._doFiltering();
-                    }
-                })
-
-            } else {
-
-                const query: AssetQuery = {
-                    realm: {
-                        name: manager.displayRealm
-                    },
-                    select: { // Just need the basic asset info
-                        attributes: []
-                    }
-                };
-
-                if (this.assetIds) {
-                    query.ids = this.assetIds;
-                    query.recursive = true;
-                } else if (this.rootAssets) {
-                    query.ids = this.rootAssets.map((asset) => asset.id!);
-                    query.recursive = true;
-                } else if (this.rootAssetIds) {
-                    query.ids = this.rootAssetIds;
-                    query.recursive = true;
-                }
-                this._sendEventWithReply({
-                    eventType: "read-assets",
-                    assetQuery: query
-                }).then((ev) => {
-                    this._loading = false;
-                    this._buildTreeNodes((ev as AssetsEvent).assets!, sortFunction);
-                    if(this._filterInput?.value) {
-                        this._doFiltering();
-                    }
-                });
-            }
-        } else {
+        // If asset objects are provided in the HTML attribute, load these instead.
+        if (this.assets) {
+            console.debug(`Assets already pre-loaded using HTML attributes; reusing them to construct the tree UI...`);
             this._loading = false;
-            this._buildTreeNodes(this.assets, sortFunction);
+            this._buildTreeNodes(this.assets);
+            return;
+        }
+
+        if (!this._connected) {
+            throw new Error("Not connected to the server; cannot load assets.");
+        }
+
+        if (this._loading) {
+            throw new Error("Already loading assets for asset tree; ignoring request.");
+        }
+
+        this._loading = true;
+
+        if(this.dataProvider) {
+            this.dataProvider().then(assets => {
+                this._loading = false;
+                this._buildTreeNodes(assets);
+                if(this._filterInput?.value) {
+                    this._doFiltering();
+                }
+            });
+
+        } else {
+
+            const query: AssetQuery = {
+                realm: {
+                    name: manager.displayRealm
+                },
+                parents: parentId ? [{ id: parentId }] : [], // Filters by parent ID. If parentId is null, it will only request 'top level' assets.
+                select: { // Just need the basic asset info
+                    attributes: []
+                },
+                /*offset: 1000,*/ // TODO: Add support for offset using "load more" buttons
+                limit: 100
+            };
+
+            if (this.assetIds) {
+                query.ids = this.assetIds;
+                query.recursive = true;
+            } else if (this.rootAssets) {
+                query.ids = this.rootAssets.map((asset) => asset.id!);
+                query.recursive = true;
+            } else if (this.rootAssetIds) {
+                query.ids = this.rootAssetIds;
+                query.recursive = true;
+            }
+            const eventPromise = this._sendEventWithReply({
+                eventType: "read-assets",
+                assetQuery: query
+            });
+            eventPromise.then(ev => {
+                const newAssets = (ev as AssetsEvent).assets ?? [];
+                this._loading = false;
+                console.debug(`Received read-assets event with ${newAssets.length} assets.`);
+                console.debug(`Combining these assets with the cache of ${cache?.length ?? 0} assets...`);
+                if(cache) {
+                    const assets = [...cache, ...newAssets.filter(a => !cache.find(c => c.id === a.id))];
+                    this._buildTreeNodes(assets);
+                } else {
+                    this._buildTreeNodes(newAssets);
+                }
+                if(this._filterInput?.value) {
+                    this._doFiltering();
+                }
+            }) as Promise<AssetsEvent>;
+
+            return eventPromise as Promise<AssetsEvent>;
         }
     }
 
@@ -1741,7 +1788,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     public onEventsConnect() {
         this._connected = true;
-        this._loadAssets();
+        this._loadAssets().catch(e => console.warn(e));
     }
 
     public onEventsDisconnect() {
@@ -1757,7 +1804,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         if (event.eventType === "assets") {
             const assetsEvent = event as AssetsEvent;
-            this._buildTreeNodes(assetsEvent.assets!, this._getSortFunction());
+            this._buildTreeNodes(assetsEvent.assets!);
             return;
         }
 
@@ -1787,7 +1834,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             }
 
             // In case of filter already active, do not override the actual state of assetTree
-            this._buildTreeNodes(assets, this._getSortFunction());
+            this._buildTreeNodes(assets);
             if (this._filterInput?.value) {
                 this._doFiltering();
             }
@@ -1795,9 +1842,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
     }
 
-
-
-    protected _buildTreeNodes(assets: Asset[], sortFunction: (a: UiAssetTreeNode, b: UiAssetTreeNode) => number) {
+    /**
+     * Function that creates and constructs the tree node objects to display.
+     * @param assets - List of assets to display in the tree
+     * @param sortFunction - Optional sorting function for ordering the nodes
+     * @protected
+     */
+    protected _buildTreeNodes(assets: Asset[], sortFunction = this._getSortFunction()) {
+        console.debug(`Building asset tree nodes for ${assets.length} assets...`);
         if (!assets || assets.length === 0) {
             this._nodes = [];
         } else {
@@ -1911,9 +1963,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         let children: UiAssetTreeNode[] | undefined = this.assetsChildren[treeNode.asset!.id!];
         treeNode.children = children ? children.sort(sortFunction) : [];
 
-        if (treeNode.children.length > 0) {
+        // TODO: Change expandable state based on "asset tree" request metadata.
+        treeNode.expandable = true;
+        /*if (treeNode.children.length > 0) {
             treeNode.expandable = true;
-        }
+        }*/
 
         treeNode.children.forEach((childNode) => {
             childNode.parent = treeNode;
@@ -2004,7 +2058,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     public _onDragEnter(ev: any): void {
-       let currentElement = ev.currentTarget as HTMLElement;
+        let currentElement = ev.currentTarget as HTMLElement;
 
         currentElement.classList.add('over');
 
@@ -2022,6 +2076,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         this._expandTimer = undefined;
     }
 
+    /**
+     * Generates the HTML TemplateResult for an individual node / tree item.
+     * @param treeNode Node to display
+     * @param level Level of depth in the tree from 0 to infinite. (0 = top level. If it has 2 parents, level = 2)
+     * @protected
+     */
     protected _treeNodeTemplate(treeNode: UiAssetTreeNode, level: number): TemplateResult | string | undefined {
         const descriptor = AssetModelUtil.getAssetDescriptor(treeNode.asset!.type!);
 

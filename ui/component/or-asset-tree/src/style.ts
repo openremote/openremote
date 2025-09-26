@@ -98,6 +98,7 @@ export const style = css`
         margin: 0;
         color: var(--internal-or-asset-tree-text-color);
         padding: 0;
+        height: 100%;
     }
     
     #list, ol {
@@ -106,6 +107,10 @@ export const style = css`
         
     li ol {
         padding: 0;
+    }
+    
+    #list li {
+        width: 100%;
     }
     
     #list li:not([data-expanded]) > ol {
