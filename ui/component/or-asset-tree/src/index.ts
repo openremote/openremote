@@ -32,7 +32,7 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-dialog";
-import {virtualize} from "@lit-labs/virtualizer/virtualize.js"; // TODO: Seems a bit unstable with the asset tree layout; might reconsider to remove this.
+/*import {virtualize} from "@lit-labs/virtualizer/virtualize.js";*/ // TODO: Seems a bit unstable with the asset tree layout; might reconsider to remove this.
 
 import {
     OrMwcDialog,
@@ -596,19 +596,36 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 ${when(this._nodes!.length === 0 || !this.atLeastOneNodeToBeShown(),
                     () => html`<span id="noAssetsFound"><or-translate value="noAssetsFound"></or-translate></span>`,
                     () => {
-                        const nodes = [
+                        /*const nodes = [
                             ...this._nodes!.filter(n => !n.hidden).map(node => html`${this._treeNodeTemplate(node, 0)}`),
                             html`<li class="asset-list-element">
-                                <div class="end-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }}
+                                <div class="end-element loadmore-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }}
                                      @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}"
-                                     @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"
-                                ></div>
-                            </li>
-                        `];
+                                     @dragover="${(ev: DragEvent) => this._onDragOver(ev)}">
+                                    <or-mwc-input type=${InputType.BUTTON} label="Load More" compact @or-mwc-input-changed=${() => {
+                                        const cache: Asset[] = [];
+                                        OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => n.asset && cache.push(n.asset));
+                                        this._loadAssets(undefined, this._nodes?.length ?? 0, cache);
+                                    }}></or-mwc-input>
+                                </div>
+                            </li>`
+                        ];*/
                         return html`
                             <div id="list-container">
                                 <ol id="list">
-                                    ${virtualize({items: nodes, renderItem: (n: TemplateResult) => html`${n}`, scroller: true})}
+                                    ${this._nodes!.filter(n => n && !n.hidden).map(node => html`${this._treeNodeTemplate(node, 0)}`)}
+                                    <li class="asset-list-element">
+                                        <div class="end-element loadmore-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }}
+                                             @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}"
+                                             @dragover="${(ev: DragEvent) => this._onDragOver(ev)}">
+                                            <or-mwc-input type=${InputType.BUTTON} label="Load More" compact @or-mwc-input-changed=${() => {
+                                                const cache: Asset[] = [];
+                                                OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => n.asset && cache.push(n.asset));
+                                                this._loadAssets(undefined, this._nodes?.length ?? 0, cache);
+                                            }}></or-mwc-input>
+                                        </div>
+                                    </li>
+                                    ${''/*virtualize({items: nodes, renderItem: (n: TemplateResult) => html`${n}`, scroller: true})*/}
                                 </ol>
                             </div>
                         `;
@@ -739,7 +756,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 } else {
                     const cache: Asset[] = [];
                     OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => n.asset && cache.push(n.asset));
-                    await this._loadAssets(node.asset?.id, cache).catch(e => console.warn(e));
+                    await this._loadAssets(node.asset?.id, 0, cache).catch(e => console.warn(e));
                 }
 
             } else {
@@ -1149,6 +1166,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 return;
             }
 
+            console.debug("Filtering asset tree using filter:", this._filter);
             this.disabled = true;
 
             // Use a matcher function - this can be altered independent of the filtering logic
@@ -1170,12 +1188,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 });
             }
 
-            // Scroll to top of list
+            // Scroll to top of list after filtering
             // TODO: Should this code be here? Or is this from a previous commit?
-            /*let listElement = this.shadowRoot?.getElementById('list');
+            let listElement = this.shadowRoot?.getElementById('list');
             if(listElement) {
                 listElement.scrollTop = 0;
-            }*/
+            }
         }
     }
 
@@ -1696,10 +1714,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
      * If the user has applied a filter, it will also be taken into count using {@link _doFiltering}.
      *
      * @param parentId - The parent ID an asset MUST be a child of during WebSocket retrieval. This is useful for pagination.
+     * @param offset - Offset number of the assets to request through WebSocket. This is useful for pagination.
      * @param cache - An array of assets to populate the tree with alongside the retrieved nodes.
      * @protected
      */
-    protected async _loadAssets(parentId?: string, cache?: Asset[]): Promise<AssetsEvent | undefined> {
+    protected async _loadAssets(parentId?: string, offset = 0, cache?: Asset[]): Promise<AssetsEvent | undefined> {
         console.debug(`Loading assets with ${parentId ? `parent ${parentId}` : `no parents`}...`);
 
         // If asset objects are provided in the HTML attribute, load these instead.
@@ -1739,7 +1758,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 select: { // Just need the basic asset info
                     attributes: []
                 },
-                /*offset: 1000,*/ // TODO: Add support for offset using "load more" buttons
+                offset: offset,
                 limit: 100
             };
 
@@ -2136,6 +2155,13 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 </div>
                 <ol>
                     ${!treeNode.children || (treeNode.expandable && !treeNode.expanded)  ? `` : treeNode.children.map((childNode) => this._treeNodeTemplate(childNode, level + 1)).filter(t => !!t)}
+                    <li class="asset-list-element loadmore-element">
+                        <or-mwc-input type=${InputType.BUTTON} label="Load More" style="padding-left: ${(level + 1) * 22}px;" @or-mwc-input-changed=${() => {
+                            const cache: Asset[] = [];
+                            OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => n.asset && cache.push(n.asset));
+                            this._loadAssets(treeNode.asset?.id, treeNode.children?.length ?? 0, cache);
+                        }}></or-mwc-input>
+                    </li>
                 </ol>
             </li>
         `;

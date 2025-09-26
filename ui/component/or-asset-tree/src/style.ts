@@ -137,8 +137,13 @@ export const style = css`
         padding: 5px 0;
         margin: -5px 0;
     }
-    .end-element {
+    .end-element, .loadmore-element {
         height: 44px;
+    }
+    .loadmore-element {
+        display: flex;
+        padding-left: 15px;
+        align-items: center;
     }
     
     .node-container {
