@@ -11,6 +11,7 @@ import {
     AssetModelUtil,
     AssetQuery,
     AssetQueryMatch,
+    AssetQueryOrderBy$Property,
     AssetsEvent,
     AssetTreeNode,
     Attribute,
@@ -19,7 +20,8 @@ import {
     LogicGroup,
     LogicGroupOperator,
     SharedEvent,
-    StringPredicate, WellknownAssets
+    StringPredicate,
+    WellknownAssets
 } from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
@@ -33,17 +35,11 @@ import "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-dialog";
 /*import {virtualize} from "@lit-labs/virtualizer/virtualize.js";*/ // TODO: Seems a bit unstable with the asset tree layout; might reconsider to remove this.
-
-import {
-    OrMwcDialog,
-    showDialog,
-    showErrorDialog,
-    showOkCancelDialog
-} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog, showErrorDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
 import "./or-add-asset-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import { when } from "lit/directives/when.js";
+import {when} from "lit/directives/when.js";
 
 export interface AssetTreeTypeConfig {
     include?: string[];
@@ -1750,6 +1746,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         } else {
 
+            let orderBy: AssetQueryOrderBy$Property;
+            switch (this.sortBy) {
+                case "type": orderBy = AssetQueryOrderBy$Property.ASSET_TYPE; break;
+                case "createdOn": orderBy = AssetQueryOrderBy$Property.CREATED_ON; break;
+                default: orderBy = AssetQueryOrderBy$Property.NAME; break;
+            }
             const query: AssetQuery = {
                 realm: {
                     name: manager.displayRealm
@@ -1758,8 +1760,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 select: { // Just need the basic asset info
                     attributes: []
                 },
+                orderBy: {
+                    property: orderBy
+                },
                 offset: offset,
-                limit: 100
+                limit: 500
             };
 
             if (this.assetIds) {
