@@ -1030,6 +1030,33 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         });
     }
 
+
+    public AssetTree queryAssetTree(AssetQuery query) {
+        List<Asset<?>> assets = Collections.emptyList();
+        boolean hasMore = false;
+    
+        // determine `hasMore` flag (extend limit by 1, with size comparison to check if there are more assets outside of the limit)
+        if (query.limit > 0) {
+            int originalLimit = query.limit;
+            query.limit++;
+            
+            assets = findAll(query);
+            
+            hasMore = assets.size() > originalLimit;
+            if (hasMore) {
+                assets.remove(assets.size() - 1);
+            }
+        } else {
+            assets = findAll(query);
+        }
+    
+        // Check whether the assets have children, and set the flag accordingly
+        Map<String, Boolean> hasChildren = hasChildren(assets.stream().map(Asset::getId).collect(Collectors.toList()));
+    
+        // Create the optimized asset tree response
+        return new AssetTree(assets, query.limit, query.offset, hasMore, hasChildren);
+    }
+    
     public List<UserAssetLink> findUserAssetLinks(String realm, String userId, String assetId) {
         return findUserAssetLinks(
             realm,
@@ -2122,33 +2149,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     protected <T extends HasAssetQuery & RespondableEvent> void onReadAssetTreeRequest(ReadAssetTreeEvent event) {
-        AssetQuery assetQuery = event.getAssetQuery();
         Event response = null;
-        List<Asset<?>> assets = Collections.emptyList();
-        boolean hasMore = false;
-
-        // When provided a limit, we need to check if there are more assets outside of its bounds
-        if (assetQuery.limit > 0) {
-            int originalLimit = assetQuery.limit;
-            assetQuery.limit++;
-
-            assets = findAll(assetQuery);
-
-            // Check if there are assets outside of the original limit
-            hasMore = assets.size() > originalLimit;
-            if (hasMore) {
-                // Drop the extra asset
-                assets.remove(assets.size() - 1);
-            }
-        } else {
-            assets = findAll(assetQuery);
-        }
-
-        // Get the hasChildren flag for each asset
-        Map<String, Boolean> hasChildren = hasChildren(assets.stream().map(Asset::getId).collect(Collectors.toList()));
 
         // Create the asset tree and event
-        AssetTree assetTree = new AssetTree(assets, assetQuery.limit, assetQuery.offset, hasMore, hasChildren);
+        AssetTree assetTree = queryAssetTree(event.getAssetQuery());
         response = new AssetTreeEvent(assetTree);
 
         // Respond to the read asset tree request

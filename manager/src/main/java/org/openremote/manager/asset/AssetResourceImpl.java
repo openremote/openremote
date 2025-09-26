@@ -563,30 +563,15 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public AssetTree queryAssetTree(RequestParams requestParams, AssetQuery query) {
-        List<Asset<?>> assets = Collections.emptyList();
-        boolean hasMore = false;
-
-        // determine `hasMore` flag (extend limit by 1, with size comparison to check if there are more assets outside of the limit)
-        if (query.limit > 0) {
-            int originalLimit = query.limit;
-            query.limit++;
-            
-            assets = assetStorageService.findAll(query);
-            
-            hasMore = assets.size() > originalLimit;
-            if (hasMore) {
-                assets.remove(assets.size() - 1);
-            }
-        } else {
-            assets = assetStorageService.findAll(query);
+        if (query == null) {
+            query = new AssetQuery();
         }
 
-        // Check whether the assets have children, and set the flag accordingly
-        Map<String, Boolean> hasChildren = assetStorageService.hasChildren(assets.stream().map(Asset::getId).collect(Collectors.toList()));
-
-        // Create the optimized asset tree response
-        AssetTree assetTree = new AssetTree(assets, query.limit, query.offset, hasMore, hasChildren);
-        return assetTree;
+        if (!assetStorageService.authorizeAssetQuery(query, getAuthContext(), getRequestRealmName())) {
+            throw new ForbiddenException("User not authorized to execute specified query");
+        }
+        
+        return assetStorageService.queryAssetTree(query);
     }
 
     protected AttributeWriteResult doAttributeWrite(AttributeEvent event) {
