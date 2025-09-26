@@ -161,20 +161,20 @@ Once this image is created, use the image.repository and image.tag entries in yo
 
 Having the following Dockerfile in your `myprj` custom project deployment folder
 ```dockerfile
-FROM openremote/manager:1.7.0
+FROM openremote/manager:1.8.1
 
 RUN mkdir -p /deployment/manager/extensions
 ADD ./build/image /deployment
 ```
 
 You can locally build a project specific image using
-`docker buildx build --load -t openremote/myprj:1.7.0 -f Dockerfile .`
+`docker buildx build --load -t openremote/myprj:1.8.1 -f Dockerfile .`
 
 And use the following snippet in your manager values files
 ```yaml
 image:
   repository: openremote/myprj
-  tag: "1.7.0"
+  tag: "1.8.1"
 ```
 to have the pod run the built image.
 
