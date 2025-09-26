@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eo pipefail
+
 if [ -z "$AWS_ACCOUNT_ID" ]; then
     echo "Error: AWS_ACCOUNT_ID environment variable is not set"
     echo "Please set it to the ID of the account you want to deploy the cluster into with: export AWS_ACCOUNT_ID=your-account-id"
@@ -11,16 +13,14 @@ if [ -z "$AWS_DEVELOPERS_ACCOUNT_ID" ]; then
     exit 1
 fi
 
-set -eo pipefail
+OR_KUBERNETES_PATH=../../kubernetes
 
 # Name of cluster, not exposed but must be unique within account
-export CLUSTER_NAME=testcluster
+export CLUSTER_NAME=loadtest-cluster
 
 # Hostname to use for public access to this instance, always under the openremote.app domain
-HOSTNAME=testmanager
+HOSTNAME=load1
 FQDN=$HOSTNAME.openremote.app
-MQTT_FQDN=mqtt.$FQDN
-MQTTS_FQDN=mqtts.$FQDN
 
 export AWS_REGION="eu-west-1"
 

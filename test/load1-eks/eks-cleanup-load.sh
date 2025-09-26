@@ -37,9 +37,9 @@ for peering_id in $VPC_PEERING_IDS; do
   aws ec2 delete-vpc-peering-connection --vpc-peering-connection-id $peering_id --profile or
 done
 
-# Give the AWS LB Controller time to delete the NLB after the Service is deleted
-while aws elbv2 describe-load-balancers  --profile or --query "LoadBalancers[?Type=='network']" 2>/dev/null | grep '"Code": "active"'; do
-  echo "Waiting for load balancer to be deleted..."
+# Give the AWS LB Controller time to delete the NLBs after the Service is deleted
+while aws elbv2 describe-load-balancers  --profile or --query "LoadBalancers[?VpcId=='$CLUSTER_VPC_ID' && Type=='network']" 2>/dev/null | grep '"Code": "active"'; do
+  echo "Waiting for load balancers to be deleted..."
   sleep 10
 done
 helm uninstall aws-load-balancer-controller -n kube-system
