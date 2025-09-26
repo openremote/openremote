@@ -79,5 +79,7 @@ class AssetTreeTest extends Specification implements ManagerContainerTrait {
         assetTree.hasMore() == false
 
         // TODO has children related tests
+
+        // TODO add WS event related tests, e.g. clientEventService 
     }
 }

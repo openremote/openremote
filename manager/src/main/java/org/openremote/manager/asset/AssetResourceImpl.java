@@ -636,6 +636,4 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             assetStorageService.merge(asset);
         }
     }
-
-
 }
