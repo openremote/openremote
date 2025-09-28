@@ -25,7 +25,7 @@ import org.openremote.model.query.AssetQuery;
 
 /**
  * A client sends this event to the server to query assets that are optimized
- * for tree display, expecting
+ * for the frontend asset tree, expecting
  * the server to answer "soon" with an {@link AssetTreeEvent} with the results.
  */
 public class ReadAssetTreeEvent extends ReadAssetsEvent {

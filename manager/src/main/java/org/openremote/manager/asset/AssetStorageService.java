@@ -1062,7 +1062,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         ? Collections.emptyMap()
         : hasChildren(assets.stream().map(Asset::getId).collect(Collectors.toList()));
 
-        return new AssetTree(assets, query.limit, query.offset, hasMore, hasChildren);
+        return new AssetTree(assets, hasMore, hasChildren);
     }
     
     public List<UserAssetLink> findUserAssetLinks(String realm, String userId, String assetId) {

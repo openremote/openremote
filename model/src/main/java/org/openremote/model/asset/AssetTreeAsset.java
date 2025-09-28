@@ -3,7 +3,8 @@ package org.openremote.model.asset;
 import java.util.Date;
 
 /**
- * This class is used to represent an minimal asset for use in the asset tree.
+ * Minimal representation of asset data, necessary for the frontend asset tree.
+ * Contains the asset ID, name, type, hasChildren flag, and creation date.
  */
 public class AssetTreeAsset {
 
@@ -62,6 +63,14 @@ public class AssetTreeAsset {
         this.createdOn = createdOn;
     }
 
+    /**
+     * Convert an asset to an optimized asset tree asset.
+     * 
+     * @param asset       The asset to convert.
+     * @param hasChildren Whether the asset has children. See
+     *                    AssetStorageService.hasChildren() for more details.
+     * @return The optimized asset tree asset.
+     */
     public static AssetTreeAsset fromAsset(Asset<?> asset, Boolean hasChildren) {
         return new AssetTreeAsset(asset.getId(), asset.getName(), asset.getType(), hasChildren, asset.getCreatedOn());
     }

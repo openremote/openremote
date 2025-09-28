@@ -55,14 +55,15 @@ class AssetTreeTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "the asset tree should be returned"
+        assetTree != null
+
+        and: "the asset tree should contain 10 assets"
         assetTree.getAssets().size() == 10
-        assetTree.getLimit() == 10
-        assetTree.getOffset() == 0
 
         and: "has more should be true, since there are more than 10 assets"
         assetTree.hasMore() == true
 
-        when: "when the next part of the asset tree is requested with a limit of 10 and offset of 10"
+        when: "the next part of the asset tree is requested with a limit of 10 and offset of 10"
         assetTree = assetResource.queryAssetTree(null,
                 new AssetQuery()
                         .realm(new RealmPredicate(managerTestSetup.realmBuildingName))
@@ -71,15 +72,18 @@ class AssetTreeTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "the asset tree should be returned"
-        assetTree.getAssets().size() > 0
-        assetTree.getLimit() == 10
-        assetTree.getOffset() == 10
+        assetTree != null
 
-        and: "has more should be false, since there are no assets outside the limit bounds"
+        and: "the asset tree should contain assets"
+        assetTree.getAssets().size() > 0
+
+        and: "has more should be false, since there are no more assets to fetch"
         assetTree.hasMore() == false
 
-        // TODO has children related tests
+        // TODO has children related tests, verify whether hasChildren flag is set correctly e.g. parent > child relation
+
 
         // TODO add WS event related tests, e.g. clientEventService 
+        // check whether events can be subscribed to, received when read-asset-tree is sent
     }
 }
