@@ -150,10 +150,15 @@ if (project == rootProject) {
     }
 }
 
-// Give test projects more memory (Gradle 5 reduced this to 512MB)
 subprojects {
+    // Give test tasks more memory (Gradle 5 reduced this to 512MB)
     tasks.withType(Test) {
         maxHeapSize = "2g"
+    }
+
+    // Give compiler tasks more memory
+    tasks.withType(GroovyCompile) {
+        groovyOptions.forkOptions.memoryMaximumSize = '2g' // Set max heap to 2 GB
     }
 }
 
