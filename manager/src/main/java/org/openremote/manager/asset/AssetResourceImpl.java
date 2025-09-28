@@ -570,8 +570,13 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         if (!assetStorageService.authorizeAssetQuery(query, getAuthContext(), getRequestRealmName())) {
             throw new ForbiddenException("User not authorized to execute specified query");
         }
-        
-        return assetStorageService.queryAssetTree(query);
+
+        AssetTree result = assetStorageService.queryAssetTree(query);
+
+        // Compress response (the request attribute enables the interceptor)
+        request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
+
+        return result;
     }
 
     protected AttributeWriteResult doAttributeWrite(AttributeEvent event) {
