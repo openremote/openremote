@@ -22,20 +22,13 @@ package org.openremote.model.value;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import com.fasterxml.jackson.databind.util.StdConverter;
-import org.openremote.model.Constants;
-import org.openremote.model.value.impl.PeriodAndDuration;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import java.time.Duration;
-import java.time.Period;
-import java.time.temporal.ChronoUnit;
-import java.util.regex.Pattern;
+import org.openremote.model.util.TimeUtil;
 
 import static org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage.TYPE;
 
@@ -44,25 +37,23 @@ public class ForecastConfigurationWeightedExponentialAverage extends ForecastCon
 
     public static final String TYPE = "wea";
 
-    protected static final Pattern iso8601Pattern = Pattern.compile(Constants.ISO8601_DURATION_REGEXP);
-
     @NotNull
     @JsonSerialize(using = ToStringSerializer.class)
-    @JsonDeserialize(converter = PeriodAndDurationConverter.class)
-    protected ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration pastPeriod;
+    @JsonDeserialize(converter = TimeUtil.PeriodAndDurationConverter.class)
+    protected TimeUtil.ExtendedPeriodAndDuration pastPeriod;
     @NotNull
     @Positive
     protected Integer pastCount;
     @NotNull
     @JsonSerialize(using = ToStringSerializer.class)
-    @JsonDeserialize(converter = PeriodAndDurationConverter.class)
-    protected ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration forecastPeriod;
+    @JsonDeserialize(converter = TimeUtil.PeriodAndDurationConverter.class)
+    protected TimeUtil.ExtendedPeriodAndDuration forecastPeriod;
     @NotNull
     @Positive
     protected Integer forecastCount;
 
     @JsonCreator
-    public ForecastConfigurationWeightedExponentialAverage(@JsonProperty("pastPeriod") ExtendedPeriodAndDuration pastPeriod, @JsonProperty("pastCount") Integer pastCount, @JsonProperty("forecastPeriod") ExtendedPeriodAndDuration forecastPeriod, @JsonProperty("forecastCount") Integer forecastCount) {
+    public ForecastConfigurationWeightedExponentialAverage(@JsonProperty("pastPeriod") TimeUtil.ExtendedPeriodAndDuration pastPeriod, @JsonProperty("pastCount") Integer pastCount, @JsonProperty("forecastPeriod") TimeUtil.ExtendedPeriodAndDuration forecastPeriod, @JsonProperty("forecastCount") Integer forecastCount) {
         super(TYPE);
         this.pastPeriod = pastPeriod;
         this.pastCount = pastCount;
@@ -78,7 +69,7 @@ public class ForecastConfigurationWeightedExponentialAverage extends ForecastCon
                forecastPeriod != null && forecastPeriod.toMillis() > 0;
     }
 
-    public ExtendedPeriodAndDuration getPastPeriod() {
+    public TimeUtil.ExtendedPeriodAndDuration getPastPeriod() {
         return pastPeriod;
     }
 
@@ -86,43 +77,11 @@ public class ForecastConfigurationWeightedExponentialAverage extends ForecastCon
         return pastCount;
     }
 
-    public ExtendedPeriodAndDuration getForecastPeriod() {
+    public TimeUtil.ExtendedPeriodAndDuration getForecastPeriod() {
         return forecastPeriod;
     }
 
     public Integer getForecastCount() {
         return forecastCount;
-    }
-
-    public static class ExtendedPeriodAndDuration extends PeriodAndDuration {
-        public ExtendedPeriodAndDuration(String str) {
-            super(str);
-            if (!iso8601Pattern.matcher(str).matches()) {
-                throw new IllegalArgumentException("Invalid ISO 8601 format");
-            }
-        }
-
-        public long toMillis() {
-            Period period = (getPeriod() != null ? getPeriod() : Period.ZERO);
-            Duration duration = (getDuration() != null ? getDuration() : Duration.ZERO);
-            return duration.plus(durationFromPeriod(period)).toMillis();
-        }
-
-        private Duration durationFromPeriod(Period period) {
-            Duration years = ChronoUnit.YEARS.getDuration().multipliedBy(period.getYears());
-            Duration months = ChronoUnit.MONTHS.getDuration().multipliedBy(period.getMonths());
-            Duration days = ChronoUnit.DAYS.getDuration().multipliedBy(period.getDays());
-            return years.plus(months).plus(days);
-        }
-    }
-
-    public static class PeriodAndDurationConverter extends StdConverter<JsonNode, ExtendedPeriodAndDuration> {
-        @Override
-        public ExtendedPeriodAndDuration convert(JsonNode value) {
-            if (value.isTextual()) {
-                return new ExtendedPeriodAndDuration(value.asText());
-            }
-            return null;
-        }
     }
 }
