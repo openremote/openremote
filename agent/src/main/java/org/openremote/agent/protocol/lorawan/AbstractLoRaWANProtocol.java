@@ -168,7 +168,6 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
             }
 
             CsvMapper csvMapper = new CsvMapper();
-            //CsvSchema schema = CsvSchema.emptySchema().withHeader(); // Auto-detect headers
             CsvSchema schema = CsvSchema.builder()
                 .addColumn("devEUI")
                 .addColumn("name")

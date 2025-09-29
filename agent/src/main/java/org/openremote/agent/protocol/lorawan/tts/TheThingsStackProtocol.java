@@ -290,11 +290,3 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
             .orElse("https");
     }
 }
-
-
-
-
-
-
-
-
