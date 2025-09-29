@@ -1,6 +1,6 @@
 import { expect } from "@openremote/test";
 import { test, userStatePath } from "./fixtures/manager.js";
-import assets, { assetMap, assetPatches, thing } from "./fixtures/data/assets.js";
+import assets, { assetMap, parentAssets, assetPatches, thing } from "./fixtures/data/assets.js";
 import {WellknownMetaItems} from "@openremote/model";
 import * as Util from "@openremote/core/lib/util";
 
@@ -241,6 +241,51 @@ test("Add all primitive configuration items", async ({ page, manager, assetViewe
     }
   }
 });
+
+/**
+ * @given Assets are set up in the "smartcity" realm
+ * @when Logging in to OpenRemote "smartcity" realm as admin
+ * @and Navigating to the "Assets" tab
+ * @and Tries to navigate through the assets in the system using the asset tree
+ * @then The asset list should be complete and should not display any artifacts or visual errors.
+ */
+test(`Check if assets are visible in the tree`, async ({ page, manager, assetsPage, assetTree }) => {
+    await manager.setup("smartcity", { assets });
+    await manager.goToRealmStartPage("smartcity");
+    await assetsPage.goto();
+
+    // Create additional assets that form a tree ('parent-child' structure)
+    await Promise.all(parentAssets.map(a => manager.createAsset(a)));
+    const cityIds = manager.assets.filter(a => a.type === "CityAsset").sort((a, b) => a.name!.localeCompare(b.name!)).map(a => a.id);
+    const childAssets = manager.assets.filter(a => a.type !== "CityAsset");
+    childAssets.forEach(ca => ca.parentId = cityIds[0]);
+    await Promise.all(childAssets.map(ca => manager.updateAsset(ca)));
+
+    // Check if City Asset 1, City Asset 2 and Consoles group asset are listed.
+    await expect(assetTree.getAssetNodes()).toHaveCount(3);
+    await expect(assetTree.getAssetNodes().nth(0)).toContainText(parentAssets[0].name);
+    await expect(assetTree.getAssetNodes().nth(1)).toContainText(parentAssets[1].name);
+    await expect(assetTree.getAssetNodes().nth(2)).toContainText('Consoles');
+    await expect(assetTree.getAssetNodes().locator('.expander')).toHaveCount(3);
+
+    // Check if expandable of City Asset 1 is correct.
+    const cityAsset1 = assetTree.getAssetNodes().filter({ hasText: parentAssets[0].name });
+    await cityAsset1.locator('.expander').click();
+    await expect(assetTree.getAssetNodes()).toHaveCount(3 + 2);
+    await expect(assetTree.getChildNodes(cityAsset1)).toHaveText([assets[0].name, assets[1].name]);
+
+    // Check if expandable of City Asset 2 is correct.
+    const cityAsset2 = assetTree.getAssetNodes().filter({ hasText: parentAssets[1].name });
+    await cityAsset2.locator('.expander').click();
+    await expect(assetTree.getAssetNodes()).toHaveCount(3 + 2 + 0);
+
+    // Check if expandable of Consoles group asset is correct.
+    const consoleAsset = assetTree.getAssetNodes().filter({ hasText: 'Consoles' });
+    await consoleAsset.locator('.expander').click();
+    expect(assetTree.getAssetNodes().count).toBeGreaterThanOrEqual(3 + 2 + 0 + 1); // (there is at least 1 console, but could be more with a larger test suite)
+});
+
+// TODO: Add test for the "Load more" button, by modifying the LIMIT variable in or-asset-tree
 
 test.fixme("Add all complex configuration items", async ({ page, manager, shared }) => {});
 
