@@ -79,7 +79,7 @@ export class PageServices extends Page<AppStateKeyed> {
     }
 
     get name(): string {
-        return "services.title";
+        return "services";
     }
 
     @state()
@@ -258,7 +258,7 @@ export class PageServices extends Page<AppStateKeyed> {
                 retrievedServices.push(...realmServicesResult.value.data);
             } else {
                 console.error("Failed to load realm services:", realmServicesResult.status);
-                showSnackbar(undefined, i18next.t("services.realmServicesLoadError"));
+                showSnackbar(undefined, i18next.t("service.realmServicesLoadError"));
             }
 
             // Handle global services result
@@ -268,7 +268,7 @@ export class PageServices extends Page<AppStateKeyed> {
                 retrievedServices.push(...globalServicesResult.value.data);
             } else {
                 console.error("Failed to load global services:", globalServicesResult.status);
-                showSnackbar(undefined, i18next.t("services.globalServicesLoadError"));
+                showSnackbar(undefined, i18next.t("service.globalServicesLoadError"));
             }
 
             // Update the services state if we able to retrieve any
@@ -286,7 +286,7 @@ export class PageServices extends Page<AppStateKeyed> {
             }
         } catch (error) {
             console.error("Unexpected error loading services:", error);
-            showSnackbar(undefined, i18next.t("services.servicesLoadError"));
+            showSnackbar(undefined, i18next.t("service.servicesLoadError"));
         } finally {
             this._loading = false;
         }
