@@ -32,5 +32,4 @@ public final class LoRaWANConstants {
     public static final String ATTRIBUTE_NAME_VENDOR_ID = "vendorId";
     public static final String ATTRIBUTE_NAME_MODEL_ID = "modelId";
     public static final String ATTRIBUTE_NAME_FIRMWARE_VERSION= "firmwareVersion";
-    public static final String ATTRIBUTE_NAME_SUPPORTC_CLASS_C = "supportsClassC";
 }
