@@ -38,7 +38,7 @@ for peering_id in $VPC_PEERING_IDS; do
 done
 
 # Give the AWS LB Controller time to delete the NLB after the Service is deleted
-while aws elbv2 describe-load-balancers  --profile or --query "LoadBalancers[?Type=='network']" 2>/dev/null | grep '"Code": "active"'; do
+while aws elbv2 describe-load-balancers  --profile or --query "LoadBalancers[?VpcId=='$CLUSTER_VPC_ID' && Type=='network']" 2>/dev/null | grep '"Code": "active"'; do
   echo "Waiting for load balancer to be deleted..."
   sleep 10
 done
