@@ -1047,24 +1047,23 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             int originalLimit = query.limit;
             query.limit = originalLimit + 1; // extend by 1
             
-            // Get the assets
             try {
                 assets = findAll(query);
             } finally {
                 query.limit = originalLimit; // restore limit
             }
 
-            // hasMore is if there are more assets than the original limit
+            // hasMore is true if there are more assets beyond the original limit bound
             hasMore = assets.size() > originalLimit;
             if (hasMore) {
-                // keep only the assets within the original limit
+                // keep only the assets within the original limit bound
                 assets = assets.subList(0, originalLimit);
             }
         } else {
             assets = findAll(query);
         }
     
-        // Get the hasChildren flag
+        // Get the hasChildren flags
         Map<String, Boolean> hasChildren = assets.isEmpty()
         ? Collections.emptyMap()
         : hasChildren(assets.stream().map(Asset::getId).collect(Collectors.toList()));
