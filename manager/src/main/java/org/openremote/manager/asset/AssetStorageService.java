@@ -1026,8 +1026,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 .setParameter("assetIds", assetIds)
                 .getResultList();
 
-            LOG.info("parentsWithChildren: " + parentsWithChildren);
-            
             // Build map: assetId -> hasChildren
             return assetIds.stream()
                 .collect(Collectors.toMap(

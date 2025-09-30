@@ -1,19 +1,12 @@
 package org.openremote.test.assets
 
-import jakarta.ws.rs.ForbiddenException
-import jakarta.ws.rs.WebApplicationException
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.event.ClientEventService
-import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetResource
-import org.openremote.model.asset.impl.BuildingAsset
-import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.asset.AssetTreeEvent
 import org.openremote.model.asset.ReadAssetTreeEvent
-import org.openremote.model.attribute.*
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.query.AssetQuery
-import org.openremote.model.query.filter.ParentPredicate
 import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
@@ -28,9 +21,6 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
-import static org.openremote.model.value.MetaItemType.*
-import static org.openremote.model.value.ValueType.BOOLEAN
-import static org.openremote.model.value.ValueType.NUMBER
 
 class AssetTreeTest extends Specification implements ManagerContainerTrait {
 
