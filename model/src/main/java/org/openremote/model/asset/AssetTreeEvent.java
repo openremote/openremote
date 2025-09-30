@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2025, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,22 +17,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol;
+package org.openremote.model.asset;
 
-import org.openremote.model.ContainerService;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.datapoint.ValueDatapoint;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.event.shared.SharedEvent;
 
-import java.time.LocalDateTime;
-import java.util.List;
+/**
+ * This event is used in response to a {@link ReadAssetTreeEvent}.
+ */
+public class AssetTreeEvent extends SharedEvent {
 
-public interface ProtocolPredictedDatapointService extends ContainerService {
+    protected AssetTree assetTree;
 
-    void updateValue(AttributeRef attributeRef, Object value, LocalDateTime timestamp);
+    @JsonCreator
+    public AssetTreeEvent(@JsonProperty("assetTree") AssetTree assetTree) {
+        this.assetTree = assetTree;
+    }
 
-    void updateValue(String assetId, String attributeName, Object value, LocalDateTime timestamp);
+    public AssetTree getAssetTree() {
+        return assetTree;
+    }
 
-    void updateValues(String assetId, String attributeName, List<ValueDatapoint<?>> valuesAndTimestamps);
-
-    void purgeValues(String assetId, String attributeName);
+    @Override
+    public String toString() {
+        return AssetTreeEvent.class.getSimpleName() + "{" +
+                ", assetTree=" + assetTree.toString() +
+                '}';
+    }
 }
