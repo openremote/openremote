@@ -1012,6 +1012,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     /**
      * Returns a map of asset IDs with the respective hasChildren flag.
+     * 
+     * It check whether any of the assetIds is set as a parentId in the Asset table.
+     * 
+     * @param assetIds The list of asset IDs to check.
+     * @return A map of asset IDs with the respective hasChildren flag.
      */
     public Map<String, Boolean> hasChildren(List<String> assetIds) {
         return persistenceService.doReturningTransaction(entityManager -> {
@@ -1020,6 +1025,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 "select distinct a.parentId from Asset a where a.parentId in :assetIds", String.class)
                 .setParameter("assetIds", assetIds)
                 .getResultList();
+
+            LOG.info("parentsWithChildren: " + parentsWithChildren);
             
             // Build map: assetId -> hasChildren
             return assetIds.stream()
@@ -2158,6 +2165,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     protected <T extends HasAssetQuery & RespondableEvent> void onReadAssetTreeRequest(ReadAssetTreeEvent event) {
         Event response = null;
+
+        if (event.getResponseConsumer() == null) {
+            LOG.warning("Cannot respond to read asset tree request event as response consumer is not set");
+            return;
+        }
 
         // Create the asset tree and event
         AssetTree assetTree = queryAssetTree(event.getAssetQuery());

@@ -14,6 +14,9 @@ public class AssetTree {
     private List<AssetTreeAsset> assets;
     private boolean hasMore;
 
+    public AssetTree() {
+    }
+
     public AssetTree(List<Asset<?>> assets, boolean hasMore, Map<String, Boolean> hasChildren) {
         this.assets = assets.stream()
                 // map list of assets to list of asset tree assets
@@ -27,8 +30,16 @@ public class AssetTree {
         return assets;
     }
 
+    public void setAssets(List<AssetTreeAsset> assets) {
+        this.assets = assets;
+    }
+
     public boolean hasMore() {
         return hasMore;
+    }
+
+    public void setHasMore(boolean hasMore) {
+        this.hasMore = hasMore;
     }
 
     @Override

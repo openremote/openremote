@@ -48,6 +48,7 @@ import org.openremote.model.alarm.AlarmEvent;
     @JsonSubTypes.Type(value = ReadAssetEvent.class, name = "read-asset"),
     @JsonSubTypes.Type(value = ReadAssetsEvent.class, name = "read-assets"),
     @JsonSubTypes.Type(value = ReadAssetTreeEvent.class, name = "read-asset-tree"),
+    @JsonSubTypes.Type(value = AssetTreeEvent.class, name = "asset-tree"),
     @JsonSubTypes.Type(value = SimulatorState.class, name = "simulator-state"),
     @JsonSubTypes.Type(value = RequestSimulatorState.class, name = "request-simulator-state"),
     @JsonSubTypes.Type(value = RulesEngineStatusEvent.class, name = "rules-engine-status"),
