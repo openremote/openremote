@@ -89,14 +89,16 @@ exit \$status
             // Add dependency on decrypt task for deployment installDist only if GFE_PASSWORD defined
             def password = System.env.GFE_PASSWORD
             if (password != null) {
-                Task decryptTask = getTasksByName("decryptFiles", false)[0]
-
-                try {
-                    def installDist = tasks.getByPath(":deployment:installDist")
-                    installDist.dependsOn decryptTask
-                    installDist.mustRunAfter(decryptTask)
-                } catch (Exception ex) {
-                    println("Failed to add decryptFiles task dependency: " + ex)
+                project(':deployment').afterEvaluate { deploymentProject ->
+                    try {
+                        def decryptTaskProvider = rootProject.tasks.named("decryptFiles")
+                        deploymentProject.tasks.named('installDist').configure { installDist ->
+                            installDist.dependsOn(decryptTaskProvider)
+                            installDist.mustRunAfter(decryptTaskProvider)
+                        }
+                    } catch (Exception ex) {
+                        println("Failed to add decryptFiles task dependency: " + ex)
+                    }
                 }
             }
         } else {
