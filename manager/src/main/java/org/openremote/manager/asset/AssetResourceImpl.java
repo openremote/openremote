@@ -39,7 +39,6 @@ import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetResource;
 import org.openremote.model.asset.AssetTree;
-import org.openremote.model.asset.AssetTreeAsset;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.attribute.*;
 import org.openremote.model.http.RequestParams;
@@ -52,7 +51,6 @@ import org.openremote.model.util.ValueUtil;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static jakarta.ws.rs.core.Response.Status.*;
