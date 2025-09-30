@@ -241,10 +241,28 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
     
     private Object parseModbusResponse(byte[] response, byte functionCode, ModbusAgentLink.ModbusDataType dataType) {
         int byteCount = response[2] & 0xFF;
-        
+
         if (functionCode == 0x01 || functionCode == 0x02) {
-            // Read coils or discrete inputs - return boolean
-            return (response[3] & 0x01) != 0;
+            // Read coils or discrete inputs
+            int numBits = byteCount * 8;
+
+            if (byteCount == 1 && ((response[3] & 0xFE) == 0)) {
+                // Single bit optimization: if only one byte and only first bit is set
+                return (response[3] & 0x01) != 0;
+            }
+
+            // Multiple bits: return boolean array
+            boolean[] bits = new boolean[numBits];
+            for (int byteIndex = 0; byteIndex < byteCount; byteIndex++) {
+                int currentByte = response[3 + byteIndex] & 0xFF;
+                for (int bitIndex = 0; bitIndex < 8; bitIndex++) {
+                    int overallBitIndex = byteIndex * 8 + bitIndex;
+                    if (overallBitIndex < numBits) {
+                        bits[overallBitIndex] = ((currentByte >> bitIndex) & 0x01) != 0;
+                    }
+                }
+            }
+            return bits;
         } else if (functionCode == 0x03 || functionCode == 0x04) {
             // Read holding or input registers
             if (byteCount == 2) {
@@ -334,7 +352,7 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
             int available = serialPort.bytesAvailable();
             if (available > 0) {
                 int bytesRead = serialPort.readBytes(buffer, buffer.length - totalBytesRead, totalBytesRead);
-                totalBytesRead += bytesRead;
+                if (bytesRead > 0) { totalBytesRead += bytesRead; }
             }
             Thread.sleep(5);
         }

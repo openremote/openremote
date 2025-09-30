@@ -96,19 +96,19 @@ public class ModbusSerialAgent extends Agent<ModbusSerialAgent, ModbusSerialProt
     }
 
     public Integer getBaudRate() {
-        return getAttribute(BAUD_RATE).get().getValue().get();
+        return getAttributes().getValue(BAUD_RATE).orElse(null);
     }
 
     public Integer getDataBits() {
-        return getAttribute(DATA_BITS).get().getValue().get();
+        return getAttributes().getValue(DATA_BITS).orElse(null);
     }
 
     public Integer getStopBits() {
-        return getAttribute(STOP_BITS).get().getValue().get();
+        return getAttributes().getValue(STOP_BITS).orElse(null);
     }
-    
+
     public Integer getUnitId() {
-        return getAttribute(UNIT_ID).get().getValue().get();
+        return getAttributes().getValue(UNIT_ID).orElse(null);
     }
     
     public ModbusClientParity getParity() {
