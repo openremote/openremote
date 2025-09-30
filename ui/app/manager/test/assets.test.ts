@@ -282,7 +282,9 @@ test(`Check if assets are visible in the tree`, async ({ page, manager, assetsPa
     // Check if expandable of Consoles group asset is correct.
     const consoleAsset = assetTree.getAssetNodes().filter({ hasText: 'Consoles' });
     await consoleAsset.locator('.expander').click();
-    expect(assetTree.getAssetNodes().count).toBeGreaterThanOrEqual(3 + 2 + 0 + 1); // (there is at least 1 console, but could be more with a larger test suite)
+    await expect.poll(async () => await assetTree.getAssetNodes().count(), {
+        message: "Waiting for the Console assets to appear..."
+    }).toBeGreaterThanOrEqual(3 + 2 + 0 + 1); // (there is at least 1 console, but could be more with a larger test suite)
 });
 
 // TODO: Add test for the "Load more" button, by modifying the LIMIT variable in or-asset-tree
