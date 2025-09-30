@@ -24,8 +24,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Represents a collection of assets with minimal representation for usage in contexts
- * where faster loading is necessary. Contains a list of {@link AssetTreeAsset} objects
+ * Represents a collection of assets with minimal representation for usage in
+ * contexts
+ * where faster loading is necessary. Contains a list of {@link AssetTreeAsset}
+ * objects
  * and pagination details indicating whether there are more assets available.
  */
 public class AssetTree {
@@ -40,8 +42,8 @@ public class AssetTree {
         this.assets = assets.stream()
                 // map list of assets to list of asset tree assets
                 .map(asset -> AssetTreeAsset.fromAsset(asset,
-                        hasChildren != null ? hasChildren.getOrDefault(asset.getId(), false) : false))
-                .collect(Collectors.toList());
+                        hasChildren != null && hasChildren.getOrDefault(asset.getId(), false)))
+                .toList();
         this.hasMore = hasMore;
     }
 
