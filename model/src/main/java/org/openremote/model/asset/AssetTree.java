@@ -24,9 +24,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Asset tree data for the frontend asset tree.
- * Contains a list of {@link AssetTreeAsset} objects and minimal
- * pagination details indicating whether there are more assets to fetch.
+ * Represents a collection of assets with minimal representation for usage in contexts
+ * where faster loading is necessary. Contains a list of {@link AssetTreeAsset} objects
+ * and pagination details indicating whether there are more assets available.
  */
 public class AssetTree {
 

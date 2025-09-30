@@ -22,7 +22,7 @@ package org.openremote.model.asset;
 import java.util.Date;
 
 /**
- * Minimal representation of asset data, necessary for the frontend asset tree.
+ * Minimal representation of asset data for usage in contexts where faster loading is necessary.
  * Contains the asset ID, name, type, hasChildren flag, and creation date.
  */
 public class AssetTreeAsset {

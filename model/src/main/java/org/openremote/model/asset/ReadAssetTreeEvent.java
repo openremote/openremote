@@ -30,8 +30,8 @@ import org.openremote.model.query.AssetQuery;
 import java.util.function.Consumer;
 
 /**
- * A client sends this event to the server to query assets that are optimized
- * for the frontend asset tree, expecting
+ * A client sends this event to the server to query assets that have a minimal representation
+ * for usage in contexts where faster loading is necessary, expecting
  * the server to answer "soon" with an {@link AssetTreeEvent} with the results.
  */
 public class ReadAssetTreeEvent extends SharedEvent implements HasAssetQuery, RespondableEvent {
