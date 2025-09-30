@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.openremote.model.asset.agent.AgentLink;
 
-import javax.validation.constraints.NotNull;
 import java.math.BigInteger;
 import java.util.Optional;
 

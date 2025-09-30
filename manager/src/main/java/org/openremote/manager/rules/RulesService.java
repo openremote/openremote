@@ -55,8 +55,6 @@ import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Realm;
 import org.openremote.model.util.Pair;
-import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.TimeUtil;
 import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
 
@@ -65,7 +63,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -75,7 +72,6 @@ import static java.util.logging.Level.SEVERE;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 
 /**
@@ -98,8 +94,6 @@ import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 public class RulesService extends RouteBuilder implements ContainerService {
 
     public static final int PRIORITY = LOW_PRIORITY;
-    public static final String OR_RULE_EVENT_EXPIRES = "OR_RULE_EVENT_EXPIRES";
-    public static final String OR_RULE_EVENT_EXPIRES_DEFAULT = "PT1H";
     /**
      * This value defines the periodic firing of the rules engines, and therefore
      * has an impact on system load. If a temporary fact has a shorter expiration
@@ -141,7 +135,6 @@ public class RulesService extends RouteBuilder implements ContainerService {
     // here means we can quickly insert facts into newly started engines
     protected final Set<AttributeEvent> attributeEvents = ConcurrentHashMap.newKeySet();
     protected final Set<AttributeEvent> preInitAttributeEvents = new HashSet<>();
-    protected long defaultEventExpiresMillis = 1000*60*60;
     protected long tempFactExpirationMillis;
     protected long quickFireMillis;
     protected boolean initDone;
@@ -213,15 +206,6 @@ public class RulesService extends RouteBuilder implements ContainerService {
         geofenceAssetAdapters.addAll(container.getServices(GeofenceAssetAdapter.class));
         geofenceAssetAdapters.sort(Comparator.comparingInt(GeofenceAssetAdapter::getPriority));
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
-        String defaultEventExpires = getString(container.getConfig(), OR_RULE_EVENT_EXPIRES, OR_RULE_EVENT_EXPIRES_DEFAULT);
-
-        if (!TextUtil.isNullOrEmpty(defaultEventExpires)) {
-            try {
-                defaultEventExpiresMillis = TimeUtil.parseTimeDuration(defaultEventExpires);
-            } catch (RuntimeException exception) {
-                LOG.log(Level.WARNING, "Failed to parse " + OR_RULE_EVENT_EXPIRES, exception);
-            }
-        }
 
         container.getService(ManagerWebService.class).addApiSingleton(
             new FlowResourceImpl(
