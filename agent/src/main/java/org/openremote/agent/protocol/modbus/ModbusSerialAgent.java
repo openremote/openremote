@@ -40,9 +40,12 @@ public class ModbusSerialAgent extends Agent<ModbusSerialAgent, ModbusSerialProt
     public static final AttributeDescriptor<Integer> DATA_BITS = new AttributeDescriptor<>("dataBits", ValueType.POSITIVE_INTEGER);
     public static final AttributeDescriptor<Integer> STOP_BITS = new AttributeDescriptor<>("stopBits", ValueType.POSITIVE_INTEGER);
     public static final AttributeDescriptor<Integer> UNIT_ID = new AttributeDescriptor<>("unitId", ValueType.POSITIVE_INTEGER);
-    
+
     public static final ValueDescriptor<ModbusClientParity> VALUE_MODBUS_PARITY = new ValueDescriptor<>("ModbusParity", ModbusClientParity.class);
     public static final AttributeDescriptor<ModbusClientParity> PARITY = new AttributeDescriptor<>("parity", VALUE_MODBUS_PARITY);
+
+    public static final AttributeDescriptor<String> ILLEGAL_REGISTERS = new AttributeDescriptor<>("illegalRegisters", ValueType.TEXT);
+    public static final AttributeDescriptor<Integer> MAX_REGISTER_LENGTH = new AttributeDescriptor<>("maxRegisterLength", ValueType.POSITIVE_INTEGER);
 
 
     public enum ModbusClientParity {
@@ -119,6 +122,13 @@ public class ModbusSerialAgent extends Agent<ModbusSerialAgent, ModbusSerialProt
         return getParity().getValue();
     }
 
+    public Optional<String> getIllegalRegisters() {
+        return getAttributes().getValue(ILLEGAL_REGISTERS);
+    }
+
+    public Integer getMaxRegisterLength() {
+        return getAttributes().getValue(MAX_REGISTER_LENGTH).orElse(125); // Modbus default max
+    }
 
     @Override
     public ModbusSerialProtocol getProtocolInstance() {
