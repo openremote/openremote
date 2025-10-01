@@ -85,7 +85,7 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
             if (serialPort.openPort()) {
                 setConnectionStatus(ConnectionStatus.CONNECTED);
                 String parityName = agent.getParity().name();
-                LOG.info("Connected to Modbus RTU device on " + portName + " (" + baudRate + "," + dataBits + "," + parityName + "," + stopBits + ")");
+                LOG.info("Modbus on serial device started successfully, " + portName + " (" + baudRate + "," + dataBits + "," + parityName + "," + stopBits + ")");
             } else {
                 setConnectionStatus(ConnectionStatus.ERROR);
                 throw new RuntimeException("Failed to open serial port: " + portName);
@@ -229,7 +229,8 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
             if (totalBytesRead >= 5 && response[0] == unitId && response[1] == functionCode) {
                 return parseModbusResponse(response, functionCode, dataType);
             } else if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {
-                LOG.warning("Modbus exception response - Exception code: " + (response[2] & 0xFF));
+                int exceptionCode = response[2] & 0xFF;
+                LOG.warning("Modbus exception response - Exception code: " + exceptionCode + " (Function: " + functionCode + ", Address: " + address + ")");
             }
             
         } catch (Exception e) {
@@ -241,6 +242,7 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
     
     private Object parseModbusResponse(byte[] response, byte functionCode, ModbusAgentLink.ModbusDataType dataType) {
         int byteCount = response[2] & 0xFF;
+        LOG.info("-------------MODBUS DEBUG RESPONSE-------------: " + response[1] + response [2] );
 
         if (functionCode == 0x01 || functionCode == 0x02) {
             // Read coils or discrete inputs
@@ -294,19 +296,25 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
     private boolean writeSingleCoil(int unitId, int address, boolean value) {
         try {
             byte[] request = createWriteCoilRequest(unitId, (byte) 0x05, address, value);
-            
+
             int bytesWritten = serialPort.writeBytes(request, request.length);
             if (bytesWritten != request.length) {
                 LOG.warning("Incomplete write: " + bytesWritten + " of " + request.length + " bytes");
                 return false;
             }
-            
+
             // Read response (8 bytes for write single coil)
             byte[] response = new byte[8];
             int totalBytesRead = readWithTimeout(response, 1000);
-            
-            return totalBytesRead >= 8 && response[0] == unitId && response[1] == 0x05;
-            
+
+            if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {
+                int exceptionCode = response[2] & 0xFF;
+                LOG.warning("Modbus exception response on write coil - Exception code: " + exceptionCode + " (Address: " + address + ")");
+                return false;
+            }
+            return true;
+
+
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Error writing single coil: " + e.getMessage(), e);
             return false;
@@ -323,21 +331,27 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
             } else {
                 throw new IllegalArgumentException("Cannot convert value to register value: " + value);
             }
-            
+
             byte[] request = createWriteRegisterRequest(unitId, (byte) 0x06, address, registerValue);
-            
+
             int bytesWritten = serialPort.writeBytes(request, request.length);
             if (bytesWritten != request.length) {
                 LOG.warning("Incomplete write: " + bytesWritten + " of " + request.length + " bytes");
                 return false;
             }
-            
+
             // Read response (8 bytes for write single register)
             byte[] response = new byte[8];
             int totalBytesRead = readWithTimeout(response, 1000);
-            
-            return totalBytesRead >= 8 && response[0] == unitId && response[1] == 0x06;
-            
+
+            if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {
+                int exceptionCode = response[2] & 0xFF;
+                LOG.warning("Modbus exception response on write register - Exception code: " + exceptionCode + " (Address: " + address + ")");
+                return false;
+            }
+            return true;
+
+
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Error writing single register: " + e.getMessage(), e);
             return false;
