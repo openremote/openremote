@@ -517,16 +517,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lit-labs/virtualizer@npm:^2.1.1":
-  version: 2.1.1
-  resolution: "@lit-labs/virtualizer@npm:2.1.1"
-  dependencies:
-    lit: "npm:^3.2.0"
-    tslib: "npm:^2.0.3"
-  checksum: 10c0/ea3cce76885448f11ab77d06ce3e58bf83fc700edf05ab4310836a83a06c11a4fc7e29f59813a0ade6056b0bd970fb7b980b0fd7df25e7892dddc4ae11fefe20
-  languageName: node
-  linkType: hard
-
 "@lit/reactive-element@npm:^1.0.0 || ^2.0.0":
   version: 2.0.4
   resolution: "@lit/reactive-element@npm:2.0.4"
@@ -1501,7 +1491,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/or-asset-tree@workspace:ui/component/or-asset-tree"
   dependencies:
-    "@lit-labs/virtualizer": "npm:^2.1.1"
     "@mdi/js": "npm:^5.9.55"
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
@@ -6531,7 +6520,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lit@npm:^3.2.0, lit@npm:^3.3.1":
+"lit@npm:^3.3.1":
   version: 3.3.1
   resolution: "lit@npm:3.3.1"
   dependencies:
