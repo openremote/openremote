@@ -188,6 +188,14 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
 
     config.devtool = !isDevServer ? false : "inline-source-map";
     config.devServer = {
+        client: {
+          overlay: {
+            runtimeErrors: (e) => {
+              console.error(e);
+              return false;
+            }
+          }
+        },
         historyApiFallback: {
             index: "/" + dirname.split(path.sep).slice(-1)[0] + "/",
         },

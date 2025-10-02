@@ -217,7 +217,11 @@ export class Manager {
    * @param asset The asset to create
    * @param config The axios request config
    */
-  async createAsset(asset: Asset, config) {
+  async createAsset(asset: Asset, config?: any) {
+    if(!config) {
+      const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
+      config = { headers: { Authorization: `Bearer ${access_token}` } };
+    }
     await rest.api.AssetResource.create(asset, config)
       .then((response) => {
         expect(response.status).toBe(200);
@@ -227,6 +231,26 @@ export class Manager {
         expect(e.response.status, { message: "Failed to create asset" }).toBe(409);
       });
   }
+
+  /**
+   * Updates an asset
+   * @param asset The asset to update
+   * @param config The axios request config
+   */
+  async updateAsset(asset: Asset, config?: any) {
+      if(!config) {
+        const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
+        config = { ...config, headers: { Authorization: `Bearer ${access_token}` } };
+      }
+      await rest.api.AssetResource.update(asset.id!, asset, config)
+        .then((response) => {
+          expect(response.status).toBe(200);
+          this.assets = [...this.assets.filter(a => a.id !== response.data.id), response.data as Asset];
+        })
+        .catch((e) => {
+          expect(e.response.status, { message: "Failed to update asset" }).toBe(409);
+        });
+    }
 
   /**
    * Setup the testing environment by giving the realm name and additional parameters
