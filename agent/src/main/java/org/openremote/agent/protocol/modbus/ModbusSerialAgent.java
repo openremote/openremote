@@ -127,7 +127,7 @@ public class ModbusSerialAgent extends Agent<ModbusSerialAgent, ModbusSerialProt
     }
 
     public Integer getMaxRegisterLength() {
-        return getAttributes().getValue(MAX_REGISTER_LENGTH).orElse(125); // Modbus default max
+        return getAttributes().getValue(MAX_REGISTER_LENGTH).orElse(1); // Batch processing disabled by default.
     }
 
     @Override

@@ -42,16 +42,21 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
 
     public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ModbusSerialProtocol.class);
 
+    private static final java.util.concurrent.atomic.AtomicInteger groupCounter = new java.util.concurrent.atomic.AtomicInteger(0);
+
     protected final Map<AttributeRef, ScheduledFuture<?>> pollingMap = new ConcurrentHashMap<>();
-    protected final Map<String, Map<AttributeRef, ModbusAgentLink>> batchGroups = new ConcurrentHashMap<>(); // Key: memoryArea_pollingInterval
+    protected final Map<String, Map<AttributeRef, ModbusAgentLink>> batchGroups = new ConcurrentHashMap<>(); // Key: agentName_groupNum_memoryArea_pollingInterval
+    protected final Map<String, List<BatchReadRequest>> cachedBatches = new ConcurrentHashMap<>(); // Cached batch requests per group
     protected final Map<String, ScheduledFuture<?>> batchPollingTasks = new ConcurrentHashMap<>();
     private final Object modbusLock = new Object();
     private SerialPort serialPort;
     private String connectionString;
     private Set<RegisterRange> illegalRegisters;
+    private final int groupNumber;
     
     public ModbusSerialProtocol(ModbusSerialAgent agent) {
         super(agent);
+        this.groupNumber = groupCounter.incrementAndGet();
     }
 
     @Override
@@ -126,6 +131,7 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
         batchPollingTasks.values().forEach(future -> future.cancel(false));
         batchPollingTasks.clear();
         batchGroups.clear();
+        cachedBatches.clear();
 
         if (serialPort != null && serialPort.isOpen()) {
             serialPort.closePort();
@@ -139,23 +145,21 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) throws RuntimeException {
         AttributeRef ref = new AttributeRef(assetId, attribute.getName());
 
-        // Create group key: agentName_memoryArea_pollingInterval
-        String groupKey = agent.getName() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
+        // Create group key: agentName_groupNum_memoryArea_pollingInterval
+        String groupKey = "Group " + groupNumber  + "_" + agent.getId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
 
-        // Add to batch group
+        // Add to batch group and invalidate cached batches
         batchGroups.computeIfAbsent(groupKey, k -> new ConcurrentHashMap<>()).put(ref, agentLink);
+        cachedBatches.remove(groupKey); // Invalidate cache
 
-        // Cancel existing batch task for this group
-        ScheduledFuture<?> existingTask = batchPollingTasks.remove(groupKey);
-        if (existingTask != null) {
-            existingTask.cancel(false);
+        // Only schedule task if one doesn't exist yet for this group
+        if (!batchPollingTasks.containsKey(groupKey)) {
+            ScheduledFuture<?> batchTask = scheduleBatchedPollingTask(groupKey, agentLink.getReadMemoryArea(), agentLink.getPollingMillis());
+            batchPollingTasks.put(groupKey, batchTask);
+            LOG.info("Scheduled new polling task for batch group " + groupKey);
         }
 
-        // Schedule new batched polling task for this group
-        ScheduledFuture<?> batchTask = scheduleBatchedPollingTask(groupKey, agentLink.getReadMemoryArea(), agentLink.getPollingMillis());
-        batchPollingTasks.put(groupKey, batchTask);
-
-        LOG.info("Added attribute " + ref + " to batch group " + groupKey);
+        LOG.info("Added attribute " + ref + " to batch group " + groupKey + " (total attributes in group: " + batchGroups.get(groupKey).size() + ")");
     }
 
     @Override
@@ -163,27 +167,23 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
 
         // Remove from batch group
-        String groupKey = agent.getName() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
+        String groupKey = agent.getName() + "_" + groupNumber + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
         Map<AttributeRef, ModbusAgentLink> group = batchGroups.get(groupKey);
         if (group != null) {
             group.remove(attributeRef);
+            cachedBatches.remove(groupKey); // Invalidate cache
 
             // If group is empty, cancel batch task
             if (group.isEmpty()) {
                 batchGroups.remove(groupKey);
+                cachedBatches.remove(groupKey);
                 ScheduledFuture<?> task = batchPollingTasks.remove(groupKey);
                 if (task != null) {
                     task.cancel(false);
                 }
                 LOG.info("Removed empty batch group " + groupKey);
             } else {
-                // Reschedule batch task with updated group
-                ScheduledFuture<?> existingTask = batchPollingTasks.remove(groupKey);
-                if (existingTask != null) {
-                    existingTask.cancel(false);
-                }
-                ScheduledFuture<?> batchTask = scheduleBatchedPollingTask(groupKey, agentLink.getReadMemoryArea(), agentLink.getPollingMillis());
-                batchPollingTasks.put(groupKey, batchTask);
+                LOG.info("Removed attribute " + attributeRef + " from batch group " + groupKey + " (remaining attributes: " + group.size() + ")");
             }
         }
     }
@@ -551,23 +551,30 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
                     return;
                 }
 
-                // Create optimized batch requests
-                List<BatchReadRequest> batches = createBatchRequests(group, illegalRegisters, agent.getMaxRegisterLength());
-
-                LOG.info("Executing " + batches.size() + " batch request(s) for group " + groupKey + " (maxRegisterLength=" + agent.getMaxRegisterLength() + ")");
+                // Get cached batches or create new ones (synchronized to prevent race conditions)
+                List<BatchReadRequest> batches;
+                synchronized (cachedBatches) {
+                    batches = cachedBatches.get(groupKey);
+                    if (batches == null) {
+                        LOG.info("Creating batch requests for group " + groupKey + " with " + group.size() + " attribute(s) (maxRegisterLength=" + agent.getMaxRegisterLength() + ")");
+                        batches = createBatchRequests(group, illegalRegisters, agent.getMaxRegisterLength());
+                        cachedBatches.put(groupKey, batches);
+                        LOG.info("Created and cached " + batches.size() + " batch request(s) from " + group.size() + " attribute(s)");
+                    }
+                }
 
                 // Execute each batch request
                 for (int i = 0; i < batches.size(); i++) {
                     BatchReadRequest batch = batches.get(i);
                     int endAddress = batch.startAddress + batch.quantity - 1;
-                    LOG.info("  Batch " + (i + 1) + "/" + batches.size() + ": registers=" + batch.startAddress + "-" + endAddress + " (quantity=" + batch.quantity + ", attributes=" + batch.attributes.size() + ")");
+                    LOG.fine("Executing batch " + (i + 1) + "/" + batches.size() + ": registers=" + batch.startAddress + "-" + endAddress + " (quantity=" + batch.quantity + ", attributes=" + batch.attributes.size() + ")");
                     executeBatchRead(batch, memoryArea, group);
                 }
 
             } catch (Exception e) {
                 LOG.log(Level.WARNING, "Exception during batched Modbus polling for group " + groupKey + ": " + e.getMessage(), e);
             }
-        }, 0, pollingMillis, TimeUnit.MILLISECONDS);
+        }, pollingMillis, pollingMillis, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -886,7 +893,6 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
             }
         }
 
-        LOG.info("Created " + batches.size() + " batch request(s) from " + attributeLinks.size() + " attribute(s)");
         return batches;
     }
 
@@ -898,9 +904,10 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
             try {
                 LOG.info("Resetting Modbus Serial agent - reconnecting serial port");
 
-                // Cancel all existing batch polling tasks
+                // Cancel all existing batch polling tasks and clear caches
                 batchPollingTasks.values().forEach(future -> future.cancel(false));
                 batchPollingTasks.clear();
+                cachedBatches.clear(); // Clear cached batches on reset
 
                 // Close serial port
                 if (serialPort != null && serialPort.isOpen()) {
