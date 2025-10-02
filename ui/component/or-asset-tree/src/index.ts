@@ -246,8 +246,6 @@ declare global {
 @customElement("or-asset-tree")
 export class OrAssetTree extends subscribe(manager)(LitElement) {
 
-    public static ASSET_QUERY_LIMIT = 100;
-
     static get styles() {
         return [
             style
@@ -301,6 +299,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     @property({type: Boolean})
     public checkboxes?: boolean = false;
+
+    @property({type: Number})
+    public readonly queryLimit = 100;
 
     protected config?: AssetTreeConfig;
 
@@ -623,8 +624,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         const result = super.shouldUpdate(_changedProperties);
         if (_changedProperties.has("assets")
             || _changedProperties.has("rootAssets")
-            || _changedProperties.has("rootAssetIds")) {
-            this._nodes = undefined;
+            || _changedProperties.has("rootAssetIds")
+            || _changedProperties.has("queryLimit")) {
+            this.refresh();
         }
 
         if (!this._nodes) {
@@ -1252,7 +1254,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             names: assetCond,
             types: assetTypeCond,
             attributes: attributeCond,
-            limit: OrAssetTree.ASSET_QUERY_LIMIT
+            limit: Math.max(this.queryLimit, 1)
         });
 
         // If the "Asset string input" is 22 characters long, we also query for the asset id
@@ -1783,7 +1785,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     property: this._getOrderBy(this.sortBy)
                 },
                 offset: offset,
-                limit: OrAssetTree.ASSET_QUERY_LIMIT
+                limit: Math.max(this.queryLimit, 1)
             };
 
             if (this.assetIds) {

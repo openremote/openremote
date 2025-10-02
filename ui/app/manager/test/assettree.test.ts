@@ -21,6 +21,7 @@ import { expect } from "@openremote/test";
 import {Manager, test, userStatePath} from "./fixtures/manager.js";
 import {batteryAsset, electricityAsset, parentAssets} from "./fixtures/data/assettree.js";
 import {Asset} from "@openremote/model";
+import type {OrAssetTree} from "@openremote/or-asset-tree";
 
 test.use({ storageState: userStatePath });
 
@@ -105,13 +106,13 @@ test(`Search for and select the battery asset`, async ({ page, manager, assetTre
  */
 test(`Search by Asset ID and select the battery asset`, async ({ page, manager, assetTree, assetsPage }) => {
     const assets = [batteryAsset, electricityAsset];
-    await manager.setup("smartcity", { assets: [batteryAsset, electricityAsset] });
+    await manager.setup("smartcity", { assets: assets });
     const id = manager.assets.find(asset => asset.name === batteryAsset.name)?.id;
     expect(id).toBeDefined();
     await manager.goToRealmStartPage("smartcity");
     await manager.navigateToTab("asset");
     await assetTree.fillFilterInput(id!);
-    await expect(assetTree.getAssetNodes()).toHaveCount(assets.length);
+    await expect(assetTree.getAssetNodes()).toHaveCount(1);
     await page.click(`text=${batteryAsset.name}`);
     await expect(page.locator(`#asset-header`, { hasText: batteryAsset.name })).toBeVisible();
 })
@@ -126,15 +127,36 @@ test(`Search by Asset ID and select the battery asset`, async ({ page, manager, 
  */
 test(`Open browser tab directly to the battery asset`, async ({ page, manager, assetsPage, assetTree }) => {
     const assets = [batteryAsset, electricityAsset];
-    await manager.setup("smartcity", { assets: [batteryAsset, electricityAsset] });
+    await manager.setup("smartcity", { assets: assets });
     const id = manager.assets.find(asset => asset.name === batteryAsset.name)?.id;
     expect(id).toBeDefined();
     await manager.goToRealmStartPage("smartcity");
     await assetsPage.gotoAssetId("smartcity", id!);
     await expect(assetTree.getFilterInput()).toHaveValue(id!);
-    await expect(assetTree.getAssetNodes()).toHaveCount(assets.length);
+    await expect(assetTree.getAssetNodes()).toHaveCount(1);
     await expect(assetTree.getSelectedNodes()).toHaveCount(1);
     await expect(page.locator(`#asset-header`, { hasText: batteryAsset.name })).toBeVisible();
 })
 
-// TODO: Add test for the "Load more" button, by modifying the LIMIT variable in or-asset-tree
+/**
+ * @given Assets are set up in the "smartcity" realm
+ * @when Logging in to the OpenRemote "smartcity" realm
+ * @and Navigating to the "asset" tab, while the QUERY_LIMIT is set to 2
+ * @then the other assets should not be visible
+ * @and a "Load More" button has to be displayed
+ * @when the "Load More" button is clicked
+ * @then the other assets should be visible
+ */
+test(`Load more buttons are shown when there are a lot of assets`, async ({ page, manager, assetsPage, assetTree }) => {
+    const assets = [batteryAsset, batteryAsset, electricityAsset, electricityAsset];
+    await manager.setup("smartcity", { assets: assets });
+    await manager.goToRealmStartPage("smartcity");
+    await assetsPage.goto();
+    await expect(assetTree.getAssetNodes()).toHaveCount(5);
+    await page.locator('or-asset-tree').evaluate(tree => {(tree as OrAssetTree).setAttribute('queryLimit', '2')});
+    await expect(assetTree.getAssetNodes()).toHaveCount(2);
+    await page.locator('.loadmore-element or-mwc-input').click();
+    await expect(assetTree.getAssetNodes()).toHaveCount(4);
+    await page.locator('.loadmore-element or-mwc-input').click();
+    await expect(assetTree.getAssetNodes()).toHaveCount(5);
+})
