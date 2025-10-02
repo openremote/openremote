@@ -49,10 +49,62 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
     protected final Map<String, List<BatchReadRequest>> cachedBatches = new ConcurrentHashMap<>(); // Cached batch requests per group
     protected final Map<String, ScheduledFuture<?>> batchPollingTasks = new ConcurrentHashMap<>();
     private final Object modbusLock = new Object();
-    private SerialPort serialPort;
+    private SerialPortWrapper serialPort;
     private String connectionString;
     private Set<RegisterRange> illegalRegisters;
-    
+
+    // Serial port wrapper interface for testing
+    public interface SerialPortWrapper {
+        boolean openPort();
+        boolean closePort();
+        boolean isOpen();
+        int writeBytes(byte[] buffer, long bytesToWrite);
+        int readBytes(byte[] buffer, long bytesToRead, long offset);
+        int bytesAvailable();
+    }
+
+    // Real SerialPort implementation
+    private static class RealSerialPortWrapper implements SerialPortWrapper {
+        private final SerialPort port;
+
+        RealSerialPortWrapper(SerialPort port) {
+            this.port = port;
+        }
+
+        @Override
+        public boolean openPort() {
+            return port.openPort();
+        }
+
+        @Override
+        public boolean closePort() {
+            return port.closePort();
+        }
+
+        @Override
+        public boolean isOpen() {
+            return port.isOpen();
+        }
+
+        @Override
+        public int writeBytes(byte[] buffer, long bytesToWrite) {
+            return port.writeBytes(buffer, (int) bytesToWrite);
+        }
+
+        @Override
+        public int readBytes(byte[] buffer, long bytesToRead, long offset) {
+            return port.readBytes(buffer, (int) bytesToRead, (int) offset);
+        }
+
+        @Override
+        public int bytesAvailable() {
+            return port.bytesAvailable();
+        }
+    }
+
+    // For testing: inject a mock serial port wrapper
+    public static SerialPortWrapper mockSerialPortForTesting = null;
+
     public ModbusSerialProtocol(ModbusSerialAgent agent) {
         super(agent);
     }
@@ -86,12 +138,19 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
 
                 connectionString = "modbus-rtu://" + portName + "?baud=" + baudRate + "&data=" + dataBits + "&stop=" + stopBits + "&parity=" + parity;
 
-                serialPort = SerialPort.getCommPort(portName);
-                serialPort.setBaudRate(baudRate);
-                serialPort.setNumDataBits(dataBits);
-                serialPort.setNumStopBits(stopBits);
-                serialPort.setParity(mapParityToSerialPort(agent.getParityValue()));
-                serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 50, 0);
+                // Use mock serial port for testing if available
+                if (mockSerialPortForTesting != null) {
+                    serialPort = mockSerialPortForTesting;
+                    LOG.info("Using mock serial port for testing");
+                } else {
+                    SerialPort sp = SerialPort.getCommPort(portName);
+                    sp.setBaudRate(baudRate);
+                    sp.setNumDataBits(dataBits);
+                    sp.setNumStopBits(stopBits);
+                    sp.setParity(mapParityToSerialPort(agent.getParityValue()));
+                    sp.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 50, 0);
+                    serialPort = new RealSerialPortWrapper(sp);
+                }
 
                 if (serialPort.openPort()) {
                     setConnectionStatus(ConnectionStatus.CONNECTED);
@@ -357,6 +416,47 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
                     buffer.order(ByteOrder.BIG_ENDIAN);
                     return buffer.getInt();
                 }
+            } else if (byteCount == 8) {
+                // Four registers - could be 64-bit integer or double precision float
+                byte[] dataBytes = new byte[8];
+                System.arraycopy(response, 3, dataBytes, 0, 8);
+
+                if (dataType == ModbusAgentLink.ModbusDataType.LREAL) {
+                    ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
+                    buffer.order(ByteOrder.BIG_ENDIAN);
+                    double value = buffer.getDouble();
+
+                    // Filter out NaN and Infinity values to prevent database issues
+                    if (Double.isNaN(value) || Double.isInfinite(value)) {
+                        LOG.warning("Modbus response contains invalid double value (NaN or Infinity), ignoring update");
+                        return null;
+                    }
+
+                    return value;
+                } else if (dataType == ModbusAgentLink.ModbusDataType.LINT) {
+                    // 64-bit signed integer
+                    ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
+                    buffer.order(ByteOrder.BIG_ENDIAN);
+                    return buffer.getLong();
+                } else if (dataType == ModbusAgentLink.ModbusDataType.ULINT) {
+                    // 64-bit unsigned integer - use BigInteger
+                    ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
+                    buffer.order(ByteOrder.BIG_ENDIAN);
+                    long signedValue = buffer.getLong();
+
+                    // Convert to unsigned BigInteger
+                    if (signedValue >= 0) {
+                        return java.math.BigInteger.valueOf(signedValue);
+                    } else {
+                        // Handle negative as unsigned
+                        return java.math.BigInteger.valueOf(signedValue).add(java.math.BigInteger.ONE.shiftLeft(64));
+                    }
+                } else {
+                    // Default: treat as 64-bit signed integer
+                    ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
+                    buffer.order(ByteOrder.BIG_ENDIAN);
+                    return buffer.getLong();
+                }
             }
         }
         
@@ -437,7 +537,7 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
     private int readWithTimeout(byte[] buffer, long timeoutMs) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         int totalBytesRead = 0;
-        
+
         while (totalBytesRead < buffer.length && (System.currentTimeMillis() - startTime) < timeoutMs) {
             int available = serialPort.bytesAvailable();
             if (available > 0) {
@@ -446,7 +546,7 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
             }
             Thread.sleep(5);
         }
-        
+
         return totalBytesRead;
     }
     
@@ -720,6 +820,46 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
                         buffer.order(ByteOrder.BIG_ENDIAN);
                         return buffer.getInt();
                     }
+                } else if (registerCount == 4) {
+                    // Four registers - could be 64-bit integer or double precision float
+                    byte[] dataBytes = new byte[8];
+                    System.arraycopy(response, byteOffset, dataBytes, 0, 8);
+
+                    if (dataType == ModbusAgentLink.ModbusDataType.LREAL) {
+                        ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
+                        buffer.order(ByteOrder.BIG_ENDIAN);
+                        double value = buffer.getDouble();
+
+                        if (Double.isNaN(value) || Double.isInfinite(value)) {
+                            LOG.warning("Batch response contains invalid double value (NaN or Infinity), ignoring");
+                            return null;
+                        }
+
+                        return value;
+                    } else if (dataType == ModbusAgentLink.ModbusDataType.LINT) {
+                        // 64-bit signed integer
+                        ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
+                        buffer.order(ByteOrder.BIG_ENDIAN);
+                        return buffer.getLong();
+                    } else if (dataType == ModbusAgentLink.ModbusDataType.ULINT) {
+                        // 64-bit unsigned integer - use BigInteger
+                        ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
+                        buffer.order(ByteOrder.BIG_ENDIAN);
+                        long signedValue = buffer.getLong();
+
+                        // Convert to unsigned BigInteger
+                        if (signedValue >= 0) {
+                            return java.math.BigInteger.valueOf(signedValue);
+                        } else {
+                            // Handle negative as unsigned
+                            return java.math.BigInteger.valueOf(signedValue).add(java.math.BigInteger.ONE.shiftLeft(64));
+                        }
+                    } else {
+                        // Default: treat as 64-bit signed integer
+                        ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
+                        buffer.order(ByteOrder.BIG_ENDIAN);
+                        return buffer.getLong();
+                    }
                 }
             }
         }
@@ -923,12 +1063,19 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
                 int dataBits = agent.getDataBits();
                 int stopBits = agent.getStopBits();
 
-                serialPort = SerialPort.getCommPort(portName);
-                serialPort.setBaudRate(baudRate);
-                serialPort.setNumDataBits(dataBits);
-                serialPort.setNumStopBits(stopBits);
-                serialPort.setParity(mapParityToSerialPort(agent.getParityValue()));
-                serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 50, 0);
+                // Use mock serial port for testing if available
+                if (mockSerialPortForTesting != null) {
+                    serialPort = mockSerialPortForTesting;
+                    LOG.info("Using mock serial port for testing (reset)");
+                } else {
+                    SerialPort sp = SerialPort.getCommPort(portName);
+                    sp.setBaudRate(baudRate);
+                    sp.setNumDataBits(dataBits);
+                    sp.setNumStopBits(stopBits);
+                    sp.setParity(mapParityToSerialPort(agent.getParityValue()));
+                    sp.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 50, 0);
+                    serialPort = new RealSerialPortWrapper(sp);
+                }
 
                 if (!serialPort.openPort()) {
                     setConnectionStatus(ConnectionStatus.ERROR);
