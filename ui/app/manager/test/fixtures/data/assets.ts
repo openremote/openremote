@@ -33,29 +33,6 @@ const assets = [
   },
 ] as const;
 
-export const parentAssets = [
-  {
-    name: "City Asset 1",
-    type: "CityAsset",
-    realm: "smartcity",
-    attributes: {
-        notes: { name: "notes", type: "text" },
-        location: { name: "location", type: "GEO_JSONPoint" },
-        country: { name: "country", type: "text" }
-    }
-  },
-  {
-    name: "City Asset 2",
-    type: "CityAsset",
-    realm: "smartcity",
-    attributes: {
-        notes: { name: "notes", type: "text" },
-        location: { name: "location", type: "GEO_JSONPoint" },
-        country: { name: "country", type: "text" }
-    }
-  }
-];
-
 export const preparedAssetsWithLocation = Object.values(
   Util.mergeObjects(
     structuredClone(assets),
