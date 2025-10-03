@@ -21,6 +21,7 @@ package org.openremote.agent.protocol.modbus;
 
 import com.fazecast.jSerialComm.SerialPort;
 import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.agent.protocol.serial.SerialPortManager;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
@@ -49,61 +50,9 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
     protected final Map<String, List<BatchReadRequest>> cachedBatches = new ConcurrentHashMap<>(); // Cached batch requests per group
     protected final Map<String, ScheduledFuture<?>> batchPollingTasks = new ConcurrentHashMap<>();
     private final Object modbusLock = new Object();
-    private SerialPortWrapper serialPort;
+    private org.openremote.agent.protocol.serial.SerialPortWrapper serialPort;
     private String connectionString;
     private Set<RegisterRange> illegalRegisters;
-
-    // Serial port wrapper interface for testing
-    public interface SerialPortWrapper {
-        boolean openPort();
-        boolean closePort();
-        boolean isOpen();
-        int writeBytes(byte[] buffer, long bytesToWrite);
-        int readBytes(byte[] buffer, long bytesToRead, long offset);
-        int bytesAvailable();
-    }
-
-    // Real SerialPort implementation
-    private static class RealSerialPortWrapper implements SerialPortWrapper {
-        private final SerialPort port;
-
-        RealSerialPortWrapper(SerialPort port) {
-            this.port = port;
-        }
-
-        @Override
-        public boolean openPort() {
-            return port.openPort();
-        }
-
-        @Override
-        public boolean closePort() {
-            return port.closePort();
-        }
-
-        @Override
-        public boolean isOpen() {
-            return port.isOpen();
-        }
-
-        @Override
-        public int writeBytes(byte[] buffer, long bytesToWrite) {
-            return port.writeBytes(buffer, (int) bytesToWrite);
-        }
-
-        @Override
-        public int readBytes(byte[] buffer, long bytesToRead, long offset) {
-            return port.readBytes(buffer, (int) bytesToRead, (int) offset);
-        }
-
-        @Override
-        public int bytesAvailable() {
-            return port.bytesAvailable();
-        }
-    }
-
-    // For testing: inject a mock serial port wrapper
-    public static SerialPortWrapper mockSerialPortForTesting = null;
 
     public ModbusSerialProtocol(ModbusSerialAgent agent) {
         super(agent);
@@ -138,21 +87,17 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
 
                 connectionString = "modbus-rtu://" + portName + "?baud=" + baudRate + "&data=" + dataBits + "&stop=" + stopBits + "&parity=" + parity;
 
-                // Use mock serial port for testing if available
-                if (mockSerialPortForTesting != null) {
-                    serialPort = mockSerialPortForTesting;
-                    LOG.info("Using mock serial port for testing");
-                } else {
-                    SerialPort sp = SerialPort.getCommPort(portName);
-                    sp.setBaudRate(baudRate);
-                    sp.setNumDataBits(dataBits);
-                    sp.setNumStopBits(stopBits);
-                    sp.setParity(mapParityToSerialPort(agent.getParityValue()));
-                    sp.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 50, 0);
-                    serialPort = new RealSerialPortWrapper(sp);
-                }
+                // Acquire shared serial port through SerialPortManager
+                org.openremote.agent.protocol.serial.SerialPortWrapper wrapper = SerialPortManager.getInstance().acquirePort(
+                        portName,
+                        baudRate,
+                        dataBits,
+                        stopBits,
+                        mapParityToSerialPort(parity)
+                );
 
-                if (serialPort.openPort()) {
+                if (wrapper != null && wrapper.isOpen()) {
+                    serialPort = wrapper;
                     setConnectionStatus(ConnectionStatus.CONNECTED);
                     String parityName = agent.getParity().name();
                     LOG.info("Modbus on serial device started successfully, " + portName + " (" + baudRate + "," + dataBits + "," + parityName + "," + stopBits + ")");
@@ -190,9 +135,17 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
         batchGroups.clear();
         cachedBatches.clear();
 
+        // Release shared serial port through SerialPortManager
         if (serialPort != null && serialPort.isOpen()) {
-            serialPort.closePort();
-            LOG.info("Disconnected from Modbus RTU device");
+            String portName = agent.getSerialPort().orElse("unknown");
+            SerialPortManager.getInstance().releasePort(
+                    portName,
+                    agent.getBaudRate(),
+                    agent.getDataBits(),
+                    agent.getStopBits(),
+                    mapParityToSerialPort(agent.getParityValue())
+            );
+            LOG.info("Released Modbus RTU device: " + portName);
         }
 
         setConnectionStatus(ConnectionStatus.DISCONNECTED);
@@ -1095,10 +1048,18 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
                 batchPollingTasks.clear();
                 cachedBatches.clear(); // Clear cached batches on reset
 
-                // Close serial port
+                // Release and re-acquire serial port
+                String portName = agent.getSerialPort().orElseThrow(() -> new RuntimeException("Serial port not specified"));
+                int baudRate = agent.getBaudRate();
+                int dataBits = agent.getDataBits();
+                int stopBits = agent.getStopBits();
+                int parity = agent.getParityValue();
+
                 if (serialPort != null && serialPort.isOpen()) {
-                    serialPort.closePort();
-                    LOG.info("Serial port closed for reset");
+                    SerialPortManager.getInstance().releasePort(
+                            portName, baudRate, dataBits, stopBits, mapParityToSerialPort(parity)
+                    );
+                    LOG.info("Serial port released for reset");
                 }
 
                 // Wait before reconnecting
@@ -1107,29 +1068,16 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
                 // Reopen serial port
                 setConnectionStatus(ConnectionStatus.CONNECTING);
 
-                String portName = agent.getSerialPort().orElseThrow(() -> new RuntimeException("Serial port not specified"));
-                int baudRate = agent.getBaudRate();
-                int dataBits = agent.getDataBits();
-                int stopBits = agent.getStopBits();
+                org.openremote.agent.protocol.serial.SerialPortWrapper wrapper = SerialPortManager.getInstance().acquirePort(
+                        portName, baudRate, dataBits, stopBits, mapParityToSerialPort(parity)
+                );
 
-                // Use mock serial port for testing if available
-                if (mockSerialPortForTesting != null) {
-                    serialPort = mockSerialPortForTesting;
-                    LOG.info("Using mock serial port for testing (reset)");
-                } else {
-                    SerialPort sp = SerialPort.getCommPort(portName);
-                    sp.setBaudRate(baudRate);
-                    sp.setNumDataBits(dataBits);
-                    sp.setNumStopBits(stopBits);
-                    sp.setParity(mapParityToSerialPort(agent.getParityValue()));
-                    sp.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 50, 0);
-                    serialPort = new RealSerialPortWrapper(sp);
-                }
-
-                if (!serialPort.openPort()) {
+                if (wrapper == null || !wrapper.isOpen()) {
                     setConnectionStatus(ConnectionStatus.ERROR);
                     throw new RuntimeException("Failed to reopen serial port: " + portName);
                 }
+
+                serialPort = wrapper;
 
                 LOG.info("Serial port reopened successfully");
                 setConnectionStatus(ConnectionStatus.CONNECTED);

@@ -48,8 +48,8 @@ public class ModbusSerialAgent extends Agent<ModbusSerialAgent, ModbusSerialProt
     public static final AttributeDescriptor<Integer> MAX_REGISTER_LENGTH = new AttributeDescriptor<>("maxRegisterLength", ValueType.POSITIVE_INTEGER);
 
     public static final ValueDescriptor<EndianOrder> VALUE_ENDIAN_ORDER = new ValueDescriptor<>("EndianOrder", EndianOrder.class);
-    public static final AttributeDescriptor<EndianOrder> BYTE_ORDER = new AttributeDescriptor<>("byteOrder", VALUE_ENDIAN_ORDER).withOptional(false);
-    public static final AttributeDescriptor<EndianOrder> WORD_ORDER = new AttributeDescriptor<>("wordOrder", VALUE_ENDIAN_ORDER).withOptional(false);
+    public static final AttributeDescriptor<EndianOrder> BYTE_ORDER = new AttributeDescriptor<>("byteOrder", VALUE_ENDIAN_ORDER);
+    public static final AttributeDescriptor<EndianOrder> WORD_ORDER = new AttributeDescriptor<>("wordOrder", VALUE_ENDIAN_ORDER);
 
     public enum EndianOrder {
         BIG,

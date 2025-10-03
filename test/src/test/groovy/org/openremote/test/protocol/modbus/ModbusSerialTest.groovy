@@ -23,6 +23,8 @@ import com.fazecast.jSerialComm.SerialPort
 import org.openremote.agent.protocol.modbus.ModbusAgentLink
 import org.openremote.agent.protocol.modbus.ModbusSerialAgent
 import org.openremote.agent.protocol.modbus.ModbusSerialProtocol
+import org.openremote.agent.protocol.serial.SerialPortManager
+import org.openremote.agent.protocol.serial.SerialPortWrapper
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -59,13 +61,18 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
     def setupSpec() {
         // Create mock serial port that simulates a Modbus RTU device
         mockSerialPort = new MockSerialPort(latestRequest)
-        // Set the mock for all protocol instances created during tests
-        ModbusSerialProtocol.mockSerialPortForTesting = mockSerialPort
+        // Set the mock factory for all protocol instances created during tests
+        SerialPortManager.setMockFactoryForTesting(new SerialPortManager.SerialPortWrapperFactory() {
+            @Override
+            SerialPortWrapper createWrapper(String portDescriptor, int baudRate, int dataBits, int stopBits, int parity) {
+                return mockSerialPort
+            }
+        })
     }
 
     def cleanupSpec() {
         // Clean up the mock
-        ModbusSerialProtocol.mockSerialPortForTesting = null
+        SerialPortManager.setMockFactoryForTesting(null)
     }
 
     def setup() {
@@ -670,7 +677,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
     /**
      * Mock Serial Port implementation for testing - implements SerialPortWrapper interface
      */
-    static class MockSerialPort implements ModbusSerialProtocol.SerialPortWrapper {
+    static class MockSerialPort implements SerialPortWrapper {
         private boolean open = false
         private byte[] readBuffer = new byte[0]
         private int readPosition = 0
@@ -682,6 +689,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
 
         @Override
         synchronized boolean openPort() {
+            // In shared port mode, this might be called multiple times
+            // Always return true to simulate successful opening
             open = true
             return true
         }
