@@ -95,7 +95,9 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
                 new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
                 new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30),
-                new Attribute<>(ModbusSerialAgent.ILLEGAL_REGISTERS, "100,150-160")
+                new Attribute<>(ModbusSerialAgent.ILLEGAL_REGISTERS, "100,150-160"),
+                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusSerialAgent.EndianOrder.BIG),
+                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusSerialAgent.EndianOrder.BIG)
         )
 
         agent = assetStorageService.merge(agent)
@@ -224,7 +226,9 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
                 new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
                 new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30),
-                new Attribute<>(ModbusSerialAgent.ILLEGAL_REGISTERS, "5-10,20-25")
+                new Attribute<>(ModbusSerialAgent.ILLEGAL_REGISTERS, "5-10,20-25"),
+                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusSerialAgent.EndianOrder.BIG),
+                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusSerialAgent.EndianOrder.BIG)
         )
 
         agent = assetStorageService.merge(agent)
@@ -308,7 +312,9 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
                 new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
-                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30)
+                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30),
+                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusSerialAgent.EndianOrder.BIG),
+                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusSerialAgent.EndianOrder.BIG)
         )
 
         def agent2 = new ModbusSerialAgent("Modbus RTU Unit 2")
@@ -320,7 +326,9 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
                 new Attribute<>(ModbusSerialAgent.UNIT_ID, 2),  // Different unit ID
-                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30)
+                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30),
+                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusSerialAgent.EndianOrder.BIG),
+                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusSerialAgent.EndianOrder.BIG)
         )
 
         agent1 = assetStorageService.merge(agent1)
@@ -402,6 +410,92 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         }
     }
 
+    def "Modbus Serial Test - Byte and Word Order Configurations"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.5)
+
+        when: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+
+        and: "four agents are created with different byte/word order combinations"
+        def agentBigBig = createAgentWithByteWordOrder(assetStorageService, "Agent BIG-BIG",
+                ModbusSerialAgent.EndianOrder.BIG, ModbusSerialAgent.EndianOrder.BIG)
+
+        def agentBigLittle = createAgentWithByteWordOrder(assetStorageService, "Agent BIG-LITTLE",
+                ModbusSerialAgent.EndianOrder.BIG, ModbusSerialAgent.EndianOrder.LITTLE)
+
+        def agentLittleBig = createAgentWithByteWordOrder(assetStorageService, "Agent LITTLE-BIG",
+                ModbusSerialAgent.EndianOrder.LITTLE, ModbusSerialAgent.EndianOrder.BIG)
+
+        def agentLittleLittle = createAgentWithByteWordOrder(assetStorageService, "Agent LITTLE-LITTLE",
+                ModbusSerialAgent.EndianOrder.LITTLE, ModbusSerialAgent.EndianOrder.LITTLE)
+
+        then: "all agents should connect successfully"
+        conditions.eventually {
+            assert assetStorageService.find(agentBigBig.getId()).getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+            assert assetStorageService.find(agentBigLittle.getId()).getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+            assert assetStorageService.find(agentLittleBig.getId()).getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+            assert assetStorageService.find(agentLittleLittle.getId()).getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+        }
+
+        when: "devices with 32-bit float values are created for each agent"
+        def deviceBigBig = createDeviceWithFloat(assetStorageService, "Device BIG-BIG", agentBigBig, 400)
+        def deviceBigLittle = createDeviceWithFloat(assetStorageService, "Device BIG-LITTLE", agentBigLittle, 410)
+        def deviceLittleBig = createDeviceWithFloat(assetStorageService, "Device LITTLE-BIG", agentLittleBig, 420)
+        def deviceLittleLittle = createDeviceWithFloat(assetStorageService, "Device LITTLE-LITTLE", agentLittleLittle, 430)
+
+        then: "all devices should receive float values"
+        conditions.eventually {
+            deviceBigBig = assetStorageService.find(deviceBigBig.getId(), true)
+            deviceBigLittle = assetStorageService.find(deviceBigLittle.getId(), true)
+            deviceLittleBig = assetStorageService.find(deviceLittleBig.getId(), true)
+            deviceLittleLittle = assetStorageService.find(deviceLittleLittle.getId(), true)
+
+            // All should have received values (mock returns endian-specific test data)
+            assert deviceBigBig.getAttribute("floatValue").flatMap { it.getValue() }.isPresent()
+            assert deviceBigLittle.getAttribute("floatValue").flatMap { it.getValue() }.isPresent()
+            assert deviceLittleBig.getAttribute("floatValue").flatMap { it.getValue() }.isPresent()
+            assert deviceLittleLittle.getAttribute("floatValue").flatMap { it.getValue() }.isPresent()
+
+            // BIG-BIG should get the standard value (42.5)
+            def valueBigBig = deviceBigBig.getAttribute("floatValue").flatMap { it.getValue() }.get() as Double
+            assert Math.abs(valueBigBig - 42.5) < 0.1
+
+            // Other combinations will have different byte arrangements resulting in different values
+            // This verifies that the byte/word order is being applied
+            def valueBigLittle = deviceBigLittle.getAttribute("floatValue").flatMap { it.getValue() }.get() as Double
+            def valueLittleBig = deviceLittleBig.getAttribute("floatValue").flatMap { it.getValue() }.get() as Double
+            def valueLittleLittle = deviceLittleLittle.getAttribute("floatValue").flatMap { it.getValue() }.get() as Double
+
+            // Values should differ based on byte/word order (exact values depend on mock implementation)
+            assert valueBigBig != valueBigLittle || valueBigBig != valueLittleBig || valueBigBig != valueLittleLittle
+        }
+
+        when: "devices with 64-bit double values are created"
+        def device64BigBig = createDeviceWithDouble(assetStorageService, "Device64 BIG-BIG", agentBigBig, 500)
+        def device64LittleLittle = createDeviceWithDouble(assetStorageService, "Device64 LITTLE-LITTLE", agentLittleLittle, 510)
+
+        then: "64-bit values should also be affected by byte/word order"
+        conditions.eventually {
+            device64BigBig = assetStorageService.find(device64BigBig.getId(), true)
+            device64LittleLittle = assetStorageService.find(device64LittleLittle.getId(), true)
+
+            assert device64BigBig.getAttribute("doubleValue").flatMap { it.getValue() }.isPresent()
+            assert device64LittleLittle.getAttribute("doubleValue").flatMap { it.getValue() }.isPresent()
+
+            def doubleBigBig = device64BigBig.getAttribute("doubleValue").flatMap { it.getValue() }.get() as Double
+            def doubleLittleLittle = device64LittleLittle.getAttribute("doubleValue").flatMap { it.getValue() }.get() as Double
+
+            // BIG-BIG should get the standard value (999.888)
+            assert Math.abs(doubleBigBig - 999.888) < 0.001
+
+            // LITTLE-LITTLE should get a different value due to byte/word swapping
+            assert doubleBigBig != doubleLittleLittle
+        }
+    }
+
     def "Modbus Serial Test - 64-bit Data Types (LINT, ULINT, LREAL)"() {
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 15, delay: 0.5)
@@ -422,7 +516,9 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
                 new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
-                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 50)
+                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 50),
+                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusSerialAgent.EndianOrder.BIG),
+                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusSerialAgent.EndianOrder.BIG)
         )
 
         agent = assetStorageService.merge(agent)
@@ -504,6 +600,71 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             assert protocol != null
             assert protocol.batchGroups.size() > 0
         }
+    }
+
+    // Helper methods for byte/word order tests
+    private ModbusSerialAgent createAgentWithByteWordOrder(AssetStorageService assetStorageService,
+                                                            String name,
+                                                            ModbusSerialAgent.EndianOrder byteOrder,
+                                                            ModbusSerialAgent.EndianOrder wordOrder) {
+        def agent = new ModbusSerialAgent(name)
+        agent.setRealm(MASTER_REALM)
+        agent.addOrReplaceAttributes(
+                new Attribute<>(ModbusSerialAgent.SERIAL_PORT, "/dev/ttyUSB0"),
+                new Attribute<>(ModbusSerialAgent.BAUD_RATE, 9600),
+                new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
+                new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
+                new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
+                new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
+                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 50),
+                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, byteOrder),
+                new Attribute<>(ModbusSerialAgent.WORD_ORDER, wordOrder)
+        )
+        return assetStorageService.merge(agent)
+    }
+
+    private ThingAsset createDeviceWithFloat(AssetStorageService assetStorageService,
+                                              String name,
+                                              ModbusSerialAgent agent,
+                                              int address) {
+        def device = new ThingAsset(name)
+        device.setRealm(MASTER_REALM)
+        device.addOrReplaceAttributes(
+                new Attribute<>("floatValue", ValueType.NUMBER).addOrReplaceMeta(
+                        new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setPollingMillis(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.REAL)
+                                    it.setReadAddress(address)
+                                    it.setReadRegistersAmount(2)
+                                }
+                        )
+                )
+        )
+        return assetStorageService.merge(device)
+    }
+
+    private ThingAsset createDeviceWithDouble(AssetStorageService assetStorageService,
+                                               String name,
+                                               ModbusSerialAgent agent,
+                                               int address) {
+        def device = new ThingAsset(name)
+        device.setRealm(MASTER_REALM)
+        device.addOrReplaceAttributes(
+                new Attribute<>("doubleValue", ValueType.NUMBER).addOrReplaceMeta(
+                        new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setPollingMillis(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.LREAL)
+                                    it.setReadAddress(address)
+                                    it.setReadRegistersAmount(4)
+                                }
+                        )
+                )
+        )
+        return assetStorageService.merge(device)
     }
 
     /**
@@ -650,6 +811,64 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                             byte[] longBytes = bb.array()
                             int copyLen = Math.min(2, 8 - (regOffset * 2))
                             System.arraycopy(longBytes, regOffset * 2, response, responseOffset, copyLen)
+                        } else if (currentAddress >= 400 && currentAddress < 402) {
+                            // Return float value 42.5 for byte/word order test (BIG-BIG) at 400-401
+                            if (i == 0 || currentAddress == 400) {
+                                ByteBuffer bb = ByteBuffer.allocate(4)
+                                bb.order(ByteOrder.BIG_ENDIAN)
+                                bb.putFloat(42.5f)
+                                byte[] floatBytes = bb.array()
+                                System.arraycopy(floatBytes, 0, response, 3, 4)
+                                break
+                            }
+                        } else if (currentAddress >= 410 && currentAddress < 412) {
+                            // Return float value 42.5 for byte/word order test (BIG-LITTLE) at 410-411
+                            if (i == 0 || currentAddress == 410) {
+                                ByteBuffer bb = ByteBuffer.allocate(4)
+                                bb.order(ByteOrder.BIG_ENDIAN)
+                                bb.putFloat(42.5f)
+                                byte[] floatBytes = bb.array()
+                                System.arraycopy(floatBytes, 0, response, 3, 4)
+                                break
+                            }
+                        } else if (currentAddress >= 420 && currentAddress < 422) {
+                            // Return float value 42.5 for byte/word order test (LITTLE-BIG) at 420-421
+                            if (i == 0 || currentAddress == 420) {
+                                ByteBuffer bb = ByteBuffer.allocate(4)
+                                bb.order(ByteOrder.BIG_ENDIAN)
+                                bb.putFloat(42.5f)
+                                byte[] floatBytes = bb.array()
+                                System.arraycopy(floatBytes, 0, response, 3, 4)
+                                break
+                            }
+                        } else if (currentAddress >= 430 && currentAddress < 432) {
+                            // Return float value 42.5 for byte/word order test (LITTLE-LITTLE) at 430-431
+                            if (i == 0 || currentAddress == 430) {
+                                ByteBuffer bb = ByteBuffer.allocate(4)
+                                bb.order(ByteOrder.BIG_ENDIAN)
+                                bb.putFloat(42.5f)
+                                byte[] floatBytes = bb.array()
+                                System.arraycopy(floatBytes, 0, response, 3, 4)
+                                break
+                            }
+                        } else if (currentAddress >= 500 && currentAddress < 504) {
+                            // Return double value 999.888 for byte/word order test (BIG-BIG) at 500-503
+                            int regOffset = currentAddress - 500
+                            ByteBuffer bb = ByteBuffer.allocate(8)
+                            bb.order(ByteOrder.BIG_ENDIAN)
+                            bb.putDouble(999.888d)
+                            byte[] doubleBytes = bb.array()
+                            int copyLen = Math.min(2, 8 - (regOffset * 2))
+                            System.arraycopy(doubleBytes, regOffset * 2, response, responseOffset, copyLen)
+                        } else if (currentAddress >= 510 && currentAddress < 514) {
+                            // Return double value 999.888 for byte/word order test (LITTLE-LITTLE) at 510-513
+                            int regOffset = currentAddress - 510
+                            ByteBuffer bb = ByteBuffer.allocate(8)
+                            bb.order(ByteOrder.BIG_ENDIAN)
+                            bb.putDouble(999.888d)
+                            byte[] doubleBytes = bb.array()
+                            int copyLen = Math.min(2, 8 - (regOffset * 2))
+                            System.arraycopy(doubleBytes, regOffset * 2, response, responseOffset, copyLen)
                         } else {
                             // Return incrementing values
                             int value = currentAddress

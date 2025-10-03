@@ -362,6 +362,43 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
         }
     }
     
+    /**
+     * Convert agent's EndianOrder to Java's ByteOrder
+     */
+    private java.nio.ByteOrder getJavaByteOrder() {
+        return agent.getByteOrder() == ModbusSerialAgent.EndianOrder.BIG
+            ? ByteOrder.BIG_ENDIAN
+            : ByteOrder.LITTLE_ENDIAN;
+    }
+
+    /**
+     * Apply word order swapping to multi-register data.
+     * Word order determines how 16-bit registers are arranged within multi-register values.
+     *
+     * Example for a 32-bit float (2 registers):
+     * - BIG word order: [Register0, Register1] - high word first
+     * - LITTLE word order: [Register1, Register0] - low word first
+     *
+     * Note: Byte order (endianness within each register) is handled separately by ByteBuffer.order()
+     */
+    private byte[] applyWordOrder(byte[] data, int registerCount) {
+        // If word order is BIG or only one register, no swapping needed
+        if (agent.getWordOrder() == ModbusSerialAgent.EndianOrder.BIG || registerCount <= 1) {
+            return data;
+        }
+
+        // LITTLE word order: reverse the order of registers
+        byte[] result = new byte[data.length];
+        for (int i = 0; i < registerCount; i++) {
+            int srcIdx = i * 2;
+            int dstIdx = (registerCount - 1 - i) * 2;
+            result[dstIdx] = data[srcIdx];
+            result[dstIdx + 1] = data[srcIdx + 1];
+        }
+
+        return result;
+    }
+
     private Object parseModbusResponse(byte[] response, byte functionCode, ModbusAgentLink.ModbusDataType dataType) {
         int byteCount = response[2] & 0xFF;
 
@@ -398,9 +435,12 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
                 byte[] dataBytes = new byte[4];
                 System.arraycopy(response, 3, dataBytes, 0, 4);
 
+                // Apply word order (register arrangement)
+                dataBytes = applyWordOrder(dataBytes, 2);
+
                 if (dataType == ModbusAgentLink.ModbusDataType.REAL) {
                     ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
-                    buffer.order(ByteOrder.BIG_ENDIAN);
+                    buffer.order(getJavaByteOrder()); // Apply byte order (endianness within registers)
                     float value = buffer.getFloat();
 
                     // Filter out NaN and Infinity values to prevent database issues
@@ -413,7 +453,7 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
                 } else {
                     // Return as 32-bit integer
                     ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
-                    buffer.order(ByteOrder.BIG_ENDIAN);
+                    buffer.order(getJavaByteOrder()); // Apply byte order (endianness within registers)
                     return buffer.getInt();
                 }
             } else if (byteCount == 8) {
@@ -421,9 +461,12 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
                 byte[] dataBytes = new byte[8];
                 System.arraycopy(response, 3, dataBytes, 0, 8);
 
+                // Apply word order (register arrangement)
+                dataBytes = applyWordOrder(dataBytes, 4);
+
                 if (dataType == ModbusAgentLink.ModbusDataType.LREAL) {
                     ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
-                    buffer.order(ByteOrder.BIG_ENDIAN);
+                    buffer.order(getJavaByteOrder()); // Apply byte order (endianness within registers)
                     double value = buffer.getDouble();
 
                     // Filter out NaN and Infinity values to prevent database issues
@@ -436,12 +479,12 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
                 } else if (dataType == ModbusAgentLink.ModbusDataType.LINT) {
                     // 64-bit signed integer
                     ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
-                    buffer.order(ByteOrder.BIG_ENDIAN);
+                    buffer.order(getJavaByteOrder()); // Apply byte order (endianness within registers)
                     return buffer.getLong();
                 } else if (dataType == ModbusAgentLink.ModbusDataType.ULINT) {
                     // 64-bit unsigned integer - use BigInteger
                     ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
-                    buffer.order(ByteOrder.BIG_ENDIAN);
+                    buffer.order(getJavaByteOrder()); // Apply byte order (endianness within registers)
                     long signedValue = buffer.getLong();
 
                     // Convert to unsigned BigInteger
@@ -454,7 +497,7 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
                 } else {
                     // Default: treat as 64-bit signed integer
                     ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
-                    buffer.order(ByteOrder.BIG_ENDIAN);
+                    buffer.order(getJavaByteOrder()); // Apply byte order (endianness within registers)
                     return buffer.getLong();
                 }
             }
@@ -804,9 +847,12 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
                     byte[] dataBytes = new byte[4];
                     System.arraycopy(response, byteOffset, dataBytes, 0, 4);
 
+                    // Apply word order (register arrangement)
+                    dataBytes = applyWordOrder(dataBytes, 2);
+
                     if (dataType == ModbusAgentLink.ModbusDataType.REAL) {
                         ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
-                        buffer.order(ByteOrder.BIG_ENDIAN);
+                        buffer.order(getJavaByteOrder()); // Apply byte order (endianness within registers)
                         float value = buffer.getFloat();
 
                         if (Float.isNaN(value) || Float.isInfinite(value)) {
@@ -817,7 +863,7 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
                         return value;
                     } else {
                         ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
-                        buffer.order(ByteOrder.BIG_ENDIAN);
+                        buffer.order(getJavaByteOrder()); // Apply byte order (endianness within registers)
                         return buffer.getInt();
                     }
                 } else if (registerCount == 4) {
@@ -825,9 +871,12 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
                     byte[] dataBytes = new byte[8];
                     System.arraycopy(response, byteOffset, dataBytes, 0, 8);
 
+                    // Apply word order (register arrangement)
+                    dataBytes = applyWordOrder(dataBytes, 4);
+
                     if (dataType == ModbusAgentLink.ModbusDataType.LREAL) {
                         ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
-                        buffer.order(ByteOrder.BIG_ENDIAN);
+                        buffer.order(getJavaByteOrder()); // Apply byte order (endianness within registers)
                         double value = buffer.getDouble();
 
                         if (Double.isNaN(value) || Double.isInfinite(value)) {
@@ -839,12 +888,12 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
                     } else if (dataType == ModbusAgentLink.ModbusDataType.LINT) {
                         // 64-bit signed integer
                         ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
-                        buffer.order(ByteOrder.BIG_ENDIAN);
+                        buffer.order(getJavaByteOrder()); // Apply byte order (endianness within registers)
                         return buffer.getLong();
                     } else if (dataType == ModbusAgentLink.ModbusDataType.ULINT) {
                         // 64-bit unsigned integer - use BigInteger
                         ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
-                        buffer.order(ByteOrder.BIG_ENDIAN);
+                        buffer.order(getJavaByteOrder()); // Apply byte order (endianness within registers)
                         long signedValue = buffer.getLong();
 
                         // Convert to unsigned BigInteger
@@ -857,7 +906,7 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
                     } else {
                         // Default: treat as 64-bit signed integer
                         ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
-                        buffer.order(ByteOrder.BIG_ENDIAN);
+                        buffer.order(getJavaByteOrder()); // Apply byte order (endianness within registers)
                         return buffer.getLong();
                     }
                 }
