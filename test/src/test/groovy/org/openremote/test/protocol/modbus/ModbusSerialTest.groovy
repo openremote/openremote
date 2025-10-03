@@ -20,6 +20,7 @@
 package org.openremote.test.protocol.modbus
 
 import com.fazecast.jSerialComm.SerialPort
+import org.openremote.agent.protocol.modbus.ModbusAgent
 import org.openremote.agent.protocol.modbus.ModbusAgentLink
 import org.openremote.agent.protocol.modbus.ModbusSerialAgent
 import org.openremote.agent.protocol.modbus.ModbusSerialProtocol
@@ -103,8 +104,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
                 new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30),
                 new Attribute<>(ModbusSerialAgent.ILLEGAL_REGISTERS, "100,150-160"),
-                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusSerialAgent.EndianOrder.BIG),
-                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusSerialAgent.EndianOrder.BIG)
+                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusAgent.EndianOrder.BIG),
+                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusAgent.EndianOrder.BIG)
         )
 
         agent = assetStorageService.merge(agent)
@@ -234,8 +235,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
                 new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30),
                 new Attribute<>(ModbusSerialAgent.ILLEGAL_REGISTERS, "5-10,20-25"),
-                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusSerialAgent.EndianOrder.BIG),
-                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusSerialAgent.EndianOrder.BIG)
+                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusAgent.EndianOrder.BIG),
+                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusAgent.EndianOrder.BIG)
         )
 
         agent = assetStorageService.merge(agent)
@@ -320,8 +321,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
                 new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
                 new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30),
-                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusSerialAgent.EndianOrder.BIG),
-                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusSerialAgent.EndianOrder.BIG)
+                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusAgent.EndianOrder.BIG),
+                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusAgent.EndianOrder.BIG)
         )
 
         def agent2 = new ModbusSerialAgent("Modbus RTU Unit 2")
@@ -334,8 +335,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
                 new Attribute<>(ModbusSerialAgent.UNIT_ID, 2),  // Different unit ID
                 new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30),
-                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusSerialAgent.EndianOrder.BIG),
-                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusSerialAgent.EndianOrder.BIG)
+                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusAgent.EndianOrder.BIG),
+                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusAgent.EndianOrder.BIG)
         )
 
         agent1 = assetStorageService.merge(agent1)
@@ -428,16 +429,16 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
 
         and: "four agents are created with different byte/word order combinations"
         def agentBigBig = createAgentWithByteWordOrder(assetStorageService, "Agent BIG-BIG",
-                ModbusSerialAgent.EndianOrder.BIG, ModbusSerialAgent.EndianOrder.BIG)
+                ModbusAgent.EndianOrder.BIG, ModbusAgent.EndianOrder.BIG)
 
         def agentBigLittle = createAgentWithByteWordOrder(assetStorageService, "Agent BIG-LITTLE",
-                ModbusSerialAgent.EndianOrder.BIG, ModbusSerialAgent.EndianOrder.LITTLE)
+                ModbusAgent.EndianOrder.BIG, ModbusAgent.EndianOrder.LITTLE)
 
         def agentLittleBig = createAgentWithByteWordOrder(assetStorageService, "Agent LITTLE-BIG",
-                ModbusSerialAgent.EndianOrder.LITTLE, ModbusSerialAgent.EndianOrder.BIG)
+                ModbusAgent.EndianOrder.LITTLE, ModbusAgent.EndianOrder.BIG)
 
         def agentLittleLittle = createAgentWithByteWordOrder(assetStorageService, "Agent LITTLE-LITTLE",
-                ModbusSerialAgent.EndianOrder.LITTLE, ModbusSerialAgent.EndianOrder.LITTLE)
+                ModbusAgent.EndianOrder.LITTLE, ModbusAgent.EndianOrder.LITTLE)
 
         then: "all agents should connect successfully"
         conditions.eventually {
@@ -524,8 +525,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
                 new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
                 new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 50),
-                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusSerialAgent.EndianOrder.BIG),
-                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusSerialAgent.EndianOrder.BIG)
+                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusAgent.EndianOrder.BIG),
+                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusAgent.EndianOrder.BIG)
         )
 
         agent = assetStorageService.merge(agent)
@@ -612,8 +613,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
     // Helper methods for byte/word order tests
     private ModbusSerialAgent createAgentWithByteWordOrder(AssetStorageService assetStorageService,
                                                             String name,
-                                                            ModbusSerialAgent.EndianOrder byteOrder,
-                                                            ModbusSerialAgent.EndianOrder wordOrder) {
+                                                            ModbusAgent.EndianOrder byteOrder,
+                                                            ModbusAgent.EndianOrder wordOrder) {
         def agent = new ModbusSerialAgent(name)
         agent.setRealm(MASTER_REALM)
         agent.addOrReplaceAttributes(
@@ -682,6 +683,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         private byte[] readBuffer = new byte[0]
         private int readPosition = 0
         private final AtomicReference<byte[]> requestCapture
+        private final Object lock = new Object()
 
         MockSerialPort(AtomicReference<byte[]> requestCapture) {
             this.requestCapture = requestCapture
@@ -734,6 +736,11 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             readPosition = 0
 
             return bytesToWrite as int
+        }
+
+        @Override
+        Object getSynchronizationLock() {
+            return lock
         }
 
         synchronized void reset() {

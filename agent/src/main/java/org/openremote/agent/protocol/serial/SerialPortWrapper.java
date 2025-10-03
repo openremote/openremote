@@ -30,4 +30,11 @@ public interface SerialPortWrapper {
     int writeBytes(byte[] buffer, long bytesToWrite);
     int readBytes(byte[] buffer, long bytesToRead, long offset);
     int bytesAvailable();
+
+    /**
+     * Get a lock object that can be used to synchronize operations across this port.
+     * For shared ports, this ensures all protocols using the same port synchronize on the same lock.
+     * @return Object suitable for use in synchronized blocks
+     */
+    Object getSynchronizationLock();
 }

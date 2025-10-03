@@ -19,29 +19,21 @@
  */
 package org.openremote.agent.protocol.modbus;
 
-import org.apache.plc4x.java.api.PlcConnection;
-import org.apache.plc4x.java.api.messages.PlcReadRequest;
-import org.apache.plc4x.java.api.messages.PlcReadResponse;
-import org.apache.plc4x.java.api.messages.PlcWriteRequest;
-import org.apache.plc4x.java.api.messages.PlcWriteResponse;
-import org.apache.plc4x.java.api.types.PlcResponseCode;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
-import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
-import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,T>, T extends ModbusAgent<T, S>>
@@ -50,128 +42,348 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractModbusProtocol.class);
 
     protected final Map<AttributeRef, ScheduledFuture<?>> pollingMap = new HashMap<>();
+    protected final Map<String, Map<AttributeRef, ModbusAgentLink>> batchGroups = new ConcurrentHashMap<>();
+    protected final Map<String, List<BatchReadRequest>> cachedBatches = new ConcurrentHashMap<>();
+    protected final Map<String, ScheduledFuture<?>> batchPollingTasks = new ConcurrentHashMap<>();
 
-    PlcConnection client = null;
+    protected Set<RegisterRange> illegalRegisters = new HashSet<>();
 
     public AbstractModbusProtocol(T agent) {
         super(agent);
     }
 
-    @Override
-    protected void doStart(Container container) throws Exception {
+    /**
+     * Represents a range of illegal registers that should not be read
+     */
+    protected static class RegisterRange {
+        final int start;
+        final int end;
 
-        try {
-            setConnectionStatus(ConnectionStatus.CONNECTING);
+        RegisterRange(int start, int end) {
+            this.start = start;
+            this.end = end;
+        }
 
-            client = createIoClient(agent);
+        boolean contains(int register) {
+            return register >= start && register <= end;
+        }
 
-            client.connect();
-
-            setConnectionStatus(client.isConnected() ? ConnectionStatus.CONNECTED : ConnectionStatus.ERROR);
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to create PLC4X connection for protocol instance: " + agent, e);
-            setConnectionStatus(ConnectionStatus.ERROR);
-            throw e;
+        boolean overlaps(int start, int end) {
+            return !(this.end < start || this.start > end);
         }
     }
+
+    /**
+     * Represents a batch read request for contiguous registers
+     */
+    protected static class BatchReadRequest {
+        final int startAddress;
+        int quantity;
+        final List<AttributeRef> attributes;
+        final List<Integer> offsets; // Offset of each attribute within the batch
+
+        BatchReadRequest(int startAddress, int quantity) {
+            this.startAddress = startAddress;
+            this.quantity = quantity;
+            this.attributes = new ArrayList<>();
+            this.offsets = new ArrayList<>();
+        }
+
+        void addAttribute(AttributeRef ref, int offset) {
+            attributes.add(ref);
+            offsets.add(offset);
+        }
+    }
+
+    /**
+     * Parses illegal registers string format: "100,130,150-180,190"
+     */
+    protected Set<RegisterRange> parseIllegalRegisters(String illegalRegistersStr) {
+        Set<RegisterRange> ranges = new HashSet<>();
+        if (illegalRegistersStr == null || illegalRegistersStr.trim().isEmpty()) {
+            return ranges;
+        }
+
+        String[] parts = illegalRegistersStr.split(",");
+        for (String part : parts) {
+            part = part.trim();
+            if (part.contains("-")) {
+                String[] rangeParts = part.split("-");
+                try {
+                    int start = Integer.parseInt(rangeParts[0].trim());
+                    int end = Integer.parseInt(rangeParts[1].trim());
+                    ranges.add(new RegisterRange(start, end));
+                } catch (NumberFormatException e) {
+                    LOG.warning("Invalid register range format: " + part);
+                }
+            } else {
+                try {
+                    int register = Integer.parseInt(part);
+                    ranges.add(new RegisterRange(register, register));
+                } catch (NumberFormatException e) {
+                    LOG.warning("Invalid register format: " + part);
+                }
+            }
+        }
+        return ranges;
+    }
+
+    /**
+     * Check if a register is in the illegal ranges
+     */
+    protected boolean isIllegalRegister(int register, Set<RegisterRange> illegalRanges) {
+        return illegalRanges.stream().anyMatch(range -> range.contains(register));
+    }
+
+    /**
+     * Get illegal registers configuration from agent. Subclasses must implement.
+     */
+    protected abstract Optional<String> getIllegalRegistersConfig();
+
+    @Override
+    protected void doStart(Container container) throws Exception {
+        // Parse illegal registers from agent config
+        illegalRegisters = parseIllegalRegisters(getIllegalRegistersConfig().orElse(""));
+        LOG.info("Loaded " + illegalRegisters.size() + " illegal register ranges for modbus agent " + agent.getId());
+
+        // Call protocol-specific start
+        doStartProtocol(container);
+    }
+
+    /**
+     * Protocol-specific start logic. Subclasses implement connection setup here.
+     */
+    protected abstract void doStartProtocol(Container container) throws Exception;
+
     @Override
     protected void doStop(Container container) throws Exception {
         pollingMap.forEach((key, value) -> value.cancel(false));
+        pollingMap.clear();
 
-        client.close();
+        batchPollingTasks.values().forEach(future -> future.cancel(false));
+        batchPollingTasks.clear();
+        batchGroups.clear();
+        cachedBatches.clear();
+
+        // Call protocol-specific stop
+        doStopProtocol(container);
     }
+
+    /**
+     * Protocol-specific stop logic. Subclasses implement connection cleanup here.
+     */
+    protected abstract void doStopProtocol(Container container) throws Exception;
 
     @Override
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) throws RuntimeException {
         AttributeRef ref = new AttributeRef(assetId, attribute.getName());
-        pollingMap.put(ref,
-                scheduleModbusPollingReadRequest(
-                    ref,
-                    agentLink.getPollingMillis(),
-                    agentLink.getReadMemoryArea(),
-                    agentLink.getReadValueType(),
-                    agentLink.getReadRegistersAmount(),
-                    agentLink.getReadAddress()
-                )
-        );
+
+        // Check if batching is enabled (maxRegisterLength > 1)
+        Integer maxRegisterLength = getMaxRegisterLength();
+        if (maxRegisterLength > 1) {
+            // Use batching logic
+            String groupKey = agent.getId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
+
+            batchGroups.computeIfAbsent(groupKey, k -> new ConcurrentHashMap<>()).put(ref, agentLink);
+            cachedBatches.remove(groupKey); // Invalidate cache
+
+            // Only schedule task if one doesn't exist yet for this group
+            if (!batchPollingTasks.containsKey(groupKey)) {
+                ScheduledFuture<?> batchTask = scheduleBatchedPollingTask(groupKey, agentLink.getReadMemoryArea(), agentLink.getPollingMillis());
+                batchPollingTasks.put(groupKey, batchTask);
+                LOG.fine("Scheduled new polling task for batch group " + groupKey);
+            }
+
+            LOG.fine("Added attribute " + ref + " to batch group " + groupKey + " (total attributes in group: " + batchGroups.get(groupKey).size() + ")");
+        } else {
+            // Use individual polling (legacy mode, maxRegisterLength = 1)
+            pollingMap.put(ref,
+                    scheduleModbusPollingReadRequest(
+                        ref,
+                        agentLink.getPollingMillis(),
+                        agentLink.getReadMemoryArea(),
+                        agentLink.getReadValueType(),
+                        agentLink.getReadRegistersAmount(),
+                        agentLink.getReadAddress()
+                    )
+            );
+        }
     }
 
     @Override
     protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) {
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
+
+        // Remove from individual polling
         ScheduledFuture<?> pollTask = pollingMap.remove(attributeRef);
         if (pollTask != null) {
             pollTask.cancel(false);
-        }
-    }
-
-    @Override
-    protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
-
-        // Look at comment in schedulePollingRequest for an explanation to this
-        int writeAddress = getOrThrowAgentLinkProperty(agentLink.getWriteAddress(), "write address");
-
-        PlcWriteRequest.Builder builder = client.writeRequestBuilder();
-
-        switch (agentLink.getWriteMemoryArea()){
-            case COIL -> builder.addTagAddress("coil", "coil:" + writeAddress, processedValue);
-            case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + writeAddress, processedValue);
-            default -> throw new IllegalStateException("No other memory area is allowed to write to a Modbus server");
+            return;
         }
 
-        PlcWriteRequest request = builder.build();
+        // Remove from batch group
+        String groupKey = agent.getId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
+        Map<AttributeRef, ModbusAgentLink> group = batchGroups.get(groupKey);
+        if (group != null) {
+            group.remove(attributeRef);
+            cachedBatches.remove(groupKey); // Invalidate cache
 
-        try {
-            PlcWriteResponse response = request.execute().get(3, TimeUnit.SECONDS);
-            if (response.getResponseCode(response.getTagNames().stream().findFirst().orElseThrow()) != PlcResponseCode.OK){
-                throw new IllegalStateException("PLC Write Response code is something other than \"OK\"");
+            // If group is empty, cancel batch task
+            if (group.isEmpty()) {
+                batchGroups.remove(groupKey);
+                cachedBatches.remove(groupKey);
+                ScheduledFuture<?> task = batchPollingTasks.remove(groupKey);
+                if (task != null) {
+                    task.cancel(false);
+                }
+                LOG.fine("Removed empty batch group " + groupKey);
+            } else {
+                LOG.info("Removed attribute " + attributeRef + " from batch group " + groupKey + " (remaining attributes: " + group.size() + ")");
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 
-    protected ScheduledFuture<?> scheduleModbusPollingReadRequest(AttributeRef ref,
-                                                                  long pollingMillis,
-                                                                  ModbusAgentLink.ReadMemoryArea readType,
-                                                                  ModbusAgentLink.ModbusDataType dataType,
-                                                                  Optional<Integer> amountOfRegisters,
-                                                                  Optional<Integer> readAddress) {
+    /**
+     * Get the maximum register length for batching. Override in subclass if agent supports this configuration.
+     */
+    protected Integer getMaxRegisterLength() {
+        return 1; // Default: no batching
+    }
 
-        PlcReadRequest.Builder builder = client.readRequestBuilder();
+    /**
+     * Groups attributes into optimized batch requests
+     */
+    protected List<BatchReadRequest> createBatchRequests(
+            Map<AttributeRef, ModbusAgentLink> attributeLinks,
+            Set<RegisterRange> illegalRanges,
+            int maxRegisterLength) {
 
-        int readAmountOfRegisters = (amountOfRegisters.isEmpty() || amountOfRegisters.get() < 1)
-                ? dataType.getRegisterCount() : amountOfRegisters.get();
-        String amountOfRegistersString = readAmountOfRegisters <= 1 ? "" : "["+readAmountOfRegisters+"]";
+        // Group by memory area and sort by address
+        Map<ModbusAgentLink.ReadMemoryArea, List<Map.Entry<AttributeRef, ModbusAgentLink>>> groupedByMemoryArea =
+                attributeLinks.entrySet().stream()
+                        .collect(Collectors.groupingBy(e -> e.getValue().getReadMemoryArea()));
 
-        int address = readAddress.orElseThrow(() -> new RuntimeException("Read Address is empty! Unable to schedule read request."));
+        List<BatchReadRequest> batches = new ArrayList<>();
 
-        switch (readType) {
-            case COIL -> builder.addTagAddress("coils", "coil:" + address + ":" + dataType + amountOfRegistersString);
-            case DISCRETE -> builder.addTagAddress("discreteInputs", "discrete-input:" + address + ":" + dataType + amountOfRegistersString);
-            case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + address + ":" + dataType + amountOfRegistersString);
-            case INPUT -> builder.addTagAddress("inputRegisters", "input-register:" + address + ":" + dataType + amountOfRegistersString);
-            default -> throw new IllegalArgumentException("Unsupported read type: " + readType);
+        for (Map.Entry<ModbusAgentLink.ReadMemoryArea, List<Map.Entry<AttributeRef, ModbusAgentLink>>> group : groupedByMemoryArea.entrySet()) {
+            // Sort by address
+            List<Map.Entry<AttributeRef, ModbusAgentLink>> sortedAttributes = group.getValue().stream()
+                    .sorted(Comparator.comparingInt(e -> e.getValue().getReadAddress().orElse(0)))
+                    .collect(Collectors.toList());
+
+            BatchReadRequest currentBatch = null;
+            int currentEnd = -1;
+
+            for (Map.Entry<AttributeRef, ModbusAgentLink> entry : sortedAttributes) {
+                ModbusAgentLink link = entry.getValue();
+                int address = link.getReadAddress().orElse(0);
+                int registerCount = link.getReadRegistersAmount().orElse(link.getReadValueType().getRegisterCount());
+
+                // Check if we can add to current batch
+                if (currentBatch != null) {
+                    int gap = address - currentEnd;
+                    boolean hasIllegalInGap = false;
+                    int firstIllegalRegister = -1;
+
+                    // Check if there are illegal registers in the gap
+                    for (int i = currentEnd; i < address; i++) {
+                        if (isIllegalRegister(i, illegalRanges)) {
+                            hasIllegalInGap = true;
+                            firstIllegalRegister = i;
+                            break;
+                        }
+                    }
+
+                    int newQuantity = address + registerCount - currentBatch.startAddress;
+
+                    // Add to current batch if: no illegal registers in gap and within max length
+                    if (!hasIllegalInGap && newQuantity <= maxRegisterLength) {
+                        int offset = address - currentBatch.startAddress;
+                        currentBatch.addAttribute(entry.getKey(), offset);
+                        currentBatch.quantity = newQuantity;
+                        currentEnd = address + registerCount;
+                        LOG.finest("Added register " + address + " to batch starting at " + currentBatch.startAddress + " (new quantity=" + newQuantity + ")");
+                        continue;
+                    } else {
+                        // Finalize current batch
+                        batches.add(currentBatch);
+                        String reason = hasIllegalInGap
+                            ? "illegal register " + firstIllegalRegister + " detected in gap (registers " + currentEnd + "-" + (address - 1) + ")"
+                            : "would exceed maxRegisterLength (" + newQuantity + " > " + maxRegisterLength + ")";
+                        LOG.info("Split batch before register " + address + ": " + reason);
+                    }
+                }
+
+                // Start new batch
+                currentBatch = new BatchReadRequest(address, registerCount);
+                currentBatch.addAttribute(entry.getKey(), 0);
+                currentEnd = address + registerCount;
+                LOG.fine("Started new batch at address " + address);
+            }
+
+            // Add final batch
+            if (currentBatch != null) {
+                batches.add(currentBatch);
+                LOG.fine("Finalized batch: startAddress=" + currentBatch.startAddress + ", quantity=" + currentBatch.quantity + ", attributes=" + currentBatch.attributes.size());
+            }
         }
-        PlcReadRequest readRequest = builder.build();
 
-        LOG.log(Level.FINE,"Scheduling Modbus Read Value polling request '" + "clientRequest" + "' to execute every " + pollingMillis + "ms for attributeRef: " + ref);
+        return batches;
+    }
+
+    /**
+     * Schedule a batched polling task for a group of attributes
+     */
+    protected ScheduledFuture<?> scheduleBatchedPollingTask(String groupKey, ModbusAgentLink.ReadMemoryArea memoryArea, long pollingMillis) {
+        LOG.info("Scheduling batched polling task for group " + groupKey + " every " + pollingMillis + "ms");
+
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
-                PlcReadResponse response = readRequest.execute().get(3, TimeUnit.SECONDS);
+                Map<AttributeRef, ModbusAgentLink> group = batchGroups.get(groupKey);
+                if (group == null || group.isEmpty()) {
+                    return;
+                }
 
-                // We currently only request one thing (with the above tag), so we get it from there. If it doesn't exist,
-                // we can assume that the request failed.
-                String responseTag = response.getTagNames().stream().findFirst()
-                        .orElseThrow(() -> new RuntimeException("Could not retrieve the requested value from the response"));
+                List<BatchReadRequest> batches;
+                synchronized (cachedBatches) {
+                    batches = cachedBatches.get(groupKey);
+                    if (batches == null) {
+                        LOG.info("Creating batch requests for group " + groupKey + " with " + group.size() + " attribute(s) (maxRegisterLength=" + getMaxRegisterLength() + ")");
+                        batches = createBatchRequests(group, illegalRegisters, getMaxRegisterLength());
+                        cachedBatches.put(groupKey, batches);
+                        LOG.info("Created " + batches.size() + " batch(es) for group " + groupKey);
+                    }
+                }
 
-                Object responseValue = response.getObject(responseTag, readAmountOfRegisters-1);
-                updateLinkedAttribute(ref, responseValue);
+                // Execute all batches for this group
+                for (int i = 0; i < batches.size(); i++) {
+                    BatchReadRequest batch = batches.get(i);
+                    int endAddress = batch.startAddress + batch.quantity - 1;
+                    LOG.finest("Executing batch " + (i + 1) + "/" + batches.size() + ": registers=" + batch.startAddress + "-" + endAddress + " (quantity=" + batch.quantity + ", attributes=" + batch.attributes.size() + ")");
+                    executeBatchRead(batch, memoryArea, group);
+                }
+
             } catch (Exception e) {
-                LOG.log(Level.FINE,"Exception thrown during Modbus Read Value polling request '" + readRequest.toString());
+                LOG.log(Level.FINE, "Exception during batched polling: " + e.getMessage(), e);
             }
         }, 0, pollingMillis, TimeUnit.MILLISECONDS);
     }
 
-    protected abstract PlcConnection createIoClient(T agent) throws RuntimeException;
+    /**
+     * Execute a batch read request. Must be implemented by subclasses for protocol-specific communication.
+     */
+    protected abstract void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group);
+
+    /**
+     * Schedule individual polling request for a single attribute (used when batching is disabled).
+     * Subclasses must implement protocol-specific polling logic.
+     */
+    protected abstract ScheduledFuture<?> scheduleModbusPollingReadRequest(
+            AttributeRef ref,
+            long pollingMillis,
+            ModbusAgentLink.ReadMemoryArea readType,
+            ModbusAgentLink.ModbusDataType dataType,
+            Optional<Integer> amountOfRegisters,
+            Optional<Integer> readAddress
+    );
 }

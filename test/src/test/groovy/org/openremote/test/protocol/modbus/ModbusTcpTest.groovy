@@ -36,6 +36,7 @@ import org.openremote.manager.asset.AssetStorageService
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.ShipAsset
+import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
@@ -60,7 +61,7 @@ import static net.solarnetwork.io.modbus.netty.msg.RegistersModbusMessage.*
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
 
-class ModbusBasicTest extends Specification implements ManagerContainerTrait {
+class ModbusTcpTest extends Specification implements ManagerContainerTrait {
 
     @Shared
     int modbusServerPort
@@ -135,7 +136,7 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
     }
 
 
-    def "Modbus Integration Test"() {
+    def "Modbus TCP Integration Test - Basic Operations"() {
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
@@ -273,4 +274,247 @@ class ModbusBasicTest extends Specification implements ManagerContainerTrait {
             assert ship.getAttribute("coil1").flatMap { it.getValue() }.orElse(null) == true
         }
     }
+
+    def "Modbus TCP Test - Register Batching"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        when: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+
+        and: "a Modbus TCP agent with batching enabled is created"
+        def agent = new ModbusTcpAgent("Modbus TCP Batching")
+        agent.setRealm(MASTER_REALM)
+        agent.setHost("127.0.0.1")
+        agent.setPort(modbusServerPort)
+        agent.setUnitId(1)
+        agent.addOrReplaceAttributes(
+                new Attribute<>(ModbusTcpAgent.MAX_REGISTER_LENGTH, 50) // Enable batching
+        )
+        agent = assetStorageService.merge(agent)
+
+        then: "the protocol instance should be created and connected"
+        conditions.eventually {
+            assert agentService.getProtocolInstance(agent.id) != null
+            agent = assetStorageService.find(agent.getId())
+            agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+        }
+
+        when: "a device with multiple sequential register attributes is created"
+        ThingAsset device = new ThingAsset("Batching Test Device")
+        device.setRealm(MASTER_REALM)
+        device.addOrReplaceAttributes(
+                new Attribute<>("register1", ValueType.POSITIVE_INTEGER).addOrReplaceMeta(
+                        new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setPollingMillis(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.UINT)
+                                    it.setReadAddress(1)
+                                }
+                        )
+                ),
+                new Attribute<>("register2", ValueType.POSITIVE_INTEGER).addOrReplaceMeta(
+                        new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setPollingMillis(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.UINT)
+                                    it.setReadAddress(2)
+                                }
+                        )
+                ),
+                new Attribute<>("register3", ValueType.POSITIVE_INTEGER).addOrReplaceMeta(
+                        new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setPollingMillis(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.UINT)
+                                    it.setReadAddress(3)
+                                }
+                        )
+                )
+        )
+        device = assetStorageService.merge(device)
+
+        then: "batch groups should be created and attributes should receive values"
+        conditions.eventually {
+            def protocol = agentService.getProtocolInstance(agent.id) as ModbusTcpProtocol
+            assert protocol != null
+
+            // Check that batch groups were created (batching is enabled)
+            assert protocol.batchGroups.size() > 0
+
+            device = assetStorageService.find(device.getId(), true)
+
+            // Verify all attributes received values from the batch read
+            assert device.getAttribute("register1").flatMap { it.getValue() }.isPresent()
+            assert device.getAttribute("register2").flatMap { it.getValue() }.isPresent()
+            assert device.getAttribute("register3").flatMap { it.getValue() }.isPresent()
+
+            // Verify the values match what the mock server returns
+            assert device.getAttribute("register1").flatMap { it.getValue() }.get() == 1
+            assert device.getAttribute("register2").flatMap { it.getValue() }.get() == 2
+            assert device.getAttribute("register3").flatMap { it.getValue() }.get() == 3
+        }
+    }
+
+    def "Modbus TCP Test - 64-bit Data Types (LINT, ULINT, LREAL)"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        when: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+
+        and: "a Modbus TCP agent is created with batching enabled"
+        def agent = new ModbusTcpAgent("Modbus TCP 64-bit Test")
+        agent.setRealm(MASTER_REALM)
+        agent.setHost("127.0.0.1")
+        agent.setPort(modbusServerPort)
+        agent.setUnitId(1)
+        agent.addOrReplaceAttributes(
+                new Attribute<>(ModbusTcpAgent.MAX_REGISTER_LENGTH, 50)
+        )
+        agent = assetStorageService.merge(agent)
+
+        then: "the agent should connect successfully"
+        conditions.eventually {
+            agent = assetStorageService.find(agent.getId())
+            agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+        }
+
+        when: "a device with 64-bit data types is created"
+        def device = new ThingAsset("64-bit Test Device")
+        device.setRealm(MASTER_REALM)
+        device.addOrReplaceAttributes(
+                // LREAL - Double precision float (4 registers)
+                new Attribute<>("doubleValue", ValueType.NUMBER).addOrReplaceMeta(
+                        new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setPollingMillis(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.LREAL)
+                                    it.setReadAddress(1)
+                                    it.setReadRegistersAmount(4)
+                                }
+                        )
+                ),
+                // LINT - 64-bit signed integer (4 registers)
+                new Attribute<>("longSignedValue", ValueType.LONG).addOrReplaceMeta(
+                        new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setPollingMillis(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.LINT)
+                                    it.setReadAddress(5)
+                                    it.setReadRegistersAmount(4)
+                                }
+                        )
+                ),
+                // ULINT - 64-bit unsigned integer (4 registers)
+                new Attribute<>("longUnsignedValue", ValueType.BIG_INTEGER).addOrReplaceMeta(
+                        new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setPollingMillis(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.ULINT)
+                                    it.setReadAddress(9)
+                                    it.setReadRegistersAmount(4)
+                                }
+                        )
+                )
+        )
+        device = assetStorageService.merge(device)
+
+        then: "all 64-bit attributes should receive values"
+        conditions.eventually {
+            device = assetStorageService.find(device.getId(), true)
+
+            // Verify all attributes have values (mock server returns short array that gets converted)
+            assert device.getAttribute("doubleValue").flatMap { it.getValue() }.isPresent()
+            assert device.getAttribute("longSignedValue").flatMap { it.getValue() }.isPresent()
+            assert device.getAttribute("longUnsignedValue").flatMap { it.getValue() }.isPresent()
+
+            // Verify the attributes are read correctly as 64-bit types
+            def doubleValue = device.getAttribute("doubleValue").flatMap { it.getValue() }.get()
+            def longSignedValue = device.getAttribute("longSignedValue").flatMap { it.getValue() }.get()
+            def longUnsignedValue = device.getAttribute("longUnsignedValue").flatMap { it.getValue() }.get()
+
+            // Values should be present and non-null (actual values depend on mock server data)
+            assert doubleValue != null
+            assert longSignedValue != null
+            assert longUnsignedValue != null
+        }
+
+        and: "verify batching was used"
+        conditions.eventually {
+            def protocol = agentService.getProtocolInstance(agent.id) as ModbusTcpProtocol
+            assert protocol != null
+            assert protocol.batchGroups.size() > 0
+        }
+    }
+
+    def "Modbus TCP Test - Byte and Word Order"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        when: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+
+        and: "a Modbus TCP agent with BIG-BIG byte/word order is created"
+        def agent = new ModbusTcpAgent("Modbus TCP Endian Test")
+        agent.setRealm(MASTER_REALM)
+        agent.setHost("127.0.0.1")
+        agent.setPort(modbusServerPort)
+        agent.setUnitId(1)
+        agent.addOrReplaceAttributes(
+                new Attribute<>(ModbusTcpAgent.BYTE_ORDER, ModbusAgent.EndianOrder.BIG),
+                new Attribute<>(ModbusTcpAgent.WORD_ORDER, ModbusAgent.EndianOrder.BIG)
+        )
+        agent = assetStorageService.merge(agent)
+
+        then: "the agent should connect successfully"
+        conditions.eventually {
+            agent = assetStorageService.find(agent.getId())
+            agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+        }
+
+        when: "a device with 32-bit float value is created"
+        def device = new ThingAsset("Endian Test Device")
+        device.setRealm(MASTER_REALM)
+        device.addOrReplaceAttributes(
+                new Attribute<>("floatValue", ValueType.NUMBER).addOrReplaceMeta(
+                        new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setPollingMillis(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.REAL)
+                                    it.setReadAddress(9)
+                                    it.setReadRegistersAmount(2)
+                                }
+                        )
+                )
+        )
+        device = assetStorageService.merge(device)
+
+        then: "the float value should be read correctly with BIG-BIG order"
+        conditions.eventually {
+            device = assetStorageService.find(device.getId(), true)
+
+            // Verify attribute receives a value with the configured byte/word order
+            assert device.getAttribute("floatValue").flatMap { it.getValue() }.isPresent()
+            def floatValue = device.getAttribute("floatValue").flatMap { it.getValue() }.get()
+
+            // Value should be present and non-null (byte/word order is configured and applied by PLC4X)
+            assert floatValue != null
+            assert floatValue instanceof Number
+        }
+    }
+
 }

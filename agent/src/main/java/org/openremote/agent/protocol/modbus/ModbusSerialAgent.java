@@ -33,13 +33,12 @@ import java.util.Optional;
  * This Modbus serial agent has been tested with USB-UART-RS485 converters with chips CH341 and CP2104. RS232 remains untested.
  */
 @Entity
-public class ModbusSerialAgent extends Agent<ModbusSerialAgent, ModbusSerialProtocol, ModbusAgentLink> {
+public class ModbusSerialAgent extends ModbusAgent<ModbusSerialAgent, ModbusSerialProtocol> {
 
     public static final AttributeDescriptor<String> SERIAL_PORT = Agent.SERIAL_PORT.withOptional(false);
     public static final AttributeDescriptor<Integer> BAUD_RATE = Agent.SERIAL_BAUDRATE.withOptional(false);
     public static final AttributeDescriptor<Integer> DATA_BITS = new AttributeDescriptor<>("dataBits", ValueType.POSITIVE_INTEGER);
     public static final AttributeDescriptor<Integer> STOP_BITS = new AttributeDescriptor<>("stopBits", ValueType.POSITIVE_INTEGER);
-    public static final AttributeDescriptor<Integer> UNIT_ID = new AttributeDescriptor<>("unitId", ValueType.POSITIVE_INTEGER);
 
     public static final ValueDescriptor<ModbusClientParity> VALUE_MODBUS_PARITY = new ValueDescriptor<>("ModbusParity", ModbusClientParity.class);
     public static final AttributeDescriptor<ModbusClientParity> PARITY = new AttributeDescriptor<>("parity", VALUE_MODBUS_PARITY);
@@ -47,19 +46,9 @@ public class ModbusSerialAgent extends Agent<ModbusSerialAgent, ModbusSerialProt
     public static final AttributeDescriptor<String> ILLEGAL_REGISTERS = new AttributeDescriptor<>("illegalRegisters", ValueType.TEXT);
     public static final AttributeDescriptor<Integer> MAX_REGISTER_LENGTH = new AttributeDescriptor<>("maxRegisterLength", ValueType.POSITIVE_INTEGER);
 
-    public static final ValueDescriptor<EndianOrder> VALUE_ENDIAN_ORDER = new ValueDescriptor<>("EndianOrder", EndianOrder.class);
-    public static final AttributeDescriptor<EndianOrder> BYTE_ORDER = new AttributeDescriptor<>("byteOrder", VALUE_ENDIAN_ORDER);
-    public static final AttributeDescriptor<EndianOrder> WORD_ORDER = new AttributeDescriptor<>("wordOrder", VALUE_ENDIAN_ORDER);
-
-    public enum EndianOrder {
-        BIG,
-        LITTLE;
-
-        @JsonValue
-        public String getJsonValue() {
-            return toString();
-        }
-    }
+    public static final ValueDescriptor<ModbusAgent.EndianOrder> VALUE_ENDIAN_ORDER = new ValueDescriptor<>("EndianOrder", ModbusAgent.EndianOrder.class);
+    public static final AttributeDescriptor<ModbusAgent.EndianOrder> BYTE_ORDER = new AttributeDescriptor<>("byteOrder", VALUE_ENDIAN_ORDER);
+    public static final AttributeDescriptor<ModbusAgent.EndianOrder> WORD_ORDER = new AttributeDescriptor<>("wordOrder", VALUE_ENDIAN_ORDER);
 
     public enum ModbusClientParity {
         NO(0),
@@ -123,10 +112,6 @@ public class ModbusSerialAgent extends Agent<ModbusSerialAgent, ModbusSerialProt
         return getAttributes().getValue(STOP_BITS).orElse(null);
     }
 
-    public Integer getUnitId() {
-        return getAttributes().getValue(UNIT_ID).orElse(null);
-    }
-    
     public ModbusClientParity getParity() {
         return getAttribute(PARITY).map(attr -> attr.getValue().orElse(ModbusClientParity.EVEN)).orElse(ModbusClientParity.EVEN);
     }
@@ -143,12 +128,12 @@ public class ModbusSerialAgent extends Agent<ModbusSerialAgent, ModbusSerialProt
         return getAttributes().getValue(MAX_REGISTER_LENGTH).orElse(1); // Batch processing disabled by default.
     }
 
-    public EndianOrder getByteOrder() {
-        return getAttribute(BYTE_ORDER).map(attr -> attr.getValue().orElse(EndianOrder.BIG)).orElse(EndianOrder.BIG);
+    public ModbusAgent.EndianOrder getByteOrder() {
+        return getAttribute(BYTE_ORDER).map(attr -> attr.getValue().orElse(ModbusAgent.EndianOrder.BIG)).orElse(ModbusAgent.EndianOrder.BIG);
     }
 
-    public EndianOrder getWordOrder() {
-        return getAttribute(WORD_ORDER).map(attr -> attr.getValue().orElse(EndianOrder.BIG)).orElse(EndianOrder.BIG);
+    public ModbusAgent.EndianOrder getWordOrder() {
+        return getAttribute(WORD_ORDER).map(attr -> attr.getValue().orElse(ModbusAgent.EndianOrder.BIG)).orElse(ModbusAgent.EndianOrder.BIG);
     }
 
     @Override

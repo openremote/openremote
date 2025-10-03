@@ -20,11 +20,9 @@
 package org.openremote.agent.protocol.modbus;
 
 import com.fazecast.jSerialComm.SerialPort;
-import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.serial.SerialPortManager;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
@@ -39,20 +37,12 @@ import java.util.stream.Collectors;
 
 import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
 
-public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, ModbusAgentLink> {
+public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialProtocol, ModbusSerialAgent> {
 
     public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ModbusSerialProtocol.class);
 
-    private static final java.util.concurrent.atomic.AtomicInteger groupCounter = new java.util.concurrent.atomic.AtomicInteger(0);
-
-    protected final Map<AttributeRef, ScheduledFuture<?>> pollingMap = new ConcurrentHashMap<>();
-    protected final Map<String, Map<AttributeRef, ModbusAgentLink>> batchGroups = new ConcurrentHashMap<>(); // Key: agentName_groupNum_memoryArea_pollingInterval
-    protected final Map<String, List<BatchReadRequest>> cachedBatches = new ConcurrentHashMap<>(); // Cached batch requests per group
-    protected final Map<String, ScheduledFuture<?>> batchPollingTasks = new ConcurrentHashMap<>();
-    private final Object modbusLock = new Object();
     private org.openremote.agent.protocol.serial.SerialPortWrapper serialPort;
     private String connectionString;
-    private Set<RegisterRange> illegalRegisters;
 
     public ModbusSerialProtocol(ModbusSerialAgent agent) {
         super(agent);
@@ -69,72 +59,55 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
     }
 
     @Override
-    protected void doStart(Container container) throws Exception {
-        // Parse illegal registers
-        illegalRegisters = parseIllegalRegisters(agent.getIllegalRegisters().orElse(""));
-        LOG.info("Loaded " + illegalRegisters.size() + " illegal register ranges for modbus agent" + agent.getId());
+    protected Optional<String> getIllegalRegistersConfig() {
+        return agent.getIllegalRegisters();
+    }
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<?> startTask = executor.submit(() -> {
-            try {
-                setConnectionStatus(ConnectionStatus.CONNECTING);
+    @Override
+    protected Integer getMaxRegisterLength() {
+        return agent.getMaxRegisterLength();
+    }
 
-                String portName = agent.getSerialPort().orElseThrow(() -> new RuntimeException("Serial port not specified"));
-                int baudRate = agent.getBaudRate();
-                int dataBits = agent.getDataBits();
-                int stopBits = agent.getStopBits();
-                int parity = agent.getParityValue();
-
-                connectionString = "modbus-rtu://" + portName + "?baud=" + baudRate + "&data=" + dataBits + "&stop=" + stopBits + "&parity=" + parity;
-
-                // Acquire shared serial port through SerialPortManager
-                org.openremote.agent.protocol.serial.SerialPortWrapper wrapper = SerialPortManager.getInstance().acquirePort(
-                        portName,
-                        baudRate,
-                        dataBits,
-                        stopBits,
-                        mapParityToSerialPort(parity)
-                );
-
-                if (wrapper != null && wrapper.isOpen()) {
-                    serialPort = wrapper;
-                    setConnectionStatus(ConnectionStatus.CONNECTED);
-                    String parityName = agent.getParity().name();
-                    LOG.info("Modbus on serial device started successfully, " + portName + " (" + baudRate + "," + dataBits + "," + parityName + "," + stopBits + ")");
-                } else {
-                    setConnectionStatus(ConnectionStatus.ERROR);
-                    throw new RuntimeException("Failed to open serial port: " + portName);
-                }
-            } catch (Exception e) {
-                LOG.log(Level.SEVERE, "Failed to start Modbus Serial Protocol: " + e.getMessage(), e);
-                setConnectionStatus(ConnectionStatus.ERROR);
-                throw new RuntimeException(e);
-            }
-        });
-
+    @Override
+    protected void doStartProtocol(Container container) throws Exception {
         try {
-            startTask.get(10, TimeUnit.SECONDS);
-        } catch (TimeoutException e) {
-            startTask.cancel(true);
+            setConnectionStatus(ConnectionStatus.CONNECTING);
+
+            String portName = agent.getSerialPort().orElseThrow(() -> new RuntimeException("Serial port not specified"));
+            int baudRate = agent.getBaudRate();
+            int dataBits = agent.getDataBits();
+            int stopBits = agent.getStopBits();
+            int parity = agent.getParityValue();
+
+            connectionString = "modbus-rtu://" + portName + "?baud=" + baudRate + "&data=" + dataBits + "&stop=" + stopBits + "&parity=" + parity;
+
+            // Acquire shared serial port through SerialPortManager
+            org.openremote.agent.protocol.serial.SerialPortWrapper wrapper = SerialPortManager.getInstance().acquirePort(
+                    portName,
+                    baudRate,
+                    dataBits,
+                    stopBits,
+                    mapParityToSerialPort(parity)
+            );
+
+            if (wrapper != null && wrapper.isOpen()) {
+                serialPort = wrapper;
+                setConnectionStatus(ConnectionStatus.CONNECTED);
+                String parityName = agent.getParity().name();
+                LOG.info("Modbus on serial device started successfully, " + portName + " (" + baudRate + "," + dataBits + "," + parityName + "," + stopBits + ")");
+            } else {
+                setConnectionStatus(ConnectionStatus.ERROR);
+                throw new RuntimeException("Failed to open serial port: " + portName);
+            }
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Failed to start Modbus Serial Protocol: " + e.getMessage(), e);
             setConnectionStatus(ConnectionStatus.ERROR);
-            throw new RuntimeException("Failed to start Modbus Serial Protocol: timeout after 10 seconds", e);
-        } catch (ExecutionException e) {
-            throw new Exception("Failed to start Modbus Serial Protocol", e.getCause());
-        } finally {
-            executor.shutdown();
+            throw e;
         }
     }
 
     @Override
-    protected void doStop(Container container) throws Exception {
-        pollingMap.values().forEach(future -> future.cancel(false));
-        pollingMap.clear();
-
-        batchPollingTasks.values().forEach(future -> future.cancel(false));
-        batchPollingTasks.clear();
-        batchGroups.clear();
-        cachedBatches.clear();
-
+    protected void doStopProtocol(Container container) throws Exception {
         // Release shared serial port through SerialPortManager
         if (serialPort != null && serialPort.isOpen()) {
             String portName = agent.getSerialPort().orElse("unknown");
@@ -149,53 +122,6 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
         }
 
         setConnectionStatus(ConnectionStatus.DISCONNECTED);
-    }
-
-    @Override
-    protected void doLinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) throws RuntimeException {
-        AttributeRef ref = new AttributeRef(assetId, attribute.getName());
-
-        // Create group key: agenId_memoryArea_pollingInterval
-        String groupKey = agent.getId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
-
-        // Add to batch group and invalidate cached batches
-        batchGroups.computeIfAbsent(groupKey, k -> new ConcurrentHashMap<>()).put(ref, agentLink);
-        cachedBatches.remove(groupKey); // Invalidate cache
-
-        // Only schedule task if one doesn't exist yet for this group
-        if (!batchPollingTasks.containsKey(groupKey)) {
-            ScheduledFuture<?> batchTask = scheduleBatchedPollingTask(groupKey, agentLink.getReadMemoryArea(), agentLink.getPollingMillis());
-            batchPollingTasks.put(groupKey, batchTask);
-            LOG.fine("Scheduled new polling task for batch group " + groupKey);
-        }
-
-        LOG.fine("Added attribute " + ref + " to batch group " + groupKey + " (total attributes in group: " + batchGroups.get(groupKey).size() + ")");
-    }
-
-    @Override
-    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) {
-        AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
-
-        // Remove from batch group
-        String groupKey = agent.getId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
-        Map<AttributeRef, ModbusAgentLink> group = batchGroups.get(groupKey);
-        if (group != null) {
-            group.remove(attributeRef);
-            cachedBatches.remove(groupKey); // Invalidate cache
-
-            // If group is empty, cancel batch task
-            if (group.isEmpty()) {
-                batchGroups.remove(groupKey);
-                cachedBatches.remove(groupKey);
-                ScheduledFuture<?> task = batchPollingTasks.remove(groupKey);
-                if (task != null) {
-                    task.cancel(false);
-                }
-                LOG.fine("Removed empty batch group " + groupKey);
-            } else {
-                LOG.info("Removed attribute " + attributeRef + " from batch group " + groupKey + " (remaining attributes: " + group.size() + ")");
-            }
-        }
     }
 
     @Override
@@ -218,6 +144,7 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
         }
     }
 
+    @Override
     protected ScheduledFuture<?> scheduleModbusPollingReadRequest(AttributeRef ref,
                                                                   long pollingMillis,
                                                                   ModbusAgentLink.ReadMemoryArea readType,
@@ -271,7 +198,8 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
     }
     
     private Object performModbusRead(int unitId, byte functionCode, int address, int quantity, ModbusAgentLink.ModbusDataType dataType) {
-        synchronized (modbusLock) {
+        // Synchronize on the serial port's shared lock to ensure atomic write-read cycles across all agents sharing the port
+        synchronized (serialPort.getSynchronizationLock()) {
             LOG.info("Performing Modbus Read" + unitId + functionCode + address + quantity);
             try {
                 byte[] request = createModbusRequest(unitId, functionCode, address, quantity);
@@ -319,7 +247,7 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
      * Convert agent's EndianOrder to Java's ByteOrder
      */
     private java.nio.ByteOrder getJavaByteOrder() {
-        return agent.getByteOrder() == ModbusSerialAgent.EndianOrder.BIG
+        return agent.getByteOrder() == ModbusAgent.EndianOrder.BIG
             ? ByteOrder.BIG_ENDIAN
             : ByteOrder.LITTLE_ENDIAN;
     }
@@ -336,7 +264,7 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
      */
     private byte[] applyWordOrder(byte[] data, int registerCount) {
         // If word order is BIG or only one register, no swapping needed
-        if (agent.getWordOrder() == ModbusSerialAgent.EndianOrder.BIG || registerCount <= 1) {
+        if (agent.getWordOrder() == ModbusAgent.EndianOrder.BIG || registerCount <= 1) {
             return data;
         }
 
@@ -460,7 +388,8 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
     }
     
     private boolean writeSingleCoil(int unitId, int address, boolean value) {
-        synchronized (modbusLock) {
+        // Synchronize on the serial port's shared lock to ensure atomic write-read cycles across all agents sharing the port
+        synchronized (serialPort.getSynchronizationLock()) {
             try {
                 byte[] request = createWriteCoilRequest(unitId, (byte) 0x05, address, value);
 
@@ -491,7 +420,8 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
     }
     
     private boolean writeSingleHoldingRegister(int unitId, int address, Object value) {
-        synchronized (modbusLock) {
+        // Synchronize on the serial port's shared lock to ensure atomic write-read cycles across all agents sharing the port
+        synchronized (serialPort.getSynchronizationLock()) {
             try {
                 int registerValue;
                 if (value instanceof Integer) {
@@ -633,47 +563,10 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
     }
 
     /**
-     * Schedule a batched polling task for a group of attributes
-     */
-    protected ScheduledFuture<?> scheduleBatchedPollingTask(String groupKey, ModbusAgentLink.ReadMemoryArea memoryArea, long pollingMillis) {
-        LOG.info("Scheduling batched polling task for group " + groupKey + " every " + pollingMillis + "ms");
-
-        return scheduledExecutorService.scheduleWithFixedDelay(() -> {
-            try {
-                Map<AttributeRef, ModbusAgentLink> group = batchGroups.get(groupKey);
-                if (group == null || group.isEmpty()) {
-                    return;
-                }
-
-                List<BatchReadRequest> batches;
-                synchronized (cachedBatches) {
-                    batches = cachedBatches.get(groupKey);
-                    if (batches == null) {
-                        LOG.info("Creating batch requests for group " + groupKey + " with " + group.size() + " attribute(s) (maxRegisterLength=" + agent.getMaxRegisterLength() + ")");
-                        batches = createBatchRequests(group, illegalRegisters, agent.getMaxRegisterLength());
-                        cachedBatches.put(groupKey, batches);
-                        LOG.info("Created and cached " + batches.size() + " batch request(s) from " + group.size() + " attribute(s)");
-                    }
-                }
-
-                // Execute each batch request
-                for (int i = 0; i < batches.size(); i++) {
-                    BatchReadRequest batch = batches.get(i);
-                    int endAddress = batch.startAddress + batch.quantity - 1;
-                    LOG.finest("Executing batch " + (i + 1) + "/" + batches.size() + ": registers=" + batch.startAddress + "-" + endAddress + " (quantity=" + batch.quantity + ", attributes=" + batch.attributes.size() + ")");
-                    executeBatchRead(batch, memoryArea, group);
-                }
-
-            } catch (Exception e) {
-                LOG.log(Level.WARNING, "Exception during batched Modbus polling for group " + groupKey + ": " + e.getMessage(), e);
-            }
-        }, pollingMillis, pollingMillis, TimeUnit.MILLISECONDS);
-    }
-
-    /**
      * Execute a batch read request and distribute values to attributes
      */
-    private void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group) {
+    @Override
+    protected void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group) {
         byte functionCode;
         switch (memoryArea) {
             case COIL:
@@ -724,7 +617,8 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
      * Perform a batch Modbus read and return the raw response data
      */
     private byte[] performModbusBatchRead(int unitId, byte functionCode, int address, int quantity) {
-        synchronized (modbusLock) {
+        // Synchronize on the serial port's shared lock to ensure atomic write-read cycles across all agents sharing the port
+        synchronized (serialPort.getSynchronizationLock()) {
             LOG.fine("Performing batch Modbus read: unit=" + unitId + ", function=" + functionCode + ", address=" + address + ", quantity=" + quantity);
             try {
                 byte[] request = createModbusRequest(unitId, functionCode, address, quantity);
@@ -867,172 +761,6 @@ public class ModbusSerialProtocol extends AbstractProtocol<ModbusSerialAgent, Mo
         }
 
         return null;
-    }
-
-    // ===== Helper classes for batching =====
-
-    /**
-     * Represents a range of illegal registers that cannot be queried
-     */
-    private static class RegisterRange {
-        final int start;
-        final int end;
-
-        RegisterRange(int start, int end) {
-            this.start = start;
-            this.end = end;
-        }
-
-        boolean contains(int register) {
-            return register >= start && register <= end;
-        }
-
-        boolean overlaps(int start, int end) {
-            return !(this.end < start || this.start > end);
-        }
-    }
-
-    /**
-     * Parses illegal registers string format: "100,130,150-180,190"
-     */
-    private Set<RegisterRange> parseIllegalRegisters(String illegalRegisters) {
-        Set<RegisterRange> ranges = new HashSet<>();
-        if (illegalRegisters == null || illegalRegisters.trim().isEmpty()) {
-            return ranges;
-        }
-
-        String[] parts = illegalRegisters.split(",");
-        for (String part : parts) {
-            part = part.trim();
-            if (part.contains("-")) {
-                String[] rangeParts = part.split("-");
-                try {
-                    int start = Integer.parseInt(rangeParts[0].trim());
-                    int end = Integer.parseInt(rangeParts[1].trim());
-                    ranges.add(new RegisterRange(start, end));
-                } catch (NumberFormatException e) {
-                    LOG.warning("Invalid register range format: " + part);
-                }
-            } else {
-                try {
-                    int register = Integer.parseInt(part);
-                    ranges.add(new RegisterRange(register, register));
-                } catch (NumberFormatException e) {
-                    LOG.warning("Invalid register number: " + part);
-                }
-            }
-        }
-        return ranges;
-    }
-
-    /**
-     * Checks if a register is in the illegal registers list
-     */
-    private boolean isIllegalRegister(int register, Set<RegisterRange> illegalRanges) {
-        return illegalRanges.stream().anyMatch(range -> range.contains(register));
-    }
-
-    /**
-     * Represents a batch read request for contiguous registers
-     */
-    private static class BatchReadRequest {
-        final int startAddress;
-        int quantity;
-        final List<AttributeRef> attributes;
-        final List<Integer> offsets; // Offset of each attribute within the batch
-
-        BatchReadRequest(int startAddress, int quantity) {
-            this.startAddress = startAddress;
-            this.quantity = quantity;
-            this.attributes = new ArrayList<>();
-            this.offsets = new ArrayList<>();
-        }
-
-        void addAttribute(AttributeRef ref, int offset) {
-            attributes.add(ref);
-            offsets.add(offset);
-        }
-    }
-
-    /**
-     * Groups attributes into optimized batch requests
-     */
-    private List<BatchReadRequest> createBatchRequests(
-            Map<AttributeRef, ModbusAgentLink> attributeLinks,
-            Set<RegisterRange> illegalRanges,
-            int maxRegisterLength) {
-
-        // Group by memory area and sort by address
-        Map<ModbusAgentLink.ReadMemoryArea, List<Map.Entry<AttributeRef, ModbusAgentLink>>> groupedByMemoryArea =
-                attributeLinks.entrySet().stream()
-                        .collect(Collectors.groupingBy(e -> e.getValue().getReadMemoryArea()));
-
-        List<BatchReadRequest> batches = new ArrayList<>();
-
-        for (Map.Entry<ModbusAgentLink.ReadMemoryArea, List<Map.Entry<AttributeRef, ModbusAgentLink>>> group : groupedByMemoryArea.entrySet()) {
-            // Sort by address
-            List<Map.Entry<AttributeRef, ModbusAgentLink>> sortedAttributes = group.getValue().stream()
-                    .sorted(Comparator.comparingInt(e -> e.getValue().getReadAddress().orElse(0)))
-                    .collect(Collectors.toList());
-
-            BatchReadRequest currentBatch = null;
-            int currentEnd = -1;
-
-            for (Map.Entry<AttributeRef, ModbusAgentLink> entry : sortedAttributes) {
-                ModbusAgentLink link = entry.getValue();
-                int address = link.getReadAddress().orElse(0);
-                int registerCount = link.getReadRegistersAmount().orElse(link.getReadValueType().getRegisterCount());
-
-                // Check if we can add to current batch
-                if (currentBatch != null) {
-                    int gap = address - currentEnd;
-                    boolean hasIllegalInGap = false;
-                    int firstIllegalRegister = -1;
-
-                    // Check if there are illegal registers in the gap
-                    for (int i = currentEnd; i < address; i++) {
-                        if (isIllegalRegister(i, illegalRanges)) {
-                            hasIllegalInGap = true;
-                            firstIllegalRegister = i;
-                            break;
-                        }
-                    }
-
-                    int newQuantity = address + registerCount - currentBatch.startAddress;
-
-                    // Add to current batch if: no illegal registers in gap and within max length
-                    if (!hasIllegalInGap && newQuantity <= maxRegisterLength) {
-                        int offset = address - currentBatch.startAddress;
-                        currentBatch.addAttribute(entry.getKey(), offset);
-                        currentBatch.quantity = newQuantity;
-                        currentEnd = address + registerCount;
-                        LOG.finest("Added register " + address + " to batch starting at " + currentBatch.startAddress + " (new quantity=" + newQuantity + ")");
-                        continue;
-                    } else {
-                        // Finalize current batch
-                        batches.add(currentBatch);
-                        String reason = hasIllegalInGap
-                            ? "illegal register " + firstIllegalRegister + " detected in gap (registers " + currentEnd + "-" + (address - 1) + ")"
-                            : "would exceed maxRegisterLength (" + newQuantity + " > " + maxRegisterLength + ")";
-                        LOG.info("Split batch before register " + address + ": " + reason);
-                    }
-                }
-
-                // Start new batch
-                currentBatch = new BatchReadRequest(address, registerCount);
-                currentBatch.addAttribute(entry.getKey(), 0);
-                currentEnd = address + registerCount;
-                LOG.fine("Started new batch at address " + address + " (previous batch would have exceeded maxRegisterLength=" + maxRegisterLength + ")");
-            }
-
-            // Add final batch
-            if (currentBatch != null) {
-                batches.add(currentBatch);
-                LOG.fine("Finalized batch: startAddress=" + currentBatch.startAddress + ", quantity=" + currentBatch.quantity + ", attributes=" + currentBatch.attributes.size());
-            }
-        }
-
-        return batches;
     }
 
     /**

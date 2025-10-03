@@ -183,6 +183,7 @@ public class SerialPortManager {
      */
     static class RealSerialPortWrapper implements SerialPortWrapper {
         private final SerialPort port;
+        private final Object lock = new Object();
 
         RealSerialPortWrapper(SerialPort port) {
             this.port = port;
@@ -216,6 +217,11 @@ public class SerialPortManager {
         @Override
         public int bytesAvailable() {
             return port.bytesAvailable();
+        }
+
+        @Override
+        public Object getSynchronizationLock() {
+            return lock;
         }
     }
 
@@ -295,6 +301,12 @@ public class SerialPortManager {
         @Override
         public int bytesAvailable() {
             return actualPort.bytesAvailable();
+        }
+
+        @Override
+        public Object getSynchronizationLock() {
+            // Return the accessLock itself for synchronization
+            return accessLock;
         }
     }
 }
