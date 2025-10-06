@@ -531,22 +531,24 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                 </div>
             `;
         }
-        else if (descriptor.assetDiscovery) {
+        if (descriptor.assetDiscovery) {
             content = html`
-                <or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" label="discoverAssets" @or-mwc-input-changed="${() => discoverAssets()}"></or-mwc-input>
-                <or-mwc-input id="cancel-discover-btn" .type="${InputType.BUTTON}" label="cancel" @or-mwc-input-changed="${() => cancelDiscovery()}" hidden style="margin-left:20px"></or-mwc-input>
+                ${content}
+                <div id="discovery">
+                    <or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" label="discoverAssets" @or-mwc-input-changed="${() => discoverAssets()}"></or-mwc-input>
+                    <or-mwc-input id="cancel-discover-btn" .type="${InputType.BUTTON}" label="cancel" @or-mwc-input-changed="${() => cancelDiscovery()}" hidden style="margin-left:20px"></or-mwc-input>
+                </div>
             `;
-        } else {
+        }
+
+        if (!descriptor.assetImport && ! descriptor.assetDiscovery) {
             showSnackbar(undefined, "agent type doesn't support a known protocol to add assets", "dismiss");
         }
 
         return html`
-            <style>
-                [hidden] {
-                    display: none;
-                }
-            </style>
-            ${content}
+            <div id="setup-wrapper">
+                ${content}
+            </div>
         `;
 
     }

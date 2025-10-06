@@ -256,13 +256,19 @@ export const style = css`
         display: none;
         cursor: pointer;
     }
-    
-    #fileupload {
+
+    #setup-wrapper {
+        width: 100%;
+        margin-top: -10px;
+    }
+
+    #fileupload, #discovery {
         display: flex;
         align-items: center;
         width: 100%;
+        margin-bottom: 10px;
     }
-    
+
     .hidden {
         display: none;
     }
