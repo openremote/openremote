@@ -193,7 +193,6 @@ public class JSONSchemaUtil {
         @Override
         public void applyToConfigBuilder(SchemaGeneratorConfigBuilder builder) {
             // Set title on root of schema
-            // TODO: resolve titles for all custom types
             JSONSchemaTitleProvider titleProvider = new JSONSchemaTitleProvider();
             builder.forTypesInGeneral()
                     .withCustomDefinitionProvider(titleProvider)
@@ -351,11 +350,13 @@ public class JSONSchemaUtil {
                 }
 
                 // These will be overwritten by member scope when colliding
-                applyTypeAnnotation(erasedType, JsonSchemaTitle.class, targetNode, mapper);
-                applyTypeAnnotation(erasedType, JsonSchemaDescription.class, targetNode, mapper);
-                applyTypeAnnotation(erasedType, JsonSchemaFormat.class, targetNode, mapper);
-                applyTypeAnnotation(erasedType, JsonSchemaDefault.class, targetNode, mapper);
-                applyTypeAnnotation(erasedType, JsonSchemaExamples.class, targetNode, mapper);
+                if (!erasedType.isArray()) {
+                    applyTypeAnnotation(erasedType, JsonSchemaTitle.class, targetNode, mapper);
+                    applyTypeAnnotation(erasedType, JsonSchemaDescription.class, targetNode, mapper);
+                    applyTypeAnnotation(erasedType, JsonSchemaFormat.class, targetNode, mapper);
+                    applyTypeAnnotation(erasedType, JsonSchemaDefault.class, targetNode, mapper);
+                    applyTypeAnnotation(erasedType, JsonSchemaExamples.class, targetNode, mapper);
+                }
             });
 
             // Apply Jackson serializers
