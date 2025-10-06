@@ -33,6 +33,10 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
@@ -143,10 +147,12 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                 String responseTag = response.getTagNames().stream().findFirst()
                         .orElseThrow(() -> new RuntimeException("Could not retrieve the requested value from the response"));
 
-                Object responseValue = response.getObject(responseTag, readAmountOfRegisters-1);
+                // PLC4X returns values at index 0 for all cases (single or multi-register)
+                Object responseValue = response.getObject(responseTag, 0);
+                LOG.log(Level.INFO, "TCP Read: tag=" + responseTag + ", registers=" + readAmountOfRegisters + ", value=" + responseValue + ", type=" + (responseValue != null ? responseValue.getClass().getName() : "null"));
                 updateLinkedAttribute(ref, responseValue);
             } catch (Exception e) {
-                LOG.log(Level.FINE,"Exception during Modbus Read polling: " + e.getMessage(), e);
+                LOG.log(Level.WARNING,"Exception during Modbus Read polling for " + ref + ": " + e.getMessage(), e);
             }
         }, 0, pollingMillis, TimeUnit.MILLISECONDS);
     }
@@ -214,18 +220,17 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                     continue;
                 }
 
-                int registerCount = agentLink.getReadRegistersAmount().orElse(agentLink.getReadValueType().getRegisterCount());
-
                 try {
-                    Object value;
-                    if (registerCount == 1) {
-                        value = response.getObject("batchRead", offset);
-                    } else {
-                        // For multi-register values, extract the range
-                        value = response.getObject("batchRead", offset + registerCount - 1);
-                    }
+                    int registerCount = agentLink.getReadRegistersAmount().orElse(agentLink.getReadValueType().getRegisterCount());
+                    ModbusAgentLink.ModbusDataType dataType = agentLink.getReadValueType();
 
-                    updateLinkedAttribute(ref, value);
+                    // Extract value using helper method that handles multi-register conversion
+                    Object value = extractValueFromBatchResponse(response, "batchRead", offset, registerCount, dataType);
+
+                    if (value != null) {
+                        LOG.fine("Extracted value from batch for " + ref + ": " + value + " (type: " + dataType + ", registers: " + registerCount + ")");
+                        updateLinkedAttribute(ref, value);
+                    }
                 } catch (Exception e) {
                     LOG.log(Level.FINE, "Failed to extract value for " + ref + " at offset " + offset + ": " + e.getMessage(), e);
                 }
@@ -244,5 +249,128 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
     @Override
     public String getProtocolInstanceUri() {
         return connectionString;
+    }
+
+    /**
+     * Convert agent's EndianOrder to Java's ByteOrder
+     */
+    private ByteOrder getJavaByteOrder() {
+        return agent.getByteOrder() == ModbusAgent.EndianOrder.BIG
+            ? ByteOrder.BIG_ENDIAN
+            : ByteOrder.LITTLE_ENDIAN;
+    }
+
+    /**
+     * Apply word order swapping to multi-register data.
+     * Word order determines how 16-bit registers are arranged within multi-register values.
+     */
+    private byte[] applyWordOrder(byte[] data, int registerCount) {
+        // If word order is BIG or only one register, no swapping needed
+        if (agent.getWordOrder() == ModbusAgent.EndianOrder.BIG || registerCount <= 1) {
+            return data;
+        }
+
+        // LITTLE word order: reverse the order of registers
+        byte[] result = new byte[data.length];
+        for (int i = 0; i < registerCount; i++) {
+            int srcIdx = i * 2;
+            int dstIdx = (registerCount - 1 - i) * 2;
+            result[dstIdx] = data[srcIdx];
+            result[dstIdx + 1] = data[srcIdx + 1];
+        }
+
+        return result;
+    }
+
+    /**
+     * Extract a multi-register value from PLC4X batch read response.
+     * PLC4X batch reads return raw SHORT arrays without data type conversion,
+     * so we need to manually convert based on the data type.
+     */
+    private Object extractValueFromBatchResponse(PlcReadResponse response, String tag, int offset, int registerCount, ModbusAgentLink.ModbusDataType dataType) {
+        try {
+            if (registerCount == 1) {
+                // Single register - PLC4X handles this correctly
+                return response.getObject(tag, offset);
+            } else if (registerCount == 2) {
+                // Two registers - DINT or REAL
+                byte[] dataBytes = new byte[4];
+                for (int i = 0; i < 2; i++) {
+                    short value = response.getShort(tag, offset + i);
+                    dataBytes[i * 2] = (byte) ((value >> 8) & 0xFF);
+                    dataBytes[i * 2 + 1] = (byte) (value & 0xFF);
+                }
+
+                // Apply word order (register arrangement)
+                dataBytes = applyWordOrder(dataBytes, 2);
+
+                if (dataType == ModbusAgentLink.ModbusDataType.REAL) {
+                    ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
+                    buffer.order(getJavaByteOrder());
+                    float value = buffer.getFloat();
+
+                    if (Float.isNaN(value) || Float.isInfinite(value)) {
+                        LOG.warning("Batch read contains invalid float value (NaN or Infinity), ignoring");
+                        return null;
+                    }
+                    return value;
+                } else {
+                    // DINT - 32-bit integer
+                    ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
+                    buffer.order(getJavaByteOrder());
+                    return buffer.getInt();
+                }
+            } else if (registerCount == 4) {
+                // Four registers - LINT, ULINT, or LREAL
+                byte[] dataBytes = new byte[8];
+                for (int i = 0; i < 4; i++) {
+                    short value = response.getShort(tag, offset + i);
+                    dataBytes[i * 2] = (byte) ((value >> 8) & 0xFF);
+                    dataBytes[i * 2 + 1] = (byte) (value & 0xFF);
+                }
+
+                // Apply word order (register arrangement)
+                dataBytes = applyWordOrder(dataBytes, 4);
+
+                if (dataType == ModbusAgentLink.ModbusDataType.LREAL) {
+                    ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
+                    buffer.order(getJavaByteOrder());
+                    double value = buffer.getDouble();
+
+                    if (Double.isNaN(value) || Double.isInfinite(value)) {
+                        LOG.warning("Batch read contains invalid double value (NaN or Infinity), ignoring");
+                        return null;
+                    }
+                    return value;
+                } else if (dataType == ModbusAgentLink.ModbusDataType.LINT) {
+                    // 64-bit signed integer
+                    ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
+                    buffer.order(getJavaByteOrder());
+                    return buffer.getLong();
+                } else if (dataType == ModbusAgentLink.ModbusDataType.ULINT) {
+                    // 64-bit unsigned integer - use BigInteger
+                    ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
+                    buffer.order(getJavaByteOrder());
+                    long signedValue = buffer.getLong();
+
+                    if (signedValue >= 0) {
+                        return java.math.BigInteger.valueOf(signedValue);
+                    } else {
+                        // Handle negative as unsigned
+                        return java.math.BigInteger.valueOf(signedValue).add(java.math.BigInteger.ONE.shiftLeft(64));
+                    }
+                } else {
+                    // Default: treat as 64-bit signed integer
+                    ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
+                    buffer.order(getJavaByteOrder());
+                    return buffer.getLong();
+                }
+            }
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to extract value from batch response at offset " + offset + ": " + e.getMessage(), e);
+            return null;
+        }
+
+        return null;
     }
 }

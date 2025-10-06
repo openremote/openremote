@@ -154,7 +154,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             // PLC4X uses 0-indexed addresses, so address 99 = register 100 in 1-indexed notation
             int registerAddress = address + i + 1
 
-            if (registerAddress >= 0 && registerAddress < 10) {
+            if (registerAddress >= 1 && registerAddress <= 10) {
                 // Basic sequential values for simple tests
                 data[i] = (short)(registerAddress)
             } else if (registerAddress >= 100 && registerAddress < 112) {
@@ -510,15 +510,15 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             device = assetStorageService.find(device.getId(), true)
 
-            // Verify all attributes have values (PLC4X handles the 64-bit conversion)
+            // Verify all attributes have values
             assert device.getAttribute("longSignedValue").flatMap { it.getValue() }.isPresent()
             assert device.getAttribute("longUnsignedValue").flatMap { it.getValue() }.isPresent()
             assert device.getAttribute("doubleValue").flatMap { it.getValue() }.isPresent()
 
-            // Values should be non-null numbers (exact values depend on PLC4X conversion)
-            assert device.getAttribute("longSignedValue").flatMap { it.getValue() }.get() != null
-            assert device.getAttribute("longUnsignedValue").flatMap { it.getValue() }.get() != null
-            assert device.getAttribute("doubleValue").flatMap { it.getValue() }.get() != null
+            // Verify the exact values from mock server (PLC4X converts multi-register data)
+            assert device.getAttribute("longSignedValue").flatMap { it.getValue() }.get() == 1234567890123456L
+            assert device.getAttribute("longUnsignedValue").flatMap { it.getValue() }.get() == 9876543210987654L
+            assert Math.abs(device.getAttribute("doubleValue").flatMap { it.getValue() }.get() as Double - 123.456789) < 0.000001
         }
 
         and: "verify batching was used"
@@ -593,9 +593,12 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             assert device.getAttribute("int32Value").flatMap { it.getValue() }.isPresent()
             assert device.getAttribute("floatValue").flatMap { it.getValue() }.isPresent()
 
-            // Values should be non-null (PLC4X handles byte/word order conversion)
-            assert device.getAttribute("int32Value").flatMap { it.getValue() }.get() != null
-            assert device.getAttribute("floatValue").flatMap { it.getValue() }.get() != null
+            // Mock server returns 0x12345678 for INT32 at 200-201 (BIG-BIG byte/word order)
+            assert device.getAttribute("int32Value").flatMap { it.getValue() }.get() == 0x12345678
+
+            // Mock server returns 12.34f for FLOAT at 202-203
+            def floatValue = device.getAttribute("floatValue").flatMap { it.getValue() }.get() as Float
+            assert Math.abs(floatValue - 12.34f) < 0.01f
         }
     }
 
