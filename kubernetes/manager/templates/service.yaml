@@ -5,11 +5,83 @@ metadata:
   labels:
     {{- include "manager.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ .Values.service.http.type }}
   ports:
-    - port: {{ .Values.service.port }}
+    - port: {{ .Values.service.http.port }}
       targetPort: 8080
       protocol: TCP
       name: http
+    {{- if and (not (.Values.service.mqtt.enabled)) (not (.Values.service.mqtts.enabled)) }}
+    - name: mqtt
+      port: 1883
+      targetPort: 1883
+      protocol: TCP
+    {{- end }}
   selector:
     {{- include "manager.selectorLabels" . | nindent 4 }}
+---
+{{- if .Values.service.mqtt.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "manager.mqttServiceName" . }}
+  labels:
+    {{- include "manager.mqttService.labels" . | nindent 4 }}
+  {{- with .Values.service.mqtt.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+spec:
+  selector:
+    {{- include "manager.selectorLabels" . | nindent 4 }}
+  type: LoadBalancer
+  ports:
+    - name: mqtt
+      port: 1883
+      targetPort: 1883
+      protocol: TCP
+---
+{{- end }}
+{{- if .Values.service.mqtts.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "manager.mqttsServiceName" . }}
+  labels:
+    {{- include "manager.mqttsService.labels" . | nindent 4 }}
+  {{- with .Values.service.mqtts.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+spec:
+  selector:
+    {{- include "manager.selectorLabels" . | nindent 4 }}
+  type: LoadBalancer
+  ports:
+    - name: mqtts
+      port: 8883
+      targetPort: 1883
+      protocol: TCP
+{{- end }}
+---
+{{- if and (.Values.or.metricsEnabled) (.Values.service.metrics.enabled) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: manager-metrics
+  {{- with .Values.service.metrics.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.metrics.type }}
+  ports:
+    - name: metrics
+      port: {{ .Values.service.metrics.port }}
+      targetPort: {{ .Values.or.metricsPort }}
+      protocol: TCP
+  selector:
+    {{- include "manager.selectorLabels" . | nindent 4 }}
+{{- end }}

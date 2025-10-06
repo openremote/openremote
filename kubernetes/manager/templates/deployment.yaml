@@ -34,14 +34,12 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-#          ports:
-#            - name: http
-#              containerPort: {{ .Values.service.port }}
-#              protocol: TCP
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.startupProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           env:
@@ -113,9 +111,6 @@ spec:
               value: "{{ .Values.or.mapTilesPath }}"
             - name: OR_MAP_SETTINGS_PATH
               value: "{{ .Values.or.mapSettingsPath }}"
-
-            - name: OR_RULE_EVENT_EXPIRES
-              value: "{{ .Values.or.ruleEventExpires }}"
 
             - name: OR_IDENTITY_PROVIDER
               value: "{{ .Values.or.identityProvider }}"

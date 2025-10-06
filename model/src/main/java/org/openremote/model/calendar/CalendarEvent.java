@@ -21,10 +21,15 @@ package org.openremote.model.calendar;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.databind.util.StdConverter;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaFormat;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
 import net.fortuna.ical4j.model.Recur;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.util.JSONSchemaUtil;
 import org.openremote.model.util.Pair;
 
 import java.io.Serializable;
@@ -47,7 +52,7 @@ import java.util.List;
  * be obtained from the associated {@link Asset}; {@link #start} and {@link #end} are required but {@link #recurrence}
  * is optional:
  * <ul>
- * <li><a href="https://tools.ietf.org/id/draft-jenkins-jscalendar-01.html">JSCalendar</a></li>
+ * <li><a href="https://datatracker.ietf.org/doc/draft-ietf-calext-jscalendarbis/">JSCalendar</a></li>
  * </ul>
  * <p>
  * Example 1 (One day, one time only):
@@ -69,18 +74,20 @@ import java.util.List;
     }
 }
  * }</pre></blockquote>
- * Example 3 (8 hours starting 2nd September 2015 08:00am, repeat every day until 1st Feb 2018):
+ * Example 3 (8 hours starting 2nd September 2015 08:00am; repeat every other day, 4 occurrences):
  * <blockquote><pre>{@code
 {
     "start": 1441177200000,
-    "ends": 1441206000000,
+    "end": 1441206000000,
     "recurrence": "RRULE:FREQ=DAILY;INTERVAL=2;COUNT=4"
 }
  * }</pre></blockquote>
  */
 public class CalendarEvent implements Serializable {
+
     protected Date start;
     protected Date end;
+
     @JsonSerialize(converter = RecurStringConverter.class)
     protected Recur<LocalDateTime> recurrence;
 

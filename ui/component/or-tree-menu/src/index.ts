@@ -73,7 +73,7 @@ const styles = css`
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0 15px;
+        padding: 0px 5px 0px 15px;
         min-height: 48px;
         background: var(--or-app-color4, #4d9d2a);
         color: var(--or-app-color7, white);

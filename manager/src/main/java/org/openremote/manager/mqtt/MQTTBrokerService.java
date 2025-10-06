@@ -75,6 +75,7 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.UserAssetLink;
+import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.security.User;
 import org.openremote.model.util.Debouncer;
 import org.openremote.model.util.TextUtil;
@@ -286,6 +287,10 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 String sessionId = notification.getProperties().getSimpleStringProperty(ManagementHelper.HDR_SESSION_NAME).toString();
                 String topic = notification.getProperties().getSimpleStringProperty(ManagementHelper.HDR_ADDRESS).toString();
                 ServerSession session = server.getActiveMQServer().getSessionByID(sessionId);
+
+                if (session == null) {
+                    return;
+                }
 
                 // Ignore internal subscriptions
                 boolean isInternal = session.getRemotingConnection().getTransportConnection() instanceof InVMConnection;

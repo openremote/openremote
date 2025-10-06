@@ -24,6 +24,7 @@ import org.keycloak.admin.client.resource.IdentityProvidersResource
 import org.keycloak.representations.idm.IdentityProviderMapperRepresentation
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider
+import org.openremote.model.Constants
 import org.openremote.model.security.ClientRole
 import org.openremote.model.security.Realm
 import org.openremote.test.ManagerContainerTrait
@@ -88,20 +89,8 @@ class IdentityProviderTest extends Specification implements ManagerContainerTrai
     }
 
     def "Configure Keycloak chaining"() {
-        def realmName = "idprealm"
-        def realmDisplayName = "IdP Realm"
-        def realmEnabled = true
+        def realmName = Constants.MASTER_REALM
         def idpAlias = "keycloak-oidc"
-
-        when: "a realm does not yet exist in the identity provider"
-        !identityProvider.realmExists(realmName)
-
-        and: "the realm is created"
-        def realm = new Realm(null, realmName, realmDisplayName, realmEnabled)
-        identityProvider.createRealm(realm)
-
-        then: "the realm exists in the identity provider"
-        identityProvider.realmExists(realmName)
 
         when: "an identity provider is created in the realm"
         Map<String, String> idpConfig = new HashMap<>();
@@ -112,13 +101,15 @@ class IdentityProviderTest extends Specification implements ManagerContainerTrai
         idpConfig.put("filteredByClaim", "true");
         idpConfig.put("claimFilterName", "claimName");
         idpConfig.put("claimFilterValue", "claimValue");
-
-        identityProvider.createUpdateIdentityProvider(realmName, idpAlias, "oidc", idpConfig);
+        identityProvider.createUpdateIdentityProvider(realmName, idpAlias, "oidc", "IdP Name", idpConfig);
 
         then: "the identity provider is created in the realm"
         identityProvider.getRealms { realmsResource ->
             IdentityProvidersResource identityProvidersResource = realmsResource.realm(realmName).identityProviders();
-            assert identityProvidersResource.findAll().stream().anyMatch(ipr -> idpAlias == ipr.getAlias())
+            def ipr = identityProvidersResource.findAll().stream().filter(ipr -> idpAlias == ipr.getAlias()).findFirst()
+            assert ipr.isPresent()
+            assert ipr.get().getProviderId() == "oidc"
+            assert ipr.get().getDisplayName() == "IdP Name"
             return null
         } == null
 
@@ -181,6 +172,39 @@ class IdentityProviderTest extends Specification implements ManagerContainerTrai
             def iprExecutions = browserFlow.getAuthenticationExecutions().stream().filter(execution -> execution.getAuthenticator() == "identity-provider-redirector").toList()
             assert iprExecutions.size() == 1
             assert iprExecutions.get(0).getAuthenticatorConfig() == idpAlias
+            return null
+        } == null
+
+        when: "identity provider role mappers are modified for all roles"
+        ClientRole.ALL_ROLES.forEach(role -> {
+            String mapperName = role.replaceAll(":", " ")
+
+            Map<String, String> mapperConfig = new HashMap<>();
+            mapperConfig.put("syncMode", "INHERIT")
+            mapperConfig.put("claim", "cloudRoles")
+            mapperConfig.put("claim.value", role)
+            mapperConfig.put("role", "openremote." + role)
+
+            identityProvider.createUpdateIdentityProviderMapper(realmName, idpAlias, mapperName, "oidc-role-idp-mapper", mapperConfig)
+        });
+
+        then: "the identity provider role mappers are updated"
+        identityProvider.getRealms { realmsResource ->
+            IdentityProviderResource idpResource = realmsResource.realm(realmName).identityProviders().get(idpAlias)
+            List<IdentityProviderMapperRepresentation> mappers = idpResource.getMappers()
+
+            assert mappers.size() == ClientRole.ALL_ROLES.size()
+
+            mappers.each { mapper ->
+                Map<String, String> storedConfig = mapper.getConfig()
+                String role = storedConfig.get("claim.value")
+
+                assert ClientRole.ALL_ROLES.contains(role)
+                assert storedConfig.get("syncMode") == "INHERIT"
+                assert storedConfig.get("claim") == "cloudRoles"
+                assert storedConfig.get("role") == "openremote." + role
+            }
+
             return null
         } == null
     }

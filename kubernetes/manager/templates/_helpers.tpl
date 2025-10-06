@@ -60,3 +60,32 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Create the name of the mqtt service to use
+*/}}
+{{- define "manager.mqttServiceName" -}}
+{{- printf "%s-%s" (include "manager.fullname" .) "mqtt" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "manager.mqttService.labels" -}}
+helm.sh/chart: {{ include "manager.chart" . }}
+app.kubernetes.io/name: {{ include "manager.mqttServiceName" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{- define "manager.mqttsServiceName" -}}
+{{- printf "%s-%s" (include "manager.fullname" .) "mqtts" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "manager.mqttsService.labels" -}}
+helm.sh/chart: {{ include "manager.chart" . }}
+app.kubernetes.io/name: {{ include "manager.mqttsServiceName" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}

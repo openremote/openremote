@@ -18,6 +18,12 @@ dependencies {
 
     api "org.geotools:gt-main:$geotoolsVersion"
     api "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
+
+    // The transitive dependency from com.jayway.jsonpath:json-path contains a vulnerability
+    // https://github.com/advisories/GHSA-pq2g-wx69-c263
+    // Version 2.5.2 fixes it.
+    api "net.minidev:json-smart:2.5.2"
+
     api "org.jeasy:easy-rules-core:$easyRulesVersion"
     api "org.mnode.ical4j:ical4j:$ical4jVersion"
     api "org.reflections:reflections:$reflectionsVersion"
@@ -37,16 +43,19 @@ dependencies {
     api "fr.neolegal:exp4j:$exp4jVersion"
 
     dependencies {
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-        testImplementation 'org.mockito:mockito-core:5.12.0'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testImplementation 'org.mockito:mockito-core:5.19.0'
         testRuntimeOnly 'org.glassfish:jakarta.el:4.0.2'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+        testRuntimeOnly "org.junit.platform:junit-platform-launcher"
     }
 }
 
-test {
-    useJUnitPlatform()
+tasks.withType(Test) {
+    environment("OR_LOGGING_CONFIG_FILE", "logging-dev.properties")
 }
+
+test {}
 
 base {
     archivesName = "openremote-${project.name}"
