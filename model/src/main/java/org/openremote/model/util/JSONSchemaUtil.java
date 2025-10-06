@@ -130,7 +130,7 @@ public class JSONSchemaUtil {
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.TYPE, ElementType.FIELD})
     public @interface JsonSchemaTitle {
-        String keyword() default "title";
+        String keyword() default "label"; // TODO: Test
         String value();
         /* Whether to put the title on the root of the schema even when the class is wrapped in an array. */
         boolean container() default true;
