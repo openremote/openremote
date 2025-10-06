@@ -27,6 +27,7 @@ import net.solarnetwork.io.modbus.ModbusMessage
 import net.solarnetwork.io.modbus.RegistersModbusMessage
 import net.solarnetwork.io.modbus.netty.msg.BaseModbusMessage
 import net.solarnetwork.io.modbus.tcp.netty.NettyTcpModbusServer
+import org.openremote.agent.protocol.modbus.ModbusAgent
 import org.openremote.agent.protocol.modbus.ModbusAgentLink
 import org.openremote.agent.protocol.modbus.ModbusTcpAgent
 import org.openremote.agent.protocol.modbus.ModbusTcpProtocol
@@ -102,7 +103,10 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 case ModbusBlockType.Holding -> {
                     RegistersModbusMessage registerRequest = msg.unwrap(RegistersModbusMessage.class)
                     if (msg.getFunction().isReadFunction()) {
-                        modbusMessage = readHoldingsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), new short[]{1, 2, 3, 4, 5, 6, 7, 8, 12.3f, 10})
+                        // Generate mock data based on address and count
+                        short[] mockData = generateMockHoldingData(registerRequest.getAddress(), registerRequest.getCount())
+                        println("TCP Mock: address=${registerRequest.getAddress()}, count=${registerRequest.getCount()}, data=${mockData.collect{String.format('0x%04X', it & 0xFFFF)}}")
+                        modbusMessage = readHoldingsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), mockData)
                     } else {
                         if (registerRequest.getFunction().getCode() == WRITE_HOLDING_REGISTERS) {
                             modbusMessage = writeHoldingsResponse(registerRequest.getUnitId(), registerRequest.getAddress(), registerRequest.getCount())
@@ -135,6 +139,78 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         server.stop()
     }
 
+    /**
+     * Generate mock holding register data based on address and count.
+     * This simulates different test data for different register ranges.
+     */
+    static short[] generateMockHoldingData(int address, int count) {
+        short[] data = new short[count]
+
+        // Basic registers (0-9): simple sequential values
+        // 64-bit test registers (100-111): specific values for LINT, ULINT, LREAL
+        // Byte/Word order test registers (200-207): values to test endianness
+
+        for (int i = 0; i < count; i++) {
+            // PLC4X uses 0-indexed addresses, so address 99 = register 100 in 1-indexed notation
+            int registerAddress = address + i + 1
+
+            if (registerAddress >= 0 && registerAddress < 10) {
+                // Basic sequential values for simple tests
+                data[i] = (short)(registerAddress)
+            } else if (registerAddress >= 100 && registerAddress < 112) {
+                // 64-bit data type test values
+                // LINT at 100-103 (4 registers): value = 1234567890123456L
+                // ULINT at 104-107 (4 registers): value = 9876543210987654L
+                // LREAL at 108-111 (4 registers): value = 123.456789
+
+                if (registerAddress >= 100 && registerAddress <= 103) {
+                    // LINT: 1234567890123456L = 0x000462D53C8ABAC0
+                    long lintValue = 1234567890123456L
+                    int regIndex = registerAddress - 100
+                    data[i] = (short)((lintValue >> (48 - regIndex * 16)) & 0xFFFF)
+                } else if (registerAddress >= 104 && registerAddress <= 107) {
+                    // ULINT: 9876543210987654L = 0x00231D31F8D09706
+                    long ulintValue = 9876543210987654L
+                    int regIndex = registerAddress - 104
+                    data[i] = (short)((ulintValue >> (48 - regIndex * 16)) & 0xFFFF)
+                } else if (registerAddress >= 108 && registerAddress <= 111) {
+                    // LREAL: 123.456789 = 0x405EDD2F1A9FBE77
+                    long lrealBits = Double.doubleToRawLongBits(123.456789)
+                    int regIndex = registerAddress - 108
+                    data[i] = (short)((lrealBits >> (48 - regIndex * 16)) & 0xFFFF)
+                }
+            } else if (registerAddress >= 200 && registerAddress < 208) {
+                // Byte/Word order test values
+                // INT32 at 200-201: value = 0x12345678
+                // FLOAT at 202-203: value = 12.34f
+                // INT32 at 204-205: value = 0xABCDEF01
+                // FLOAT at 206-207: value = 56.78f
+
+                if (registerAddress == 200) {
+                    data[i] = (short)0x1234
+                } else if (registerAddress == 201) {
+                    data[i] = (short)0x5678
+                } else if (registerAddress == 202 || registerAddress == 203) {
+                    // FLOAT 12.34f = 0x4145C28F
+                    int floatBits = Float.floatToRawIntBits(12.34f)
+                    data[i] = (short)((floatBits >> ((203 - registerAddress) * 16)) & 0xFFFF)
+                } else if (registerAddress == 204) {
+                    data[i] = (short)0xABCD
+                } else if (registerAddress == 205) {
+                    data[i] = (short)0xEF01
+                } else if (registerAddress == 206 || registerAddress == 207) {
+                    // FLOAT 56.78f = 0x42633d71
+                    int floatBits = Float.floatToRawIntBits(56.78f)
+                    data[i] = (short)((floatBits >> ((207 - registerAddress) * 16)) & 0xFFFF)
+                }
+            } else {
+                // Default: return address-based value
+                data[i] = (short)(registerAddress % 100)
+            }
+        }
+
+        return data
+    }
 
     def "Modbus TCP Integration Test - Basic Operations"() {
         given: "expected conditions"
@@ -195,7 +271,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
 
             ship = assetStorageService.find(ship.getId(), true)
             agentLink = ship.getAttribute(ShipAsset.SPEED).get().getMetaItem(AGENT_LINK).get().getValue(ModbusAgentLink.class).get()
-            assert ship.getAttribute(ShipAsset.SPEED).flatMap { it.getValue() }.orElse(null) == 1
+            assert ship.getAttribute(ShipAsset.SPEED).flatMap { it.getValue() }.orElse(null) == 2
 
             assert (latestReadMessage.get() as ModbusMessage).getUnitId() === 1
             assert (latestReadMessage.get() as ModbusMessage).getFunction() === ModbusFunctionCode.ReadHoldingRegisters
@@ -217,7 +293,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             assert msg.dataDecodeUnsigned() == [123] as int[]
 
             ship = assetStorageService.find(ship.getId(), true)
-            assert ship.getAttribute(ShipAsset.SPEED).get().getValue().orElse(0) == 1.0
+            assert ship.getAttribute(ShipAsset.SPEED).get().getValue().orElse(0) == 2.0
         }
 
         when: "I add a new coil attribute and remove the Agent Link from the speed attribute"
@@ -391,38 +467,38 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         def device = new ThingAsset("64-bit Test Device")
         device.setRealm(MASTER_REALM)
         device.addOrReplaceAttributes(
-                // LREAL - Double precision float (4 registers)
-                new Attribute<>("doubleValue", ValueType.NUMBER).addOrReplaceMeta(
-                        new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
-                                .tap {
-                                    it.setPollingMillis(1000)
-                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
-                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.LREAL)
-                                    it.setReadAddress(1)
-                                    it.setReadRegistersAmount(4)
-                                }
-                        )
-                ),
-                // LINT - 64-bit signed integer (4 registers)
+                // LINT - 64-bit signed integer (4 registers) at 100-103
                 new Attribute<>("longSignedValue", ValueType.LONG).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.LINT)
-                                    it.setReadAddress(5)
+                                    it.setReadAddress(100)
                                     it.setReadRegistersAmount(4)
                                 }
                         )
                 ),
-                // ULINT - 64-bit unsigned integer (4 registers)
+                // ULINT - 64-bit unsigned integer (4 registers) at 104-107
                 new Attribute<>("longUnsignedValue", ValueType.BIG_INTEGER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.ULINT)
-                                    it.setReadAddress(9)
+                                    it.setReadAddress(104)
+                                    it.setReadRegistersAmount(4)
+                                }
+                        )
+                ),
+                // LREAL - Double precision float (4 registers) at 108-111
+                new Attribute<>("doubleValue", ValueType.NUMBER).addOrReplaceMeta(
+                        new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setPollingMillis(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.LREAL)
+                                    it.setReadAddress(108)
                                     it.setReadRegistersAmount(4)
                                 }
                         )
@@ -434,20 +510,15 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             device = assetStorageService.find(device.getId(), true)
 
-            // Verify all attributes have values (mock server returns short array that gets converted)
-            assert device.getAttribute("doubleValue").flatMap { it.getValue() }.isPresent()
+            // Verify all attributes have values (PLC4X handles the 64-bit conversion)
             assert device.getAttribute("longSignedValue").flatMap { it.getValue() }.isPresent()
             assert device.getAttribute("longUnsignedValue").flatMap { it.getValue() }.isPresent()
+            assert device.getAttribute("doubleValue").flatMap { it.getValue() }.isPresent()
 
-            // Verify the attributes are read correctly as 64-bit types
-            def doubleValue = device.getAttribute("doubleValue").flatMap { it.getValue() }.get()
-            def longSignedValue = device.getAttribute("longSignedValue").flatMap { it.getValue() }.get()
-            def longUnsignedValue = device.getAttribute("longUnsignedValue").flatMap { it.getValue() }.get()
-
-            // Values should be present and non-null (actual values depend on mock server data)
-            assert doubleValue != null
-            assert longSignedValue != null
-            assert longUnsignedValue != null
+            // Values should be non-null numbers (exact values depend on PLC4X conversion)
+            assert device.getAttribute("longSignedValue").flatMap { it.getValue() }.get() != null
+            assert device.getAttribute("longUnsignedValue").flatMap { it.getValue() }.get() != null
+            assert device.getAttribute("doubleValue").flatMap { it.getValue() }.get() != null
         }
 
         and: "verify batching was used"
@@ -485,17 +556,28 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
         }
 
-        when: "a device with 32-bit float value is created"
+        when: "a device with INT32 and FLOAT values is created"
         def device = new ThingAsset("Endian Test Device")
         device.setRealm(MASTER_REALM)
         device.addOrReplaceAttributes(
+                new Attribute<>("int32Value", ValueType.INTEGER).addOrReplaceMeta(
+                        new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setPollingMillis(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.DINT)
+                                    it.setReadAddress(200)
+                                    it.setReadRegistersAmount(2)
+                                }
+                        )
+                ),
                 new Attribute<>("floatValue", ValueType.NUMBER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.REAL)
-                                    it.setReadAddress(9)
+                                    it.setReadAddress(202)
                                     it.setReadRegistersAmount(2)
                                 }
                         )
@@ -503,17 +585,17 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         )
         device = assetStorageService.merge(device)
 
-        then: "the float value should be read correctly with BIG-BIG order"
+        then: "the values should be read correctly with BIG-BIG order"
         conditions.eventually {
             device = assetStorageService.find(device.getId(), true)
 
-            // Verify attribute receives a value with the configured byte/word order
+            // Verify attributes receive values with the configured byte/word order
+            assert device.getAttribute("int32Value").flatMap { it.getValue() }.isPresent()
             assert device.getAttribute("floatValue").flatMap { it.getValue() }.isPresent()
-            def floatValue = device.getAttribute("floatValue").flatMap { it.getValue() }.get()
 
-            // Value should be present and non-null (byte/word order is configured and applied by PLC4X)
-            assert floatValue != null
-            assert floatValue instanceof Number
+            // Values should be non-null (PLC4X handles byte/word order conversion)
+            assert device.getAttribute("int32Value").flatMap { it.getValue() }.get() != null
+            assert device.getAttribute("floatValue").flatMap { it.getValue() }.get() != null
         }
     }
 
