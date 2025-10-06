@@ -20,6 +20,7 @@
 package org.openremote.model.util;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.openremote.model.util.JSONSchemaUtil.*;
 
@@ -110,7 +111,7 @@ public class I18nAnnotationProcessor extends AbstractProcessor {
             try {
                 existing.putAll(mapper.readValue(path.toFile(), new TypeReference<Map<String, Object>>() {}));
             } catch (Exception e) {
-                throw new RuntimeException("");
+                throw new RuntimeException(e);
             }
         }
 
@@ -119,9 +120,43 @@ public class I18nAnnotationProcessor extends AbstractProcessor {
         }
 
         try {
-            mapper.writeValue(path.toFile(), existing);
+            String updatedJsonString = buildJsonWithoutSpaces(mapper.valueToTree(existing), 0) + "\n";
+            Files.write(path, updatedJsonString.getBytes());
         } catch (Exception e) {
-            throw new RuntimeException("");
+            throw new RuntimeException(e);
         }
+    }
+
+    // Hacky solution to get around weird Jackson formatting which adds spaces between field names and colons
+    private static String buildJsonWithoutSpaces(JsonNode jsonNode, int indentLevel) {
+        StringBuilder jsonBuilder = new StringBuilder();
+        String indent = "  ".repeat(indentLevel); // Create indentation spaces
+
+        // Close and return the object if empty
+        if (!jsonNode.fields().hasNext()) {
+            return jsonBuilder.append("{}").toString();
+        } else {
+            jsonBuilder.append("{\n");
+        }
+
+        // Iterate through the fields without adding a space between the "fieldName" and colon
+        jsonNode.fields().forEachRemaining(entry -> {
+            jsonBuilder.append(indent).append("  \"").append(entry.getKey()).append("\": "); // Key with space after
+            JsonNode value = entry.getValue();
+
+            if (value.isObject()) {
+                jsonBuilder.append(buildJsonWithoutSpaces(value, indentLevel + 1));
+            } else {
+                jsonBuilder.append(value);
+            }
+            jsonBuilder.append(",\n");
+        });
+
+        if (jsonBuilder.length() > 1) {
+            jsonBuilder.setLength(jsonBuilder.length() - 2); // Remove last comma and newline
+        }
+        jsonBuilder.append("\n").append(indent).append("}"); // Close the object
+
+        return jsonBuilder.toString();
     }
 }
