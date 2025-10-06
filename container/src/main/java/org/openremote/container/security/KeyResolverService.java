@@ -14,6 +14,7 @@ public class KeyResolverService {
 
     // Inject the base URL for Keycloak from a configuration file (e.g., microprofile-config.properties)
     @Inject
+    @ConfigProperty(name = "or.keycloak.base.url")
     private String keycloakBaseUrl;
 
     private final ConcurrentMap<String, JWKSource<SecurityContext>> jwkSources = new ConcurrentHashMap<>();

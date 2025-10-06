@@ -27,6 +27,7 @@ import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.LoginConfig;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.UriBuilder;
@@ -42,6 +43,7 @@ import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.openremote.container.security.IdentityProvider;
+import org.openremote.container.security.JWTAuthenticationFilter;
 import org.openremote.container.web.OAuthFilter;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
@@ -259,6 +261,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     @Override
     public void secureDeployment(DeploymentInfo deploymentInfo) {
+        deploymentInfo.addFilter(new FilterInfo(JWTAuthenticationFilter.NAME, JWTAuthenticationFilter.class));
         LoginConfig loginConfig = new LoginConfig(SimpleKeycloakServletExtension.AUTH_MECHANISM, "OpenRemote");
         deploymentInfo.setLoginConfig(loginConfig);
         deploymentInfo.addServletExtension(new SimpleKeycloakServletExtension(keycloakConfigResolver));
@@ -288,27 +291,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             if (target == this.keycloakTarget) {
                 realmsResourcePool.offer(realmsResource);
             }
-        }
-    }
-
-    public synchronized KeycloakDeployment getKeycloakDeployment(String realm, String clientId) {
-        if (realm == null || clientId == null) {
-            return null;
-        }
-        try {
-            return keycloakDeploymentCache.get(new KeycloakRealmClient(realm, clientId));
-        } catch (Exception ex) {
-            if (ex.getCause() != null && ex.getCause() instanceof NotFoundException) {
-                LOG.fine("Client '" + clientId + "' for realm '" + realm + "' not found on identity provider");
-            } else {
-                LOG.log(
-                    Level.WARNING,
-                    "Error loading client '" + clientId + "' for realm '" + realm + "' from identity provider, " +
-                        "exception from call to identity provider follows",
-                    ex
-                );
-            }
-            return null;
         }
     }
 
@@ -380,39 +362,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
      * @return credentials or null if generation/storage failed.
      */
     protected abstract OAuthGrant generateStoredCredentials(Container container);
-
-    protected LoadingCache<KeycloakRealmClient, KeycloakDeployment> createKeycloakDeploymentCache() {
-        CacheLoader<KeycloakRealmClient, KeycloakDeployment> loader =
-            new CacheLoader<KeycloakRealmClient, KeycloakDeployment>() {
-                public KeycloakDeployment load(KeycloakRealmClient keycloakRealmClient) {
-                    LOG.finest("Loading adapter config for client '" + keycloakRealmClient.clientId + "' in realm '" + keycloakRealmClient.realm + "'");
-
-                    //KeycloakResource keycloak = getKeycloak();
-                    KeycloakResource keycloak = getTarget(httpClient, keycloakServiceUri.build(), null, null, null).proxy(KeycloakResource.class);
-
-                    // Can't get adapter for client in another realm
-                    AdapterConfig adapterConfig = keycloak.getAdapterConfig(
-                        keycloakRealmClient.realm, KEYCLOAK_CLIENT_ID//keycloakRealmClient.clientId
-                    );
-
-                    // The auth-server-url in the adapter config must be reachable by this manager it will be the frontend URL by default
-                    adapterConfig.setAuthServerUrl(
-                        keycloakServiceUri.clone().build().toString()
-                    );
-
-                    // Set preferred username as principal attribute
-                    adapterConfig.setPrincipalAttribute("preferred_username");
-
-                    return KeycloakDeploymentBuilder.build(adapterConfig);
-                }
-            };
-
-        // TODO configurable? Or replace all of this with Observable.cache()?
-        return CacheBuilder.newBuilder()
-            .maximumSize(500)
-            .expireAfterWrite(10, MINUTES)
-            .build(loader);
-    }
 
     protected void enableAuthProxy(WebService webService, String keycloakPath) {
         if (authProxyHandler == null)

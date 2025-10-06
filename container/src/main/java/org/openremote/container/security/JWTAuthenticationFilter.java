@@ -9,15 +9,14 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import jakarta.annotation.Priority;
-import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.SecurityContext;
 import jakarta.ws.rs.ext.Provider;
+import org.openremote.model.Constants;
 
 import java.security.Principal;
 import java.util.Collections;
@@ -27,17 +26,18 @@ import java.util.Set;
 
 @Provider
 @Priority(Priorities.AUTHENTICATION)
-@RequestScoped
 public class JWTAuthenticationFilter implements ContainerRequestFilter {
+
+    public static final String NAME = "JWTAuthFilter";
 
     @Inject
     private KeyResolverService keyResolverService;
 
     @Override
     public void filter(ContainerRequestContext requestContext) {
-        String realm = requestContext.getHeaderString("X-Realm");
+        String realm = requestContext.getHeaderString(Constants.REALM_PARAM_NAME);
         if (realm == null) {
-            requestContext.abortWith(Response.status(Response.Status.BAD_REQUEST).entity("X-Realm header is missing").build());
+            requestContext.abortWith(Response.status(Response.Status.BAD_REQUEST).entity(Constants.REALM_PARAM_NAME + " header is missing").build());
             return;
         }
 
@@ -76,11 +76,13 @@ public class JWTAuthenticationFilter implements ContainerRequestFilter {
             // 5. Process the token. This verifies the signature and validates the claims.
             JWTClaimsSet claimsSet = jwtProcessor.process(token, null);
 
+            // Set preferred username as principal attribute
+            adapterConfig.setPrincipalAttribute("preferred_username");
             Principal principal = () -> claimsSet.getSubject();
             List<String> rolesList = claimsSet.getStringListClaim("roles");
             Set<String> roles = (rolesList != null) ? new HashSet<>(rolesList) : Collections.emptySet();
 
-            SecurityContext originalContext = requestContext.getSecurityContext();
+            jakarta.ws.rs.core.SecurityContext originalContext = requestContext.getSecurityContext();
             TokenSecurityContext securityContext = new TokenSecurityContext(principal, roles, originalContext.isSecure(), "JWT");
             requestContext.setSecurityContext(securityContext);
 
