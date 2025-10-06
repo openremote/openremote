@@ -77,6 +77,16 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
     }
 
     def setup() {
+        // Ensure all async port cleanup operations from previous test complete BEFORE starting new test
+        try {
+            SerialPortManager.getInstance().awaitPendingCleanups(5000)
+        } catch (Exception e) {
+            println "Warning: Error waiting for pending cleanups in setup: ${e.message}"
+        }
+
+        // Give extra time for any OS-level resource cleanup
+        Thread.sleep(200)
+
         // Reset mock state before each test
         mockSerialPort.reset()
         latestRequest.set(null)
@@ -691,20 +701,24 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
 
         @Override
         synchronized boolean openPort() {
-            // In shared port mode, this might be called multiple times
-            // Always return true to simulate successful opening
+            // In shared port mode, this will be called once per SharedSerialPort instance
+            // Always succeed and mark as open
             open = true
             return true
         }
 
         @Override
         synchronized boolean closePort() {
-            open = false
+            // In shared port mode, this is called from async cleanup
+            // Don't actually mark as closed - let the next openPort() call handle it
+            // This prevents issues when one SharedSerialPort closes while another is being created
             return true
         }
 
         @Override
         synchronized boolean isOpen() {
+            // For shared port testing, always return true once opened
+            // The SerialPortManager's refCount is the real indicator of port availability
             return open
         }
 
@@ -744,6 +758,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         }
 
         synchronized void reset() {
+            // Reset to initial state for new test
+            open = false
             readBuffer = new byte[0]
             readPosition = 0
         }
@@ -816,17 +832,17 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                             bb.order(ByteOrder.BIG_ENDIAN)
                             bb.putLong(-9223372036854775000L)
                             byte[] longBytes = bb.array()
-                            int copyLen = Math.min(2, 8 - (regOffset * 2))
-                            System.arraycopy(longBytes, regOffset * 2, response, responseOffset, copyLen)
+                            response[responseOffset] = longBytes[regOffset * 2]
+                            response[responseOffset + 1] = longBytes[regOffset * 2 + 1]
                         } else if (currentAddress >= 320 && currentAddress < 324) {
                             // Return 64-bit unsigned integer at registers 320-323
                             int regOffset = currentAddress - 320
                             ByteBuffer bb = ByteBuffer.allocate(8)
                             bb.order(ByteOrder.BIG_ENDIAN)
-                            bb.putLong(-616L) // This represents a large unsigned number
+                            bb.putLong(-616L) // This represents 18446744073709551000 as unsigned
                             byte[] longBytes = bb.array()
-                            int copyLen = Math.min(2, 8 - (regOffset * 2))
-                            System.arraycopy(longBytes, regOffset * 2, response, responseOffset, copyLen)
+                            response[responseOffset] = longBytes[regOffset * 2]
+                            response[responseOffset + 1] = longBytes[regOffset * 2 + 1]
                         } else if (currentAddress >= 400 && currentAddress < 402) {
                             // Return float value 42.5 for byte/word order test (BIG-BIG) at 400-401
                             if (i == 0 || currentAddress == 400) {

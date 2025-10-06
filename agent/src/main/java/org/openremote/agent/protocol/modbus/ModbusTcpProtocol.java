@@ -65,26 +65,79 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
 
     @Override
     protected void doStartProtocol(Container container) throws Exception {
-        try {
-            setConnectionStatus(ConnectionStatus.CONNECTING);
+        setConnectionStatus(ConnectionStatus.CONNECTING);
 
-            // Convert byte/word order to PLC4X format
-            String byteOrderParam = convertToPlc4xByteOrder(agent.getByteOrder(), agent.getWordOrder());
+        // Convert byte/word order to PLC4X format
+        String byteOrderParam = convertToPlc4xByteOrder(agent.getByteOrder(), agent.getWordOrder());
 
-            connectionString = "modbus-tcp://" + agent.getHost().orElseThrow()
-                    + ":" + agent.getPort().orElseThrow()
-                    + "?unit-identifier=" + agent.getUnitId()
-                    + "&byte-order=" + byteOrderParam;
+        connectionString = "modbus-tcp://" + agent.getHost().orElseThrow()
+                + ":" + agent.getPort().orElseThrow()
+                + "?unit-identifier=" + agent.getUnitId()
+                + "&byte-order=" + byteOrderParam;
 
-            client = PlcDriverManager.getDefault().getConnectionManager().getConnection(connectionString);
-            client.connect();
+        // Retry logic with exponential backoff
+        int maxRetries = 3;
+        int retryDelayMs = 500; // Start with 500ms
+        Exception lastException = null;
 
-            setConnectionStatus(client.isConnected() ? ConnectionStatus.CONNECTED : ConnectionStatus.ERROR);
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to create PLC4X connection for protocol instance: " + agent, e);
-            setConnectionStatus(ConnectionStatus.ERROR);
-            throw e;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                LOG.info("Attempting to connect to Modbus TCP " + agent.getHost().orElse("unknown") + ":" + agent.getPort().orElse(502) + " (attempt " + attempt + "/" + maxRetries + ")");
+
+                client = PlcDriverManager.getDefault().getConnectionManager().getConnection(connectionString);
+                client.connect();
+
+                if (client.isConnected()) {
+                    setConnectionStatus(ConnectionStatus.CONNECTED);
+                    LOG.info("Modbus TCP connection established successfully: " + connectionString);
+                    return; // Success - exit method
+                } else {
+                    lastException = new PlcConnectionException("PLC4X client connected but isConnected() returned false");
+                    LOG.warning("Modbus TCP connection failed on attempt " + attempt + "/" + maxRetries + ": Client not in connected state");
+
+                    // Close failed connection attempt
+                    try {
+                        if (client != null) {
+                            client.close();
+                            client = null;
+                        }
+                    } catch (Exception closeEx) {
+                        LOG.log(Level.FINE, "Error closing failed connection: " + closeEx.getMessage(), closeEx);
+                    }
+                }
+            } catch (Exception e) {
+                lastException = e;
+                LOG.log(Level.WARNING, "Exception during Modbus TCP connection (attempt " + attempt + "/" + maxRetries + "): " + e.getMessage(), e);
+
+                // Close failed connection attempt
+                try {
+                    if (client != null) {
+                        client.close();
+                        client = null;
+                    }
+                } catch (Exception closeEx) {
+                    LOG.log(Level.FINE, "Error closing failed connection: " + closeEx.getMessage(), closeEx);
+                }
+            }
+
+            // If not the last attempt, wait before retrying
+            if (attempt < maxRetries) {
+                try {
+                    LOG.info("Waiting " + retryDelayMs + "ms before retry...");
+                    Thread.sleep(retryDelayMs);
+                    retryDelayMs *= 2; // Exponential backoff: 500ms, 1000ms, 2000ms
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    LOG.warning("Retry delay interrupted, aborting connection attempt");
+                    break;
+                }
+            }
         }
+
+        // All retries exhausted
+        LOG.log(Level.SEVERE, "Failed to create PLC4X connection after " + maxRetries + " attempts: " + agent);
+        setConnectionStatus(ConnectionStatus.ERROR);
+        throw lastException != null ? lastException : new PlcConnectionException("Failed to connect after " + maxRetries + " attempts");
     }
 
     /**

@@ -71,46 +71,76 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
 
     @Override
     protected void doStartProtocol(Container container) throws Exception {
-        try {
-            setConnectionStatus(ConnectionStatus.CONNECTING);
+        setConnectionStatus(ConnectionStatus.CONNECTING);
 
-            String portName = agent.getSerialPort().orElseThrow(() -> new RuntimeException("Serial port not specified"));
-            int baudRate = agent.getBaudRate();
-            int dataBits = agent.getDataBits();
-            int stopBits = agent.getStopBits();
-            int parity = agent.getParityValue();
+        String portName = agent.getSerialPort().orElseThrow(() -> new RuntimeException("Serial port not specified"));
+        int baudRate = agent.getBaudRate();
+        int dataBits = agent.getDataBits();
+        int stopBits = agent.getStopBits();
+        int parity = agent.getParityValue();
 
-            connectionString = "modbus-rtu://" + portName + "?baud=" + baudRate + "&data=" + dataBits + "&stop=" + stopBits + "&parity=" + parity;
+        connectionString = "modbus-rtu://" + portName + "?baud=" + baudRate + "&data=" + dataBits + "&stop=" + stopBits + "&parity=" + parity;
 
-            // Acquire shared serial port through SerialPortManager
-            org.openremote.agent.protocol.serial.SerialPortWrapper wrapper = SerialPortManager.getInstance().acquirePort(
-                    portName,
-                    baudRate,
-                    dataBits,
-                    stopBits,
-                    mapParityToSerialPort(parity)
-            );
+        // Retry logic with exponential backoff
+        int maxRetries = 3;
+        int retryDelayMs = 500; // Start with 500ms
+        Exception lastException = null;
 
-            if (wrapper != null && wrapper.isOpen()) {
-                serialPort = wrapper;
-                setConnectionStatus(ConnectionStatus.CONNECTED);
-                String parityName = agent.getParity().name();
-                LOG.info("Modbus on serial device started successfully, " + portName + " (" + baudRate + "," + dataBits + "," + parityName + "," + stopBits + ")");
-            } else {
-                setConnectionStatus(ConnectionStatus.ERROR);
-                throw new RuntimeException("Failed to open serial port: " + portName);
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                LOG.info("Attempting to acquire serial port " + portName + " (attempt " + attempt + "/" + maxRetries + ")");
+
+                // Acquire shared serial port through SerialPortManager
+                org.openremote.agent.protocol.serial.SerialPortWrapper wrapper = SerialPortManager.getInstance().acquirePort(
+                        portName,
+
+                        baudRate,
+                        dataBits,
+                        stopBits,
+                        mapParityToSerialPort(parity)
+                );
+
+                if (wrapper != null && wrapper.isOpen()) {
+                    serialPort = wrapper;
+                    setConnectionStatus(ConnectionStatus.CONNECTED);
+                    String parityName = agent.getParity().name();
+                    LOG.info("Modbus on serial device started successfully, " + portName + " (" + baudRate + "," + dataBits + "," + parityName + "," + stopBits + ")");
+                    return; // Success - exit method
+                } else {
+                    lastException = new RuntimeException("Failed to open serial port: " + portName + " (wrapper " + (wrapper == null ? "is null" : "is not open") + ")");
+                    LOG.warning("Serial port acquisition failed on attempt " + attempt + "/" + maxRetries + ": " + lastException.getMessage());
+                }
+            } catch (Exception e) {
+                lastException = e;
+                LOG.log(Level.WARNING, "Exception during serial port acquisition (attempt " + attempt + "/" + maxRetries + "): " + e.getMessage(), e);
             }
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to start Modbus Serial Protocol: " + e.getMessage(), e);
-            setConnectionStatus(ConnectionStatus.ERROR);
-            throw e;
+
+            // If not the last attempt, wait before retrying
+            if (attempt < maxRetries) {
+                try {
+                    LOG.info("Waiting " + retryDelayMs + "ms before retry...");
+                    Thread.sleep(retryDelayMs);
+                    retryDelayMs *= 2; // Exponential backoff: 500ms, 1000ms, 2000ms
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    LOG.warning("Retry delay interrupted, aborting connection attempt");
+                    break;
+                }
+            }
         }
+
+        // All retries exhausted
+        LOG.log(Level.SEVERE, "Failed to start Modbus Serial Protocol after " + maxRetries + " attempts");
+        setConnectionStatus(ConnectionStatus.ERROR);
+        throw lastException != null ? lastException : new RuntimeException("Failed to acquire serial port after " + maxRetries + " attempts");
     }
 
     @Override
     protected void doStopProtocol(Container container) throws Exception {
         // Release shared serial port through SerialPortManager
-        if (serialPort != null && serialPort.isOpen()) {
+        // IMPORTANT: Always release if we have a port reference, even if isOpen() is false
+        // The port might appear "closed" during async cleanup but we still hold a reference count
+        if (serialPort != null) {
             String portName = agent.getSerialPort().orElse("unknown");
             SerialPortManager.getInstance().releasePort(
                     portName,
@@ -119,6 +149,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
                     agent.getStopBits(),
                     mapParityToSerialPort(agent.getParityValue())
             );
+            serialPort = null; // Clear reference after release
             LOG.info("Released Modbus RTU device: " + portName);
         }
 

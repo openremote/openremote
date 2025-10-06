@@ -22,9 +22,10 @@ package org.openremote.agent.protocol.serial;
 import com.fazecast.jSerialComm.SerialPort;
 import org.openremote.model.syslog.SyslogCategory;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -41,12 +42,23 @@ import java.util.logging.Logger;
 public class SerialPortManager {
 
     private static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, SerialPortManager.class);
+    private static final int PORT_CLEANUP_TIMEOUT_MS = 5000; // 5 seconds timeout for port cleanup
 
     // Singleton instance
     private static final SerialPortManager INSTANCE = new SerialPortManager();
 
     // Map of port descriptors to shared port instances
     private final Map<String, SharedSerialPort> sharedPorts = new ConcurrentHashMap<>();
+
+    // Map of ports being cleaned up (prevents immediate re-acquisition)
+    private final Map<String, Future<?>> portCleanupTasks = new ConcurrentHashMap<>();
+
+    // Executor for background port cleanup operations
+    private final ScheduledExecutorService cleanupExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "SerialPortCleanup");
+        t.setDaemon(true); // Don't prevent JVM shutdown
+        return t;
+    });
 
     // For testing: inject a mock serial port wrapper factory
     private static SerialPortWrapperFactory mockFactoryForTesting = null;
@@ -94,6 +106,26 @@ public class SerialPortManager {
 
         String portKey = createPortKey(portDescriptor, baudRate, dataBits, stopBits, parity);
 
+        // Wait for any pending cleanup to complete before acquiring
+        Future<?> pendingCleanup = portCleanupTasks.get(portKey);
+        if (pendingCleanup != null) {
+            LOG.info("Port " + portDescriptor + " is being cleaned up, waiting for completion...");
+            try {
+                pendingCleanup.get(PORT_CLEANUP_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                LOG.info("Port cleanup completed for " + portDescriptor);
+            } catch (TimeoutException e) {
+                LOG.warning("Port cleanup timed out after " + PORT_CLEANUP_TIMEOUT_MS + "ms for " + portDescriptor + ", proceeding anyway");
+                portCleanupTasks.remove(portKey); // Remove stale cleanup task
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                LOG.warning("Interrupted while waiting for port cleanup: " + portDescriptor);
+                return null;
+            } catch (ExecutionException e) {
+                LOG.log(Level.WARNING, "Port cleanup failed for " + portDescriptor + ": " + e.getMessage(), e);
+                portCleanupTasks.remove(portKey); // Remove failed cleanup task
+            }
+        }
+
         SharedSerialPort sharedPort = sharedPorts.get(portKey);
 
         if (sharedPort == null) {
@@ -139,7 +171,10 @@ public class SerialPortManager {
 
     /**
      * Release access to a serial port. Decrements the reference count, and closes
-     * the port if this was the last agent using it.
+     * the port asynchronously if this was the last agent using it.
+     *
+     * This method returns immediately. The actual port closure happens in the background
+     * to avoid blocking the caller while waiting for OS-level resource cleanup.
      *
      * @param portDescriptor Port name
      * @param baudRate Baud rate
@@ -167,15 +202,127 @@ public class SerialPortManager {
         LOG.info("Released shared serial port: " + portDescriptor + " (refCount=" + refCount + ")");
 
         if (refCount == 0) {
-            // Last agent released the port, close it
-            LOG.info("Closing shared serial port (no more references): " + portDescriptor);
-            sharedPort.actualPort.closePort();
+            // Last agent released the port - schedule asynchronous cleanup
+            LOG.info("Scheduling asynchronous cleanup for shared serial port (no more references): " + portDescriptor);
+
+            // Remove from active ports immediately to prevent new acquisitions during cleanup
             sharedPorts.remove(portKey);
+
+            // Schedule async cleanup task
+            Future<?> cleanupTask = cleanupExecutor.submit(() -> {
+                try {
+                    LOG.info("Starting port cleanup for: " + portDescriptor);
+                    boolean closed = sharedPort.actualPort.closePort();
+                    if (closed) {
+                        LOG.info("Successfully closed serial port: " + portDescriptor);
+                    } else {
+                        LOG.warning("Failed to close serial port (closePort returned false): " + portDescriptor);
+                    }
+                } catch (Exception e) {
+                    LOG.log(Level.SEVERE, "Exception during serial port cleanup for " + portDescriptor + ": " + e.getMessage(), e);
+                } finally {
+                    // Remove cleanup task from tracking map
+                    portCleanupTasks.remove(portKey);
+                    LOG.info("Port cleanup task completed for: " + portDescriptor);
+                }
+            });
+
+            portCleanupTasks.put(portKey, cleanupTask);
         }
     }
 
     private String createPortKey(String portDescriptor, int baudRate, int dataBits, int stopBits, int parity) {
         return portDescriptor + ":" + baudRate + ":" + dataBits + ":" + stopBits + ":" + parity;
+    }
+
+    /**
+     * Wait for all pending port cleanup tasks to complete.
+     * This is useful in tests or during controlled shutdown sequences to ensure
+     * all asynchronous cleanup operations have finished before proceeding.
+     *
+     * @param timeoutMs Maximum time to wait in milliseconds
+     * @throws InterruptedException if interrupted while waiting
+     * @throws TimeoutException if cleanup tasks don't complete within timeout
+     */
+    public synchronized void awaitPendingCleanups(long timeoutMs) throws InterruptedException, TimeoutException {
+        if (portCleanupTasks.isEmpty()) {
+            LOG.fine("No pending cleanup tasks to wait for");
+            return;
+        }
+
+        LOG.info("Waiting for " + portCleanupTasks.size() + " pending port cleanup task(s) to complete...");
+        long deadline = System.currentTimeMillis() + timeoutMs;
+
+        // Create a snapshot to avoid ConcurrentModificationException
+        List<Map.Entry<String, Future<?>>> tasks = new ArrayList<>(portCleanupTasks.entrySet());
+
+        for (Map.Entry<String, Future<?>> entry : tasks) {
+            long remaining = deadline - System.currentTimeMillis();
+            if (remaining <= 0) {
+                throw new TimeoutException("Timeout waiting for cleanup tasks after " + timeoutMs + "ms");
+            }
+
+            try {
+                entry.getValue().get(remaining, TimeUnit.MILLISECONDS);
+                LOG.fine("Cleanup task completed for: " + entry.getKey());
+            } catch (ExecutionException e) {
+                LOG.log(Level.WARNING, "Cleanup task failed for " + entry.getKey() + ": " + e.getMessage(), e);
+                // Continue waiting for other tasks even if one fails
+            }
+        }
+
+        LOG.info("All pending cleanup tasks completed");
+    }
+
+    /**
+     * Shutdown the SerialPortManager, closing all open ports and stopping background cleanup tasks.
+     * This should be called during application shutdown to ensure clean resource release.
+     */
+    public synchronized void shutdown() {
+        LOG.info("Shutting down SerialPortManager...");
+
+        // Close all currently open ports
+        for (Map.Entry<String, SharedSerialPort> entry : sharedPorts.entrySet()) {
+            String portKey = entry.getKey();
+            SharedSerialPort sharedPort = entry.getValue();
+            LOG.info("Closing serial port during shutdown: " + portKey + " (refCount=" + sharedPort.getRefCount() + ")");
+            try {
+                sharedPort.actualPort.closePort();
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Error closing port during shutdown: " + portKey, e);
+            }
+        }
+        sharedPorts.clear();
+
+        // Wait for pending cleanup tasks to complete
+        if (!portCleanupTasks.isEmpty()) {
+            LOG.info("Waiting for " + portCleanupTasks.size() + " pending port cleanup task(s) to complete...");
+            for (Map.Entry<String, Future<?>> entry : portCleanupTasks.entrySet()) {
+                try {
+                    entry.getValue().get(2000, TimeUnit.MILLISECONDS); // 2 second timeout per task
+                } catch (TimeoutException e) {
+                    LOG.warning("Cleanup task timed out during shutdown: " + entry.getKey());
+                    entry.getValue().cancel(true);
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, "Error waiting for cleanup task during shutdown: " + entry.getKey(), e);
+                }
+            }
+        }
+        portCleanupTasks.clear();
+
+        // Shutdown the cleanup executor
+        cleanupExecutor.shutdown();
+        try {
+            if (!cleanupExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                LOG.warning("Cleanup executor did not terminate within 5 seconds, forcing shutdown");
+                cleanupExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            cleanupExecutor.shutdownNow();
+        }
+
+        LOG.info("SerialPortManager shutdown complete");
     }
 
     /**
