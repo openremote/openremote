@@ -31,20 +31,20 @@ import java.util.Optional;
 //TODO: Make non-primitive parameters required
 public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
 
-    @JsonProperty(required=true, access = JsonProperty.Access.READ_WRITE)
+    @JsonProperty(required=true)
     @JsonPropertyDescription("Poll interval in milliseconds")
     @Min(1000)
     private Long pollingMillis;
 
-    @JsonProperty(required=true, access = JsonProperty.Access.READ_WRITE)
+    @JsonProperty(required=true)
     @JsonPropertyDescription("Memory area to read from during read request")
     private ReadMemoryArea readMemoryArea;
 
-    @JsonProperty(required=true, access = JsonProperty.Access.READ_WRITE)
+    @JsonProperty(required=true)
     @JsonPropertyDescription("Type to convert the returned data to. As specified by the PLC4X Modbus data types.")
     private ModbusDataType readValueType;
 
-    @JsonProperty(required=true, access = JsonProperty.Access.READ_WRITE)
+    @JsonProperty(required=true)
     @JsonPropertyDescription("Zero based address from which the value is read from")
     private Integer readAddress;
 
