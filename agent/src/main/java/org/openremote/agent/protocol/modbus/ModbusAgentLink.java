@@ -19,8 +19,10 @@
  */
 package org.openremote.agent.protocol.modbus;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import jakarta.validation.constraints.Min;
 import org.openremote.model.asset.agent.AgentLink;
 
 import java.math.BigInteger;
@@ -31,6 +33,7 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
 
     @JsonProperty(required=true)
     @JsonPropertyDescription("Poll interval in milliseconds")
+    @Min(1000)
     private Long pollingMillis;
 
     @JsonProperty(required=true)
@@ -52,6 +55,7 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     private Integer writeAddress;
 
     @JsonPropertyDescription("Set amount of registers to read/write. If left empty or less than 1, will use the default size for the corresponding data-type.")
+    @JsonAlias("readRegisterAmount")  // Support old field name for backward compatibility
     private Integer registersAmount;
 
     @JsonPropertyDescription("If enabled, the current attribute value will be written to the modbus register at pollingMillis interval, not just on attribute events.")
