@@ -19,17 +19,10 @@
  */
 package org.openremote.agent.protocol.simulator;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import net.fortuna.ical4j.model.Recur;
 import org.openremote.model.asset.agent.AgentLink;
-import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 
-import java.time.*;
-import java.time.chrono.ChronoLocalDateTime;
-import java.util.Date;
-import java.util.List;
 import java.util.Optional;
 
 public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
@@ -41,7 +34,6 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
     protected SimulatorReplayDatapoint[] replayData;
 
     // TODO: consider implementing @JsonSchemaFormat("calendar-event") to reuse the `or-rule-validity` component.
-    // Current generator cannot handle injecting custom type and description at the same time
     @JsonPropertyDescription("When defined overwrites the possible dataset length and when it is replayed." +
         " This could be once when only a start- (and end) date are defined," +
         " or a recurring event following the RFC 5545 RRULE format." +

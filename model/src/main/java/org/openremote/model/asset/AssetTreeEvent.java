@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2025, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,28 +17,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.query.filter;
+package org.openremote.model.asset;
 
-import org.openremote.model.util.JSONSchemaUtil.*;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.event.shared.SharedEvent;
 
-import java.util.Objects;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+/**
+ * This event is used in response to a {@link ReadAssetTreeEvent}.
+ */
+public class AssetTreeEvent extends SharedEvent {
 
-@JsonSchemaTitle("Empty value")
-@JsonSchemaDescription("Predicate that matches any empty/null value; unless negated.")
-public class ValueEmptyPredicate extends ValuePredicate {
+    protected AssetTree assetTree;
 
-    public static final String name = "value-empty";
-    public boolean negate;
+    @JsonCreator
+    public AssetTreeEvent(@JsonProperty("assetTree") AssetTree assetTree) {
+        this.assetTree = assetTree;
+    }
 
-    public ValueEmptyPredicate negate(boolean negate) {
-        this.negate = negate;
-        return this;
+    public AssetTree getAssetTree() {
+        return assetTree;
     }
 
     @Override
-    public Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier) {
-        return obj -> negate != Objects.isNull(obj);
+    public String toString() {
+        return AssetTreeEvent.class.getSimpleName() + "{" +
+                ", assetTree=" + assetTree.toString() +
+                '}';
     }
 }
