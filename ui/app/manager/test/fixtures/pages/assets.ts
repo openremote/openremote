@@ -36,7 +36,7 @@ export class AssetsPage implements BasePage {
    * @param asset The asset name
    */
   async deleteSelectedAsset(asset: string) {
-    const assetLocator = this.page.locator(`text=${asset}`);
+    const assetLocator = this.page.locator(`text="${asset}"`);
     await expect(assetLocator).toHaveCount(1);
     await assetLocator.click();
     await this.page.click(".mdi-delete");

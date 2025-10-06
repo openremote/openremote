@@ -41,6 +41,7 @@ import {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
 import "./or-add-asset-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {when} from "lit/directives/when.js";
+import {debounce} from "lodash";
 
 export interface AssetTreeTypeConfig {
     include?: string[];
@@ -316,7 +317,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     @state()
     protected _filter: OrAssetTreeFilter = new OrAssetTreeFilter();
-    protected _searchInputTimer?: number = undefined;
     @query("#clearIconContainer")
     protected _clearIconContainer!: HTMLElement;
     @query("#filterInput")
@@ -488,14 +488,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                   placeholder="${i18next.t("filter.filter")}..."
                                   compact="true"
                                   outlined="true"
-                                  @input="${(e: KeyboardEvent) => {
+                                  @input="${debounce((e: KeyboardEvent) => {
                                       // Means some input is occurring so delay filter
-                                      this._onFilterInputEvent(e);
-                                  }}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      // Means field has lost focus so do filter immediately
-                                      this._onFilterInput((e.detail.value as string) || undefined, true);
-                                  }}">
+                                      this._onFilterInput(this._filterInput.nativeValue);
+                                  }, 200)}">
                     </or-mwc-input>
                     <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" title="${i18next.t(this._filterSettingOpen ? "filter.close" : "filter.open")}" @click="${() => {
                         if (this._filterSettingOpen) {
@@ -1111,32 +1107,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         this._doFiltering();
     }
 
-    protected _onFilterInputEvent(_e: KeyboardEvent) {
-        this._onFilterInput(this._filterInput?.nativeValue, false);
-    }
-
-    protected _onFilterInput(newValue: string | undefined, force: boolean): void {
+    protected _onFilterInput(newValue: string | undefined): void {
         this.applyFilter(newValue);
-
-        if (this._searchInputTimer) {
-            clearTimeout(this._searchInputTimer);
-        }
-
-        if (!force) {
-            this._searchInputTimer = window.setTimeout(() => {
-                this._doFiltering();
-            }, 350);
-        } else {
-            this._doFiltering();
-        }
+        this._doFiltering();
     }
 
     protected async _doFiltering() {
-        // Clear timeout in case we got here from value change
-        if (this._searchInputTimer) {
-            clearTimeout(this._searchInputTimer);
-            this._searchInputTimer = undefined;
-        }
 
         if (this.isConnected && this._nodes) {
 
@@ -1295,7 +1271,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         // Query parents of the found assets if not cached yet.
-        const parentIds = new Set(foundAssets.filter(a => a.path).flatMap(a => a.path!).slice(0, -1));
+        const parentIds = new Set(foundAssets.filter(a => a.path && a.path.length > 1).flatMap(a => a.path!.slice(0, -1)));
         const unknownParentIds = Array.from(parentIds).filter(id => id && !this.assets?.find(a => a.id === id)) as string[];
         if (unknownParentIds.length > 0) {
             try {

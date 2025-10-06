@@ -61,15 +61,17 @@ async function applyParentAssets(parentAssets: Asset[], manager: Manager) {
  * @then The asset list should be complete and should not display any artifacts or visual errors.
  */
 test(`Check if assets are visible in the tree`, async ({ assetTree, manager, assetsPage }) => {
-    await manager.setup("smartcity", { assets: [...createBatteryAssets(2), ...createElectricityAssets(2)] });
+    const batteryAssets = createBatteryAssets(2);
+    const electricityAssets = createElectricityAssets(2)
+    await manager.setup("smartcity", { assets: [...batteryAssets, ...electricityAssets] });
     await applyParentAssets(parentAssets, manager);
     await manager.goToRealmStartPage("smartcity");
     await assetsPage.goto();
 
     // Check if City Asset 1, City Asset 2 and Consoles group asset are listed.
     await expect(assetTree.getAssetNodes()).toHaveCount(3);
-    await expect(assetTree.getAssetNodes().nth(0)).toContainText(parentAssets[0].name);
-    await expect(assetTree.getAssetNodes().nth(1)).toContainText(parentAssets[1].name);
+    await expect(assetTree.getAssetNodes().nth(0)).toContainText(parentAssets[0].name!);
+    await expect(assetTree.getAssetNodes().nth(1)).toContainText(parentAssets[1].name!);
     await expect(assetTree.getAssetNodes().nth(2)).toContainText('Consoles');
     await expect(assetTree.getAssetNodes().locator('.expander')).toHaveCount(3);
 
@@ -77,12 +79,13 @@ test(`Check if assets are visible in the tree`, async ({ assetTree, manager, ass
     const cityAsset1 = assetTree.getAssetNodes().filter({ hasText: parentAssets[0].name });
     await cityAsset1.locator('.expander').click();
     await expect(assetTree.getAssetNodes()).toHaveCount(3 + 2);
-    await expect(assetTree.getChildNodes(cityAsset1)).toHaveText([batteryAsset.name, electricityAsset.name]);
+    await expect(assetTree.getChildNodes(cityAsset1)).toHaveText(batteryAssets.map(a => a.name));
 
     // Check if expandable of City Asset 2 is correct.
     const cityAsset2 = assetTree.getAssetNodes().filter({ hasText: parentAssets[1].name });
     await cityAsset2.locator('.expander').click();
     await expect(assetTree.getAssetNodes()).toHaveCount(3 + 2 + 2);
+    await expect(assetTree.getChildNodes(cityAsset2)).toHaveText(electricityAssets.map(a => a.name));
 
     // Check if expandable of Consoles group asset is correct.
     const consoleAsset = assetTree.getAssetNodes().filter({ hasText: 'Consoles' });
@@ -217,15 +220,48 @@ test(`Deleting an asset properly keeps the tree and viewer in tact`, async ({ pa
 /**
  * @given 20 assets are loaded in the "smartcity" realm
  * @when Logging in to the OpenRemote "smartcity" realm
- * @and Selecting an asset from the list
+ * @and Searching for an asset using the filter
+ * @and The asset is appearing in the list as expected
+ * @and The asset is selected
+ * @then Attempting to remove the asset from the list succeeds
+ * @and the asset list should be updated, but kept in the same state without visual artifacts
  */
-/*test(`Searching for an asset and removing it keeps the tree and viewer in tact`, async ({page, manager, assetsPage, assetTree}) => {
+test(`Searching for an asset and removing it keeps the tree and viewer in tact`, async ({page, manager, assetsPage, assetTree}) => {
     const batteryAssets = createBatteryAssets(10);
     const electricityAssets = createElectricityAssets(10);
-    const assets = [...batteryAssets, ...electricityAssets];
-    await manager.setup("smartcity", { assets: assets });
+    await manager.setup("smartcity", { assets: [...batteryAssets, ...electricityAssets] });
     await applyParentAssets(parentAssets, manager);
     await manager.goToRealmStartPage("smartcity");
     await assetsPage.goto();
+
+    // Fill in "Battery 10", and expect that single asset + parent to show up
+    const battery10 = batteryAssets[batteryAssets.length - 1];
     await expect(assetTree.getAssetNodes()).toHaveCount(3); // 2 parent assets + 1 console group
-})*/
+    await assetTree.fillFilterInput(battery10.name);
+    await expect(assetTree.getAssetNodes()).toContainText([parentAssets[0].name!, battery10.name]);
+    await expect(assetTree.getAssetNodes()).toHaveCount(2); // Parent asset + child battery asset
+    await page.click(`text=${battery10.name}`);
+    await expect(assetTree.getSelectedNodes()).toHaveCount(1);
+    await expect(page.locator(`#asset-header`, { hasText: battery10.name })).toBeVisible();
+
+    // Fill in "Electricity meter 1", and expect that single asset + "Electricity meter 10", and their parent to show up"
+    const meter1 = electricityAssets[0];
+    const meter10 = electricityAssets[electricityAssets.length - 1];
+    await assetTree.fillFilterInput(meter1.name);
+    await expect(assetTree.getAssetNodes()).toContainText([parentAssets[1].name!, meter1.name]);
+    await expect(assetTree.getAssetNodes()).toHaveCount(2 + 1); // Parent asset + the two electricity meter assets
+
+    // Attempt to select and delete the "Electricity meter 1"
+    await assetsPage.deleteSelectedAsset(meter1.name);
+    await expect(assetTree.getSelectedNodes()).toHaveCount(0);
+    await expect(assetTree.getAssetNodes()).toContainText([parentAssets[1].name!, meter10.name]);
+    await expect(assetTree.getAssetNodes()).toHaveCount(1 + 1); // Only parent + "Electricity meter 10" are visible now.
+
+    // We now clear the filter, and try to delete "Battery 10" from earlier as well
+    await assetTree.fillFilterInput(battery10.name);
+    await expect(assetTree.getAssetNodes()).toContainText([parentAssets[0].name!, battery10.name]);
+    await expect(assetTree.getAssetNodes()).toHaveCount(2); // Parent asset + child electricity asset
+    await assetsPage.deleteSelectedAsset(battery10.name);
+    await expect(assetTree.getSelectedNodes()).toHaveCount(0);
+    await expect(assetTree.getAssetNodes()).toHaveCount(0); // Nothing is visible anymore, since there is nothing matching the "Battery 10" text filter.
+})
