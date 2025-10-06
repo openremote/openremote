@@ -23,6 +23,7 @@ import com.fazecast.jSerialComm.SerialPort;
 import org.openremote.agent.protocol.serial.SerialPortManager;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
@@ -127,14 +128,19 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
     @Override
     protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
         int writeAddress = getOrThrowAgentLinkProperty(agentLink.getWriteAddress(), "write address");
-        
+        int registersCount = agentLink.getRegistersAmount().orElse(1);
+
         try {
             switch (agentLink.getWriteMemoryArea()) {
                 case COIL:
                     writeSingleCoil(agent.getUnitId(), writeAddress, (Boolean) processedValue);
                     break;
                 case HOLDING:
-                    writeSingleHoldingRegister(agent.getUnitId(), writeAddress, processedValue);
+                    if (registersCount > 1) {
+                        writeMultipleHoldingRegisters(agent.getUnitId(), writeAddress, registersCount, processedValue);
+                    } else {
+                        writeSingleHoldingRegister(agent.getUnitId(), writeAddress, processedValue);
+                    }
                     break;
                 default:
                     throw new IllegalStateException("Only COIL and HOLDING memory areas are supported for writing");
@@ -459,6 +465,40 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
             }
         }
     }
+
+    private boolean writeMultipleHoldingRegisters(int unitId, int address, int quantity, Object value) {
+        // Synchronize on the serial port's shared lock to ensure atomic write-read cycles across all agents sharing the port
+        synchronized (serialPort.getSynchronizationLock()) {
+            try {
+                // Convert value to byte array based on quantity
+                byte[] registerData = convertValueToRegisters(value, quantity);
+
+                byte[] request = createWriteMultipleRegistersRequest(unitId, (byte) 0x10, address, quantity, registerData);
+
+                int bytesWritten = serialPort.writeBytes(request, request.length);
+                if (bytesWritten != request.length) {
+                    LOG.warning("Incomplete write: " + bytesWritten + " of " + request.length + " bytes");
+                    return false;
+                }
+
+                // Read response (8 bytes for write multiple registers)
+                byte[] response = new byte[8];
+                int totalBytesRead = readWithTimeout(response, 50);
+
+                if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {
+                    int exceptionCode = response[2] & 0xFF;
+                    LOG.warning("Modbus exception response on write multiple registers - Exception code: " + exceptionCode + " (Address: " + address + ", Quantity: " + quantity + ") - Resetting agent");
+                    resetAgent();
+                    return false;
+                }
+                return true;
+
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Error writing multiple registers: " + e.getMessage(), e);
+                return false;
+            }
+        }
+    }
     
     private int readWithTimeout(byte[] buffer, long timeoutMs) throws InterruptedException {
         long startTime = System.currentTimeMillis();
@@ -516,12 +556,107 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         frame[3] = (byte) (registerAddress & 0xFF);
         frame[4] = (byte) (value >> 8);
         frame[5] = (byte) (value & 0xFF);
-        
+
         int crc = calculateCRC16(frame, 0, 6);
         frame[6] = (byte) (crc & 0xFF);
         frame[7] = (byte) (crc >> 8);
-        
+
         return frame;
+    }
+
+    private byte[] createWriteMultipleRegistersRequest(int unitId, byte functionCode, int startAddress, int quantity, byte[] registerData) {
+        int byteCount = quantity * 2;
+        byte[] frame = new byte[9 + byteCount];
+
+        frame[0] = (byte) unitId;
+        frame[1] = functionCode;
+        frame[2] = (byte) (startAddress >> 8);
+        frame[3] = (byte) (startAddress & 0xFF);
+        frame[4] = (byte) (quantity >> 8);
+        frame[5] = (byte) (quantity & 0xFF);
+        frame[6] = (byte) byteCount;
+
+        // Copy register data
+        System.arraycopy(registerData, 0, frame, 7, byteCount);
+
+        int crc = calculateCRC16(frame, 0, 7 + byteCount);
+        frame[7 + byteCount] = (byte) (crc & 0xFF);
+        frame[8 + byteCount] = (byte) (crc >> 8);
+
+        return frame;
+    }
+
+    /**
+     * Convert a value to register bytes based on the number of registers.
+     * Applies byte and word order based on agent configuration.
+     */
+    private byte[] convertValueToRegisters(Object value, int registerCount) {
+        byte[] data;
+
+        if (registerCount == 1) {
+            // Single register (16-bit)
+            int intValue;
+            if (value instanceof Integer) {
+                intValue = (Integer) value;
+            } else if (value instanceof Number) {
+                intValue = ((Number) value).intValue();
+            } else {
+                throw new IllegalArgumentException("Cannot convert value to register: " + value);
+            }
+            data = new byte[2];
+            data[0] = (byte) (intValue >> 8);
+            data[1] = (byte) (intValue & 0xFF);
+        } else if (registerCount == 2) {
+            // Two registers (32-bit int or float)
+            data = new byte[4];
+            if (value instanceof Float) {
+                ByteBuffer buffer = ByteBuffer.allocate(4);
+                buffer.order(getJavaByteOrder());
+                buffer.putFloat((Float) value);
+                data = buffer.array();
+            } else if (value instanceof Integer) {
+                ByteBuffer buffer = ByteBuffer.allocate(4);
+                buffer.order(getJavaByteOrder());
+                buffer.putInt((Integer) value);
+                data = buffer.array();
+            } else if (value instanceof Number) {
+                ByteBuffer buffer = ByteBuffer.allocate(4);
+                buffer.order(getJavaByteOrder());
+                buffer.putInt(((Number) value).intValue());
+                data = buffer.array();
+            } else {
+                throw new IllegalArgumentException("Cannot convert value to 2 registers: " + value);
+            }
+            // Apply word order
+            data = applyWordOrder(data, 2);
+        } else if (registerCount == 4) {
+            // Four registers (64-bit int or double)
+            data = new byte[8];
+            if (value instanceof Double) {
+                ByteBuffer buffer = ByteBuffer.allocate(8);
+                buffer.order(getJavaByteOrder());
+                buffer.putDouble((Double) value);
+                data = buffer.array();
+            } else if (value instanceof Long) {
+                ByteBuffer buffer = ByteBuffer.allocate(8);
+                buffer.order(getJavaByteOrder());
+                buffer.putLong((Long) value);
+                data = buffer.array();
+            } else if (value instanceof Number) {
+                ByteBuffer buffer = ByteBuffer.allocate(8);
+                buffer.order(getJavaByteOrder());
+                buffer.putLong(((Number) value).longValue());
+                data = buffer.array();
+            } else {
+                throw new IllegalArgumentException("Cannot convert value to 4 registers: " + value);
+            }
+            // Apply word order
+            data = applyWordOrder(data, 4);
+        } else {
+            throw new IllegalArgumentException("Unsupported register count for write: " + registerCount);
+        }
+
+        return data;
     }
     
     private int calculateCRC16(byte[] data, int offset, int length) {
@@ -761,6 +896,37 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         }
 
         return null;
+    }
+
+    @Override
+    protected ScheduledFuture<?> scheduleModbusPollingWriteRequest(AttributeRef ref, ModbusAgentLink agentLink) {
+        LOG.fine("Scheduling Modbus Write polling request to execute every " + agentLink.getPollingMillis() + "ms for attributeRef: " + ref);
+
+        return scheduledExecutorService.scheduleWithFixedDelay(() -> {
+            try {
+                // Get current attribute value
+                Attribute<?> attribute = linkedAttributes.get(ref);
+                if (attribute == null || attribute.getValue().isEmpty()) {
+                    LOG.finest("Skipping write poll for " + ref + " - no value available");
+                    return;
+                }
+
+                Object currentValue = attribute.getValue().orElse(null);
+                if (currentValue == null) {
+                    return;
+                }
+
+                // Create a synthetic AttributeEvent for the write
+                AttributeEvent syntheticEvent = new AttributeEvent(ref, currentValue);
+
+                // Perform the write using the existing write logic
+                doLinkedAttributeWrite(agentLink, syntheticEvent, currentValue);
+
+                LOG.finest("Write poll executed for " + ref + " with value: " + currentValue);
+            } catch (Exception e) {
+                LOG.log(Level.FINE, "Exception during Modbus Write polling for " + ref + ": " + e.getMessage(), e);
+            }
+        }, 0, agentLink.getPollingMillis(), TimeUnit.MILLISECONDS);
     }
 
     /**

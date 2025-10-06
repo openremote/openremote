@@ -29,6 +29,7 @@ import org.apache.plc4x.java.api.messages.PlcWriteResponse;
 import org.apache.plc4x.java.api.types.PlcResponseCode;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
@@ -124,9 +125,9 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
 
         PlcReadRequest.Builder builder = client.readRequestBuilder();
 
-        int readAmountOfRegisters = (amountOfRegisters.isEmpty() || amountOfRegisters.get() < 1)
+        int registersCount = (amountOfRegisters.isEmpty() || amountOfRegisters.get() < 1)
                 ? dataType.getRegisterCount() : amountOfRegisters.get();
-        String amountOfRegistersString = readAmountOfRegisters <= 1 ? "" : "["+readAmountOfRegisters+"]";
+        String amountOfRegistersString = registersCount <= 1 ? "" : "["+registersCount+"]";
 
         int address = readAddress.orElseThrow(() -> new RuntimeException("Read Address is empty! Unable to schedule read request."));
 
@@ -149,7 +150,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
 
                 // PLC4X returns values at index 0 for all cases (single or multi-register)
                 Object responseValue = response.getObject(responseTag, 0);
-                LOG.log(Level.INFO, "TCP Read: tag=" + responseTag + ", registers=" + readAmountOfRegisters + ", value=" + responseValue + ", type=" + (responseValue != null ? responseValue.getClass().getName() : "null"));
+                LOG.log(Level.INFO, "TCP Read: tag=" + responseTag + ", registers=" + registersCount + ", value=" + responseValue + ", type=" + (responseValue != null ? responseValue.getClass().getName() : "null"));
                 updateLinkedAttribute(ref, responseValue);
             } catch (Exception e) {
                 LOG.log(Level.WARNING,"Exception during Modbus Read polling for " + ref + ": " + e.getMessage(), e);
@@ -160,12 +161,15 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
     @Override
     protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
         int writeAddress = getOrThrowAgentLinkProperty(agentLink.getWriteAddress(), "write address");
+        int registersCount = agentLink.getRegistersAmount().orElse(1);
 
         PlcWriteRequest.Builder builder = client.writeRequestBuilder();
 
+        String amountString = registersCount <= 1 ? "" : "[" + registersCount + "]";
+
         switch (agentLink.getWriteMemoryArea()){
-            case COIL -> builder.addTagAddress("coil", "coil:" + writeAddress, processedValue);
-            case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + writeAddress, processedValue);
+            case COIL -> builder.addTagAddress("coil", "coil:" + writeAddress + amountString, processedValue);
+            case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + writeAddress + amountString, processedValue);
             default -> throw new IllegalStateException("Only COIL and HOLDING memory areas are supported for writing");
         }
 
@@ -221,7 +225,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                 }
 
                 try {
-                    int registerCount = agentLink.getReadRegistersAmount().orElse(agentLink.getReadValueType().getRegisterCount());
+                    int registerCount = agentLink.getRegistersAmount().orElse(agentLink.getReadValueType().getRegisterCount());
                     ModbusAgentLink.ModbusDataType dataType = agentLink.getReadValueType();
 
                     // Extract value using helper method that handles multi-register conversion
@@ -239,6 +243,37 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
         } catch (Exception e) {
             LOG.log(Level.FINE, "Exception during batch read: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    protected ScheduledFuture<?> scheduleModbusPollingWriteRequest(AttributeRef ref, ModbusAgentLink agentLink) {
+        LOG.fine("Scheduling Modbus Write polling request to execute every " + agentLink.getPollingMillis() + "ms for attributeRef: " + ref);
+
+        return scheduledExecutorService.scheduleWithFixedDelay(() -> {
+            try {
+                // Get current attribute value
+                Attribute<?> attribute = linkedAttributes.get(ref);
+                if (attribute == null || attribute.getValue().isEmpty()) {
+                    LOG.finest("Skipping write poll for " + ref + " - no value available");
+                    return;
+                }
+
+                Object currentValue = attribute.getValue().orElse(null);
+                if (currentValue == null) {
+                    return;
+                }
+
+                // Create a synthetic AttributeEvent for the write
+                AttributeEvent syntheticEvent = new AttributeEvent(ref, currentValue);
+
+                // Perform the write using the existing write logic
+                doLinkedAttributeWrite(agentLink, syntheticEvent, currentValue);
+
+                LOG.finest("Write poll executed for " + ref + " with value: " + currentValue);
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Exception during Modbus Write polling for " + ref + ": " + e.getMessage(), e);
+            }
+        }, 0, agentLink.getPollingMillis(), TimeUnit.MILLISECONDS);
     }
 
     @Override

@@ -45,6 +45,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected final Map<String, Map<AttributeRef, ModbusAgentLink>> batchGroups = new ConcurrentHashMap<>();
     protected final Map<String, List<BatchReadRequest>> cachedBatches = new ConcurrentHashMap<>();
     protected final Map<String, ScheduledFuture<?>> batchPollingTasks = new ConcurrentHashMap<>();
+    protected final Map<AttributeRef, ScheduledFuture<?>> writePollingMap = new HashMap<>();
 
     protected Set<RegisterRange> illegalRegisters = new HashSet<>();
 
@@ -165,6 +166,9 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
         batchGroups.clear();
         cachedBatches.clear();
 
+        writePollingMap.forEach((key, value) -> value.cancel(false));
+        writePollingMap.clear();
+
         // Call protocol-specific stop
         doStopProtocol(container);
     }
@@ -203,10 +207,17 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                         agentLink.getPollingMillis(),
                         agentLink.getReadMemoryArea(),
                         agentLink.getReadValueType(),
-                        agentLink.getReadRegistersAmount(),
+                        agentLink.getRegistersAmount(),
                         agentLink.getReadAddress()
                     )
             );
+        }
+
+        // Check if write polling is enabled
+        if (agentLink.getWriteWithPollingRate().orElse(false) && agentLink.getWriteAddress().isPresent()) {
+            ScheduledFuture<?> writeTask = scheduleModbusPollingWriteRequest(ref, agentLink);
+            writePollingMap.put(ref, writeTask);
+            LOG.fine("Scheduled write polling task for attribute " + ref + " every " + agentLink.getPollingMillis() + "ms");
         }
     }
 
@@ -218,7 +229,13 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
         ScheduledFuture<?> pollTask = pollingMap.remove(attributeRef);
         if (pollTask != null) {
             pollTask.cancel(false);
-            return;
+        }
+
+        // Remove from write polling
+        ScheduledFuture<?> writeTask = writePollingMap.remove(attributeRef);
+        if (writeTask != null) {
+            writeTask.cancel(false);
+            LOG.fine("Cancelled write polling task for attribute " + attributeRef);
         }
 
         // Remove from batch group
@@ -277,7 +294,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             for (Map.Entry<AttributeRef, ModbusAgentLink> entry : sortedAttributes) {
                 ModbusAgentLink link = entry.getValue();
                 int address = link.getReadAddress().orElse(0);
-                int registerCount = link.getReadRegistersAmount().orElse(link.getReadValueType().getRegisterCount());
+                int registerCount = link.getRegistersAmount().orElse(link.getReadValueType().getRegisterCount());
 
                 // Check if we can add to current batch
                 if (currentBatch != null) {
@@ -385,5 +402,14 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             ModbusAgentLink.ModbusDataType dataType,
             Optional<Integer> amountOfRegisters,
             Optional<Integer> readAddress
+    );
+
+    /**
+     * Schedule a polling write request for an attribute with writeWithPollingRate enabled.
+     * Subclasses must implement protocol-specific polling write logic.
+     */
+    protected abstract ScheduledFuture<?> scheduleModbusPollingWriteRequest(
+            AttributeRef ref,
+            ModbusAgentLink agentLink
     );
 }

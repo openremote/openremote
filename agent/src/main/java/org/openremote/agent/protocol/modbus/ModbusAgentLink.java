@@ -51,8 +51,11 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     @JsonPropertyDescription("Zero-based address to which the value sent is written to")
     private Integer writeAddress;
 
-    @JsonPropertyDescription("Set amount of registers to read. If left empty or less than 1, will use the default size for the corresponding data-type.")
-    private Integer readRegistersAmount;
+    @JsonPropertyDescription("Set amount of registers to read/write. If left empty or less than 1, will use the default size for the corresponding data-type.")
+    private Integer registersAmount;
+
+    @JsonPropertyDescription("If enabled, the current attribute value will be written to the modbus register at pollingMillis interval, not just on attribute events.")
+    private Boolean writeWithPollingRate;
 
     public long getPollingMillis() {
         return pollingMillis;
@@ -102,12 +105,20 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         this.writeAddress = writeAddress;
     }
 
-    public Optional<Integer> getReadRegistersAmount() {
-        return Optional.ofNullable(readRegistersAmount);
+    public Optional<Integer> getRegistersAmount() {
+        return Optional.ofNullable(registersAmount);
     }
 
-    public void setReadRegistersAmount(Integer readRegistersAmount) {
-        this.readRegistersAmount = writeAddress;
+    public void setRegistersAmount(Integer registersAmount) {
+        this.registersAmount = registersAmount;
+    }
+
+    public Optional<Boolean> getWriteWithPollingRate() {
+        return Optional.ofNullable(writeWithPollingRate);
+    }
+
+    public void setWriteWithPollingRate(Boolean writeWithPollingRate) {
+        this.writeWithPollingRate = writeWithPollingRate;
     }
 
     public enum ReadMemoryArea {
