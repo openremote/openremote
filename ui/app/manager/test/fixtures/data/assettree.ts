@@ -1,4 +1,6 @@
-export const parentAssets = [
+import type {Asset} from "@openremote/model";
+
+export const parentAssets: Asset[] = [
     {
         name: "City Asset 1",
         type: "CityAsset",

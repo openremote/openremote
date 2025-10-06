@@ -30,12 +30,26 @@ test.afterEach(async ({ manager }) => {
     await manager.cleanUp();
 });
 
+function createBatteryAssets(amount: number) {
+    return Array.from({ length: amount }, (_, i) => ({
+        ...batteryAsset,
+        name: `Battery ${i + 1}`
+    }));
+}
+
+function createElectricityAssets(amount: number) {
+    return Array.from({ length: amount }, (_, i) => ({
+        ...electricityAsset,
+        name: `Electricity meter ${i + 1}`
+    }));
+}
+
 // Utility function to create parent assets, and apply assets as children
 async function applyParentAssets(parentAssets: Asset[], manager: Manager) {
     await Promise.all(parentAssets.map(a => manager.createAsset(a)));
     const cityIds = manager.assets.filter(a => a.type === "CityAsset").sort((a, b) => a.name!.localeCompare(b.name!)).map(a => a.id);
     const childAssets = manager.assets.filter(a => a.type !== "CityAsset");
-    childAssets.forEach(ca => ca.parentId = cityIds[0]);
+    childAssets.forEach(((ca, i) => ca.parentId = cityIds[Math.floor(i / (childAssets.length / cityIds.length))]));
     await Promise.all(childAssets.map(ca => manager.updateAsset(ca)));
 }
 
@@ -47,7 +61,7 @@ async function applyParentAssets(parentAssets: Asset[], manager: Manager) {
  * @then The asset list should be complete and should not display any artifacts or visual errors.
  */
 test(`Check if assets are visible in the tree`, async ({ assetTree, manager, assetsPage }) => {
-    await manager.setup("smartcity", { assets: [batteryAsset, electricityAsset] });
+    await manager.setup("smartcity", { assets: [...createBatteryAssets(2), ...createElectricityAssets(2)] });
     await applyParentAssets(parentAssets, manager);
     await manager.goToRealmStartPage("smartcity");
     await assetsPage.goto();
@@ -68,14 +82,14 @@ test(`Check if assets are visible in the tree`, async ({ assetTree, manager, ass
     // Check if expandable of City Asset 2 is correct.
     const cityAsset2 = assetTree.getAssetNodes().filter({ hasText: parentAssets[1].name });
     await cityAsset2.locator('.expander').click();
-    await expect(assetTree.getAssetNodes()).toHaveCount(3 + 2 + 0);
+    await expect(assetTree.getAssetNodes()).toHaveCount(3 + 2 + 2);
 
     // Check if expandable of Consoles group asset is correct.
     const consoleAsset = assetTree.getAssetNodes().filter({ hasText: 'Consoles' });
     await consoleAsset.locator('.expander').click();
     await expect.poll(async () => await assetTree.getAssetNodes().count(), {
         message: "Waiting for the Console assets to appear..."
-    }).toBeGreaterThanOrEqual(3 + 2 + 0 + 1); // (there is at least 1 console, but could be more with a larger test suite)
+    }).toBeGreaterThanOrEqual(3 + 2 + 2 + 1); // (there is at least 1 console, but could be more with a larger test suite)
 });
 
 /**
@@ -160,3 +174,58 @@ test(`Load more buttons are shown when there are a lot of assets`, async ({ page
     await page.locator('.loadmore-element or-mwc-input').click();
     await expect(assetTree.getAssetNodes()).toHaveCount(5);
 })
+
+/**
+ * @given 20 assets are loaded in the "smartcity" realm
+ * @when Logging in to the OpenRemote "smartcity" realm
+ * @and Selecting an asset from the list
+ * @and Attempting to delete the asset
+ * @then The asset should be deleted
+ * @and The asset list should be updated, but kept in the same state without visual artifacts
+ * @and The asset detail page should be closed
+ */
+test(`Deleting an asset properly keeps the tree and viewer in tact`, async ({ page, manager, assetsPage, assetTree }) => {
+    const batteryAssets = createBatteryAssets(10);
+    const electricityAssets = createElectricityAssets(10);
+    const assets = [...batteryAssets, ...electricityAssets];
+    await manager.setup("smartcity", { assets: assets });
+    await applyParentAssets(parentAssets, manager);
+    await manager.goToRealmStartPage("smartcity");
+    await assetsPage.goto();
+    await expect(assetTree.getAssetNodes()).toHaveCount(3); // 2 parent assets + 1 console group
+
+    // Expand both City Asset 1 and City Asset 2
+    const cityAsset1 = assetTree.getAssetNodes().filter({ hasText: parentAssets[0].name });
+    await cityAsset1.locator('.expander').click();
+    await expect(assetTree.getChildNodes(cityAsset1)).toHaveCount(assets.length / 2);
+    const cityAsset2 = assetTree.getAssetNodes().filter({ hasText: parentAssets[1].name });
+    await cityAsset2.locator('.expander').click();
+    await expect(assetTree.getChildNodes(cityAsset2)).toHaveCount(assets.length / 2);
+    await expect(assetTree.getAssetNodes()).toHaveCount(1 + 10 + 1 + 10 + 1);
+
+    // Delete battery asset 5 of the first city, and check if state is the same
+    await assetsPage.deleteSelectedAsset(batteryAssets[4].name);
+    await expect(assetTree.getSelectedNodes()).toHaveCount(0);
+    await expect(assetTree.getChildNodes(cityAsset1)).toHaveCount(assets.length / 2 - 1);
+    await expect(assetTree.getChildNodes(cityAsset2)).toHaveCount(assets.length / 2);
+    await expect(assetTree.getAssetNodes()).toHaveCount(1 + 9 + 1 + 10 + 1);
+    await expect(page.locator('or-asset-tree li.asset-list-element .expander[data-expandable]')).toHaveCount(3);
+    await expect(page.locator('or-asset-tree li.asset-list-element[data-expanded] .expander[data-expandable]')).toHaveCount(2);
+    await expect(page.locator('or-asset-viewer or-translate')).toHaveAttribute('value', 'noAssetSelected');
+})
+
+/**
+ * @given 20 assets are loaded in the "smartcity" realm
+ * @when Logging in to the OpenRemote "smartcity" realm
+ * @and Selecting an asset from the list
+ */
+/*test(`Searching for an asset and removing it keeps the tree and viewer in tact`, async ({page, manager, assetsPage, assetTree}) => {
+    const batteryAssets = createBatteryAssets(10);
+    const electricityAssets = createElectricityAssets(10);
+    const assets = [...batteryAssets, ...electricityAssets];
+    await manager.setup("smartcity", { assets: assets });
+    await applyParentAssets(parentAssets, manager);
+    await manager.goToRealmStartPage("smartcity");
+    await assetsPage.goto();
+    await expect(assetTree.getAssetNodes()).toHaveCount(3); // 2 parent assets + 1 console group
+})*/

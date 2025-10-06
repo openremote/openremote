@@ -276,7 +276,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     @property({type: Boolean})
     public readonly disableSubscribe: boolean = false;
 
-    @property({type: Array, reflect: true})
+    @property({type: Array})
     public selectedIds?: string[];
 
     @property({type: Boolean})
@@ -634,7 +634,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             return true;
         }
 
-        if (_changedProperties.has("selectedIds") && this.selectedIds?.length) {
+        if (_changedProperties.has("selectedIds") && this.selectedIds !== undefined) {
             const previous: string[] | undefined = _changedProperties.get("selectedIds");
             if (!Util.objectsEqual(previous, this.selectedIds)) {
                 this._updateSelectedNodes();
@@ -707,7 +707,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         if(actuallySelectedIds?.length) {
             this.selectedIds = actuallySelectedIds;
         }
-        if(selectedNodes !== undefined) {
+        if(selectedNodes !== undefined || this.selectedNodes !== undefined) {
             const oldSelection = this._selectedNodes;
             this._selectedNodes = selectedNodes ?? [];
             this.dispatchEvent(new OrAssetTreeSelectionEvent({
@@ -1636,17 +1636,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             }, {
                 paramsSerializer: params => Qs.stringify(params, {arrayFormat: 'repeat'})
             }).then((response) => {
-                // Clear nodes to re-fetch them
-                this.refresh();
-                this.disabled = false;
-
+                this._onDeselectClicked();
                 if (response.status !== 204) {
                     showErrorDialog(i18next.t("deleteAssetsFailed"));
                 }
             }).catch((reason) => {
-                this.refresh();
-                this.disabled = false;
                 showErrorDialog(i18next.t("deleteAssetsFailed"));
+            }).finally(() => {
+                this.disabled = false;
             });
         };
 
