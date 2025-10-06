@@ -405,7 +405,7 @@ jobs:
           inputEnv = os.getenv('INPUT_ENVIRONMENT')
           managerVersion = os.getenv('MANAGER_VERSION')
 
-          if eventName == 'workflow_dispatch' and refType != 'tag' and inputEnv and inputEnv.strip():
+          if eventName == 'workflow_dispatch' and refType != 'tag':
             if isMainRepo:
               tag=inputTag
               if not inputTag:
