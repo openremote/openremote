@@ -43,9 +43,11 @@ import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.util.HttpString;
+import jakarta.ws.rs.core.Application;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.security.IdentityService;
+import org.openremote.container.web.WebApplication;
 import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
 
@@ -56,13 +58,11 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static io.undertow.util.RedirectBuilder.redirect;
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
@@ -127,6 +127,17 @@ public class ManagerWebService extends WebService {
         addOpenApiResource();
 
         initialised = true;
+
+       Application application = new WebApplication(container, apiClasses, apiSingletons);
+       ResteasyDeployment deployment = createResteasyDeployment(application, container.getService(IdentityService.class), true);
+       DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, API_PATH, "Manager HTTP API");
+
+        ResteasyDeployment deployment = createDeployment(application);
+        DeploymentInfo deploymentInfo = createDeploymentInfo(deployment);
+        configureDeploymentInfo(deploymentInfo);
+        deploy(deploymentInfo);
+
+
         ResteasyDeployment resteasyDeployment = createResteasyDeployment(container, getApiClasses(), apiSingletons, true);
 
         // Serve REST API
@@ -326,33 +337,6 @@ public class ManagerWebService extends WebService {
 
     public Path getCustomAppDocRoot() {
         return customAppDocRoot;
-    }
-
-    protected HttpHandler createApiHandler(Container container, ResteasyDeployment resteasyDeployment) {
-        if (resteasyDeployment == null)
-            return null;
-
-        ServletInfo restServlet = Servlets.servlet("RESTEasy Servlet", HttpServlet30Dispatcher.class)
-                .setAsyncSupported(true)
-                .setLoadOnStartup(1)
-                .addMapping("/*");
-
-        DeploymentInfo deploymentInfo = new DeploymentInfo()
-                .setDeploymentName("RESTEasy Deployment")
-                .setContextPath(API_PATH)
-                .addServletContextAttribute(ResteasyDeployment.class.getName(), resteasyDeployment)
-                .addServlet(restServlet)
-                .setClassLoader(Container.class.getClassLoader());
-
-        IdentityService identityService = container.getService(IdentityService.class);
-
-        if (identityService != null) {
-            resteasyDeployment.setSecurityEnabled(true);
-        } else {
-            throw new RuntimeException("No identity service deployed, can't enable API security");
-        }
-
-        return addServletDeployment(container, deploymentInfo, resteasyDeployment.isSecurityEnabled());
     }
 
     public static HttpHandler createFileHandler(Container container, ResourceManager resourceManager, String[] requiredRoles) {

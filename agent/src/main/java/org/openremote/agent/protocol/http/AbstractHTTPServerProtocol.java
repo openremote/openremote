@@ -30,6 +30,7 @@ import org.jboss.resteasy.plugins.interceptors.CorsFilter;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.container.security.IdentityProvider;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.*;
 import org.openremote.model.Constants;
@@ -49,10 +50,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static org.openremote.container.web.WebService.configureDeploymentInfo;
-import static org.openremote.container.web.WebService.getStandardProviders;
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
+import static org.openremote.container.web.WebService.*;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
@@ -107,79 +107,29 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
 
         webService = container.getService(WebService.class);
 
-        Application application = createApplication();
-        ResteasyDeployment deployment = createDeployment(application);
-        DeploymentInfo deploymentInfo = createDeploymentInfo(deployment);
-        configureDeploymentInfo(deploymentInfo);
+        boolean secure = agent.isRoleBasedSecurity().orElse(false);
+        String deploymentPath = getDeploymentPath();
+        String deploymentName = getDeploymentName();
+
+       Application application = new WebApplication(
+          container,
+          null,
+          Stream.of(
+             getStandardProviders(
+                devMode,
+                agent.getAllowedOrigins().map(Set::of).orElse(null),
+                Optional.of(agent.getAllowedHTTPMethods()
+                   .orElse(DEFAULT_ALLOWED_METHODS)).map(Set::of).orElse(null)),
+             getApiSingletons()).flatMap(Collection::stream).toList());
+
+        ResteasyDeployment deployment = createResteasyDeployment(application, identityService, secure);
+        DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, deploymentPath, deploymentName);
         deploy(deploymentInfo);
     }
 
     @Override
     protected void doStop(Container container) throws Exception {
         undeploy();
-    }
-
-    protected Application createApplication() {
-        List<Object> providers = getStandardProviders(this.devMode);
-        providers = providers == null ? new ArrayList<>() : providers;
-        providers.addAll(getApiSingletons());
-        return new WebApplication(container, null, providers);
-    }
-
-    protected ResteasyDeployment createDeployment(Application application) {
-        ResteasyDeployment resteasyDeployment = new ResteasyDeploymentImpl();
-        resteasyDeployment.setApplication(application);
-
-        List<String> allowedOrigins;
-
-        if (devMode) {
-            allowedOrigins = Collections.singletonList("*");
-        } else {
-            allowedOrigins = agent.getAllowedOrigins().map(Arrays::asList).orElse(null);
-        }
-
-        if (allowedOrigins != null) {
-            String allowedMethods = Arrays.stream(agent.getAllowedHTTPMethods().orElse(DEFAULT_ALLOWED_METHODS)).map(Enum::name).collect(Collectors.joining(","));
-            CorsFilter corsFilter = new CorsFilter();
-            corsFilter.getAllowedOrigins().addAll(allowedOrigins);
-            corsFilter.setAllowedMethods(allowedMethods);
-            resteasyDeployment.getProviders().add(corsFilter);
-        }
-
-        return resteasyDeployment;
-    }
-
-    protected DeploymentInfo createDeploymentInfo(ResteasyDeployment resteasyDeployment) {
-        String deploymentPath = getDeploymentPath();
-        String deploymentName = getDeploymentName();
-
-        boolean enableSecurity = agent.isRoleBasedSecurity().orElse(false);
-
-        if (enableSecurity) {
-            if (identityService == null) {
-                throw new RuntimeException("Role based security can only be enabled when an identity service is available");
-            }
-        }
-
-        resteasyDeployment.setSecurityEnabled(enableSecurity);
-
-        ServletInfo resteasyServlet = Servlets.servlet("ResteasyServlet", HttpServlet30Dispatcher.class)
-                .setAsyncSupported(true)
-                .setLoadOnStartup(1)
-                .addMapping("/*");
-
-        DeploymentInfo deploymentInfo = new DeploymentInfo()
-                .setDeploymentName(deploymentName)
-                .setContextPath(deploymentPath)
-                .addServletContextAttribute(ResteasyDeployment.class.getName(), resteasyDeployment)
-                .addServlet(resteasyServlet)
-                .setClassLoader(Container.class.getClassLoader());
-
-        if (enableSecurity) {
-            identityService.secureDeployment(deploymentInfo);
-        }
-
-        return deploymentInfo;
     }
 
     /**

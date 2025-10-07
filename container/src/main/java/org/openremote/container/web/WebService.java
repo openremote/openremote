@@ -30,14 +30,18 @@ import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
+import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
 import io.undertow.util.HeaderMap;
 import io.undertow.websockets.core.WebSocketChannel;
 import jakarta.servlet.DispatcherType;
+import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.core.ResteasyDeploymentImpl;
+import org.jboss.resteasy.plugins.interceptors.CorsFilter;
 import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
+import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.CORSFilter;
@@ -45,6 +49,7 @@ import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.http.HTTPMethod;
 import org.openremote.model.util.TextUtil;
 import org.xnio.Options;
 
@@ -128,6 +133,7 @@ public abstract class WebService implements ContainerService {
     protected static WebServiceExceptions.DefaultResteasyExceptionMapper defaultResteasyExceptionMapper;
     protected static WebServiceExceptions.ForbiddenResteasyExceptionMapper forbiddenResteasyExceptionMapper;
     protected static JacksonConfig jacksonConfig;
+    protected static GZIPEncodingInterceptor gzipEncodingInterceptor;
     protected static AlreadyGzippedWriterInterceptor alreadyGzippedWriterInterceptor;
     protected static ClientErrorExceptionHandler clientErrorExceptionHandler;
     protected static WebServiceExceptions.ServletUndertowExceptionHandler undertowExceptionHandler;
@@ -242,15 +248,10 @@ public abstract class WebService implements ContainerService {
         }
     }
 
-    public static void configureDeploymentInfo(DeploymentInfo deploymentInfo) {
-        // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
-        deploymentInfo.setExceptionHandler(undertowExceptionHandler);
-    }
-
     /**
      * Get standard JAX-RS providers that are used in the deployment.
      */
-    public static List<Object> getStandardProviders(boolean devMode) {
+    public static List<Object> getStandardProviders(boolean devMode, Set<String> allowedOrigins, Set<HTTPMethod> allowedMethods) {
         if (defaultResteasyExceptionMapper == null) {
             defaultResteasyExceptionMapper = new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode);
             forbiddenResteasyExceptionMapper = new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode);
@@ -258,14 +259,39 @@ public abstract class WebService implements ContainerService {
             jacksonConfig = new JacksonConfig();
             alreadyGzippedWriterInterceptor = new AlreadyGzippedWriterInterceptor();
             clientErrorExceptionHandler = new ClientErrorExceptionHandler();
+            gzipEncodingInterceptor = new GZIPEncodingInterceptor();
         }
-        return Lists.newArrayList(
+        List<Object> providers = Lists.newArrayList(
                 defaultResteasyExceptionMapper,
                 forbiddenResteasyExceptionMapper,
+                undertowExceptionHandler,
                 jacksonConfig,
                 alreadyGzippedWriterInterceptor,
                 clientErrorExceptionHandler
         );
+
+        if (!devMode) {
+           providers.add(gzipEncodingInterceptor);
+        }
+
+        if (devMode && allowedOrigins == null) {
+           allowedOrigins = Collections.singleton("*");
+        }
+
+        if (allowedOrigins != null) {
+           CorsFilter corsFilter = new CorsFilter();
+           corsFilter.getAllowedOrigins().addAll(allowedOrigins);
+
+           if (allowedMethods != null) {
+              corsFilter.setAllowedMethods(
+                 allowedMethods.stream().map(Enum::name).collect(Collectors.joining(","))
+              );
+           }
+           providers.add(corsFilter);
+        }
+
+
+        return providers;
     }
 
     /**
@@ -334,29 +360,37 @@ public abstract class WebService implements ContainerService {
         return builder;
     }
 
-    protected ResteasyDeployment createResteasyDeployment(Container container, Collection<Class<?>> apiClasses, Collection<Object> apiSingletons, boolean secure) {
-        if (apiClasses == null && apiSingletons == null)
-            return null;
-        WebApplication webApplication = new WebApplication(container, apiClasses, apiSingletons);
-        ResteasyDeployment resteasyDeployment = new ResteasyDeploymentImpl();
-        resteasyDeployment.setApplication(webApplication);
+   static protected ResteasyDeployment createResteasyDeployment(Application application, IdentityService identityService, boolean secure) {
+      ResteasyDeployment resteasyDeployment = new ResteasyDeploymentImpl();
+      resteasyDeployment.setApplication(application);
+      if (secure) {
+         if (identityService == null) {
+            throw new RuntimeException("Role based security can only be enabled when an identity service is available");
+         }
+         resteasyDeployment.setSecurityEnabled(true);
+         identityService.secureDeployment(resteasyDeployment);
+      }
+      return resteasyDeployment;
+   }
 
-        // Custom providers (these only apply to server applications, not client calls)
-        resteasyDeployment.getProviders().add(new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode));
-        resteasyDeployment.getProviders().add(new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode));
-        resteasyDeployment.getProviders().add(new JacksonConfig());
+   static protected DeploymentInfo createDeploymentInfo(ResteasyDeployment resteasyDeployment, String deploymentPath, String deploymentName) {
 
-        if (!container.isDevMode()) {
-            resteasyDeployment.getProviders().add(GZIPEncodingInterceptor.class);
-        }
-        resteasyDeployment.getActualProviderClasses().add(AlreadyGzippedWriterInterceptor.class);
-        resteasyDeployment.getActualProviderClasses().add(ClientErrorExceptionHandler.class);
-        //resteasyDeployment.getActualProviderClasses().add(RequestLogger.class);
+      ServletInfo resteasyServlet = Servlets.servlet("ResteasyServlet", HttpServlet30Dispatcher.class)
+         .setAsyncSupported(true)
+         .setLoadOnStartup(1)
+         .addMapping("/*");
 
-        resteasyDeployment.setSecurityEnabled(secure);
+      DeploymentInfo deploymentInfo = new DeploymentInfo()
+         .setDeploymentName(deploymentName)
+         .setContextPath(deploymentPath)
+         .addServletContextAttribute(ResteasyDeployment.class.getName(), resteasyDeployment)
+         .addServlet(resteasyServlet)
+         .setClassLoader(Container.class.getClassLoader());
 
-        return resteasyDeployment;
-    }
+      // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
+      deploymentInfo.setExceptionHandler(undertowExceptionHandler);
+      return deploymentInfo;
+   }
 
     public Undertow getUndertow() {
         return undertow;
