@@ -21,7 +21,6 @@ package org.openremote.agent.protocol.modbus;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
 import org.openremote.model.asset.agent.AgentLink;
@@ -127,12 +126,7 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     }
 
     public enum ReadMemoryArea {
-        COIL, DISCRETE, HOLDING, INPUT;
-
-        @JsonValue
-        public String toValue() {
-            return name();
-        }
+        COIL, DISCRETE, HOLDING, INPUT
     }
 
     public enum ModbusDataType {
@@ -169,20 +163,10 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         public Integer getRegisterCount() {
             return registerCount;
         }
-
-        @JsonValue
-        public String toValue() {
-            return name();
-        }
     }
 
     public enum WriteMemoryArea {
-        COIL, HOLDING;
-
-        @JsonValue
-        public String toValue() {
-            return name();
-        }
+        COIL, HOLDING
     }
 
 
