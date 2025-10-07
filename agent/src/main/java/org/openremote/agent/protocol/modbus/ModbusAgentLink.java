@@ -26,7 +26,6 @@ import org.openremote.model.asset.agent.AgentLink;
 import java.math.BigInteger;
 import java.util.Optional;
 
-//TODO: Make non-primitive parameters required
 public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
 
     @NotNull()
