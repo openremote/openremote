@@ -237,6 +237,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
     private Object performModbusRead(int unitId, byte functionCode, int address, int quantity, ModbusAgentLink.ModbusDataType dataType) {
         // Synchronize on the serial port's shared lock to ensure atomic write-read cycles across all agents sharing the port
         synchronized (serialPort.getSynchronizationLock()) {
+            String messageId = "read_" + unitId + "_" + functionCode + "_" + address + "_" + quantity;
             LOG.info("Performing Modbus Read" + unitId + functionCode + address + quantity);
             try {
                 byte[] request = createModbusRequest(unitId, functionCode, address, quantity);
@@ -260,20 +261,22 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
 
                 if (totalBytesRead >= 5 && response[0] == unitId && response[1] == functionCode) {
                     LOG.info("-------------MODBUS DEBUG RESPONSE------------- Address:"+ address  );
-
+                    onRequestSuccess(messageId);
                     return parseModbusResponse(response, functionCode, dataType);
                 } else if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {
                     int exceptionCode = response[2] & 0xFF;
-                    LOG.warning("Modbus exception response - Exception code: " + exceptionCode + " (Function: " + functionCode + ", Address: " + address + ") - Resetting agent");
-                    resetAgent();
+                    onRequestFailure(messageId, "Modbus read function=" + functionCode + " address=" + address,
+                        "Exception code: " + exceptionCode);
                 } else if (totalBytesRead == 0) {
-                    LOG.warning("Modbus read timeout - no response received (Function: " + functionCode + ", Address: " + address + ", Unit: " + unitId + ")");
+                    onRequestFailure(messageId, "Modbus read function=" + functionCode + " address=" + address + " unit=" + unitId,
+                        "Timeout - no response received");
                 } else {
-                    LOG.warning("Modbus invalid response - received " + totalBytesRead + " bytes, expected " + expectedResponseLength + " (Function: " + functionCode + ", Address: " + address + ", Unit: " + unitId + ")");
+                    onRequestFailure(messageId, "Modbus read function=" + functionCode + " address=" + address + " unit=" + unitId,
+                        "Invalid response - received " + totalBytesRead + " bytes, expected " + expectedResponseLength);
                 }
 
             } catch (Exception e) {
-                LOG.log(Level.FINE, "Error reading from Modbus device: " + e.getMessage(), e);
+                onRequestFailure(messageId, "Modbus read function=" + functionCode + " address=" + address, e);
             }
 
             return null;
@@ -427,6 +430,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
     private boolean writeSingleCoil(int unitId, int address, boolean value) {
         // Synchronize on the serial port's shared lock to ensure atomic write-read cycles across all agents sharing the port
         synchronized (serialPort.getSynchronizationLock()) {
+            String messageId = "write_coil_" + unitId + "_" + address;
             try {
                 byte[] request = createWriteCoilRequest(unitId, (byte) 0x05, address, value);
 
@@ -442,15 +446,15 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
 
                 if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {
                     int exceptionCode = response[2] & 0xFF;
-                    LOG.warning("Modbus exception response on write coil - Exception code: " + exceptionCode + " (Address: " + address + ") - Resetting agent");
-                    resetAgent();
+                    onRequestFailure(messageId, "Write single coil address=" + address,
+                        "Exception code: " + exceptionCode);
                     return false;
                 }
+                onRequestSuccess(messageId);
                 return true;
 
-
             } catch (Exception e) {
-                LOG.log(Level.WARNING, "Error writing single coil: " + e.getMessage(), e);
+                onRequestFailure(messageId, "Write single coil address=" + address, e);
                 return false;
             }
         }
@@ -459,6 +463,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
     private boolean writeSingleHoldingRegister(int unitId, int address, Object value) {
         // Synchronize on the serial port's shared lock to ensure atomic write-read cycles across all agents sharing the port
         synchronized (serialPort.getSynchronizationLock()) {
+            String messageId = "write_holding_" + unitId + "_" + address;
             try {
                 int registerValue;
                 if (value instanceof Integer) {
@@ -483,15 +488,15 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
 
                 if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {
                     int exceptionCode = response[2] & 0xFF;
-                    LOG.warning("Modbus exception response on write register - Exception code: " + exceptionCode + " (Address: " + address + ") - Resetting agent");
-                    resetAgent();
+                    onRequestFailure(messageId, "Write single register address=" + address,
+                        "Exception code: " + exceptionCode);
                     return false;
                 }
+                onRequestSuccess(messageId);
                 return true;
 
-
             } catch (Exception e) {
-                LOG.log(Level.WARNING, "Error writing single register: " + e.getMessage(), e);
+                onRequestFailure(messageId, "Write single register address=" + address, e);
                 return false;
             }
         }
@@ -500,6 +505,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
     private boolean writeMultipleHoldingRegisters(int unitId, int address, int quantity, Object value) {
         // Synchronize on the serial port's shared lock to ensure atomic write-read cycles across all agents sharing the port
         synchronized (serialPort.getSynchronizationLock()) {
+            String messageId = "write_multiple_" + unitId + "_" + address + "_" + quantity;
             try {
                 // Convert value to byte array based on quantity
                 byte[] registerData = convertValueToRegisters(value, quantity);
@@ -518,14 +524,15 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
 
                 if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {
                     int exceptionCode = response[2] & 0xFF;
-                    LOG.warning("Modbus exception response on write multiple registers - Exception code: " + exceptionCode + " (Address: " + address + ", Quantity: " + quantity + ") - Resetting agent");
-                    resetAgent();
+                    onRequestFailure(messageId, "Write multiple registers address=" + address + " quantity=" + quantity,
+                        "Exception code: " + exceptionCode);
                     return false;
                 }
+                onRequestSuccess(messageId);
                 return true;
 
             } catch (Exception e) {
-                LOG.log(Level.WARNING, "Error writing multiple registers: " + e.getMessage(), e);
+                onRequestFailure(messageId, "Write multiple registers address=" + address + " quantity=" + quantity, e);
                 return false;
             }
         }
@@ -785,6 +792,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
     private byte[] performModbusBatchRead(int unitId, byte functionCode, int address, int quantity) {
         // Synchronize on the serial port's shared lock to ensure atomic write-read cycles across all agents sharing the port
         synchronized (serialPort.getSynchronizationLock()) {
+            String messageId = "batch_" + unitId + "_" + functionCode + "_" + address + "_" + quantity;
             LOG.fine("Performing batch Modbus read: unit=" + unitId + ", function=" + functionCode + ", address=" + address + ", quantity=" + quantity);
             try {
                 byte[] request = createModbusRequest(unitId, functionCode, address, quantity);
@@ -807,24 +815,28 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
                 int totalBytesRead = readWithTimeout(response, 50);
 
                 if (totalBytesRead == expectedResponseLength && response[0] == unitId && response[1] == functionCode) {
+                    onRequestSuccess(messageId);
                     return response;
                 } else if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {
                     int exceptionCode = response[2] & 0xFF;
                     int endAddress = address + quantity - 1;
-                    LOG.warning("Modbus exception response in batch read - Exception code: " + exceptionCode + " (Function: " + functionCode + ", Registers: " + address + "-" + endAddress + ", Unit: " + unitId + ") - This may indicate illegal/unsupported registers in range. Consider adding them to 'illegalRegisters' agent configuration. Resetting agent.");
-                    resetAgent();
+                    onRequestFailure(messageId, "Batch read function=" + functionCode + " registers=" + address + "-" + endAddress + " unit=" + unitId,
+                        "Exception code: " + exceptionCode + " - This may indicate illegal/unsupported registers in range. Consider adding them to 'illegalRegisters' agent configuration.");
                 } else if (totalBytesRead == 0) {
                     int endAddress = address + quantity - 1;
-                    LOG.warning("Modbus batch read timeout - no response received (Function: " + functionCode + ", Registers: " + address + "-" + endAddress + ", Unit: " + unitId + ")");
+                    onRequestFailure(messageId, "Batch read function=" + functionCode + " registers=" + address + "-" + endAddress + " unit=" + unitId,
+                        "Timeout - no response received");
                 } else if (totalBytesRead != expectedResponseLength) {
                     int endAddress = address + quantity - 1;
-                    LOG.warning("Modbus invalid batch response - received " + totalBytesRead + " bytes, expected " + expectedResponseLength + " (Function: " + functionCode + ", Registers: " + address + "-" + endAddress + ", Unit: " + unitId + ") - This may indicate illegal/unsupported registers in range. Consider adding them to 'illegalRegisters' agent configuration.");
+                    onRequestFailure(messageId, "Batch read function=" + functionCode + " registers=" + address + "-" + endAddress + " unit=" + unitId,
+                        "Invalid response - received " + totalBytesRead + " bytes, expected " + expectedResponseLength + " - This may indicate illegal/unsupported registers in range. Consider adding them to 'illegalRegisters' agent configuration.");
                 } else {
-                    LOG.warning("Modbus batch response validation failed - Unit ID or Function Code mismatch (received unitId=" + (response[0] & 0xFF) + ", expected=" + unitId + ", received function=" + (response[1] & 0xFF) + ", expected=" + functionCode + ")");
+                    onRequestFailure(messageId, "Batch read function=" + functionCode + " address=" + address + " unit=" + unitId,
+                        "Response validation failed - Unit ID or Function Code mismatch (received unitId=" + (response[0] & 0xFF) + ", expected=" + unitId + ", received function=" + (response[1] & 0xFF) + ", expected=" + functionCode + ")");
                 }
 
             } catch (Exception e) {
-                LOG.log(Level.FINE, "Error in batch Modbus read: " + e.getMessage(), e);
+                onRequestFailure(messageId, "Batch read function=" + functionCode + " address=" + address + " quantity=" + quantity, e);
             }
 
             return null;
@@ -960,77 +972,4 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         }, 0, agentLink.getPollingMillis(), TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * Reset the agent by reconnecting the serial port and recreating polling tasks
-     */
-    private void resetAgent() {
-        scheduledExecutorService.execute(() -> {
-            try {
-                LOG.info("Resetting Modbus Serial agent - reconnecting serial port");
-
-                // Cancel all existing batch polling tasks and clear caches
-                batchPollingTasks.values().forEach(future -> future.cancel(false));
-                batchPollingTasks.clear();
-                cachedBatches.clear(); // Clear cached batches on reset
-
-                // Release and re-acquire serial port
-                String portName = agent.getSerialPort().orElseThrow(() -> new RuntimeException("Serial port not specified"));
-                int baudRate = agent.getBaudRate();
-                int dataBits = agent.getDataBits();
-                int stopBits = agent.getStopBits();
-                int parity = agent.getParityValue();
-
-                if (serialPort != null && serialPort.isOpen()) {
-                    SerialPortManager.getInstance().releasePort(
-                            portName, baudRate, dataBits, stopBits, mapParityToSerialPort(parity)
-                    );
-                    LOG.info("Serial port released for reset");
-                }
-
-                // Wait before reconnecting
-                Thread.sleep(1000);
-
-                // Reopen serial port
-                setConnectionStatus(ConnectionStatus.CONNECTING);
-
-                org.openremote.agent.protocol.serial.SerialPortWrapper wrapper = SerialPortManager.getInstance().acquirePort(
-                        portName, baudRate, dataBits, stopBits, mapParityToSerialPort(parity)
-                );
-
-                if (wrapper == null || !wrapper.isOpen()) {
-                    setConnectionStatus(ConnectionStatus.ERROR);
-                    throw new RuntimeException("Failed to reopen serial port: " + portName);
-                }
-
-                serialPort = wrapper;
-
-                LOG.info("Serial port reopened successfully");
-                setConnectionStatus(ConnectionStatus.CONNECTED);
-
-                // Recreate batch polling tasks for all groups
-                Map<String, Map<AttributeRef, ModbusAgentLink>> groupsCopy = new HashMap<>(batchGroups);
-                for (Map.Entry<String, Map<AttributeRef, ModbusAgentLink>> entry : groupsCopy.entrySet()) {
-                    String groupKey = entry.getKey();
-                    Map<AttributeRef, ModbusAgentLink> group = entry.getValue();
-
-                    if (!group.isEmpty()) {
-                        // Extract memoryArea and pollingInterval from groupKey: agentName_memoryArea_pollingInterval
-                        String[] parts = groupKey.split("_");
-                        ModbusAgentLink.ReadMemoryArea memoryArea = ModbusAgentLink.ReadMemoryArea.valueOf(parts[1]);
-                        long pollingMillis = Long.parseLong(parts[2]);
-
-                        ScheduledFuture<?> batchTask = scheduleBatchedPollingTask(groupKey, memoryArea, pollingMillis);
-                        batchPollingTasks.put(groupKey, batchTask);
-                        LOG.info("Recreated batch polling task for group " + groupKey + " with " + group.size() + " attributes");
-                    }
-                }
-
-                LOG.info("Modbus Serial agent reset complete");
-
-            } catch (Exception e) {
-                LOG.log(Level.SEVERE, "Failed to reset Modbus Serial agent: " + e.getMessage(), e);
-                setConnectionStatus(ConnectionStatus.ERROR);
-            }
-        });
-    }
 }

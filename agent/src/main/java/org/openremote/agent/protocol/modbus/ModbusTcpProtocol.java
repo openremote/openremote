@@ -195,6 +195,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
 
         LOG.log(Level.FINE,"Scheduling Modbus Read Value polling request to execute every " + pollingMillis + "ms for attributeRef: " + ref);
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
+            String messageId = "tcp_read_" + ref.getId() + "_" + ref.getName() + "_" + address;
             try {
                 PlcReadResponse response = readRequest.execute().get(3, TimeUnit.SECONDS);
 
@@ -204,9 +205,10 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                 // PLC4X returns values at index 0 for all cases (single or multi-register)
                 Object responseValue = response.getObject(responseTag, 0);
                 LOG.log(Level.INFO, "TCP Read: tag=" + responseTag + ", registers=" + registersCount + ", value=" + responseValue + ", type=" + (responseValue != null ? responseValue.getClass().getName() : "null"));
+                onRequestSuccess(messageId);
                 updateLinkedAttribute(ref, responseValue);
             } catch (Exception e) {
-                LOG.log(Level.WARNING,"Exception during Modbus Read polling for " + ref + ": " + e.getMessage(), e);
+                onRequestFailure(messageId, "Modbus TCP read polling for " + ref, e);
             }
         }, 0, pollingMillis, TimeUnit.MILLISECONDS);
     }
@@ -215,6 +217,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
     protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
         int writeAddress = getOrThrowAgentLinkProperty(agentLink.getWriteAddress(), "write address");
         int registersCount = agentLink.getRegistersAmount().orElse(1);
+        String messageId = "tcp_write_" + event.getRef().getId() + "_" + event.getRef().getName() + "_" + writeAddress;
 
         PlcWriteRequest.Builder builder = client.writeRequestBuilder();
 
@@ -231,15 +234,19 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
         try {
             PlcWriteResponse response = request.execute().get(3, TimeUnit.SECONDS);
             if (response.getResponseCode(response.getTagNames().stream().findFirst().orElseThrow()) != PlcResponseCode.OK){
+                onRequestFailure(messageId, "Modbus TCP write address=" + writeAddress, "PLC Write Response code is not OK: " + response.getResponseCode(response.getTagNames().stream().findFirst().orElseThrow()));
                 throw new IllegalStateException("PLC Write Response code is something other than \"OK\"");
             }
+            onRequestSuccess(messageId);
         } catch (Exception e) {
+            onRequestFailure(messageId, "Modbus TCP write address=" + writeAddress, e);
             throw new RuntimeException(e);
         }
     }
 
     @Override
     protected void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group) {
+        String messageId = "tcp_batch_" + memoryArea + "_" + batch.startAddress + "_" + batch.quantity;
         try {
             PlcReadRequest.Builder builder = client.readRequestBuilder();
 
@@ -263,9 +270,11 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
             PlcReadResponse response = readRequest.execute().get(3, TimeUnit.SECONDS);
 
             if (response.getResponseCode("batchRead") != PlcResponseCode.OK) {
-                LOG.warning("Batch read failed for " + tagAddress + ": " + response.getResponseCode("batchRead"));
+                onRequestFailure(messageId, "Modbus TCP batch read " + tagAddress, "Response code: " + response.getResponseCode("batchRead"));
                 return;
             }
+
+            onRequestSuccess(messageId);
 
             // Extract values for each attribute in the batch
             for (int i = 0; i < batch.attributes.size(); i++) {
@@ -294,7 +303,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
             }
 
         } catch (Exception e) {
-            LOG.log(Level.FINE, "Exception during batch read: " + e.getMessage(), e);
+            onRequestFailure(messageId, "Modbus TCP batch read " + memoryArea + " address=" + batch.startAddress + " quantity=" + batch.quantity, e);
         }
     }
 

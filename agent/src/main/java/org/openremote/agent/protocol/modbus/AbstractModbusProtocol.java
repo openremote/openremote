@@ -21,6 +21,7 @@ package org.openremote.agent.protocol.modbus;
 
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
@@ -48,6 +49,9 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected final Map<AttributeRef, ScheduledFuture<?>> writePollingMap = new HashMap<>();
 
     protected Set<RegisterRange> illegalRegisters = new HashSet<>();
+
+    // Track failed message identifiers - only clear ERROR state when this set is empty
+    protected final Set<String> failedMessageIds = ConcurrentHashMap.newKeySet();
 
     public AbstractModbusProtocol(T agent) {
         super(agent);
@@ -412,4 +416,43 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             AttributeRef ref,
             ModbusAgentLink agentLink
     );
+
+    /**
+     * Called when a Modbus request succeeds. Removes this message from failed set.
+     * If all messages have succeeded (failed set is empty), recovers connection to CONNECTED.
+     * @param messageId Unique identifier for this message/request
+     */
+    protected void onRequestSuccess(String messageId) {
+        failedMessageIds.remove(messageId);
+
+        if (agent.getAgentStatus().orElse(null) == ConnectionStatus.ERROR && failedMessageIds.isEmpty()) {
+            setConnectionStatus(ConnectionStatus.CONNECTED);
+            LOG.info("Connection recovered - all messages now succeeding");
+        }
+    }
+
+    /**
+     * Called when a Modbus request fails. Adds this message to failed set and sets connection status to ERROR.
+     * @param messageId Unique identifier for this message/request
+     * @param operation Description of the operation that failed
+     * @param e The exception that occurred
+     */
+    protected void onRequestFailure(String messageId, String operation, Exception e) {
+        failedMessageIds.add(messageId);
+        setConnectionStatus(ConnectionStatus.ERROR);
+        LOG.log(Level.WARNING, "Request failed for " + operation + " [id=" + messageId + "]: " + e.getMessage(), e);
+    }
+
+    /**
+     * Called when a Modbus request times out or receives invalid response.
+     * Adds this message to failed set and sets connection status to ERROR.
+     * @param messageId Unique identifier for this message/request
+     * @param operation Description of the operation that failed
+     * @param reason Reason for the failure
+     */
+    protected void onRequestFailure(String messageId, String operation, String reason) {
+        failedMessageIds.add(messageId);
+        setConnectionStatus(ConnectionStatus.ERROR);
+        LOG.warning("Request failed for " + operation + " [id=" + messageId + "]: " + reason);
+    }
 }
