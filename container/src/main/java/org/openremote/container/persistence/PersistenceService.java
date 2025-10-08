@@ -530,21 +530,11 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         // Now applied it here (so it is excluded for the migration process), to prevent that flyway drops the extension during cleanup.
         StringBuilder initSql = new StringBuilder();
 
-
         // CRITICAL: Set at DATABASE level (higher priority than role level)
         initSql.append("ALTER DATABASE ").append(databaseName).append(" SET search_path TO ").append(schemaName).append(", public, topology;");
 
-// 3. Set at ROLE level (persistent for this user)
-//        initSql.append("ALTER ROLE ").append(databaseUsername).append(" IN DATABASE ").append(schemaName).append(" SET search_path TO ").append(schemaName).append(", public;");
-
-// 4. Set for current session (immediate effect)
-//        initSql.append("SET search_path TO ").append(schemaName).append(", public;");
-
-// 5. Create extensions in public schema
         initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb SCHEMA public cascade;");
-//        initSql.append("ALTER EXTENSION timescaledb UPDATE;");
         initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit SCHEMA public cascade;");
-//        initSql.append("ALTER EXTENSION timescaledb_toolkit UPDATE;");
 
         flyway = Flyway.configure()
             .cleanDisabled(false)
