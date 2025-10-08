@@ -211,14 +211,14 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                         agentLink.getPollingMillis(),
                         agentLink.getReadMemoryArea(),
                         agentLink.getReadValueType(),
-                        agentLink.getRegistersAmount(),
-                        agentLink.getReadAddress()
+                        Optional.ofNullable(agentLink.getRegistersAmount()),
+                        Optional.ofNullable(agentLink.getReadAddress())
                     )
             );
         }
 
         // Check if write polling is enabled
-        if (agentLink.getWriteWithPollingRate().orElse(false) && agentLink.getWriteAddress().isPresent()) {
+        if (Optional.ofNullable(agentLink.getWriteWithPollingRate()).orElse(false) && Optional.ofNullable(agentLink.getWriteAddress()).isPresent()) {
             ScheduledFuture<?> writeTask = scheduleModbusPollingWriteRequest(ref, agentLink);
             writePollingMap.put(ref, writeTask);
             LOG.fine("Scheduled write polling task for attribute " + ref + " every " + agentLink.getPollingMillis() + "ms");
@@ -289,7 +289,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
         for (Map.Entry<ModbusAgentLink.ReadMemoryArea, List<Map.Entry<AttributeRef, ModbusAgentLink>>> group : groupedByMemoryArea.entrySet()) {
             // Sort by address
             List<Map.Entry<AttributeRef, ModbusAgentLink>> sortedAttributes = group.getValue().stream()
-                    .sorted(Comparator.comparingInt(e -> e.getValue().getReadAddress().orElse(0)))
+                    .sorted(Comparator.comparingInt(e -> Optional.ofNullable(e.getValue().getReadAddress()).orElse(0)))
                     .collect(Collectors.toList());
 
             BatchReadRequest currentBatch = null;
@@ -297,8 +297,8 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
             for (Map.Entry<AttributeRef, ModbusAgentLink> entry : sortedAttributes) {
                 ModbusAgentLink link = entry.getValue();
-                int address = link.getReadAddress().orElse(0);
-                int registerCount = link.getRegistersAmount().orElse(link.getReadValueType().getRegisterCount());
+                int address = Optional.ofNullable(link.getReadAddress()).orElse(0);
+                int registerCount = Optional.ofNullable(link.getRegistersAmount()).orElse(link.getReadValueType().getRegisterCount());
 
                 // Check if we can add to current batch
                 if (currentBatch != null) {

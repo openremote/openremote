@@ -215,8 +215,8 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
 
     @Override
     protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
-        int writeAddress = getOrThrowAgentLinkProperty(agentLink.getWriteAddress(), "write address");
-        int registersCount = agentLink.getRegistersAmount().orElse(1);
+        int writeAddress = getOrThrowAgentLinkProperty(Optional.ofNullable(agentLink.getWriteAddress()), "write address");
+        int registersCount = Optional.ofNullable(agentLink.getRegistersAmount()).orElse(1);
         String messageId = "tcp_write_" + event.getRef().getId() + "_" + event.getRef().getName() + "_" + writeAddress;
 
         PlcWriteRequest.Builder builder = client.writeRequestBuilder();
@@ -287,7 +287,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                 }
 
                 try {
-                    int registerCount = agentLink.getRegistersAmount().orElse(agentLink.getReadValueType().getRegisterCount());
+                    int registerCount = Optional.ofNullable(agentLink.getRegistersAmount()).orElse(agentLink.getReadValueType().getRegisterCount());
                     ModbusAgentLink.ModbusDataType dataType = agentLink.getReadValueType();
 
                     // Extract value using helper method that handles multi-register conversion

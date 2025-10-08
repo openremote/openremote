@@ -158,8 +158,8 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
 
     @Override
     protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
-        int writeAddress = getOrThrowAgentLinkProperty(agentLink.getWriteAddress(), "write address");
-        int registersCount = agentLink.getRegistersAmount().orElse(1);
+        int writeAddress = getOrThrowAgentLinkProperty(Optional.ofNullable(agentLink.getWriteAddress()), "write address");
+        int registersCount = Optional.ofNullable(agentLink.getRegistersAmount()).orElse(1);
 
         try {
             switch (agentLink.getWriteMemoryArea()) {
