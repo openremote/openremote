@@ -132,12 +132,9 @@ public class ManagerWebService extends WebService {
        ResteasyDeployment deployment = createResteasyDeployment(application, container.getService(IdentityService.class), true);
        DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, API_PATH, "Manager HTTP API");
 
-        ResteasyDeployment deployment = createDeployment(application);
-        DeploymentInfo deploymentInfo = createDeploymentInfo(deployment);
-        configureDeploymentInfo(deploymentInfo);
         deploy(deploymentInfo);
 
-
+        addServletDeployment(container, deploymentInfo, true);
         ResteasyDeployment resteasyDeployment = createResteasyDeployment(container, getApiClasses(), apiSingletons, true);
 
         // Serve REST API

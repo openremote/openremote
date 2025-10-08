@@ -179,7 +179,7 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
      * Get a unique deployment name for this instance.
      */
     protected String getDeploymentName() {
-        return "HttpServerProtocol=" + getClass().getSimpleName() + ",  Agent ID=" + agent.getId();
+        return "HttpServerProtocol=" + getClass().getSimpleName() + ", Agent ID=" + agent.getId();
     }
 
     protected void deploy(DeploymentInfo deploymentInfo) {
