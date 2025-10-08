@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.modbus;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
@@ -36,28 +37,32 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     @Min(1000)
     private Long pollingMillis;
 
-    @NotNull()
+    @JsonProperty
     @JsonPropertyDescription("Memory area to read from during read request")
     private ReadMemoryArea readMemoryArea;
 
-    @NotNull()
+    @JsonProperty
     @JsonPropertyDescription("Type to convert the returned data to. As specified by the PLC4X Modbus data types.")
     private ModbusDataType readValueType;
 
-    @NotNull()
+    @JsonProperty
     @JsonPropertyDescription("Zero based address from which the value is read from")
     private Integer readAddress;
 
+    @JsonProperty
     @JsonPropertyDescription("Memory area to write to. \"HOLDING\" or \"COIL\" allowed.")
     private WriteMemoryArea writeMemoryArea;
 
+    @JsonProperty
     @JsonPropertyDescription("Zero-based address to which the value sent is written to")
     private Integer writeAddress;
 
+    @JsonProperty
     @JsonPropertyDescription("Set amount of registers to read/write. If left empty or less than 1, will use the default size for the corresponding data-type.")
     @JsonAlias("readRegisterAmount")  // Support old field name for backward compatibility
     private Integer registersAmount;
 
+    @JsonProperty
     @JsonPropertyDescription("If enabled, the current attribute value will be written to the modbus register at pollingMillis interval, not just on attribute events.")
     private Boolean writeWithPollingRate;
 
