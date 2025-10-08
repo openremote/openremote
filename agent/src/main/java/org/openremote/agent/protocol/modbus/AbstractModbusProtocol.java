@@ -42,7 +42,6 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
     public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractModbusProtocol.class);
 
-    protected final Map<AttributeRef, ScheduledFuture<?>> pollingMap = new HashMap<>();
     protected final Map<String, Map<AttributeRef, ModbusAgentLink>> batchGroups = new ConcurrentHashMap<>();
     protected final Map<String, List<BatchReadRequest>> cachedBatches = new ConcurrentHashMap<>();
     protected final Map<String, ScheduledFuture<?>> batchPollingTasks = new ConcurrentHashMap<>();
@@ -52,6 +51,106 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
     // Track failed message identifiers - only clear ERROR state when this set is empty
     protected final Set<String> failedMessageIds = ConcurrentHashMap.newKeySet();
+
+    /**
+     * Convert agent's EndianOrder to Java's ByteOrder
+     */
+    protected java.nio.ByteOrder getJavaByteOrder() {
+        return agent.getByteOrder() == ModbusAgent.EndianOrder.BIG
+            ? java.nio.ByteOrder.BIG_ENDIAN
+            : java.nio.ByteOrder.LITTLE_ENDIAN;
+    }
+
+    /**
+     * Apply word order swapping to multi-register data.
+     * Word order determines how 16-bit registers are arranged within multi-register values.
+     */
+    protected byte[] applyWordOrder(byte[] data, int registerCount) {
+        // If word order is BIG or only one register, no swapping needed
+        if (agent.getWordOrder() == ModbusAgent.EndianOrder.BIG || registerCount <= 1) {
+            return data;
+        }
+
+        // LITTLE word order: reverse the order of registers
+        byte[] result = new byte[data.length];
+        for (int i = 0; i < registerCount; i++) {
+            int srcIdx = i * 2;
+            int dstIdx = (registerCount - 1 - i) * 2;
+            result[dstIdx] = data[srcIdx];
+            result[dstIdx + 1] = data[srcIdx + 1];
+        }
+
+        return result;
+    }
+
+    /**
+     * Parse multi-register value from raw bytes based on data type.
+     * Handles byte order, word order, and type conversion.
+     */
+    protected Object parseMultiRegisterValue(byte[] dataBytes, int registerCount, ModbusAgentLink.ModbusDataType dataType) {
+        if (registerCount == 1) {
+            // Single 16-bit register
+            int high = (dataBytes[0] & 0xFF) << 8;
+            int low = dataBytes[1] & 0xFF;
+            return high | low;
+        } else if (registerCount == 2) {
+            // Two registers - could be IEEE754 float or 32-bit integer
+            byte[] processedBytes = applyWordOrder(dataBytes, 2);
+
+            if (dataType == ModbusAgentLink.ModbusDataType.REAL) {
+                java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(processedBytes);
+                buffer.order(getJavaByteOrder());
+                float value = buffer.getFloat();
+
+                // Filter out NaN and Infinity values
+                if (Float.isNaN(value) || Float.isInfinite(value)) {
+                    LOG.warning("Invalid float value (NaN or Infinity), ignoring");
+                    return null;
+                }
+                return value;
+            } else {
+                // Return as 32-bit integer
+                java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(processedBytes);
+                buffer.order(getJavaByteOrder());
+                return buffer.getInt();
+            }
+        } else if (registerCount == 4) {
+            // Four registers - could be 64-bit integer or double precision float
+            byte[] processedBytes = applyWordOrder(dataBytes, 4);
+
+            if (dataType == ModbusAgentLink.ModbusDataType.LREAL) {
+                java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(processedBytes);
+                buffer.order(getJavaByteOrder());
+                double value = buffer.getDouble();
+
+                if (Double.isNaN(value) || Double.isInfinite(value)) {
+                    LOG.warning("Invalid double value (NaN or Infinity), ignoring");
+                    return null;
+                }
+                return value;
+            } else if (dataType == ModbusAgentLink.ModbusDataType.LINT) {
+                java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(processedBytes);
+                buffer.order(getJavaByteOrder());
+                return buffer.getLong();
+            } else if (dataType == ModbusAgentLink.ModbusDataType.ULINT) {
+                java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(processedBytes);
+                buffer.order(getJavaByteOrder());
+                long signedValue = buffer.getLong();
+
+                if (signedValue >= 0) {
+                    return java.math.BigInteger.valueOf(signedValue);
+                } else {
+                    return java.math.BigInteger.valueOf(signedValue).add(java.math.BigInteger.ONE.shiftLeft(64));
+                }
+            } else {
+                java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(processedBytes);
+                buffer.order(getJavaByteOrder());
+                return buffer.getLong();
+            }
+        }
+
+        return null;
+    }
 
     public AbstractModbusProtocol(T agent) {
         super(agent);
@@ -162,9 +261,6 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
     @Override
     protected void doStop(Container container) throws Exception {
-        pollingMap.forEach((key, value) -> value.cancel(false));
-        pollingMap.clear();
-
         batchPollingTasks.values().forEach(future -> future.cancel(false));
         batchPollingTasks.clear();
         batchGroups.clear();
@@ -184,56 +280,43 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
     @Override
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) throws RuntimeException {
-        AttributeRef ref = new AttributeRef(assetId, attribute.getName());
+            AttributeRef ref = new AttributeRef(assetId, attribute.getName());
 
-        // Check if batching is enabled (maxRegisterLength > 1)
-        Integer maxRegisterLength = getMaxRegisterLength();
-        if (maxRegisterLength > 1) {
-            // Use batching logic
-            String groupKey = agent.getId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
+            // Check if read configuration is present (all three parameters required for reading)
+            boolean hasReadConfig = agentLink.getReadMemoryArea() != null
+                    && agentLink.getReadValueType() != null
+                    && agentLink.getReadAddress() != null;
 
-            batchGroups.computeIfAbsent(groupKey, k -> new ConcurrentHashMap<>()).put(ref, agentLink);
-            cachedBatches.remove(groupKey); // Invalidate cache
+            if (hasReadConfig) {
+                // Setup read polling using batching (works for single or multiple attributes)
+                String groupKey = agent.getId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
 
-            // Only schedule task if one doesn't exist yet for this group
-            if (!batchPollingTasks.containsKey(groupKey)) {
-                ScheduledFuture<?> batchTask = scheduleBatchedPollingTask(groupKey, agentLink.getReadMemoryArea(), agentLink.getPollingMillis());
-                batchPollingTasks.put(groupKey, batchTask);
-                LOG.fine("Scheduled new polling task for batch group " + groupKey);
+                batchGroups.computeIfAbsent(groupKey, k -> new ConcurrentHashMap<>()).put(ref, agentLink);
+                cachedBatches.remove(groupKey); // Invalidate cache
+
+                // Only schedule task if one doesn't exist yet for this group
+                if (!batchPollingTasks.containsKey(groupKey)) {
+                    ScheduledFuture<?> batchTask = scheduleBatchedPollingTask(groupKey, agentLink.getReadMemoryArea(), agentLink.getPollingMillis());
+                    batchPollingTasks.put(groupKey, batchTask);
+                    LOG.fine("Scheduled new polling task for batch group " + groupKey);
+                }
+
+                LOG.fine("Added attribute " + ref + " to batch group " + groupKey + " (total attributes in group: " + batchGroups.get(groupKey).size() + ")");
+            } else {
+                LOG.fine("Skipping read polling for " + ref + " - read configuration incomplete (readMemoryArea, readValueType, and readAddress all required)");
             }
 
-            LOG.fine("Added attribute " + ref + " to batch group " + groupKey + " (total attributes in group: " + batchGroups.get(groupKey).size() + ")");
-        } else {
-            // Use individual polling (legacy mode, maxRegisterLength = 1)
-            pollingMap.put(ref,
-                    scheduleModbusPollingReadRequest(
-                        ref,
-                        agentLink.getPollingMillis(),
-                        agentLink.getReadMemoryArea(),
-                        agentLink.getReadValueType(),
-                        Optional.ofNullable(agentLink.getRegistersAmount()),
-                        Optional.ofNullable(agentLink.getReadAddress())
-                    )
-            );
-        }
-
-        // Check if write polling is enabled
-        if (Optional.ofNullable(agentLink.getWriteWithPollingRate()).orElse(false) && Optional.ofNullable(agentLink.getWriteAddress()).isPresent()) {
-            ScheduledFuture<?> writeTask = scheduleModbusPollingWriteRequest(ref, agentLink);
-            writePollingMap.put(ref, writeTask);
-            LOG.fine("Scheduled write polling task for attribute " + ref + " every " + agentLink.getPollingMillis() + "ms");
-        }
+            // Check if write polling is enabled
+            if (Optional.ofNullable(agentLink.getWriteWithPollingRate()).orElse(false) && Optional.ofNullable(agentLink.getWriteAddress()).isPresent()) {
+                ScheduledFuture<?> writeTask = scheduleModbusPollingWriteRequest(ref, agentLink);
+                writePollingMap.put(ref, writeTask);
+                LOG.fine("Scheduled write polling task for attribute " + ref + " every " + agentLink.getPollingMillis() + "ms");
+            }
     }
 
     @Override
     protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) {
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
-
-        // Remove from individual polling
-        ScheduledFuture<?> pollTask = pollingMap.remove(attributeRef);
-        if (pollTask != null) {
-            pollTask.cancel(false);
-        }
 
         // Remove from write polling
         ScheduledFuture<?> writeTask = writePollingMap.remove(attributeRef);
@@ -242,24 +325,26 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             LOG.fine("Cancelled write polling task for attribute " + attributeRef);
         }
 
-        // Remove from batch group
-        String groupKey = agent.getId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
-        Map<AttributeRef, ModbusAgentLink> group = batchGroups.get(groupKey);
-        if (group != null) {
-            group.remove(attributeRef);
-            cachedBatches.remove(groupKey); // Invalidate cache
+        // Remove from batch group (if read config was present)
+        if (agentLink.getReadMemoryArea() != null) {
+            String groupKey = agent.getId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
+            Map<AttributeRef, ModbusAgentLink> group = batchGroups.get(groupKey);
+            if (group != null) {
+                group.remove(attributeRef);
+                cachedBatches.remove(groupKey); // Invalidate cache
 
-            // If group is empty, cancel batch task
-            if (group.isEmpty()) {
-                batchGroups.remove(groupKey);
-                cachedBatches.remove(groupKey);
-                ScheduledFuture<?> task = batchPollingTasks.remove(groupKey);
-                if (task != null) {
-                    task.cancel(false);
+                // If group is empty, cancel batch task
+                if (group.isEmpty()) {
+                    batchGroups.remove(groupKey);
+                    cachedBatches.remove(groupKey);
+                    ScheduledFuture<?> task = batchPollingTasks.remove(groupKey);
+                    if (task != null) {
+                        task.cancel(false);
+                    }
+                    LOG.fine("Removed empty batch group " + groupKey);
+                } else {
+                    LOG.info("Removed attribute " + attributeRef + " from batch group " + groupKey + " (remaining attributes: " + group.size() + ")");
                 }
-                LOG.fine("Removed empty batch group " + groupKey);
-            } else {
-                LOG.info("Removed attribute " + attributeRef + " from batch group " + groupKey + " (remaining attributes: " + group.size() + ")");
             }
         }
     }
@@ -372,7 +457,6 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                         LOG.info("Creating batch requests for group " + groupKey + " with " + group.size() + " attribute(s) (maxRegisterLength=" + getMaxRegisterLength() + ")");
                         batches = createBatchRequests(group, illegalRegisters, getMaxRegisterLength());
                         cachedBatches.put(groupKey, batches);
-                        LOG.info("Created " + batches.size() + " batch(es) for group " + groupKey);
                     }
                 }
 
@@ -394,19 +478,6 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
      * Execute a batch read request. Must be implemented by subclasses for protocol-specific communication.
      */
     protected abstract void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group);
-
-    /**
-     * Schedule individual polling request for a single attribute (used when batching is disabled).
-     * Subclasses must implement protocol-specific polling logic.
-     */
-    protected abstract ScheduledFuture<?> scheduleModbusPollingReadRequest(
-            AttributeRef ref,
-            long pollingMillis,
-            ModbusAgentLink.ReadMemoryArea readType,
-            ModbusAgentLink.ModbusDataType dataType,
-            Optional<Integer> amountOfRegisters,
-            Optional<Integer> readAddress
-    );
 
     /**
      * Schedule a polling write request for an attribute with writeWithPollingRate enabled.

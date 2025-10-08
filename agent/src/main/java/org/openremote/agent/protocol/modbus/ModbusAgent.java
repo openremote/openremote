@@ -57,4 +57,7 @@ public abstract class ModbusAgent<T extends ModbusAgent<T, U>, U extends Abstrac
     public void setUnitId(Integer unitId) {
         getAttributes().getOrCreate(UNIT_ID).setValue(unitId);
     }
+
+    public abstract EndianOrder getByteOrder();
+    public abstract EndianOrder getWordOrder();
 }
