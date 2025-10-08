@@ -133,15 +133,15 @@ public class I18nAnnotationProcessor extends AbstractProcessor {
         String indent = "  ".repeat(indentLevel); // Create indentation spaces
 
         // Close and return the object if empty
-        if (!jsonNode.fields().hasNext()) {
+        if (!jsonNode.properties().iterator().hasNext()) {
             return jsonBuilder.append("{}").toString();
         } else {
             jsonBuilder.append("{\n");
         }
 
         // Iterate through the fields without adding a space between the "fieldName" and colon
-        jsonNode.fields().forEachRemaining(entry -> {
-            jsonBuilder.append(indent).append("  \"").append(entry.getKey()).append("\": "); // Key with space after
+        for (Map.Entry<String, JsonNode> entry : jsonNode.properties()) {
+            jsonBuilder.append(indent).append("  \"").append(entry.getKey()).append("\": ");
             JsonNode value = entry.getValue();
 
             if (value.isObject()) {
@@ -150,7 +150,7 @@ public class I18nAnnotationProcessor extends AbstractProcessor {
                 jsonBuilder.append(value);
             }
             jsonBuilder.append(",\n");
-        });
+        }
 
         if (jsonBuilder.length() > 1) {
             jsonBuilder.setLength(jsonBuilder.length() - 2); // Remove last comma and newline
