@@ -619,8 +619,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                         hideOverlap: true,
                         fontSize: 10,
                          formatter: {
-                             year: "{yyyy}-{MMM}",
-                             month: "{yy}-{MMM}",
+                             year: "1-{MMM}-{yyyy}",
+                             month: "1-{MMM}-'{yy}",
                              day: "{d}-{MMM}",
                              hour: "{HH}:{mm}",
                              minute: "{HH}:{mm}",
