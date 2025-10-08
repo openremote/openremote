@@ -109,10 +109,10 @@ public class SerialPortManager {
         // Wait for any pending cleanup to complete before acquiring
         Future<?> pendingCleanup = portCleanupTasks.get(portKey);
         if (pendingCleanup != null) {
-            LOG.info("Port " + portDescriptor + " is being cleaned up, waiting for completion...");
+            //LOG.info("Port " + portDescriptor + " is being cleaned up, waiting for completion...");
             try {
                 pendingCleanup.get(PORT_CLEANUP_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-                LOG.info("Port cleanup completed for " + portDescriptor);
+                //LOG.info("Port cleanup completed for " + portDescriptor);
             } catch (TimeoutException e) {
                 LOG.warning("Port cleanup timed out after " + PORT_CLEANUP_TIMEOUT_MS + "ms for " + portDescriptor + ", proceeding anyway");
                 portCleanupTasks.remove(portKey); // Remove stale cleanup task
@@ -130,7 +130,7 @@ public class SerialPortManager {
 
         if (sharedPort == null) {
             // Port not yet opened, create new shared instance
-            LOG.info("Opening new shared serial port: " + portDescriptor);
+            //LOG.info("Opening new shared serial port: " + portDescriptor);
 
             SerialPortWrapper wrapper;
 
@@ -164,7 +164,7 @@ public class SerialPortManager {
 
         // Increment reference count
         sharedPort.incrementRefCount();
-        LOG.info("Acquired shared serial port: " + portDescriptor + " (refCount=" + sharedPort.getRefCount() + ")");
+        //LOG.info("Acquired shared serial port: " + portDescriptor + " (refCount=" + sharedPort.getRefCount() + ")");
 
         return sharedPort;
     }
@@ -199,7 +199,7 @@ public class SerialPortManager {
         }
 
         int refCount = sharedPort.decrementRefCount();
-        LOG.info("Released shared serial port: " + portDescriptor + " (refCount=" + refCount + ")");
+        //LOG.info("Released shared serial port: " + portDescriptor + " (refCount=" + refCount + ")");
 
         if (refCount == 0) {
             // Last agent released the port - schedule asynchronous cleanup
@@ -211,10 +211,10 @@ public class SerialPortManager {
             // Schedule async cleanup task
             Future<?> cleanupTask = cleanupExecutor.submit(() -> {
                 try {
-                    LOG.info("Starting port cleanup for: " + portDescriptor);
+                    //LOG.info("Starting port cleanup for: " + portDescriptor);
                     boolean closed = sharedPort.actualPort.closePort();
                     if (closed) {
-                        LOG.info("Successfully closed serial port: " + portDescriptor);
+                        //LOG.info("Successfully closed serial port: " + portDescriptor);
                     } else {
                         LOG.warning("Failed to close serial port (closePort returned false): " + portDescriptor);
                     }
@@ -246,11 +246,11 @@ public class SerialPortManager {
      */
     public synchronized void awaitPendingCleanups(long timeoutMs) throws InterruptedException, TimeoutException {
         if (portCleanupTasks.isEmpty()) {
-            LOG.fine("No pending cleanup tasks to wait for");
+            //LOG.fine("No pending cleanup tasks to wait for");
             return;
         }
 
-        LOG.info("Waiting for " + portCleanupTasks.size() + " pending port cleanup task(s) to complete...");
+        //LOG.info("Waiting for " + portCleanupTasks.size() + " pending port cleanup task(s) to complete...");
         long deadline = System.currentTimeMillis() + timeoutMs;
 
         // Create a snapshot to avoid ConcurrentModificationException
@@ -264,14 +264,14 @@ public class SerialPortManager {
 
             try {
                 entry.getValue().get(remaining, TimeUnit.MILLISECONDS);
-                LOG.fine("Cleanup task completed for: " + entry.getKey());
+                //LOG.fine("Cleanup task completed for: " + entry.getKey());
             } catch (ExecutionException e) {
                 LOG.log(Level.WARNING, "Cleanup task failed for " + entry.getKey() + ": " + e.getMessage(), e);
                 // Continue waiting for other tasks even if one fails
             }
         }
 
-        LOG.info("All pending cleanup tasks completed");
+        //LOG.info("All pending cleanup tasks completed");
     }
 
     /**
@@ -279,13 +279,13 @@ public class SerialPortManager {
      * This should be called during application shutdown to ensure clean resource release.
      */
     public synchronized void shutdown() {
-        LOG.info("Shutting down SerialPortManager...");
+        //LOG.info("Shutting down SerialPortManager...");
 
         // Close all currently open ports
         for (Map.Entry<String, SharedSerialPort> entry : sharedPorts.entrySet()) {
             String portKey = entry.getKey();
             SharedSerialPort sharedPort = entry.getValue();
-            LOG.info("Closing serial port during shutdown: " + portKey + " (refCount=" + sharedPort.getRefCount() + ")");
+            //LOG.info("Closing serial port during shutdown: " + portKey + " (refCount=" + sharedPort.getRefCount() + ")");
             try {
                 sharedPort.actualPort.closePort();
             } catch (Exception e) {
@@ -296,7 +296,7 @@ public class SerialPortManager {
 
         // Wait for pending cleanup tasks to complete
         if (!portCleanupTasks.isEmpty()) {
-            LOG.info("Waiting for " + portCleanupTasks.size() + " pending port cleanup task(s) to complete...");
+            //LOG.info("Waiting for " + portCleanupTasks.size() + " pending port cleanup task(s) to complete...");
             for (Map.Entry<String, Future<?>> entry : portCleanupTasks.entrySet()) {
                 try {
                     entry.getValue().get(2000, TimeUnit.MILLISECONDS); // 2 second timeout per task
@@ -322,7 +322,7 @@ public class SerialPortManager {
             cleanupExecutor.shutdownNow();
         }
 
-        LOG.info("SerialPortManager shutdown complete");
+        //LOG.info("SerialPortManager shutdown complete");
     }
 
     /**

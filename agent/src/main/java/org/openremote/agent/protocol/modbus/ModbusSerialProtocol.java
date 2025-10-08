@@ -88,7 +88,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
 
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                LOG.info("Attempting to acquire serial port " + portName + " (attempt " + attempt + "/" + maxRetries + ")");
+                //LOG.info("Attempting to acquire serial port " + portName + " (attempt " + attempt + "/" + maxRetries + ")");
 
                 // Acquire shared serial port through SerialPortManager
                 org.openremote.agent.protocol.serial.SerialPortWrapper wrapper = SerialPortManager.getInstance().acquirePort(
@@ -150,7 +150,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
                     mapParityToSerialPort(agent.getParityValue())
             );
             serialPort = null; // Clear reference after release
-            LOG.info("Released Modbus RTU device: " + portName);
+            //LOG.info("Released Modbus RTU device: " + portName);
         }
 
         setConnectionStatus(ConnectionStatus.DISCONNECTED);
@@ -238,7 +238,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         // Synchronize on the serial port's shared lock to ensure atomic write-read cycles across all agents sharing the port
         synchronized (serialPort.getSynchronizationLock()) {
             String messageId = "read_" + unitId + "_" + functionCode + "_" + address + "_" + quantity;
-            LOG.info("Performing Modbus Read" + unitId + functionCode + address + quantity);
+            //LOG.info("Performing Modbus Read" + unitId + functionCode + address + quantity);
             try {
                 byte[] request = createModbusRequest(unitId, functionCode, address, quantity);
 
@@ -260,7 +260,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
                 int totalBytesRead = readWithTimeout(response, 50);
 
                 if (totalBytesRead >= 5 && response[0] == unitId && response[1] == functionCode) {
-                    LOG.info("-------------MODBUS DEBUG RESPONSE------------- Address:"+ address  );
+                    LOG.info("-------------MODBUS READ SUCCESS------------- Address:"+ address  );
                     onRequestSuccess(messageId);
                     return parseModbusResponse(response, functionCode, dataType);
                 } else if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {

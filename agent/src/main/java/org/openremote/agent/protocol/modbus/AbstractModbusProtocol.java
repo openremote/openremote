@@ -418,6 +418,22 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     );
 
     /**
+     * Get the current connection status of the protocol.
+     * @return The current connection status, or DISCONNECTED if not available
+     */
+    protected ConnectionStatus getConnectionStatus() {
+        return agent.getAgentStatus().orElse(ConnectionStatus.DISCONNECTED);
+    }
+
+    /**
+     * Check if the agent is currently disabled.
+     * @return true if the agent is disabled, false otherwise
+     */
+    protected boolean isAgentDisabled() {
+        return agent.isDisabled().orElse(false);
+    }
+
+    /**
      * Called when a Modbus request succeeds. Removes this message from failed set.
      * If all messages have succeeded (failed set is empty), recovers connection to CONNECTED.
      * @param messageId Unique identifier for this message/request
@@ -425,7 +441,12 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected void onRequestSuccess(String messageId) {
         failedMessageIds.remove(messageId);
 
-        if (agent.getAgentStatus().orElse(null) == ConnectionStatus.ERROR && failedMessageIds.isEmpty()) {
+        // Don't change status if agent is disabled
+        if (isAgentDisabled()) {
+            return;
+        }
+
+        if (getConnectionStatus() == ConnectionStatus.ERROR && failedMessageIds.isEmpty()) {
             setConnectionStatus(ConnectionStatus.CONNECTED);
             LOG.info("Connection recovered - all messages now succeeding");
         }
@@ -439,8 +460,11 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
      */
     protected void onRequestFailure(String messageId, String operation, Exception e) {
         failedMessageIds.add(messageId);
-        setConnectionStatus(ConnectionStatus.ERROR);
-        LOG.log(Level.WARNING, "Request failed for " + operation + " [id=" + messageId + "]: " + e.getMessage(), e);
+
+        if (!isAgentDisabled() && getConnectionStatus() != ConnectionStatus.ERROR ) {
+            setConnectionStatus(ConnectionStatus.ERROR);
+            LOG.log(Level.WARNING, "Request failed for " + operation + " [id=" + messageId + "]: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -452,7 +476,10 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
      */
     protected void onRequestFailure(String messageId, String operation, String reason) {
         failedMessageIds.add(messageId);
-        setConnectionStatus(ConnectionStatus.ERROR);
-        LOG.warning("Request failed for " + operation + " [id=" + messageId + "]: " + reason);
+
+        if (!isAgentDisabled() && getConnectionStatus() != ConnectionStatus.ERROR) {
+            setConnectionStatus(ConnectionStatus.ERROR);
+            LOG.warning("Request failed for " + operation + " [id=" + messageId + "]: " + reason);
+        }
     }
 }
