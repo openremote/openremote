@@ -194,7 +194,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
                 ? dataType.getRegisterCount() : amountOfRegisters.get();
 
         LOG.finest("Scheduling Modbus Read polling request to execute every " + pollingMillis + "ms for attributeRef: " + ref);
-
+        
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 Object value = readModbusValue(readType, agent.getUnitId(), address, readAmount, dataType);
@@ -260,10 +260,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
                 int totalBytesRead = readWithTimeout(response, 50);
 
                 if (totalBytesRead >= 5 && response[0] == unitId && response[1] == functionCode) {
-                    String responseHex = bytesToHex(response, totalBytesRead);
-                    LOG.info("-------------MODBUS READ SUCCESS------------- Address: " + address +
-                            ", Function: 0x" + String.format("%02X", response[1] & 0xFF) +
-                            ", Response: " + responseHex);
+                    LOG.info("-------------MODBUS READ SUCCESS------------- Address:"+ address  );
                     onRequestSuccess(messageId);
                     return parseModbusResponse(response, functionCode, dataType);
                 } else if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {
@@ -716,17 +713,6 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
     }
     
     /**
-     * Convert byte array to hex string for logging
-     */
-    private String bytesToHex(byte[] bytes, int length) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < length && i < bytes.length; i++) {
-            sb.append(String.format("%02X ", bytes[i] & 0xFF));
-        }
-        return sb.toString().trim();
-    }
-
-    /**
      * Map parity integer value to jSerialComm parity constant
      * @param parity 0=NONE, 1=ODD, 2=EVEN, 3=MARK, 4=SPACE
      * @return jSerialComm parity constant
@@ -790,7 +776,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
             }
 
             try {
-                Object value = extractValueFromBatchResponse(response, offset, agentLink.getReadValueType().orElseThrow(), functionCode);
+                Object value = extractValueFromBatchResponse(response, offset, agentLink.getReadValueType(), functionCode);
                 if (value != null) {
                     updateLinkedAttribute(attrRef, value);
                 }

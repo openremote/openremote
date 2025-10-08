@@ -287,8 +287,8 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                 }
 
                 try {
-                    ModbusAgentLink.ModbusDataType dataType = agentLink.getReadValueType().orElseThrow();
-                    int registerCount = agentLink.getRegistersAmount().orElse(dataType.getRegisterCount());
+                    int registerCount = agentLink.getRegistersAmount().orElse(agentLink.getReadValueType().getRegisterCount());
+                    ModbusAgentLink.ModbusDataType dataType = agentLink.getReadValueType();
 
                     // Extract value using helper method that handles multi-register conversion
                     Object value = extractValueFromBatchResponse(response, "batchRead", offset, registerCount, dataType);
