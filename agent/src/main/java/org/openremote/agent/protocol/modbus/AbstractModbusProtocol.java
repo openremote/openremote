@@ -149,7 +149,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected void doStart(Container container) throws Exception {
         // Parse illegal registers from agent config
         illegalRegisters = parseIllegalRegisters(getIllegalRegistersConfig().orElse(""));
-        LOG.info("Loaded " + illegalRegisters.size() + " illegal register ranges for modbus agent " + agent.getId());
+        LOG.fine("Loaded " + illegalRegisters.size() + " illegal register ranges for modbus agent " + agent.getId());
 
         // Call protocol-specific start
         doStartProtocol(container);
@@ -186,35 +186,53 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) throws RuntimeException {
         AttributeRef ref = new AttributeRef(assetId, attribute.getName());
 
-        // Check if batching is enabled (maxRegisterLength > 1)
-        Integer maxRegisterLength = getMaxRegisterLength();
-        if (maxRegisterLength > 1) {
-            // Use batching logic
-            String groupKey = agent.getId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
+        // Check read/write configuration
+        boolean readEnabled = agentLink.getRead().orElse(false);
+        boolean writeEnabled = agentLink.getWrite().orElse(false);
 
-            batchGroups.computeIfAbsent(groupKey, k -> new ConcurrentHashMap<>()).put(ref, agentLink);
-            cachedBatches.remove(groupKey); // Invalidate cache
+        if (!readEnabled && !writeEnabled) {
+            LOG.warning("ModbusAgentLink for " + ref + " has neither read nor write enabled - skipping");
+            return;
+        }
 
-            // Only schedule task if one doesn't exist yet for this group
-            if (!batchPollingTasks.containsKey(groupKey)) {
-                ScheduledFuture<?> batchTask = scheduleBatchedPollingTask(groupKey, agentLink.getReadMemoryArea(), agentLink.getPollingMillis());
-                batchPollingTasks.put(groupKey, batchTask);
-                LOG.fine("Scheduled new polling task for batch group " + groupKey);
+        // Validate read configuration
+        if (readEnabled) {
+            if (agentLink.getReadMemoryArea().isEmpty() || agentLink.getReadAddress().isEmpty() || agentLink.getReadValueType().isEmpty()) {
+                throw new RuntimeException("Read enabled for " + ref + " but missing required fields: readMemoryArea, readAddress, and/or readValueType");
             }
 
-            LOG.fine("Added attribute " + ref + " to batch group " + groupKey + " (total attributes in group: " + batchGroups.get(groupKey).size() + ")");
+            // Check if batching is enabled (maxRegisterLength > 1)
+            Integer maxRegisterLength = getMaxRegisterLength();
+            if (maxRegisterLength > 1) {
+                // Use batching logic
+                String groupKey = agent.getId() + "_" + agentLink.getReadMemoryArea().get() + "_" + agentLink.getPollingMillis();
+
+                batchGroups.computeIfAbsent(groupKey, k -> new ConcurrentHashMap<>()).put(ref, agentLink);
+                cachedBatches.remove(groupKey); // Invalidate cache
+
+                // Only schedule task if one doesn't exist yet for this group
+                if (!batchPollingTasks.containsKey(groupKey)) {
+                    ScheduledFuture<?> batchTask = scheduleBatchedPollingTask(groupKey, agentLink.getReadMemoryArea().get(), agentLink.getPollingMillis());
+                    batchPollingTasks.put(groupKey, batchTask);
+                    LOG.fine("Scheduled new polling task for batch group " + groupKey);
+                }
+
+                LOG.fine("Added attribute " + ref + " to batch group " + groupKey + " (total attributes in group: " + batchGroups.get(groupKey).size() + ")");
+            } else {
+                // Use individual polling (legacy mode, maxRegisterLength = 1)
+                pollingMap.put(ref,
+                        scheduleModbusPollingReadRequest(
+                            ref,
+                            agentLink.getPollingMillis(),
+                            agentLink.getReadMemoryArea().get(),
+                            agentLink.getReadValueType().get(),
+                            agentLink.getRegistersAmount(),
+                            agentLink.getReadAddress()
+                        )
+                );
+            }
         } else {
-            // Use individual polling (legacy mode, maxRegisterLength = 1)
-            pollingMap.put(ref,
-                    scheduleModbusPollingReadRequest(
-                        ref,
-                        agentLink.getPollingMillis(),
-                        agentLink.getReadMemoryArea(),
-                        agentLink.getReadValueType(),
-                        agentLink.getRegistersAmount(),
-                        agentLink.getReadAddress()
-                    )
-            );
+            LOG.fine("Read polling disabled for attribute " + ref);
         }
 
         // Check if write polling is enabled
@@ -242,24 +260,26 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             LOG.fine("Cancelled write polling task for attribute " + attributeRef);
         }
 
-        // Remove from batch group
-        String groupKey = agent.getId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
-        Map<AttributeRef, ModbusAgentLink> group = batchGroups.get(groupKey);
-        if (group != null) {
-            group.remove(attributeRef);
-            cachedBatches.remove(groupKey); // Invalidate cache
+        // Remove from batch group (if readMemoryArea is present)
+        if (agentLink.getReadMemoryArea().isPresent()) {
+            String groupKey = agent.getId() + "_" + agentLink.getReadMemoryArea().get() + "_" + agentLink.getPollingMillis();
+            Map<AttributeRef, ModbusAgentLink> group = batchGroups.get(groupKey);
+            if (group != null) {
+                group.remove(attributeRef);
+                cachedBatches.remove(groupKey); // Invalidate cache
 
-            // If group is empty, cancel batch task
-            if (group.isEmpty()) {
-                batchGroups.remove(groupKey);
-                cachedBatches.remove(groupKey);
-                ScheduledFuture<?> task = batchPollingTasks.remove(groupKey);
-                if (task != null) {
-                    task.cancel(false);
+                // If group is empty, cancel batch task
+                if (group.isEmpty()) {
+                    batchGroups.remove(groupKey);
+                    cachedBatches.remove(groupKey);
+                    ScheduledFuture<?> task = batchPollingTasks.remove(groupKey);
+                    if (task != null) {
+                        task.cancel(false);
+                    }
+                    LOG.fine("Removed empty batch group " + groupKey);
+                } else {
+                    LOG.info("Removed attribute " + attributeRef + " from batch group " + groupKey + " (remaining attributes: " + group.size() + ")");
                 }
-                LOG.fine("Removed empty batch group " + groupKey);
-            } else {
-                LOG.info("Removed attribute " + attributeRef + " from batch group " + groupKey + " (remaining attributes: " + group.size() + ")");
             }
         }
     }
@@ -279,10 +299,12 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             Set<RegisterRange> illegalRanges,
             int maxRegisterLength) {
 
-        // Group by memory area and sort by address
+        // Group by memory area and sort by address (filter out entries without read enabled or readMemoryArea)
         Map<ModbusAgentLink.ReadMemoryArea, List<Map.Entry<AttributeRef, ModbusAgentLink>>> groupedByMemoryArea =
                 attributeLinks.entrySet().stream()
-                        .collect(Collectors.groupingBy(e -> e.getValue().getReadMemoryArea()));
+                        .filter(e -> e.getValue().getRead().orElse(false))
+                        .filter(e -> e.getValue().getReadMemoryArea().isPresent())
+                        .collect(Collectors.groupingBy(e -> e.getValue().getReadMemoryArea().get()));
 
         List<BatchReadRequest> batches = new ArrayList<>();
 
@@ -298,7 +320,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             for (Map.Entry<AttributeRef, ModbusAgentLink> entry : sortedAttributes) {
                 ModbusAgentLink link = entry.getValue();
                 int address = link.getReadAddress().orElse(0);
-                int registerCount = link.getRegistersAmount().orElse(link.getReadValueType().getRegisterCount());
+                int registerCount = link.getRegistersAmount().orElse(link.getReadValueType().orElseThrow().getRegisterCount());
 
                 // Check if we can add to current batch
                 if (currentBatch != null) {
@@ -369,7 +391,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 synchronized (cachedBatches) {
                     batches = cachedBatches.get(groupKey);
                     if (batches == null) {
-                        LOG.info("Creating batch requests for group " + groupKey + " with " + group.size() + " attribute(s) (maxRegisterLength=" + getMaxRegisterLength() + ")");
+                        //LOG.info("Creating batch requests for group " + groupKey + " with " + group.size() + " attribute(s) (maxRegisterLength=" + getMaxRegisterLength() + ")");
                         batches = createBatchRequests(group, illegalRegisters, getMaxRegisterLength());
                         cachedBatches.put(groupKey, batches);
                         LOG.info("Created " + batches.size() + " batch(es) for group " + groupKey);
@@ -380,7 +402,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 for (int i = 0; i < batches.size(); i++) {
                     BatchReadRequest batch = batches.get(i);
                     int endAddress = batch.startAddress + batch.quantity - 1;
-                    LOG.finest("Executing batch " + (i + 1) + "/" + batches.size() + ": registers=" + batch.startAddress + "-" + endAddress + " (quantity=" + batch.quantity + ", attributes=" + batch.attributes.size() + ")");
+                    //LOG.finest("Executing batch " + (i + 1) + "/" + batches.size() + ": registers=" + batch.startAddress + "-" + endAddress + " (quantity=" + batch.quantity + ", attributes=" + batch.attributes.size() + ")");
                     executeBatchRead(batch, memoryArea, group);
                 }
 

@@ -36,15 +36,18 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     @Min(1000)
     private Long pollingMillis;
 
-    @NotNull()
+    @JsonPropertyDescription("Enable read polling for this attribute")
+    private Boolean read;
+
+    @JsonPropertyDescription("Enable write operations for this attribute")
+    private Boolean write;
+
     @JsonPropertyDescription("Memory area to read from during read request")
     private ReadMemoryArea readMemoryArea;
 
-    @NotNull()
     @JsonPropertyDescription("Type to convert the returned data to. As specified by the PLC4X Modbus data types.")
     private ModbusDataType readValueType;
 
-    @NotNull()
     @JsonPropertyDescription("Zero based address from which the value is read from")
     private Integer readAddress;
 
@@ -69,16 +72,32 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         this.pollingMillis = pollingMillis;
     }
 
-    public ReadMemoryArea getReadMemoryArea() {
-        return readMemoryArea;
+    public Optional<Boolean> getRead() {
+        return Optional.ofNullable(read);
+    }
+
+    public void setRead(Boolean read) {
+        this.read = read;
+    }
+
+    public Optional<Boolean> getWrite() {
+        return Optional.ofNullable(write);
+    }
+
+    public void setWrite(Boolean write) {
+        this.write = write;
+    }
+
+    public Optional<ReadMemoryArea> getReadMemoryArea() {
+        return Optional.ofNullable(readMemoryArea);
     }
 
     public void setReadMemoryArea(ReadMemoryArea readMemoryArea) {
         this.readMemoryArea = readMemoryArea;
     }
 
-    public ModbusDataType getReadValueType() {
-        return readValueType;
+    public Optional<ModbusDataType> getReadValueType() {
+        return Optional.ofNullable(readValueType);
     }
 
     public void setReadValueType(ModbusDataType readValueType) {
