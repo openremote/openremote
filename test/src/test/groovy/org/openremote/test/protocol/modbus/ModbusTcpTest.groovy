@@ -302,7 +302,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
 
             assert (latestReadMessage.get() as ModbusMessage).getUnitId() === 1
             assert (latestReadMessage.get() as ModbusMessage).getFunction() === ModbusFunctionCode.ReadHoldingRegisters
-            assert (latestReadMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage.class).getAddress() == agentLink.getReadAddress().get()-1
+            assert (latestReadMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage.class).getAddress() == agentLink.getReadAddress()-1
             assert (latestReadMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage.class).getCount() == 1
         }
 
@@ -315,7 +315,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             def msg = (latestWriteMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage)
             assert msg != null
             assert msg.getCount() == 1
-            assert msg.getAddress() == agentLink.getWriteAddress().get()-1
+            assert msg.getAddress() == agentLink.getWriteAddress()-1
             assert msg.dataDecodeUnsigned() == [123] as int[]
 
             ship = assetStorageService.find(ship.getId(), true)
@@ -353,7 +353,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             def msg = (latestReadMessage.get() as ModbusMessage).unwrap(BitsModbusMessage)
             assert msg != null
             assert msg.getCount() == 1
-            assert msg.getAddress() == agentLink.getReadAddress().get()-1
+            assert msg.getAddress() == agentLink.getReadAddress()-1
 
             ship = assetStorageService.find(ship.getId(), true)
             assert ship.getAttribute("coil1").flatMap { it.getValue() }.orElse(null) == true
@@ -707,8 +707,8 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             def link = attr.getMetaItem(AGENT_LINK).get().getValue(ModbusAgentLink.class).get()
 
             // Verify the configuration uses 2 registers for write
-            assert link.getRegistersAmount().orElse(1) == 2
-            assert link.getWriteAddress().isPresent()
+            assert link.getRegistersAmount() == 2
+            assert link.getWriteAddress()
 
             //  Check if a write message was captured (may not always happen depending on timing)
             def msg = (latestWriteMessage.get() as ModbusMessage)?.unwrap(RegistersModbusMessage)
@@ -728,8 +728,8 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             def link = attr.getMetaItem(AGENT_LINK).get().getValue(ModbusAgentLink.class).get()
 
             // Verify the configuration uses 2 registers for write
-            assert link.getRegistersAmount().orElse(1) == 2
-            assert link.getWriteAddress().isPresent()
+            assert link.getRegistersAmount() == 2
+            assert link.getWriteAddress()
         }
     }
 
