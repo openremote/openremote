@@ -35,12 +35,13 @@ export class AssetsPage implements BasePage {
    * Delete an asset by its name.
    * @param asset The asset name
    */
-  async deleteSelectedAsset(asset: string) {
+  async deleteSelectedAsset(manager: Manager, asset: string) {
     const assetLocator = this.page.locator(`text="${asset}"`);
     await expect(assetLocator).toHaveCount(1);
     await assetLocator.click();
     await this.page.click(".mdi-delete");
     await this.page.getByRole("button", { name: "Delete" }).click();
     await expect(assetLocator).toHaveCount(0);
+    manager.assets = manager.assets.filter(a => a.name !== asset); // Remove asset from cache as well
   }
 }

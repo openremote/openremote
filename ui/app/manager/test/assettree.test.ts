@@ -207,7 +207,7 @@ test(`Deleting an asset properly keeps the tree and viewer in tact`, async ({ pa
     await expect(assetTree.getAssetNodes()).toHaveCount(1 + 10 + 1 + 10 + 1);
 
     // Delete battery asset 5 of the first city, and check if state is the same
-    await assetsPage.deleteSelectedAsset(batteryAssets[4].name);
+    await assetsPage.deleteSelectedAsset(manager, batteryAssets[4].name);
     await expect(assetTree.getSelectedNodes()).toHaveCount(0);
     await expect(assetTree.getChildNodes(cityAsset1)).toHaveCount(assets.length / 2 - 1);
     await expect(assetTree.getChildNodes(cityAsset2)).toHaveCount(assets.length / 2);
@@ -252,7 +252,7 @@ test(`Searching for an asset and removing it keeps the tree and viewer in tact`,
     await expect(assetTree.getAssetNodes()).toHaveCount(2 + 1); // Parent asset + the two electricity meter assets
 
     // Attempt to select and delete the "Electricity meter 1"
-    await assetsPage.deleteSelectedAsset(meter1.name);
+    await assetsPage.deleteSelectedAsset(manager, meter1.name);
     await expect(assetTree.getSelectedNodes()).toHaveCount(0);
     await expect(assetTree.getAssetNodes()).toContainText([parentAssets[1].name!, meter10.name]);
     await expect(assetTree.getAssetNodes()).toHaveCount(1 + 1); // Only parent + "Electricity meter 10" are visible now.
@@ -261,7 +261,7 @@ test(`Searching for an asset and removing it keeps the tree and viewer in tact`,
     await assetTree.fillFilterInput(battery10.name);
     await expect(assetTree.getAssetNodes()).toContainText([parentAssets[0].name!, battery10.name]);
     await expect(assetTree.getAssetNodes()).toHaveCount(2); // Parent asset + child electricity asset
-    await assetsPage.deleteSelectedAsset(battery10.name);
+    await assetsPage.deleteSelectedAsset(manager, battery10.name);
     await expect(assetTree.getSelectedNodes()).toHaveCount(0);
     await expect(assetTree.getAssetNodes()).toHaveCount(0); // Nothing is visible anymore, since there is nothing matching the "Battery 10" text filter.
 })
