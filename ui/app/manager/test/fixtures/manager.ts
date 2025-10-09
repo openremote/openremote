@@ -289,7 +289,7 @@ export class Manager {
       this.assets = [];
       for (const asset of assets) {
         await this.createAsset(asset, config);
-        await new Promise(resolve => setTimeout(resolve, 50)); // Prevent overload in HTTP requests
+        await new Promise(resolve => setTimeout(resolve, 200)); // Prevent overload in HTTP requests
       }
     }
   }
