@@ -201,8 +201,8 @@ test("Delete specified assets and verify they are removed", async ({ page, manag
   await manager.setup("smartcity", { assets });
   await manager.goToRealmStartPage("smartcity");
   await manager.navigateToTab("Assets");
-  await assetsPage.deleteSelectedAsset("Battery");
-  await assetsPage.deleteSelectedAsset("Solar Panel");
+  await assetsPage.deleteSelectedAsset(manager, "Battery");
+  await assetsPage.deleteSelectedAsset(manager, "Solar Panel");
   await expect(page.locator("text=Console")).toHaveCount(1);
   await expect(page.locator("text=Solar Panel")).toHaveCount(0);
   await expect(page.locator("text=Battery")).toHaveCount(0);
