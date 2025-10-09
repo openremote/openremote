@@ -58,6 +58,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
     public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, TheThingsStackProtocol.class);
 
     public static final String PROTOCOL_DISPLAY_NAME = "The Things Stack";
+    public static final int GET_DEVICE_LIMIT = 1000;
 
     private Optional<Map<String, String>> devEuiToDeviceIdMap = Optional.empty();
 
@@ -225,10 +226,10 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
     }
 
     private void initializeDevEuiToDeviceIdMap() {
-        Optional<String> host = getAgent().getHost().map(h -> h.trim());
+        Optional<String> host = getAgent().getHost().map(String::trim);
         Optional<Integer> port = getAgent().getPort();
-        Optional<String> apiKey = getAgent().getApiKey().map(key -> key.trim());
-        Optional<String> applicationId = getAgent().getApplicationId().map(key -> key.trim());
+        Optional<String> apiKey = getAgent().getApiKey().map(String::trim);
+        Optional<String> applicationId = getAgent().getApplicationId().map(String::trim);
 
         if (host.isEmpty() || apiKey.isEmpty() || applicationId.isEmpty()) {
             return;
@@ -240,23 +241,42 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
             String hostWithPort = port
                 .map(p -> String.format("%s:%d", host.get(), p))
                 .orElse(host.get());
-            String url = String.format("%s://%s/api/v3/applications/%s/devices?field_mask=name,ids",
-                getTTSApiScheme(), hostWithPort, applicationId.get());
-
-            HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("Authorization", "Bearer " + apiKey.get())
-                .header("Accept", "application/json")
-                .GET()
-                .build();
 
             HttpClient client = HttpClient.newHttpClient();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            ObjectMapper mapper = new ObjectMapper();
 
-            if (response.statusCode() == 200) {
-                ObjectMapper mapper = new ObjectMapper();
+            int page = 1;
+
+            while (true) {
+                String url = String.format(
+                    "%s://%s/api/v3/applications/%s/devices?field_mask=name,ids&limit=%d&page=%d",
+                    getTTSApiScheme(), hostWithPort, applicationId.get(), GET_DEVICE_LIMIT, page
+                );
+
+                HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("Authorization", "Bearer " + apiKey.get())
+                    .header("Accept", "application/json")
+                    .GET()
+                    .build();
+
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() != 200) {
+                    LOG.log(
+                        Level.WARNING,
+                        "CSV import failure because couldn't retrieve device list from LoRaWAN server [HTTP " +
+                        response.statusCode() + "]: " + response.body()
+                    );
+                    break;
+                }
+
                 JsonNode root = mapper.readTree(response.body());
                 JsonNode devices = root.path("end_devices");
+
+                if (!devices.isArray() || devices.isEmpty()) {
+                    break;
+                }
 
                 for (JsonNode device : devices) {
                     JsonNode ids = device.path("ids");
@@ -267,18 +287,19 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
                         map.put(devEui.toLowerCase(), deviceId);
                     }
                 }
-                this.devEuiToDeviceIdMap =  Optional.of(map);
-            } else {
-                LOG.log(
-                    Level.WARNING,
-                    "CSV import failure because couldn't retrieve device id list from the LoRaWAN network server [HTTP status code='" +
-                          response.statusCode() + "', error body='" + response.body() +"']"
-                );
+
+                if (devices.size() < GET_DEVICE_LIMIT) {
+                    break;
+                }
+
+                page++;
             }
+
+            this.devEuiToDeviceIdMap = Optional.of(map);
         } catch (Exception e) {
             LOG.log(
                 Level.WARNING,
-                "CSV import failure because couldn't retrieve device id list from the LoRaWAN network server", e
+                "CSV import failure because couldn't retrieve device list from the LoRaWAN server", e
             );
         }
     }
