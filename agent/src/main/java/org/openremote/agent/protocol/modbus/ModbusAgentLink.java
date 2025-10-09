@@ -19,29 +19,28 @@
  */
 package org.openremote.agent.protocol.modbus;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import jakarta.validation.constraints.NotNull;
 import org.openremote.model.asset.agent.AgentLink;
 
 import java.math.BigInteger;
 import java.util.Optional;
 
-//TODO: Make non-primitive parameters required
 public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
 
-    @JsonProperty(required=true)
+    @NotNull()
     @JsonPropertyDescription("Poll interval in milliseconds")
     private Long pollingMillis;
 
-    @JsonProperty(required=true)
+    @NotNull()
     @JsonPropertyDescription("Memory area to read from during read request")
     private ReadMemoryArea readMemoryArea;
 
-    @JsonProperty(required=true)
+    @NotNull()
     @JsonPropertyDescription("Type to convert the returned data to. As specified by the PLC4X Modbus data types.")
     private ModbusDataType readValueType;
 
-    @JsonProperty(required=true)
+    @NotNull()
     @JsonPropertyDescription("Zero based address from which the value is read from")
     private Integer readAddress;
 
