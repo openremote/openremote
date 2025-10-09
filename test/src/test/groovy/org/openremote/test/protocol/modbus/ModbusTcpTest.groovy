@@ -290,14 +290,8 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         ModbusAgentLink agentLink
 
 
-
-
-
-
         then: "a client should be created and the pollingMap is populated"
         conditions.eventually {
-
-
             def protocol = agentService.getProtocolInstance(agent.id) as ModbusTcpProtocol
             assert protocol != null
             assert protocol.batchGroups.size() > 0
@@ -312,38 +306,11 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             assert (latestReadMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage.class).getCount() == 1
         }
 
-
-        then: "register batches should be created and attributes should receive values"
-        conditions.eventually {
-            def protocol = agentService.getProtocolInstance(agent.id) as ModbusSerialProtocol
-            assert protocol != null
-
-
-
-            device = assetStorageService.find(device.getId(), true)
-
-            // Verify values were read
-            assert device.getAttribute("register1").flatMap { it.getValue() }.isPresent()
-            assert device.getAttribute("register2").flatMap { it.getValue() }.isPresent()
-            assert device.getAttribute("temperature").flatMap { it.getValue() }.isPresent()
-            assert device.getAttribute("switch1").flatMap { it.getValue() }.isPresent()
-
-            // Check float value (should be 23.5 from mock)
-            assert Math.abs((device.getAttribute("temperature").flatMap { it.getValue() }.get() as Double) - 23.5) < 0.1
-        }
-
-
-
-
-
-
-
         when: "the attribute is updated"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(ship.getId(), ShipAsset.SPEED, 123D))
         ship.addOrReplaceAttributes(new Attribute<?>(ShipAsset.SPEED, 10))
 
         then: "the value is sent to the Modbus server"
-
         conditions.eventually {
             def msg = (latestWriteMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage)
             assert msg != null
