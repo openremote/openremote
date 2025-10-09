@@ -338,7 +338,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
 
     private Optional<Class<? extends Asset<?>>> resolveAssetClass(String simpleClassName, CsvRecord csvRecord) {
         if (simpleClassName == null || csvRecord == null) {
-            return null;
+            return Optional.empty();
         }
 
         return ValueUtil.getAssetClass(simpleClassName)
