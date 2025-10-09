@@ -231,26 +231,35 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
                 }
 
                 byte[] response = new byte[expectedResponseLength];
-                int totalBytesRead = readWithTimeout(response, 50);
+                int totalBytesRead = readWithTimeout(response, 150);
 
                 if (totalBytesRead >= 5 && response[0] == unitId && response[1] == functionCode) {
                     LOG.info("-------------MODBUS READ SUCCESS------------- Address:"+ address  );
                     onRequestSuccess(messageId);
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
                     return parseModbusResponse(response, functionCode, dataType);
                 } else if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {
                     int exceptionCode = response[2] & 0xFF;
                     onRequestFailure(messageId, "Modbus read function=" + functionCode + " address=" + address,
                         "Exception code: " + exceptionCode);
+                    flushSerialBuffer();
                 } else if (totalBytesRead == 0) {
                     onRequestFailure(messageId, "Modbus read function=" + functionCode + " address=" + address + " unit=" + unitId,
                         "Timeout - no response received");
+                    flushSerialBuffer();
                 } else {
                     onRequestFailure(messageId, "Modbus read function=" + functionCode + " address=" + address + " unit=" + unitId,
                         "Invalid response - received " + totalBytesRead + " bytes, expected " + expectedResponseLength);
+                    flushSerialBuffer();
                 }
 
             } catch (Exception e) {
                 onRequestFailure(messageId, "Modbus read function=" + functionCode + " address=" + address, e);
+                flushSerialBuffer();
             }
 
             return null;
@@ -403,6 +412,23 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         }
     }
     
+    /**
+     * Flush any remaining data from the serial buffer.
+     * Should be called on error paths before releasing the synchronization lock.
+     */
+    private void flushSerialBuffer() {
+        try {
+            int available = serialPort.bytesAvailable();
+            if (available > 0) {
+                byte[] flush = new byte[available];
+                serialPort.readBytes(flush, available, 0);
+                LOG.fine("Flushed " + available + " stale bytes from serial buffer");
+            }
+        } catch (Exception e) {
+            LOG.log(Level.FINE, "Error flushing serial buffer: " + e.getMessage(), e);
+        }
+    }
+
     private int readWithTimeout(byte[] buffer, long timeoutMs) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         int totalBytesRead = 0;
@@ -677,31 +703,41 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
                 }
 
                 byte[] response = new byte[expectedResponseLength];
-                int totalBytesRead = readWithTimeout(response, 50);
+                int totalBytesRead = readWithTimeout(response, 150);
 
                 if (totalBytesRead == expectedResponseLength && response[0] == unitId && response[1] == functionCode) {
                     onRequestSuccess(messageId);
+                    try {
+                        Thread.sleep(10); //Modbus Frame spacing
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
                     return response;
                 } else if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {
                     int exceptionCode = response[2] & 0xFF;
                     int endAddress = address + quantity - 1;
                     onRequestFailure(messageId, "Batch read function=" + functionCode + " registers=" + address + "-" + endAddress + " unit=" + unitId,
                         "Exception code: " + exceptionCode + " - This may indicate illegal/unsupported registers in range. Consider adding them to 'illegalRegisters' agent configuration.");
+                    flushSerialBuffer();
                 } else if (totalBytesRead == 0) {
                     int endAddress = address + quantity - 1;
                     onRequestFailure(messageId, "Batch read function=" + functionCode + " registers=" + address + "-" + endAddress + " unit=" + unitId,
                         "Timeout - no response received");
+                    flushSerialBuffer();
                 } else if (totalBytesRead != expectedResponseLength) {
                     int endAddress = address + quantity - 1;
                     onRequestFailure(messageId, "Batch read function=" + functionCode + " registers=" + address + "-" + endAddress + " unit=" + unitId,
                         "Invalid response - received " + totalBytesRead + " bytes, expected " + expectedResponseLength + " - This may indicate illegal/unsupported registers in range. Consider adding them to 'illegalRegisters' agent configuration.");
+                    flushSerialBuffer();
                 } else {
                     onRequestFailure(messageId, "Batch read function=" + functionCode + " address=" + address + " unit=" + unitId,
                         "Response validation failed - Unit ID or Function Code mismatch (received unitId=" + (response[0] & 0xFF) + ", expected=" + unitId + ", received function=" + (response[1] & 0xFF) + ", expected=" + functionCode + ")");
+                    flushSerialBuffer();
                 }
 
             } catch (Exception e) {
                 onRequestFailure(messageId, "Batch read function=" + functionCode + " address=" + address + " quantity=" + quantity, e);
+                flushSerialBuffer();
             }
 
             return null;
