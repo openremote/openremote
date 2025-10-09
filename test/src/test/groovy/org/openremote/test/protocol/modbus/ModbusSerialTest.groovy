@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
+import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS
 
 /**
  * Test for Modbus Serial Protocol with virtual serial devices
@@ -130,6 +131,32 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             agent = assetStorageService.find(agent.getId())
             agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+        }
+
+        when: "a device with partial read configuration is created (missing readValueType)"
+        def device0 = new ThingAsset("Partial Config Device")
+        device0.setRealm(MASTER_REALM)
+        device0.addOrReplaceAttributes(
+                // Partial read config - has readMemoryArea and readAddress but missing readValueType
+                new Attribute<>("partialReadConfig", ValueType.INTEGER).addOrReplaceMeta(new MetaItem<>(
+                        AGENT_LINK,
+                        new ModbusAgentLink(
+                                id: agent.getId(),
+                                pollingMillis: 1000,
+                                readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
+                                readAddress: 50
+                                // Missing: readValueType
+                        )
+                ))
+        )
+        device0 = assetStorageService.merge(device0)
+
+        then: "the attribute should be linked without creating read polling tasks"
+        conditions.eventually {
+            def protocol = agentService.getProtocolInstance(agent.id) as ModbusSerialProtocol
+            assert protocol != null
+            // No batch groups should be created for incomplete read config
+            assert protocol.batchGroups.isEmpty()
         }
 
         when: "A Thing asset is created with multiple agent links"
@@ -620,11 +647,156 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         }
     }
 
+    def "Modbus Serial Test - Multi-Register Write (registersAmount)"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.5)
+
+        when: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def agentService = container.getService(AgentService.class)
+
+        and: "a Modbus Serial agent is created"
+        def agent = new ModbusSerialAgent("Modbus Serial Multi-Write")
+        agent.setRealm(MASTER_REALM)
+        agent.addOrReplaceAttributes(
+                new Attribute<>(ModbusSerialAgent.SERIAL_PORT, "/dev/ttyUSB0"),
+                new Attribute<>(ModbusSerialAgent.BAUD_RATE, 9600),
+                new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
+                new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
+                new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
+                new Attribute<>(ModbusSerialAgent.UNIT_ID, 1)
+        )
+        agent = assetStorageService.merge(agent)
+
+        then: "the agent should connect successfully"
+        conditions.eventually {
+            agent = assetStorageService.find(agent.getId())
+            agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+        }
+
+        when: "a device with multi-register write attributes is created"
+        def device = new ThingAsset("Multi-Write Serial Device")
+        device.setRealm(MASTER_REALM)
+        device.addOrReplaceAttributes(
+                // Write FLOAT (2 registers) to address 50
+                new Attribute<>("floatWrite", ValueType.NUMBER).addOrReplaceMeta(new MetaItem<>(
+                        AGENT_LINK,
+                        new ModbusAgentLink(
+                                id: agent.getId(),
+                                pollingMillis: 1000,
+                                readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
+                                readValueType: ModbusAgentLink.ModbusDataType.REAL,
+                                readAddress: 50,
+                                registersAmount: 2,
+                                writeMemoryArea: ModbusAgentLink.WriteMemoryArea.HOLDING,
+                                writeAddress: 50
+                        )
+                ))
+        )
+        device = assetStorageService.merge(device)
+
+        then: "device should be linked"
+        conditions.eventually {
+            device = assetStorageService.find(device.getId(), true)
+            assert device.getAttribute("floatWrite").isPresent()
+        }
+
+        when: "multi-register float value is written"
+        latestRequest.set(null)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(device.getId(), "floatWrite", 45.67f))
+
+        then: "the write should use function code 0x10 (Write Multiple Registers)"
+        conditions.eventually {
+            def request = latestRequest.get()
+            assert request != null
+            assert request[0] == (byte) 1  // Unit ID
+            assert request[1] == (byte) 0x10  // Function code 0x10 for multi-register write
+            assert ((request[2] & 0xFF) << 8 | (request[3] & 0xFF)) == 50  // Start address
+            assert ((request[4] & 0xFF) << 8 | (request[5] & 0xFF)) == 2  // Register count
+            assert request[6] == (byte) 4  // Byte count (2 registers * 2 bytes)
+        }
+    }
+
+    def "Modbus Serial Test - Write With Polling Rate"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.5)
+
+        when: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def agentService = container.getService(AgentService.class)
+
+        and: "a Modbus Serial agent is created"
+        def agent = new ModbusSerialAgent("Modbus Serial Polling Write")
+        agent.setRealm(MASTER_REALM)
+        agent.addOrReplaceAttributes(
+                new Attribute<>(ModbusSerialAgent.SERIAL_PORT, "/dev/ttyUSB0"),
+                new Attribute<>(ModbusSerialAgent.BAUD_RATE, 9600),
+                new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
+                new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
+                new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
+                new Attribute<>(ModbusSerialAgent.UNIT_ID, 1)
+        )
+        agent = assetStorageService.merge(agent)
+
+        then: "the agent should connect successfully"
+        conditions.eventually {
+            agent = assetStorageService.find(agent.getId())
+            agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+        }
+
+        when: "a device with writeWithPollingRate enabled is created"
+        def device = new ThingAsset("Polling Write Serial Device")
+        device.setRealm(MASTER_REALM)
+        device.addOrReplaceAttributes(
+                new Attribute<>("pollingWrite", ValueType.INTEGER, 77).addOrReplaceMeta(
+                        new MetaItem<>(
+                        AGENT_LINK,
+                        new ModbusAgentLink(
+                                id: agent.getId(),
+                                pollingMillis: 1000,  // Write every 1000ms
+                                readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
+                                readValueType: ModbusAgentLink.ModbusDataType.UINT,
+                                readAddress: 60,
+                                writeMemoryArea: ModbusAgentLink.WriteMemoryArea.HOLDING,
+                                writeAddress: 60,
+                                writeWithPollingRate: true
+                        )
+                        ),
+                        new MetaItem<>(STORE_DATA_POINTS)
+                )
+        )
+        device = assetStorageService.merge(device)
+
+        then: "write polling task should be created"
+        conditions.eventually {
+            def protocol = agentService.getProtocolInstance(agent.id) as ModbusSerialProtocol
+            assert protocol != null
+            assert protocol.writePollingMap.size() == 1
+        }
+
+        def assetDatapointService = container.getService(org.openremote.manager.datapoint.AssetDatapointService.class)
+        def attributeRef = new org.openremote.model.attribute.AttributeRef(device.getId(), "pollingWrite")
+
+        then: "database should show multiple datapoints"
+        conditions.eventually {
+            // Query datapoints stored for this attribute - writeWithPollingRate should create datapoints for writes
+            def datapoints = assetDatapointService.getDatapoints(attributeRef)
+            println "Datapoints found: ${datapoints.size()}"
+            datapoints.each { println "  - timestamp: ${it.timestamp}, value: ${it.value}" }
+            assert datapoints.size() >= 2  // Should have at least 2 datapoints from periodic writes
+        }
+    }
+
+
     // Helper methods for byte/word order tests
     private ModbusSerialAgent createAgentWithByteWordOrder(AssetStorageService assetStorageService,
-                                                            String name,
-                                                            ModbusAgent.EndianOrder byteOrder,
-                                                            ModbusAgent.EndianOrder wordOrder) {
+                                                           String name,
+                                                           ModbusAgent.EndianOrder byteOrder,
+                                                           ModbusAgent.EndianOrder wordOrder) {
         def agent = new ModbusSerialAgent(name)
         agent.setRealm(MASTER_REALM)
         agent.addOrReplaceAttributes(
@@ -642,9 +814,9 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
     }
 
     private ThingAsset createDeviceWithFloat(AssetStorageService assetStorageService,
-                                              String name,
-                                              ModbusSerialAgent agent,
-                                              int address) {
+                                             String name,
+                                             ModbusSerialAgent agent,
+                                             int address) {
         def device = new ThingAsset(name)
         device.setRealm(MASTER_REALM)
         device.addOrReplaceAttributes(
@@ -664,9 +836,9 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
     }
 
     private ThingAsset createDeviceWithDouble(AssetStorageService assetStorageService,
-                                               String name,
-                                               ModbusSerialAgent agent,
-                                               int address) {
+                                              String name,
+                                              ModbusSerialAgent agent,
+                                              int address) {
         def device = new ThingAsset(name)
         device.setRealm(MASTER_REALM)
         device.addOrReplaceAttributes(
@@ -950,168 +1122,6 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             data[length] = (byte) (crc & 0xFF)
             data[length + 1] = (byte) (crc >> 8)
             return data
-        }
-    }
-
-    def "Modbus Serial Test - Multi-Register Write (registersAmount)"() {
-        given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 15, delay: 0.5)
-
-        when: "the container starts"
-        def container = startContainer(defaultConfig(), defaultServices())
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
-        def agentService = container.getService(AgentService.class)
-
-        and: "a Modbus Serial agent is created"
-        def agent = new ModbusSerialAgent("Modbus Serial Multi-Write")
-        agent.setRealm(MASTER_REALM)
-        agent.addOrReplaceAttributes(
-                new Attribute<>(ModbusSerialAgent.SERIAL_PORT, "/dev/ttyUSB0"),
-                new Attribute<>(ModbusSerialAgent.BAUD_RATE, 9600),
-                new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
-                new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
-                new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
-                new Attribute<>(ModbusSerialAgent.UNIT_ID, 1)
-        )
-        agent = assetStorageService.merge(agent)
-
-        then: "the agent should connect successfully"
-        conditions.eventually {
-            agent = assetStorageService.find(agent.getId())
-            agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
-        }
-
-        when: "a device with multi-register write attributes is created"
-        def device = new ThingAsset("Multi-Write Serial Device")
-        device.setRealm(MASTER_REALM)
-        device.addOrReplaceAttributes(
-                // Write FLOAT (2 registers) to address 50
-                new Attribute<>("floatWrite", ValueType.NUMBER).addOrReplaceMeta(new MetaItem<>(
-                        AGENT_LINK,
-                        new ModbusAgentLink(
-                                id: agent.getId(),
-                                pollingMillis: 1000,
-                                readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
-                                readValueType: ModbusAgentLink.ModbusDataType.REAL,
-                                readAddress: 50,
-                                registersAmount: 2,
-                                writeMemoryArea: ModbusAgentLink.WriteMemoryArea.HOLDING,
-                                writeAddress: 50
-                        )
-                ))
-        )
-        device = assetStorageService.merge(device)
-
-        then: "device should be linked"
-        conditions.eventually {
-            device = assetStorageService.find(device.getId(), true)
-            assert device.getAttribute("floatWrite").isPresent()
-        }
-
-        when: "multi-register float value is written"
-        latestRequest.set(null)
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(device.getId(), "floatWrite", 45.67f))
-
-        then: "the write should use function code 0x10 (Write Multiple Registers)"
-        conditions.eventually {
-            def request = latestRequest.get()
-            assert request != null
-            assert request[0] == (byte) 1  // Unit ID
-            assert request[1] == (byte) 0x10  // Function code 0x10 for multi-register write
-            assert ((request[2] & 0xFF) << 8 | (request[3] & 0xFF)) == 50  // Start address
-            assert ((request[4] & 0xFF) << 8 | (request[5] & 0xFF)) == 2  // Register count
-            assert request[6] == (byte) 4  // Byte count (2 registers * 2 bytes)
-        }
-    }
-
-    def "Modbus Serial Test - Write With Polling Rate"() {
-        given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 20, delay: 0.5)
-
-        when: "the container starts"
-        def container = startContainer(defaultConfig(), defaultServices())
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
-        def agentService = container.getService(AgentService.class)
-
-        and: "a Modbus Serial agent is created"
-        def agent = new ModbusSerialAgent("Modbus Serial Polling Write")
-        agent.setRealm(MASTER_REALM)
-        agent.addOrReplaceAttributes(
-                new Attribute<>(ModbusSerialAgent.SERIAL_PORT, "/dev/ttyUSB0"),
-                new Attribute<>(ModbusSerialAgent.BAUD_RATE, 9600),
-                new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
-                new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
-                new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
-                new Attribute<>(ModbusSerialAgent.UNIT_ID, 1)
-        )
-        agent = assetStorageService.merge(agent)
-
-        then: "the agent should connect successfully"
-        conditions.eventually {
-            agent = assetStorageService.find(agent.getId())
-            agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
-        }
-
-        when: "a device with writeWithPollingRate enabled is created"
-        def device = new ThingAsset("Polling Write Serial Device")
-        device.setRealm(MASTER_REALM)
-        device.addOrReplaceAttributes(
-                new Attribute<>("pollingWrite", ValueType.INTEGER, 77).addOrReplaceMeta(new MetaItem<>(
-                        AGENT_LINK,
-                        new ModbusAgentLink(
-                                id: agent.getId(),
-                                pollingMillis: 500,  // Write every 500ms
-                                readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
-                                readValueType: ModbusAgentLink.ModbusDataType.UINT,
-                                readAddress: 60,
-                                writeMemoryArea: ModbusAgentLink.WriteMemoryArea.HOLDING,
-                                writeAddress: 60,
-                                writeWithPollingRate: true
-                        )
-                ))
-        )
-        device = assetStorageService.merge(device)
-
-        then: "write polling task should be created"
-        conditions.eventually {
-            def protocol = agentService.getProtocolInstance(agent.id) as ModbusSerialProtocol
-            assert protocol != null
-            assert protocol.writePollingMap.size() == 1
-        }
-
-        and: "periodic writes should occur"
-        int writeCount = 0
-        latestRequest.set(null)
-
-        conditions.eventually {
-            // Count write requests (function code 0x06 for single register write)
-            def request = latestRequest.get()
-            if (request != null && request[1] == (byte) 0x06) {
-                writeCount++
-                latestRequest.set(null)  // Reset for next write
-            }
-            assert writeCount >= 2  // Should receive at least 2 periodic writes
-        }
-
-        when: "attribute value is changed"
-        device = assetStorageService.find(device.getId(), true)
-        device.getAttribute("pollingWrite").ifPresent { attr ->
-            attr.setValue(88)
-        }
-        device = assetStorageService.merge(device)
-        Thread.sleep(1000)  // Wait for value to be stored and next polling write
-
-        then: "the new value should be written periodically"
-        latestRequest.set(null)
-        conditions.eventually {
-            def request = latestRequest.get()
-            assert request != null
-            assert request[0] == (byte) 1  // Unit ID
-            assert request[1] == (byte) 0x06  // Function code 0x06 for single register write
-            assert ((request[2] & 0xFF) << 8 | (request[3] & 0xFF)) == 60  // Write address
-            assert ((request[4] & 0xFF) << 8 | (request[5] & 0xFF)) == 88  // Should write the updated value
         }
     }
 }

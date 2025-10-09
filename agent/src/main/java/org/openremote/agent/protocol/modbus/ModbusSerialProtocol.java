@@ -81,58 +81,33 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
 
         connectionString = "modbus-rtu://" + portName + "?baud=" + baudRate + "&data=" + dataBits + "&stop=" + stopBits + "&parity=" + parity;
 
-        // Retry logic with exponential backoff
-        int maxRetries = 3;
-        int retryDelayMs = 500; // Start with 500ms
-        Exception lastException = null;
-
-        for (int attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                //LOG.info("Attempting to acquire serial port " + portName + " (attempt " + attempt + "/" + maxRetries + ")");
-
-                // Acquire shared serial port through SerialPortManager
-                org.openremote.agent.protocol.serial.SerialPortWrapper wrapper = SerialPortManager.getInstance().acquirePort(
-                        portName,
-
-                        baudRate,
-                        dataBits,
-                        stopBits,
-                        mapParityToSerialPort(parity)
-                );
-
-                if (wrapper != null && wrapper.isOpen()) {
-                    serialPort = wrapper;
-                    setConnectionStatus(ConnectionStatus.CONNECTED);
-                    String parityName = agent.getParity().name();
-                    LOG.info("Modbus on serial device started successfully, " + portName + " (" + baudRate + "," + dataBits + "," + parityName + "," + stopBits + ")");
-                    return; // Success - exit method
-                } else {
-                    lastException = new RuntimeException("Failed to open serial port: " + portName + " (wrapper " + (wrapper == null ? "is null" : "is not open") + ")");
-                    LOG.warning("Serial port acquisition failed on attempt " + attempt + "/" + maxRetries + ": " + lastException.getMessage());
-                }
-            } catch (Exception e) {
-                lastException = e;
-                LOG.log(Level.WARNING, "Exception during serial port acquisition (attempt " + attempt + "/" + maxRetries + "): " + e.getMessage(), e);
+        try {
+            // Acquire shared serial port through SerialPortManager
+            org.openremote.agent.protocol.serial.SerialPortWrapper wrapper = SerialPortManager.getInstance().acquirePort(
+                    portName,
+                    baudRate,
+                    dataBits,
+                    stopBits,
+                    mapParityToSerialPort(parity)
+            );
+            Thread.sleep(100); //Delay to allow connectionStatus attribute processing
+            if (wrapper != null && wrapper.isOpen()) {
+                serialPort = wrapper;
+                setConnectionStatus(ConnectionStatus.CONNECTED);
+                String parityName = agent.getParity().name();
+                LOG.info("Modbus on serial device started successfully, " + connectionString);
+                return; // Success - exit method
+            } else {
+                LOG.warning("Serial port acquisition failed");
             }
-
-            // If not the last attempt, wait before retrying
-            if (attempt < maxRetries) {
-                try {
-                    LOG.info("Waiting " + retryDelayMs + "ms before retry...");
-                    Thread.sleep(retryDelayMs);
-                    retryDelayMs *= 2; // Exponential backoff: 500ms, 1000ms, 2000ms
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    LOG.warning("Retry delay interrupted, aborting connection attempt");
-                    break;
-                }
-            }
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Exception during serial port acquisition: " + e.getMessage(), e);
+            LOG.finest("Here3");
         }
 
         // All retries exhausted
-        LOG.log(Level.SEVERE, "Failed to start Modbus Serial Protocol after " + maxRetries + " attempts");
+        LOG.log(Level.SEVERE, "Failed to start Modbus Serial Protocol for " + connectionString);
         setConnectionStatus(ConnectionStatus.ERROR);
-        throw lastException != null ? lastException : new RuntimeException("Failed to acquire serial port after " + maxRetries + " attempts");
     }
 
     @Override
@@ -179,126 +154,6 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Error writing to Modbus device: " + e.getMessage(), e);
         }
-    }
-
-    private Object readModbusValue(ModbusAgentLink.ReadMemoryArea memoryArea, int unitId, int address, int quantity, ModbusAgentLink.ModbusDataType dataType) {
-        if (serialPort == null || !serialPort.isOpen()) {
-            LOG.warning("Serial port not connected");
-            return null;
-        }
-        
-        byte functionCode;
-        switch (memoryArea) {
-            case COIL:
-                functionCode = 0x01;
-                break;
-            case DISCRETE:
-                functionCode = 0x02;
-                break;
-            case HOLDING:
-                functionCode = 0x03;
-                break;
-            case INPUT:
-                functionCode = 0x04;
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported read memory area: " + memoryArea);
-        }
-        
-        return performModbusRead(unitId, functionCode, address, quantity, dataType);
-    }
-    
-    private Object performModbusRead(int unitId, byte functionCode, int address, int quantity, ModbusAgentLink.ModbusDataType dataType) {
-        // Synchronize on the serial port's shared lock to ensure atomic write-read cycles across all agents sharing the port
-        synchronized (serialPort.getSynchronizationLock()) {
-            String messageId = "read_" + unitId + "_" + functionCode + "_" + address + "_" + quantity;
-            //LOG.info("Performing Modbus Read" + unitId + functionCode + address + quantity);
-            try {
-                byte[] request = createModbusRequest(unitId, functionCode, address, quantity);
-
-                int bytesWritten = serialPort.writeBytes(request, request.length);
-                if (bytesWritten != request.length) {
-                    LOG.warning("Incomplete write: " + bytesWritten + " of " + request.length + " bytes");
-                    return null;
-                }
-
-                // Calculate expected response length
-                int expectedResponseLength;
-                if (functionCode == 0x01 || functionCode == 0x02) {
-                    expectedResponseLength = 5 + ((quantity + 7) / 8); // Boolean values packed in bytes
-                } else {
-                    expectedResponseLength = 5 + (quantity * 2); // Each register is 2 bytes
-                }
-
-                byte[] response = new byte[expectedResponseLength];
-                int totalBytesRead = readWithTimeout(response, 150);
-
-                if (totalBytesRead >= 5 && response[0] == unitId && response[1] == functionCode) {
-                    LOG.info("-------------MODBUS READ SUCCESS------------- Address:"+ address  );
-                    onRequestSuccess(messageId);
-                    try {
-                        Thread.sleep(10);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                    return parseModbusResponse(response, functionCode, dataType);
-                } else if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {
-                    int exceptionCode = response[2] & 0xFF;
-                    onRequestFailure(messageId, "Modbus read function=" + functionCode + " address=" + address,
-                        "Exception code: " + exceptionCode);
-                    flushSerialBuffer();
-                } else if (totalBytesRead == 0) {
-                    onRequestFailure(messageId, "Modbus read function=" + functionCode + " address=" + address + " unit=" + unitId,
-                        "Timeout - no response received");
-                    flushSerialBuffer();
-                } else {
-                    onRequestFailure(messageId, "Modbus read function=" + functionCode + " address=" + address + " unit=" + unitId,
-                        "Invalid response - received " + totalBytesRead + " bytes, expected " + expectedResponseLength);
-                    flushSerialBuffer();
-                }
-
-            } catch (Exception e) {
-                onRequestFailure(messageId, "Modbus read function=" + functionCode + " address=" + address, e);
-                flushSerialBuffer();
-            }
-
-            return null;
-        }
-    }
-    
-    private Object parseModbusResponse(byte[] response, byte functionCode, ModbusAgentLink.ModbusDataType dataType) {
-        int byteCount = response[2] & 0xFF;
-
-        if (functionCode == 0x01 || functionCode == 0x02) {
-            // Read coils or discrete inputs
-            int numBits = byteCount * 8;
-
-            if (byteCount == 1 && ((response[3] & 0xFE) == 0)) {
-                // Single bit optimization: if only one byte and only first bit is set
-                return (response[3] & 0x01) != 0;
-            }
-
-            // Multiple bits: return boolean array
-            boolean[] bits = new boolean[numBits];
-            for (int byteIndex = 0; byteIndex < byteCount; byteIndex++) {
-                int currentByte = response[3 + byteIndex] & 0xFF;
-                for (int bitIndex = 0; bitIndex < 8; bitIndex++) {
-                    int overallBitIndex = byteIndex * 8 + bitIndex;
-                    if (overallBitIndex < numBits) {
-                        bits[overallBitIndex] = ((currentByte >> bitIndex) & 0x01) != 0;
-                    }
-                }
-            }
-            return bits;
-        } else if (functionCode == 0x03 || functionCode == 0x04) {
-            // Read holding or input registers - use shared parsing logic
-            int registerCount = byteCount / 2;
-            byte[] dataBytes = new byte[byteCount];
-            System.arraycopy(response, 3, dataBytes, 0, byteCount);
-            return parseMultiRegisterValue(dataBytes, registerCount, dataType);
-        }
-
-        return null;
     }
     
     private boolean writeSingleCoil(int unitId, int address, boolean value) {

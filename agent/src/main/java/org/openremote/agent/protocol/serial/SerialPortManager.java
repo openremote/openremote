@@ -148,7 +148,7 @@ public class SerialPortManager {
                 sp.setNumDataBits(dataBits);
                 sp.setNumStopBits(stopBits);
                 sp.setParity(parity);
-                sp.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 50, 0);
+                sp.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 100, 0);
 
                 wrapper = new RealSerialPortWrapper(sp);
 

@@ -90,8 +90,8 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         this.readValueType = readValueType;
     }
 
-    public Integer getReadAddress() {
-        return readAddress;
+    public Optional<Integer> getReadAddress() {
+        return Optional.ofNullable(readAddress);
     }
 
     public void setReadAddress(Integer readAddress) {
@@ -106,24 +106,24 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         this.writeMemoryArea = writeMemoryArea;
     }
 
-    public Integer getWriteAddress() {
-        return writeAddress;
+    public Optional<Integer> getWriteAddress() {
+        return Optional.ofNullable(writeAddress);
     }
 
     public void setWriteAddress(Integer writeAddress) {
         this.writeAddress = writeAddress;
     }
 
-    public Integer getRegistersAmount() {
-        return registersAmount;
+    public Optional<Integer> getRegistersAmount() {
+        return Optional.ofNullable(registersAmount);
     }
 
     public void setRegistersAmount(Integer registersAmount) {
         this.registersAmount = registersAmount;
     }
 
-    public Boolean getWriteWithPollingRate() {
-        return writeWithPollingRate;
+    public Optional<Boolean> getWriteWithPollingRate() {
+        return Optional.ofNullable(writeWithPollingRate);
     }
 
     public void setWriteWithPollingRate(Boolean writeWithPollingRate) {

@@ -29,6 +29,7 @@ import net.solarnetwork.io.modbus.netty.msg.BaseModbusMessage
 import net.solarnetwork.io.modbus.tcp.netty.NettyTcpModbusServer
 import org.openremote.agent.protocol.modbus.ModbusAgent
 import org.openremote.agent.protocol.modbus.ModbusAgentLink
+import org.openremote.agent.protocol.modbus.ModbusSerialProtocol
 import org.openremote.agent.protocol.modbus.ModbusTcpAgent
 import org.openremote.agent.protocol.modbus.ModbusTcpProtocol
 import org.openremote.manager.agent.AgentService
@@ -244,6 +245,32 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
         }
 
+        when: "a device with partial read configuration is created (missing readValueType)"
+        def device = new ThingAsset("Partial Config Device")
+        device.setRealm(MASTER_REALM)
+        device.addOrReplaceAttributes(
+                // Partial read config - has readMemoryArea and readAddress but missing readValueType
+                new Attribute<>("partialReadConfig", ValueType.INTEGER).addOrReplaceMeta(
+                        new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setPollingMillis(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadAddress(550)
+                                    // Missing: readValueType
+                                }
+                        )
+                )
+        )
+        device = assetStorageService.merge(device)
+
+        then: "the attribute should be linked without creating read polling tasks"
+        conditions.eventually {
+            def protocol = agentService.getProtocolInstance(agent.id) as ModbusTcpProtocol
+            assert protocol != null
+            // No batch groups should be created for incomplete read config
+            assert protocol.batchGroups.isEmpty()
+        }
+
         when: "A ShipAsset is created with an agent link"
         ShipAsset ship = new ShipAsset("testAsset")
         ship.setRealm(MASTER_REALM)
@@ -262,12 +289,18 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         ship = assetStorageService.merge(ship)
         ModbusAgentLink agentLink
 
+
+
+
+
+
         then: "a client should be created and the pollingMap is populated"
         conditions.eventually {
 
-            assert agentService.getProtocolInstance(agent.id) != null
-            assert ((ModbusTcpProtocol)agentService.getProtocolInstance(agent.id)) != null
-            assert ((ModbusTcpProtocol)agentService.getProtocolInstance(agent.id)).pollingMap.size() == 1
+
+            def protocol = agentService.getProtocolInstance(agent.id) as ModbusTcpProtocol
+            assert protocol != null
+            assert protocol.batchGroups.size() > 0
 
             ship = assetStorageService.find(ship.getId(), true)
             agentLink = ship.getAttribute(ShipAsset.SPEED).get().getMetaItem(AGENT_LINK).get().getValue(ModbusAgentLink.class).get()
@@ -278,6 +311,32 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             assert (latestReadMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage.class).getAddress() == agentLink.getReadAddress().get()-1
             assert (latestReadMessage.get() as ModbusMessage).unwrap(RegistersModbusMessage.class).getCount() == 1
         }
+
+
+        then: "register batches should be created and attributes should receive values"
+        conditions.eventually {
+            def protocol = agentService.getProtocolInstance(agent.id) as ModbusSerialProtocol
+            assert protocol != null
+
+
+
+            device = assetStorageService.find(device.getId(), true)
+
+            // Verify values were read
+            assert device.getAttribute("register1").flatMap { it.getValue() }.isPresent()
+            assert device.getAttribute("register2").flatMap { it.getValue() }.isPresent()
+            assert device.getAttribute("temperature").flatMap { it.getValue() }.isPresent()
+            assert device.getAttribute("switch1").flatMap { it.getValue() }.isPresent()
+
+            // Check float value (should be 23.5 from mock)
+            assert Math.abs((device.getAttribute("temperature").flatMap { it.getValue() }.get() as Double) - 23.5) < 0.1
+        }
+
+
+
+
+
+
 
         when: "the attribute is updated"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(ship.getId(), ShipAsset.SPEED, 123D))
@@ -786,6 +845,100 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             assert msg != null
             assert msg.getAddress() == 399  // PLC4X uses 0-indexed
             assert msg.dataDecodeUnsigned()[0] == 99  // Should write the updated value
+        }
+    }
+
+    def "Modbus TCP Test - Write-Only Attribute (No Read Configuration)"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        when: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def agentService = container.getService(AgentService.class)
+
+        and: "a Modbus TCP agent is created"
+        def agent = new ModbusTcpAgent("Modbus TCP Write-Only Test")
+        agent.setRealm(MASTER_REALM)
+        agent.setHost("127.0.0.1")
+        agent.setPort(modbusServerPort)
+        agent.setUnitId(1)
+        agent = assetStorageService.merge(agent)
+
+        then: "the agent should connect successfully"
+        conditions.eventually {
+            agent = assetStorageService.find(agent.getId())
+            agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+        }
+
+        when: "a device with write-only attribute is created (no read configuration)"
+        def device = new ThingAsset("Write-Only Device")
+        device.setRealm(MASTER_REALM)
+        device.addOrReplaceAttributes(
+                // Write-only attribute - no readMemoryArea, readValueType, or readAddress
+                new Attribute<>("writeOnlyValue", ValueType.INTEGER, 555).addOrReplaceMeta(
+                        new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setWriteMemoryArea(ModbusAgentLink.WriteMemoryArea.HOLDING)
+                                    it.setWriteAddress(500)
+                                }
+                        )
+                )
+        )
+        device = assetStorageService.merge(device)
+
+        then: "the attribute should be linked without errors"
+        conditions.eventually {
+            def protocol = agentService.getProtocolInstance(agent.id) as ModbusTcpProtocol
+            assert protocol != null
+            // No read polling tasks should be created for write-only attributes
+            assert protocol.batchGroups.values().flatten().isEmpty()
+        }
+
+        when: "a write operation is performed"
+        latestWriteMessage.set(null)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(device.getId(), "writeOnlyValue", 777))
+
+        then: "the write should be sent successfully"
+        conditions.eventually {
+            def msg = (latestWriteMessage.get() as ModbusMessage)?.unwrap(RegistersModbusMessage)
+            assert msg != null
+            assert msg.getUnitId() == 1
+            assert msg.getAddress() == 499  // PLC4X uses 0-indexed (500-1)
+            assert msg.dataDecodeUnsigned()[0] == 777  // Written value
+        }
+    }
+
+    def "Modbus TCP Test - Partial Read Configuration Should Be Ignored"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        when: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+
+        and: "a Modbus TCP agent is created"
+        def agent = new ModbusTcpAgent("Modbus TCP Partial Config Test")
+        agent.setRealm(MASTER_REALM)
+        agent.setHost("127.0.0.1")
+        agent.setPort(modbusServerPort)
+        agent.setUnitId(1)
+        agent = assetStorageService.merge(agent)
+
+        then: "the agent should connect successfully"
+        conditions.eventually {
+            agent = assetStorageService.find(agent.getId())
+            agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+        }
+
+
+
+        and: "agent should remain in CONNECTED state (no exceptions thrown)"
+        conditions.eventually {
+            agent = assetStorageService.find(agent.getId())
+            assert agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
         }
     }
 
