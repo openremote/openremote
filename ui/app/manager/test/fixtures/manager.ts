@@ -233,6 +233,26 @@ export class Manager {
   }
 
   /**
+   * Import list of assets
+   * @param asset The asset to create
+   * @param config The axios request config
+   */
+  async importAssets(assets: Asset[], config?: any) {
+    if(!config) {
+      const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
+      config = { headers: { Authorization: `Bearer ${access_token}` } };
+    }
+    await rest.api.AssetResource.importAssets(assets, config)
+      .then((response) => {
+        expect(response.status).toBe(200);
+        this.assets = [...this.assets, ...response.data as Asset[]];
+      })
+      .catch((e) => {
+        expect(e.response.status, { message: "Failed to create asset" }).toBe(409);
+      });
+    }
+
+  /**
    * Updates an asset
    * @param asset The asset to update
    * @param config The axios request config
@@ -287,10 +307,11 @@ export class Manager {
     // Provision assets
     if (assets) {
       this.assets = [];
-      for (const asset of assets) {
+      await this.importAssets(assets as Asset[]);
+      /*for (const asset of assets) {
         await this.createAsset(asset, config);
         await new Promise(resolve => setTimeout(resolve, 200)); // Prevent overload in HTTP requests
-      }
+      }*/
     }
   }
 

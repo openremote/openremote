@@ -481,29 +481,52 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 LOG.finest("No asset in request");
                 throw new WebApplicationException(BAD_REQUEST);
             }
-
-            // If there was no realm provided (create was called by regular user in manager UI), use the auth realm
-            if (asset.getRealm() == null || asset.getRealm().isEmpty()) {
-                asset.setRealm(getAuthenticatedRealm().getName());
-            } else if (!isRealmActiveAndAccessible(asset.getRealm())) {
-                LOG.fine("Forbidden access for user '" + getUsername() + "', can't create: " + asset);
-                throw new WebApplicationException(FORBIDDEN);
-            }
-
-            Asset<?> newAsset = ValueUtil.clone(asset);
-
-            // Allow client to set identifier
-            if (asset.getId() != null) {
-                newAsset.setId(asset.getId());
-            }
-
-            return assetStorageService.merge(newAsset);
+            return tryCreate(asset);
 
         } catch (ConstraintViolationException ex) {
             throw new ResteasyViolationExceptionImpl(ex.getConstraintViolations(), requestParams.headers.getAcceptableMediaTypes());
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
         }
+    }
+
+    @Override
+    public Asset<?>[] importAssets(RequestParams requestParams, Asset<?>[] assets) {
+        try {
+            if (isRestrictedUser()) {
+                throw new WebApplicationException(FORBIDDEN);
+            }
+            if (assets == null || Arrays.stream(assets).anyMatch(Objects::isNull)) {
+                LOG.finest("An imported asset cannot be NULL in request");
+                throw new WebApplicationException(BAD_REQUEST);
+            }
+            return Arrays.stream(assets).map(this::tryCreate).toArray(Asset[]::new);
+
+        } catch (ConstraintViolationException ex) {
+            throw new ResteasyViolationExceptionImpl(ex.getConstraintViolations(), requestParams.headers.getAcceptableMediaTypes());
+        } catch (IllegalStateException ex) {
+            throw new WebApplicationException(ex, BAD_REQUEST);
+        }
+    }
+
+    protected Asset<?> tryCreate(Asset<?> asset) {
+
+        // If there was no realm provided (create was called by regular user in manager UI), use the auth realm
+        if (asset.getRealm() == null || asset.getRealm().isEmpty()) {
+            asset.setRealm(getAuthenticatedRealm().getName());
+        } else if (!isRealmActiveAndAccessible(asset.getRealm())) {
+            LOG.fine("Forbidden access for user '" + getUsername() + "', can't create: " + asset);
+            throw new WebApplicationException(FORBIDDEN);
+        }
+
+        Asset<?> newAsset = ValueUtil.clone(asset);
+
+        // Allow client to set identifier
+        if (asset.getId() != null) {
+            newAsset.setId(asset.getId());
+        }
+
+        return assetStorageService.merge(newAsset);
     }
 
     @Override
