@@ -22,6 +22,20 @@ export const parentAssets: Asset[] = [
         }
     }
 ];
+export const buildingAsset = {
+    name: "Building",
+    type: "BuildingAsset",
+    realm: "smartcity",
+    attributes: {
+        area: { name: "area", type: "positiveInteger" },
+        city: { name: "city", type: "text" },
+        country: { name: "country", type: "text" },
+        location: { name: "location", type: "GEO_JSONPoint" },
+        notes: { name: "notes", type: "text" },
+        postalCode: { name: "postalCode", type: "text" },
+        street: { name: "street", type: "text" }
+    }
+}
 export const batteryAsset = {
     name: "Battery",
     type: "ThingAsset",

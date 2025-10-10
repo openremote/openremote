@@ -307,11 +307,10 @@ export class Manager {
     // Provision assets
     if (assets) {
       this.assets = [];
-      await this.importAssets(assets as Asset[]);
-      /*for (const asset of assets) {
+      /*await this.importAssets(assets as Asset[]);*/
+      for (const asset of assets) {
         await this.createAsset(asset, config);
-        await new Promise(resolve => setTimeout(resolve, 200)); // Prevent overload in HTTP requests
-      }*/
+      }
     }
   }
 

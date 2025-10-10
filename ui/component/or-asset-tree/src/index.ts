@@ -821,9 +821,17 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         const isExpander = evt && (evt.target as HTMLElement).className.indexOf("expander") >= 0;
         const isParentCheckbox = evt && (evt.target as OrIcon)?.icon?.includes("checkbox-multiple");
+        const isLoadMoreButton = evt && (evt.target as OrMwcInput)?.parentElement?.classList.contains("loadmore-element");
 
         if (isExpander) {
             this._toggleExpander((evt.target as HTMLElement), node);
+
+        } else if (isLoadMoreButton) {
+            if(node) {
+                const cache: Asset[] = [];
+                OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => n.asset && cache.push(n.asset));
+                this._loadAssets(node.asset?.id, node.children?.length ?? 0, cache);
+            }
         } else {
             let canSelect = true;
 
@@ -2161,11 +2169,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     ${!treeNode.children || (treeNode.expandable && !treeNode.expanded)  ? `` : treeNode.children.map((childNode) => this._treeNodeTemplate(childNode, level + 1)).filter(t => !!t)}
                     ${when(treeNode.asset?.id && this._incompleteParentIds.includes(treeNode.asset.id), () => html`
                         <li class="asset-list-element loadmore-element">
-                            <or-mwc-input type=${InputType.BUTTON} label="Load More" style="padding-left: ${(level + 1) * 22}px;" @or-mwc-input-changed=${() => {
-                                const cache: Asset[] = [];
-                                OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => n.asset && cache.push(n.asset));
-                                this._loadAssets(treeNode.asset?.id, treeNode.children?.length ?? 0, cache);
-                            }}></or-mwc-input>
+                            <or-mwc-input type=${InputType.BUTTON} label="Load More" style="padding-left: ${(level + 1) * 22}px;"></or-mwc-input>
                         </li>
                     `)}
                 </ol>
