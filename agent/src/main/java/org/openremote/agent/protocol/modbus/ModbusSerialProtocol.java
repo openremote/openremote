@@ -157,7 +157,6 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
             // -the event source isn't a synthetic polling task write
             // -there is no reading action set (the read action should trigger the update)
             if (writeSuccess && event.getSource() != null & agentLink.getReadAddress() == null) {
-                // This write came from AbstractProtocol (user-initiated), update to confirm success
                 // First update the local map so polling sees the new value immediately
                 Attribute<?> attribute = linkedAttributes.get(event.getRef());
                 if (attribute != null) {

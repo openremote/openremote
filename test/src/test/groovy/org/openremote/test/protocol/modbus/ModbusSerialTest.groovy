@@ -758,9 +758,6 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         new ModbusAgentLink(
                                 id: agent.getId(),
                                 pollingMillis: 1000,  // Write every 1000ms
-                                readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
-                                readValueType: ModbusAgentLink.ModbusDataType.UINT,
-                                readAddress: 60,
                                 writeMemoryArea: ModbusAgentLink.WriteMemoryArea.HOLDING,
                                 writeAddress: 60,
                                 writeWithPollingRate: true
@@ -781,13 +778,30 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         def assetDatapointService = container.getService(org.openremote.manager.datapoint.AssetDatapointService.class)
         def attributeRef = new org.openremote.model.attribute.AttributeRef(device.getId(), "pollingWrite")
 
-        then: "database should show multiple datapoints"
+        then: "multiple write events should be observed"
+        def writeRequests = []
         conditions.eventually {
-            // Query datapoints stored for this attribute - writeWithPollingRate should create datapoints for writes
+            def request = latestRequest.get()
+            if (request != null) {
+                // Capture write requests (function codes 0x05, 0x06, 0x10)
+                def functionCode = request[1] & 0xFF
+                if (functionCode == 0x06 || functionCode == 0x05 || functionCode == 0x10) {
+                    writeRequests.add(request.clone())
+                }
+            }
+            // Wait to accumulate multiple writes
+            Thread.sleep(2500) // Wait for ~2-3 write cycles at 1000ms polling
+            assert writeRequests.size() >= 2  // Should have at least 2 writes
+        }
+
+
+        then: "database should show 1 datapoint"
+        conditions.eventually {
+            // Query datapoints stored for this attribute - writeWithPollingRate should no extra datapoints for writes
             def datapoints = assetDatapointService.getDatapoints(attributeRef)
             println "Datapoints found: ${datapoints.size()}"
             datapoints.each { println "  - timestamp: ${it.timestamp}, value: ${it.value}" }
-            assert datapoints.size() >= 2  // Should have at least 2 datapoints from periodic writes
+            assert datapoints.size() == 1  // Should have 1 datapoint from periodic writes
         }
     }
 

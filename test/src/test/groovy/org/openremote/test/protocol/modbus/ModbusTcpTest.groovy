@@ -764,10 +764,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("pollingWriteValue", ValueType.INTEGER, 42).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
-                                    it.setPollingMillis(500)  // Write every 500ms
-                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
-                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.UINT)
-                                    it.setReadAddress(400)
+                                    it.setPollingMillis(1000)  // Write every 500ms
                                     it.setWriteMemoryArea(ModbusAgentLink.WriteMemoryArea.HOLDING)
                                     it.setWriteAddress(400)
                                     it.setWriteWithPollingRate(true)  // Enable periodic write
@@ -783,6 +780,8 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             assert protocol != null
             assert protocol.writePollingMap.size() == 1
         }
+
+
 
         and: "periodic writes should occur even without attribute events"
         int writeCount = 0
@@ -812,6 +811,18 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             assert msg != null
             assert msg.getAddress() == 399  // PLC4X uses 0-indexed
             assert msg.dataDecodeUnsigned()[0] == 99  // Should write the updated value
+        }
+
+        def assetDatapointService = container.getService(org.openremote.manager.datapoint.AssetDatapointService.class)
+        def attributeRef = new org.openremote.model.attribute.AttributeRef(device.getId(), "pollingWriteValue")
+
+        then: "database should only store datapoints from value changes"
+        conditions.eventually {
+            // Query datapoints stored for this attribute - writeWithPollingRate should no extra datapoints for writes
+            def datapoints = assetDatapointService.getDatapoints(attributeRef)
+            println "Datapoints found: ${datapoints.size()}"
+            datapoints.each { println "  - timestamp: ${it.timestamp}, value: ${it.value}" }
+            assert datapoints.size() == 2  // Should have 2 datapoint from value changes, not from periodic writes
         }
     }
 
@@ -849,6 +860,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                                 .tap {
                                     it.setWriteMemoryArea(ModbusAgentLink.WriteMemoryArea.HOLDING)
                                     it.setWriteAddress(500)
+                                    it.setPollingMillis(1000)
                                 }
                         )
                 )
