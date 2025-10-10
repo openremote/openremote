@@ -153,9 +153,10 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
                     throw new IllegalStateException("Only COIL and HOLDING memory areas are supported for writing");
             }
 
-            // Only update from AbstractProtocol writes, not from polling writes
-            // Check if this write came from AbstractProtocol by looking at the event source
-            if (writeSuccess && event.getSource() != null) {
+            // Only update attribute value when:
+            // -the event source isn't a synthetic polling task write
+            // -there is no reading action set (the read action should trigger the update)
+            if (writeSuccess && event.getSource() != null & agentLink.getReadAddress() == null) {
                 // This write came from AbstractProtocol (user-initiated), update to confirm success
                 // First update the local map so polling sees the new value immediately
                 Attribute<?> attribute = linkedAttributes.get(event.getRef());

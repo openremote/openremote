@@ -306,8 +306,8 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 LOG.fine("Skipping read polling for " + ref + " - read configuration incomplete (readMemoryArea, readValueType, and readAddress all required)");
             }
 
-            // Check if write polling is enabled
-            if (Optional.ofNullable(agentLink.getWriteWithPollingRate()).orElse(false) && Optional.ofNullable(agentLink.getWriteAddress()).isPresent()) {
+            // Check if write polling is enabled and reading is not
+            if (Optional.ofNullable(agentLink.getWriteWithPollingRate()).orElse(false) && Optional.ofNullable(agentLink.getWriteAddress()).isPresent() && agentLink.getReadAddress() == null) {
                 ScheduledFuture<?> writeTask = scheduleModbusPollingWriteRequest(ref, agentLink);
                 writePollingMap.put(ref, writeTask);
                 LOG.fine("Scheduled write polling task for attribute " + ref + " every " + agentLink.getPollingMillis() + "ms");

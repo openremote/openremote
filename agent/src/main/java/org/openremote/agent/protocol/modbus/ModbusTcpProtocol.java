@@ -194,9 +194,10 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
             }
             onRequestSuccess(messageId);
 
-            // Only update from AbstractProtocol writes, not from polling writes
-            // Check if this write came from AbstractProtocol by looking at the event source
-            if (event.getSource() != null) {
+            // Only update attribute value when:
+            // -the event source isn't a synthetic polling task write
+            // -there is no reading action set (the read action should trigger the update)
+            if (event.getSource() != null & agentLink.getReadAddress() == null) {
                 // This write came from AbstractProtocol (user-initiated), update to confirm success
                 // First update the local map so polling sees the new value immediately
                 Attribute<?> attribute = linkedAttributes.get(event.getRef());
@@ -207,6 +208,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                 }
                 // Then send the event to the system
                 updateLinkedAttribute(event.getRef(), processedValue);
+                LOG.finest("DEBUG doLinkedAttributeWrite triggered an updateLinkedAttribute: " + event.getRef());
             }
             // Polling writes have null source, so they don't trigger updateLinkedAttribute
         } catch (Exception e) {
