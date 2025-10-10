@@ -425,7 +425,7 @@ jobs:
 
           os.system(f"echo 'value={deployments}' >> $GITHUB_OUTPUT")
           deploySnapshot = os.getenv('DEPLOY_SNAPSHOT')
-          os.system(f"echo 'deploySnapshot={deploySnapshot}'") >> $GITHUB_OUTPUT
+          os.system(f"echo 'deploySnapshot={deploySnapshot}' >> $GITHUB_OUTPUT")
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
