@@ -43,6 +43,7 @@
 #                           an openremote submodule).
 # - CLEAN_INSTALL         - Should the .ci_cd/host_init/clean.sh script be run during deployment (warning this will delete
 #                           assets, rules, etc.)
+# - DEPLOY_SNAPSHOT       - Should a SNAPSHOT docker image be pushed to AWS ECR
 # - COMMIT                - Which branch/SHA should be checked out for the deployment (defaults to trigger commit)
 # - OR_HOSTNAME           - FQDN of host to deploy to (e.g. demo.openremote.app)
 # - SSH_USER              - Set/override the SSH user to use for SSH/SCP commands
@@ -74,6 +75,9 @@ on:
         description: 'Manager docker tag to pull'
       CLEAN_INSTALL:
         description: 'Delete data before starting'
+        type: boolean
+      DEPLOY_SNAPSHOT:
+        description: 'Deploy SNAPSHOT docker image to ECR'
         type: boolean
       COMMIT:
         description: 'Repo branch or commit SHA to checkout'
@@ -420,6 +424,8 @@ jobs:
               sys.exit(1)
 
           os.system(f"echo 'value={deployments}' >> $GITHUB_OUTPUT")
+          deploySnapshot = os.getenv('DEPLOY_SNAPSHOT')
+          os.system(f"echo 'deploySnapshot={deploySnapshot}'") >> $GITHUB_OUTPUT
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
@@ -542,14 +548,14 @@ jobs:
         run: echo "deployment-docker-command output set"
 
       - name: Configure AWS Credentials
-        if: ${{ steps.manager-docker-command.outputs.pushToDockerHub != 'true' }}
+        if: ${{ steps.deployments.outputs.deploySnapshot == 'true' }}
         uses: aws-actions/configure-aws-credentials@a03048d87541d1d9fcf2ecf528a4a65ba9bd7838 # v5.0.0
         with:
           aws-region: eu-west-1
           role-to-assume: "arn:aws:iam::${{ steps.inputs-and-secrets.outputs.OR_AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ steps.inputs-and-secrets.outputs.OR_GH_AWS_ECR_PUSH_ROLE }}"
 
       - name: Login to private ECR
-        if: ${{ steps.manager-docker-command.outputs.pushToDockerHub != 'true' }}
+        if: ${{ steps.deployments.outputs.deploySnapshot == 'true' }}
         uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
       - name: set up QEMU
