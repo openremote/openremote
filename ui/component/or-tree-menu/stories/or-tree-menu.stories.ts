@@ -1,7 +1,9 @@
-import type { Meta, StoryObj } from "@storybook/web-components";
-import "@openremote/or-tree-menu";
+import {setCustomElementsManifest, type Meta, type StoryObj } from "@storybook/web-components";
+import customElements from "../custom-elements.json";
+import "../src/index";
 
 type Story = StoryObj;
+setCustomElementsManifest(customElements);
 
 const meta: Meta = {
     component: "or-tree-menu"

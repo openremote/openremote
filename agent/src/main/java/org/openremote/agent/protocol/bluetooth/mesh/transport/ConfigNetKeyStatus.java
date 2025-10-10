@@ -51,7 +51,7 @@ public class ConfigNetKeyStatus extends ConfigStatusMessage {
         mStatusCodeName = getStatusCodeName(mStatusCode);
         final List<Integer> keyIndexes = decode(mParameters.length, 1);
         //NetKey status will only contain one index so we just take the first element
-        mNetKeyIndex = keyIndexes.get(0);//ByteBuffer.wrap(netKeyIndex).order(ByteOrder.BIG_ENDIAN).getShort();
+        mNetKeyIndex = keyIndexes.getFirst();//ByteBuffer.wrap(netKeyIndex).order(ByteOrder.BIG_ENDIAN).getShort();
 
         LOG.info("Status code: " + mStatusCode);
         LOG.info("Status message: " + mStatusCodeName);

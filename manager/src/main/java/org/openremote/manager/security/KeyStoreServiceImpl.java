@@ -32,9 +32,12 @@ import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStore;
+import java.security.UnrecoverableKeyException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Optional;
 
+import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD;
 import static org.openremote.container.util.MapAccess.getString;
 
 /**
@@ -80,9 +83,8 @@ public class KeyStoreServiceImpl implements KeyStoreService {
         persistenceService = container.getService(PersistenceService.class);
         identityService = container.getService(ManagerIdentityService.class);
 
-        String defaultPassword = getString(container.getConfig(), "OR_ADMIN_PASSWORD", "secret");
-
-        keyStorePassword = getString(container.getConfig(), OR_KEYSTORE_PASSWORD, defaultPassword);
+        // Stop using OR_ADMIN_PASSWORD, if OR_KEYSTORE_PASSWORD is unset, use no password instead.
+        keyStorePassword = getString(container.getConfig(), OR_KEYSTORE_PASSWORD, "");
     }
 
     @Override
@@ -104,7 +106,29 @@ public class KeyStoreServiceImpl implements KeyStoreService {
             Path defaultKeyStorePath = persistenceService.resolvePath(Paths.get("keystores").resolve("client_keystore.p12"));
             if (new File(defaultKeyStorePath.toUri()).exists()) {
                 this.keyStorePath = defaultKeyStorePath;
-                this.keyStore = KeyStore.getInstance(new File(defaultKeyStorePath.toUri()), getKeyStorePassword());
+                try{
+                    this.keyStore = KeyStore.getInstance(new File(defaultKeyStorePath.toUri()), getKeyStorePassword());
+                }
+                catch(Exception exception){
+                    if (exception instanceof IOException e) {
+                        //If the truststore's password is incorrect, try using OR_ADMIN_PASSWORD, as the first version of
+                        // KeystoreService used that as the fallback password if OR_KEYSTORE_PASSWORD was unset.
+                        if (e.getCause() instanceof UnrecoverableKeyException) {
+                            String adminPassword = getString(container.getConfig(), OR_ADMIN_PASSWORD, "secret");
+                            this.keyStore = KeyStore.getInstance(defaultKeyStorePath.toFile(), adminPassword.toCharArray());
+                            if (this.keyStore != null) {
+                                this.keyStorePassword = adminPassword;
+                                LOG.log(Level.INFO, "Loaded KeyStore from " + defaultKeyStorePath.toAbsolutePath() +
+                                        " using OR_ADMIN_PASSWORD as fallback. Make sure to set OR_KEYSTORE_PASSWORD " +
+                                        "to OR_ADMIN_PASSWORD's value to get rid of this message.");
+                            } else {
+                                LOG.log(Level.WARNING, "Failed to load KeyStore from " + defaultKeyStorePath.toAbsolutePath() + ": " + e.getMessage(), e);
+                            }
+                        }
+                    } else {
+                        LOG.log(Level.WARNING, "Failed to load KeyStore from " + defaultKeyStorePath.toAbsolutePath() + ": " + exception.getMessage(), exception);
+                    }
+                }
             } else {
                 this.keyStore = createKeyStore(defaultKeyStorePath);
             }
@@ -118,7 +142,29 @@ public class KeyStoreServiceImpl implements KeyStoreService {
             Path defaultTrustStorePath = persistenceService.resolvePath(Paths.get("keystores").resolve("client_truststore.p12"));
             if (new File(defaultTrustStorePath.toUri()).exists()) {
                 this.trustStorePath = defaultTrustStorePath;
-                this.trustStore = KeyStore.getInstance(new File(defaultTrustStorePath.toUri()), getKeyStorePassword());
+                try{
+                    this.trustStore = KeyStore.getInstance(new File(defaultTrustStorePath.toUri()), getKeyStorePassword());
+                }
+                catch(Exception exception){
+                    if (exception instanceof IOException e) {
+                        //If the truststore's password is incorrect, try using OR_ADMIN_PASSWORD, as the first version of
+                        // KeystoreService used that as the fallback password if OR_KEYSTORE_PASSWORD was unset.
+                        if (e.getCause() instanceof UnrecoverableKeyException) {
+                            String adminPassword = getString(container.getConfig(), OR_ADMIN_PASSWORD, "secret");
+                            this.trustStore = KeyStore.getInstance(defaultTrustStorePath.toFile(), adminPassword.toCharArray());
+                            if (this.trustStore != null) {
+                                trustStorePassword = adminPassword;
+                                LOG.log(Level.INFO, "Loaded TrustStore from " + defaultTrustStorePath.toAbsolutePath() +
+                                        " using OR_ADMIN_PASSWORD as fallback. Make sure to set OR_KEYSTORE_PASSWORD " +
+                                        "to OR_ADMIN_PASSWORD's value to get rid of this message.");
+                            } else {
+                                LOG.log(Level.WARNING, "Failed to load TrustStore from " + defaultTrustStorePath.toAbsolutePath() + ": " + e.getMessage(), e);
+                            }
+                        }
+                    } else {
+                        LOG.log(Level.WARNING, "Failed to load TrustStore from " + defaultTrustStorePath.toAbsolutePath() + ": " + exception.getMessage(), exception);
+                    }
+                }
             } else {
                 this.trustStore = createKeyStore(defaultTrustStorePath);
             }
