@@ -110,7 +110,7 @@ public class JSONSchemaUtil {
             return node;
         }
 
-        public static ObjectNode getSuppliedNode(FieldScope fieldScope, JsonSchemaSupplier annotation) throws RuntimeException {
+        public static ObjectNode getSuppliedNode(JsonSchemaSupplier annotation) throws RuntimeException {
             try {
                 switch (annotation.getClass().getMethod("supplier").invoke(annotation).toString()) {
                     case SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_ANY_TYPE:
@@ -193,7 +193,7 @@ public class JSONSchemaUtil {
 
         @Override
         public void applyToConfigBuilder(SchemaGeneratorConfigBuilder builder) {
-            // Set title on root of schema
+            // Set title on root of schema and for object definitions
             JSONSchemaTitleProvider titleProvider = new JSONSchemaTitleProvider();
             builder.forTypesInGeneral()
                     .withCustomDefinitionProvider(titleProvider)
@@ -265,7 +265,7 @@ public class JSONSchemaUtil {
                     // Apply supplied definition
                     JsonSchemaSupplier ann = fieldScope.getAnnotation(JsonSchemaSupplier.class);
                     if (ann != null) {
-                        attrs = SchemaNodeMapper.getSuppliedNode(fieldScope, ann);
+                        attrs = SchemaNodeMapper.getSuppliedNode(ann);
                     }
                     // Avoids annotation also being applied to the `items` in an array. See https://victools.github.io/jsonschema-generator/#generator-individual-configurations
                     if (!fieldScope.isFakeContainerItemScope()) {
@@ -480,6 +480,7 @@ public class JSONSchemaUtil {
             public void overrideTypeAttributes(ObjectNode attrs, TypeScope scope, SchemaGenerationContext context) {
                 if ((this.rootType == scope.getType() && !attrs.has(context.getKeyword(SchemaKeyword.TAG_TITLE))) ||
                     (!attrs.has(context.getKeyword(SchemaKeyword.TAG_TITLE))
+                    && !scope.getType().isInstanceOf(Map.class)
                     && attrs.has(context.getKeyword(SchemaKeyword.TAG_TYPE))
                     && attrs.get(context.getKeyword(SchemaKeyword.TAG_TYPE)).textValue().equals("object"))
                 ) {
