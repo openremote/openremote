@@ -22,6 +22,8 @@ package org.openremote.model.util;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import org.openremote.model.util.JSONSchemaUtil.*;
 
 import javax.annotation.processing.*;
@@ -36,6 +38,8 @@ import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+
+import static javax.tools.Diagnostic.Kind.*;
 
 public class I18nAnnotationProcessor extends AbstractProcessor {
 
@@ -105,22 +109,54 @@ public class I18nAnnotationProcessor extends AbstractProcessor {
     }
 
     private void appendKeys(Path path, boolean writeValue) {
-        Map<String, Object> existing = new LinkedHashMap<>();
+        ObjectNode existing;
 
-        if (Files.exists(path)) {
-            try {
-                existing.putAll(mapper.readValue(path.toFile(), new TypeReference<Map<String, Object>>() {}));
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        for (var entry : translations.entrySet()) {
-            existing.putIfAbsent(entry.getKey(), writeValue ? entry.getValue() : "");
+        if (!Files.exists(path)) {
+            processingEnv.getMessager().printMessage(WARNING, "Missing translation file");
+            return;
         }
 
         try {
-            String updatedJsonString = buildJsonWithoutSpaces(mapper.valueToTree(existing), 0) + "\n";
+            existing = mapper.readValue(path.toFile(), new TypeReference<>() {});
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        int conflicts = 0;
+
+        nextTranslation:
+        for (Map.Entry<String, String> entry : translations.entrySet()) {
+            String key = entry.getKey();
+            String[] keys = key.split("\\.");
+            int zeroIndexLength = keys.length-1;
+
+            ObjectNode node = existing;
+
+            for (int i = 0; i < zeroIndexLength; i++) {
+                ObjectNode newNode = mapper.createObjectNode();
+                JsonNode oldNode = node.putIfAbsent(keys[i], newNode);
+                if (oldNode instanceof ObjectNode obj) {
+                    node = obj;
+                } else if (oldNode == null) {
+                    node = newNode;
+                } else {
+                    processingEnv.getMessager().printMessage(ERROR, "Translation key conflict for: "+key);
+                    conflicts++;
+                    continue nextTranslation;
+                }
+            }
+            node.putIfAbsent(keys[zeroIndexLength], new TextNode(writeValue ? entry.getValue() : ""));
+        }
+
+        if (conflicts > 0) {
+            processingEnv.getMessager().printMessage(ERROR,
+                    conflicts + " translation key conflict(s) detected. Please remove the above keys or the conflicting annotations."
+            );
+            throw new RuntimeException("Key conflict");
+        }
+
+        try {
+            String updatedJsonString = buildJsonWithoutSpaces(existing, 0) + "\n";
             Files.write(path, updatedJsonString.getBytes());
         } catch (Exception e) {
             throw new RuntimeException(e);
