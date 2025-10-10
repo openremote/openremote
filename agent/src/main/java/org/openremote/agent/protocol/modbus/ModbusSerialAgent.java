@@ -46,9 +46,8 @@ public class ModbusSerialAgent extends ModbusAgent<ModbusSerialAgent, ModbusSeri
     public static final AttributeDescriptor<String> ILLEGAL_REGISTERS = new AttributeDescriptor<>("illegalRegisters", ValueType.TEXT);
     public static final AttributeDescriptor<Integer> MAX_REGISTER_LENGTH = new AttributeDescriptor<>("maxRegisterLength", ValueType.POSITIVE_INTEGER);
 
-    public static final ValueDescriptor<ModbusAgent.EndianOrder> VALUE_ENDIAN_ORDER = new ValueDescriptor<>("EndianOrder", ModbusAgent.EndianOrder.class);
-    public static final AttributeDescriptor<ModbusAgent.EndianOrder> BYTE_ORDER = new AttributeDescriptor<>("byteOrder", VALUE_ENDIAN_ORDER);
-    public static final AttributeDescriptor<ModbusAgent.EndianOrder> WORD_ORDER = new AttributeDescriptor<>("wordOrder", VALUE_ENDIAN_ORDER);
+    public static final ValueDescriptor<ModbusAgent.EndianFormat> VALUE_ENDIAN_FORMAT = new ValueDescriptor<>("EndianFormat", ModbusAgent.EndianFormat.class);
+    public static final AttributeDescriptor<ModbusAgent.EndianFormat> ENDIAN_FORMAT = new AttributeDescriptor<>("endianFormat", VALUE_ENDIAN_FORMAT);
 
     public enum ModbusClientParity {
         NO(0),
@@ -128,12 +127,9 @@ public class ModbusSerialAgent extends ModbusAgent<ModbusSerialAgent, ModbusSeri
         return getAttributes().getValue(MAX_REGISTER_LENGTH).orElse(1); // Batch processing disabled by default.
     }
 
-    public ModbusAgent.EndianOrder getByteOrder() {
-        return getAttribute(BYTE_ORDER).map(attr -> attr.getValue().orElse(ModbusAgent.EndianOrder.BIG)).orElse(ModbusAgent.EndianOrder.BIG);
-    }
-
-    public ModbusAgent.EndianOrder getWordOrder() {
-        return getAttribute(WORD_ORDER).map(attr -> attr.getValue().orElse(ModbusAgent.EndianOrder.BIG)).orElse(ModbusAgent.EndianOrder.BIG);
+    @Override
+    public ModbusAgent.EndianFormat getEndianFormat() {
+        return getAttribute(ENDIAN_FORMAT).map(attr -> attr.getValue().orElse(ModbusAgent.EndianFormat.BIG_ENDIAN)).orElse(ModbusAgent.EndianFormat.BIG_ENDIAN);
     }
 
     @Override

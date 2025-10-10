@@ -114,9 +114,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
                 new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
                 new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30),
-                new Attribute<>(ModbusSerialAgent.ILLEGAL_REGISTERS, "100,150-160"),
-                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusAgent.EndianOrder.BIG),
-                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusAgent.EndianOrder.BIG)
+                new Attribute<>(ModbusSerialAgent.ILLEGAL_REGISTERS, "101,151-161"),
+                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT, ModbusAgent.EndianFormat.BIG_ENDIAN)
         )
 
         agent = assetStorageService.merge(agent)
@@ -159,7 +158,13 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             assert protocol.batchGroups.isEmpty()
         }
 
-        when: "A Thing asset is created with multiple agent links"
+        when: "the partial config device is removed"
+        assetStorageService.delete([device0.getId()])
+
+        and: "we wait for cleanup to complete"
+        Thread.sleep(500)
+
+        and: "A Thing asset is created with multiple agent links"
         ThingAsset device = new ThingAsset("Test Modbus Device")
         device.setRealm(MASTER_REALM)
 
@@ -173,7 +178,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
-                                readAddress: 0,
+                                readAddress: 1,
                                 registersAmount: 1
                         )
                 )),
@@ -185,7 +190,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
-                                readAddress: 2,
+                                readAddress: 3,
                                 registersAmount: 1
                         )
                 )),
@@ -197,7 +202,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.INPUT,
                                 readValueType: ModbusAgentLink.ModbusDataType.REAL,
-                                readAddress: 200,
+                                readAddress: 201,
                                 registersAmount: 2
                         )
                 )),
@@ -209,9 +214,9 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.COIL,
                                 readValueType: ModbusAgentLink.ModbusDataType.BOOL,
-                                readAddress: 5,
+                                readAddress: 6,
                                 writeMemoryArea: ModbusAgentLink.WriteMemoryArea.COIL,
-                                writeAddress: 5
+                                writeAddress: 6
                         )
                 ))
         )
@@ -271,9 +276,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
                 new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
                 new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30),
-                new Attribute<>(ModbusSerialAgent.ILLEGAL_REGISTERS, "5-10,20-25"),
-                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusAgent.EndianOrder.BIG),
-                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusAgent.EndianOrder.BIG)
+                new Attribute<>(ModbusSerialAgent.ILLEGAL_REGISTERS, "6-11,21-26"),
+                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT, ModbusAgent.EndianFormat.BIG_ENDIAN)
         )
 
         agent = assetStorageService.merge(agent)
@@ -290,7 +294,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
-                                readAddress: 0,
+                                readAddress: 1,
                                 registersAmount: 2
                         )
                 )),
@@ -301,7 +305,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
-                                readAddress: 15,
+                                readAddress: 16,
                                 registersAmount: 2
                         )
                 )),
@@ -312,7 +316,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
-                                readAddress: 30,
+                                readAddress: 31,
                                 registersAmount: 2
                         )
                 ))
@@ -358,8 +362,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
                 new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
                 new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30),
-                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusAgent.EndianOrder.BIG),
-                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusAgent.EndianOrder.BIG)
+                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT, ModbusAgent.EndianFormat.BIG_ENDIAN)
         )
 
         def agent2 = new ModbusSerialAgent("Modbus RTU Unit 2")
@@ -372,8 +375,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
                 new Attribute<>(ModbusSerialAgent.UNIT_ID, 2),  // Different unit ID
                 new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30),
-                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusAgent.EndianOrder.BIG),
-                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusAgent.EndianOrder.BIG)
+                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT, ModbusAgent.EndianFormat.BIG_ENDIAN)
         )
 
         agent1 = assetStorageService.merge(agent1)
@@ -402,7 +404,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
-                                readAddress: 0,
+                                readAddress: 1,
                                 registersAmount: 1
                         )
                 ))
@@ -418,7 +420,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
-                                readAddress: 0,
+                                readAddress: 1,
                                 registersAmount: 1
                         )
                 ))
@@ -464,18 +466,18 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         def assetStorageService = container.getService(AssetStorageService.class)
         def agentService = container.getService(AgentService.class)
 
-        and: "four agents are created with different byte/word order combinations"
-        def agentBigBig = createAgentWithByteWordOrder(assetStorageService, "Agent BIG-BIG",
-                ModbusAgent.EndianOrder.BIG, ModbusAgent.EndianOrder.BIG)
+        and: "four agents are created with different endian format combinations"
+        def agentBigBig = createAgentWithEndianFormat(assetStorageService, "Agent BIG-BIG",
+                ModbusAgent.EndianFormat.BIG_ENDIAN)
 
-        def agentBigLittle = createAgentWithByteWordOrder(assetStorageService, "Agent BIG-LITTLE",
-                ModbusAgent.EndianOrder.BIG, ModbusAgent.EndianOrder.LITTLE)
+        def agentBigLittle = createAgentWithEndianFormat(assetStorageService, "Agent BIG-LITTLE",
+                ModbusAgent.EndianFormat.BIG_ENDIAN_BYTE_SWAP)
 
-        def agentLittleBig = createAgentWithByteWordOrder(assetStorageService, "Agent LITTLE-BIG",
-                ModbusAgent.EndianOrder.LITTLE, ModbusAgent.EndianOrder.BIG)
+        def agentLittleBig = createAgentWithEndianFormat(assetStorageService, "Agent LITTLE-BIG",
+                ModbusAgent.EndianFormat.LITTLE_ENDIAN_BYTE_SWAP)
 
-        def agentLittleLittle = createAgentWithByteWordOrder(assetStorageService, "Agent LITTLE-LITTLE",
-                ModbusAgent.EndianOrder.LITTLE, ModbusAgent.EndianOrder.LITTLE)
+        def agentLittleLittle = createAgentWithEndianFormat(assetStorageService, "Agent LITTLE-LITTLE",
+                ModbusAgent.EndianFormat.LITTLE_ENDIAN)
 
         then: "all agents should connect successfully"
         conditions.eventually {
@@ -486,10 +488,10 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "devices with 32-bit float values are created for each agent"
-        def deviceBigBig = createDeviceWithFloat(assetStorageService, "Device BIG-BIG", agentBigBig, 400)
-        def deviceBigLittle = createDeviceWithFloat(assetStorageService, "Device BIG-LITTLE", agentBigLittle, 410)
-        def deviceLittleBig = createDeviceWithFloat(assetStorageService, "Device LITTLE-BIG", agentLittleBig, 420)
-        def deviceLittleLittle = createDeviceWithFloat(assetStorageService, "Device LITTLE-LITTLE", agentLittleLittle, 430)
+        def deviceBigBig = createDeviceWithFloat(assetStorageService, "Device BIG-BIG", agentBigBig, 401)
+        def deviceBigLittle = createDeviceWithFloat(assetStorageService, "Device BIG-LITTLE", agentBigLittle, 411)
+        def deviceLittleBig = createDeviceWithFloat(assetStorageService, "Device LITTLE-BIG", agentLittleBig, 421)
+        def deviceLittleLittle = createDeviceWithFloat(assetStorageService, "Device LITTLE-LITTLE", agentLittleLittle, 431)
 
         then: "all devices should receive float values"
         conditions.eventually {
@@ -519,8 +521,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "devices with 64-bit double values are created"
-        def device64BigBig = createDeviceWithDouble(assetStorageService, "Device64 BIG-BIG", agentBigBig, 500)
-        def device64LittleLittle = createDeviceWithDouble(assetStorageService, "Device64 LITTLE-LITTLE", agentLittleLittle, 510)
+        def device64BigBig = createDeviceWithDouble(assetStorageService, "Device64 BIG-BIG", agentBigBig, 501)
+        def device64LittleLittle = createDeviceWithDouble(assetStorageService, "Device64 LITTLE-LITTLE", agentLittleLittle, 511)
 
         then: "64-bit values should also be affected by byte/word order"
         conditions.eventually {
@@ -562,8 +564,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
                 new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
                 new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 50),
-                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, ModbusAgent.EndianOrder.BIG),
-                new Attribute<>(ModbusSerialAgent.WORD_ORDER, ModbusAgent.EndianOrder.BIG)
+                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT, ModbusAgent.EndianFormat.BIG_ENDIAN)
         )
 
         agent = assetStorageService.merge(agent)
@@ -573,36 +574,36 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         device.setRealm(MASTER_REALM)
         device.setParent(agent)
         device.addOrReplaceAttributes(
-                // LREAL - Double precision float at address 300 (4 registers)
+                // LREAL - Double precision float at address 301 (4 registers, 1-based = 300 protocol)
                 new Attribute<>("doubleValue", ValueType.NUMBER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.LREAL)
-                                    it.setReadAddress(300)
+                                    it.setReadAddress(301)
                                 }
                         )
                 ),
-                // LINT - 64-bit signed integer at address 310 (4 registers)
+                // LINT - 64-bit signed integer at address 311 (4 registers, 1-based = 310 protocol)
                 new Attribute<>("longSignedValue", ValueType.LONG).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.LINT)
-                                    it.setReadAddress(310)
+                                    it.setReadAddress(311)
                                 }
                         )
                 ),
-                // ULINT - 64-bit unsigned integer at address 320 (4 registers)
+                // ULINT - 64-bit unsigned integer at address 321 (4 registers, 1-based = 320 protocol)
                 new Attribute<>("longUnsignedValue", ValueType.BIG_INTEGER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.ULINT)
-                                    it.setReadAddress(320)
+                                    it.setReadAddress(321)
                                 }
                         )
                 )
@@ -680,7 +681,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         def device = new ThingAsset("Multi-Write Serial Device")
         device.setRealm(MASTER_REALM)
         device.addOrReplaceAttributes(
-                // Write FLOAT (2 registers) to address 50
+                // Write FLOAT (2 registers) to address 51 (1-based = 50 protocol)
                 new Attribute<>("floatWrite", ValueType.NUMBER).addOrReplaceMeta(new MetaItem<>(
                         AGENT_LINK,
                         new ModbusAgentLink(
@@ -688,10 +689,10 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.REAL,
-                                readAddress: 50,
+                                readAddress: 51,
                                 registersAmount: 2,
                                 writeMemoryArea: ModbusAgentLink.WriteMemoryArea.HOLDING,
-                                writeAddress: 50
+                                writeAddress: 51
                         )
                 ))
         )
@@ -759,7 +760,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                                 id: agent.getId(),
                                 pollingMillis: 1000,  // Write every 1000ms
                                 writeMemoryArea: ModbusAgentLink.WriteMemoryArea.HOLDING,
-                                writeAddress: 60,
+                                writeAddress: 61,
                                 writeWithPollingRate: true
                         )
                         ),
@@ -806,11 +807,10 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
     }
 
 
-    // Helper methods for byte/word order tests
-    private ModbusSerialAgent createAgentWithByteWordOrder(AssetStorageService assetStorageService,
+    // Helper methods for endian format tests
+    private ModbusSerialAgent createAgentWithEndianFormat(AssetStorageService assetStorageService,
                                                            String name,
-                                                           ModbusAgent.EndianOrder byteOrder,
-                                                           ModbusAgent.EndianOrder wordOrder) {
+                                                           ModbusAgent.EndianFormat endianFormat) {
         def agent = new ModbusSerialAgent(name)
         agent.setRealm(MASTER_REALM)
         agent.addOrReplaceAttributes(
@@ -821,8 +821,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
                 new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
                 new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 50),
-                new Attribute<>(ModbusSerialAgent.BYTE_ORDER, byteOrder),
-                new Attribute<>(ModbusSerialAgent.WORD_ORDER, wordOrder)
+                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT, endianFormat)
         )
         return assetStorageService.merge(agent)
     }

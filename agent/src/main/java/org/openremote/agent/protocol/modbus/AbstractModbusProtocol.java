@@ -53,25 +53,31 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected final Set<String> failedMessageIds = ConcurrentHashMap.newKeySet();
 
     /**
-     * Convert agent's EndianOrder to Java's ByteOrder
+     * Get Java ByteOrder based on EndianFormat.
+     * Extracts byte order from the combined endian format.
      */
     protected java.nio.ByteOrder getJavaByteOrder() {
-        return agent.getByteOrder() == ModbusAgent.EndianOrder.BIG
+        ModbusAgent.EndianFormat format = agent.getEndianFormat();
+        // BIG_ENDIAN and BIG_ENDIAN_BYTE_SWAP use big-endian byte order
+        // LITTLE_ENDIAN and LITTLE_ENDIAN_BYTE_SWAP use little-endian byte order
+        return (format == ModbusAgent.EndianFormat.BIG_ENDIAN || format == ModbusAgent.EndianFormat.BIG_ENDIAN_BYTE_SWAP)
             ? java.nio.ByteOrder.BIG_ENDIAN
             : java.nio.ByteOrder.LITTLE_ENDIAN;
     }
 
     /**
-     * Apply word order swapping to multi-register data.
+     * Apply word order swapping to multi-register data based on EndianFormat.
      * Word order determines how 16-bit registers are arranged within multi-register values.
      */
     protected byte[] applyWordOrder(byte[] data, int registerCount) {
-        // If word order is BIG or only one register, no swapping needed
-        if (agent.getWordOrder() == ModbusAgent.EndianOrder.BIG || registerCount <= 1) {
+        ModbusAgent.EndianFormat format = agent.getEndianFormat();
+
+        // No swapping needed for single register or BIG_ENDIAN/LITTLE_ENDIAN formats
+        if (registerCount <= 1 || format == ModbusAgent.EndianFormat.BIG_ENDIAN || format == ModbusAgent.EndianFormat.LITTLE_ENDIAN) {
             return data;
         }
 
-        // LITTLE word order: reverse the order of registers
+        // BYTE_SWAP formats: reverse the order of registers
         byte[] result = new byte[data.length];
         for (int i = 0; i < registerCount; i++) {
             int srcIdx = i * 2;

@@ -33,9 +33,11 @@ public abstract class ModbusAgent<T extends ModbusAgent<T, U>, U extends Abstrac
 
     public static final AttributeDescriptor<Integer> UNIT_ID = new AttributeDescriptor<>("unitId", ValueType.INTEGER, new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.Min(1), new ValueConstraint.Max(255))));
 
-    public enum EndianOrder {
-        BIG,
-        LITTLE;
+    public enum EndianFormat {
+        BIG_ENDIAN,              // ABCD - Big byte order, Big word order
+        LITTLE_ENDIAN,           // DCBA - Little byte order, Little word order
+        BIG_ENDIAN_BYTE_SWAP,    // BADC - Big byte order, Little word order
+        LITTLE_ENDIAN_BYTE_SWAP; // CDAB - Little byte order, Big word order
 
         @JsonValue
         public String getJsonValue() {
@@ -58,6 +60,5 @@ public abstract class ModbusAgent<T extends ModbusAgent<T, U>, U extends Abstrac
         getAttributes().getOrCreate(UNIT_ID).setValue(unitId);
     }
 
-    public abstract EndianOrder getByteOrder();
-    public abstract EndianOrder getWordOrder();
+    public abstract EndianFormat getEndianFormat();
 }

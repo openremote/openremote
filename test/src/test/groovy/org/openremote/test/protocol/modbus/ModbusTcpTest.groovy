@@ -571,8 +571,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         agent.setPort(modbusServerPort)
         agent.setUnitId(1)
         agent.addOrReplaceAttributes(
-                new Attribute<>(ModbusTcpAgent.BYTE_ORDER, ModbusAgent.EndianOrder.BIG),
-                new Attribute<>(ModbusTcpAgent.WORD_ORDER, ModbusAgent.EndianOrder.BIG)
+                new Attribute<>(ModbusTcpAgent.ENDIAN_FORMAT, ModbusAgent.EndianFormat.BIG_ENDIAN)
         )
         agent = assetStorageService.merge(agent)
 

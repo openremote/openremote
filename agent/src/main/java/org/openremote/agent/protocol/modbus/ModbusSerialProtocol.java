@@ -90,7 +90,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
                     stopBits,
                     mapParityToSerialPort(parity)
             );
-            Thread.sleep(100); //Delay to allow connectionStatus attribute processing
+            Thread.sleep(100); //Delay to allow connectionStatus attribute processing, this may still cause failure on slow systems...
             if (wrapper != null && wrapper.isOpen()) {
                 serialPort = wrapper;
                 setConnectionStatus(ConnectionStatus.CONNECTED);

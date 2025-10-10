@@ -67,13 +67,10 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
     protected void doStartProtocol(Container container) throws Exception {
         setConnectionStatus(ConnectionStatus.CONNECTING);
 
-        // Convert byte/word order to PLC4X format
-        String byteOrderParam = convertToPlc4xByteOrder(agent.getByteOrder(), agent.getWordOrder());
-
         connectionString = "modbus-tcp://" + agent.getHost().orElseThrow()
                 + ":" + agent.getPort().orElseThrow()
                 + "?unit-identifier=" + agent.getUnitId()
-                + "&byte-order=" + byteOrderParam;
+                + "&byte-order=" + agent.getEndianFormat().getJsonValue();
 
         // Retry logic with exponential backoff
         int maxRetries = 3;
@@ -138,21 +135,6 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
         LOG.log(Level.SEVERE, "Failed to create PLC4X connection after " + maxRetries + " attempts: " + agent);
         setConnectionStatus(ConnectionStatus.ERROR);
         throw lastException != null ? lastException : new PlcConnectionException("Failed to connect after " + maxRetries + " attempts");
-    }
-
-    /**
-     * Convert our byte/word order enums to PLC4X byte order format.
-     */
-    private String convertToPlc4xByteOrder(ModbusAgent.EndianOrder byteOrder, ModbusAgent.EndianOrder wordOrder) {
-        if (byteOrder == ModbusAgent.EndianOrder.BIG && wordOrder == ModbusAgent.EndianOrder.BIG) {
-            return "BIG_ENDIAN";  // ABCD
-        } else if (byteOrder == ModbusAgent.EndianOrder.LITTLE && wordOrder == ModbusAgent.EndianOrder.LITTLE) {
-            return "LITTLE_ENDIAN";  // DCBA
-        } else if (byteOrder == ModbusAgent.EndianOrder.BIG && wordOrder == ModbusAgent.EndianOrder.LITTLE) {
-            return "BIG_ENDIAN_BYTE_SWAP";  // BADC
-        } else { // LITTLE byte, BIG word
-            return "LITTLE_ENDIAN_BYTE_SWAP";  // CDAB
-        }
     }
 
     @Override
