@@ -343,8 +343,10 @@ jobs:
 
               os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
               os.system(f" echo 'Manager tags to push to docker hub: {dockerPublishTags}'")
+              os.system(f" echo 'org: {github.repository_owner}'")
               dockerPublishTags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", dockerPublishTags.split(",")))
-              os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
+              if github.repository_owner == 'openremote':
+                os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
 
             if mavenPublishTag is not None:
               mavenPublishTag = mavenPublishTag.replace("$version", version)
