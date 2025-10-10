@@ -17,10 +17,10 @@
     "lit": "^3.3.1"
   },
   "devDependencies": {
-    "@rsbuild/core": "^1.4.11",
-    "@storybook/web-components": "^9.1.10",
-    "storybook": "^9.1.10",
-    "storybook-web-components-rsbuild": "^2.0.2",
-    "typescript": "^5.8.3"
+    "@rsbuild/core": "~1.5.13",
+    "@storybook/web-components": "~9.1.10",
+    "storybook": "~9.1.10",
+    "storybook-web-components-rsbuild": "~2.1.2",
+    "typescript": "~5.9.3"
   }
 }

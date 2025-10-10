@@ -2317,12 +2317,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/storybook@workspace:ui/app/storybook"
   dependencies:
-    "@rsbuild/core": "npm:^1.4.11"
-    "@storybook/web-components": "npm:^9.1.10"
+    "@rsbuild/core": "npm:~1.5.13"
+    "@storybook/web-components": "npm:~9.1.10"
     lit: "npm:^3.3.1"
-    storybook: "npm:^9.1.10"
-    storybook-web-components-rsbuild: "npm:^2.0.2"
-    typescript: "npm:^5.8.3"
+    storybook: "npm:~9.1.10"
+    storybook-web-components-rsbuild: "npm:~2.1.2"
+    typescript: "npm:~5.9.3"
   languageName: unknown
   linkType: soft
 
@@ -2584,7 +2584,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rsbuild/core@npm:^1.4.11":
+"@rsbuild/core@npm:~1.5.13":
   version: 1.5.13
   resolution: "@rsbuild/core@npm:1.5.13"
   dependencies:
@@ -3005,7 +3005,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/web-components@npm:^9.1.10, @storybook/web-components@npm:^9.1.7":
+"@storybook/web-components@npm:^9.1.7, @storybook/web-components@npm:~9.1.10":
   version: 9.1.10
   resolution: "@storybook/web-components@npm:9.1.10"
   dependencies:
@@ -10184,7 +10184,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"storybook-web-components-rsbuild@npm:^2.0.2":
+"storybook-web-components-rsbuild@npm:~2.1.2":
   version: 2.1.2
   resolution: "storybook-web-components-rsbuild@npm:2.1.2"
   dependencies:
@@ -10198,7 +10198,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"storybook@npm:^9.1.10":
+"storybook@npm:~9.1.10":
   version: 9.1.10
   resolution: "storybook@npm:9.1.10"
   dependencies:
@@ -10800,16 +10800,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.8.3":
-  version: 5.9.3
-  resolution: "typescript@npm:5.9.3"
-  bin:
-    tsc: bin/tsc
-    tsserver: bin/tsserver
-  checksum: 10c0/6bd7552ce39f97e711db5aa048f6f9995b53f1c52f7d8667c1abdc1700c68a76a308f579cd309ce6b53646deb4e9a1be7c813a93baaf0a28ccd536a30270e1c5
-  languageName: node
-  linkType: hard
-
 "typescript@npm:~5.4.2":
   version: 5.4.5
   resolution: "typescript@npm:5.4.5"
@@ -10830,6 +10820,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"typescript@npm:~5.9.3":
+  version: 5.9.3
+  resolution: "typescript@npm:5.9.3"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/6bd7552ce39f97e711db5aa048f6f9995b53f1c52f7d8667c1abdc1700c68a76a308f579cd309ce6b53646deb4e9a1be7c813a93baaf0a28ccd536a30270e1c5
+  languageName: node
+  linkType: hard
+
 "typescript@patch:typescript@npm%3A^5.3.3#optional!builtin<compat/typescript>":
   version: 5.3.3
   resolution: "typescript@patch:typescript@npm%3A5.3.3#optional!builtin<compat/typescript>::version=5.3.3&hash=e012d7"
@@ -10837,16 +10837,6 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10c0/1d0a5f4ce496c42caa9a30e659c467c5686eae15d54b027ee7866744952547f1be1262f2d40de911618c242b510029d51d43ff605dba8fb740ec85ca2d3f9500
-  languageName: node
-  linkType: hard
-
-"typescript@patch:typescript@npm%3A^5.8.3#optional!builtin<compat/typescript>":
-  version: 5.9.3
-  resolution: "typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"
-  bin:
-    tsc: bin/tsc
-    tsserver: bin/tsserver
-  checksum: 10c0/ad09fdf7a756814dce65bc60c1657b40d44451346858eea230e10f2e95a289d9183b6e32e5c11e95acc0ccc214b4f36289dcad4bf1886b0adb84d711d336a430
   languageName: node
   linkType: hard
 
@@ -10867,6 +10857,16 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10c0/39117e346ff8ebd87ae1510b3a77d5d92dae5a89bde588c747d25da5c146603a99c8ee588c7ef80faaf123d89ed46f6dbd918d534d641083177d5fac38b8a1cb
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@npm%3A~5.9.3#optional!builtin<compat/typescript>":
+  version: 5.9.3
+  resolution: "typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/ad09fdf7a756814dce65bc60c1657b40d44451346858eea230e10f2e95a289d9183b6e32e5c11e95acc0ccc214b4f36289dcad4bf1886b0adb84d711d336a430
   languageName: node
   linkType: hard
 
