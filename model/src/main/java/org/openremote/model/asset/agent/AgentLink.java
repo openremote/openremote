@@ -56,7 +56,7 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
     @JsonSchemaDescription("Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion")
     @JsonSchemaSupplier(supplier = SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
     protected Map<String, Object> writeValueConverter;
-    @JsonSchemaDescription("String to be used for attribute writes and can contain dynamic placeholders to allow dyanmic" +
+    @JsonSchemaDescription("String to be used for attribute writes and can contain dynamic placeholders to allow dynamic" +
             " value and/or time injection with formatting (see documentation for details) into the string or alternatively" +
             " write the string through to the protocol as is (static string)")
     @JsonSchemaFormat("or-multiline")
