@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
@@ -26,7 +27,9 @@ import com.fasterxml.jackson.databind.cfg.ConstructorDetector;
 import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -65,6 +68,9 @@ import java.io.Serializable;
 import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -934,6 +940,29 @@ public class ValueUtil {
             )
             .distinct()
             .toArray(Class<?>[]::new);
+    }
+
+    static class SortingNodeFactory extends JsonNodeFactory {
+        @Override
+        public ObjectNode objectNode() {
+            return new ObjectNode(this, new TreeMap<String, JsonNode>());
+        }
+    }
+
+    /**
+     * Returns a hash of all AssetInfos that we consider the AssetModelVersion
+     */
+    public static String hash() {
+        MessageDigest md;
+        try {
+            md = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            LOG.severe("MD5 algorithm not supported");
+            return null;
+        }
+        JsonNode node = JSON.copy().setNodeFactory(new SortingNodeFactory()).valueToTree(assetInfoMap);
+        System.out.println(node);
+        return Base64.getEncoder().encodeToString(md.digest(node.toString().getBytes(StandardCharsets.UTF_8)));
     }
 
     /**

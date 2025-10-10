@@ -20,10 +20,13 @@
 package org.openremote.manager.system;
 
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.TextNode;
+import org.openremote.manager.asset.AssetModelService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.system.StatusResource;
+import org.openremote.model.util.ValueUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,7 +41,7 @@ public class StatusResourceImpl implements StatusResource {
 
     private static final Logger LOG = Logger.getLogger(StatusResourceImpl.class.getName());
     protected List<HealthStatusProvider> healthStatusProviderList;
-    protected Map<String, Object> serverInfo;
+    protected HashMap<String, Object> serverInfo = new HashMap<>();
 
     public StatusResourceImpl(Container container, List<HealthStatusProvider> healthStatusProviderList) {
         this.healthStatusProviderList = healthStatusProviderList;
@@ -64,10 +67,10 @@ public class StatusResourceImpl implements StatusResource {
             version = "0.0.0";
         }
 
-        serverInfo = Map.of(
+        serverInfo.putAll(Map.of(
             "version", version,
             "authServerUrl", authServerUrl
-        );
+        ));
 
         LOG.info("Starting OpenRemote version: v"+version);
     }
@@ -88,6 +91,7 @@ public class StatusResourceImpl implements StatusResource {
 
     @Override
     public Map<String, Object> getInfo() {
+        serverInfo.put("assetModelVersion", String.valueOf(ValueUtil.hash()));
         return serverInfo;
     }
 }
