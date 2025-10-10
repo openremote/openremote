@@ -37,32 +37,25 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     @Min(1000)
     private Long pollingMillis;
 
-    @JsonProperty
     @JsonPropertyDescription("Memory area to read from during read request")
     private ReadMemoryArea readMemoryArea;
 
-    @JsonProperty
     @JsonPropertyDescription("Type to convert the returned data to. As specified by the PLC4X Modbus data types.")
     private ModbusDataType readValueType;
 
-    @JsonProperty
-    @JsonPropertyDescription("Zero based address from which the value is read from")
+    @JsonPropertyDescription("1-based address from which the value is read from (e.g., HOLDING register 1 = 40001)")
     private Integer readAddress;
 
-    @JsonProperty
     @JsonPropertyDescription("Memory area to write to. \"HOLDING\" or \"COIL\" allowed.")
     private WriteMemoryArea writeMemoryArea;
 
-    @JsonProperty
-    @JsonPropertyDescription("Zero-based address to which the value sent is written to")
+    @JsonPropertyDescription("1-based address to which the value is written to (e.g., HOLDING register 1 = 40001)")
     private Integer writeAddress;
 
-    @JsonProperty
     @JsonPropertyDescription("Set amount of registers to read/write. If left empty or less than 1, will use the default size for the corresponding data-type.")
     @JsonAlias("readRegisterAmount")  // Support old field name for backward compatibility
     private Integer registersAmount;
 
-    @JsonProperty
     @JsonPropertyDescription("If enabled, the current attribute value will be written to the modbus register at pollingMillis interval, not just on attribute events.")
     private Boolean writeWithPollingRate;
 

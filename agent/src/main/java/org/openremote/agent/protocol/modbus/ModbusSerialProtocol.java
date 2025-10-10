@@ -136,17 +136,20 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         int writeAddress = getOrThrowAgentLinkProperty(Optional.ofNullable(agentLink.getWriteAddress()), "write address");
         int registersCount = Optional.ofNullable(agentLink.getRegistersAmount()).orElse(1);
 
+        // Convert from 1-based user address to 0-based protocol address
+        int protocolAddress = writeAddress - 1;
+
         boolean writeSuccess = false;
         try {
             switch (agentLink.getWriteMemoryArea()) {
                 case COIL:
-                    writeSuccess = writeSingleCoil(agent.getUnitId(), writeAddress, (Boolean) processedValue);
+                    writeSuccess = writeSingleCoil(agent.getUnitId(), protocolAddress, (Boolean) processedValue);
                     break;
                 case HOLDING:
                     if (registersCount > 1) {
-                        writeSuccess = writeMultipleHoldingRegisters(agent.getUnitId(), writeAddress, registersCount, processedValue);
+                        writeSuccess = writeMultipleHoldingRegisters(agent.getUnitId(), protocolAddress, registersCount, processedValue);
                     } else {
-                        writeSuccess = writeSingleHoldingRegister(agent.getUnitId(), writeAddress, processedValue);
+                        writeSuccess = writeSingleHoldingRegister(agent.getUnitId(), protocolAddress, processedValue);
                     }
                     break;
                 default:
@@ -521,8 +524,11 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
                 throw new IllegalArgumentException("Unsupported read memory area: " + memoryArea);
         }
 
+        // Convert from 1-based user address to 0-based protocol address
+        int protocolAddress = batch.startAddress - 1;
+
         // Perform the batch read
-        byte[] response = performModbusBatchRead(agent.getUnitId(), functionCode, batch.startAddress, batch.quantity);
+        byte[] response = performModbusBatchRead(agent.getUnitId(), functionCode, protocolAddress, batch.quantity);
 
         if (response == null) {
             return;
