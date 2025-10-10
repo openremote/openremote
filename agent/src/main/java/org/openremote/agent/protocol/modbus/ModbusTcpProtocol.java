@@ -169,6 +169,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
 
     @Override
     protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
+        LOG.finest("DEBUG doLinkedAttributeWrite triggered: " + agentLink + ", event: " + event + ", processedValue: " + processedValue);
         int writeAddress = getOrThrowAgentLinkProperty(Optional.ofNullable(agentLink.getWriteAddress()), "write address");
         int registersCount = Optional.ofNullable(agentLink.getRegistersAmount()).orElse(1);
         String messageId = "tcp_write_" + event.getRef().getId() + "_" + event.getRef().getName() + "_" + writeAddress;
@@ -192,6 +193,22 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                 throw new IllegalStateException("PLC Write Response code is something other than \"OK\"");
             }
             onRequestSuccess(messageId);
+
+            // Only update from AbstractProtocol writes, not from polling writes
+            // Check if this write came from AbstractProtocol by looking at the event source
+            if (event.getSource() != null) {
+                // This write came from AbstractProtocol (user-initiated), update to confirm success
+                // First update the local map so polling sees the new value immediately
+                Attribute<?> attribute = linkedAttributes.get(event.getRef());
+                if (attribute != null) {
+                    @SuppressWarnings("unchecked")
+                    Attribute<Object> attr = (Attribute<Object>) attribute;
+                    attr.setValue(processedValue);
+                }
+                // Then send the event to the system
+                updateLinkedAttribute(event.getRef(), processedValue);
+            }
+            // Polling writes have null source, so they don't trigger updateLinkedAttribute
         } catch (Exception e) {
             onRequestFailure(messageId, "Modbus TCP write address=" + writeAddress, e);
             throw new RuntimeException(e);
@@ -267,7 +284,8 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
 
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
-                // Get current attribute value
+                // Get current attribute value from linkedAttributes map
+                // This map is kept up-to-date by doLinkedAttributeWrite after successful writes
                 Attribute<?> attribute = linkedAttributes.get(ref);
                 if (attribute == null || attribute.getValue().isEmpty()) {
                     LOG.finest("Skipping write poll for " + ref + " - no value available");

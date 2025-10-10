@@ -136,21 +136,38 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         int writeAddress = getOrThrowAgentLinkProperty(Optional.ofNullable(agentLink.getWriteAddress()), "write address");
         int registersCount = Optional.ofNullable(agentLink.getRegistersAmount()).orElse(1);
 
+        boolean writeSuccess = false;
         try {
             switch (agentLink.getWriteMemoryArea()) {
                 case COIL:
-                    writeSingleCoil(agent.getUnitId(), writeAddress, (Boolean) processedValue);
+                    writeSuccess = writeSingleCoil(agent.getUnitId(), writeAddress, (Boolean) processedValue);
                     break;
                 case HOLDING:
                     if (registersCount > 1) {
-                        writeMultipleHoldingRegisters(agent.getUnitId(), writeAddress, registersCount, processedValue);
+                        writeSuccess = writeMultipleHoldingRegisters(agent.getUnitId(), writeAddress, registersCount, processedValue);
                     } else {
-                        writeSingleHoldingRegister(agent.getUnitId(), writeAddress, processedValue);
+                        writeSuccess = writeSingleHoldingRegister(agent.getUnitId(), writeAddress, processedValue);
                     }
                     break;
                 default:
                     throw new IllegalStateException("Only COIL and HOLDING memory areas are supported for writing");
             }
+
+            // Only update from AbstractProtocol writes, not from polling writes
+            // Check if this write came from AbstractProtocol by looking at the event source
+            if (writeSuccess && event.getSource() != null) {
+                // This write came from AbstractProtocol (user-initiated), update to confirm success
+                // First update the local map so polling sees the new value immediately
+                Attribute<?> attribute = linkedAttributes.get(event.getRef());
+                if (attribute != null) {
+                    @SuppressWarnings("unchecked")
+                    Attribute<Object> attr = (Attribute<Object>) attribute;
+                    attr.setValue(processedValue);
+                }
+                // Then send the event to the system
+                updateLinkedAttribute(event.getRef(), processedValue);
+            }
+            // Polling writes have null source, so they don't trigger updateLinkedAttribute
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Error writing to Modbus device: " + e.getMessage(), e);
         }
@@ -633,7 +650,8 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
 
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
-                // Get current attribute value
+                // Get current attribute value from linkedAttributes map
+                // This map is kept up-to-date by doLinkedAttributeWrite after successful writes
                 Attribute<?> attribute = linkedAttributes.get(ref);
                 if (attribute == null || attribute.getValue().isEmpty()) {
                     LOG.finest("Skipping write poll for " + ref + " - no value available");
