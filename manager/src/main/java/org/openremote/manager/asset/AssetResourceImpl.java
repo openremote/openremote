@@ -490,7 +490,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
     }
 
-    @Override
+    /*@Override
     public Asset<?>[] importAssets(RequestParams requestParams, Asset<?>[] assets) {
         try {
             if (isRestrictedUser()) {
@@ -507,7 +507,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
         }
-    }
+    }*/
 
     protected Asset<?> tryCreate(Asset<?> asset) {
 

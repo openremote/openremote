@@ -41,7 +41,9 @@ function createElectricityAssets(amount: number) {
 
 // Utility function to create parent assets, and apply assets as children
 async function applyParentAssets(parentAssets: Asset[], manager: Manager) {
-    await manager.importAssets(parentAssets);
+    for (const p of parentAssets) {
+        await manager.createAsset(p);
+    }
     const cityIds = manager.assets.filter(a => a.type === "CityAsset").sort((a, b) => a.name!.localeCompare(b.name!)).map(a => a.id);
     const childAssets = manager.assets.filter(a => a.type !== "CityAsset");
     childAssets.forEach(((ca, i) => ca.parentId = cityIds[Math.floor(i / (childAssets.length / cityIds.length))]));

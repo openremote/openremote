@@ -293,13 +293,13 @@ public interface AssetResource {
     @Operation(operationId = "createAsset", summary = "Create an asset")
     Asset<?> create(@BeanParam RequestParams requestParams, Asset<?> asset);
 
-    @POST
+    /*@POST
     @Path("import")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
     @Operation(operationId = "createAssets", summary = "Import assets")
-    Asset<?>[] importAssets(@BeanParam RequestParams requestParams, Asset<?>[] assets);
+    Asset<?>[] importAssets(@BeanParam RequestParams requestParams, Asset<?>[] assets);*/
 
     /**
      * Deletes an asset. Regular users can only delete assets in their authenticated realm, the superuser can delete

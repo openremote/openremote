@@ -237,7 +237,7 @@ export class Manager {
    * @param asset The asset to create
    * @param config The axios request config
    */
-  async importAssets(assets: Asset[], config?: any) {
+  /*async importAssets(assets: Asset[], config?: any) {
     if(!config) {
       const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
       config = { headers: { Authorization: `Bearer ${access_token}` } };
@@ -250,7 +250,7 @@ export class Manager {
       .catch((e) => {
         expect(e.response.status, { message: "Failed to create asset" }).toBe(409);
       });
-    }
+    }*/
 
   /**
    * Updates an asset
