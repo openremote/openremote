@@ -477,4 +477,34 @@ public class JSONSchemaUtilTest {
         JsonNode actual = ValueUtil.getSchema(JavaTimeJacksonModule.class);
         assertEquals(expected.toString(), actual.toString(), true);
     }
+
+    enum TypeOption {
+        INTEGER(int.class),
+        STRING(String.class),
+        LONG(long.class),
+        FLOAT(Float.class);
+
+        TypeOption(Class<?> javaType) {
+        }
+    }
+
+    @Test
+    public void shouldGenerateEnum() throws JsonProcessingException, JSONException {
+        JsonNode expected = ValueUtil.JSON.readTree("""
+            {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "string",
+                "enum": [
+                    "INTEGER",
+                    "STRING",
+                    "LONG",
+                    "FLOAT"
+                ],
+                "title": "Type Option"
+            }"""
+        );
+
+        JsonNode actual = ValueUtil.getSchema(TypeOption.class);
+        assertEquals(expected.toString(), actual.toString(), true);
+    }
 }
