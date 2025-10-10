@@ -297,6 +297,7 @@ jobs:
           eventName = os.getenv('GITHUB_EVENT_NAME')
           refName = os.getenv('GITHUB_REF_NAME')
           refType = os.getenv('GITHUB_REF_TYPE')
+          repoOwner = os.getenv('GITHUB_REPOSITORY_OWNER')
           isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
           isRelease = os.getenv('IS_RELEASE') == 'true'
           managerVersion = os.getenv('MANAGER_VERSION')
@@ -343,7 +344,6 @@ jobs:
 
               os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
               os.system(f" echo 'Manager tags to push to docker hub: {dockerPublishTags}'")
-              repoOwner = os.getenv('github.repository_owner')
               os.system(f" echo 'org: {repoOwner}'")
               dockerPublishTags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", dockerPublishTags.split(",")))
               if repoOwner == 'openremote':
