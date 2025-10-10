@@ -25,11 +25,6 @@ import type {OrAssetTree} from "@openremote/or-asset-tree";
 
 test.use({ storageState: userStatePath });
 
-// After each test, clean up all data
-test.afterEach(async ({ manager }) => {
-    await manager.cleanUp();
-});
-
 function createBatteryAssets(amount: number) {
     return Array.from({ length: amount }, (_, i) => ({
         ...batteryAsset,
@@ -46,11 +41,13 @@ function createElectricityAssets(amount: number) {
 
 // Utility function to create parent assets, and apply assets as children
 async function applyParentAssets(parentAssets: Asset[], manager: Manager) {
-    await Promise.all(parentAssets.map(a => manager.createAsset(a)));
+    await manager.importAssets(parentAssets);
     const cityIds = manager.assets.filter(a => a.type === "CityAsset").sort((a, b) => a.name!.localeCompare(b.name!)).map(a => a.id);
     const childAssets = manager.assets.filter(a => a.type !== "CityAsset");
     childAssets.forEach(((ca, i) => ca.parentId = cityIds[Math.floor(i / (childAssets.length / cityIds.length))]));
-    await Promise.all(childAssets.map(ca => manager.updateAsset(ca)));
+    for (const a of childAssets) {
+        await manager.updateAsset(a);
+    }
 }
 
 /**
@@ -304,3 +301,8 @@ test(`When a lot of assets are displayed, make sure scroll positions are kept co
     await expect(assetTree.getAssetNodes()).toHaveCount(3 + 25 + 25); // Now it's 25 out of 25 assets again
     expect(await listContainer.evaluate(el => el.scrollTop)).toStrictEqual(scrollPos2);
 })
+
+// After each test, clean up all data
+test.afterEach(async ({ manager }) => {
+    await manager.cleanUp();
+});
