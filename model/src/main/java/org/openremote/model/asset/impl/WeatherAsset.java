@@ -38,6 +38,21 @@ public class WeatherAsset extends Asset<WeatherAsset> {
     public static final AttributeDescriptor<Double> TEMPERATURE = new AttributeDescriptor<>("temperature", ValueType.NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_CELSIUS);
+    public static final AttributeDescriptor<Double> TEMPERATURE_FEELS_LIKE = new AttributeDescriptor<>("temperatureFeelsLike", ValueType.NUMBER,
+        new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withUnits(UNITS_CELSIUS);
+    public static final AttributeDescriptor<Double> TEMPERATURE_MIN = new AttributeDescriptor<>("temperatureMin", ValueType.NUMBER,
+        new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withUnits(UNITS_CELSIUS);
+    public static final AttributeDescriptor<Double> TEMPERATURE_MAX = new AttributeDescriptor<>("temperatureMax", ValueType.NUMBER,
+        new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withUnits(UNITS_CELSIUS);
+    public static final AttributeDescriptor<Integer> PRESSURE = new AttributeDescriptor<>("pressure", ValueType.POSITIVE_INTEGER,
+        new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withUnits(UNITS_HECTO, UNITS_PASCAL);
+    public static final AttributeDescriptor<Integer> CLOUD_COVERAGE = new AttributeDescriptor<>("cloudCoverage", ValueType.POSITIVE_INTEGER,
+        new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
     public static final AttributeDescriptor<Double> UV_INDEX = new AttributeDescriptor<>("uVIndex", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.LABEL, "UV index"),
         new MetaItem<>(MetaItemType.READ_ONLY)
@@ -60,6 +75,9 @@ public class WeatherAsset extends Asset<WeatherAsset> {
     public static final AttributeDescriptor<Integer> WIND_DIRECTION = new AttributeDescriptor<>("windDirection", ValueType.DIRECTION,
         new MetaItem<>(MetaItemType.READ_ONLY)
     );
+    public static final AttributeDescriptor<Double> WIND_GUST = new AttributeDescriptor<>("windGust", ValueType.POSITIVE_NUMBER,
+        new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND);
     public static final AttributeDescriptor<Double> RAINFALL = new AttributeDescriptor<>("rainfall", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_MILLI, UNITS_METRE);
@@ -83,6 +101,26 @@ public class WeatherAsset extends Asset<WeatherAsset> {
         return getAttributes().getValue(TEMPERATURE);
     }
 
+    public Optional<Double> getTemperatureFeelsLike() {
+        return getAttributes().getValue(TEMPERATURE_FEELS_LIKE);
+    }
+
+    public Optional<Double> getTemperatureMin() {
+        return getAttributes().getValue(TEMPERATURE_MIN);
+    }
+
+    public Optional<Double> getTemperatureMax() {
+        return getAttributes().getValue(TEMPERATURE_MAX);
+    }
+
+    public Optional<Integer> getPressure() {
+        return getAttributes().getValue(PRESSURE);
+    }
+
+    public Optional<Integer> getCloudCoverage() {
+        return getAttributes().getValue(CLOUD_COVERAGE);
+    }
+
     public Optional<Double> getUVIndex() {
         return getAttributes().getValue(UV_INDEX);
     }
@@ -101,6 +139,18 @@ public class WeatherAsset extends Asset<WeatherAsset> {
 
     public Optional<Double> getSunAltitude() {
         return getAttributes().getValue(SUN_ALTITUDE);
+    }
+
+    public Optional<Double> getWindSpeed() {
+        return getAttributes().getValue(WIND_SPEED);
+    }
+
+    public Optional<Integer> getWindDirection() {
+        return getAttributes().getValue(WIND_DIRECTION);
+    }
+
+    public Optional<Double> getWindGust() {
+        return getAttributes().getValue(WIND_GUST);
     }
 
     public Optional<Double> getRainfall() {
