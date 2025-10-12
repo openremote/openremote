@@ -39,6 +39,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.core.Response;
 
@@ -60,6 +61,10 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, OpenWeatherMapProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "OpenWeatherMap";
     private static final AtomicReference<ResteasyClient> client = new AtomicReference<>();
+
+    // Initial delay is used so the system has time to establish agent links
+    private static final int INITIAL_MILLIS_DELAY = 5000; // 5 seconds
+    private static final int DEFAULT_POLLING_MILLIS = 3600000; // 1 hour
 
     protected ScheduledFuture<?> pollingFuture;
 
@@ -87,7 +92,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
      */
     public String getOneCallApiUrl(double latitude, double longitude) {
         String apiKey = agent.getAPIKey().orElseThrow(() -> new IllegalStateException("API key is not set"));
-        return "https://api.openweathermap.org/data/3.0/onecall?lat=" + latitude + "&lon=" + longitude + "&exclude=alerts&appid=" + apiKey;
+        return "https://api.openweathermap.org/data/3.0/onecall?lat=" + latitude + "&lon=" + longitude + "&units=metric&exclude=alerts,minutely&appid=" + apiKey;
     }
 
     @Override
@@ -111,8 +116,8 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
         }
 
         // Schedule a task to retrieve weather data periodically
-        int pollingMillis = agent.getPollingMillis().orElse(3600000);
-        pollingFuture = scheduledExecutorService.scheduleAtFixedRate(this::retrieveWeatherData, 0, pollingMillis, TimeUnit.MILLISECONDS);
+        int pollingMillis = agent.getPollingMillis().orElse(DEFAULT_POLLING_MILLIS);
+        pollingFuture = scheduledExecutorService.scheduleAtFixedRate(this::retrieveWeatherData, INITIAL_MILLIS_DELAY, pollingMillis, TimeUnit.MILLISECONDS);
 
         setConnectionStatus(ConnectionStatus.CONNECTED);
     }
@@ -171,7 +176,13 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
      * unique location.
      */
     protected void retrieveWeatherData() {
+        LOG.fine("Retrieving weather data from OpenWeatherMap");
         Map<AttributeRef, Attribute<?>> linkedAttributes = getLinkedAttributes();
+
+        if (linkedAttributes.isEmpty()) {
+            LOG.fine("No linked attributes found, skipping weather data retrieval");
+            return;
+        }
 
         // <locationKey, attributeRefs>
         Map<String, List<AttributeRef>> locationGroups = new HashMap<>();
@@ -201,6 +212,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
      * @param linkedAttributes the linked attributes
      */
     protected void processLocationGroup(String locationKey, List<AttributeRef> attributeRefs, Map<AttributeRef, Attribute<?>> linkedAttributes) {
+        LOG.log(Level.FINE, () -> "Processing location group: " + locationKey);
         Asset<?> asset = assetService.findAsset(attributeRefs.get(0).getId());
         GeoJSONPoint location = asset.getLocation().orElse(null);
         if (location == null) {
@@ -234,16 +246,17 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
     protected void updateAttributesFromWeatherData(List<AttributeRef> attributeRefs, Map<AttributeRef, Attribute<?>> linkedAttributes,
             OpenWeatherMapResponse weatherData) {
         for (AttributeRef attrRef : attributeRefs) {
-            // Get the attribute
             Attribute<?> attr = linkedAttributes.get(attrRef);
 
             // Get the agent link
             OpenWeatherMapAgentLink agentLink = agent.getAgentLink(attr);
-            OpenWeatherMapField field = agentLink.getField().orElse(null);
-            Object value = field != null ? extractCurrentFieldValue(weatherData, field) : null;
+            OpenWeatherMapField field = agentLink.getField();
 
-            // Check if the field or value is null
-            if (field == null || value == null) {
+            // Extract the value from the weather entry based on the agent link field
+            OpenWeatherMapResponse.WeatherEntry weatherEntry = weatherData.getCurrent();
+            Object value = extractWeatherEntryFieldValue(weatherEntry, field);
+
+            if (value == null) {
                 AttributeRef ref = attrRef;
                 LOG.log(Level.WARNING, () -> "Field or value is null for attribute: " + ref);
                 continue;
@@ -255,49 +268,32 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
     }
 
     /**
-     * Extract the current weather value from the weather entry based on the given
-     * field
-     * 
-     * @param openWeatherMapResponse the weather response
-     * @param field the field
-     * @return the value
-     */
-    protected Object extractCurrentFieldValue(OpenWeatherMapResponse openWeatherMapResponse, OpenWeatherMapField field) {
-        // Index 0 = current weather entry
-        OpenWeatherMapResponse.WeatherEntry weatherEntry = openWeatherMapResponse.getList().get(0);
-        // Extract the value based on the field
-        return extractFieldValueFromWeatherEntry(weatherEntry, field);
-    }
-
-    /**
      * Extract the value from the weather entry based on the given field
      * 
      * @param weatherEntry the weather entry
      * @param field the field
      * @return the value
      */
-    protected Object extractFieldValueFromWeatherEntry(OpenWeatherMapResponse.WeatherEntry weatherEntry, OpenWeatherMapField field) {
+    protected Object extractWeatherEntryFieldValue(OpenWeatherMapResponse.WeatherEntry weatherEntry, OpenWeatherMapField field) {
         switch (field) {
-        case TEMP:
-            return weatherEntry.getMain().getTemperature();
-        case TEMP_FEELS_LIKE:
-            return weatherEntry.getMain().getFeelsLike();
-        case TEMP_MIN:
-            return weatherEntry.getMain().getTemperatureMin();
-        case TEMP_MAX:
-            return weatherEntry.getMain().getTemperatureMax();
-        case PRESSURE:
-            return weatherEntry.getMain().getPressure();
-        case HUMIDITY:
-            return weatherEntry.getMain().getHumidity();
+        case TEMPERATURE:
+            return weatherEntry.getTemperature();
+        case ATMOSPHERIC_PRESSURE:
+            return weatherEntry.getPressure();
+        case HUMIDITY_PERCENTAGE:
+            return weatherEntry.getHumidity();
         case CLOUD_COVERAGE:
-            return weatherEntry.getClouds().getAll();
+            return weatherEntry.getClouds();
         case WIND_SPEED:
-            return weatherEntry.getWind().getSpeed();
-        case WIND_DEG:
-            return weatherEntry.getWind().getDegrees();
-        case WIND_GUST:
-            return weatherEntry.getWind().getGust();
+            return weatherEntry.getWindSpeed();
+        case WIND_DIRECTION_DEGREES:
+            return weatherEntry.getWindDegrees();
+        case WIND_GUST_SPEED:
+            return weatherEntry.getWindGust();
+        case PROBABILITY_OF_PRECIPITATION:
+            return weatherEntry.getPop();
+        case ULTRAVIOLET_INDEX:
+            return weatherEntry.getUvi();
         default:
             return null;
         }

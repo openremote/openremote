@@ -11,8 +11,14 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class OpenWeatherMapResponse {
 
-    @JsonProperty("list")
-    private List<WeatherEntry> list;
+    @JsonProperty("current")
+    private WeatherEntry current;
+
+    @JsonProperty("hourly")
+    private List<WeatherEntry> hourly;
+
+    @JsonProperty("daily")
+    private List<DailyWeatherEntry> daily;
 
     /**
      * For hydrators
@@ -20,12 +26,29 @@ public class OpenWeatherMapResponse {
     public OpenWeatherMapResponse() {
     }
 
-    public List<WeatherEntry> getList() {
-        return list;
+    public WeatherEntry getCurrent() {
+        return current;
     }
 
-    public void setList(List<WeatherEntry> list) {
-        this.list = list;
+    public void setCurrent(WeatherEntry current) {
+        this.current = current;
+    }
+
+
+    public List<WeatherEntry> getHourly() {
+        return hourly;
+    }
+
+    public void setHourly(List<WeatherEntry> hourly) {
+        this.hourly = hourly;
+    }
+
+    public List<DailyWeatherEntry> getDaily() {
+        return daily;
+    }
+
+    public void setDaily(List<DailyWeatherEntry> daily) {
+        this.daily = daily;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -34,14 +57,32 @@ public class OpenWeatherMapResponse {
         @JsonProperty("dt")
         private long timestamp;
 
-        @JsonProperty("main")
-        private Main main;
+        @JsonProperty("temp")
+        private double temperature;
+
+        @JsonProperty("pressure")
+        private int pressure;
+
+        @JsonProperty("humidity")
+        private int humidity;
 
         @JsonProperty("clouds")
-        private Clouds clouds;
+        private int clouds;
 
-        @JsonProperty("wind")
-        private Wind wind;
+        @JsonProperty("wind_speed")
+        private double windSpeed;
+
+        @JsonProperty("wind_deg")
+        private int windDegrees;
+
+        @JsonProperty("wind_gust")
+        private double windGust;
+
+        @JsonProperty("pop")
+        private double pop;
+
+        @JsonProperty("uvi")
+        private double uvi;
 
         /**
          * For hydrators
@@ -57,88 +98,12 @@ public class OpenWeatherMapResponse {
             this.timestamp = timestamp;
         }
 
-        public Main getMain() {
-            return main;
-        }
-
-        public void setMain(Main main) {
-            this.main = main;
-        }
-
-        public Clouds getClouds() {
-            return clouds;
-        }
-
-        public void setClouds(Clouds clouds) {
-            this.clouds = clouds;
-        }
-
-        public Wind getWind() {
-            return wind;
-        }
-
-        public void setWind(Wind wind) {
-            this.wind = wind;
-        }
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Main {
-
-        @JsonProperty("temp")
-        private double temperature;
-
-        @JsonProperty("feels_like")
-        private double feelsLike;
-
-        @JsonProperty("temp_min")
-        private double temperatureMin;
-
-        @JsonProperty("temp_max")
-        private double temperatureMax;
-
-        @JsonProperty("pressure")
-        private int pressure;
-
-        @JsonProperty("humidity")
-        private int humidity;
-
-        /**
-         * For hydrators
-         */
-        public Main() {
-        }
-
         public double getTemperature() {
             return temperature;
         }
 
         public void setTemperature(double temperature) {
             this.temperature = temperature;
-        }
-
-        public double getFeelsLike() {
-            return feelsLike;
-        }
-
-        public void setFeelsLike(double feelsLike) {
-            this.feelsLike = feelsLike;
-        }
-
-        public double getTemperatureMin() {
-            return temperatureMin;
-        }
-
-        public void setTemperatureMin(double temperatureMin) {
-            this.temperatureMin = temperatureMin;
-        }
-
-        public double getTemperatureMax() {
-            return temperatureMax;
-        }
-
-        public void setTemperatureMax(double temperatureMax) {
-            this.temperatureMax = temperatureMax;
         }
 
         public int getPressure() {
@@ -156,69 +121,252 @@ public class OpenWeatherMapResponse {
         public void setHumidity(int humidity) {
             this.humidity = humidity;
         }
+
+        public int getClouds() {
+            return clouds;
+        }
+
+        public void setClouds(int clouds) {
+            this.clouds = clouds;
+        }
+
+        public double getWindSpeed() {
+            return windSpeed;
+        }
+
+        public void setWindSpeed(double windSpeed) {
+            this.windSpeed = windSpeed;
+        }
+
+        public int getWindDegrees() {
+            return windDegrees;
+        }
+
+        public void setWindDegrees(int windDegrees) {
+            this.windDegrees = windDegrees;
+        }
+
+        public double getWindGust() {
+            return windGust;
+        }
+
+        public void setWindGust(double windGust) {
+            this.windGust = windGust;
+        }
+
+        public double getPop() {
+            return pop;
+        }
+
+        public void setPop(double pop) {
+            this.pop = pop;
+        }
+
+        public double getUvi() {
+            return uvi;
+        }
+
+        public void setUvi(double uvi) {
+            this.uvi = uvi;
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Clouds {
+    public static class DailyWeatherEntry {
+        @JsonProperty("dt")
+        private long timestamp;
 
-        @JsonProperty("all")
-        private int all;
+        @JsonProperty("temp")
+        private Temp temp;
 
-        /**
-         * For hydrators
-         */
-        public Clouds() {
+        @JsonProperty("pressure")
+        private int pressure;
+
+        @JsonProperty("humidity")
+        private int humidity;
+
+        @JsonProperty("wind_speed")
+        private double windSpeed;
+
+        @JsonProperty("wind_deg")
+        private int windDegrees;
+
+        @JsonProperty("wind_gust")
+        private double windGust;
+
+        @JsonProperty("clouds")
+        private int clouds;
+
+        @JsonProperty("pop")
+        private double pop;
+
+        @JsonProperty("rain")
+        private double rain;
+
+        @JsonProperty("uvi")
+        private double uvi;
+
+        public DailyWeatherEntry() {
         }
 
-        public int getAll() {
-            return all;
+        public long getTimestamp() {
+            return timestamp;
         }
 
-        public void setAll(int all) {
-            this.all = all;
+        public void setTimestamp(long timestamp) {
+            this.timestamp = timestamp;
+        }
+
+        public Temp getTemp() {
+            return temp;
+        }
+
+        public void setTemp(Temp temp) {
+            this.temp = temp;
+        }
+
+        public int getPressure() {
+            return pressure;
+        }
+
+        public void setPressure(int pressure) {
+            this.pressure = pressure;
+        }
+
+        public int getHumidity() {
+            return humidity;
+        }
+
+        public void setHumidity(int humidity) {
+            this.humidity = humidity;
+        }
+
+        public double getWindSpeed() {
+            return windSpeed;
+        }
+
+        public void setWindSpeed(double windSpeed) {
+            this.windSpeed = windSpeed;
+        }
+
+        public int getWindDegrees() {
+            return windDegrees;
+        }
+
+        public void setWindDegrees(int windDegrees) {
+            this.windDegrees = windDegrees;
+        }
+
+        public double getWindGust() {
+            return windGust;
+        }
+
+        public void setWindGust(double windGust) {
+            this.windGust = windGust;
+        }
+
+        public int getClouds() {
+            return clouds;
+        }
+
+        public void setClouds(int clouds) {
+            this.clouds = clouds;
+        }
+
+        public double getPop() {
+            return pop;
+        }
+
+        public void setPop(double pop) {
+            this.pop = pop;
+        }
+
+        public double getRain() {
+            return rain;
+        }
+
+        public void setRain(double rain) {
+            this.rain = rain;
+        }
+
+        public double getUvi() {
+            return uvi;
+        }
+
+        public void setUvi(double uvi) {
+            this.uvi = uvi;
         }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Wind {
+    public static class Temp {
+        @JsonProperty("day")
+        private double day;
 
-        @JsonProperty("speed")
-        private double speed;
+        @JsonProperty("min")
+        private double min;
 
-        @JsonProperty("deg")
-        private int degrees;
+        @JsonProperty("max")
+        private double max;
 
-        @JsonProperty("gust")
-        private double gust;
+        @JsonProperty("night")
+        private double night;
 
-        /**
-         * For hydrators
-         */
-        public Wind() {
+        @JsonProperty("eve")
+        private double eve;
+
+        @JsonProperty("morn")
+        private double morn;
+
+        public Temp() {
         }
 
-        public double getSpeed() {
-            return speed;
+        public double getDay() {
+            return day;
         }
 
-        public void setSpeed(double speed) {
-            this.speed = speed;
+        public void setDay(double day) {
+            this.day = day;
         }
 
-        public int getDegrees() {
-            return degrees;
+        public double getMin() {
+            return min;
         }
 
-        public void setDegrees(int degrees) {
-            this.degrees = degrees;
+        public void setMin(double min) {
+            this.min = min;
         }
 
-        public double getGust() {
-            return gust;
+        public double getMax() {
+            return max;
         }
 
-        public void setGust(double gust) {
-            this.gust = gust;
+        public void setMax(double max) {
+            this.max = max;
+        }
+
+        public double getNight() {
+            return night;
+        }
+
+        public void setNight(double night) {
+            this.night = night;
+        }
+
+        public double getEve() {
+            return eve;
+        }
+
+        public void setEve(double eve) {
+            this.eve = eve;
+        }
+
+        public double getMorn() {
+            return morn;
+        }
+
+        public void setMorn(double morn) {
+            this.morn = morn;
         }
     }
 
