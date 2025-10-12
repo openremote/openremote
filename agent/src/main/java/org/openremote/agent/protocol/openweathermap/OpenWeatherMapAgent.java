@@ -35,27 +35,21 @@ public class OpenWeatherMapAgent extends Agent<OpenWeatherMapAgent, OpenWeatherM
     public static final AgentDescriptor<OpenWeatherMapAgent, OpenWeatherMapProtocol, OpenWeatherMapAgentLink> DESCRIPTOR = new AgentDescriptor<>(
             OpenWeatherMapAgent.class, OpenWeatherMapProtocol.class, OpenWeatherMapAgentLink.class);
 
-    public static final AttributeDescriptor<String> API_KEY = new AttributeDescriptor<>(
-            "openweathermapAPIKey", ValueType.TEXT);
-
-    public static final AttributeDescriptor<Integer> REQUEST_TIMEOUT_MILLIS = new AttributeDescriptor<>(
-            "openweathermapRequestTimeoutMillis", ValueType.POSITIVE_INTEGER);
+    public static final AttributeDescriptor<String> API_KEY = new AttributeDescriptor<>("ApiKey", ValueType.TEXT);
 
     // Read only attribution, required by OpenWeatherMap API
-    public static final AttributeDescriptor<String> ATTRIBUTION = new AttributeDescriptor<>(
-            "openweathermapAttribution", ValueType.TEXT, new MetaItem<>(MetaItemType.READ_ONLY));
-
+    // Set during protocol start
+    public static final AttributeDescriptor<String> ATTRIBUTION = new AttributeDescriptor<>("Attribution", ValueType.TEXT,
+            new MetaItem<>(MetaItemType.READ_ONLY));
 
     // Button to provision a weather asset with the appropriate agent links
-    public static final AttributeDescriptor<Boolean> PROVISION_WEATHER_ASSET = new AttributeDescriptor<>(
-            "openweathermapProvisionWeatherAsset", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<Boolean> PROVISION_WEATHER_ASSET = new AttributeDescriptor<>("ProvisionWeatherAsset", ValueType.BOOLEAN);
 
     protected OpenWeatherMapAgent() {
     }
 
     public OpenWeatherMapAgent(String name) {
         super(name);
-        getAttributes().getOrCreate(ATTRIBUTION).setValue("Weather data provided by OpenWeather (https://openweathermap.org/)");
     }
 
     public Optional<String> getAPIKey() {
@@ -67,15 +61,6 @@ public class OpenWeatherMapAgent extends Agent<OpenWeatherMapAgent, OpenWeatherM
         return this;
     }
 
-    public Optional<Integer> getRequestTimeoutMillis() {
-        return getAttributes().getValue(REQUEST_TIMEOUT_MILLIS);
-    }
-
-    public OpenWeatherMapAgent setRequestTimeoutMillis(Integer value) {
-        getAttributes().getOrCreate(REQUEST_TIMEOUT_MILLIS).setValue(value);
-        return this;
-    }
-
     public Optional<Boolean> getProvisionWeatherAsset() {
         return getAttributes().getValue(PROVISION_WEATHER_ASSET);
     }
@@ -84,7 +69,6 @@ public class OpenWeatherMapAgent extends Agent<OpenWeatherMapAgent, OpenWeatherM
         getAttributes().getOrCreate(PROVISION_WEATHER_ASSET).setValue(value);
         return this;
     }
-
 
     @Override
     public OpenWeatherMapProtocol getProtocolInstance() {

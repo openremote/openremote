@@ -33,6 +33,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
@@ -47,9 +48,9 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 /**
  * Protocol for the OpenWeatherMap API (One Call 3.0 API)
  * 
- * This protocol retrieves the weather data for all linked attributes grouped by
- * their coordinates (Attribute Asset location) and makes one API call per
- * distinct location.
+ * This protocol periodically retrieves the weather data for all linked
+ * attributes grouped by their coordinates (Attribute Asset location) and makes
+ * one API call per distinct location.
  * 
  * It then updates the attributes based on the returned weather data.
  * 
@@ -91,16 +92,37 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
 
     @Override
     protected void doStart(Container container) throws Exception {
-        // Check the required agent attributes, fail fast if not set
+        setConnectionStatus(ConnectionStatus.CONNECTING);
+
+        if (agent.getAttributes().getValue(OpenWeatherMapAgent.ATTRIBUTION).isEmpty()) {
+            setOpenWeatherMapAttribution();
+        }
+
         if (agent.getAPIKey().isEmpty()) {
-            throw new IllegalStateException("API key is not set");
+            setConnectionStatus(ConnectionStatus.ERROR);
+            LOG.warning("API key is not set");
+            return;
+        }
+
+        if (!healthCheck()) {
+            setConnectionStatus(ConnectionStatus.ERROR);
+            LOG.warning("Could not reach OpenWeatherMap API, either API is unavailable or API key is invalid");
+            return;
         }
 
         // Schedule a task to retrieve weather data periodically
-        // Initial delay is 0, meaning the task will be executed immediately after the
-        // start
         int pollingMillis = agent.getPollingMillis().orElse(3600000);
-        pollingFuture = scheduledExecutorService.scheduleWithFixedDelay(this::retrieveWeatherData, 0, pollingMillis, TimeUnit.MILLISECONDS);
+        pollingFuture = scheduledExecutorService.scheduleAtFixedRate(this::retrieveWeatherData, 0, pollingMillis, TimeUnit.MILLISECONDS);
+
+        setConnectionStatus(ConnectionStatus.CONNECTED);
+    }
+
+    /**
+     * Set the required attribution for the OpenWeatherMap API
+     */
+    protected void setOpenWeatherMapAttribution() {
+        sendAttributeEvent(new AttributeEvent(agent.getId(), OpenWeatherMapAgent.ATTRIBUTION.getName(),
+                "Weather data provided by OpenWeather (https://openweathermap.org/)"));
     }
 
     @Override
@@ -112,25 +134,25 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
 
     @Override
     public boolean onAgentAttributeChanged(AttributeEvent event) {
-
         // handle provision weather asset 'button'
         if (event.getName().equals(OpenWeatherMapAgent.PROVISION_WEATHER_ASSET.getName())) {
             boolean provisionWeatherAsset = (Boolean) event.getValue().orElse(false);
             if (provisionWeatherAsset) {
-
+                LOG.info("Provisioning weather asset");
                 // uncheck the button
                 sendAttributeEvent(new AttributeEvent(agent.getId(), OpenWeatherMapAgent.PROVISION_WEATHER_ASSET.getName(), false));
             }
-
             return false; // Not a configuration attribute
         }
 
+        // Let the super method determine if this is a configuration attribute
         return super.onAgentAttributeChanged(event);
     }
 
     @Override
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, OpenWeatherMapAgentLink agentLink) throws RuntimeException {
-        // Do nothing
+        // Should we call the API when a new link is introduced? Al though this
+        // might cause frequent calls when setting up the agent
     }
 
     @Override
@@ -193,9 +215,11 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
                 OpenWeatherMapResponse weatherData = response.readEntity(OpenWeatherMapResponse.class);
                 updateAttributesFromWeatherData(attributeRefs, linkedAttributes, weatherData);
             } else {
+                setConnectionStatus(ConnectionStatus.ERROR);
                 LOG.warning("API request failed with status: " + response.getStatus());
             }
         } catch (Exception e) {
+            setConnectionStatus(ConnectionStatus.ERROR);
             LOG.log(Level.SEVERE, e, () -> "Failed to fetch weather data for location: " + locationKey);
         }
     }
@@ -276,6 +300,21 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
             return weatherEntry.getWind().getGust();
         default:
             return null;
+        }
+    }
+
+    protected boolean healthCheck() {
+        String apiUrl = getOneCallApiUrl(0, 0);
+        try (Response response = client.get().target(apiUrl).request().get()) {
+            if (response.getStatus() != 200) {
+                LOG.warning("Health check failed with status: " + response.getStatus());
+                return false;
+            } else {
+                return true;
+            }
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, e, () -> "Failed to perform health check");
+            return false;
         }
     }
 

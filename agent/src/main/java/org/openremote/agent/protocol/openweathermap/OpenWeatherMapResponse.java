@@ -4,17 +4,15 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
-
 /**
- * The response object from the OpenWeatherMap API,
- * trimmed down to only include the core weather properties
+ * The response object from the OpenWeatherMap API, trimmed down to only include
+ * the core weather properties
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class OpenWeatherMapResponse {
-    
+
     @JsonProperty("list")
     private List<WeatherEntry> list;
-
 
     /**
      * For hydrators
@@ -32,16 +30,16 @@ public class OpenWeatherMapResponse {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class WeatherEntry {
-        
+
         @JsonProperty("dt")
         private long timestamp;
-        
+
         @JsonProperty("main")
         private Main main;
-        
+
         @JsonProperty("clouds")
         private Clouds clouds;
-        
+
         @JsonProperty("wind")
         private Wind wind;
 
@@ -86,22 +84,22 @@ public class OpenWeatherMapResponse {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Main {
-        
+
         @JsonProperty("temp")
         private double temperature;
-        
+
         @JsonProperty("feels_like")
         private double feelsLike;
-        
+
         @JsonProperty("temp_min")
         private double temperatureMin;
-        
+
         @JsonProperty("temp_max")
         private double temperatureMax;
-        
+
         @JsonProperty("pressure")
         private int pressure;
-        
+
         @JsonProperty("humidity")
         private int humidity;
 
@@ -110,7 +108,7 @@ public class OpenWeatherMapResponse {
          */
         public Main() {
         }
-        
+
         public double getTemperature() {
             return temperature;
         }
@@ -162,7 +160,7 @@ public class OpenWeatherMapResponse {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Clouds {
-        
+
         @JsonProperty("all")
         private int all;
 
@@ -183,13 +181,13 @@ public class OpenWeatherMapResponse {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Wind {
-        
+
         @JsonProperty("speed")
         private double speed;
-        
+
         @JsonProperty("deg")
         private int degrees;
-        
+
         @JsonProperty("gust")
         private double gust;
 

@@ -25,16 +25,16 @@ package org.openremote.agent.protocol.openweathermap;
  * updating the attribute.
  */
 public enum OpenWeatherMapField {
-    TEMP,                  // main.temp
-    TEMP_FEELS_LIKE,       // main.feels_like
-    TEMP_MIN,              // main.temp_min
-    TEMP_MAX,              // main.temp_max
-    PRESSURE,              // main.pressure
-    HUMIDITY,              // main.humidity
-    CLOUD_COVERAGE,        // clouds.all (%)
-    WIND_SPEED,            // wind.speed (m/s)
-    WIND_DEG,              // wind.deg (degrees)
-    WIND_GUST;             // wind.gust (m/s)
+    TEMP,               // main.temp
+    TEMP_FEELS_LIKE,    // main.feels_like
+    TEMP_MIN,           // main.temp_min
+    TEMP_MAX,           // main.temp_max
+    PRESSURE,           // main.pressure
+    HUMIDITY,           // main.humidity
+    CLOUD_COVERAGE,     // clouds.all (%)
+    WIND_SPEED,         // wind.speed (m/s)
+    WIND_DEG,           // wind.deg (degrees)
+    WIND_GUST;          // wind.gust (m/s)
 
     public String getProperty() {
         return name().toLowerCase();
