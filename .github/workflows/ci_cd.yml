@@ -422,7 +422,7 @@ jobs:
 
           if not isMainRepo:
             if "-SNAPSHOT" in deployments:
-              os.system("SNAPSHOT manager docker images not currently supported for custom project deployment")
+              os.system("echo 'SNAPSHOT manager docker images not currently supported for custom project deployment'")
               sys.exit(1)
 
           os.system(f"echo 'value={deployments}' >> $GITHUB_OUTPUT")
