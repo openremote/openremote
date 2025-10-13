@@ -973,5 +973,135 @@
     "globalServicesLoadError": "Something went wrong while retrieving global services",
     "noServices": "No services found, check the documentation on how to add services",
     "iframeLoadError": "The selected service could not be loaded"
+  },
+  "org": {
+    "openremote": {
+      "model": {
+        "query": {
+          "filter": {
+            "ValueEmptyPredicate": {
+              "label": "Empty value",
+              "description": "Predicate that matches any empty/null value; unless negated."
+            },
+            "RadialGeofencePredicate": {
+              "label": "Radial geofence",
+              "description": "Predicate for GEO JSON point values; will return true if the point is within the specified radius of the specified latitude and longitude unless negated."
+            },
+            "ValueAnyPredicate": {
+              "label": "Any value",
+              "description": "Predicate that matches any value including null."
+            },
+            "CalendarEventPredicate": {
+              "label": "Calendar",
+              "description": "Predicate for calendar event values; will match based on whether the calendar event is active for the specified time."
+            },
+            "RectangularGeofencePredicate": {
+              "label": "Rectangular geofence",
+              "description": "Predicate for GEO JSON point values; will return true if the point is within the specified rectangle specified as latitude and longitude values of two corners unless negated."
+            },
+            "ArrayPredicate": {
+              "description": "Predicate for array values; will match based on configured options."
+            },
+            "StringPredicate": {
+              "description": "Predicate for string values; will match based on configured options."
+            },
+            "NumberPredicate": {
+              "description": "Predicate for number values; will match based on configured options."
+            },
+            "DateTimePredicate": {
+              "description": "Predicate for date time values; provided values should be valid ISO 8601 datetime strings (e.g. yyyy-MM-dd'T'HH:mm:ssZ or yyyy-MM-dd'T'HH:mm:ss±HH:mm), offset and time are optional, if no offset information is supplied then UTC is assumed."
+            },
+            "BooleanPredicate": {
+              "description": "Predicate for boolean values; will evaluate the value as a boolean and match against this predicates value, any value that is not a boolean will not match"
+            }
+          }
+        },
+        "simulator": {
+          "SimulatorReplayDatapoint": {
+            "label": "Data point"
+          }
+        },
+        "value": {
+          "MathExpressionValueFilter": {
+            "label": "Mathematical Expression"
+          },
+          "SubStringValueFilter": {
+            "label": "Substring"
+          },
+          "JsonPathFilter": {
+            "label": "JSON Path"
+          },
+          "RegexValueFilter": {
+            "label": "Regex"
+          },
+          "ValueConstraint": {
+            "description": "The constraints must be a JSON compatible list of objects.",
+            "Size": {
+              "description": "The attribute value must be between the specified boundaries based on the `min` and `max` properties. Supported types are JSON compatible strings, arrays and objects. Null values are considered valid."
+            },
+            "Min": {
+              "description": "The attribute value must be a number higher or equal to the specified value on the `min` property. Null values are considered valid."
+            },
+            "Max": {
+              "description": "The attribute value must be a number lower or equal to the specified value on the `max` property. Null values are considered valid."
+            },
+            "Pattern": {
+              "description": "The attribute value must match the regular expression pattern described in the `regexp` property. The regular expression follows the Java regular expression conventions. Flags can be specified using the `flags` property with values: CASE_INSENSITIVE, MULTILINE, DOTALL, UNIX_LINES, UNICODE_CASE, CANON_EQ and COMMENTS. Null values are considered valid."
+            },
+            "AllowedValues": {
+              "description": "The attribute value must match any of the specified values in the `allowedValues` property. The associated input in the UI will change to a select input with the options specified in the `allowedValues` property. The `allowedValueNames` property accepts a list of names that replace the labels in the select input, if the `allowedValueNames` list matches the length of the `allowedValues` list otherwise it falls back to the `allowedValues` as labels. Null values are considered valid. If `allowedValues` is not specified or empty the constraint only accepts null values."
+            },
+            "Past": {
+              "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past. Null values are considered valid."
+            },
+            "PastOrPresent": {
+              "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past or present. Null values are considered valid."
+            },
+            "Future": {
+              "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future. Null values are considered valid."
+            },
+            "FutureOrPresent": {
+              "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future or present. Null values are considered valid."
+            },
+            "NotEmpty": {
+              "description": "The attribute value must not be null nor empty. Supported types are JSON compatible strings, arrays and objects which contain at least 1 character, item or property."
+            },
+            "NotBlank": {
+              "description": "The attribute value must not be null and must contain at least 1 non-whitespace character. Accepts strings."
+            },
+            "NotNull": {
+              "description": "The attribute value must not be null. Accepts any type."
+            }
+          }
+        },
+        "asset": {
+          "agent": {
+            "AgentLink": {
+              "valueFilters": {
+                "description": "Defines ValueFilters to apply to an incoming value before it is written to a protocol linked attribute; this is particularly useful for generic protocols. The message should pass through the filters in array order"
+              },
+              "valueConverter": {
+                "description": "Defines a value converter map to allow for basic value type conversion; the incoming value will be converted to JSON and if this string matches a key in the converter then the value of that key will be pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but you want to connect this to a Boolean attribute"
+              },
+              "writeValueConverter": {
+                "description": "Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion"
+              },
+              "writeValue": {
+                "description": "String to be used for attribute writes and can contain dynamic placeholders to allow dynamic value and/or time injection with formatting (see documentation for details) into the string or alternatively write the string through to the protocol as is (static string)"
+              },
+              "messageMatchPredicate": {
+                "description": "The predicate to apply to incoming messages to determine if the message is intended for the linked attribute; the value used in the predicate can be filtered using the message match filters. This must be defined to enable attributes to be updated by the linked agent."
+              },
+              "messageMatchFilters": {
+                "description": "ValueFilters to apply to incoming messages prior to comparison with the messageMatchPredicate"
+              },
+              "updateOnWrite": {
+                "description": "Don't expect a response from the protocol just update the attribute immediately on write"
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
