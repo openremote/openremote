@@ -979,97 +979,97 @@
         "query": {
           "filter": {
             "ValueEmptyPredicate": {
-              "label": "",
-              "description": ""
+              "label": "Lege waarde",
+              "description": "Predicaat dat overeenkomt met elke lege/nulwaarde; tenzij genegeerd."
             },
             "RadialGeofencePredicate": {
-              "label": "",
-              "description": ""
+              "label": "Radiale geofence",
+              "description": "Predicaat voor GEO JSON-puntwaarden; geeft true terug als het punt zich binnen de opgegeven straal rond de opgegeven breedte- en lengtegraad bevindt, tenzij negatief gemaakt."
             },
             "ValueAnyPredicate": {
-              "label": "",
-              "description": ""
+              "label": "Elke waarde",
+              "description": "Predicaat dat overeenkomt met elke waarde, inclusief null."
             },
             "CalendarEventPredicate": {
-              "label": "",
-              "description": ""
+              "label": "Kalender",
+              "description": "Predicaat voor kalender-evenementwaarden; komt overeen op basis van of het kalender-evenement actief is op het opgegeven tijdstip."
             },
             "RectangularGeofencePredicate": {
-              "label": "",
-              "description": ""
+              "label": "Rechthoekige geofence",
+              "description": "Predicaat voor GEO JSON-puntwaarden; geeft true terug als het punt zich binnen de opgegeven rechthoek bevindt, gespecificeerd als breedte- en lengtegraad van twee hoeken, tenzij negatief gemaakt."
             },
             "ArrayPredicate": {
-              "description": ""
+              "description": "Predicaat voor array waarden; komt overeen op basis van geconfigureerde opties."
             },
             "StringPredicate": {
-              "description": ""
+              "description": "Predicaat voor string waarden; komt overeen op basis van geconfigureerde opties."
             },
             "NumberPredicate": {
-              "description": ""
+              "description": "Predicaat voor numerieke waarden; komt overeen op basis van geconfigureerde opties."
             },
             "DateTimePredicate": {
-              "description": ""
+              "description": "Predicaat voor datum/tijdwaarden; opgegeven waarden moeten geldige ISO 8601-datumtijdstrings zijn (bijv. yyyy-MM-dd'T'HH:mm:ssZ of yyyy-MM-dd'T'HH:mm:ss±HH:mm). Offset en tijd zijn optioneel. Als geen offset-informatie wordt opgegeven, wordt UTC aangenomen."
             },
             "BooleanPredicate": {
-              "description": ""
+              "description": "Predicaat voor boolean waarden; evalueert de waarde als een boolean en vergelijkt deze met de waarde van dit predicaat. Elke waarde die geen boolean is, komt niet overeen."
             }
           }
         },
         "simulator": {
           "SimulatorReplayDatapoint": {
-            "label": ""
+            "label": "Datapunt"
           }
         },
         "value": {
           "MathExpressionValueFilter": {
-            "label": ""
+            "label": "Wiskundige expressie"
           },
           "SubStringValueFilter": {
-            "label": ""
+            "label": "Substring"
           },
           "JsonPathFilter": {
-            "label": ""
+            "label": "JSON-pad"
           },
           "RegexValueFilter": {
-            "label": ""
+            "label": "Regex"
           },
           "ValueConstraint": {
-            "description": "",
+            "description": "De beperkingen moeten een JSON-compatibele lijst van objecten zijn.",
             "Size": {
-              "description": ""
+              "description": "De attribuutwaarde moet binnen de opgegeven grenzen liggen op basis van de `min` en `max` waardes. Ondersteunde types zijn JSON-compatibele strings, arrays en objecten. Null-waarden worden als geldig beschouwd."
             },
             "Min": {
-              "description": ""
+              "description": "De attribuutwaarde moet een getal zijn dat groter of gelijk is aan de opgegeven `min` waarde. Null-waarden worden als geldig beschouwd."
             },
             "Max": {
-              "description": ""
+              "description": "De attribuutwaarde moet een getal zijn dat kleiner of gelijk is aan de opgegeven `max` waarde. Null-waarden worden als geldig beschouwd."
             },
             "Pattern": {
-              "description": ""
+              "description": "De attribuutwaarde moet overeenkomen met het reguliere expressiepatroon dat is beschreven in de eigenschap `regexp`. De reguliere expressie volgt de Java-reguliere expressieconventies. Vlaggen kunnen worden opgegeven met behulp van de eigenschap `flags` met waarden: CASE_INSENSITIVE, MULTILINE, DOTALL, UNIX_LINES, UNICODE_CASE, CANON_EQ en COMMENTS. Null-waarden worden als geldig beschouwd."
             },
             "AllowedValues": {
-              "description": ""
+              "description": "De attribuutwaarde moet overeenkomen met een van de opgegeven waarden in de eigenschap `allowedValues`. De bijbehorende invoer in de UI verandert in een selectievak met de opties die in `allowedValues` zijn opgegeven. De eigenschap `allowedValueNames` accepteert een lijst met namen die de labels in de selectielijst vervangen, als de lengte van `allowedValueNames` overeenkomt met die van `allowedValues`; anders worden de waarden zelf als labels gebruikt. Null-waarden worden als geldig beschouwd. Als `allowedValues` niet is opgegeven of leeg is, accepteert de beperking alleen null-waarden."
             },
             "Past": {
-              "description": ""
+              "description": "De attribuutwaarde moet een java-timeobject, java-datumobject, een string in ISO8601-formaat of een getal zijn in epoch-milliseconds; de waarde moet een tijd in het verleden zijn. Null-waarden worden als geldig beschouwd."
             },
             "PastOrPresent": {
-              "description": ""
+              "description": "De attribuutwaarde moet een java-timeobject, java-datumobject, een string in ISO8601-formaat of een getal zijn in epoch-milliseconds; de waarde moet een tijd in het verleden of heden zijn. Null-waarden worden als geldig beschouwd."
             },
             "Future": {
-              "description": ""
+              "description": "De attribuutwaarde moet een java-timeobject, java-datumobject, een string in ISO8601-formaat of een getal zijn in epoch-milliseconds; de waarde moet een tijd in de toekomst zijn. Null-waarden worden als geldig beschouwd."
             },
             "FutureOrPresent": {
-              "description": ""
+              "description": "De attribuutwaarde moet een java-timeobject, java-datumobject, een string in ISO8601-formaat of een getal zijn in epoch-milliseconds; de waarde moet een tijd in de toekomst of het heden zijn. Null-waarden worden als geldig beschouwd."
             },
             "NotEmpty": {
-              "description": ""
+              "description": "De attribuutwaarde mag niet null of leeg zijn. Ondersteunde types zijn JSON-compatibele strings, arrays en objecten die ten minste 1 teken, item of eigenschap bevatten."
             },
             "NotBlank": {
-              "description": ""
+              "description": "De attribuutwaarde mag niet null zijn en moet ten minste 1 niet-witruimte-teken bevatten. Accepteert strings."
             },
             "NotNull": {
-              "description": ""
+              "description": "De attribuutwaarde mag niet null zijn. Accepteert elk type."
             }
           }
         },
@@ -1077,25 +1077,25 @@
           "agent": {
             "AgentLink": {
               "valueFilters": {
-                "description": ""
+                "description": "Definieert ValueFilters die worden toegepast op een inkomende waarde voordat deze wordt weggeschreven naar een protocol gekoppeld attribuut; dit is vooral nuttig voor generieke protocollen. Het bericht moet de filters in arrayvolgorde doorlopen."
               },
               "valueConverter": {
-                "description": ""
+                "description": "Definieert een waardeconversiemap voor eenvoudige typeconversie; de inkomende waarde wordt geconverteerd naar JSON en als deze string overeenkomt met een eigenschapsnaam in de converter, wordt de waarde van die eigenschapsnaam naar het attribuut gestuurd. Een voorbeeld: een API die 'ACTIVE'/'DISABLED' strings retourneert, maar u wilt dit koppelen aan een boolean attribuutwaarde."
               },
               "writeValueConverter": {
-                "description": ""
+                "description": "Vergelijkbaar met valueConverter, maar wordt toegepast op uitgaande waarden voor de omgekeerde conversie."
               },
               "writeValue": {
-                "description": ""
+                "description": "String die wordt gebruikt voor attribuutschrijfacties en dynamische placeholders kan bevatten om dynamische waarden en/of tijd in de string in te voegen (zie documentatie voor details), of anders de string ongewijzigd naar het protocol doorsturen (statische string)."
               },
               "messageMatchPredicate": {
-                "description": ""
+                "description": "Het predicaat dat wordt toegepast op inkomende berichten om te bepalen of het bericht bedoeld is voor het gekoppelde attribuut; de waarde die in het predicaat wordt gebruikt, kan worden gefilterd met behulp van de message match-filters. Dit moet worden gedefinieerd om attributen door de gekoppelde agent te laten bijwerken."
               },
               "messageMatchFilters": {
-                "description": ""
+                "description": "ValueFilters die worden toegepast op inkomende berichten voordat deze worden vergeleken met het messageMatchPredicate."
               },
               "updateOnWrite": {
-                "description": ""
+                "description": "Verwacht geen reactie van het protocol; het werkt de attribuut onmiddellijk bij tijdens schrijven."
               }
             }
           }
