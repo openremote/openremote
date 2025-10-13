@@ -43,7 +43,7 @@
 #                           an openremote submodule).
 # - CLEAN_INSTALL         - Should the .ci_cd/host_init/clean.sh script be run during deployment (warning this will delete
 #                           assets, rules, etc.)
-# - PUSH_SNAPSHOT       - Should a SNAPSHOT docker image be pushed to AWS ECR
+# - PUSH_SNAPSHOT         - Should a SNAPSHOT docker image be pushed to AWS ECR
 # - COMMIT                - Which branch/SHA should be checked out for the deployment (defaults to trigger commit)
 # - OR_HOSTNAME           - FQDN of host to deploy to (e.g. demo.openremote.app)
 # - SSH_USER              - Set/override the SSH user to use for SSH/SCP commands
@@ -427,7 +427,7 @@ jobs:
               os.system("echo 'SNAPSHOT manager docker images not currently supported for custom project deployment'")
               sys.exit(1)
           os.system(f"echo 'value={deployments}' >> $GITHUB_OUTPUT")
-          pushSnapshot = os.getenv('PUSH_SNAPSHOT')
+          pushSnapshot = os.getenv('INPUT_PUSH_SNAPSHOT')
 
 
           os.system(f"echo 'org: {repoOwner}'")
@@ -445,6 +445,7 @@ jobs:
           DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
           INPUT_ENVIRONMENT: ${{ steps.inputs-and-secrets.outputs.ENVIRONMENT }}
           INPUT_MANAGER_TAG: ${{steps.inputs-and-secrets.outputs.MANAGER_TAG }}
+          INPUT_PUSH_SNAPSHOT: ${{ steps.inputs-and-secrets.outputs.PUSH_SNAPSHOT }}
 
       - name: Define backend test command
         id: test-backend-command
