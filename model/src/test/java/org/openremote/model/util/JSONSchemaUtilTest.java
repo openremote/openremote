@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.net.URL;
 import java.time.*;
 import java.util.Date;
+import java.util.Map;
 
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 
@@ -48,6 +49,41 @@ public class JSONSchemaUtilTest {
         );
 
         JsonNode actual = ValueUtil.getSchema(Title.class);
+        assertEquals(expected.toString(), actual.toString(), true);
+    }
+
+    @JsonSchemaTitle("Test Title")
+    static class ItemType { }
+
+    static class MembersShouldNotHaveTitle {
+        public Map<String, String> test;
+        public ItemType[] test1;
+    }
+
+    @Test
+    public void shouldNotHaveTitle() throws JsonProcessingException, JSONException {
+        JsonNode expected = ValueUtil.JSON.readTree("""
+                {
+                  "$schema": "http://json-schema.org/draft-07/schema#",
+                  "type": "object",
+                  "properties": {
+                    "test": { "type": "object", "additionalProperties": { "type": "string" } },
+                    "test1": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "title": "Test Title",
+                        "additionalProperties": true
+                      }
+                    }
+                  },
+                  "title": "Members Should Not Have Title",
+                  "additionalProperties": true
+                }
+            """
+        );
+
+        JsonNode actual = ValueUtil.getSchema(MembersShouldNotHaveTitle.class);
         assertEquals(expected.toString(), actual.toString(), true);
     }
 
@@ -475,6 +511,36 @@ public class JSONSchemaUtilTest {
         );
 
         JsonNode actual = ValueUtil.getSchema(JavaTimeJacksonModule.class);
+        assertEquals(expected.toString(), actual.toString(), true);
+    }
+
+    enum TypeOption {
+        INTEGER(int.class),
+        STRING(String.class),
+        LONG(long.class),
+        FLOAT(Float.class);
+
+        TypeOption(Class<?> javaType) {
+        }
+    }
+
+    @Test
+    public void shouldGenerateEnum() throws JsonProcessingException, JSONException {
+        JsonNode expected = ValueUtil.JSON.readTree("""
+            {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "string",
+                "enum": [
+                    "INTEGER",
+                    "STRING",
+                    "LONG",
+                    "FLOAT"
+                ],
+                "title": "Type Option"
+            }"""
+        );
+
+        JsonNode actual = ValueUtil.getSchema(TypeOption.class);
         assertEquals(expected.toString(), actual.toString(), true);
     }
 }
