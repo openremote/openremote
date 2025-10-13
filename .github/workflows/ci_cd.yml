@@ -43,7 +43,7 @@
 #                           an openremote submodule).
 # - CLEAN_INSTALL         - Should the .ci_cd/host_init/clean.sh script be run during deployment (warning this will delete
 #                           assets, rules, etc.)
-# - DEPLOY_SNAPSHOT       - Should a SNAPSHOT docker image be pushed to AWS ECR
+# - PUSH_SNAPSHOT       - Should a SNAPSHOT docker image be pushed to AWS ECR
 # - COMMIT                - Which branch/SHA should be checked out for the deployment (defaults to trigger commit)
 # - OR_HOSTNAME           - FQDN of host to deploy to (e.g. demo.openremote.app)
 # - SSH_USER              - Set/override the SSH user to use for SSH/SCP commands
@@ -76,8 +76,8 @@ on:
       CLEAN_INSTALL:
         description: 'Delete data before starting'
         type: boolean
-      DEPLOY_SNAPSHOT:
-        description: 'Deploy SNAPSHOT docker image to ECR'
+      PUSH_SNAPSHOT:
+        description: 'Push SNAPSHOT docker image to ECR'
         type: boolean
       COMMIT:
         description: 'Repo branch or commit SHA to checkout'
@@ -403,6 +403,7 @@ jobs:
         run: |
           import os
 
+          repoOwner = os.getenv('GITHUB_REPOSITORY_OWNER')
           isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
           deployments = os.getenv('DEPLOYMENTS')
           eventName = os.getenv('GITHUB_EVENT_NAME')
@@ -426,8 +427,12 @@ jobs:
               sys.exit(1)
 
           os.system(f"echo 'value={deployments}' >> $GITHUB_OUTPUT")
-          deploySnapshot = os.getenv('DEPLOY_SNAPSHOT')
-          os.system(f"echo 'deploySnapshot={deploySnapshot}' >> $GITHUB_OUTPUT")
+          pushSnapshot = os.getenv('PUSH_SNAPSHOT')
+          if repoOwner == 'openremote':
+            os.system(f"echo 'pushSnapshot={pushSnapshot}' >> $GITHUB_OUTPUT")
+          else:
+            os.system("echo 'Only Openremote organisation can push to ECR'")
+            sys.exit(1)
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
@@ -468,7 +473,7 @@ jobs:
               echo "pushToDockerHub=true" >> $GITHUB_OUTPUT
               echo "managerDockerImage=openremote/manager:$FIRST_MANAGER_TAG" >> $GITHUB_OUTPUT
             else
-              if [ "$DEPLOY_SNAPSHOT" == "true" ]; then
+              if [ "$PUSH_SNAPSHOT" == "true" ]; then
                 command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t ${{ steps.inputs-and-secrets.outputs.OR_AWS_DEVELOPERS_ACCOUNT_ID }}.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:SNAPSHOT-$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath"
               else
                 command="docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${OTHER_PLATFORM:-linux/aarch64} -t openremote/manager:$commitShaShort $buildPath"
@@ -483,7 +488,7 @@ jobs:
           FIRST_MANAGER_TAG: ${{ steps.ci-cd-output.outputs.firstDockerTag }}
           MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.dockerTags }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
-          DEPLOY_SNAPSHOT: ${{ steps.deployments.outputs.deploySnapshot }}
+          PUSH_SNAPSHOT: ${{ steps.deployments.outputs.pushSnapshot }}
           TEST_UI_CMD: ${{ steps.test-ui-apps-command.outputs.value }}
 
       - name: Define maven publish command
@@ -547,14 +552,14 @@ jobs:
           password: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_PASSWORD }}
 
       - name: Configure AWS Credentials
-        if: ${{ steps.deployments.outputs.deploySnapshot == 'true' }}
+        if: ${{ steps.deployments.outputs.pushSnapshot == 'true' }}
         uses: aws-actions/configure-aws-credentials@a03048d87541d1d9fcf2ecf528a4a65ba9bd7838 # v5.0.0
         with:
           aws-region: eu-west-1
           role-to-assume: "arn:aws:iam::${{ steps.inputs-and-secrets.outputs.OR_AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ steps.inputs-and-secrets.outputs.OR_GH_AWS_ECR_PUSH_ROLE }}"
 
       - name: Login to private ECR
-        if: ${{ steps.deployments.outputs.deploySnapshot == 'true' }}
+        if: ${{ steps.deployments.outputs.pushSnapshot == 'true' }}
         uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
       - name: set up QEMU
