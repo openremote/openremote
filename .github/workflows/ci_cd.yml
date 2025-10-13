@@ -359,7 +359,7 @@ jobs:
               os.system(f"echo 'npmTag={npmPublishTag}' >> $GITHUB_OUTPUT")
 
           deployStr = None
-          if deploys is not None:
+          if deploys is not None and repoOwner == 'openremote':
             if not isinstance(deploys, list):
               deploys = [deploys]
 
