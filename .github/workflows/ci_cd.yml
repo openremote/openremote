@@ -426,13 +426,14 @@ jobs:
             if "-SNAPSHOT" in deployments:
               os.system("echo 'SNAPSHOT manager docker images not currently supported for custom project deployment'")
               sys.exit(1)
+          os.system(f"echo 'value={deployments}' >> $GITHUB_OUTPUT")
+          pushSnapshot = os.getenv('PUSH_SNAPSHOT')
+
 
           os.system(f"echo 'org: {repoOwner}'")
           os.system(f"echo 'pushSnapshot: {pushSnapshot}'")
 
 
-          os.system(f"echo 'value={deployments}' >> $GITHUB_OUTPUT")
-          pushSnapshot = os.getenv('PUSH_SNAPSHOT')
           if pushSnapshot == 'true' and repoOwner != 'openremote':
             os.system("echo 'Only Openremote organisation can push to ECR'")
             sys.exit(1)
