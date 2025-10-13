@@ -165,16 +165,20 @@ test(`Search by Asset ID and select the battery asset`, async ({ page, manager, 
  * @and The asset detail page is displayed
  */
 test(`Open browser tab directly to the battery asset`, async ({ page, manager, assetsPage, assetTree }) => {
-    const assets = [batteryAsset, electricityAsset];
+    const batteryAssets = createBatteryAssets(10);
+    const electricityAssets = createElectricityAssets(10);
+    const assets = [...batteryAssets, ...electricityAssets];
     await manager.setup("smartcity", { assets: assets });
-    const id = manager.assets.find(asset => asset.name === batteryAsset.name)?.id;
+    await applyParentAssets(parentAssets, manager);
+    const id = manager.assets.find(asset => asset.name === batteryAssets[0].name)?.id;
     expect(id).toBeDefined();
     await manager.goToRealmStartPage("smartcity");
     await assetsPage.gotoAssetId("smartcity", id!);
     await expect(assetTree.getFilterInput()).toHaveValue(id!);
-    await expect(assetTree.getAssetNodes()).toHaveCount(1);
+    await expect(assetTree.getAssetNodes()).toHaveCount(2); // The parent city asset + selected battery asset
     await expect(assetTree.getSelectedNodes()).toHaveCount(1);
     await expect(page.locator(`#asset-header`, { hasText: batteryAsset.name })).toBeVisible();
+    expect(page.url()).toContain(id!);
 })
 
 /**

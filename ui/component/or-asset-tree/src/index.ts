@@ -1157,9 +1157,17 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         this._buildTreeNodes([...cache, ...assets.filter(a => !cache.find(c => c.id === a.id))]);
 
                         // Filter out nodes that should not be visible
-                        this._nodes.forEach((node: UiAssetTreeNode) => {
-                            this.filterTreeNode(node, matcher);
+                        const visibleNodes = new Map<string, boolean>();
+                        OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => {
+                            const visible = this.filterTreeNode(n, matcher);
+                            if(visible && !n.notMatchingFilter && n.asset?.id) {
+                                visibleNodes.set(n.asset.id, visible);
+                            }
                         });
+                        // If only 1 asset is shown, automatically select it
+                        if(visibleNodes.size === 1) {
+                            this.selectedIds = Array.from(visibleNodes.keys());
+                        }
                         this.disabled = false;
                     }
                 });
