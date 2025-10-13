@@ -13,8 +13,6 @@ import {
     AssetQueryMatch,
     AssetQueryOrderBy$Property,
     AssetsEvent,
-    AssetTree,
-    AssetTreeAsset,
     AssetTreeEvent, AssetTreeNode,
     Attribute,
     AttributePredicate,
@@ -585,7 +583,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     () => html`
                         <div id="list-container">
                             <ol id="list">
-                                ${this._nodes!.filter(n => n && !n.hidden).map(node => html`${this._treeNodeTemplate(node, 0)}`)}
+                                ${this._nodes?.filter(n => n && !n.hidden).map(node => this._treeNodeTemplate(node, 0))}
                                 ${when(this._hasMoreParents, () => html`
                                     <li class="asset-list-element">
                                         <div class="end-element loadmore-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }}
@@ -606,7 +604,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             `)}
 
             <div id="footer">
-
+            
             </div>
         `;
     }
@@ -616,7 +614,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-        console.debug(_changedProperties);
         const result = super.shouldUpdate(_changedProperties);
         if (_changedProperties.has("assets")
             || _changedProperties.has("rootAssets")
@@ -1272,7 +1269,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         try {
             console.debug(`Querying assets using filter '${this._filterInput.nativeValue}'...`);
-            const promises = assetQueries.map(q => manager.rest.api.AssetResource.queryAssets(q)); // TODO: Use queryAssets instead, so we can make sure "load more" is shown upon filtering.
+            const promises = assetQueries.map(q => manager.rest.api.AssetResource.queryAssets(q)); // TODO: Use assetTree for more efficient querying.
             const responses = await Promise.all(promises);
             foundAssets = responses.flatMap(r => r.data);
             foundAssetIds = foundAssets.map(a => a.id!);
