@@ -257,11 +257,6 @@ export const style = css`
         cursor: pointer;
     }
 
-    #setup-wrapper {
-        width: 100%;
-        margin-top: -10px;
-    }
-
     #fileupload, #discovery {
         display: flex;
         align-items: center;
