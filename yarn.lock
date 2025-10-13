@@ -2317,6 +2317,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/storybook@workspace:ui/app/storybook"
   dependencies:
+    "@openremote/core": "workspace:*"
+    "@openremote/model": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
+    "@openremote/or-tree-menu": "workspace:*"
     "@rsbuild/core": "npm:~1.5.13"
     "@storybook/web-components": "npm:~9.1.10"
     lit: "npm:^3.3.1"

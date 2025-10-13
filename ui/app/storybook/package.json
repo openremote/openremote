@@ -7,13 +7,16 @@
   "type": "module",
   "scripts": {
     "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
-    "build": "rsbuild build",
-    "build:storybook": "storybook build",
-    "dev": "rsbuild dev --open",
-    "preview": "rsbuild preview",
-    "storybook": "storybook dev -p 6007"
+    "build": "storybook build",
+    "serve": "storybook dev -p 6007",
+    "test": "echo \"No tests\" && exit 0"
   },
   "dependencies": {
+    "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
+    "@openremote/or-mwc-components": "workspace:*",
+    "@openremote/or-translate": "workspace:*",
+    "@openremote/or-tree-menu": "workspace:*",
     "lit": "^3.3.1"
   },
   "devDependencies": {
