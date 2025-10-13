@@ -35,9 +35,7 @@ import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static javax.tools.Diagnostic.Kind.*;
 
@@ -81,9 +79,17 @@ public class I18nAnnotationProcessor extends AbstractProcessor {
         for (Element element : roundEnv.getElementsAnnotatedWith(annotationClass)) {
             try {
                 A ann = element.getAnnotation(annotationClass);
+                boolean translate = (boolean) annotationClass.getMethod("i18n").invoke(ann);
+                if (!translate) continue;
+
+                Optional<String> i18nSuffix = Arrays.stream(annotationClass.getMethods())
+                        .filter(m -> m.getName().equals("i18nSuffix"))
+                        .map(m -> (String)m.getDefaultValue())
+                        .findFirst();
                 String keyword = (String) annotationClass.getMethod("keyword").invoke(ann);
-                String key = resolveKey(element, keyword);
+                String key = resolveKey(element, i18nSuffix.orElse(keyword));
                 String value = (String) annotationClass.getMethod("value").invoke(ann);
+
                 translations.put(key, value);
             } catch (Exception e) {
                 throw new RuntimeException("Failed to process i18n annotation " + annotationClass.getSimpleName(), e);
