@@ -499,7 +499,6 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             return assetStorageService.merge(newAsset);
 
-
         } catch (ConstraintViolationException ex) {
             throw new ResteasyViolationExceptionImpl(ex.getConstraintViolations(), requestParams.headers.getAcceptableMediaTypes());
         } catch (IllegalStateException ex) {
