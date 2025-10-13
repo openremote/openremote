@@ -549,6 +549,27 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             <div id="setup-wrapper">
                 ${content}
             </div>
+        if (!descriptor.assetImport && !descriptor.assetDiscovery) {
+            showSnackbar(undefined, "agent type doesn't support a known protocol to add assets", "dismiss");
+        }
+
+        return html`
+            ${when(descriptor.assetImport, () => html`
+                <div id="fileupload">
+                    <or-mwc-input style="flex: 0 1 auto;" outlined label="selectFile" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => hostElement.shadowRoot!.getElementById('fileupload-elem')!.click()}">
+                        <input id="fileupload-elem" name="configfile" type="file" accept=".*" @change="${() => updateFileName()}"/>
+                    </or-mwc-input>
+                    <or-mwc-input style="flex: 1 1 auto; margin: 0 4px 0 10px;" id="filename-elem" .label="${i18next.t("file")}" .type="${InputType.TEXT}" disabled></or-mwc-input>
+                    <or-mwc-input style="flex: 0 1 auto;" id="fileupload-btn" icon="upload" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => doImport()}" disabled></or-mwc-input>
+                    <progress id="progress-circular" class="hidden pure-material-progress-circular"></progress>
+                </div>
+            `)}
+            ${when(descriptor.assetDiscovery, () => html`
+                <div id="discovery">
+                    <or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" label="discoverAssets" @or-mwc-input-changed="${() => discoverAssets()}"></or-mwc-input>
+                    <or-mwc-input id="cancel-discover-btn" .type="${InputType.BUTTON}" label="cancel" @or-mwc-input-changed="${() => cancelDiscovery()}" hidden style="margin-left:20px"></or-mwc-input>
+                </div>
+            `)}
         `;
 
     }
