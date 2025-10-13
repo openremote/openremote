@@ -1,0 +1,1531 @@
+{
+  "schemaVersion": "1.0.0",
+  "readme": "",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "src/index.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "OrTreeMenu",
+          "members": [
+            {
+              "kind": "field",
+              "name": "nodes",
+              "type": {
+                "text": "TreeNode[]"
+              },
+              "privacy": "public",
+              "default": "[]",
+              "description": "List of node items in the menu.\r\nUses the TreeNode format for rendering the OrTreeNode elements.",
+              "attribute": "nodes"
+            },
+            {
+              "kind": "field",
+              "name": "selection",
+              "type": {
+                "text": "TreeMenuSelection"
+              },
+              "privacy": "public",
+              "description": "Changes the allowed selection method within the tree.\r\nCommon options are `LEAF`, `SINGLE` and `MULTI`.",
+              "attribute": "selection"
+            },
+            {
+              "kind": "field",
+              "name": "draggable",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "public",
+              "default": "false",
+              "description": "Disables and enables dragging of nodes into groups.",
+              "attribute": "draggable"
+            },
+            {
+              "kind": "field",
+              "name": "noHeader",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "public",
+              "default": "false",
+              "description": "Removes the header from the tree menu.",
+              "attribute": "no-header"
+            },
+            {
+              "kind": "field",
+              "name": "menuTitle",
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "default": "\"Tree Menu\"",
+              "description": "Adjusts the title in the menu header.",
+              "attribute": "menu-title"
+            },
+            {
+              "kind": "field",
+              "name": "sortOptions",
+              "type": {
+                "text": "TreeMenuSorting[] | undefined"
+              },
+              "privacy": "public",
+              "description": "List of options available to sort the object with",
+              "attribute": "sort-options"
+            },
+            {
+              "kind": "field",
+              "name": "sortBy",
+              "type": {
+                "text": "TreeMenuSorting"
+              },
+              "privacy": "public",
+              "description": "Represents the selected sorting option",
+              "attribute": "sort-by",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "groupFirst",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "public",
+              "default": "false",
+              "description": "Automatically prioritizes the groups, and positions these on top.",
+              "attribute": "group-first"
+            },
+            {
+              "kind": "field",
+              "name": "_uiNodes",
+              "type": {
+                "text": "NodeListOf<OrTreeNode> | undefined"
+              },
+              "privacy": "protected"
+            },
+            {
+              "kind": "field",
+              "name": "_uiGroups",
+              "type": {
+                "text": "NodeListOf<OrTreeGroup> | undefined"
+              },
+              "privacy": "protected"
+            },
+            {
+              "kind": "field",
+              "name": "_treeNodeCache",
+              "type": {
+                "text": "Map<TreeNode, string>"
+              },
+              "privacy": "protected",
+              "default": "new Map<TreeNode, string>()"
+            },
+            {
+              "kind": "field",
+              "name": "_lastSelectedNode",
+              "type": {
+                "text": "OrTreeNode | undefined"
+              },
+              "privacy": "protected"
+            },
+            {
+              "kind": "method",
+              "name": "moveNodesToGroup",
+              "privacy": "public",
+              "parameters": [
+                {
+                  "name": "nodesToMove",
+                  "type": {
+                    "text": "TreeNode[]"
+                  },
+                  "description": "The array of nodes that are moved into a group."
+                },
+                {
+                  "name": "groupNode",
+                  "optional": true,
+                  "type": {
+                    "text": "TreeNode"
+                  },
+                  "description": "The group node to insert nodesToMove in."
+                }
+              ],
+              "description": "Function that moves an array of TreeNode into another TreeNode, by adding them to their children.\r\nThe function takes care of removing the nodes from the former group, and makes sure no duplicates end up in the list."
+            },
+            {
+              "kind": "method",
+              "name": "_getTreeTemplate",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "nodes",
+                  "type": {
+                    "text": "TreeNode[]"
+                  },
+                  "description": "List of nodes to be rendered"
+                }
+              ],
+              "description": "Returns a HTML template that displays the tree menu."
+            },
+            {
+              "kind": "method",
+              "name": "_getNodeTemplate",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "node",
+                  "type": {
+                    "text": "TreeNode"
+                  },
+                  "description": "Node to be rendered"
+                },
+                {
+                  "name": "parent",
+                  "optional": true,
+                  "type": {
+                    "text": "TreeNode"
+                  },
+                  "description": "Optional parent (group node) if the node is placed inside a group"
+                }
+              ],
+              "description": "Returns an HTML template for displaying a single node within a tree menu. This can both be a group or a solo node."
+            },
+            {
+              "kind": "method",
+              "name": "_getSingleNodeTemplate",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "node",
+                  "type": {
+                    "text": "TreeNode"
+                  },
+                  "description": "Node to be rendered"
+                },
+                {
+                  "name": "parent",
+                  "optional": true,
+                  "type": {
+                    "text": "TreeNode"
+                  },
+                  "description": "Optional parent (group node) if the node is placed inside a group"
+                }
+              ],
+              "description": "Returns an HTML template for displaying a single node"
+            },
+            {
+              "kind": "method",
+              "name": "_getSingleNodeSlotTemplate",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "node",
+                  "type": {
+                    "text": "TreeNode"
+                  },
+                  "description": "Node to be rendered"
+                }
+              ],
+              "description": "Returns an HTML template for the slot element inside <or-tree-node>.\r\nIt allows customization such as a prefix icon, adjusting the label, etc."
+            },
+            {
+              "kind": "method",
+              "name": "_getGroupNodeTemplate",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "node",
+                  "type": {
+                    "text": "TreeNode"
+                  },
+                  "description": "Node to be rendered"
+                },
+                {
+                  "name": "_parent",
+                  "optional": true,
+                  "type": {
+                    "text": "TreeNode"
+                  },
+                  "description": "Optional parent (group node) if the node is placed inside a group"
+                }
+              ],
+              "description": "Returns a HTML template for rendering a group node (aka a node with children)"
+            },
+            {
+              "kind": "method",
+              "name": "_getGroupNodeSlotTemplate",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "node",
+                  "type": {
+                    "text": "TreeNode"
+                  },
+                  "description": "Node to be rendered"
+                }
+              ],
+              "description": "Returns an HTML template for the parent slot element inside <or-tree-group>.\r\nIt allows customization such as a prefix icon, adjusting the label, etc."
+            },
+            {
+              "kind": "method",
+              "name": "_getHeaderTemplate",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "description": "Returns a HTML template for the header"
+            },
+            {
+              "kind": "method",
+              "name": "_getSortActionTemplate",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "value",
+                  "optional": true,
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "The selected sorting option"
+                },
+                {
+                  "name": "options",
+                  "optional": true,
+                  "type": {
+                    "text": "TreeMenuSorting[]"
+                  },
+                  "description": "The available sorting options"
+                }
+              ],
+              "description": "Returns a HTML template for the sorting options menu."
+            },
+            {
+              "kind": "method",
+              "name": "_getErrorTemplate",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "description": "Returns a HTML template for displaying errors"
+            },
+            {
+              "kind": "method",
+              "name": "_onSortClick",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "The new selected sort option"
+                }
+              ],
+              "description": "HTML callback event for selecting a sort option in the dropdown menu,."
+            },
+            {
+              "kind": "method",
+              "name": "_onTreeGroupClick",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "ev",
+                  "type": {
+                    "text": "PointerEvent"
+                  }
+                }
+              ],
+              "description": "HTML callback event for clicking on a group node. (aka a node with children)\r\nBased on the configured TreeMenuSelection, it single- or multi selects the nodes."
+            },
+            {
+              "kind": "method",
+              "name": "_onTreeNodeClick",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "ev",
+                  "type": {
+                    "text": "PointerEvent"
+                  }
+                }
+              ],
+              "description": "HTML callback event for when a child node of the tree gets clicked on."
+            },
+            {
+              "kind": "method",
+              "name": "_onDragStart",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "ev",
+                  "type": {
+                    "text": "DragEvent"
+                  }
+                },
+                {
+                  "name": "node",
+                  "type": {
+                    "text": "TreeNode"
+                  }
+                }
+              ],
+              "description": "HTML callback event for 'dragstart' (the moment when a drag gesture is started)"
+            },
+            {
+              "kind": "method",
+              "name": "_onDragOverList",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "ev",
+                  "type": {
+                    "text": "DragEvent"
+                  }
+                }
+              ],
+              "description": "HTML callback event for 'dragover' on the list element"
+            },
+            {
+              "kind": "method",
+              "name": "_onDragOverSingleNode",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "ev",
+                  "type": {
+                    "text": "DragEvent"
+                  }
+                },
+                {
+                  "name": "node",
+                  "type": {
+                    "text": "TreeNode"
+                  }
+                },
+                {
+                  "name": "parent",
+                  "optional": true,
+                  "type": {
+                    "text": "TreeNode"
+                  }
+                }
+              ],
+              "description": "HTML callback event for 'dragover', so while a node is dragged over a single node"
+            },
+            {
+              "kind": "method",
+              "name": "_onDragOverGroup",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "ev",
+                  "type": {
+                    "text": "DragEvent"
+                  }
+                },
+                {
+                  "name": "groupNode",
+                  "type": {
+                    "text": "TreeNode"
+                  }
+                }
+              ],
+              "description": "HTML callback event for 'dragover', so while a node is dragged over a group node"
+            },
+            {
+              "kind": "method",
+              "name": "_onDragLeaveSingleNode",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "ev",
+                  "type": {
+                    "text": "DragEvent"
+                  }
+                },
+                {
+                  "name": "node",
+                  "type": {
+                    "text": "TreeNode"
+                  }
+                },
+                {
+                  "name": "parent",
+                  "optional": true,
+                  "type": {
+                    "text": "TreeNode"
+                  }
+                }
+              ],
+              "description": "HTML callback event for 'dragover', so while a node is dragged over a single node"
+            },
+            {
+              "kind": "method",
+              "name": "_onDragLeaveGroup",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "ev",
+                  "type": {
+                    "text": "DragEvent"
+                  }
+                },
+                {
+                  "name": "groupNode",
+                  "type": {
+                    "text": "TreeNode"
+                  }
+                }
+              ],
+              "description": "HTML callback event for 'dragleave', so after a node has been dragged over a group node"
+            },
+            {
+              "kind": "method",
+              "name": "_onDragDropList",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "ev",
+                  "type": {
+                    "text": "DragEvent"
+                  }
+                }
+              ],
+              "description": "HTML callback event for when a node is dropped on the list level."
+            },
+            {
+              "kind": "method",
+              "name": "_onDragDropSingleNode",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "ev",
+                  "type": {
+                    "text": "DragEvent"
+                  }
+                },
+                {
+                  "name": "groupNode",
+                  "optional": true,
+                  "type": {
+                    "text": "TreeNode"
+                  }
+                },
+                {
+                  "name": "parent",
+                  "optional": true,
+                  "type": {
+                    "text": "TreeNode"
+                  }
+                }
+              ],
+              "description": "HTML callback event for when a node is dropped onto a single node, after dragging it over."
+            },
+            {
+              "kind": "method",
+              "name": "_onDragDropGroup",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "ev",
+                  "type": {
+                    "text": "DragEvent"
+                  }
+                },
+                {
+                  "name": "groupNode",
+                  "optional": true,
+                  "type": {
+                    "text": "TreeNode"
+                  }
+                }
+              ],
+              "description": "HTML callback event for when a node is dropped onto a group node, after dragging it over."
+            },
+            {
+              "kind": "method",
+              "name": "_dispatchCancellableDragEvent",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "Promise<void>"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "nodes",
+                  "type": {
+                    "text": "TreeNode[]"
+                  }
+                },
+                {
+                  "name": "groupNode",
+                  "optional": true,
+                  "type": {
+                    "text": "TreeNode"
+                  }
+                },
+                {
+                  "name": "allNodes",
+                  "default": "[]",
+                  "type": {
+                    "text": "TreeNode[]"
+                  }
+                }
+              ],
+              "description": "Dispatches a cancellable tree drag event."
+            },
+            {
+              "kind": "method",
+              "name": "_selectNode",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "node",
+                  "optional": true,
+                  "type": {
+                    "text": "OrTreeNode"
+                  },
+                  "description": "Node to be selected"
+                },
+                {
+                  "name": "notify",
+                  "default": "true",
+                  "description": "Boolean whether to notify the HTML parents of an or-tree-select."
+                }
+              ],
+              "description": "Selects the node using the HTML attribute 'selected' of OrTreeNode"
+            },
+            {
+              "kind": "method",
+              "name": "_selectNodesBetween",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "nodes",
+                  "type": {
+                    "text": "OrTreeNode[]"
+                  },
+                  "description": "List of nodes in the tree menu"
+                },
+                {
+                  "name": "index1",
+                  "type": {
+                    "text": "number"
+                  },
+                  "description": "Start index of the nodes to select"
+                },
+                {
+                  "name": "index2",
+                  "type": {
+                    "text": "number"
+                  },
+                  "description": "End index of the nodes to select"
+                },
+                {
+                  "name": "notify",
+                  "default": "true",
+                  "description": "Boolean whether to notify the HTML parents of an or-tree-select."
+                }
+              ],
+              "description": "Multi-selects the nodes between two indexes in a list of OrTreeNode."
+            },
+            {
+              "kind": "method",
+              "name": "_notifyNodesSelect",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "selectedNodes",
+                  "optional": true,
+                  "type": {
+                    "text": "TreeNode[]"
+                  }
+                }
+              ],
+              "description": "Function that notifies parent HTMLElements that a tree node got selected.\r\nIt dispatches the OrTreeSelectEvent, which includes a list of the selected nodes.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "_findSelectedTreeNodes",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "TreeNode[]"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "uiNodes",
+                  "default": "Array.from(this._uiNodes || [])",
+                  "description": "List of <or-tree-node> UI elements"
+                },
+                {
+                  "name": "cache",
+                  "default": "this._treeNodeCache",
+                  "description": "Optionally, supply the cache for retrieving a {@link TreeNode}object from a <or-tree-node> element.\r\n     "
+                }
+              ],
+              "description": "Utility function to detect the selected tree nodes."
+            },
+            {
+              "kind": "method",
+              "name": "_getTreeNodeFromTree",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "TreeNode | undefined"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "uiNode",
+                  "type": {
+                    "text": "OrTreeNode"
+                  },
+                  "description": "The tree node HTML element"
+                },
+                {
+                  "name": "cache",
+                  "default": "this._treeNodeCache",
+                  "description": "Optional cache to get the TreeNode from"
+                }
+              ],
+              "description": "Utility function that gets a TreeNode based on an OrTreeNode HTML element in the menu."
+            },
+            {
+              "kind": "method",
+              "name": "_getUiNodeFromTree",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "OrTreeNode | undefined"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "treeNode",
+                  "type": {
+                    "text": "TreeNode"
+                  },
+                  "description": "The tree node object"
+                },
+                {
+                  "name": "cache",
+                  "default": "this._treeNodeCache",
+                  "description": "Optional cache to get the HTML element from"
+                }
+              ],
+              "description": "Utility function that gets an OrTreeNode HTML element based on the TreeNode input object."
+            },
+            {
+              "kind": "method",
+              "name": "_dispatchSelectEvent",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              },
+              "parameters": [
+                {
+                  "name": "selectedNodes",
+                  "optional": true,
+                  "type": {
+                    "text": "TreeNode[]"
+                  },
+                  "description": "List of selected nodes to include in the event payload."
+                }
+              ],
+              "description": "Utility function for sending a \"select\" event, so consumers of this component are aware a new node has been selected."
+            },
+            {
+              "kind": "method",
+              "name": "deselectAllNodes",
+              "privacy": "public",
+              "description": "Public function that deselects all tree nodes."
+            },
+            {
+              "kind": "method",
+              "name": "_sortNodes",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "TreeNode[]"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "nodes",
+                  "type": {
+                    "text": "TreeNode[]"
+                  },
+                  "description": "List of nodes to be sorted"
+                },
+                {
+                  "name": "sortBy",
+                  "optional": true,
+                  "type": {
+                    "text": "TreeMenuSorting"
+                  },
+                  "description": "Sorting option"
+                },
+                {
+                  "name": "groupFirst",
+                  "default": "false",
+                  "description": "Whether to prioritize group nodes, and place them on the top of the list."
+                }
+              ],
+              "description": "Utility function that sorts the list of nodes based on the given sortBy method."
+            },
+            {
+              "kind": "method",
+              "name": "_setTreeNodeId",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "string"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "node",
+                  "type": {
+                    "text": "TreeNode"
+                  },
+                  "description": "The TreeNode object to cache"
+                },
+                {
+                  "name": "randomId",
+                  "default": "Math.random().toString(36).substring(2, 11)",
+                  "description": "Optionally you can supply an ID to use for caching"
+                }
+              ],
+              "description": "Function that caches a random ID into a key-value storage, linking the TreeNode with a generated ID.\r\nThis generated ID can be used somewhere else, for example in an HTMLElement ID as a unique identifier."
+            },
+            {
+              "kind": "method",
+              "name": "_getSortFunction",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "(a: TreeNode, b: TreeNode) => number"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "sortBy",
+                  "optional": true,
+                  "type": {
+                    "text": "TreeMenuSorting"
+                  },
+                  "description": "Sorting option to use, such as \"a_to_z\""
+                }
+              ],
+              "description": "Function for retrieving the sorting for TreeNodes based on a sortBy parameter.\r\nThe sortBy parameter represents a key in the TreeNode object like 'label'."
+            },
+            {
+              "kind": "method",
+              "name": "expandGroup",
+              "privacy": "public",
+              "parameters": [
+                {
+                  "name": "groupId",
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "The ID of the group to expand."
+                }
+              ],
+              "description": "Programmatically finds a group by its ID and sets it to be expanded.\r\nThis is called by the parent component after a new node is added to a tree group."
+            }
+          ],
+          "events": [
+            {
+              "name": "nodes",
+              "type": {
+                "text": "OrTreeDragEvent"
+              }
+            },
+            {
+              "type": {
+                "text": "OrTreeSelectEvent"
+              }
+            },
+            {
+              "type": {
+                "text": "OrTreeSelectEvent"
+              },
+              "description": "Triggers upon selecting a node, and dispatches a list of the nodes selected.",
+              "name": "or-tree-select"
+            },
+            {
+              "type": {
+                "text": "OrTreeDragEvent"
+              },
+              "description": "Triggers upon dragging a node to a new group, and dispatches a list of dragged nodes, the group node, and the updated list of all nodes.",
+              "name": "or-tree-drag"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "nodes",
+              "type": {
+                "text": "TreeNode[]"
+              },
+              "default": "[]",
+              "description": "List of node items in the menu.\r\nUses the TreeNode format for rendering the OrTreeNode elements.",
+              "fieldName": "nodes"
+            },
+            {
+              "name": "selection",
+              "type": {
+                "text": "TreeMenuSelection"
+              },
+              "description": "Changes the allowed selection method within the tree.\r\nCommon options are `LEAF`, `SINGLE` and `MULTI`.",
+              "fieldName": "selection"
+            },
+            {
+              "name": "draggable",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "Disables and enables dragging of nodes into groups.",
+              "fieldName": "draggable"
+            },
+            {
+              "name": "no-header",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "Removes the header from the tree menu.",
+              "fieldName": "noHeader"
+            },
+            {
+              "name": "menu-title",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"Tree Menu\"",
+              "description": "Adjusts the title in the menu header.",
+              "fieldName": "menuTitle"
+            },
+            {
+              "name": "sort-options",
+              "type": {
+                "text": "TreeMenuSorting[] | undefined"
+              },
+              "description": "List of options available to sort the object with",
+              "fieldName": "sortOptions"
+            },
+            {
+              "name": "sort-by",
+              "type": {
+                "text": "TreeMenuSorting"
+              },
+              "description": "Represents the selected sorting option",
+              "fieldName": "sortBy"
+            },
+            {
+              "name": "group-first",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "Automatically prioritizes the groups, and positions these on top.",
+              "fieldName": "groupFirst"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "or-tree-menu",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "*",
+          "declaration": {
+            "name": "*",
+            "package": "\"./or-tree-group\""
+          }
+        },
+        {
+          "kind": "js",
+          "name": "*",
+          "declaration": {
+            "name": "*",
+            "package": "\"./or-tree-node\""
+          }
+        },
+        {
+          "kind": "js",
+          "name": "*",
+          "declaration": {
+            "name": "*",
+            "package": "\"./model\""
+          }
+        },
+        {
+          "kind": "js",
+          "name": "OrTreeMenu",
+          "declaration": {
+            "name": "OrTreeMenu",
+            "module": "src/index.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "or-tree-menu",
+          "declaration": {
+            "name": "OrTreeMenu",
+            "module": "src/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/model.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "Model for the SELECT event that OrTreeMenu can dispatch.\r\nOnce a node is selected, a list of all the selected nodes will be shared with the consumer elements.",
+          "name": "OrTreeSelectEvent",
+          "members": [
+            {
+              "kind": "field",
+              "name": "NAME",
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "static": true,
+              "readonly": true,
+              "default": "\"or-tree-select\""
+            }
+          ],
+          "superclass": {
+            "name": "CustomEvent",
+            "module": "src/model.ts"
+          }
+        },
+        {
+          "kind": "class",
+          "description": "Model for the DRAG event that OrTreeMenu can dispatch.\r\nOnce a node is dragged into (or outside) a group, we send details to consumer elements.",
+          "name": "OrTreeDragEvent",
+          "members": [
+            {
+              "kind": "field",
+              "name": "NAME",
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "static": true,
+              "readonly": true,
+              "default": "\"or-tree-drag\""
+            }
+          ],
+          "superclass": {
+            "name": "CustomEvent",
+            "module": "src/model.ts"
+          }
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "OrTreeSelectEvent",
+          "declaration": {
+            "name": "OrTreeSelectEvent",
+            "module": "src/model.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "OrTreeDragEvent",
+          "declaration": {
+            "name": "OrTreeDragEvent",
+            "module": "src/model.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/or-tree-group.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "OrTreeGroup",
+          "cssParts": [
+            {
+              "description": "The chevron icon element for expanding/collapsing the group.",
+              "name": "chevron"
+            }
+          ],
+          "slots": [
+            {
+              "description": "Default slot for child nodes within the group",
+              "name": ""
+            },
+            {
+              "description": "Slot for inserting a parent node",
+              "name": "parent"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "expanded",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "public",
+              "default": "false",
+              "description": "Determines the visibility of child nodes.\r\nSetting this to `false` hides them, and acts as a 'collapsed' state.",
+              "attribute": "expanded",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "leaf",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "public",
+              "readonly": true,
+              "default": "false",
+              "description": "Only allows child nodes to be selected, making the expander (parent node) readonly.\r\nIf this is set to false, only the chevron icon can be used to collapse/expand the list.",
+              "attribute": "leaf"
+            },
+            {
+              "kind": "field",
+              "name": "readonly",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "public",
+              "readonly": true,
+              "default": "false",
+              "description": "Makes the group readonly",
+              "attribute": "readonly"
+            },
+            {
+              "kind": "field",
+              "name": "_childNodes",
+              "type": {
+                "text": "Array<HTMLLIElement> | undefined"
+              },
+              "privacy": "protected"
+            },
+            {
+              "kind": "field",
+              "name": "_parentNodes",
+              "type": {
+                "text": "Array<OrTreeNode> | undefined"
+              },
+              "privacy": "protected"
+            },
+            {
+              "kind": "field",
+              "name": "_slotClickListener",
+              "privacy": "protected",
+              "description": "A click event listener on the component, used for selecting, expanding, and collapsing the group"
+            },
+            {
+              "kind": "field",
+              "name": "_chevronClickListener",
+              "privacy": "protected",
+              "description": "A click event listener on the chevron, used for expanding/collapsing the group"
+            },
+            {
+              "kind": "method",
+              "name": "select",
+              "privacy": "public",
+              "description": "Selects the group (parent) node."
+            },
+            {
+              "kind": "method",
+              "name": "selectAll",
+              "privacy": "public",
+              "description": "Selects the group node itself, and all children nodes within that group."
+            },
+            {
+              "kind": "method",
+              "name": "deselect",
+              "privacy": "public",
+              "description": "Deselects the group (parent) node."
+            },
+            {
+              "kind": "method",
+              "name": "deselectAll",
+              "privacy": "public",
+              "description": "Deselects the group node itself, and all children nodes within that group."
+            },
+            {
+              "kind": "method",
+              "name": "getGroupNode",
+              "privacy": "public",
+              "return": {
+                "type": {
+                  "text": "OrTreeNode | undefined"
+                }
+              },
+              "description": "Returns the group (parent) node (OrTreeNode) using a query selector."
+            },
+            {
+              "kind": "method",
+              "name": "getChildNodes",
+              "privacy": "public",
+              "return": {
+                "type": {
+                  "text": "OrTreeNode[]"
+                }
+              },
+              "description": "Returns a list of all children nodes (OrTreeNode) within the group, using a query selector."
+            },
+            {
+              "kind": "method",
+              "name": "_getIconTemplate",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "expanded",
+                  "default": "false",
+                  "description": "State of the group"
+                }
+              ],
+              "description": "Returns an HTML template that represents the icon for this group."
+            },
+            {
+              "kind": "method",
+              "name": "_onExpandToggle",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "_ev",
+                  "type": {
+                    "text": "MouseEvent"
+                  }
+                }
+              ],
+              "description": "Function that expands/collapses the group, changing the visibility of the child nodes."
+            },
+            {
+              "kind": "method",
+              "name": "_onSlotChange",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "_ev",
+                  "type": {
+                    "text": "Event"
+                  }
+                }
+              ],
+              "description": "Event listener for 'slotchange' of the default slot.\r\nNormally triggers when <or-tree-node> elements are added or removed."
+            },
+            {
+              "kind": "method",
+              "name": "_applyIndentToChildren",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "children",
+                  "default": "this.getChildNodes()",
+                  "description": "Node elements to apply padding to."
+                }
+              ],
+              "description": "Function that applies CSS to TreeNode based on the group indentation.\r\nIt loops through all parent elements, and detects the amount of or-tree-group elements it is in.\r\nThe more nested in the tree, the more left handed padding is applied."
+            }
+          ],
+          "attributes": [
+            {
+              "name": "expanded",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "Determines the visibility of child nodes.\r\nSetting this to `false` hides them, and acts as a 'collapsed' state.",
+              "fieldName": "expanded"
+            },
+            {
+              "name": "leaf",
+              "type": {
+                "text": "boolean"
+              },
+              "readonly": true,
+              "default": "false",
+              "description": "Only allows child nodes to be selected, making the expander (parent node) readonly.\r\nIf this is set to false, only the chevron icon can be used to collapse/expand the list.",
+              "fieldName": "leaf"
+            },
+            {
+              "name": "readonly",
+              "type": {
+                "text": "boolean"
+              },
+              "readonly": true,
+              "default": "false",
+              "description": "Makes the group readonly",
+              "fieldName": "readonly"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "or-tree-group",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "OrTreeGroup",
+          "declaration": {
+            "name": "OrTreeGroup",
+            "module": "src/or-tree-group.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "or-tree-group",
+          "declaration": {
+            "name": "OrTreeGroup",
+            "module": "src/or-tree-group.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/or-tree-node.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "OrTreeNode",
+          "cssProperties": [
+            {
+              "description": "Controls the height of the node",
+              "name": "--or-tree-node-height"
+            },
+            {
+              "description": "Controls the left padding of the node",
+              "name": "--or-tree-node-indent"
+            },
+            {
+              "description": "Sets the default background",
+              "name": "--or-tree-node-background"
+            },
+            {
+              "description": "Sets the background while hovering",
+              "name": "--or-tree-node-background--hovered"
+            },
+            {
+              "description": "Sets the background when selected",
+              "name": "--or-tree-node-background--selected"
+            },
+            {
+              "description": "Sets the primary color of the node when selected",
+              "name": "--or-tree-node-color--selected"
+            }
+          ],
+          "slots": [
+            {
+              "description": "Appends elements to the left hand side of the node, commonly used for icons.",
+              "name": "prefix"
+            },
+            {
+              "description": "Default slot for the main content, commonly used for text.",
+              "name": ""
+            },
+            {
+              "description": "Appends elements to the right hand side of the node.",
+              "name": "suffix"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "readonly",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "public",
+              "default": "false",
+              "description": "HTML attribute that only applies CSS, showing this node cannot be interacted with.",
+              "attribute": "readonly",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "selected",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "public",
+              "default": "false",
+              "description": "HTML attribute that only applies CSS, marking the node as 'selected'.",
+              "attribute": "selected",
+              "reflects": true
+            }
+          ],
+          "attributes": [
+            {
+              "name": "readonly",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "HTML attribute that only applies CSS, showing this node cannot be interacted with.",
+              "fieldName": "readonly"
+            },
+            {
+              "name": "selected",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "HTML attribute that only applies CSS, marking the node as 'selected'.",
+              "fieldName": "selected"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "or-tree-node",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "OrTreeNode",
+          "declaration": {
+            "name": "OrTreeNode",
+            "module": "src/or-tree-node.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "or-tree-node",
+          "declaration": {
+            "name": "OrTreeNode",
+            "module": "src/or-tree-node.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/util.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "moveNodesToGroupNode",
+          "return": {
+            "type": {
+              "text": "TreeNode[]"
+            }
+          },
+          "parameters": [
+            {
+              "name": "nodesToMove",
+              "type": {
+                "text": "TreeNode[]"
+              },
+              "description": "The array of nodes that are moved into a group."
+            },
+            {
+              "name": "groupNode",
+              "optional": true,
+              "type": {
+                "text": "TreeNode"
+              },
+              "description": "The group node to insert nodesToMove in."
+            },
+            {
+              "name": "treeNodes",
+              "default": "[]",
+              "type": {
+                "text": "TreeNode[]"
+              },
+              "description": "Full list of nodes in the tree menu."
+            }
+          ],
+          "description": "Utility function that moves an array of TreeNode into another TreeNode, by adding them to their children.\r\nThe function takes care of removing the nodes from the former group, and makes sure no duplicates end up in the list."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "moveNodesToGroupNode",
+          "declaration": {
+            "name": "moveNodesToGroupNode",
+            "module": "src/util.ts"
+          }
+        }
+      ]
+    }
+  ]
+}
