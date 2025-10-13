@@ -1154,7 +1154,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         // Add nodes to the tree if not done yet
                         const cache: Asset[] = [];
                         OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => n.asset && cache.push(n.asset));
-                        this._buildTreeNodes([...cache, ...assets.filter(a => !cache.find(c => c.id === a.id))]);
+                        const assetsWithoutDuplicates = new Map([...cache, ...assets].map(item => [item.id, item])).values();
+                        this._buildTreeNodes([...assetsWithoutDuplicates]);
 
                         // Filter out nodes that should not be visible
                         const visibleNodes = new Map<string, boolean>();
@@ -1166,6 +1167,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         });
                         // If only 1 asset is shown, automatically select it
                         if(visibleNodes.size === 1) {
+                            console.debug("Only 1 asset is shown, automatically selecting it...");
                             this.selectedIds = Array.from(visibleNodes.keys());
                         }
                         this.disabled = false;
@@ -1288,7 +1290,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         // Query parents of the found assets if not cached yet.
         const parentIds = new Set(foundAssets.filter(a => a.path && a.path.length > 1).flatMap(a => a.path!.slice(0, -1)));
-        const unknownParentIds = Array.from(parentIds).filter(id => id && !this.assets?.find(a => a.id === id)) as string[];
+        const unknownParentIds = Array.from(parentIds).filter(id => id && !this.assets?.some(a => a.id === id));
         if (unknownParentIds.length > 0) {
             try {
                 console.debug(`Querying parents of ${unknownParentIds.length} assets...`);

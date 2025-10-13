@@ -384,7 +384,7 @@ test(`Searching for an asset and removing it keeps the tree and viewer in tact`,
 
     // Attempt to select and delete the "Electricity meter 1"
     await assetsPage.deleteSelectedAsset(manager, meter1.name!);
-    await expect(assetTree.getSelectedNodes()).toHaveCount(0);
+    await expect(assetTree.getSelectedNodes()).toHaveCount(1); // It automatically selects the other asset, "Electricity meter 10"
     await expect(assetTree.getAssetNodes()).toContainText([parentAssets[1].name!, meter10.name!]);
     await expect(assetTree.getAssetNodes()).toHaveCount(1 + 1); // Only parent + "Electricity meter 10" are visible now.
 
@@ -392,7 +392,7 @@ test(`Searching for an asset and removing it keeps the tree and viewer in tact`,
     await assetTree.fillFilterInput(battery10.name!);
     await expect(assetTree.getAssetNodes()).toContainText([parentAssets[0].name!, battery10.name!]);
     await expect(assetTree.getAssetNodes()).toHaveCount(2); // Parent asset + child electricity asset
-    await assetsPage.deleteSelectedAsset(manager, battery10.name!);
+    await assetsPage.deleteSelectedAsset(manager, battery10.name!, assetTree.getSelectedNodes());
     await expect(assetTree.getSelectedNodes()).toHaveCount(0);
     await expect(assetTree.getAssetNodes()).toHaveCount(0); // Nothing is visible anymore, since there is nothing matching the "Battery 10" text filter.
 })
