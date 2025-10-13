@@ -8,6 +8,9 @@ const storybookConfig: StorybookConfig = {
         "../../../component/**/*.stories.@(js|jsx|mjs|ts|tsx)",
         "../docs/**/*.mdx"
     ],
+    core: {
+        disableTelemetry: true
+    },
     rsbuildFinal: config => {
         // Customize the final Rsbuild config here
         return config;
