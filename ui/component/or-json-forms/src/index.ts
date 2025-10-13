@@ -159,13 +159,11 @@ export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPr
                 dispatch: (action: CoreActions) => this.updateCore(action),
                 i18n: {
                     locale: this._language,
-                    translate: (id, defaultMessage, values) => {
-                        return i18next.t(id, { defaultValue: defaultMessage }) || defaultMessage!;
-                    },
-                    translateError: (error, translate, uischema) => {
-                        console.log(`Locale: ${this.contextValue?.i18n?.locale}, Error: ${error}, UI Schema: ${uischema}`);
-                        return error.message!;
-                    },
+                    translate: (id, defaultMessage, { errors: [error] }) => {
+                        const defaultValue = defaultMessage || error?.message || "";
+                        return i18next.t(id, { defaultValue })
+                            || i18next.t(id, { defaultValue, lng: "en" });
+                    }
                 }
             }
         }
