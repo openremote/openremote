@@ -413,7 +413,7 @@ jobs:
           inputEnv = os.getenv('INPUT_ENVIRONMENT')
           managerVersion = os.getenv('MANAGER_VERSION')
 
-          if eventName == 'workflow_dispatch' and refType != 'tag':
+          if eventName == 'workflow_dispatch' and refType != 'tag' and repoOwner == 'openremote':
             if isMainRepo:
               tag=inputTag
               if not inputTag:
