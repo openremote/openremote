@@ -110,7 +110,7 @@ public class JSONSchemaUtil {
             return node;
         }
 
-        public static ObjectNode getSuppliedNode(FieldScope fieldScope, JsonSchemaSupplier annotation) throws RuntimeException {
+        public static ObjectNode getSuppliedNode(JsonSchemaSupplier annotation) throws RuntimeException {
             try {
                 switch (annotation.getClass().getMethod("supplier").invoke(annotation).toString()) {
                     case SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_ANY_TYPE:
@@ -180,19 +180,20 @@ public class JSONSchemaUtil {
         String supplier();
     }
 
-    private static void setFormat(ObjectNode node, String format) {
-        node.put("format", format);
-    }
+    private static class CustomModule implements Module {
 
-    public static class CustomModule implements Module {
-
+        private final ObjectMapper mapper;
         private final JacksonResolvers jacksonResolvers = new JacksonResolvers();
         private static final ConcurrentHashMap<Class<?>, List<ResolvedType>> subtypeCache = new ConcurrentHashMap<>();
         private static final Reflections reflections = new Reflections("org.openremote");
 
+        CustomModule(ObjectMapper mapper) {
+            this.mapper = mapper;
+        }
+
         @Override
         public void applyToConfigBuilder(SchemaGeneratorConfigBuilder builder) {
-            // Set title on root of schema
+            // Set title on root of schema and for object definitions
             JSONSchemaTitleProvider titleProvider = new JSONSchemaTitleProvider();
             builder.forTypesInGeneral()
                     .withCustomDefinitionProvider(titleProvider)
@@ -264,16 +265,16 @@ public class JSONSchemaUtil {
                     // Apply supplied definition
                     JsonSchemaSupplier ann = fieldScope.getAnnotation(JsonSchemaSupplier.class);
                     if (ann != null) {
-                        attrs = SchemaNodeMapper.getSuppliedNode(fieldScope, ann);
+                        attrs = SchemaNodeMapper.getSuppliedNode(ann);
                     }
                     // Avoids annotation also being applied to the `items` in an array. See https://victools.github.io/jsonschema-generator/#generator-individual-configurations
                     if (!fieldScope.isFakeContainerItemScope()) {
-                        ObjectMapper mapper = context.getGeneratorConfig().getObjectMapper();
-                        applyFieldAnnotation(fieldScope, JsonSchemaTitle.class, attrs, mapper);
-                        applyFieldAnnotation(fieldScope, JsonSchemaDescription.class, attrs, mapper);
-                        applyFieldAnnotation(fieldScope, JsonSchemaFormat.class, attrs, mapper);
-                        applyFieldAnnotation(fieldScope, JsonSchemaDefault.class, attrs, mapper);
-                        applyFieldAnnotation(fieldScope, JsonSchemaExamples.class, attrs, mapper);
+                        applyFieldAnnotation(fieldScope, JsonSchemaFormat.class, attrs);
+                        applyFieldAnnotation(fieldScope, JsonSchemaTitle.class, attrs);
+                        applyFieldAnnotation(fieldScope, JsonSchemaDescription.class, attrs);
+                        applyFieldAnnotation(fieldScope, JsonSchemaFormat.class, attrs);
+                        applyFieldAnnotation(fieldScope, JsonSchemaDefault.class, attrs);
+                        applyFieldAnnotation(fieldScope, JsonSchemaExamples.class, attrs);
                     }
                     String description = jacksonResolvers.resolveDescription(fieldScope);
                     if (description != null) {
@@ -337,8 +338,6 @@ public class JSONSchemaUtil {
             // Custom annotations injection
             builder.forTypesInGeneral().withTypeAttributeOverride((attrs, typeScope, context) -> {
                 Class<?> erasedType = typeScope.getType().getErasedType();
-                ObjectMapper mapper = context.getGeneratorConfig().getObjectMapper();
-
                 ObjectNode targetNode;
 
                 // If there is an allOf array, inject into the first object inside it to allow for cleanup with `Option.ALLOF_CLEANUP_AT_THE_END`
@@ -351,18 +350,17 @@ public class JSONSchemaUtil {
 
                 // These will be overwritten by member scope when colliding
                 if (!erasedType.isArray()) {
-                    applyTypeAnnotation(erasedType, JsonSchemaTitle.class, targetNode, mapper);
-                    applyTypeAnnotation(erasedType, JsonSchemaDescription.class, targetNode, mapper);
-                    applyTypeAnnotation(erasedType, JsonSchemaFormat.class, targetNode, mapper);
-                    applyTypeAnnotation(erasedType, JsonSchemaDefault.class, targetNode, mapper);
-                    applyTypeAnnotation(erasedType, JsonSchemaExamples.class, targetNode, mapper);
+                    applyTypeAnnotation(erasedType, JsonSchemaTitle.class, targetNode);
+                    applyTypeAnnotation(erasedType, JsonSchemaDescription.class, targetNode);
+                    applyTypeAnnotation(erasedType, JsonSchemaFormat.class, targetNode);
+                    applyTypeAnnotation(erasedType, JsonSchemaDefault.class, targetNode);
+                    applyTypeAnnotation(erasedType, JsonSchemaExamples.class, targetNode);
                 }
             });
 
             // Apply Jackson serializers
             builder.forTypesInGeneral().withCustomDefinitionProvider((resolvedType, context) -> {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                ObjectMapper mapper = builder.getObjectMapper();
                 JavaType javaType = mapper.constructType(resolvedType.getErasedType());
 
                 try {
@@ -374,7 +372,9 @@ public class JSONSchemaUtil {
                                 public void format(JsonValueFormat format) {
                                     setFormat(node, format.toString());
                                 }
-                                public void enumTypes(Set<String> enums) {}
+                                public void enumTypes(Set<String> enums) {
+                                    setEnum(node, enums);
+                                }
                             };
                         }
 
@@ -386,7 +386,9 @@ public class JSONSchemaUtil {
                                 public void format(JsonValueFormat format) {
                                     setFormat(node, format.toString());
                                 }
-                                public void enumTypes(Set<String> enums) {}
+                                public void enumTypes(Set<String> enums) {
+                                    setEnum(node, enums);
+                                }
                             };
                         }
 
@@ -398,7 +400,9 @@ public class JSONSchemaUtil {
                                 public void format(JsonValueFormat format) {
                                     setFormat(node, format.toString());
                                 }
-                                public void enumTypes(Set<String> enums) {}
+                                public void enumTypes(Set<String> enums) {
+                                    setEnum(node, enums);
+                                }
                             };
                         }
 
@@ -409,7 +413,9 @@ public class JSONSchemaUtil {
                                 public void format(JsonValueFormat format) {
                                     setFormat(node, format.toString());
                                 }
-                                public void enumTypes(Set<String> enums) {}
+                                public void enumTypes(Set<String> enums) {
+                                    setEnum(node, enums);
+                                }
                             };
                         }
                     };
@@ -423,6 +429,14 @@ public class JSONSchemaUtil {
                 } catch (Exception ignored) {}
                 return null;
             });
+        }
+
+        private static void setFormat(ObjectNode node, String format) {
+            node.put("format", format);
+        }
+
+        private void setEnum(ObjectNode node, Set<String> values) {
+            node.set("enum", this.mapper.createArrayNode().addAll(values.stream().map(TextNode::new).toList()));
         }
 
         private static class JacksonResolvers extends JacksonModule {
@@ -466,6 +480,7 @@ public class JSONSchemaUtil {
             public void overrideTypeAttributes(ObjectNode attrs, TypeScope scope, SchemaGenerationContext context) {
                 if ((this.rootType == scope.getType() && !attrs.has(context.getKeyword(SchemaKeyword.TAG_TITLE))) ||
                     (!attrs.has(context.getKeyword(SchemaKeyword.TAG_TITLE))
+                    && !scope.getType().isInstanceOf(Map.class)
                     && attrs.has(context.getKeyword(SchemaKeyword.TAG_TYPE))
                     && attrs.get(context.getKeyword(SchemaKeyword.TAG_TYPE)).textValue().equals("object"))
                 ) {
@@ -552,11 +567,10 @@ public class JSONSchemaUtil {
             return null;
         }
 
-        private static <A extends Annotation> void applyTypeAnnotation(
+        private <A extends Annotation> void applyTypeAnnotation(
                 Class<?> type,
                 Class<A> annotationClass,
-                ObjectNode schema,
-                ObjectMapper mapper
+                ObjectNode schema
         ) {
             A annotation;
 
@@ -567,23 +581,22 @@ public class JSONSchemaUtil {
             }
 
             if (annotation != null) {
-                applyAnnotation(annotationClass, annotation, schema, mapper);
+                applyAnnotation(annotationClass, annotation, schema);
             }
         }
 
-        private static <A extends Annotation> void applyFieldAnnotation(
+        private <A extends Annotation> void applyFieldAnnotation(
                 FieldScope fieldScope,
                 Class<A> annotationClass,
-                ObjectNode schema,
-                ObjectMapper mapper
+                ObjectNode schema
         ) {
             A annotation = fieldScope.getAnnotation(annotationClass);
             if (annotation != null) {
-                applyAnnotation(annotationClass, annotation, schema, mapper);
+                applyAnnotation(annotationClass, annotation, schema);
             }
         }
 
-        private static <A extends Annotation> void applyAnnotation(Class<?> annotationClass, A annotation, ObjectNode schema, ObjectMapper mapper) {
+        private <A extends Annotation> void applyAnnotation(Class<?> annotationClass, A annotation, ObjectNode schema) {
             try {
                 String keyword = (String) annotationClass.getMethod("keyword").invoke(annotation);
                 Method valueMethod = annotationClass.getMethod("value");
@@ -593,10 +606,10 @@ public class JSONSchemaUtil {
                 if (returnType.isArray()) {
                     ArrayNode arrayNode = schema.putArray(keyword);
                     for (Object element : (Object[]) value) {
-                        arrayNode.add(parseJsonOrString(mapper, element.toString()));
+                        arrayNode.add(parseJsonOrString(this.mapper, element.toString()));
                     }
                 } else {
-                    schema.set(keyword, parseJsonOrString(mapper, value.toString()));
+                    schema.set(keyword, parseJsonOrString(this.mapper, value.toString()));
                 }
             } catch (Exception e) {
                 throw new RuntimeException("Failed to apply annotation " + annotationClass.getSimpleName(), e);
@@ -654,7 +667,7 @@ public class JSONSchemaUtil {
             JakartaValidationOption.NOT_NULLABLE_FIELD_IS_REQUIRED,
             JakartaValidationOption.INCLUDE_PATTERN_EXPRESSIONS
         ))
-        .with(new CustomModule())
+        .with(new CustomModule(mapper))
         .build();
     }
 }
