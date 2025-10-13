@@ -402,6 +402,7 @@ jobs:
         shell: python
         run: |
           import os
+          import sys
 
           repoOwner = os.getenv('GITHUB_REPOSITORY_OWNER')
           isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
@@ -428,11 +429,11 @@ jobs:
 
           os.system(f"echo 'value={deployments}' >> $GITHUB_OUTPUT")
           pushSnapshot = os.getenv('PUSH_SNAPSHOT')
-          if repoOwner == 'openremote':
-            os.system(f"echo 'pushSnapshot={pushSnapshot}' >> $GITHUB_OUTPUT")
-          else:
+          if pushSnapshot == 'true' and repoOwner != 'openremote':
             os.system("echo 'Only Openremote organisation can push to ECR'")
             sys.exit(1)
+          else:
+            os.system(f"echo 'pushSnapshot={pushSnapshot}' >> $GITHUB_OUTPUT")
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
