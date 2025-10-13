@@ -31,47 +31,31 @@ import java.util.List;
 public class OpenWeatherMapResponse {
 
     @JsonProperty("current")
-    private WeatherEntry current;
+    private WeatherDatapoint current;
 
     @JsonProperty("hourly")
-    private List<WeatherEntry> hourly;
+    private List<WeatherDatapoint> hourly;
 
     @JsonProperty("daily")
-    private List<DailyWeatherEntry> daily;
+    private List<DailyWeatherDatapoint> daily;
 
-    /**
-     * For hydrators
-     */
     public OpenWeatherMapResponse() {
     }
 
-    public WeatherEntry getCurrent() {
+    public WeatherDatapoint getCurrent() {
         return current;
     }
 
-    public void setCurrent(WeatherEntry current) {
-        this.current = current;
-    }
-
-
-    public List<WeatherEntry> getHourly() {
+    public List<WeatherDatapoint> getHourly() {
         return hourly;
     }
 
-    public void setHourly(List<WeatherEntry> hourly) {
-        this.hourly = hourly;
-    }
-
-    public List<DailyWeatherEntry> getDaily() {
+    public List<DailyWeatherDatapoint> getDaily() {
         return daily;
     }
 
-    public void setDaily(List<DailyWeatherEntry> daily) {
-        this.daily = daily;
-    }
-
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class WeatherEntry {
+    public static class WeatherDatapoint {
 
         @JsonProperty("dt")
         private long timestamp;
@@ -103,100 +87,65 @@ public class OpenWeatherMapResponse {
         @JsonProperty("uvi")
         private double uvi;
 
-        /**
-         * For hydrators
-         */
-        public WeatherEntry() {
+        @JsonProperty("rain")
+        private Rain rain;
+
+        public WeatherDatapoint() {
         }
 
         public long getTimestamp() {
             return timestamp;
         }
 
-        public void setTimestamp(long timestamp) {
-            this.timestamp = timestamp;
-        }
-
         public double getTemperature() {
             return temperature;
-        }
-
-        public void setTemperature(double temperature) {
-            this.temperature = temperature;
         }
 
         public int getPressure() {
             return pressure;
         }
 
-        public void setPressure(int pressure) {
-            this.pressure = pressure;
-        }
-
         public int getHumidity() {
             return humidity;
-        }
-
-        public void setHumidity(int humidity) {
-            this.humidity = humidity;
         }
 
         public int getClouds() {
             return clouds;
         }
 
-        public void setClouds(int clouds) {
-            this.clouds = clouds;
-        }
-
         public double getWindSpeed() {
             return windSpeed;
-        }
-
-        public void setWindSpeed(double windSpeed) {
-            this.windSpeed = windSpeed;
         }
 
         public int getWindDegrees() {
             return windDegrees;
         }
 
-        public void setWindDegrees(int windDegrees) {
-            this.windDegrees = windDegrees;
-        }
-
         public double getWindGust() {
             return windGust;
-        }
-
-        public void setWindGust(double windGust) {
-            this.windGust = windGust;
         }
 
         public double getPop() {
             return pop;
         }
 
-        public void setPop(double pop) {
-            this.pop = pop;
-        }
-
         public double getUvi() {
             return uvi;
         }
 
-        public void setUvi(double uvi) {
-            this.uvi = uvi;
+        public double getRain() {
+            return rain != null ? rain.getOneHour() : 0.0;
         }
+
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class DailyWeatherEntry {
+    public static class DailyWeatherDatapoint {
         @JsonProperty("dt")
         private long timestamp;
 
         @JsonProperty("temp")
-        private Temp temp;
+        private Temp temperature;
 
         @JsonProperty("pressure")
         private int pressure;
@@ -220,100 +169,56 @@ public class OpenWeatherMapResponse {
         private double pop;
 
         @JsonProperty("rain")
-        private double rain;
+        private Double rain;
 
         @JsonProperty("uvi")
         private double uvi;
 
-        public DailyWeatherEntry() {
+        public DailyWeatherDatapoint() {
         }
 
         public long getTimestamp() {
             return timestamp;
         }
 
-        public void setTimestamp(long timestamp) {
-            this.timestamp = timestamp;
-        }
-
-        public Temp getTemp() {
-            return temp;
-        }
-
-        public void setTemp(Temp temp) {
-            this.temp = temp;
-        }
-
         public int getPressure() {
             return pressure;
-        }
-
-        public void setPressure(int pressure) {
-            this.pressure = pressure;
         }
 
         public int getHumidity() {
             return humidity;
         }
 
-        public void setHumidity(int humidity) {
-            this.humidity = humidity;
+        public Temp getTemperature() {
+            return temperature;
         }
 
         public double getWindSpeed() {
             return windSpeed;
         }
 
-        public void setWindSpeed(double windSpeed) {
-            this.windSpeed = windSpeed;
-        }
-
         public int getWindDegrees() {
             return windDegrees;
-        }
-
-        public void setWindDegrees(int windDegrees) {
-            this.windDegrees = windDegrees;
         }
 
         public double getWindGust() {
             return windGust;
         }
 
-        public void setWindGust(double windGust) {
-            this.windGust = windGust;
-        }
-
         public int getClouds() {
             return clouds;
-        }
-
-        public void setClouds(int clouds) {
-            this.clouds = clouds;
         }
 
         public double getPop() {
             return pop;
         }
 
-        public void setPop(double pop) {
-            this.pop = pop;
-        }
-
-        public double getRain() {
-            return rain;
-        }
-
-        public void setRain(double rain) {
-            this.rain = rain;
-        }
-
         public double getUvi() {
             return uvi;
         }
 
-        public void setUvi(double uvi) {
-            this.uvi = uvi;
+        public double getRain() {
+            return rain != null ? rain : 0.0;
         }
     }
 
@@ -344,48 +249,37 @@ public class OpenWeatherMapResponse {
             return day;
         }
 
-        public void setDay(double day) {
-            this.day = day;
-        }
-
         public double getMin() {
             return min;
-        }
-
-        public void setMin(double min) {
-            this.min = min;
         }
 
         public double getMax() {
             return max;
         }
 
-        public void setMax(double max) {
-            this.max = max;
-        }
-
         public double getNight() {
             return night;
-        }
-
-        public void setNight(double night) {
-            this.night = night;
         }
 
         public double getEve() {
             return eve;
         }
 
-        public void setEve(double eve) {
-            this.eve = eve;
-        }
-
         public double getMorn() {
             return morn;
         }
+    }
 
-        public void setMorn(double morn) {
-            this.morn = morn;
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Rain {
+        @JsonProperty("1h")
+        private double oneHour;
+
+        public Rain() {
+        }
+
+        public double getOneHour() {
+            return oneHour;
         }
     }
 

@@ -117,7 +117,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
 
         // Schedule a task to retrieve weather data periodically
         int pollingMillis = agent.getPollingMillis().orElse(DEFAULT_POLLING_MILLIS);
-        pollingFuture = scheduledExecutorService.scheduleAtFixedRate(this::updateWeatherAttributes, INITIAL_MILLIS_DELAY, pollingMillis, TimeUnit.MILLISECONDS);
+        pollingFuture = scheduledExecutorService.scheduleAtFixedRate(this::updateWeatherData, INITIAL_MILLIS_DELAY, pollingMillis, TimeUnit.MILLISECONDS);
 
         setConnectionStatus(ConnectionStatus.CONNECTED);
     }
@@ -164,23 +164,27 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
     }
 
     /**
-     * Update linked asset attributes with weather data
+     * Update the agent's linked attributes with weather data from the
+     * OpenWeatherMap API
+     * 
+     * This method groups all linked attributes by their Asset ID and then retrieves
+     * the weather data for each asset based on its location
      */
-    protected void updateWeatherAttributes() {
+    protected void updateWeatherData() {
         LOG.fine("Retrieving weather data from OpenWeatherMap");
 
         if (getLinkedAttributes().isEmpty()) {
             LOG.fine("No linked attributes found, skipping weather data retrieval");
             return;
         }
+
         // <assetId, List<AttributeRef>>
         Map<String, List<AttributeRef>> assetGroups = new HashMap<>();
 
         // Group the attributes by asset ID
         getLinkedAttributes().forEach((attributeRef, attribute) -> assetGroups.computeIfAbsent(attributeRef.getId(), k -> new ArrayList<>()).add(attributeRef));
 
-
-        // Retrieve the weather data for each asset, updating their linked attributes with the weather data
+        // Retrieve the weather data for each asset, updating their linked attributes
         assetGroups.forEach((assetId, attributeRefs) -> {
             Asset<?> asset = assetService.findAsset(assetId);
             if (asset == null) {
@@ -233,9 +237,9 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
             OpenWeatherMapAgentLink agentLink = agent.getAgentLink(attribute);
             OpenWeatherMapField field = agentLink.getField();
 
-            // Extract the value from the weather entry based on the agent link field
-            OpenWeatherMapResponse.WeatherEntry weatherEntry = weatherData.getCurrent();
-            Object value = extractWeatherEntryFieldValue(weatherEntry, field);
+            // Get the corresponding `field` value from the weather data object
+            OpenWeatherMapResponse.WeatherDatapoint currentWeatherData = weatherData.getCurrent();
+            Object value = getFieldValue(currentWeatherData, field);
 
             if (value == null) {
                 LOG.log(Level.WARNING, () -> "Field or value is null for attribute: " + attributeRef);
@@ -247,36 +251,37 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
     }
 
     /**
-     * Extract the value from the weather entry based on the given field
+     * Get the corresponding `field` value from the weather data object
      */
-    protected Object extractWeatherEntryFieldValue(OpenWeatherMapResponse.WeatherEntry weatherEntry, OpenWeatherMapField field) {
+    protected Object getFieldValue(OpenWeatherMapResponse.WeatherDatapoint weatherData, OpenWeatherMapField field) {
         switch (field) {
         case TEMPERATURE:
-            return weatherEntry.getTemperature();
+            return weatherData.getTemperature();
         case ATMOSPHERIC_PRESSURE:
-            return weatherEntry.getPressure();
+            return weatherData.getPressure();
         case HUMIDITY_PERCENTAGE:
-            return weatherEntry.getHumidity();
+            return weatherData.getHumidity();
         case CLOUD_COVERAGE:
-            return weatherEntry.getClouds();
+            return weatherData.getClouds();
         case WIND_SPEED:
-            return weatherEntry.getWindSpeed();
+            return weatherData.getWindSpeed();
         case WIND_DIRECTION_DEGREES:
-            return weatherEntry.getWindDegrees();
+            return weatherData.getWindDegrees();
         case WIND_GUST_SPEED:
-            return weatherEntry.getWindGust();
+            return weatherData.getWindGust();
         case PROBABILITY_OF_PRECIPITATION:
-            return weatherEntry.getPop();
+            return weatherData.getPop();
         case ULTRAVIOLET_INDEX:
-            return weatherEntry.getUvi();
+            return weatherData.getUvi();
+        case RAIN_AMOUNT:
+            return weatherData.getRain();
         default:
             return null;
         }
     }
 
     /**
-     * Perform a health check to the OpenWeatherMap API by retrieving null island
-     * data
+     * Health check, by sending a request to the OpenWeatherMap API
      */
     protected boolean healthCheck() {
         String apiUrl = getOneCallApiUrl(0, 0);
