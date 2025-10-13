@@ -2319,9 +2319,11 @@ __metadata:
   dependencies:
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
+    "@openremote/or-icon": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-tree-menu": "workspace:*"
+    "@openremote/rest": "workspace:*"
     "@rsbuild/core": "npm:~1.5.13"
     "@storybook/web-components": "npm:~9.1.10"
     lit: "npm:^3.3.1"
