@@ -35,7 +35,6 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.protocol.ProtocolAssetImport;
 import org.openremote.model.protocol.ProtocolAssetService;
-import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.JsonPathFilter;
@@ -49,6 +48,8 @@ import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
@@ -71,6 +72,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
     private MQTTProtocol mqttProtocol;
     private MQTTAgent mqttAgent;
     private T agent;
+    private Set<String> devEuiSet = new CopyOnWriteArraySet<>();
     protected Container container;
 
     public AbstractLoRaWANProtocol(T agent) {
@@ -106,11 +108,27 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
     @Override
     public void linkAttribute(String assetId, Attribute<?> attribute) throws Exception {
         mqttProtocol.linkAttribute(assetId, attribute);
+
+        if (ATTRIBUTE_NAME_DEV_EUI.equals(attribute.getName())) {
+            attribute.getValue(String.class)
+                .map(String::trim)
+                .map(String::toUpperCase)
+                .filter(s -> !s.isEmpty())
+                .ifPresent(devEUI -> devEuiSet.add(devEUI));
+        }
     }
 
     @Override
     public void unlinkAttribute(String assetId, Attribute<?> attribute) throws Exception {
         mqttProtocol.unlinkAttribute(assetId, attribute);
+
+        if (ATTRIBUTE_NAME_DEV_EUI.equals(attribute.getName())) {
+            attribute.getValue(String.class)
+                .map(String::trim)
+                .map(String::toUpperCase)
+                .filter(s -> !s.isEmpty())
+                .ifPresent(devEUI -> devEuiSet.remove(devEUI));
+        }
     }
 
     @Override
@@ -312,17 +330,25 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
     }
 
     private boolean duplicateAssetCheck(CsvRecord record) {
-        if (record == null || record.getDevEUI() == null) {
+        if (record == null) {
             return false;
         }
 
-        boolean isDuplicate =  assetService.findAssets(
-            new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, record.getDevEUI().toUpperCase())
-        ).size() > 0;
-        if (isDuplicate) {
+        if (!duplicateAssetCheck(record.getDevEUI())) {
             LOG.log(Level.INFO, "CSV import skipped a CSV record because an asset already existed: " + record);
+            return false;
         }
-        return !isDuplicate;
+
+        return true;
+    }
+
+    private boolean duplicateAssetCheck(String devEUI) {
+        return Optional.ofNullable(devEUI)
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .map(String::toUpperCase)
+            .map(s -> !devEuiSet.contains(s))
+            .orElse(false);
     }
 
     private Optional<Asset<?>> createAsset(CsvRecord csvRecord) {
@@ -395,9 +421,11 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
                 isOk = isOk && configureMQTTWriteValueTemplate(attribute, agentLink, csvRecord);
             }
 
-            attribute.addOrReplaceMeta(
-                new MetaItem<>(AGENT_LINK, agentLink)
-            );
+            if (getAgentConfig(attribute).isPresent() || ATTRIBUTE_NAME_DEV_EUI.equals(attribute.getName())) {
+                attribute.addOrReplaceMeta(
+                    new MetaItem<>(AGENT_LINK, agentLink)
+                );
+            }
 
             MetaMap metaMap = attribute.getMeta();
             metaMap.remove(AGENT_LINK_CONFIG);
