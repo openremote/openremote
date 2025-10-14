@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-app",
-  "version": "1.8.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "OpenRemote app template",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",

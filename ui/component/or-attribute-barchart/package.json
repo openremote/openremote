@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-attribute-barchart",
-  "version": "1.8.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "OpenRemote attribute bar chart",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",

@@ -8,6 +8,10 @@ const storybookConfig: StorybookConfig = {
         "../../../component/**/*.stories.@(js|jsx|mjs|ts|tsx)",
         "../docs/**/*.mdx"
     ],
+    addons: [
+        "@storybook/addon-docs",
+        "@storybook/addon-a11y"
+    ],
     core: {
         disableTelemetry: true
     },

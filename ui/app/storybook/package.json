@@ -1,7 +1,7 @@
 {
   "name": "@openremote/storybook",
-  "version": "1.8.0-snapshot",
-  "description": "OpenRemote Storybook",
+  "version": "1.10.0-snapshot",
+  "description": "OpenRemote Storybook UI",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -23,6 +23,8 @@
   },
   "devDependencies": {
     "@rsbuild/core": "~1.5.13",
+    "@storybook/addon-a11y": "~9.1.10",
+    "@storybook/addon-docs": "~9.1.10",
     "@storybook/web-components": "~9.1.10",
     "storybook": "~9.1.10",
     "storybook-web-components-rsbuild": "~2.1.2",

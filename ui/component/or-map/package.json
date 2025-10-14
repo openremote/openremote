@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-map",
-  "version": "1.8.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "Displays s vector or raster map",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
