@@ -113,7 +113,7 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait{
         and: "a ChirpStack agent is created"
         def agent = new ChirpStackAgent("ChirpStackAgent")
         agent.setRealm(MASTER_REALM)
-        agent.setHost(HOST)
+        agent.setMqttHost(HOST)
         agent.setMqttPort(mqttBrokerPort)
         agent.setClientId(CLIENT_ID)
         agent.setApplicationId(APPLICATION_ID)

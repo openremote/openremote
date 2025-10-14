@@ -165,6 +165,7 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait{
         agent.setRealm(MASTER_REALM)
         agent.setHost(HOST)
         agent.setPort(ttsServerPort)
+        agent.setMqttHost(HOST)
         agent.setMqttPort(mqttBrokerPort)
         agent.setClientId(CLIENT_ID)
         agent.setApplicationId(APPLICATION_ID)

@@ -48,8 +48,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.agent.protocol.lorawan.tts.TheThingsStackAgent.API_KEY;
+import static org.openremote.agent.protocol.lorawan.tts.TheThingsStackAgent.HOST;
 import static org.openremote.agent.protocol.lorawan.tts.TheThingsStackAgent.TENANT_ID;
-import static org.openremote.model.asset.agent.Agent.HOST;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.container.util.MapAccess.getBoolean;
 
@@ -76,7 +76,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
     @Override
     public String getProtocolInstanceUri() {
         return "tts://" + getAgent().getHost().orElse("-") + ":"
-                        + getAgent().getMqttPort().map(p -> p.toString()).orElse("-");
+                        + getAgent().getPort().map(p -> p.toString()).orElse("-");
     }
 
     @Override

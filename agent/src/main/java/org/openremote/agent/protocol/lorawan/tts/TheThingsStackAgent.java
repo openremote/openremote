@@ -21,8 +21,8 @@ package org.openremote.agent.protocol.lorawan.tts;
 
 import jakarta.persistence.Entity;
 import org.openremote.agent.protocol.lorawan.LoRaWANAgent;
-import org.openremote.agent.protocol.mqtt.MQTTAgent;
 import org.openremote.agent.protocol.mqtt.MQTTAgentLink;
+import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
@@ -32,7 +32,8 @@ import java.util.Optional;
 @Entity
 public class TheThingsStackAgent extends LoRaWANAgent<TheThingsStackAgent, TheThingsStackProtocol> {
 
-    public static final AttributeDescriptor<Integer> PORT = MQTTAgent.PORT;
+    public static final AttributeDescriptor<String> HOST = Agent.HOST.withOptional(false);
+    public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
     public static final AttributeDescriptor<String> TENANT_ID = new AttributeDescriptor<>("tenantId", ValueType.TEXT);
     public static final AttributeDescriptor<String> API_KEY = new AttributeDescriptor<>("apiKey", ValueType.TEXT);
 

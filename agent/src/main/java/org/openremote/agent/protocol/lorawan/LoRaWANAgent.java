@@ -31,8 +31,7 @@ import java.util.Optional;
 @Entity
 public abstract class LoRaWANAgent<T extends LoRaWANAgent<T, U>, U extends AbstractLoRaWANProtocol<U, T>> extends Agent<T, U, MQTTAgentLink>{
 
-    public static final AttributeDescriptor<String> HOST = MQTTAgent.HOST;
-    public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(true);
+    public static final AttributeDescriptor<String> MQTT_HOST = new AttributeDescriptor<>("MQTTHost", ValueType.HOSTNAME_OR_IP_ADDRESS).withOptional(false);
     public static final AttributeDescriptor<Integer> MQTT_PORT = new AttributeDescriptor<>("MQTTPort", ValueType.PORT).withOptional(false);
     public static final AttributeDescriptor<String> CLIENT_ID = MQTTAgent.CLIENT_ID;
     public static final AttributeDescriptor<Boolean> SECURE_MODE = MQTTAgent.SECURE_MODE;
@@ -55,6 +54,15 @@ public abstract class LoRaWANAgent<T extends LoRaWANAgent<T, U>, U extends Abstr
 
     protected LoRaWANAgent(String name) {
         super(name);
+    }
+
+    public Optional<String> getMqttHost() {
+        return getAttributes().getValue(MQTT_HOST);
+    }
+
+    public LoRaWANAgent<T, U> setMqttHost(String host) {
+        getAttributes().getOrCreate(MQTT_HOST).setValue(host);
+        return this;
     }
 
     public Optional<Integer> getMqttPort() {

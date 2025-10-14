@@ -47,7 +47,7 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
 
     @Override
     public String getProtocolInstanceUri() {
-        return "chirpstack://" + getAgent().getHost().orElse("-") + ":"
+        return "chirpstack://" + getAgent().getMqttHost().orElse("-") + ":"
                                + getAgent().getMqttPort().map(p -> p.toString()).orElse("-");
     }
 

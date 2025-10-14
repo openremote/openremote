@@ -57,6 +57,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.APPLICATION_ID;
+import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.MQTT_HOST;
+import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.MQTT_PORT;
 import static org.openremote.agent.protocol.lorawan.LoRaWANConstants.*;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
@@ -80,7 +82,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         this.mqttAgent = new MQTTAgent(agent.getName());
 
         mqttAgent.setId(agent.getId());
-        agent.getHost().ifPresent(host -> mqttAgent.setHost(host));
+        agent.getMqttHost().ifPresent(host -> mqttAgent.setHost(host));
         agent.getMqttPort().ifPresent(port -> mqttAgent.setPort(port));
         agent.getClientId().ifPresent(clientId -> mqttAgent.setClientId(clientId));
         agent.isSecureMode().ifPresent(secureMode -> mqttAgent.setSecureMode(secureMode));
@@ -171,9 +173,13 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
 
     @Override
     public boolean onAgentAttributeChanged(AttributeEvent event) {
-        if (APPLICATION_ID.getName().equals(event.getName())) {
+        if (MQTT_HOST.getName().equals(event.getName()) ||
+            MQTT_PORT.getName().equals(event.getName()) ||
+            APPLICATION_ID.getName().equals(event.getName()))
+        {
             return true;
         }
+
         return mqttProtocol.onAgentAttributeChanged(event);
     }
 
