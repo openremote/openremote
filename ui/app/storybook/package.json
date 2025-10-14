@@ -8,7 +8,7 @@
   "scripts": {
     "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
     "build": "storybook build -o dist",
-    "serve": "storybook dev",
+    "serve": "storybook dev -p 9000 --no-open",
     "test": "echo \"No tests\" && exit 0"
   },
   "dependencies": {

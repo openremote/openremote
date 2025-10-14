@@ -9,6 +9,10 @@ export default defineConfig({
             version: "legacy"
         }
     },
+    dev: {
+        hmr: false, // HMR does not work for our Web Components atm
+        liveReload: true
+    },
     resolve: {
         alias: {
             // Webpack fallbacks for Node.js modules

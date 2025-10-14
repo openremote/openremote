@@ -11,11 +11,10 @@ const storybookConfig: StorybookConfig = {
     core: {
         disableTelemetry: true
     },
-    rsbuildFinal: config => {
-        if(config.mode === "production") {
-            config.output ??= {};
-            config.output.assetPrefix = "/storybook/";
-        }
+    rsbuildFinal: (config, { configType }) => {
+        config.output ??= {};
+        config.output.assetPrefix = "/storybook/";
+        console.debug(`Using RSBuild config for ${configType}:`, config);
         return config;
     }
 };
