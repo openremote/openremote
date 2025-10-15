@@ -198,9 +198,9 @@ test(`Load more buttons are shown when there are a lot of assets`, async ({ page
     await expect(assetTree.getAssetNodes()).toHaveCount(5); // 2 battery assets + 2 electricity assets + 1 console group
     await page.locator('or-asset-tree').evaluate(tree => {(tree as OrAssetTree).setAttribute('queryLimit', '2')});
     await expect(assetTree.getAssetNodes()).toHaveCount(2);
-    await page.locator('.loadmore-element or-mwc-input').click();
+    await page.getByRole('button', { name: "Load More" }).click();
     await expect(assetTree.getAssetNodes()).toHaveCount(4);
-    await page.locator('.loadmore-element or-mwc-input').click();
+    await page.getByRole('button', { name: "Load More" }).click();
     await expect(assetTree.getAssetNodes()).toHaveCount(5);
 })
 
@@ -233,7 +233,7 @@ test(`Load more buttons are shown properly without any unexpected scroll behavio
 
     // Scroll down to the "load more" botton, and check if the scroll position is kept after pressing it.
     const listContainer = page.locator('or-asset-tree #list-container');
-    await cityAsset1.locator('.loadmore-element or-mwc-input').click();
+    await cityAsset1.getByRole('button', { name: "Load More" }).click();
     const scrollPos1 = await listContainer.evaluate(el => el.scrollTop);
     await expect(assetTree.getAssetNodes()).toHaveCount(3 + 25); // Now it's 25 out of 25 assets again
     expect(await listContainer.evaluate(el => el.scrollTop)).toStrictEqual(scrollPos1);
@@ -242,7 +242,7 @@ test(`Load more buttons are shown properly without any unexpected scroll behavio
     let cityAsset2 = assetTree.getAssetNodes().filter({ hasText: parentAssets[1].name });
     await cityAsset2.locator('.expander[data-expandable]').click();
     await expect(assetTree.getAssetNodes()).toHaveCount(3 + 25 + 20); // City 2 now has 20 out of 25 assets
-    await cityAsset2.locator('.loadmore-element or-mwc-input').click();
+    await cityAsset2.getByRole('button', { name: "Load More" }).click();
     const scrollPos2 = await listContainer.evaluate(el => el.scrollTop);
     await expect(assetTree.getAssetNodes()).toHaveCount(3 + 25 + 25); // Now it's 25 out of 25 assets again
     expect(await listContainer.evaluate(el => el.scrollTop)).toStrictEqual(scrollPos2);
@@ -302,8 +302,8 @@ test(`Load more buttons are shown properly when there is a complex tree`, async 
     await expect(page.locator(`#asset-header`, { hasText: buildingAssets[0].name })).toBeVisible();
 
     // Select the 1st building of the city
-    await expect(page.locator('.loadmore-element or-mwc-input')).toHaveCount(2);
-    await page.locator('.loadmore-element or-mwc-input').first().click();
+    await expect(page.getByRole('button', { name: 'Load More' })).toHaveCount(2);
+    await page.getByRole('button', { name: 'Load More' }).first().click();
     await expect(assetTree.getSelectedNodes()).toHaveCount(1);
     await expect(assetTree.getSelectedNodes()).toHaveText(buildingAssets[0].name!);
     await expect(page.locator(`#asset-header`, { hasText: buildingAssets[0].name })).toBeVisible();
