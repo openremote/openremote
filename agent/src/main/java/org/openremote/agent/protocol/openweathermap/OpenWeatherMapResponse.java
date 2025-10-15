@@ -21,6 +21,8 @@ package org.openremote.agent.protocol.openweathermap;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
 import java.util.List;
 
 /**
@@ -30,14 +32,17 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class OpenWeatherMapResponse {
 
-    @JsonProperty("current")
+    @JsonProperty("current") 
+    @JsonDeserialize(as = WeatherDatapointImpl.class)
     private WeatherDatapoint current;
 
-    @JsonProperty("hourly")
+    @JsonProperty("hourly") 
+    @JsonDeserialize(contentAs = WeatherDatapointImpl.class)
     private List<WeatherDatapoint> hourly;
 
     @JsonProperty("daily")
-    private List<DailyWeatherDatapoint> daily;
+    @JsonDeserialize(contentAs = DailyWeatherDatapointImpl.class)
+    private List<WeatherDatapoint> daily;
 
     public OpenWeatherMapResponse() {
     }
@@ -50,12 +55,36 @@ public class OpenWeatherMapResponse {
         return hourly;
     }
 
-    public List<DailyWeatherDatapoint> getDaily() {
+    public List<WeatherDatapoint> getDaily() {
         return daily;
     }
 
+    public interface WeatherDatapoint {
+        long getTimestamp();
+
+        int getPressure();
+
+        int getHumidity();
+
+        double getTemperature();
+
+        double getWindSpeed();
+
+        int getWindDegrees();
+
+        double getWindGust();
+
+        int getClouds();
+
+        double getPop();
+
+        double getUvi();
+
+        double getRain();
+    }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class WeatherDatapoint {
+    public static class WeatherDatapointImpl implements WeatherDatapoint {
 
         @JsonProperty("dt")
         private long timestamp;
@@ -90,7 +119,7 @@ public class OpenWeatherMapResponse {
         @JsonProperty("rain")
         private Rain rain;
 
-        public WeatherDatapoint() {
+        public WeatherDatapointImpl() {
         }
 
         public long getTimestamp() {
@@ -140,7 +169,7 @@ public class OpenWeatherMapResponse {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class DailyWeatherDatapoint {
+    public static class DailyWeatherDatapointImpl implements WeatherDatapoint {
         @JsonProperty("dt")
         private long timestamp;
 
@@ -174,7 +203,7 @@ public class OpenWeatherMapResponse {
         @JsonProperty("uvi")
         private double uvi;
 
-        public DailyWeatherDatapoint() {
+        public DailyWeatherDatapointImpl() {
         }
 
         public long getTimestamp() {
@@ -189,8 +218,9 @@ public class OpenWeatherMapResponse {
             return humidity;
         }
 
-        public Temp getTemperature() {
-            return temperature;
+        // Temperature is a sub-object, so we need to get the day temperature
+        public double getTemperature() {
+            return temperature.getDay();
         }
 
         public double getWindSpeed() {

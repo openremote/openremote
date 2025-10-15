@@ -69,8 +69,8 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
     public static final String PROTOCOL_DISPLAY_NAME = "OpenWeatherMap";
     private static final AtomicReference<ResteasyClient> client = new AtomicReference<>();
 
-    // Initial delay is used so the system has time to populate the agent links
-    private static final int INITIAL_MILLIS_DELAY = 5000; // 5 seconds
+    // Initial delay to allow system to populate agent links
+    private static final int INITIAL_POLLING_DELAY_MILLIS = 3000; // 3 seconds
     private static final int DEFAULT_POLLING_MILLIS = 3600000; // 1 hour
 
     protected ScheduledFuture<?> pollingFuture;
@@ -112,7 +112,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
 
         // Schedule the polling task
         int pollingMillis = agent.getPollingMillis().orElse(DEFAULT_POLLING_MILLIS);
-        pollingFuture = scheduledExecutorService.scheduleAtFixedRate(this::updateWeatherData, INITIAL_MILLIS_DELAY, pollingMillis, TimeUnit.MILLISECONDS);
+        pollingFuture = scheduledExecutorService.scheduleAtFixedRate(this::updateWeatherData, INITIAL_POLLING_DELAY_MILLIS, pollingMillis, TimeUnit.MILLISECONDS);
 
         setConnectionStatus(ConnectionStatus.CONNECTED);
     }
@@ -197,16 +197,15 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
             if (weatherData != null) {
                 // Update attributes with current weather data
                 try {
-                    updateAttributes(attributeRefs, weatherData.getCurrent()); // current timestamp
+                    updateAttributes(attributeRefs, weatherData.getCurrent());
                 } catch (Exception e) {
                     LOG.log(Level.WARNING, e, () -> "Failed to update attributes: " + attributeRefs);
                 }
 
                 // Update predicted data points with weather forecast
                 try {
-                    updatePredictedDataPoints(attributeRefs, weatherData.getHourly()); // hourly data up to 48 hours
-                    // updatePredictedDataPoints(attributeRefs, weatherData.getDaily()); // daily
-                    // data up to 8 days
+                    updatePredictedDataPoints(attributeRefs, weatherData.getDaily()); // write daily forecast, up to 8 days
+                    updatePredictedDataPoints(attributeRefs, weatherData.getHourly()); // write hourly forecast, up to 48 hours
                 } catch (Exception e) {
                     LOG.log(Level.WARNING, e, () -> "Failed to write predicted data points: " + attributeRefs);
                 }
@@ -386,7 +385,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
      * Provision a weather asset with the appropriate agent links, location needs to
      * be manually configured after provisioning
      */
-    protected void provisionWeatherAsset() {
+    protected WeatherAsset provisionWeatherAsset() {
         WeatherAsset weatherAsset = new WeatherAsset("Weather");
         weatherAsset.setParentId(agent.getId());
         weatherAsset.setRealm(agent.getRealm());
@@ -432,7 +431,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
         weatherAsset.getAttribute(WeatherAsset.UV_INDEX).ifPresent(attribute -> attribute
                 .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setField(OpenWeatherMapField.ULTRAVIOLET_INDEX))));
 
-        assetService.mergeAsset(weatherAsset);
+        return assetService.mergeAsset(weatherAsset);
     }
 
     /**
