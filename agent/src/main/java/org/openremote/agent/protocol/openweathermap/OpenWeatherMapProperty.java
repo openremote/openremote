@@ -20,11 +20,11 @@
 package org.openremote.agent.protocol.openweathermap;
 
 /*
- * These are the core weather fields that are returned by the OpenWeatherMap API
- * It is used by the {@link OpenWeatherMapAgentLink} to determine which field to use as the data source for
+ * These are the core weather properties that are returned by the OpenWeatherMap API
+ * It is used by the {@link OpenWeatherMapAgentLink} to determine which property to use as the data source for
  * updating the attribute.
  */
-public enum OpenWeatherMapField {
+public enum OpenWeatherMapProperty {
     TEMPERATURE,                            // Temperature
     ATMOSPHERIC_PRESSURE,                   // Atmospheric pressure
     HUMIDITY_PERCENTAGE,                    // Humidity percentage

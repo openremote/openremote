@@ -26,8 +26,8 @@ import org.openremote.model.asset.agent.AgentLink;
 public class OpenWeatherMapAgentLink extends AgentLink<OpenWeatherMapAgentLink> {
 
     @NotNull
-    @JsonPropertyDescription("The OpenWeatherMap weather field to use as a data source for the attribute")
-    private OpenWeatherMapField field;
+    @JsonPropertyDescription("Select which weather property (e.g. temperature, humidity) to use as the data source")
+    private OpenWeatherMapProperty weatherProperty;
 
     // For Hydrators
     protected OpenWeatherMapAgentLink() {
@@ -37,12 +37,12 @@ public class OpenWeatherMapAgentLink extends AgentLink<OpenWeatherMapAgentLink> 
         super(id);
     }
 
-    public OpenWeatherMapField getField() {
-        return field;
+    public OpenWeatherMapProperty getWeatherProperty() {
+        return weatherProperty;
     }
 
-    public OpenWeatherMapAgentLink setField(OpenWeatherMapField field) {
-        this.field = field;
+    public OpenWeatherMapAgentLink setWeatherProperty(OpenWeatherMapProperty weatherProperty) {
+        this.weatherProperty = weatherProperty;
         return this;
     }
 
