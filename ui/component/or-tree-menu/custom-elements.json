@@ -8,7 +8,7 @@
       "declarations": [
         {
           "kind": "class",
-          "description": "",
+          "description": "A component for displaying a hierarchical, tree-like structure of elements.\r\nCommon use cases are visualizing parent-child relationships, or for grouping elements together.",
           "name": "OrTreeMenu",
           "members": [
             {

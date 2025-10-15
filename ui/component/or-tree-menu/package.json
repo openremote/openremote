@@ -16,6 +16,7 @@
     "prepack": "npx rspack"
   },
   "author": "OpenRemote",
+  "repository": "https://github.com/openremote/openremote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@mdi/js": "^5.9.55",
