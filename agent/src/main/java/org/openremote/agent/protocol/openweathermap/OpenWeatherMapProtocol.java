@@ -54,8 +54,9 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
  * Protocol for integrating with the OpenWeatherMap One Call 3.0 API.
  * 
  * This protocol periodically fetches weather data from OpenWeatherMap for all
- * linked asset attributes, grouped by the asset that contains them. Each asset’s location
- * (latitude and longitude) is used to query the API once per asset.
+ * linked asset attributes, grouped by the asset that contains them. Each
+ * asset’s location (latitude and longitude) is used to query the API once per
+ * asset.
  * 
  * For each linked attribute:
  * <ul>
@@ -244,6 +245,9 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
         try (Response response = client.get().target(apiUrl).request().get()) {
             if (response.getStatus() == 200) {
                 return response.readEntity(OpenWeatherMapResponse.class);
+            } else if (response.getStatus() == 401) {
+                LOG.warning("API request was unauthorized, either the API key is invalid or the key does not have access to the One Call 3.0 API");
+                return null;
             } else {
                 LOG.warning("API request failed with status: " + response.getStatus());
                 return null;
