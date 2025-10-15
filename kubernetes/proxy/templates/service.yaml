@@ -4,14 +4,14 @@ metadata:
   name: {{ include "proxy.fullname" . }}
   labels:
     {{- include "proxy.labels" . | nindent 4 }}
-  {{- with .Values.service.annotations }}
+  {{- with .Values.service.http.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ .Values.service.http.type }}
   ports:
-    - port: {{ .Values.service.port }}
+    - port: {{ .Values.service.http.port }}
       targetPort: {{ .Values.or.httpPort }}
       protocol: TCP
       name: http
@@ -23,9 +23,25 @@ spec:
       targetPort: 8883
       protocol: TCP
       name: mqtts
-    - port: 8404
-      targetPort: 8404
-      protocol: TCP
-      name: metrics
   selector:
     {{- include "proxy.selectorLabels" . | nindent 4 }}
+---
+{{- if .Values.service.metrics.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: proxy-metrics
+  {{- with .Values.service.metrics.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.metrics.type }}
+  ports:
+    - name: metrics
+      port: {{ .Values.service.metrics.port }}
+      targetPort: 8404
+      protocol: TCP
+  selector:
+    {{- include "proxy.selectorLabels" . | nindent 4 }}
+{{- end }}

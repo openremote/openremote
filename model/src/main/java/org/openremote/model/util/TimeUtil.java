@@ -16,7 +16,10 @@
 
 package org.openremote.model.util;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.util.StdConverter;
 import org.openremote.model.Constants;
+import org.openremote.model.value.impl.PeriodAndDuration;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
@@ -106,5 +109,37 @@ public class TimeUtil {
             zonedDateTime = ((LocalDate) temporalAccessor).atStartOfDay(ZoneOffset.UTC);
         }
         return zonedDateTime.toInstant();
+    }
+
+    public static class ExtendedPeriodAndDuration extends PeriodAndDuration {
+        public ExtendedPeriodAndDuration(String str) {
+            super(str);
+            if (!SIMPLE.matcher(str).matches()) {
+                throw new IllegalArgumentException("Invalid ISO 8601 format");
+            }
+        }
+
+        public long toMillis() {
+            Period period = (getPeriod() != null ? getPeriod() : Period.ZERO);
+            Duration duration = (getDuration() != null ? getDuration() : Duration.ZERO);
+            return duration.plus(durationFromPeriod(period)).toMillis();
+        }
+
+        public Duration durationFromPeriod(Period period) {
+            Duration years = ChronoUnit.YEARS.getDuration().multipliedBy(period.getYears());
+            Duration months = ChronoUnit.MONTHS.getDuration().multipliedBy(period.getMonths());
+            Duration days = ChronoUnit.DAYS.getDuration().multipliedBy(period.getDays());
+            return years.plus(months).plus(days);
+        }
+    }
+
+    public static class PeriodAndDurationConverter extends StdConverter<JsonNode, ExtendedPeriodAndDuration> {
+        @Override
+        public ExtendedPeriodAndDuration convert(JsonNode value) {
+            if (value.isTextual()) {
+                return new ExtendedPeriodAndDuration(value.asText());
+            }
+            return null;
+        }
     }
 }

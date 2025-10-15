@@ -89,14 +89,16 @@ exit \$status
             // Add dependency on decrypt task for deployment installDist only if GFE_PASSWORD defined
             def password = System.env.GFE_PASSWORD
             if (password != null) {
-                Task decryptTask = getTasksByName("decryptFiles", false)[0]
-
-                try {
-                    def installDist = tasks.getByPath(":deployment:installDist")
-                    installDist.dependsOn decryptTask
-                    installDist.mustRunAfter(decryptTask)
-                } catch (Exception ex) {
-                    println("Failed to add decryptFiles task dependency: " + ex)
+                project(':deployment').afterEvaluate { deploymentProject ->
+                    try {
+                        def decryptTaskProvider = rootProject.tasks.named("decryptFiles")
+                        deploymentProject.tasks.named('installDist').configure { installDist ->
+                            installDist.dependsOn(decryptTaskProvider)
+                            installDist.mustRunAfter(decryptTaskProvider)
+                        }
+                    } catch (Exception ex) {
+                        println("Failed to add decryptFiles task dependency: " + ex)
+                    }
                 }
             }
         } else {
@@ -150,10 +152,15 @@ if (project == rootProject) {
     }
 }
 
-// Give test projects more memory (Gradle 5 reduced this to 512MB)
 subprojects {
+    // Give test tasks more memory (Gradle 5 reduced this to 512MB)
     tasks.withType(Test) {
         maxHeapSize = "2g"
+    }
+
+    // Give compiler tasks more memory
+    tasks.withType(GroovyCompile) {
+        groovyOptions.forkOptions.memoryMaximumSize = '2g' // Set max heap to 2 GB
     }
 }
 

@@ -62,6 +62,12 @@ service:
   mqtts:
     enabled: false
     annotations: {}
+  metrics:
+    enabled: true
+    # Service type, typically use ClusterIP for local deployment and LoadBalancer for cloud deployments
+    type: ClusterIP
+    port: 8405
+    annotations: {}
 
 # Expose an Ingress for direct HTTP(S) access to the manager, disable when using HA Proxy
 ingress:
