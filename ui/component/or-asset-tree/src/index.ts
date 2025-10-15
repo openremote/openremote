@@ -623,7 +623,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         if (!this._nodes) {
-            this._loadAssets().catch(e => console.warn(e));
+            this._loadAssets().catch(console.warn);
             return true;
         }
 
