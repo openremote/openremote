@@ -23,6 +23,7 @@
     "prepack": "npx tsc -b"
   },
   "author": "OpenRemote",
+  "repository": "https://github.com/openremote/openremote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@material/button": "^9.0.0",

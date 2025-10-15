@@ -1,6 +1,4 @@
 import type {Preview} from "@storybook/web-components";
-import { setStorybookHelpersConfig, type Options } from "@wc-toolkit/storybook-helpers";
-
 import './styles.css';
 
 
@@ -13,6 +11,9 @@ const preview: Preview = {
             }
         },
         docs: {
+            story: {
+                inline: false
+            },
             toc: {
                 disable: false,
                 headingSelector: "h2,h3"

@@ -29,7 +29,10 @@ export const ComponentDocs = (props) => {
             </div>
 
             {/* Description of the component */}
-            {customElements.description ? <p>{customElements.description}</p> : <i>Could not find description of the story. Please place a comment above the TypeScript class of the component.</i>}
+            {story.default?.parameters?.docs?.description || customElements.description
+                ? <p>{story.default?.parameters?.docs?.description ?? customElements.description}</p>
+                : <i>Could not find description of the story. Please place a comment above the TypeScript class of the component.</i>
+            }
 
             {/* Primary interactive example of this component */}
             {story.Primary ? <Canvas of={story.Primary}/> : <i>Could not find story. Please define a story, and export it as "Primary".</i>}
@@ -37,7 +40,7 @@ export const ComponentDocs = (props) => {
             {/* Examples section */}
             {story.examples?.length ? <div id="examples-section">
                 {story?.examples.map((s, index) => <div key={("Example" + index)}>
-                    <Markdown>{"### " + (s.name || ("Example " + index))}</Markdown>
+                    <Markdown>{"### " + (s.parameters?.title ?? s.name ?? ("Example " + index))}</Markdown>
                     {s.parameters?.summary ? <Markdown>{s.parameters?.summary}</Markdown> : null}
                     <Canvas of={s}></Canvas>
                 </div>)}
