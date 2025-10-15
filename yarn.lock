@@ -2328,6 +2328,7 @@ __metadata:
     "@storybook/addon-a11y": "npm:~9.1.10"
     "@storybook/addon-docs": "npm:~9.1.10"
     "@storybook/web-components": "npm:~9.1.10"
+    "@wc-toolkit/storybook-helpers": "npm:^9.0.1"
     lit: "npm:^3.3.1"
     storybook: "npm:~9.1.10"
     storybook-web-components-rsbuild: "npm:~2.1.2"
@@ -2367,6 +2368,7 @@ __metadata:
     "@rspack/core": "npm:^1.4.4"
     "@typescript-eslint/eslint-plugin": "npm:^5.9.0"
     "@typescript-eslint/parser": "npm:^5.9.0"
+    "@wc-toolkit/storybook-helpers": "npm:^9.0.1"
     cross-env: "npm:^7.0.3"
     css-loader: "npm:^7.1.2"
     eslint: "npm:^8.6.0"
@@ -3703,6 +3705,16 @@ __metadata:
     loupe: "npm:^3.1.4"
     tinyrainbow: "npm:^2.0.0"
   checksum: 10c0/024a9b8c8bcc12cf40183c246c244b52ecff861c6deb3477cbf487ac8781ad44c68a9c5fd69f8c1361878e55b97c10d99d511f2597f1f7244b5e5101d028ba64
+  languageName: node
+  linkType: hard
+
+"@wc-toolkit/storybook-helpers@npm:^9.0.1":
+  version: 9.0.1
+  resolution: "@wc-toolkit/storybook-helpers@npm:9.0.1"
+  peerDependencies:
+    lit: ^2.0.0 || ^3.0.0
+    storybook: ">=9.0.0-0 <10.0.0-0"
+  checksum: 10c0/70f57c869c1d58f9eaf09d1cdc841784ceb01f7154452808d736431d79ba8757817320668e703a5136fe0b64428bdae386cd5b4b9cbabcfe75321eb234695673
   languageName: node
   linkType: hard
 

@@ -17,8 +17,6 @@ export const ComponentDocs = (props) => {
     const customElements = getCustomElements(story.default.component, props?.elementsjson);
     if(!customElements) return (<i>Error: Could not parse custom-elements.json specification of the story.</i>)
 
-    console.log(props);
-    console.debug(story);
     return (
         <>
             <Title>{options.displayName || customElements.tagName || "Title"}</Title>
