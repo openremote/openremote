@@ -1829,7 +1829,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     public onEventsConnect() {
         this._connected = true;
-        this._loadAssets().catch(e => console.warn(e));
+        this._loadAssets().catch(console.warn);
     }
 
     public onEventsDisconnect() {
