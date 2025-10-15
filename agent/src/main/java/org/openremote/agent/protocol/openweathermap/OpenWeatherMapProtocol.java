@@ -54,7 +54,7 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
  * Protocol for integrating with the OpenWeatherMap One Call 3.0 API.
  * 
  * This protocol periodically fetches weather data from OpenWeatherMap for all
- * linked asset attributes, grouped by their parent asset. Each asset’s location
+ * linked asset attributes, grouped by the asset that contains them. Each asset’s location
  * (latitude and longitude) is used to query the API once per asset.
  * 
  * For each linked attribute:
