@@ -39,12 +39,9 @@ import io.undertow.server.handlers.RedirectHandler;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceManager;
-import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.ServletInfo;
 import io.undertow.util.HttpString;
 import jakarta.ws.rs.core.Application;
-import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebApplication;
@@ -62,11 +59,13 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.undertow.util.RedirectBuilder.redirect;
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 import static jakarta.ws.rs.core.UriBuilder.fromUri;
+import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.Constants.REALM_PARAM_NAME;
 import static org.openremote.model.util.ValueUtil.configureObjectMapper;
@@ -128,16 +127,24 @@ public class ManagerWebService extends WebService {
 
         initialised = true;
 
-       Application application = new WebApplication(container, apiClasses, apiSingletons);
-       ResteasyDeployment deployment = createResteasyDeployment(application, container.getService(IdentityService.class), true);
-       DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, API_PATH, "Manager HTTP API");
-
-        deploy(deploymentInfo);
-
-        addServletDeployment(container, deploymentInfo, true);
-        ResteasyDeployment resteasyDeployment = createResteasyDeployment(container, getApiClasses(), apiSingletons, true);
-
         // Serve REST API
+        Application APIApplication = new WebApplication(
+                container,
+                apiClasses,
+                Stream.of(
+                        devMode ? getStandardProviders(devMode) : getStandardProviders(devMode,
+                                getCORSAllowedOrigins(container),
+                                getString(container.getConfig(), OR_WEBSERVER_ALLOWED_METHODS, DEFAULT_CORS_ALLOW_ALL),
+                                getString(container.getConfig(), OR_WEBSERVER_EXPOSED_HEADERS, DEFAULT_CORS_ALLOW_ALL),
+                                DEFAULT_CORS_MAX_AGE,
+                                DEFAULT_CORS_ALLOW_CREDENTIALS),
+                        apiSingletons).flatMap(Collection::stream).toList());
+
+       ResteasyDeployment deployment = createResteasyDeployment(APIApplication, container.getService(IdentityService.class), true);
+       DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, API_PATH, "Manager HTTP API");
+       RequestHandler apiRequestHandler = deploy(deploymentInfo);
+
+
         HttpHandler apiHandler = createApiHandler(container, resteasyDeployment);
 
         if (apiHandler != null) {
@@ -251,9 +258,9 @@ public class ManagerWebService extends WebService {
                 )).security(List.of(new SecurityRequirement().addList("openid")));
 
         Info info = new Info()
-                .title("OpenRemote Manager REST API")
+                .title("OpenRemote Manager HTTP API")
                 .version("3.0.0")
-                .description("This is the documentation for the OpenRemote Manager HTTP REST API.  Please see the [documentation](https://docs.openremote.io) for more info.")
+                .description("This is the documentation for the OpenRemote Manager HTTP API.  Please see the [documentation](https://docs.openremote.io) for more info.")
                 .contact(new Contact().email("info@openremote.io"))
                 .license(new License().name("AGPL 3.0").url("https://www.gnu.org/licenses/agpl-3.0.en.html"));
 

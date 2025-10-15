@@ -23,14 +23,10 @@ import io.undertow.server.HttpHandler;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
-import io.undertow.servlet.api.ServletInfo;
 import io.undertow.util.HttpString;
-import org.jboss.resteasy.core.ResteasyDeploymentImpl;
-import org.jboss.resteasy.plugins.interceptors.CorsFilter;
-import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
+import jakarta.servlet.ServletException;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.container.security.IdentityProvider;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.*;
 import org.openremote.model.Constants;
@@ -38,20 +34,18 @@ import org.openremote.model.Container;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.http.HTTPMethod;
 import org.openremote.model.syslog.SyslogCategory;
+
+import jakarta.ws.rs.core.Application;
 import org.openremote.model.util.TextUtil;
 
-import jakarta.servlet.ServletException;
-import jakarta.ws.rs.core.Application;
-
 import java.util.*;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.lang.System.Logger.Level.INFO;
 import static org.openremote.container.web.WebService.*;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
@@ -75,17 +69,15 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerProtocol<T, U, V>, U extends AbstractHTTPServerAgent<U, T, V>, V extends AgentLink<?>> extends AbstractProtocol<U, V> {
 
     /**
-     * This is the default path prefix for all deployments. Should not be overridden unless you know what you are doing
-     * and there is a good reason to override.
+     * This is the path prefix for all HTTP server agent deployments
      */
-    public static final String DEFAULT_DEPLOYMENT_PATH_PREFIX = "/rest";
+    public static final String DEPLOYMENT_PATH_PREFIX = "/http_agent";
 
     /**
      * The regex used to validate the deployment path.
      */
     public static final Pattern PATH_REGEX = Pattern.compile("^[\\w/_]+$", Pattern.CASE_INSENSITIVE);
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractHTTPServerProtocol.class);
-    public static final HTTPMethod[] DEFAULT_ALLOWED_METHODS = HTTPMethod.values();
     protected WebService.DeploymentInstance deployment;
     protected Container container;
     protected boolean devMode;
@@ -115,16 +107,19 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
           container,
           null,
           Stream.of(
-             getStandardProviders(
-                devMode,
+             devMode ? getStandardProviders(devMode) : getStandardProviders(devMode,
                 agent.getAllowedOrigins().map(Set::of).orElse(null),
-                Optional.of(agent.getAllowedHTTPMethods()
-                   .orElse(DEFAULT_ALLOWED_METHODS)).map(Set::of).orElse(null)),
+                agent.getAllowedHTTPMethods().map(methods ->
+                        Arrays.stream(methods).map(Enum::name)
+                                .collect(Collectors.joining(","))).orElse(DEFAULT_CORS_ALLOW_ALL),
+                DEFAULT_CORS_ALLOW_ALL,
+                DEFAULT_CORS_MAX_AGE,
+                DEFAULT_CORS_ALLOW_CREDENTIALS),
              getApiSingletons()).flatMap(Collection::stream).toList());
 
         ResteasyDeployment deployment = createResteasyDeployment(application, identityService, secure);
         DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, deploymentPath, deploymentName);
-        deploy(deploymentInfo);
+        deploy(deploymentInfo, agent.getRealm());
     }
 
     @Override
@@ -138,22 +133,14 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
     abstract protected Set<Object> getApiSingletons();
 
     /**
-     * Get the path prefix to use for this protocol instance; should use {@value #DEFAULT_DEPLOYMENT_PATH_PREFIX} unless there
-     * is a good reason to override this.
-     */
-    protected String getDeploymentPathPrefix() {
-        return DEFAULT_DEPLOYMENT_PATH_PREFIX;
-    }
-
-    /**
-     * Deployment path will always be prefixed with {@link #getDeploymentPathPrefix()}; default implementation combines
-     * the prefix with the value of {@link AbstractHTTPServerAgent#DEPLOYMENT_PATH}, for example:
+     * Deployment path will always be prefixed with {@link #DEPLOYMENT_PATH_PREFIX}; and {@link Agent#getRealm()} then
+     * combines the prefix with the value of {@link AbstractHTTPServerAgent#DEPLOYMENT_PATH}, for example an agent in
+     * a realm called manufacturer:
      * <ul>
-     * <li>getDeploymentPathPrefix() = {@value #DEFAULT_DEPLOYMENT_PATH_PREFIX}</li>
      * <li>{@link AbstractHTTPServerAgent#DEPLOYMENT_PATH} = "complaints"</li>
      * </ul>
      * <p>
-     * Full path to deployment = "/rest/complaints"
+     * Full path to deployment = "{@value #DEPLOYMENT_PATH_PREFIX}/manufacturer/complaints"
      * <p>
      * If the {@link AbstractHTTPServerAgent#DEPLOYMENT_PATH} is missing or not a String or the generated path does
      * not match the {@link #PATH_REGEX} regex then an {@link IllegalArgumentException} will is thrown.
@@ -165,7 +152,7 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
                         new IllegalArgumentException(
                                 "Required deployment path attribute is missing or invalid: " + agent));
 
-        String deploymentPath = getDeploymentPathPrefix() + "/" + path;
+        String deploymentPath = DEPLOYMENT_PATH_PREFIX + "/" + agent.getRealm() + "/" + path;
 
         if (!PATH_REGEX.matcher(deploymentPath).find()) {
             throw new IllegalArgumentException(
@@ -182,14 +169,11 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
         return "HttpServerProtocol=" + getClass().getSimpleName() + ", Agent ID=" + agent.getId();
     }
 
-    protected void deploy(DeploymentInfo deploymentInfo) {
-        LOG.info("Deploying JAX-RS deployment for protocol instance : " + this);
+    public static WebService.RequestHandler deploy(DeploymentInfo deploymentInfo, String agentRealm) {
+        LOG.log(INFO, "Deploying JAX-RS deployment for protocol instance : " + this);
         DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
         manager.deploy();
         HttpHandler httpHandler;
-
-        // Get realm from owning agent asset
-        String agentRealm = agent.getRealm();
 
         if (TextUtil.isNullOrEmpty(agentRealm)) {
             throw new IllegalStateException("Cannot determine the realm that this agent belongs to");
@@ -215,33 +199,6 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
             deployment = new WebService.DeploymentInstance(deploymentInfo, requestHandler);
         } catch (ServletException e) {
             LOG.severe("Failed to deploy deployment: " + deploymentInfo.getDeploymentName());
-        }
-    }
-
-    protected void undeploy() {
-
-        if (deployment == null) {
-            LOG.info("Deployment doesn't exist for protocol instance: " + this);
-            return;
-        }
-
-        try {
-            LOG.info("Un-registering HTTP Server Protocol request handler '"
-                    + this.getClass().getSimpleName()
-                    + "' for request path: "
-                    + deployment.getDeploymentInfo().getContextPath());
-            webService.getRequestHandlers().remove(deployment.getRequestHandler());
-            DeploymentManager manager = Servlets.defaultContainer().getDeployment(deployment.getDeploymentInfo().getDeploymentName());
-            if (manager != null) {
-                manager.stop();
-                manager.undeploy();
-            }
-            Servlets.defaultContainer().removeDeployment(deployment.getDeploymentInfo());
-        } catch (Exception ex) {
-            LOG.log(Level.WARNING,
-                    "An exception occurred whilst un-deploying protocol instance: " + this,
-                    ex);
-            throw new RuntimeException(ex);
         }
     }
 
