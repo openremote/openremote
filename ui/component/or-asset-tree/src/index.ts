@@ -486,7 +486,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                   placeholder="${i18next.t("filter.filter")}..."
                                   compact="true"
                                   outlined="true"
-                                  @input="${debounce((e: KeyboardEvent) => {
+                                  @input="${debounce(() => {
                                       // Means some input is occurring so delay filter
                                       this._onFilterInput(this._filterInput.nativeValue);
                                   }, 200)}">
