@@ -618,7 +618,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         if (_changedProperties.has("assets")
             || _changedProperties.has("rootAssets")
             || _changedProperties.has("rootAssetIds")
-            || _changedProperties.has("queryLimit")) {
+            || _changedProperties.has("queryLimit")
+        ) {
             this.refresh();
         }
 
