@@ -17,6 +17,7 @@ const meta: Meta = {
     args: args,
     argTypes: argTypes,
     render: (args) => template(args),
+    excludeStories: /^[a-z].*/,
     parameters: {
         actions: {
             handles: events
