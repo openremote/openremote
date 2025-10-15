@@ -2142,7 +2142,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         if (treeNode.expanded && treeNode.children.length === 0) {
-            console.warn("Tree node has no children, collapsing it...");
+            console.debug("Tree node has no children, collapsing it...");
             treeNode.expanded = false;
         }
 
