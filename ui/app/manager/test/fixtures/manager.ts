@@ -13,6 +13,7 @@ import { AssetViewer } from "../../../../component/or-asset-viewer/test/fixtures
 import { CollapsiblePanel } from "../../../../component/or-components/test/fixtures";
 import { JsonForms } from "../../../../component/or-json-forms/test/fixtures";
 import { AssetTree } from "../../../../component/or-asset-tree/test/fixtures";
+import { type AxiosRequestConfig } from "axios";
 
 export const adminStatePath = path.join(__dirname, "data/.auth/admin.json");
 export const userStatePath = path.join(__dirname, "data/.auth/user.json");
@@ -117,7 +118,7 @@ export class Manager {
    * Expects a realm to be configured
    * @param config The axios request config
    */
-  async getClientRoles(config) {
+  async getClientRoles(config?: AxiosRequestConfig<any>) {
     try {
       const response = await rest.api.UserResource.getClientRoles(this.realm!, this.clientId, config);
       expect(response.status).toBe(200);
@@ -137,7 +138,7 @@ export class Manager {
    * @param roles The current stored roles to add the new role to
    * @param config The axios request config
    */
-  async createRole(newRole: Role, roles: Role[], config) {
+  async createRole(newRole: Role, roles: Role[], config?: AxiosRequestConfig<any>) {
     if (newRole.compositeRoleIds) {
       newRole.compositeRoleIds = newRole.compositeRoleIds
         .map((name) => roles.find((r) => r.name === name)?.id)
@@ -160,7 +161,7 @@ export class Manager {
    * @param user The user to create
    * @param config The axios request config
    */
-  async createUser(user: UserModel, config) {
+  async createUser(user: UserModel, config?: AxiosRequestConfig<any>) {
     try {
       const response = await rest.api.UserResource.create(this.realm!, user, config);
       expect(response.status).toBe(200);
@@ -177,7 +178,7 @@ export class Manager {
    * @param roles A list of roles to add to the user
    * @param config The axios request config
    */
-  async addUserRoles(roles: string[], config) {
+  async addUserRoles(roles: string[], config?: AxiosRequestConfig<any>) {
     try {
       const response = await rest.api.UserResource.updateUserClientRoles(
         this.realm!,
@@ -198,7 +199,7 @@ export class Manager {
    * Expects a realm and user to be configured
    * @param config The axios request config
    */
-  async resetUserPassword(config) {
+  async resetUserPassword(config?: AxiosRequestConfig<any>) {
     try {
       const response = await rest.api.UserResource.resetPassword(
         this.realm!,
@@ -217,7 +218,7 @@ export class Manager {
    * @param asset The asset to create
    * @param config The axios request config
    */
-  async createAsset(asset: Asset, config?: any) {
+  async createAsset(asset: Asset, config?: AxiosRequestConfig<any>) {
     if(!config) {
       const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
       config = { headers: { Authorization: `Bearer ${access_token}` } };
@@ -237,7 +238,7 @@ export class Manager {
    * @param asset The asset to update
    * @param config The axios request config
    */
-  async updateAsset(asset: Asset, config?: any) {
+  async updateAsset(asset: Asset, config?: AxiosRequestConfig<any>) {
       if(!config) {
         const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
         config = { ...(config || {}), headers: { Authorization: `Bearer ${access_token}` } };
@@ -297,7 +298,7 @@ export class Manager {
    * Deletes rules in the active realm
    * @param config The axios request config
    */
-  async deleteRealmRulesets(config) {
+  async deleteRealmRulesets(config?: AxiosRequestConfig<any>) {
     for (const [i, id] of this.rules.entries()) {
       try {
         const response = await rest.api.RulesResource.deleteRealmRuleset(id!, config);
@@ -313,7 +314,7 @@ export class Manager {
    * Deletes assets
    * @param config The axios request config
    */
-  async deleteAssets(config) {
+  async deleteAssets(config?: AxiosRequestConfig<any>) {
     const assetIds = this.assets.map(({ id }) => id!);
     try {
       const response = await rest.api.AssetResource.delete({ assetId: assetIds }, config);
