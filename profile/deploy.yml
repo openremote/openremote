@@ -464,6 +464,40 @@ services:
       # is set to false
       #OR_DISABLE_REINDEX=${OR_DISABLE_REINDEX:-false}
 
+  # Query Exporter - Prometheus metrics from PostgreSQL queries
+  # Uncomment this service to enable PostgreSQL metrics collection
+  # Documentation: https://github.com/albertodonato/query-exporter
+  query-exporter:
+    image: adonato/query-exporter:latest
+    restart: always
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      manager:
+        condition: service_healthy
+    volumes:
+      # Mount deployment-data volume containing config.yaml for query-exporter configuration
+      # Config file should be at: /deployment/query-exporter/config.yaml
+      - ../deployment/query-exporter:/config
+    ports:
+      - "0.0.0.0:9560:9560" # Metrics endpoint (localhost only by default)
+      # Uncomment to expose on private network:
+      # - "${PRIVATE_IP:-127.0.0.1}:9560:9560"
+    environment:
+      TZ: ${TZ:-Europe/Amsterdam}
+      # Database connection settings (matches postgresql service)
+      # These can be referenced in the config.yaml file using !env tag
+      POSTGRES_HOST: ${OR_DB_HOST:-postgresql}
+      POSTGRES_PORT: ${OR_DB_PORT:-5432}
+      POSTGRES_DB: ${OR_DB_NAME:-openremote}
+      POSTGRES_USER: ${OR_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${OR_DB_PASSWORD:-postgres}
+      # Bloat detection thresholds
+      TABLE_BLOAT_THRESHOLD: ${TABLE_BLOAT_THRESHOLD:-1.2}  # 1.2 = 20% table bloat
+      INDEX_BLOAT_THRESHOLD: ${INDEX_BLOAT_THRESHOLD:-1.5}  # 1.5 = 50% index bloat
+      # Point to config file in deployment volume
+      CONFIG_DIR: /config
+
   # Map tile server
   tileserver:
     image: openremote/tileserver:${TILESERVER_VERSION:-latest}
