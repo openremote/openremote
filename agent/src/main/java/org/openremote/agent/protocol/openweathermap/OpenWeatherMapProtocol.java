@@ -34,17 +34,21 @@ import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.asset.impl.WeatherAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.syslog.SyslogCategory;
 
 import jakarta.ws.rs.core.Response;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 
 import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 
 /**
  * Protocol for the OpenWeatherMap API (One Call 3.0 API)
@@ -128,8 +132,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
         if (event.getName().equals(OpenWeatherMapAgent.PROVISION_WEATHER_ASSET.getName())) {
             boolean provisionWeatherAsset = (Boolean) event.getValue().orElse(false);
             if (provisionWeatherAsset) {
-                LOG.info("Provisioning weather asset");
-
+                provisionWeatherAsset();
                 sendAttributeEvent(new AttributeEvent(agent.getId(), OpenWeatherMapAgent.PROVISION_WEATHER_ASSET.getName(), false));
             }
 
@@ -196,7 +199,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
                 try {
                     updateAttributes(attributeRefs, weatherData.getCurrent()); // current timestamp
                 } catch (Exception e) {
-                    LOG.log(Level.SEVERE, e, () -> "Failed to update attributes: " + attributeRefs);
+                    LOG.log(Level.WARNING, e, () -> "Failed to update attributes: " + attributeRefs);
                 }
 
                 // Update predicted data points with weather forecast
@@ -205,7 +208,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
                     // updatePredictedDataPoints(attributeRefs, weatherData.getDaily()); // daily
                     // data up to 8 days
                 } catch (Exception e) {
-                    LOG.log(Level.SEVERE, e, () -> "Failed to write predicted data points: " + attributeRefs);
+                    LOG.log(Level.WARNING, e, () -> "Failed to write predicted data points: " + attributeRefs);
                 }
             }
         });
@@ -228,7 +231,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
             }
         } catch (Exception e) {
             setConnectionStatus(ConnectionStatus.ERROR);
-            LOG.log(Level.SEVERE, e, () -> "Failed to fetch weather data");
+            LOG.log(Level.WARNING, e, () -> "Failed to fetch weather data");
             return null;
         }
     }
@@ -374,9 +377,62 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
                 return true;
             }
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, e, () -> "Failed to perform health check");
+            LOG.log(Level.WARNING, e, () -> "Failed to perform health check");
             return false;
         }
+    }
+
+    /**
+     * Provision a weather asset with the appropriate agent links, location needs to
+     * be manually configured after provisioning
+     */
+    protected void provisionWeatherAsset() {
+        WeatherAsset weatherAsset = new WeatherAsset("Weather");
+        weatherAsset.setParentId(agent.getId());
+        weatherAsset.setRealm(agent.getRealm());
+        weatherAsset.setId(UniqueIdentifierGenerator.generateId());
+
+        // Temperature
+        weatherAsset.getAttribute(WeatherAsset.TEMPERATURE).ifPresent(attribute -> attribute
+                .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setField(OpenWeatherMapField.TEMPERATURE))));
+
+        // Humidity
+        weatherAsset.getAttribute(WeatherAsset.HUMIDITY).ifPresent(attribute -> attribute
+                .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setField(OpenWeatherMapField.HUMIDITY_PERCENTAGE))));
+
+        // Atmospheric Pressure
+        weatherAsset.getAttribute(WeatherAsset.ATMOSPHERIC_PRESSURE).ifPresent(attribute -> attribute
+                .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setField(OpenWeatherMapField.ATMOSPHERIC_PRESSURE))));
+
+        // Wind Speed
+        weatherAsset.getAttribute(WeatherAsset.WIND_SPEED).ifPresent(attribute -> attribute
+                .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setField(OpenWeatherMapField.WIND_SPEED))));
+
+        // Wind Direction
+        weatherAsset.getAttribute(WeatherAsset.WIND_DIRECTION).ifPresent(attribute -> attribute
+                .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setField(OpenWeatherMapField.WIND_DIRECTION_DEGREES))));
+
+        // Wind Gust Speed
+        weatherAsset.getAttribute(WeatherAsset.WIND_GUST_SPEED).ifPresent(attribute -> attribute
+                .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setField(OpenWeatherMapField.WIND_GUST_SPEED))));
+
+        // Cloud Coverage
+        weatherAsset.getAttribute(WeatherAsset.CLOUD_COVERAGE).ifPresent(attribute -> attribute
+                .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setField(OpenWeatherMapField.CLOUD_COVERAGE))));
+
+        // Probability of Precipitation
+        weatherAsset.getAttribute(WeatherAsset.PROBABILITY_OF_PRECIPITATION).ifPresent(attribute -> attribute.addOrReplaceMeta(
+                new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setField(OpenWeatherMapField.PROBABILITY_OF_PRECIPITATION))));
+
+        // Rain Amount
+        weatherAsset.getAttribute(WeatherAsset.RAINFALL).ifPresent(attribute -> attribute
+                .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setField(OpenWeatherMapField.RAIN_AMOUNT))));
+
+        // Ultraviolet Index
+        weatherAsset.getAttribute(WeatherAsset.UV_INDEX).ifPresent(attribute -> attribute
+                .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setField(OpenWeatherMapField.ULTRAVIOLET_INDEX))));
+
+        assetService.mergeAsset(weatherAsset);
     }
 
     /**
