@@ -396,7 +396,7 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
 
         and: "the predicted data points should be written"
         conditions.eventually {
-            // We expect 3 predicted datapoints (response has 2, but 3 unique timestamps)
+            // We expect 3 predicted datapoints (response has 4, but 3 unique timestamps)
             assert assetPredictedDatapointService.getDatapoints(new AttributeRef(weatherAsset2.id, WeatherAsset.TEMPERATURE.name)).size() == 3
             assert assetPredictedDatapointService.getDatapoints(new AttributeRef(weatherAsset2.id, WeatherAsset.HUMIDITY.name)).size() == 3
             assert assetPredictedDatapointService.getDatapoints(new AttributeRef(weatherAsset2.id, WeatherAsset.ATMOSPHERIC_PRESSURE.name)).size() == 3
