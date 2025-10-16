@@ -65,9 +65,16 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
                 case "api.openweathermap.org":
                     if (requestUri.path.startsWith("/data/3.0/onecall")) {
                     def now = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS)
-
-                    // Mock response from the OpenWeatherMap API (One Call 3.0 API)
-                    def content = """{
+                    
+                    // Extract location from query parameters
+                    def queryParams = requestUri.query.split("&")
+                    def lat = queryParams.find { it.startsWith("lat=") }?.split("=")[1]
+                    def lon = queryParams.find { it.startsWith("lon=") }?.split("=")[1]
+                    
+                    def content
+                    if (lat == "52.3676" && lon == "4.9041") {
+                        // Amsterdam weather data
+                        content = """{
                         "current": {
                             "dt": ${now.toEpochSecond(ZoneOffset.UTC)},
                             "temp": 15.5,
@@ -138,6 +145,81 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
                             }
                         ]
                     }"""
+                    
+                    } else if (lat == "51.5072" && lon == "-0.1276") {
+                        // London weather data (different values)
+                        content = """{
+                        "current": {
+                            "dt": ${now.toEpochSecond(ZoneOffset.UTC)},
+                            "temp": 12.3,
+                            "pressure": 1008,
+                            "humidity": 78,
+                            "wind_speed": 4.5,
+                            "wind_deg": 220,
+                            "wind_gust": 5.2,
+                            "clouds": 45,
+                            "uvi": 1.8,
+                            "pop": 0.3,
+                            "rain": {"1h": 1.2}
+                        },
+                        "hourly": [
+                            {
+                                "dt": ${now.toEpochSecond(ZoneOffset.UTC)},
+                                "temp": 12.3,
+                                "pressure": 1008,
+                                "humidity": 78,
+                                "wind_speed": 4.5,
+                                "wind_deg": 220,
+                                "wind_gust": 5.2,
+                                "clouds": 45,
+                                "uvi": 1.8,
+                                "pop": 0.3,
+                                "rain": {"1h": 1.2}
+                            },
+                            {
+                                "dt": ${now.plusHours(1).toEpochSecond(ZoneOffset.UTC)},
+                                "temp": 11.8,
+                                "pressure": 1007,
+                                "humidity": 82,
+                                "wind_speed": 5.1,
+                                "wind_deg": 225,
+                                "wind_gust": 5.8,
+                                "clouds": 60,
+                                "uvi": 1.5,
+                                "pop": 0.4,
+                                "rain": {"1h": 0.8}
+                            }
+                        ],
+                        "daily": [
+                            {
+                                "dt": ${now.toEpochSecond(ZoneOffset.UTC)},
+                                "temp": {"day": 14.2, "min": 8.5, "max": 16.0, "night": 10.0, "eve": 13.0, "morn": 9.0},
+                                "pressure": 1008,
+                                "humidity": 78,
+                                "wind_speed": 4.5,
+                                "wind_deg": 220,
+                                "wind_gust": 5.2,
+                                "clouds": 45,
+                                "uvi": 1.8,
+                                "pop": 0.3,
+                                "rain": 1.2
+                            },
+                            {
+                                "dt": ${now.plusDays(1).toEpochSecond(ZoneOffset.UTC)},
+                                "temp": {"day": 13.8, "min": 7.2, "max": 15.5, "night": 9.5, "eve": 12.5, "morn": 8.5},
+                                "pressure": 1005,
+                                "humidity": 85,
+                                "wind_speed": 4.8,
+                                "wind_deg": 230,
+                                "wind_gust": 6.1,
+                                "clouds": 70,
+                                "uvi": 1.6,
+                                "pop": 0.5,
+                                "rain": 2.1
+                            }
+                        ]
+                    }"""
+                    }
                     
                     def responseBody = ValueUtil.JSON.readValue(content, OpenWeatherMapResponse.class)
                     requestContext.abortWith(
@@ -233,15 +315,15 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
         }
 
         when: "the weather asset has its location set"
-        weatherAsset.setLocation(new GeoJSONPoint(5.46108d, 51.44593d))
+        weatherAsset.setLocation(new GeoJSONPoint(4.9041d, 52.3676d))
         weatherAsset = assetStorageService.merge(weatherAsset)
 
         then: "the weather asset should have its location set"
         conditions.eventually {
             weatherAsset = assetStorageService.find(weatherAsset.id)
             assert weatherAsset != null
-            assert weatherAsset.getLocation().map{it.x}.orElse(null) == 5.46108d
-            assert weatherAsset.getLocation().map{it.y}.orElse(null) == 51.44593d
+            assert weatherAsset.getLocation().map{it.x}.orElse(null) == 4.9041d
+            assert weatherAsset.getLocation().map{it.y}.orElse(null) == 52.3676d
         }
 
         when: "a weather update is triggered and the weather asset now has a location set"
