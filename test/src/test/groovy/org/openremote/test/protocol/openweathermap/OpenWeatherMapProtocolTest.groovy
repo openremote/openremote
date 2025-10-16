@@ -326,10 +326,10 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
             assert weatherAsset.getLocation().map{it.y}.orElse(null) == 52.3676d
         }
 
-        when: "a weather update is triggered and the weather asset now has a location set"
+        when: "a weather update is triggered"
         protocol.updateAllLinkedAttributes()
 
-        then: "the weather data should be updated with current values"
+        then: "the weather data should be updated with current values according to the asset's location"
         conditions.eventually {
             weatherAsset = assetStorageService.find(weatherAsset.id)
             assert weatherAsset.getAttribute(WeatherAsset.TEMPERATURE).get().getValue().orElse(null) == 15.5d
@@ -359,6 +359,57 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
             assert assetPredictedDatapointService.getDatapoints(new AttributeRef(weatherAsset.id, WeatherAsset.UV_INDEX.name)).size() == 3
         }
 
+        when: "another weather asset is provisioned with a different location"
+        def weatherAsset2 = protocol.provisionWeatherAsset()
+        weatherAsset2.setLocation(new GeoJSONPoint(-0.1276d, 51.5072d))
+        weatherAsset2 = assetStorageService.merge(weatherAsset2)
+
+        then: "the weather asset should be available and have its location set"
+        conditions.eventually {
+            weatherAsset2 = assetStorageService.find(weatherAsset2.id)
+            assert weatherAsset2 != null
+            assert weatherAsset2.id != null
+            assert weatherAsset2.name == "Weather"
+            assert weatherAsset2.realm == agent.realm
+            assert weatherAsset2.parentId == agent.id
+            assert weatherAsset2.getLocation().map{it.x}.orElse(null) == -0.1276d
+            assert weatherAsset2.getLocation().map{it.y}.orElse(null) == 51.5072d
+        }
+
+        when: "a weather update is triggered"
+        protocol.updateAllLinkedAttributes()
+
+        then: "the weather data should be updated with current values according to the asset's location"
+        conditions.eventually {
+            weatherAsset2 = assetStorageService.find(weatherAsset2.id)
+            assert weatherAsset2.getAttribute(WeatherAsset.TEMPERATURE).get().getValue().orElse(null) == 12.3d
+            assert weatherAsset2.getAttribute(WeatherAsset.HUMIDITY).get().getValue().orElse(null) == 78
+            assert weatherAsset2.getAttribute(WeatherAsset.ATMOSPHERIC_PRESSURE).get().getValue().orElse(null) == 1008
+            assert weatherAsset2.getAttribute(WeatherAsset.WIND_SPEED).get().getValue().orElse(null) == 4.5d
+            assert weatherAsset2.getAttribute(WeatherAsset.WIND_DIRECTION).get().getValue().orElse(null) == 220
+            assert weatherAsset2.getAttribute(WeatherAsset.WIND_GUST_SPEED).get().getValue().orElse(null) == 5.2d
+            assert weatherAsset2.getAttribute(WeatherAsset.CLOUD_COVERAGE).get().getValue().orElse(null) == 45
+            assert weatherAsset2.getAttribute(WeatherAsset.PROBABILITY_OF_PRECIPITATION).get().getValue().orElse(null) == 0.3d
+            assert weatherAsset2.getAttribute(WeatherAsset.RAINFALL).get().getValue().orElse(null) == 1.2d
+            assert weatherAsset2.getAttribute(WeatherAsset.UV_INDEX).get().getValue().orElse(null) == 1.8d
+        }
+
+        and: "the predicted data points should be written"
+        conditions.eventually {
+            // We expect 3 predicted datapoints (response has 2, but 3 unique timestamps)
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(weatherAsset2.id, WeatherAsset.TEMPERATURE.name)).size() == 3
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(weatherAsset2.id, WeatherAsset.HUMIDITY.name)).size() == 3
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(weatherAsset2.id, WeatherAsset.ATMOSPHERIC_PRESSURE.name)).size() == 3
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(weatherAsset2.id, WeatherAsset.WIND_SPEED.name)).size() == 3
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(weatherAsset2.id, WeatherAsset.WIND_DIRECTION.name)).size() == 3
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(weatherAsset2.id, WeatherAsset.WIND_GUST_SPEED.name)).size() == 3
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(weatherAsset2.id, WeatherAsset.CLOUD_COVERAGE.name)).size() == 3
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(weatherAsset2.id, WeatherAsset.PROBABILITY_OF_PRECIPITATION.name)).size() == 3
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(weatherAsset2.id, WeatherAsset.RAINFALL.name)).size() == 3
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(weatherAsset2.id, WeatherAsset.UV_INDEX.name)).size() == 3
+        }
+
+        
         cleanup: "remove mock client"
         if (OpenWeatherMapProtocol.client.get() != null) {
             OpenWeatherMapProtocol.client.set(null)
