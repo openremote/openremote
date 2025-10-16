@@ -105,7 +105,7 @@ tasks.register('publishUi') {
 
 tasks.register('installDist', Copy) {
     dependsOn(npmBuild)
-    mustRunAfter(resolveTask(":ui:npmAnalyze"))
+    dependsOn subprojects.collect { it.tasks.matching { it.name == 'npmAnalyze' } }
     mustRunAfter(resolveTask(":manager:installDist"))
     from layout.projectDirectory.dir("dist")
     into project(':manager').layout.buildDirectory.dir("install/manager/web/${project.name}")
