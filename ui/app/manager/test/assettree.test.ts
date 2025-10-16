@@ -343,9 +343,9 @@ test(`Deleting an asset properly keeps the tree and viewer in tact`, async ({ pa
     await expect(assetTree.getChildNodes(cityAsset1)).toHaveCount(assets.length / 2 - 1);
     await expect(assetTree.getChildNodes(cityAsset2)).toHaveCount(assets.length / 2);
     await expect(assetTree.getAssetNodes()).toHaveCount(1 + 9 + 1 + 10 + 1);
-    await expect(page.locator('or-asset-tree li.asset-list-element [data-expandable]')).toHaveCount(3);
-    await expect(page.locator('or-asset-tree li.asset-list-element[data-expanded] [data-expandable]')).toHaveCount(2);
-    await expect(page.locator('or-asset-viewer or-translate')).toHaveAttribute('value', 'noAssetSelected');
+    await expect(page.locator('or-asset-tree [data-expandable]')).toHaveCount(3);
+    await expect(page.locator('or-asset-tree [data-expanded] [data-expandable]')).toHaveCount(2);
+    await expect(page.locator('or-asset-viewer', { hasText: "Please select an asset on the left"})).toBeVisible();
 })
 
 /**
