@@ -343,11 +343,13 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
         case CLOUD_COVERAGE:
             return weatherData.getClouds();
         case WIND_SPEED:
-            return weatherData.getWindSpeed();
+            // Convert m/s to km/h: m/s * 3.6 = km/h
+            return weatherData.getWindSpeed() * 3.6;
         case WIND_DIRECTION_DEGREES:
             return weatherData.getWindDegrees();
         case WIND_GUST_SPEED:
-            return weatherData.getWindGust();
+            // Convert m/s to km/h: m/s * 3.6 = km/h
+            return weatherData.getWindGust() * 3.6;
         case PROBABILITY_OF_PRECIPITATION:
             return weatherData.getPop();
         case ULTRAVIOLET_INDEX:
