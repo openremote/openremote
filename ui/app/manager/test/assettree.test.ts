@@ -129,7 +129,7 @@ test(`Search for and select the battery asset`, async ({ page, manager, assetTre
     await manager.setup("smartcity", { assets: [batteryAsset, electricityAsset] });
     await manager.goToRealmStartPage("smartcity");
     await assetsPage.goto();
-    await assetTree.fillFilterInput(batteryAsset.name);
+    await assetTree.getFilterInput().fill(batteryAsset.name);
     await expect(assetTree.getAssetNodes()).toHaveCount(1);
     await page.click(`text=${batteryAsset.name}`);
     await expect(page.locator(`#asset-header`, { hasText: batteryAsset.name })).toBeVisible();
@@ -150,7 +150,7 @@ test(`Search by Asset ID and select the battery asset`, async ({ page, manager, 
     expect(id).toBeDefined();
     await manager.goToRealmStartPage("smartcity");
     await manager.navigateToTab("asset");
-    await assetTree.fillFilterInput(id!);
+    await assetTree.getFilterInput().fill(id!);
     await expect(assetTree.getAssetNodes()).toHaveCount(1);
     await page.click(`text=${batteryAsset.name}`);
     await expect(page.locator(`#asset-header`, { hasText: batteryAsset.name })).toBeVisible();
@@ -368,7 +368,7 @@ test(`Searching for an asset and removing it keeps the tree and viewer in tact`,
     // Fill in "Battery 10", and expect that single asset + parent to show up
     const battery10 = batteryAssets[batteryAssets.length - 1];
     await expect(assetTree.getAssetNodes()).toHaveCount(3); // 2 parent assets + 1 console group
-    await assetTree.fillFilterInput(battery10.name!);
+    await assetTree.getFilterInput().fill(battery10.name!);
     await expect(assetTree.getAssetNodes()).toContainText([parentAssets[0].name!, battery10.name!]);
     await expect(assetTree.getAssetNodes()).toHaveCount(2); // Parent asset + child battery asset
     await page.click(`text=${battery10.name}`);
@@ -378,7 +378,7 @@ test(`Searching for an asset and removing it keeps the tree and viewer in tact`,
     // Fill in "Electricity meter 1", and expect that single asset + "Electricity meter 10", and their parent to show up"
     const meter1 = electricityAssets[0];
     const meter10 = electricityAssets[electricityAssets.length - 1];
-    await assetTree.fillFilterInput(meter1.name!);
+    await assetTree.getFilterInput().fill(meter1.name!);
     await expect(assetTree.getAssetNodes()).toContainText([parentAssets[1].name!, meter1.name!]);
     await expect(assetTree.getAssetNodes()).toHaveCount(2 + 1); // Parent asset + the two electricity meter assets
 
@@ -389,7 +389,7 @@ test(`Searching for an asset and removing it keeps the tree and viewer in tact`,
     await expect(assetTree.getAssetNodes()).toHaveCount(1 + 1); // Only parent + "Electricity meter 10" are visible now.
 
     // We now clear the filter, and try to delete "Battery 10" from earlier as well
-    await assetTree.fillFilterInput(battery10.name!);
+    await assetTree.getFilterInput().fill(battery10.name!);
     await expect(assetTree.getAssetNodes()).toContainText([parentAssets[0].name!, battery10.name!]);
     await expect(assetTree.getAssetNodes()).toHaveCount(2); // Parent asset + child electricity asset
     await assetsPage.deleteSelectedAsset(manager, battery10.name!, assetTree.getSelectedNodes());

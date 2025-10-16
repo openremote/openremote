@@ -12,14 +12,6 @@ export class AssetTree {
     }
 
     /**
-     * Fills the filter input with the supplied text
-     * @param text - Text to filter nodes by
-     */
-    fillFilterInput(text: string) {
-        return this.page.fill(`or-asset-tree #filterInput input[type="text"]`, text);
-    }
-
-    /**
      * Returns a locator of all nodes that contain assets
      */
     getAssetNodes() {
