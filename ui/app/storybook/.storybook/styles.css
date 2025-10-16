@@ -1,0 +1,5 @@
+.badge-section {
+    display: flex;
+    align-items: start;
+    gap: 4px;
+}
