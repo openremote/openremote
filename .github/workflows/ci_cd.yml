@@ -530,7 +530,7 @@ jobs:
         id: translation-processor-command
         shell: bash
         run: |
-            echo "value=./gradlew -p ui/app/shared runModelProcessor --no-parallel" >> $GITHUB_OUTPUT
+            echo "value=./gradlew -p ui/app/shared processTranslations --no-parallel" >> $GITHUB_OUTPUT
 
       - name: Login to DockerHub
         if: ${{ steps.manager-docker-command.outputs.pushToDockerHub == 'true' }}

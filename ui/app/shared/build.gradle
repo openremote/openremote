@@ -87,7 +87,7 @@ tasks.register('installDist', Copy) {
     into project(':manager').layout.buildDirectory.dir("install/manager/web/${project.name}")
 }
 
-tasks.register('runModelProcessor') {
+tasks.register('processTranslations') {
     dependsOn(":model:classes")
     doLast {
         def compiler = ToolProvider.systemJavaCompiler
