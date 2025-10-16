@@ -72,6 +72,7 @@ signing {
 tasks.register('npmBuild', Exec) {
     mustRunAfter npmClean
     dependsOn getYarnInstallTask()
+    dependsOn getRootProject().getSubprojects().collect { it.tasks.matching { it.name == 'npmAnalyze' } }
     commandLine npmCommand("yarn"), "run", "build"
 }
 
@@ -105,7 +106,6 @@ tasks.register('publishUi') {
 
 tasks.register('installDist', Copy) {
     dependsOn(npmBuild)
-    dependsOn subprojects.collect { it.tasks.matching { it.name == 'npmAnalyze' } }
     mustRunAfter(resolveTask(":manager:installDist"))
     from layout.projectDirectory.dir("dist")
     into project(':manager').layout.buildDirectory.dir("install/manager/web/${project.name}")
