@@ -29,7 +29,7 @@
     "@openremote/core": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "ace-builds": "^1.41.0",
-    "lit": "^2.0.2",
+    "lit": "^3.3.1",
     "simplebar": "^5.3.6"
   },
   "devDependencies": {

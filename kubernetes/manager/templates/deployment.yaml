@@ -112,9 +112,6 @@ spec:
             - name: OR_MAP_SETTINGS_PATH
               value: "{{ .Values.or.mapSettingsPath }}"
 
-            - name: OR_RULE_EVENT_EXPIRES
-              value: "{{ .Values.or.ruleEventExpires }}"
-
             - name: OR_IDENTITY_PROVIDER
               value: "{{ .Values.or.identityProvider }}"
             - name: OR_IDENTITY_SESSION_MAX_MINUTES

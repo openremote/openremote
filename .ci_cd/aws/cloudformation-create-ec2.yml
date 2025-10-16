@@ -29,7 +29,7 @@ Parameters:
   Host:
     Description: FQDN for host
     Type: String
-    #AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
+    # AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
     Default: ""
   VpcId:
     Description: VPC ID in which to create instance
@@ -70,7 +70,7 @@ Parameters:
   DNSHostedZoneName:
     Description: Name of hosted domain zone to insert host A record into
     Type: String
-    #AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
+    # AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
     ConstraintDescription: Must be a valid FQDN
     Default: ""
   DNSHostedZoneRoleArn:
@@ -78,10 +78,10 @@ Parameters:
     Type: String
     Default: ""
   DLMExecutionRoleArn:
-    Description: Role ARN for executing the DLM operations
+    Description: Role ARN that can be assumed for executing DLM operations
     Type: String
   SnapshotId:
-    Description: Snapshot ID to create the EBS data volume based of an existing snapshot
+    Description: Snapshot ID to create EBS data volume based on an existing snapshot
     Type: String
     Default: ""
   ElasticIP:
@@ -99,11 +99,11 @@ Parameters:
       - false
     Default: false
   RootDiskSize:
-    Description: Root EBS volume size GB
+    Description: Size of the EBS root volume (in GB)
     Type: Number
     Default: 16
   DataDiskSize:
-    Description: Amount of storage you want to provision for this EBS data volume
+    Description: Size of the EBS data volume (in GB)
     Type: Number
     Default: 16
   HealthChecks:
@@ -836,8 +836,8 @@ Resources:
       ImageId: !If [UseAMIID, !Ref ImageAMI, !Ref ImageId]
       SubnetId: !Ref SubnetId
       SecurityGroupIds:
-        - Ref: SSHSecurityGroupId
-        - Ref: StandardSecurityGroup
+        - !Ref SSHSecurityGroupId
+        - !Ref StandardSecurityGroup
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
@@ -881,6 +881,7 @@ Resources:
 
   EBSDataVolume:
     Type: AWS::EC2::Volume
+    DeletionPolicy: Snapshot
     Properties:
       AvailabilityZone: !GetAtt EC2Instance.AvailabilityZone
       Size: !Ref DataDiskSize
@@ -891,7 +892,6 @@ Resources:
           Value: !Sub ${Host}-data
         - Key: Type
           Value: !Sub ${Host}-or-data-not-in-use
-    DeletionPolicy: Snapshot
 
   # DLM Policy for automatic snapshot creation
 
@@ -900,7 +900,10 @@ Resources:
     DependsOn: EBSDataVolume
     Properties:
       ExecutionRoleArn: !Ref DLMExecutionRoleArn
-      Description: 'or-data'
+      Description: !Join 
+        - ''
+        - - 'Docker Volumes from instance '
+          - !Ref EC2Instance
       State: ENABLED
       PolicyDetails:
         PolicyLanguage: STANDARD
@@ -912,18 +915,22 @@ Resources:
           - VOLUME
         Schedules:
           - Name: Daily Backup
+            CopyTags: true
             CreateRule:
-              Interval: 24
-              IntervalUnit: HOURS
-              Times:
-              - '05:00'
+              CronExpression: 'cron(0 3 * * ? * )'
             RetainRule:
-              Count: 5
+              Count: 7
+          - Name: Weekly Backup
+            CopyTags: true
+            CreateRule:
+              CronExpression: 'cron(0 3 ? * MON * )'
+            RetainRule:
+              Count: 4
       Tags:
         - Key: Name
           Value: !Ref Host
 
-  # Telemetry and Alarms.
+  # Telemetry and Alarms
 
   EmailSubscription:
     Condition: CreateHealthChecks

@@ -126,13 +126,11 @@ public class MapService implements ContainerService {
         mapConfiguration.sources.clear();
         mapConfiguration.sources.put("vector_tiles", ValueUtil.JSON.convertValue(vectorTiles, MapSourceConfig.class));
 
-        Iterator<Map.Entry<String, JsonNode>> fields = sources.fields();
-        while (fields.hasNext()) {
-            Map.Entry<String, JsonNode> field = fields.next();
-            if (!Objects.equals(field.getKey(), "vector_tiles")) {
+        sources.propertyStream()
+            .filter(field -> !Objects.equals(field.getKey(), "vector_tiles"))
+            .forEach(field -> {
                 mapConfiguration.sources.put(field.getKey(), ValueUtil.JSON.convertValue(field.getValue(), MapSourceConfig.class));
-            }
-        }
+            });
 
         mapConfig.remove("override");
         if (mapConfiguration.override != null) {
@@ -611,13 +609,12 @@ public class MapService implements ContainerService {
     public void saveMapMetadata(Metadata metadata) {
         Optional<JsonNode> options = Optional.ofNullable(mapConfig.get("options"));
         if (metadata.isValid() && options.isPresent()) {
-            Iterator<Map.Entry<String, JsonNode>> fields = options.get().fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> field = fields.next();
-                ObjectNode value = (ObjectNode)field.getValue();
-                value.set("center", metadata.getCenter());
-                value.set("bounds", metadata.getBounds());
-            }
+            options.get().propertyStream()
+                .forEach(field -> {
+                    ObjectNode value = (ObjectNode)field.getValue();
+                    value.set("center", metadata.getCenter());
+                    value.set("bounds", metadata.getBounds());
+                });
             configurationService.saveMapConfig(mapConfig);
             mapConfig = configurationService.getMapConfig();
             mapSettings.clear();

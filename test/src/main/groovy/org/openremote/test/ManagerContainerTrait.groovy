@@ -80,6 +80,14 @@ trait ManagerContainerTrait extends ContainerTrait {
         withClockOf(container) { it.stop() }
     }
 
+    void resetPseudoClockAt() {
+        withClockOf(container) { it.reset() }
+    }
+
+    void stopPseudoClockAt(long amount) {
+        withClockOf(container) { it.stopAtTime(amount) }
+    }
+
     void startPseudoClock() {
         withClockOf(container) { it.start() }
     }

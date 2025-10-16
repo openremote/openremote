@@ -67,7 +67,7 @@ import static org.openremote.model.attribute.AttributeWriteFailure.*;
  * <p>
  * <h2>Rules Service processing logic</h2>
  * <p>
- * Checks if attribute has {@link MetaItemType#RULE_STATE} and/or {@link MetaItemType#RULE_EVENT} {@link MetaItem}s,
+ * Checks if attribute has {@link MetaItemType#RULE_STATE},
  * and if so the message is passed through the rule engines that are in scope for the asset.
  * <p>
  * <h2>Asset Storage Service processing logic</h2>

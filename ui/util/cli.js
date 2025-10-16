@@ -29,7 +29,7 @@ function getGradleDirectory() {
 if (process.argv.length >= 3 && process.argv[2] =="watch") {
 
     // Do watch
-    let cwd = getWorkingDirectory();
+    let cwd = getGradleDirectory();
     console.log("Watching model for changes...");
     const child = spawn((process.platform === "win32" ? "gradlew" : "./gradlew"), ["-t", "modelWatch"], {
         cwd: cwd,

@@ -48,7 +48,7 @@ public class Gateway {
      * @return Credentials that can be used to authenticate to the IKEA TRÅDFRI gateway
      */
     public Credentials connect(String securityCode) {
-        String identity = RandomStringUtils.randomAlphanumeric(16);
+        String identity = RandomStringUtils.insecure().nextAlphanumeric(16);
         AuthenticateRequest request = new AuthenticateRequest();
         request.setIdentity(identity);
         setCredentials("Client_identity", securityCode);

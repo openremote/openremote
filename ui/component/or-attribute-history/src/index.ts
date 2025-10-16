@@ -438,15 +438,15 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             hideOverlap: true,
                             fontSize: 10,
                             formatter: {
-                                year: '{yyyy}-{MMM}',
-                                month: '{yy}-{MMM}',
-                                day: '{d}-{MMM}',
-                                hour: '{HH}:{mm}',
-                                minute: '{HH}:{mm}',
-                                second: '{HH}:{mm}:{ss}',
-                                millisecond: '{d}-{MMM} {HH}:{mm}',
+                                year: "1-{MMM}-{yyyy}",
+                                month: "1-{MMM}-'{yy}",
+                                day: "{d}-{MMM}",
+                                hour: "{HH}:{mm}",
+                                minute: "{HH}:{mm}",
+                                second: "{HH}:{mm}:{ss}",
+                                millisecond: "{d}-{MMM} {HH}:{mm}",
                                 // @ts-ignore
-                                none: '{MMM}-{dd} {HH}:{mm}'
+                                none: "{MMM}-{dd} {HH}:{mm}"
                             }
                         }
                     },

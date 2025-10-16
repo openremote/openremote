@@ -22,7 +22,7 @@
     "@openremote/core": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "lit": "^3.2.1"
+    "lit": "^3.3.1"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*"

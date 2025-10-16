@@ -1246,9 +1246,9 @@ export class OrAttributeBarChart extends LitElement {
                     interval: this._intervalConfig?.millis,
                     fontSize: 10,
                     formatter: {
-                        year: "{yyyy}",
-                        month: "{MMMM} '{yy}",
-                        day: "{MMM} {d}th",
+                        year: "1-{MMM}-{yyyy}",
+                        month: "1-{MMM}-'{yy}",
+                        day: "{d}-{MMM}",
                         hour: "{HH}:{mm}",
                         minute: "{HH}:{mm}",
                         second: "{HH}:{mm}:{ss}",

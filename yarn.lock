@@ -503,7 +503,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lit-labs/ssr-dom-shim@npm:^1.0.0, @lit-labs/ssr-dom-shim@npm:^1.1.0, @lit-labs/ssr-dom-shim@npm:^1.2.0":
+"@lit-labs/ssr-dom-shim@npm:^1.2.0":
   version: 1.2.0
   resolution: "@lit-labs/ssr-dom-shim@npm:1.2.0"
   checksum: 10c0/016168cf6901ab343462c13fb168dda6d549f8b42680aa394e6b7cd0af7cce51271e00dbfa5bbbe388912bf89cbb8f941a21cc3ec9bf95d6a84b6241aa9e5a72
@@ -517,21 +517,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lit/reactive-element@npm:^1.0.0 || ^2.0.0, @lit/reactive-element@npm:^2.0.4":
+"@lit/reactive-element@npm:^1.0.0 || ^2.0.0":
   version: 2.0.4
   resolution: "@lit/reactive-element@npm:2.0.4"
   dependencies:
     "@lit-labs/ssr-dom-shim": "npm:^1.2.0"
   checksum: 10c0/359cc19ea9ee8b65e1417eb9c12f40dddba8f0a5ab32f0e5facaecee6060629e44eb4ca27d9af945fe6eda8c033aa636abaa5f0c4e6a529b224d78674acf47ba
-  languageName: node
-  linkType: hard
-
-"@lit/reactive-element@npm:^1.3.0, @lit/reactive-element@npm:^1.6.0":
-  version: 1.6.3
-  resolution: "@lit/reactive-element@npm:1.6.3"
-  dependencies:
-    "@lit-labs/ssr-dom-shim": "npm:^1.0.0"
-  checksum: 10c0/10f1d25e24e32feb21c4c6f9e11d062901241602e12c4ecf746b3138f87fed4d8394194645514d5c1bfd5f33f3fd56ee8ef41344e2cb4413c40fe4961ec9d419
   languageName: node
   linkType: hard
 
@@ -1379,7 +1370,7 @@ __metadata:
     "@rspack/cli": "npm:^1.4.4"
     "@rspack/core": "npm:^1.4.4"
     i18next: "npm:^21.5.3"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
     typescript: "npm:^5.3.3"
   languageName: unknown
   linkType: soft
@@ -1431,7 +1422,7 @@ __metadata:
     "@openremote/util": "workspace:*"
     "@rspack/cli": "npm:^1.1.3"
     "@rspack/core": "npm:^1.1.3"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
     typescript: "npm:^5.3.3"
   languageName: unknown
   linkType: soft
@@ -1482,13 +1473,14 @@ __metadata:
     "@openremote/or-map": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-rules": "workspace:*"
+    "@openremote/or-services": "workspace:*"
     "@openremote/or-smart-notify": "workspace:*"
     "@openremote/or-timeline": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     "@reduxjs/toolkit": "npm:^1.8.1"
     "@webcomponents/webcomponentsjs": "npm:^2.6.0"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"
     navigo: "npm:^8.11.1"
     pwa-helpers: "npm:^0.9.0"
@@ -1507,7 +1499,7 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"
   languageName: unknown
   linkType: soft
@@ -1531,7 +1523,7 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
 
@@ -1561,7 +1553,7 @@ __metadata:
     "@openremote/util": "workspace:*"
     chart.js: "npm:^3.6.0"
     chartjs-adapter-moment: "npm:^1.0.0"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"
   languageName: unknown
   linkType: soft
@@ -1579,7 +1571,7 @@ __metadata:
     "@openremote/util": "workspace:*"
     echarts: "npm:~5.6.0"
     jsonpath-plus: "npm:^6.0.1"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
 
@@ -1594,7 +1586,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/util": "workspace:*"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
 
@@ -1607,7 +1599,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/util": "workspace:*"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
 
@@ -1637,7 +1629,7 @@ __metadata:
     "@types/chart.js": "npm:^2.9.34"
     "@types/offscreencanvas": "npm:^2019.6.4"
     echarts: "npm:~5.6.0"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"
   languageName: unknown
   linkType: soft
@@ -1651,7 +1643,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/util": "workspace:*"
     ace-builds: "npm:^1.41.0"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
     simplebar: "npm:^5.3.6"
   languageName: unknown
   linkType: soft
@@ -1670,7 +1662,7 @@ __metadata:
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     gridstack: "npm:^7.2.0"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
 
@@ -1691,7 +1683,7 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
 
@@ -1706,7 +1698,7 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     "@openremote/util": "workspace:*"
     gaugeJS: "npm:^1.3.7"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
 
@@ -1715,7 +1707,7 @@ __metadata:
   resolution: "@openremote/or-icon@workspace:ui/component/or-icon"
   dependencies:
     "@mdi/font": "npm:latest"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
     terser-webpack-plugin: "npm:^5.2.5"
     typescript: "npm:^5.3.3"
   languageName: unknown
@@ -1731,7 +1723,7 @@ __metadata:
     "@openremote/util": "workspace:*"
     "@polymer/polymer": "npm:^3.3.1"
     ajv: "npm:^8.8.2"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
 
@@ -1744,7 +1736,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/util": "workspace:*"
     http-link-header: "npm:^1.1.3"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"
     url: "npm:^0.11.0"
   languageName: unknown
@@ -1765,7 +1757,7 @@ __metadata:
     "@polymer/polymer": "npm:^3.3.1"
     "@types/geojson": "npm:^7946.0.7"
     "@types/mapbox": "npm:^1.6.42"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
     mapbox.js: "npm:^3.3.1"
     maplibre-gl: "npm:^4.1.2"
   languageName: unknown
@@ -1799,7 +1791,7 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     "@openremote/test": "workspace:*"
     "@openremote/util": "workspace:*"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
 
@@ -1821,11 +1813,27 @@ __metadata:
     ace-builds: "npm:^1.41.0"
     iso-639-1: "npm:^3.1.3"
     linqts: "npm:^1.12.6"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"
     resize-observer: "npm:^1.0.3"
     rrule: "npm:^2.6.4"
     shortid: "npm:^2.2.15"
+  languageName: unknown
+  linkType: soft
+
+"@openremote/or-services@workspace:*, @openremote/or-services@workspace:ui/component/or-services":
+  version: 0.0.0-use.local
+  resolution: "@openremote/or-services@workspace:ui/component/or-services"
+  dependencies:
+    "@openremote/core": "workspace:*"
+    "@openremote/model": "workspace:*"
+    "@openremote/or-components": "workspace:*"
+    "@openremote/or-icon": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
+    "@openremote/or-tree-menu": "workspace:*"
+    "@openremote/rest": "workspace:*"
+    "@openremote/util": "workspace:*"
   languageName: unknown
   linkType: soft
 
@@ -1840,7 +1848,7 @@ __metadata:
     "@openremote/model": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"
   languageName: unknown
   linkType: soft
@@ -1852,7 +1860,7 @@ __metadata:
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
     "@openremote/util": "workspace:*"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
 
@@ -1865,7 +1873,7 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     "@openremote/util": "workspace:*"
     "@types/lodash-es": "npm:^4.17.5"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
     lodash-es: "npm:^4.17.15"
     moment: "npm:2.29.4"
   languageName: unknown
@@ -1877,7 +1885,7 @@ __metadata:
   dependencies:
     "@openremote/model": "workspace:*"
     "@openremote/util": "workspace:*"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
 
@@ -1886,7 +1894,7 @@ __metadata:
   resolution: "@openremote/or-timeline@workspace:ui/component/or-timeline"
   dependencies:
     "@openremote/util": "workspace:*"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"
   languageName: unknown
   linkType: soft
@@ -1897,7 +1905,7 @@ __metadata:
   dependencies:
     "@openremote/util": "workspace:*"
     i18next: "npm:^21.5.3"
-    lit: "npm:^2.0.2"
+    lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
 
@@ -1910,7 +1918,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/util": "workspace:*"
-    lit: "npm:^3.2.1"
+    lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
 
@@ -6492,28 +6500,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lit-element@npm:^3.3.0":
-  version: 3.3.3
-  resolution: "lit-element@npm:3.3.3"
-  dependencies:
-    "@lit-labs/ssr-dom-shim": "npm:^1.1.0"
-    "@lit/reactive-element": "npm:^1.3.0"
-    lit-html: "npm:^2.8.0"
-  checksum: 10c0/f44c12fa3423a4e9ca5b84651410687e14646bb270ac258325e6905affac64a575f041f8440377e7ebaefa3910b6f0d6b8b1e902cb1aa5d0849b3fdfbf4fb3b6
-  languageName: node
-  linkType: hard
-
-"lit-element@npm:^4.1.0":
-  version: 4.1.1
-  resolution: "lit-element@npm:4.1.1"
-  dependencies:
-    "@lit-labs/ssr-dom-shim": "npm:^1.2.0"
-    "@lit/reactive-element": "npm:^2.0.4"
-    lit-html: "npm:^3.2.0"
-  checksum: 10c0/b3c6c77d60a8239134d7c7e7c002be48414074f5b42f9ad026216749101a4f948266a4db9110a536fb23914044d584dbe4185c87064a4fa98baa4045ba2bbb46
-  languageName: node
-  linkType: hard
-
 "lit-element@npm:^4.2.0":
   version: 4.2.1
   resolution: "lit-element@npm:4.2.1"
@@ -6525,52 +6511,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lit-html@npm:^2.8.0":
-  version: 2.8.0
-  resolution: "lit-html@npm:2.8.0"
-  dependencies:
-    "@types/trusted-types": "npm:^2.0.2"
-  checksum: 10c0/90057dee050803823ac884c1355b0213ab8c05fbe2ec63943c694b61aade5d36272068f3925f45a312835e504f9c9784738ef797009f0a756a750351eafb52d5
-  languageName: node
-  linkType: hard
-
-"lit-html@npm:^3.2.0":
-  version: 3.2.1
-  resolution: "lit-html@npm:3.2.1"
-  dependencies:
-    "@types/trusted-types": "npm:^2.0.2"
-  checksum: 10c0/31c02df2148bf9a73545570cbe57aae01c4de1d9b44060b6ff13641837d38e39e6b1abcf92e13882cc84f5fee37605ed79602b91ad479728549014462808118e
-  languageName: node
-  linkType: hard
-
 "lit-html@npm:^3.3.0":
   version: 3.3.1
   resolution: "lit-html@npm:3.3.1"
   dependencies:
     "@types/trusted-types": "npm:^2.0.2"
   checksum: 10c0/0dfb645f35c2ae129a40c09550b4d0e60617b715af7f2e0b825cdfd0624118fc4bf16e9cfaabdfbe43469522e145057d3cc46c64ca1019681480e4b9ae8f52cd
-  languageName: node
-  linkType: hard
-
-"lit@npm:^2.0.2":
-  version: 2.8.0
-  resolution: "lit@npm:2.8.0"
-  dependencies:
-    "@lit/reactive-element": "npm:^1.6.0"
-    lit-element: "npm:^3.3.0"
-    lit-html: "npm:^2.8.0"
-  checksum: 10c0/bf33c26b1937ee204aed1adbfa4b3d43a284e85aad8ea9763c7865365917426eded4e5888158b4136095ea42054812561fe272862b61775f1198fad3588b071f
-  languageName: node
-  linkType: hard
-
-"lit@npm:^3.2.1":
-  version: 3.2.1
-  resolution: "lit@npm:3.2.1"
-  dependencies:
-    "@lit/reactive-element": "npm:^2.0.4"
-    lit-element: "npm:^4.1.0"
-    lit-html: "npm:^3.2.0"
-  checksum: 10c0/064a31459fe54ad052c0685d058dd5aef089ddc97a247888ef91a0356dfef60c8cc531e48077bbd2cb4e9f48cb86f0ff0951bb535f1d9f144d2351f253291f66
   languageName: node
   linkType: hard
 
@@ -9299,21 +9245,21 @@ __metadata:
 
 "typescript@patch:typescript@npm%3A~5.4.2#optional!builtin<compat/typescript>":
   version: 5.4.5
-  resolution: "typescript@patch:typescript@npm%3A5.4.5#optional!builtin<compat/typescript>::version=5.4.5&hash=d69c25"
+  resolution: "typescript@patch:typescript@npm%3A5.4.5#optional!builtin<compat/typescript>::version=5.4.5&hash=5adc0c"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/9cf4c053893bcf327d101b6c024a55baf05430dc30263f9adb1bf354aeffc11306fe1f23ba2f9a0209674359f16219b5b7d229e923477b94831d07d5a33a4217
+  checksum: 10c0/db2ad2a16ca829f50427eeb1da155e7a45e598eec7b086d8b4e8ba44e5a235f758e606d681c66992230d3fc3b8995865e5fd0b22a2c95486d0b3200f83072ec9
   languageName: node
   linkType: hard
 
 "typescript@patch:typescript@npm%3A~5.8.3#optional!builtin<compat/typescript>":
   version: 5.8.3
-  resolution: "typescript@patch:typescript@npm%3A5.8.3#optional!builtin<compat/typescript>::version=5.8.3&hash=d69c25"
+  resolution: "typescript@patch:typescript@npm%3A5.8.3#optional!builtin<compat/typescript>::version=5.8.3&hash=5786d5"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/92ea03509e06598948559ddcdd8a4ae5a7ab475766d5589f1b796f5731b3d631a4c7ddfb86a3bd44d58d10102b132cd4b4994dda9b63e6273c66d77d6a271dbd
+  checksum: 10c0/39117e346ff8ebd87ae1510b3a77d5d92dae5a89bde588c747d25da5c146603a99c8ee588c7ef80faaf123d89ed46f6dbd918d534d641083177d5fac38b8a1cb
   languageName: node
   linkType: hard
 

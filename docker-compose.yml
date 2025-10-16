@@ -23,6 +23,8 @@ services:
       - "${OR_SSL_PORT:-443}:443"
       - "8883:8883"
       - "127.0.0.1:8404:8404" # Localhost metrics access
+      - "${PRIVATE_IP:-127.0.0.1}:8404:8404" # Allows to also expose metrics on a given IP address,
+                                             # intended to be IP of the interface of the private subnet of the EC2 VM
     volumes:
       - proxy-data:/deployment
     environment:
@@ -63,6 +65,8 @@ services:
         condition: service_healthy
     ports:
       - "127.0.0.1:8405:8405" # Localhost metrics access
+      - "${PRIVATE_IP:-127.0.0.1}:8405:8405" # Allows to also expose metrics on a given IP address,
+                                             # intended to be IP of the interface of the private subnet of the EC2 VM
     environment:
       OR_SETUP_TYPE:
       OR_ADMIN_PASSWORD:

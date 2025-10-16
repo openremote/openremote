@@ -22,6 +22,7 @@
     { "path": "../../component/or-log-viewer" },
     { "path": "../../component/or-chart" },
     { "path": "../../component/or-rules" },
+    { "path": "../../component/or-services" },
     { "path": "../../component/or-dashboard-builder" },
     { "path": "../../component/or-gauge" }
   ]

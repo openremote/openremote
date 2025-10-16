@@ -7,7 +7,8 @@
     "lib": [
       "dom",
       "es2017",
-      "es2019"
+      "es2019",
+      "es2021"
     ],
     "strict": true,
     "declaration": true,

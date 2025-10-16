@@ -7,7 +7,10 @@ dependencies {
 
     api project(":model")
 
-    api "org.apache.groovy:groovy-all:$groovyVersion"
+    api "org.apache.groovy:groovy:$groovyVersion"
+    api "org.apache.groovy:groovy-json:$groovyVersion"
+    api "org.apache.groovy:groovy-xml:$groovyVersion"
+    api "org.apache.groovy:groovy-yaml:$groovyVersion"
     api "org.craftercms:groovy-sandbox:$groovySandboxVersion"
 
     // SLF4J JUL provider

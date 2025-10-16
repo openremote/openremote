@@ -1,10 +1,20 @@
 #!/bin/bash
 
+if [ -z "$AWS_ACCOUNT_ID" ]; then
+    echo "Error: AWS_ACCOUNT_ID environment variable is not set"
+    echo "Please set it to the ID of the account you want to deploy the cluster into with: export AWS_ACCOUNT_ID=your-account-id"
+    exit 1
+fi
+if [ -z "$AWS_DEVELOPERS_ACCOUNT_ID" ]; then
+    echo "Error: $AWS_DEVELOPERS_ACCOUNT_ID environment variable is not set"
+    echo "Please set it to the ID of the OpenRemote developers root account with: export AWS_DEVELOPERS_ACCOUNT_ID=dev-account-id"
+    exit 1
+fi
+
 set -eo pipefail
 
 # Name of cluster, not exposed but must be unique within account
-# !!! make sure to also update in cluster.yaml
-CLUSTER_NAME=testcluster
+export CLUSTER_NAME=testcluster
 
 # Hostname to use for public access to this instance, always under the openremote.app domain
 HOSTNAME=testmanager
@@ -12,11 +22,9 @@ FQDN=$HOSTNAME.openremote.app
 MQTT_FQDN=mqtt.$FQDN
 MQTTS_FQDN=mqtts.$FQDN
 
-# !!! make sure region in cluster.yaml matches
-AWS_REGION="eu-west-1"
-AWS_ACCOUNT_ID="463235666115" # openremote
+export AWS_REGION="eu-west-1"
 
-DNSCHG_ROLE_ARN="arn:aws:iam::134517981306:role/route53-full-access"
+DNSCHG_ROLE_ARN="arn:aws:iam::$AWS_DEVELOPERS_ACCOUNT_ID:role/route53-full-access"
 
 aws configure set region $AWS_REGION
 aws configure --profile or set region $AWS_REGION

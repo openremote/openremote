@@ -62,6 +62,12 @@ service:
   mqtts:
     enabled: false
     annotations: {}
+  metrics:
+    enabled: true
+    # Service type, typically use ClusterIP for local deployment and LoadBalancer for cloud deployments
+    type: ClusterIP
+    port: 8405
+    annotations: {}
 
 # Expose an Ingress for direct HTTP(S) access to the manager, disable when using HA Proxy
 ingress:
@@ -173,11 +179,6 @@ or:
   # Override the map settings such as center location and zoom when opening the
   # manager's map, as well as other style details and colours.
   mapSettingsPath: /deployment/map/mapsettings.json
-
-  # When asset attributes are enabled for rule events, each value update will be a temporary
-  # fact in rules. You can set the global default expiration time span used when no other
-  # attribute-level configuration exists. Default is 1 hour.
-  ruleEventExpires: "PT1H"
 
   # The identity provider implementation to use for managing user identities, roles, and
   # access authorization. The default is 'keycloak' which requires a separate service but

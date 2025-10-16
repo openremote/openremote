@@ -29,7 +29,7 @@ import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ParseContext;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
+import org.openremote.model.util.JSONSchemaUtil.JsonSchemaTitle;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
