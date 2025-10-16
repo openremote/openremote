@@ -128,17 +128,20 @@ public class ManagerWebService extends WebService {
         initialised = true;
 
         // Serve REST API
+
+       Collection<Object> deploymentSingletons = Stream.of(
+          devMode ? getStandardProviders(devMode) : getStandardProviders(devMode,
+             getCORSAllowedOrigins(container),
+             getString(container.getConfig(), OR_WEBSERVER_ALLOWED_METHODS, DEFAULT_CORS_ALLOW_ALL),
+             getString(container.getConfig(), OR_WEBSERVER_EXPOSED_HEADERS, DEFAULT_CORS_ALLOW_ALL),
+             DEFAULT_CORS_MAX_AGE,
+             DEFAULT_CORS_ALLOW_CREDENTIALS),
+          apiSingletons).flatMap(Collection::stream).toList();
+
         Application APIApplication = new WebApplication(
                 container,
-                apiClasses,
-                Stream.of(
-                        devMode ? getStandardProviders(devMode) : getStandardProviders(devMode,
-                                getCORSAllowedOrigins(container),
-                                getString(container.getConfig(), OR_WEBSERVER_ALLOWED_METHODS, DEFAULT_CORS_ALLOW_ALL),
-                                getString(container.getConfig(), OR_WEBSERVER_EXPOSED_HEADERS, DEFAULT_CORS_ALLOW_ALL),
-                                DEFAULT_CORS_MAX_AGE,
-                                DEFAULT_CORS_ALLOW_CREDENTIALS),
-                        apiSingletons).flatMap(Collection::stream).toList());
+               apiClasses,
+               deploymentSingletons);
 
        ResteasyDeployment deployment = createResteasyDeployment(APIApplication, container.getService(IdentityService.class), true);
        DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, API_PATH, "Manager HTTP API");
@@ -321,8 +324,11 @@ public class ManagerWebService extends WebService {
     /**
      * Add resource/provider/etc. classes to enable REST API
      */
-    public Collection<Class<?>> getApiClasses() {
-        return apiClasses;
+    public void addApiClasses(Class<?> apiClass) {
+       if (this.initialised) {
+          throw new IllegalStateException("API classes must be added before the service is initialised");
+       }
+       apiClasses.add(apiClass);
     }
 
     /**

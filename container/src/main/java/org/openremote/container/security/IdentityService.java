@@ -66,35 +66,10 @@ public abstract class IdentityService implements ContainerService {
     }
 
     public void secureDeployment(DeploymentInfo deploymentInfo) {
-        LOG.info("Securing web deployment: " + deploymentInfo.getContextPath());
+        LOG.info("Securing web deployment: name=" + deploymentInfo.getDeploymentName() + ", path=" + deploymentInfo.getContextPath());
         deploymentInfo.addInitialHandlerChainWrapper(AuthOverloadHandler::new);
         deploymentInfo.setSecurityDisabled(false);
         identityProvider.secureDeployment(deploymentInfo);
-
-        if (devMode) {
-            // We need to add an undertow handler wrapper to inject CORS headers on 401/403 responses as the authentication
-            // handler doesn't include headers set by deployment filters
-            deploymentInfo.addOuterHandlerChainWrapper(new HandlerWrapper() {
-                @Override
-                public HttpHandler wrap(HttpHandler handler) {
-                    return new HttpHandler() {
-                        @Override
-                        public void handleRequest(HttpServerExchange exchange) throws Exception {
-
-                            if (exchange.isInIoThread()) {
-                                exchange.dispatch(this);
-                                return;
-                            }
-
-                            String origin = exchange.getRequestHeaders().getFirst(CorsHeaders.ORIGIN);
-                            exchange.getResponseHeaders().add(HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_ORIGIN), origin);
-                            exchange.getResponseHeaders().add(HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS), "true");
-                            handler.handleRequest(exchange);
-                        }
-                    };
-                }
-            });
-        }
     }
 
     /**

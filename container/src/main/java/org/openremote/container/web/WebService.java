@@ -201,22 +201,8 @@ public abstract class WebService implements ContainerService {
         }
     }
 
-    /**
-     * Adds a deployment to the default servlet container and returns the started handler.
-     */
-    public static HttpHandler addServletDeployment(Container container, DeploymentInfo deploymentInfo, boolean secure) {
-
-        try {
-            DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
-            manager.deploy();
-            return manager.start();
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    public static WebService.RequestHandler deploy(DeploymentInfo deploymentInfo, String agentRealm) {
-        LOG.log(INFO, "Deploying JAX-RS deployment for protocol instance : " + this);
+    public static WebService.RequestHandler deploy(DeploymentInfo deploymentInfo, String agentRealm, boolean secure) {
+        LOG.log(INFO, "Deploying undertow servlet deployment: name=" + deploymentInfo.getDeploymentName() + ", path=" + deploymentInfo.getContextPath());
         DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
         manager.deploy();
         HttpHandler httpHandler;
