@@ -1,25 +1,16 @@
 package org.openremote.model.value;
 
 import jakarta.validation.ConstraintValidatorContext;
-import org.hibernate.mapping.Value;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetDescriptor;
-import org.openremote.model.asset.AssetTypeInfo;
-import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.util.ValueUtil;
 
-import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -214,37 +205,4 @@ public class ValueUtilTest {
         assertFalse(valid);
     }
 
-    @Nested
-    class AssetModelHash {
-
-        static class Test1 extends Asset<Test1> { }
-
-        AssetTypeInfo buildAssetTypeInfo() {
-            ValueDescriptor<?>[] valueDescriptors = { new ValueDescriptor<>("value", null, ValueConstraint.constraints(new ValueConstraint.AllowedValues("value1", "value2")), null, null, null) };
-
-            MetaItemDescriptor<?>[] metaItemDescriptors = { new MetaItemDescriptor<>("meta", valueDescriptors[0]) };
-            AttributeDescriptor<?>[] attributeDescriptors = {
-                    new AttributeDescriptor<>("test1", valueDescriptors[0]),
-                    new AttributeDescriptor<>("test2", ValueType.POSITIVE_INTEGER).withOptional(true)
-            };
-            AssetDescriptor<?> assetDescriptor = new AssetDescriptor<>("", "", Test1.class);
-            return new AssetTypeInfo(assetDescriptor, attributeDescriptors, metaItemDescriptors, valueDescriptors);
-        }
-
-        @Test
-        public void hashShouldMatch1() {
-            assertEquals("mZFLkyvTelC5g8XnyQrpOw==", ValueUtil.hash());
-        }
-
-        @Test
-        public void hashShouldMatch2() throws NoSuchFieldException, IllegalAccessException {
-            Field field = ValueUtil.class.getDeclaredField("assetInfoMap");
-            field.setAccessible(true);
-
-            HashMap<String, AssetTypeInfo> configRef = (HashMap<String, AssetTypeInfo>) field.get(null);
-            configRef.put("test1", buildAssetTypeInfo());
-
-            assertEquals("Tuwus1LCAYrd6WQlOCoH0w==", ValueUtil.hash());
-        }
-    }
 }

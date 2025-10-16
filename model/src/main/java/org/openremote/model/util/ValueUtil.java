@@ -19,7 +19,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
@@ -164,8 +163,20 @@ public class ValueUtil {
     protected static Map<String, Class<? extends AgentLink<?>>> agentTypeMap = new HashMap<>();
     protected static Map<String, MetaItemDescriptor<?>> metaItemDescriptors = new HashMap<>();
     protected static Map<String, ValueDescriptor<?>> valueDescriptors = new HashMap<>();
+    protected static Map<String, ObjectNode> jsonSchemas = new HashMap<>();
+    protected static Map<String, String> jsonSchemaCacheKeys = new HashMap<>();
     protected static Validator validator;
     protected static SchemaGenerator generator;
+    protected static MessageDigest md;
+
+    static {
+        try {
+            md = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            LOG.severe("MD5 algorithm not supported");
+            throw new RuntimeException(e);
+        }
+    }
 
     public static ObjectMapper configureObjectMapper(ObjectMapper objectMapper) {
         objectMapper
@@ -646,6 +657,14 @@ public class ValueUtil {
         return Optional.ofNullable(metaItemDescriptors.get(name));
     }
 
+    public static Map<String, ObjectNode> getJsonSchemas() {
+        return jsonSchemas;
+    }
+
+    public static Map<String, String> getJsonSchemaCacheKeys() {
+        return jsonSchemaCacheKeys;
+    }
+
     public static Map<String, ValueDescriptor<?>> getValueDescriptors() {
         return valueDescriptors;
     }
@@ -925,6 +944,24 @@ public class ValueUtil {
         JSON.registerSubtypes(agentLinkSubTypes);
 
         doSchemaInit();
+
+        // Add JSON schemas for complex meta items and generate cache keys
+        Map<String, MetaItemDescriptor<?>> metaItems = getMetaItemDescriptors();
+        jsonSchemas.putAll(metaItems.values().stream()
+                .map(AbstractNameValueDescriptorHolder::getType)
+                .filter(v -> {
+                    String jsonType = v.getJsonType();
+                    return jsonType.equals("array") || jsonType.equals("object");
+                })
+                .map(ValueDescriptor::getType)
+                .collect(Collectors.toMap(
+                        Class::getTypeName,
+                        type -> (ObjectNode) getSchema(type)
+                )));
+        jsonSchemaCacheKeys.putAll(jsonSchemas.entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getKey,
+                v -> hash(v.getValue().toString())
+        )));
     }
 
     protected static void doSchemaInit() {
@@ -942,27 +979,8 @@ public class ValueUtil {
             .toArray(Class<?>[]::new);
     }
 
-    static class SortingNodeFactory extends JsonNodeFactory {
-        @Override
-        public ObjectNode objectNode() {
-            return new ObjectNode(this, new TreeMap<String, JsonNode>());
-        }
-    }
-
-    /**
-     * Returns a hash of all AssetInfos that we consider the AssetModelVersion
-     */
-    public static String hash() {
-        MessageDigest md;
-        try {
-            md = MessageDigest.getInstance("MD5");
-        } catch (NoSuchAlgorithmException e) {
-            LOG.severe("MD5 algorithm not supported");
-            return null;
-        }
-        JsonNode node = JSON.copy().setNodeFactory(new SortingNodeFactory()).valueToTree(assetInfoMap);
-        System.out.println(node);
-        return Base64.getEncoder().encodeToString(md.digest(node.toString().getBytes(StandardCharsets.UTF_8)));
+    public static String hash(String v) {
+        return bytesToHexString(md.digest(v.getBytes(StandardCharsets.UTF_8)));
     }
 
     /**
@@ -1449,5 +1467,9 @@ public class ValueUtil {
         matcher.appendTail(result);
 
         return result.toString();
+    }
+
+    public static Class<?> wrapTypeWithArrayDimensions(Class<?> type, int arrayDimensions) {
+        return arrayDimensions > 0 ? Array.newInstance(type, new int[arrayDimensions]).getClass() : type;
     }
 }

@@ -22,6 +22,7 @@ package org.openremote.model.asset;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.system.StatusResource;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
@@ -103,9 +104,8 @@ public interface AssetModelResource {
 
     /**
      * Retrieve the JSON Schema for a {@link ValueDescriptor} available in this system. A value descriptor schema is only meant to be retrieved
-     * once. Either when a new {@code version}, {@code descriptorType} or {@code arrayDimensions} are requested. The HTTP client should cache the response based on the
-     * {@code Cache-Control} header. The {@code version} currently represents the system version and does not account for runtime asset model changes.
-     * TODO: The {@code version} parameter should use the asset model version instead once this is maintained.
+     * once per client. Either when a new {@code version}, {@code descriptorType} or {@code arrayDimensions} are requested. The HTTP client should cache the response based on the
+     * {@code Cache-Control} header. The {@code version} for actively cached descriptors can be found by requesting the {@link StatusResource#getInfo()} endpoint.
      */
     @GET
     @Path("getValueDescriptorSchema")

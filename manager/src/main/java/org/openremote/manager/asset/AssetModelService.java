@@ -247,6 +247,8 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         );
 
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
+
+        dynamicJsonSchemas.putAll(ValueUtil.getJsonSchemas());
     }
 
     protected void initDynamicModel() {
@@ -381,10 +383,9 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
     }
 
     public JsonNode getValueDescriptorSchema(String descriptorType, Integer arrayDimensions) throws ClassNotFoundException {
-        Class<?> clazz = Class.forName(descriptorType);
-        return dynamicJsonSchemas.computeIfAbsent(clazz.getTypeName() + ":" + arrayDimensions, key -> (ObjectNode)ValueUtil.getSchema(
-            arrayDimensions != null && arrayDimensions > 0 ? Array.newInstance(clazz, new int[arrayDimensions]).getClass() : clazz
-        ));
+        Class<?> type = ValueUtil.wrapTypeWithArrayDimensions(Class.forName(descriptorType), Optional.ofNullable(arrayDimensions).orElse(0));
+        String typeName = type.getTypeName();
+        return dynamicJsonSchemas.computeIfAbsent(typeName, key -> (ObjectNode)ValueUtil.getSchema(type));
     }
 
     protected <T> T parse(String jsonString, Class<T> type) throws JsonProcessingException {

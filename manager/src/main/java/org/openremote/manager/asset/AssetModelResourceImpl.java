@@ -76,7 +76,7 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     public Response getValueDescriptorSchema(RequestParams requestParams, String version, String descriptorType, Integer arrayDimensions) {
         try {
             JsonNode schema = assetModelService.getValueDescriptorSchema(descriptorType, arrayDimensions);
-            // A 1-year immutable cache as the responses are versioned making invalidation largely automatic
+            // A 1-year immutable cache, as the responses are versioned, making invalidation largely automatic
             return Response.ok(schema).header("Cache-Control", "public,max-age=" + 31536000 + ",immutable").build();
         } catch (ClassNotFoundException e) {
             LOG.log(Level.INFO, "Could not find class: '" + descriptorType + "'", e);
