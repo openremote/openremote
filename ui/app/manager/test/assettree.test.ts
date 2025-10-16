@@ -125,14 +125,14 @@ test(`Check if assets are visible in the tree`, async ({ assetTree, manager, ass
  * @and Selecting the asset from the list
  * @then The asset detail page is displayed
  */
-test(`Search for and select the battery asset`, async ({ page, manager, assetTree, assetsPage }) => {
+test(`Search for and select the battery asset`, async ({ page, manager, assetTree, assetViewer, assetsPage }) => {
     await manager.setup("smartcity", { assets: [batteryAsset, electricityAsset] });
     await manager.goToRealmStartPage("smartcity");
     await assetsPage.goto();
     await assetTree.getFilterInput().fill(batteryAsset.name);
     await expect(assetTree.getAssetNodes()).toHaveCount(1);
     await page.click(`text=${batteryAsset.name}`);
-    await expect(page.locator(`#asset-header`, { hasText: batteryAsset.name })).toBeVisible();
+    await expect(assetViewer.getHeaderLocator(batteryAsset.name)).toBeVisible();
 });
 
 /**
@@ -143,7 +143,7 @@ test(`Search for and select the battery asset`, async ({ page, manager, assetTre
  * @and Selecting the asset from the list
  * @then The asset detail page is displayed
  */
-test(`Search by Asset ID and select the battery asset`, async ({ page, manager, assetTree, assetsPage }) => {
+test(`Search by Asset ID and select the battery asset`, async ({ page, manager, assetTree, assetViewer, assetsPage }) => {
     const assets = [batteryAsset, electricityAsset];
     await manager.setup("smartcity", { assets: assets });
     const id = manager.assets.find(asset => asset.name === batteryAsset.name)?.id;
@@ -153,7 +153,7 @@ test(`Search by Asset ID and select the battery asset`, async ({ page, manager, 
     await assetTree.getFilterInput().fill(id!);
     await expect(assetTree.getAssetNodes()).toHaveCount(1);
     await page.click(`text=${batteryAsset.name}`);
-    await expect(page.locator(`#asset-header`, { hasText: batteryAsset.name })).toBeVisible();
+    await expect(assetViewer.getHeaderLocator(batteryAsset.name)).toBeVisible();
 })
 
 /**
@@ -164,7 +164,7 @@ test(`Search by Asset ID and select the battery asset`, async ({ page, manager, 
  * @and The asset list should contain the asset with the given ID
  * @and The asset detail page is displayed
  */
-test(`Open browser tab directly to the battery asset`, async ({ page, manager, assetsPage, assetTree }) => {
+test(`Open browser tab directly to the battery asset`, async ({ page, manager, assetsPage, assetTree, assetViewer }) => {
     const batteryAssets = createBatteryAssets(10);
     const electricityAssets = createElectricityAssets(10);
     const assets = [...batteryAssets, ...electricityAssets];
@@ -177,7 +177,7 @@ test(`Open browser tab directly to the battery asset`, async ({ page, manager, a
     await expect(assetTree.getFilterInput()).toHaveValue(id!);
     await expect(assetTree.getAssetNodes()).toHaveCount(2); // The parent city asset + selected battery asset
     await expect(assetTree.getSelectedNodes()).toHaveCount(1);
-    await expect(page.locator(`#asset-header`, { hasText: batteryAsset.name })).toBeVisible();
+    await expect(assetViewer.getHeaderLocator(batteryAsset.name)).toBeVisible();
     expect(page.url()).toContain(id!);
 })
 
@@ -255,7 +255,7 @@ test(`Load more buttons are shown properly without any unexpected scroll behavio
  * @and Pressing "load more" buttons within each parent
  * @then The correct children are displayed, and the correct asset is selected
  */
-test(`Load more buttons are shown properly when there is a complex tree`, async ({page, manager, assetsPage, assetTree}) => {
+test(`Load more buttons are shown properly when there is a complex tree`, async ({page, manager, assetsPage, assetTree, assetViewer}) => {
     await manager.setup("smartcity", { assets: parentAssets });
     const cityAssets = manager.assets.filter(a => a.type === "CityAsset");
     expect(cityAssets.length).toBe(2);
@@ -299,14 +299,14 @@ test(`Load more buttons are shown properly when there is a complex tree`, async 
     await page.click(`text=${buildingAssets[0].name}`); // Clicking "Building 1" within the 1st city
     await expect(assetTree.getSelectedNodes()).toHaveCount(1);
     await expect(assetTree.getSelectedNodes()).toHaveText(buildingAssets[0].name!);
-    await expect(page.locator(`#asset-header`, { hasText: buildingAssets[0].name })).toBeVisible();
+    await expect(assetViewer.getHeaderLocator(buildingAssets[0].name)).toBeVisible();
 
     // Select the 1st building of the city
     await expect(page.getByRole('button', { name: 'Load More' })).toHaveCount(2);
     await page.getByRole('button', { name: 'Load More' }).first().click();
     await expect(assetTree.getSelectedNodes()).toHaveCount(1);
     await expect(assetTree.getSelectedNodes()).toHaveText(buildingAssets[0].name!);
-    await expect(page.locator(`#asset-header`, { hasText: buildingAssets[0].name })).toBeVisible();
+    await expect(assetViewer.getHeaderLocator(buildingAssets[0].name)).toBeVisible();
 })
 
 /**
@@ -357,7 +357,7 @@ test(`Deleting an asset properly keeps the tree and viewer in tact`, async ({ pa
  * @then Attempting to remove the asset from the list succeeds
  * @and the asset list should be updated, but kept in the same state without visual artifacts
  */
-test(`Searching for an asset and removing it keeps the tree and viewer in tact`, async ({page, manager, assetsPage, assetTree}) => {
+test(`Searching for an asset and removing it keeps the tree and viewer in tact`, async ({page, manager, assetsPage, assetTree, assetViewer}) => {
     const batteryAssets = createBatteryAssets(10);
     const electricityAssets = createElectricityAssets(10);
     await manager.setup("smartcity", { assets: [...batteryAssets, ...electricityAssets] });
@@ -373,7 +373,7 @@ test(`Searching for an asset and removing it keeps the tree and viewer in tact`,
     await expect(assetTree.getAssetNodes()).toHaveCount(2); // Parent asset + child battery asset
     await page.click(`text=${battery10.name}`);
     await expect(assetTree.getSelectedNodes()).toHaveCount(1);
-    await expect(page.locator(`#asset-header`, { hasText: battery10.name })).toBeVisible();
+    await expect(assetViewer.getHeaderLocator(battery10.name!)).toBeVisible();
 
     // Fill in "Electricity meter 1", and expect that single asset + "Electricity meter 10", and their parent to show up"
     const meter1 = electricityAssets[0];
