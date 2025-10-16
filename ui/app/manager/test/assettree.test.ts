@@ -95,23 +95,23 @@ test(`Check if assets are visible in the tree`, async ({ assetTree, manager, ass
     await expect(assetTree.getAssetNodes().nth(0)).toContainText(parentAssets[0].name!);
     await expect(assetTree.getAssetNodes().nth(1)).toContainText(parentAssets[1].name!);
     await expect(assetTree.getAssetNodes().nth(2)).toContainText('Consoles');
-    await expect(assetTree.getAssetNodes().locator('.expander[data-expandable]')).toHaveCount(3);
+    await expect(assetTree.getAssetNodes().locator('[data-expandable]')).toHaveCount(3);
 
     // Check if expandable of City Asset 1 is correct.
     const cityAsset1 = assetTree.getAssetNodes().filter({ hasText: parentAssets[0].name });
-    await cityAsset1.locator('.expander[data-expandable]').click();
+    await cityAsset1.locator('[data-expandable]').click();
     await expect(assetTree.getAssetNodes()).toHaveCount(3 + 2);
     await expect(assetTree.getChildNodes(cityAsset1)).toHaveText(batteryAssets.map(a => a.name!));
 
     // Check if expandable of City Asset 2 is correct.
     const cityAsset2 = assetTree.getAssetNodes().filter({ hasText: parentAssets[1].name });
-    await cityAsset2.locator('.expander[data-expandable]').click();
+    await cityAsset2.locator('[data-expandable]').click();
     await expect(assetTree.getAssetNodes()).toHaveCount(3 + 2 + 2);
     await expect(assetTree.getChildNodes(cityAsset2)).toHaveText(electricityAssets.map(a => a.name!));
 
     // Check if expandable of Consoles group asset is correct.
     const consoleAsset = assetTree.getAssetNodes().filter({ hasText: 'Consoles' });
-    await consoleAsset.locator('.expander[data-expandable]').click();
+    await consoleAsset.locator('[data-expandable]').click();
     await expect.poll(async () => await assetTree.getAssetNodes().count(), {
         message: "Waiting for the Console assets to appear..."
     }).toBeGreaterThanOrEqual(3 + 2 + 2 + 1); // (there is at least 1 console, but could be more with a larger test suite)
@@ -221,14 +221,14 @@ test(`Load more buttons are shown properly without any unexpected scroll behavio
 
     // Test if expanding the node works correctly
     let cityAsset1 = assetTree.getAssetNodes().filter({ hasText: parentAssets[0].name });
-    await cityAsset1.locator('.expander[data-expandable]').click();
+    await cityAsset1.locator('[data-expandable]').click();
     await expect(assetTree.getAssetNodes()).toHaveCount(3 + 25); // City 1, City 2, Consoles asset and 25 battery assets
 
     // Limit the number of expanding nodes to 20, and check if the tree is still in tact
     await page.locator('or-asset-tree').evaluate(tree => {(tree as OrAssetTree).setAttribute('queryLimit', '20')});
     await expect(assetTree.getAssetNodes()).toHaveCount(3); // City 1, City 2 and Consoles asset
     cityAsset1 = assetTree.getAssetNodes().filter({ hasText: parentAssets[0].name });
-    await cityAsset1.locator('.expander[data-expandable]').click();
+    await cityAsset1.locator('[data-expandable]').click();
     await expect(assetTree.getAssetNodes()).toHaveCount(3 + 20); // City 1, City 2, Consoles asset and 20 out of 25 battery assets
 
     // Scroll down to the "load more" botton, and check if the scroll position is kept after pressing it.
@@ -240,7 +240,7 @@ test(`Load more buttons are shown properly without any unexpected scroll behavio
 
     // Now click the 2nd city, scroll down to their "load more" button, and do the same.
     let cityAsset2 = assetTree.getAssetNodes().filter({ hasText: parentAssets[1].name });
-    await cityAsset2.locator('.expander[data-expandable]').click();
+    await cityAsset2.locator('[data-expandable]').click();
     await expect(assetTree.getAssetNodes()).toHaveCount(3 + 25 + 20); // City 2 now has 20 out of 25 assets
     await cityAsset2.getByRole('button', { name: "Load More" }).click();
     const scrollPos2 = await listContainer.evaluate(el => el.scrollTop);
@@ -294,7 +294,7 @@ test(`Load more buttons are shown properly when there is a complex tree`, async 
 
     // Navigate to the 1st building within the first city
     let cityAsset1 = assetTree.getAssetNodes().filter({ hasText: parentAssets[0].name });
-    await cityAsset1.locator('.expander[data-expandable]').click();
+    await cityAsset1.locator('[data-expandable]').click();
     await expect(assetTree.getAssetNodes()).toHaveCount(2 + 2); // City 1, City 2, and 2 out of 3 building assets
     await page.click(`text=${buildingAssets[0].name}`); // Clicking "Building 1" within the 1st city
     await expect(assetTree.getSelectedNodes()).toHaveCount(1);
@@ -330,10 +330,10 @@ test(`Deleting an asset properly keeps the tree and viewer in tact`, async ({ pa
 
     // Expand both City Asset 1 and City Asset 2
     const cityAsset1 = assetTree.getAssetNodes().filter({ hasText: parentAssets[0].name });
-    await cityAsset1.locator('.expander[data-expandable]').click();
+    await cityAsset1.locator('[data-expandable]').click();
     await expect(assetTree.getChildNodes(cityAsset1)).toHaveCount(assets.length / 2);
     const cityAsset2 = assetTree.getAssetNodes().filter({ hasText: parentAssets[1].name });
-    await cityAsset2.locator('.expander[data-expandable]').click();
+    await cityAsset2.locator('[data-expandable]').click();
     await expect(assetTree.getChildNodes(cityAsset2)).toHaveCount(assets.length / 2);
     await expect(assetTree.getAssetNodes()).toHaveCount(1 + 10 + 1 + 10 + 1);
 
@@ -343,8 +343,8 @@ test(`Deleting an asset properly keeps the tree and viewer in tact`, async ({ pa
     await expect(assetTree.getChildNodes(cityAsset1)).toHaveCount(assets.length / 2 - 1);
     await expect(assetTree.getChildNodes(cityAsset2)).toHaveCount(assets.length / 2);
     await expect(assetTree.getAssetNodes()).toHaveCount(1 + 9 + 1 + 10 + 1);
-    await expect(page.locator('or-asset-tree li.asset-list-element .expander[data-expandable]')).toHaveCount(3);
-    await expect(page.locator('or-asset-tree li.asset-list-element[data-expanded] .expander[data-expandable]')).toHaveCount(2);
+    await expect(page.locator('or-asset-tree li.asset-list-element [data-expandable]')).toHaveCount(3);
+    await expect(page.locator('or-asset-tree li.asset-list-element[data-expanded] [data-expandable]')).toHaveCount(2);
     await expect(page.locator('or-asset-viewer or-translate')).toHaveAttribute('value', 'noAssetSelected');
 })
 
