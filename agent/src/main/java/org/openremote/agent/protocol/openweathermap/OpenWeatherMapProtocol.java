@@ -52,23 +52,23 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 
 /**
  * Protocol for integrating with the OpenWeatherMap One Call 3.0 API.
- * 
+ * <p>
  * This protocol periodically fetches weather data from OpenWeatherMap for all
  * linked asset attributes, grouped by the asset that contains them. Each
  * asset’s location (latitude and longitude) is used to query the API once per
  * asset.
- * 
+ * <p>
  * For each linked attribute:
  * <ul>
  * <li>The <b>current value</b> is updated using the latest weather data.</li>
  * <li><b>Predicted datapoints</b> (hourly and daily forecasts) are written to
  * enable time-series analysis and visualization in Insights.</li>
  * </ul>
- * 
+ * <p>
  * A helper action can provision a default {@link WeatherAsset} preconfigured
  * with common weather attributes (temperature, humidity, wind, etc.), each
  * linked to a corresponding {@link OpenWeatherMapProperty}.
- * 
+ * <p>
  * The agent requires a valid OpenWeatherMap API key and location information on
  * each linked asset. Attribution to OpenWeather is automatically applied.
  */
@@ -171,7 +171,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
     /**
      * Update the agent's linked attributes with weather data from the
      * OpenWeatherMap API
-     * 
+     * <p>
      * This method groups all linked attributes by their Asset ID and then updates
      * the weather data for each asset based on its location
      */
@@ -195,8 +195,8 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
 
     /**
      * Update weather data attributes for a specific asset
-     * 
-     * @param assetId the asset ID
+     *
+     * @param assetId       the asset ID
      * @param attributeRefs list of attribute references to update
      */
     protected void updateAssetWeatherData(String assetId, List<AttributeRef> attributeRefs) {
@@ -237,7 +237,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
 
     /**
      * Fetch the weather data from the OpenWeatherMap API for the given API URL
-     * 
+     *
      * @param apiUrl the API URL
      * @return the OpenWeatherMapResponse from the API
      */
@@ -260,8 +260,8 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
 
     /**
      * Update values of the linked attributes based on the given weather datapoint
-     * 
-     * @param attributeRefs list of attribute references
+     *
+     * @param attributeRefs           list of attribute references
      * @param currentWeatherDatapoint the current weather datapoint
      */
     protected void updateCurrentValues(List<AttributeRef> attributeRefs, OpenWeatherMapResponse.WeatherDatapoint currentWeatherDatapoint) {
@@ -283,8 +283,8 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
     /**
      * Update the predicted data points for the given attributes based on the
      * provided list of weather datapoints
-     * 
-     * @param attributeRefs list of attribute references
+     *
+     * @param attributeRefs     list of attribute references
      * @param weatherDatapoints list of weather datapoints
      */
     protected void updatePredictedDatapoints(List<AttributeRef> attributeRefs, List<OpenWeatherMapResponse.WeatherDatapoint> weatherDatapoints) {
@@ -306,9 +306,9 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
     /**
      * Build a list of predicted datapoints based on the provided weather data and
      * attribute reference
-     * 
+     *
      * @param attributeRef the attribute reference
-     * @param weatherData the weather data
+     * @param weatherData  the weather data
      * @return a list of ValueDatapoints
      */
     protected List<ValueDatapoint<?>> buildPredictedDatapoints(AttributeRef attributeRef, List<OpenWeatherMapResponse.WeatherDatapoint> weatherData) {
@@ -327,43 +327,29 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
     /**
      * Extract the corresponding `weatherProperty` value from the weather data
      * object
-     * 
-     * @param weatherData the weather datapoint
+     *
+     * @param weatherData     the weather datapoint
      * @param weatherProperty the weather property to get the value from
      * @return the corresponding `weatherProperty` value
      */
     protected Object extractWeatherPropertyValue(OpenWeatherMapResponse.WeatherDatapoint weatherData, OpenWeatherMapProperty weatherProperty) {
-        switch (weatherProperty) {
-        case TEMPERATURE:
-            return weatherData.getTemperature();
-        case ATMOSPHERIC_PRESSURE:
-            return weatherData.getPressure();
-        case HUMIDITY_PERCENTAGE:
-            return weatherData.getHumidity();
-        case CLOUD_COVERAGE:
-            return weatherData.getClouds();
-        case WIND_SPEED:
-            // Convert m/s to km/h: m/s * 3.6 = km/h
-            return weatherData.getWindSpeed() * 3.6;
-        case WIND_DIRECTION_DEGREES:
-            return weatherData.getWindDegrees();
-        case WIND_GUST_SPEED:
-            // Convert m/s to km/h: m/s * 3.6 = km/h
-            return weatherData.getWindGust() * 3.6;
-        case PROBABILITY_OF_PRECIPITATION:
-            return weatherData.getPop();
-        case ULTRAVIOLET_INDEX:
-            return weatherData.getUvi();
-        case RAIN_AMOUNT:
-            return weatherData.getRain();
-        default:
-            return null;
-        }
+        return switch (weatherProperty) {
+            case TEMPERATURE -> weatherData.getTemperature();
+            case ATMOSPHERIC_PRESSURE -> weatherData.getPressure();
+            case HUMIDITY_PERCENTAGE -> weatherData.getHumidity();
+            case CLOUD_COVERAGE -> weatherData.getClouds();
+            case WIND_SPEED -> convertMsToKmh(weatherData.getWindSpeed());
+            case WIND_DIRECTION_DEGREES -> weatherData.getWindDegrees();
+            case WIND_GUST_SPEED -> convertMsToKmh(weatherData.getWindGust());
+            case PROBABILITY_OF_PRECIPITATION -> weatherData.getPop();
+            case ULTRAVIOLET_INDEX -> weatherData.getUvi();
+            case RAIN_AMOUNT -> weatherData.getRain();
+        };
     }
 
     /**
      * Resolve the OpenWeatherMapProperty for the given attribute reference
-     * 
+     *
      * @param attributeRef the attribute reference
      * @return the OpenWeatherMapProperty
      */
@@ -376,8 +362,8 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
     /**
      * Build the OpenWeatherMap API URL for the given latitude and longitude (One
      * Call 3.0 API)
-     * 
-     * @param latitude the latitude
+     *
+     * @param latitude  the latitude
      * @param longitude the longitude
      * @return the OpenWeatherMap API URL
      */
@@ -389,7 +375,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
 
     /**
      * Perform a health check by sending a request to the OpenWeatherMap API
-     * 
+     *
      * @return true if the health check is successful, false otherwise
      */
     protected boolean healthCheck() {
@@ -476,7 +462,27 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
         }
     }
 
-    protected long toMillis(long timestamp) {
+    /**
+     * Convert meters per second to kilometers per hour
+     *
+     * <p>
+     * Rounds the value to 2 decimal places
+     * </p>
+     *
+     * @param value the value to convert
+     * @return the converted value rounded to 2 decimal places
+     */
+    protected static double convertMsToKmh(double value) {
+        return Math.round(value * 3.6 * 100.0) / 100.0;
+    }
+
+    /**
+     * Convert seconds to milliseconds
+     *
+     * @param timestamp the timestamp to convert
+     * @return the converted value
+     */
+    protected static long toMillis(long timestamp) {
         return timestamp * 1000;
     }
 

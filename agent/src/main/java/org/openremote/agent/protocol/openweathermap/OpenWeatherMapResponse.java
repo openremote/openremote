@@ -32,11 +32,11 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class OpenWeatherMapResponse {
 
-    @JsonProperty("current") 
+    @JsonProperty("current")
     @JsonDeserialize(as = WeatherDatapointImpl.class)
     private WeatherDatapoint current;
 
-    @JsonProperty("hourly") 
+    @JsonProperty("hourly")
     @JsonDeserialize(contentAs = WeatherDatapointImpl.class)
     private List<WeatherDatapoint> hourly;
 

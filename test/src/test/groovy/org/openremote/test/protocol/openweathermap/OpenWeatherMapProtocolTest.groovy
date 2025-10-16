@@ -335,9 +335,9 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
             assert weatherAsset.getAttribute(WeatherAsset.TEMPERATURE).get().getValue().orElse(null) == 15.5d
             assert weatherAsset.getAttribute(WeatherAsset.HUMIDITY).get().getValue().orElse(null) == 65
             assert weatherAsset.getAttribute(WeatherAsset.ATMOSPHERIC_PRESSURE).get().getValue().orElse(null) == 1013
-            assert weatherAsset.getAttribute(WeatherAsset.WIND_SPEED).get().getValue().orElse(null) == 3.2d
+            assert weatherAsset.getAttribute(WeatherAsset.WIND_SPEED).get().getValue().orElse(null) == OpenWeatherMapProtocol.convertMsToKmh(3.2d)
             assert weatherAsset.getAttribute(WeatherAsset.WIND_DIRECTION).get().getValue().orElse(null) == 180
-            assert weatherAsset.getAttribute(WeatherAsset.WIND_GUST_SPEED).get().getValue().orElse(null) == 4.1d
+            assert weatherAsset.getAttribute(WeatherAsset.WIND_GUST_SPEED).get().getValue().orElse(null) == OpenWeatherMapProtocol.convertMsToKmh(4.1d)
             assert weatherAsset.getAttribute(WeatherAsset.CLOUD_COVERAGE).get().getValue().orElse(null) == 20
             assert weatherAsset.getAttribute(WeatherAsset.PROBABILITY_OF_PRECIPITATION).get().getValue().orElse(null) == 0.1d
             assert weatherAsset.getAttribute(WeatherAsset.RAINFALL).get().getValue().orElse(null) == 0.5d
@@ -385,9 +385,9 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
             assert weatherAsset2.getAttribute(WeatherAsset.TEMPERATURE).get().getValue().orElse(null) == 12.3d
             assert weatherAsset2.getAttribute(WeatherAsset.HUMIDITY).get().getValue().orElse(null) == 78
             assert weatherAsset2.getAttribute(WeatherAsset.ATMOSPHERIC_PRESSURE).get().getValue().orElse(null) == 1008
-            assert weatherAsset2.getAttribute(WeatherAsset.WIND_SPEED).get().getValue().orElse(null) == 4.5d
+            assert weatherAsset2.getAttribute(WeatherAsset.WIND_SPEED).get().getValue().orElse(null) == OpenWeatherMapProtocol.convertMsToKmh(4.5d)
             assert weatherAsset2.getAttribute(WeatherAsset.WIND_DIRECTION).get().getValue().orElse(null) == 220
-            assert weatherAsset2.getAttribute(WeatherAsset.WIND_GUST_SPEED).get().getValue().orElse(null) == 5.2d
+            assert weatherAsset2.getAttribute(WeatherAsset.WIND_GUST_SPEED).get().getValue().orElse(null) == OpenWeatherMapProtocol.convertMsToKmh(5.2d)
             assert weatherAsset2.getAttribute(WeatherAsset.CLOUD_COVERAGE).get().getValue().orElse(null) == 45
             assert weatherAsset2.getAttribute(WeatherAsset.PROBABILITY_OF_PRECIPITATION).get().getValue().orElse(null) == 0.3d
             assert weatherAsset2.getAttribute(WeatherAsset.RAINFALL).get().getValue().orElse(null) == 1.2d
