@@ -222,7 +222,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
             try {
                 updateCurrentValues(attributeRefs, weatherData.getCurrent());
             } catch (Exception e) {
-                LOG.log(Level.WARNING, e, () -> "Failed to update attributes: " + attributeRefs);
+                LOG.log(Level.SEVERE, e, () -> "Failed to update attributes: " + attributeRefs);
             }
 
             // Write the predicted data points for the daily and hourly forecast
@@ -230,7 +230,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
                 updatePredictedDatapoints(attributeRefs, weatherData.getDaily()); // write daily forecast, up to 8 days
                 updatePredictedDatapoints(attributeRefs, weatherData.getHourly()); // write hourly forecast, up to 48 hours
             } catch (Exception e) {
-                LOG.log(Level.WARNING, e, () -> "Failed to write predicted data points: " + attributeRefs);
+                LOG.log(Level.SEVERE, e, () -> "Failed to write predicted data points: " + attributeRefs);
             }
         }
     }
