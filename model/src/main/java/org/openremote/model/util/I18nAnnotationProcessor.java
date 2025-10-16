@@ -151,7 +151,11 @@ public class I18nAnnotationProcessor extends AbstractProcessor {
                     continue nextTranslation;
                 }
             }
-            node.putIfAbsent(keys[zeroIndexLength], new TextNode(writeValue ? entry.getValue() : ""));
+            if (writeValue) {
+                node.set(keys[zeroIndexLength], new TextNode(entry.getValue()));
+            } else {
+                node.putIfAbsent(keys[zeroIndexLength], new TextNode(""));
+            }
         }
 
         if (conflicts > 0) {
