@@ -34,6 +34,6 @@ public enum OpenWeatherMapProperty {
     WIND_GUST_SPEED,                        // Wind gust (m/s)
     PROBABILITY_OF_PRECIPITATION,           // Probability of precipitation
     RAIN_AMOUNT,                            // Rain amount (mm)
-    ULTRAVIOLET_INDEX                      // Ultraviolet index
+    ULTRAVIOLET_INDEX                       // Ultraviolet index
 
 }
