@@ -4,10 +4,9 @@ import {AssetWidgetSettings} from "../util/or-asset-widget";
 import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {MapWidgetConfig} from "../widgets/map-widget";
-import {AttributeMarkerColours, LngLatLike, MapMarkerColours} from "@openremote/or-map";
+import {AttributeMarkerColours, LngLatLike, MapMarkerColours, LngLat} from "@openremote/or-map";
 import "../panels/assettypes-panel";
 import "../panels/thresholds-panel";
-import {LngLat} from "maplibre-gl"; // TODO: Replace this import
 import {when} from "lit/directives/when.js";
 import {AssetIdsSelectEvent, AssetTypeSelectEvent, AssetAllOfTypeSwitchEvent, AssetTypesFilterConfig, AttributeNamesSelectEvent} from "../panels/assettypes-panel";
 import manager from "@openremote/core";
