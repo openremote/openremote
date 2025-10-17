@@ -20,18 +20,18 @@
 package org.openremote.container.web;
 
 import com.google.common.collect.Lists;
+import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RequestDumpingHandler;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.util.HeaderMap;
-import io.undertow.util.HttpString;
 import io.undertow.websockets.core.WebSocketChannel;
 import jakarta.servlet.ServletException;
 import jakarta.ws.rs.core.Application;
@@ -48,7 +48,6 @@ import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.CORSFilter;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
-import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
@@ -57,7 +56,6 @@ import org.xnio.Options;
 import java.net.Inet4Address;
 import java.net.URI;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -67,48 +65,6 @@ import static org.openremote.model.Constants.OR_ADDITIONAL_HOSTNAMES;
 import static org.openremote.model.Constants.OR_HOSTNAME;
 
 public abstract class WebService implements ContainerService {
-
-    public static class RequestHandler {
-        protected String name;
-        protected Predicate<HttpServerExchange> handlePredicate;
-        protected HttpHandler handler;
-
-        public RequestHandler(String name, Predicate<HttpServerExchange> handlePredicate, HttpHandler handler) {
-            this.name = name;
-            this.handlePredicate = handlePredicate;
-            this.handler = handler;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public Predicate<HttpServerExchange> getHandlePredicate() {
-            return handlePredicate;
-        }
-
-        public io.undertow.server.HttpHandler getHandler() {
-            return handler;
-        }
-    }
-
-    public static class DeploymentInstance {
-        protected DeploymentInfo deploymentInfo;
-        protected WebService.RequestHandler requestHandler;
-
-        public DeploymentInstance(DeploymentInfo deploymentInfo, WebService.RequestHandler requestHandler) {
-            this.deploymentInfo = deploymentInfo;
-            this.requestHandler = requestHandler;
-        }
-
-        public WebService.RequestHandler getRequestHandler() {
-            return requestHandler;
-        }
-
-        public DeploymentInfo getDeploymentInfo() {
-            return deploymentInfo;
-        }
-    }
 
     // Change this to 0.0.0.0 to bind on all interfaces, enabling
     // access of the manager service from other devices in your LAN
@@ -124,7 +80,7 @@ public abstract class WebService implements ContainerService {
     public static final String OR_WEBSERVER_IO_THREADS_MAX = "OR_WEBSERVER_IO_THREADS_MAX";
     public static final int OR_WEBSERVER_IO_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
     public static final String OR_WEBSERVER_WORKER_THREADS_MAX = "OR_WEBSERVER_WORKER_THREADS_MAX";
-    public static final int WEBSERVER_WORKER_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 10);
+    public static final int OR_WEBSERVER_WORKER_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 10);
     private static final System.Logger LOG = System.getLogger(WebService.class.getName());
     public static final int DEFAULT_CORS_MAX_AGE = 1209600;
     public static final String DEFAULT_CORS_ALLOW_ALL = "*";
@@ -133,15 +89,11 @@ public abstract class WebService implements ContainerService {
     protected String host;
     protected int port;
     protected Undertow undertow;
-    protected List<RequestHandler> httpHandlers = new ArrayList<>();
     protected URI containerHostUri;
+    protected PathHandler pathHandler = Handlers.path();
 
     protected static String getLocalIpAddress() throws Exception {
         return Inet4Address.getLocalHost().getHostAddress();
-    }
-
-    public static RequestHandler pathStartsWithHandler(String name, String path, HttpHandler handler) {
-        return new RequestHandler(name, exchange -> exchange.getRequestPath().startsWith(path), handler);
     }
 
     @Override
@@ -169,7 +121,7 @@ public abstract class WebService implements ContainerService {
                 Undertow.builder()
                         .addHttpListener(port, host)
                         .setIoThreads(getInteger(container.getConfig(), OR_WEBSERVER_IO_THREADS_MAX, OR_WEBSERVER_IO_THREADS_MAX_DEFAULT))
-                        .setWorkerThreads(getInteger(container.getConfig(), OR_WEBSERVER_WORKER_THREADS_MAX, WEBSERVER_WORKER_THREADS_MAX_DEFAULT))
+                        .setWorkerThreads(getInteger(container.getConfig(), OR_WEBSERVER_WORKER_THREADS_MAX, OR_WEBSERVER_WORKER_THREADS_MAX_DEFAULT))
                         .setWorkerOption(Options.WORKER_NAME, "WebService")
                         .setWorkerOption(Options.THREAD_DAEMON, true)
         ).build();
@@ -195,29 +147,18 @@ public abstract class WebService implements ContainerService {
         }
     }
 
-    public static WebService.RequestHandler deploy(DeploymentInfo deploymentInfo, String agentRealm, boolean secure) {
+    public void deploy(DeploymentInfo deploymentInfo, boolean secure) {
         LOG.log(INFO, "Deploying undertow servlet deployment: name=" + deploymentInfo.getDeploymentName() + ", path=" + deploymentInfo.getContextPath());
-        DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
-        manager.deploy();
-        HttpHandler httpHandler;
-
-
-
 
        try {
-            httpHandler = manager.start();
-            WebService.RequestHandler requestHandler = pathStartsWithHandler(deploymentInfo.getDeploymentName(), deploymentInfo.getContextPath(), httpHandler);
+           DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
+           manager.deploy();
+           HttpHandler httpHandler = manager.start();
+           Servlets.defaultContainer().addDeployment(deploymentInfo);
 
-            LOG.info("Registering HTTP Server Protocol request handler '"
-                    + this.getClass().getSimpleName()
-                    + "' for request path: "
-                    + deploymentInfo.getContextPath());
-            // Add the handler before the greedy deployment handler
-            webService.getRequestHandlers().addFirst(requestHandler);
-
-            deployment = new WebService.DeploymentInstance(deploymentInfo, requestHandler);
+           pathHandler.addPrefixPath(deploymentInfo.getContextPath(), httpHandler);
         } catch (ServletException e) {
-            LOG.severe("Failed to deploy deployment: " + deploymentInfo.getDeploymentName());
+            LOG.log(ERROR, "Servlet deployment failed: " + e.getMessage());
         }
     }
 
@@ -225,16 +166,14 @@ public abstract class WebService implements ContainerService {
 
        try {
           DeploymentManager manager = Servlets.defaultContainer().getDeployment(deploymentName);
+          DeploymentInfo deploymentInfo = manager.getDeployment().getDeploymentInfo();
+          LOG.log(INFO, "Un-deploying undertow servlet deployment: name=" + deploymentInfo.getDeploymentName() + ", path=" + deploymentInfo.getContextPath());
           manager.stop();
           manager.undeploy();
+          Servlets.defaultContainer().removeDeployment(deploymentInfo);
        } catch (Exception ex) {
-          throw new RuntimeException(ex);
+           LOG.log(ERROR, "Servlet un-deployment failed: " + ex.getMessage());
        }
-
-        if (deployment == null) {
-            LOG.info("Deployment doesn't exist for protocol instance: " + this);
-            return;
-        }
 
         try {
             LOG.info("Un-registering HTTP Server Protocol request handler '"
@@ -311,14 +250,6 @@ public abstract class WebService implements ContainerService {
         }
 
         return providers;
-    }
-
-    /**
-     * When a request comes in the handlers are called in order until a handler returns a non null value; when this
-     * happens the returned {@link RequestHandler} is invoked.
-     */
-    public List<RequestHandler> getRequestHandlers() {
-        return this.httpHandlers;
     }
 
     /**
