@@ -523,7 +523,7 @@ export class OrMap extends LitElement {
 
     public renderCurrentCluster(config?: MapMarkerAssetConfig | undefined): void {
         if (this._map) {
-            this._map.renderCurrentCluster(config);
+            // this._map.renderCurrentCluster(config);
         }
     }
 
