@@ -25,6 +25,8 @@ nodeGroups:
     instanceType: m8g.2xlarge
     volumeSize: 32
     desiredCapacity: 1
+    availabilityZones:
+      - ${AWS_REGION}a
 
 addons:
   - name: aws-ebs-csi-driver
