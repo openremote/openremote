@@ -521,12 +521,6 @@ export class OrMap extends LitElement {
         }
     }
 
-    public renderCurrentCluster(config?: MapMarkerAssetConfig | undefined): void {
-        if (this._map) {
-            this._map.renderCurrentCluster(config);
-        }
-    }
-
     protected firstUpdated(_changedProperties: PropertyValues): void {
         super.firstUpdated(_changedProperties);
         if (manager.ready) {
@@ -599,7 +593,6 @@ export class OrMap extends LitElement {
                 .setControls(this.controls)
                 .setGeoJson(this.geoJson);
             this._map.load().then(() => {
-                this.loadPoints();
 
                 // Get markers from slot
                 this._observer = new FlattenedNodesObserver(this._slotElement!, (info: any) => {

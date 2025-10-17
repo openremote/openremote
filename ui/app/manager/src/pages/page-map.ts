@@ -463,7 +463,6 @@ export class PageMap extends Page<MapStateKeyed> {
 
     protected onMapLoad(e: OrMapSourceLoadedEvent) {
         this.mapInitLoaded = !this.mapInitLoaded;
-        this._map.renderCurrentCluster(this.config.markers);
     }
 
     protected getCurrentAsset() {
