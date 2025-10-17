@@ -38,7 +38,9 @@ import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.core.ResteasyDeploymentImpl;
+import org.jboss.resteasy.plugins.interceptors.AcceptEncodingGZIPFilter;
 import org.jboss.resteasy.plugins.interceptors.CorsFilter;
+import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
 import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
@@ -133,14 +135,6 @@ public abstract class WebService implements ContainerService {
     protected Undertow undertow;
     protected List<RequestHandler> httpHandlers = new ArrayList<>();
     protected URI containerHostUri;
-    protected static WebServiceExceptions.DefaultResteasyExceptionMapper defaultResteasyExceptionMapper;
-    protected static WebServiceExceptions.ForbiddenResteasyExceptionMapper forbiddenResteasyExceptionMapper;
-    protected static JacksonConfig jacksonConfig;
-    protected static GZIPEncodingInterceptor gzipEncodingInterceptor;
-    protected static AlreadyGzippedWriterInterceptor alreadyGzippedWriterInterceptor;
-    protected static ClientErrorExceptionHandler clientErrorExceptionHandler;
-    protected static WebServiceExceptions.ServletUndertowExceptionHandler undertowExceptionHandler;
-
 
     protected static String getLocalIpAddress() throws Exception {
         return Inet4Address.getLocalHost().getHostAddress();
@@ -207,19 +201,12 @@ public abstract class WebService implements ContainerService {
         manager.deploy();
         HttpHandler httpHandler;
 
-        if (TextUtil.isNullOrEmpty(agentRealm)) {
-            throw new IllegalStateException("Cannot determine the realm that this agent belongs to");
-        }
 
-        try {
+
+
+       try {
             httpHandler = manager.start();
-
-            // Wrap the handler to inject the realm
-            HttpHandler handlerWrapper = exchange -> {
-                exchange.getRequestHeaders().put(HttpString.tryFromString(Constants.REALM_PARAM_NAME), agentRealm);
-                httpHandler.handleRequest(exchange);
-            };
-            WebService.RequestHandler requestHandler = pathStartsWithHandler(deploymentInfo.getDeploymentName(), deploymentInfo.getContextPath(), handlerWrapper);
+            WebService.RequestHandler requestHandler = pathStartsWithHandler(deploymentInfo.getDeploymentName(), deploymentInfo.getContextPath(), httpHandler);
 
             LOG.info("Registering HTTP Server Protocol request handler '"
                     + this.getClass().getSimpleName()
@@ -234,18 +221,15 @@ public abstract class WebService implements ContainerService {
         }
     }
 
-    public static void removeServletDeployment(DeploymentInfo deploymentInfo) {
-        try {
-            DeploymentManager manager = Servlets.defaultContainer().getDeployment(deploymentInfo.getDeploymentName());
-            manager.stop();
-            manager.undeploy();
-            Servlets.defaultContainer().removeDeployment(deploymentInfo);
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
-    }
+    public static void undeploy(String deploymentName) {
 
-    protected static void undeploy(RequestHandler requestHandler) {
+       try {
+          DeploymentManager manager = Servlets.defaultContainer().getDeployment(deploymentName);
+          manager.stop();
+          manager.undeploy();
+       } catch (Exception ex) {
+          throw new RuntimeException(ex);
+       }
 
         if (deployment == null) {
             LOG.info("Deployment doesn't exist for protocol instance: " + this);
@@ -273,11 +257,13 @@ public abstract class WebService implements ContainerService {
     }
 
     /**
-     * Get standard JAX-RS providers that are used in the deployment with default CORS behaviour
+     * Get standard JAX-RS providers that are used in the deployment with optional realm extraction from the request
+     * path and default CORS behaviour
      */
-    public static List<Object> getStandardProviders(boolean devMode) {
+    public static List<Object> getStandardProviders(boolean devMode, Integer realmIndex) {
         return getStandardProviders(
             devMode,
+            realmIndex,
             devMode ? Collections.singleton(DEFAULT_CORS_ALLOW_ALL) : null,
             devMode ? DEFAULT_CORS_ALLOW_ALL : null,
             devMode ? DEFAULT_CORS_ALLOW_ALL : null,
@@ -286,35 +272,32 @@ public abstract class WebService implements ContainerService {
     }
 
     /**
-     * Get standard JAX-RS providers that are used in the deployment with custom CORS behaviour
+     * Get standard JAX-RS providers that are used in the deployment with optional realm extraction from the request
+     * path and custom CORS behaviour
      */
     public static List<Object> getStandardProviders(
             boolean devMode,
+            Integer realmIndex,
             Set<String> allowedOrigins,
             String allowedMethods,
             String exposedHeaders,
             int corsMaxAge,
             boolean allowCredentials) {
-        if (defaultResteasyExceptionMapper == null) {
-            defaultResteasyExceptionMapper = new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode);
-            forbiddenResteasyExceptionMapper = new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode);
-            undertowExceptionHandler = new WebServiceExceptions.ServletUndertowExceptionHandler(devMode);
-            jacksonConfig = new JacksonConfig();
-            alreadyGzippedWriterInterceptor = new AlreadyGzippedWriterInterceptor();
-            clientErrorExceptionHandler = new ClientErrorExceptionHandler();
-            gzipEncodingInterceptor = new GZIPEncodingInterceptor();
-        }
+
         List<Object> providers = Lists.newArrayList(
-                defaultResteasyExceptionMapper,
-                forbiddenResteasyExceptionMapper,
-                undertowExceptionHandler,
-                jacksonConfig,
-                alreadyGzippedWriterInterceptor,
-                clientErrorExceptionHandler
+           new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode),
+           new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode),
+           new WebServiceExceptions.ServletUndertowExceptionHandler(devMode),
+           new JacksonConfig(),
+           new ClientErrorExceptionHandler(),
+           new GZIPEncodingInterceptor(),
+           new GZIPDecodingInterceptor(),
+           new AcceptEncodingGZIPFilter(),
+           new AlreadyGzippedWriterInterceptor()
         );
 
-        if (!devMode) {
-           providers.add(gzipEncodingInterceptor);
+        if (realmIndex != null) {
+           providers.addFirst(new RealmPathExtractorFilter(realmIndex));
         }
 
         if (allowedOrigins != null) {

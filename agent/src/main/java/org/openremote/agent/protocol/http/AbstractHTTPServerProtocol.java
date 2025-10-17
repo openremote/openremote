@@ -107,7 +107,7 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
           container,
           null,
           Stream.of(
-             devMode ? getStandardProviders(devMode) : getStandardProviders(devMode,
+             devMode ? getStandardProviders(devMode, 1) : getStandardProviders(devMode, 1,
                 agent.getAllowedOrigins().map(Set::of).orElse(null),
                 agent.getAllowedHTTPMethods().map(methods ->
                         Arrays.stream(methods).map(Enum::name)
