@@ -26,7 +26,9 @@ import com.fasterxml.jackson.databind.cfg.ConstructorDetector;
 import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -65,6 +67,9 @@ import java.io.Serializable;
 import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -158,8 +163,20 @@ public class ValueUtil {
     protected static Map<String, Class<? extends AgentLink<?>>> agentTypeMap = new HashMap<>();
     protected static Map<String, MetaItemDescriptor<?>> metaItemDescriptors = new HashMap<>();
     protected static Map<String, ValueDescriptor<?>> valueDescriptors = new HashMap<>();
+    protected static Map<String, ObjectNode> jsonSchemas = new HashMap<>();
+    protected static Map<String, String> jsonSchemaCacheKeys = new HashMap<>();
     protected static Validator validator;
     protected static SchemaGenerator generator;
+    protected static MessageDigest md;
+
+    static {
+        try {
+            md = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            LOG.severe("MD5 algorithm not supported");
+            throw new RuntimeException(e);
+        }
+    }
 
     public static ObjectMapper configureObjectMapper(ObjectMapper objectMapper) {
         objectMapper
@@ -640,6 +657,14 @@ public class ValueUtil {
         return Optional.ofNullable(metaItemDescriptors.get(name));
     }
 
+    public static Map<String, ObjectNode> getJsonSchemas() {
+        return jsonSchemas;
+    }
+
+    public static Map<String, String> getJsonSchemaCacheKeys() {
+        return jsonSchemaCacheKeys;
+    }
+
     public static Map<String, ValueDescriptor<?>> getValueDescriptors() {
         return valueDescriptors;
     }
@@ -919,6 +944,24 @@ public class ValueUtil {
         JSON.registerSubtypes(agentLinkSubTypes);
 
         doSchemaInit();
+
+        // Add JSON schemas for complex meta items and generate cache keys
+        Map<String, MetaItemDescriptor<?>> metaItems = getMetaItemDescriptors();
+        jsonSchemas.putAll(metaItems.values().stream()
+                .map(AbstractNameValueDescriptorHolder::getType)
+                .filter(v -> {
+                    String jsonType = v.getJsonType();
+                    return jsonType.equals("array") || jsonType.equals("object");
+                })
+                .map(ValueDescriptor::getType)
+                .collect(Collectors.toMap(
+                        Class::getTypeName,
+                        type -> (ObjectNode) getSchema(type)
+                )));
+        jsonSchemaCacheKeys.putAll(jsonSchemas.entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getKey,
+                v -> hash(v.getValue().toString())
+        )));
     }
 
     protected static void doSchemaInit() {
@@ -934,6 +977,10 @@ public class ValueUtil {
             )
             .distinct()
             .toArray(Class<?>[]::new);
+    }
+
+    public static String hash(String v) {
+        return bytesToHexString(md.digest(v.getBytes(StandardCharsets.UTF_8)));
     }
 
     /**
@@ -1420,5 +1467,9 @@ public class ValueUtil {
         matcher.appendTail(result);
 
         return result.toString();
+    }
+
+    public static Class<?> wrapTypeWithArrayDimensions(Class<?> type, int arrayDimensions) {
+        return arrayDimensions > 0 ? Array.newInstance(type, new int[arrayDimensions]).getClass() : type;
     }
 }

@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import org.apache.camel.builder.RouteBuilder;
@@ -51,9 +52,14 @@ import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -203,6 +209,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
     protected GatewayService gatewayService;
     protected PersistenceService persistenceService;
     protected Map<String, AssetTypeInfo> dynamicAssetTypeInfos;
+    protected Map<String, ObjectNode> dynamicJsonSchemas = new ConcurrentHashMap<>();
     protected Path storageDir;
 
     @Override
@@ -240,6 +247,8 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         );
 
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
+
+        dynamicJsonSchemas.putAll(ValueUtil.getJsonSchemas());
     }
 
     protected void initDynamicModel() {
@@ -371,6 +380,12 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         }
 
         return ValueUtil.getMetaItemDescriptors();
+    }
+
+    public JsonNode getValueDescriptorSchema(String descriptorType, Integer arrayDimensions) throws ClassNotFoundException {
+        Class<?> type = ValueUtil.wrapTypeWithArrayDimensions(Class.forName(descriptorType), Optional.ofNullable(arrayDimensions).orElse(0));
+        String typeName = type.getTypeName();
+        return dynamicJsonSchemas.computeIfAbsent(typeName, key -> (ObjectNode)ValueUtil.getSchema(type));
     }
 
     protected <T> T parse(String jsonString, Class<T> type) throws JsonProcessingException {
