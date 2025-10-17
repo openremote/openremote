@@ -599,7 +599,7 @@ export class OrMap extends LitElement {
                 .setControls(this.controls)
                 .setGeoJson(this.geoJson);
             this._map.load().then(() => {
-                this.loadPoints();
+                // this.loadPoints();
 
                 // Get markers from slot
                 this._observer = new FlattenedNodesObserver(this._slotElement!, (info: any) => {
