@@ -141,6 +141,12 @@ if (project == rootProject) {
                             OR_SETUP_TYPE: "demo"
                     ]
                 }
+                "Clustering Setup"(Application) {
+                    moduleName = getProject().idea.module.name + ".setup.clustering"
+                    envs = [
+                            OR_SETUP_TYPE: "clustering"
+                    ]
+                }
                 "Test Setup"(Application) {
                     moduleName = getProject().idea.module.name + ".setup.integration"
                 }

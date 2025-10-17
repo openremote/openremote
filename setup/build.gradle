@@ -4,6 +4,7 @@ sourceSets {
     integration
     demo
     load1
+    clustering
 }
 
 // dependencies declaration
@@ -11,6 +12,7 @@ configurations {
     integrationImplementation.extendsFrom(implementation)
     demoImplementation.extendsFrom(implementation)
     load1Implementation.extendsFrom(implementation)
+    clusteringImplementation.extendsFrom(implementation)
 }
 
 dependencies {
@@ -31,6 +33,13 @@ tasks.register('demoJar', Jar) {
         archivesName = "openremote-demo-${project.name}"
     }
     from sourceSets.demo.output
+}
+
+tasks.register('clustering', Jar) {
+    base {
+        archivesName = "openremote-clustering-${project.name}"
+    }
+    from sourceSets.clustering.output
 }
 
 // Use demo setup sourceset by default for jar
