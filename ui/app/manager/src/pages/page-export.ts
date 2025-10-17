@@ -207,7 +207,7 @@ export class PageExport extends Page<AppStateKeyed> {
     @property()
     protected _loading: boolean = false;
 
-    protected _exportFormats: {[key: number]: string} = {1: 'Default .csv', 2: "Column per attribute .csv", 3: "Column per attributes .csv with 1 minute averages"};
+    protected _exportFormats: {[key: number]: string} = {1: 'CSV: Default', 2: "CSV: Multicolumn", 3: "CSV: Multicolumn | 1min averages"};
 
     @property()
     private selectedFormat: number = 1;
@@ -290,9 +290,6 @@ export class PageExport extends Page<AppStateKeyed> {
                         </div>
                     </div>
                     <div class="export-btn-wrapper">
-                        <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="clearTable" @click="${() => this.clearSelection()}"></or-mwc-input>
-                        <div>
-                        <or-mwc-input .disabled="${this.isExportBtnDisabled || this._loading}" class="button" raised .type="${InputType.BUTTON}" label="export" @click="${() => this.export()}"></or-mwc-input>
                         <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="clearTable" @or-mwc-input-changed="${() => this.clearSelection()}"></or-mwc-input>
                         <or-mwc-input .disabled="${this.isExportBtnDisabled}" class="button" raised .type="${InputType.BUTTON}" label="export" @or-mwc-input-changed="${() => this.export()}"></or-mwc-input>
                     </div>
