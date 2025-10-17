@@ -1969,7 +1969,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             const newExpanded: UiAssetTreeNode[] = [];
             this._expandedNodes.forEach(expandedNode => {
                 OrAssetTree._forEachNodeRecursive(this._nodes!, n => {
-                    if (n.asset && expandedNode && expandedNode.asset && n.asset.id === expandedNode.asset.id) {
+                    if (n.asset?.id && expandedNode?.asset?.id && n.asset.id === expandedNode.asset.id && this.isExpandable(expandedNode.asset.id)) {
                         n.expanded = true;
                         newExpanded.push(n);
 
