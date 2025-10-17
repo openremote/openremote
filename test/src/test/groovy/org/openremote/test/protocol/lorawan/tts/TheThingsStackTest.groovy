@@ -45,6 +45,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.nio.file.Path
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -90,12 +91,17 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait 
     Server mqttBroker
 
     @Shared
+    Path tempDataDir
+
+    @Shared
     Mqtt3AsyncClient mqttClient
 
     def setupSpec() {
+        tempDataDir = File.createTempDir('moquette_data_', '').toPath()
         mqttBrokerPort = findEphemeralPort()
         def props = new Properties()
         props.setProperty('port', mqttBrokerPort.toString())
+        props.setProperty('persistent_store', tempDataDir.resolve('moquette_store.mapdb').toString())
         def config = new MemoryConfig(props)
         mqttBroker = new Server()
         mqttBroker.startServer(config)
@@ -147,6 +153,7 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait 
         ttsServer?.stop(0)
         mqttClient?.disconnect()
         mqttBroker?.stopServer()
+        tempDataDir?.deleteDir()
     }
 
     def "TheThingsStack Integration Test"() {
