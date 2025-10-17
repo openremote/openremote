@@ -589,7 +589,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                         <div class="end-element loadmore-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }}
                                              @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}"
                                              @dragover="${(ev: DragEvent) => this._onDragOver(ev)}">
-                                            <or-mwc-input type=${InputType.BUTTON} label="Load More" outlined compact @or-mwc-input-changed=${() => {
+                                            <or-mwc-input type=${InputType.BUTTON} label="loadMore" outlined compact @or-mwc-input-changed=${() => {
                                                 const cache: Asset[] = [];
                                                 OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => n.asset && cache.push(n.asset));
                                                 this._loadAssets(undefined, this._nodes?.length ?? 0, cache);
@@ -2177,7 +2177,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     ${!treeNode.children || (treeNode.expandable && !treeNode.expanded)  ? `` : treeNode.children.map((childNode) => this._treeNodeTemplate(childNode, level + 1)).filter(t => !!t)}
                     ${when(treeNode.asset?.id && this._incompleteParentIds.includes(treeNode.asset.id), () => html`
                         <li class="asset-list-element loadmore-element">
-                            <or-mwc-input type=${InputType.BUTTON} outlined label="Load More" style="padding-left: ${(level + 1) * 22}px;"></or-mwc-input>
+                            <or-mwc-input type=${InputType.BUTTON} outlined label="loadMore" style="padding-left: ${(level + 1) * 22}px;"></or-mwc-input>
                         </li>
                     `)}
                 </ol>

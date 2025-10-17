@@ -628,6 +628,7 @@
   "dismiss": "sluiten",
   "createAssetFailed": "Asset aanmaken is niet gelukt",
   "moveAssetFailed": "Failed to move asset",
+  "loadMore": "Meer laden",
   "logCategory": {},
   "readPermissions": "Leesrechten",
   "writePermissions": "Schrijfrechten",
