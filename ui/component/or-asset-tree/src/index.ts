@@ -11,16 +11,17 @@ import {
     AssetModelUtil,
     AssetQuery,
     AssetQueryMatch,
+    AssetQueryOrderBy$Property,
     AssetsEvent,
-    AssetTreeNode,
-    AssetTypeInfo,
+    AssetTreeEvent, AssetTreeNode,
     Attribute,
     AttributePredicate,
     ClientRole,
     LogicGroup,
     LogicGroupOperator,
     SharedEvent,
-    StringPredicate, WellknownAssets
+    StringPredicate,
+    WellknownAssets
 } from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
@@ -33,17 +34,12 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-dialog";
-
-import {
-    OrMwcDialog,
-    showDialog,
-    showErrorDialog,
-    showOkCancelDialog
-} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog, showErrorDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
 import "./or-add-asset-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import { when } from "lit/directives/when.js";
+import {when} from "lit/directives/when.js";
+import {debounce} from "lodash";
 
 export interface AssetTreeTypeConfig {
     include?: string[];
@@ -246,19 +242,6 @@ declare global {
     }
 }
 
-export const getAssetTypes = async () => {
-    const response = await manager.rest.api.AssetResource.queryAssets({
-        select: {
-            attributes: []
-        },
-        recursive: true
-    });
-
-    if(response && response.data) {
-        return response.data.map(asset => asset.type!);
-    }
-}
-
 @customElement("or-asset-tree")
 export class OrAssetTree extends subscribe(manager)(LitElement) {
 
@@ -272,31 +255,25 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
      * Allows arbitrary assets to be displayed using a tree
      */
     @property({type: Array, reflect: false})
-    public assets?: Asset[];
+    public readonly assets?: Asset[];
+
+    @property({type: Array})
+    public readonly rootAssets?: Asset[];
+
+    @property({type: Array})
+    public readonly rootAssetIds?: string[];
 
     @property({type: Object})
-    public assetInfos?: AssetTypeInfo[];
-
-    @property({type: Array})
-    public _assetIdsOverride?: string[];
-
-    @property({type: Array})
-    public rootAssets?: Asset[];
-
-    @property({type: Array})
-    public rootAssetIds?: string[];
-
-    @property({type: Object})
-    public dataProvider?: () => Promise<Asset[]>;
+    public readonly dataProvider?: () => Promise<Asset[]>;
 
     @property({type: Boolean})
-    public readonly: boolean = false;
+    public readonly readonly: boolean = false;
 
     @property({type: Boolean})
     public disabled: boolean = false;
 
     @property({type: Boolean})
-    public disableSubscribe: boolean = false;
+    public readonly disableSubscribe: boolean = false;
 
     @property({type: Array})
     public selectedIds?: string[];
@@ -322,9 +299,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     @property({type: Boolean})
     public checkboxes?: boolean = false;
 
+    @property({type: Number})
+    public readonly queryLimit = 100;
+
     protected config?: AssetTreeConfig;
 
-    @property({attribute: false})
+    @state()
     protected _nodes?: UiAssetTreeNode[];
 
     protected _loading: boolean = false;
@@ -335,7 +315,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     @state()
     protected _filter: OrAssetTreeFilter = new OrAssetTreeFilter();
-    protected _searchInputTimer?: number = undefined;
     @query("#clearIconContainer")
     protected _clearIconContainer!: HTMLElement;
     @query("#filterInput")
@@ -351,6 +330,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     @state()
     protected _assetTypeFilter!: string;
     protected _uniqueAssetTypes: string[] = [];
+    @state()
+    protected _hasMoreParents = false;
+    @state()
+    protected _incompleteParentIds: string[] = [];
 
     private _dragDropParentId: string | null = null;
     protected _expandTimer?: number = undefined;
@@ -503,14 +486,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                   placeholder="${i18next.t("filter.filter")}..."
                                   compact="true"
                                   outlined="true"
-                                  @input="${(e: KeyboardEvent) => {
+                                  @input="${debounce(() => {
                                       // Means some input is occurring so delay filter
-                                      this._onFilterInputEvent(e);
-                                  }}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      // Means field has lost focus so do filter immediately
-                                      this._onFilterInput((e.detail.value as string) || undefined, true);
-                                  }}">
+                                      this._onFilterInput(this._filterInput.nativeValue);
+                                  }, 200)}">
                     </or-mwc-input>
                     <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" title="${i18next.t(this._filterSettingOpen ? "filter.close" : "filter.open")}" @click="${() => {
                         if (this._filterSettingOpen) {
@@ -595,23 +574,34 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     </div>
                 </div>
             `)}
-            
-            ${!this._nodes
-                ? html`
-                    <span id="loading"><or-translate value="loading"></or-translate></span>`
-                : ((this._nodes.length === 0 || !this.atLeastOneNodeToBeShown())
-                            ? html `<span id="noAssetsFound"><or-translate value="noAssetsFound"></or-translate></span>` 
-                            : html`
-                    <div id="list-container">
-                        <ol id="list">
-                            ${this._nodes.map((treeNode) => this._treeNodeTemplate(treeNode, 0)).filter(t => !!t)}
-                            <li class="asset-list-element">    
-                                <div class="end-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"></div>
-                            </li>
-                        </ol>
-                    </div>
-                `)
-            }
+
+            ${when(!this._nodes, () => html`
+                <span id="loading"><or-translate value="loading"></or-translate></span>
+            `, () => html`
+                ${when(this._nodes!.length === 0 || !this.atLeastOneNodeToBeShown(),
+                    () => html`<span id="noAssetsFound"><or-translate value="noAssetsFound"></or-translate></span>`,
+                    () => html`
+                        <div id="list-container">
+                            <ol id="list">
+                                ${this._nodes?.filter(n => n && !n.hidden).map(node => this._treeNodeTemplate(node, 0))}
+                                ${when(this._hasMoreParents, () => html`
+                                    <li class="asset-list-element">
+                                        <div class="end-element loadmore-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }}
+                                             @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}"
+                                             @dragover="${(ev: DragEvent) => this._onDragOver(ev)}">
+                                            <or-mwc-input type=${InputType.BUTTON} label="loadMore" outlined compact @or-mwc-input-changed=${() => {
+                                                const cache: Asset[] = [];
+                                                OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => n.asset && cache.push(n.asset));
+                                                this._loadAssets(undefined, this._nodes?.length ?? 0, cache);
+                                            }}></or-mwc-input>
+                                        </div>
+                                    </li>
+                                `)}
+                            </ol>
+                        </div>
+                    `
+                )}
+            `)}
 
             <div id="footer">
             
@@ -627,16 +617,18 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         const result = super.shouldUpdate(_changedProperties);
         if (_changedProperties.has("assets")
             || _changedProperties.has("rootAssets")
-            || _changedProperties.has("rootAssetIds")) {
-            this._nodes = undefined;
+            || _changedProperties.has("rootAssetIds")
+            || _changedProperties.has("queryLimit")
+        ) {
+            this.refresh();
         }
 
         if (!this._nodes) {
-            this._loadAssets();
+            this._loadAssets().catch(console.warn);
             return true;
         }
 
-        if (_changedProperties.has("selectedIds")) {
+        if (_changedProperties.has("selectedIds") && this.selectedIds !== undefined) {
             const previous: string[] | undefined = _changedProperties.get("selectedIds");
             if (!Util.objectsEqual(previous, this.selectedIds)) {
                 this._updateSelectedNodes();
@@ -665,11 +657,13 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected _updateSelectedNodes() {
-        const actuallySelectedIds: string[] = [];
-        const selectedNodes: UiAssetTreeNode[] = [];
+        let actuallySelectedIds: string[] | undefined;
+        let selectedNodes: UiAssetTreeNode[] | undefined;
         OrAssetTree._forEachNodeRecursive(this._nodes!, (node) => {
             if (this.selectedIds && this.selectedIds.indexOf(node.asset!.id!) >= 0) {
+                actuallySelectedIds ??= [];
                 actuallySelectedIds.push(node.asset!.id!);
+                selectedNodes ??= [];
                 selectedNodes.push(node);
                 node.selected = true;
 
@@ -693,9 +687,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     parent.someChildrenSelected = false;
                     parent.allChildrenSelected = false;
 
-                    if (allChildren.every(c => actuallySelectedIds.includes(c.asset!.id!))) {
+                    if (allChildren.every(c => actuallySelectedIds?.includes(c.asset!.id!))) {
                         parent.allChildrenSelected = true;
-                    } else if (allChildren.some(c => actuallySelectedIds.includes(c.asset!.id!))) {
+                    } else if (allChildren.some(c => actuallySelectedIds?.includes(c.asset!.id!))) {
                         parent.someChildrenSelected = true;
                     }
 
@@ -704,13 +698,17 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             }
         });
 
-        this.selectedIds = actuallySelectedIds;
-        const oldSelection = this._selectedNodes;
-        this._selectedNodes = selectedNodes;
-        this.dispatchEvent(new OrAssetTreeSelectionEvent({
-            oldNodes: oldSelection,
-            newNodes: selectedNodes
-        }));
+        if(actuallySelectedIds?.length) {
+            this.selectedIds = actuallySelectedIds;
+        }
+        if(selectedNodes !== undefined || this.selectedNodes !== undefined) {
+            const oldSelection = this._selectedNodes;
+            this._selectedNodes = selectedNodes ?? [];
+            this.dispatchEvent(new OrAssetTreeSelectionEvent({
+                oldNodes: oldSelection,
+                newNodes: selectedNodes ?? []
+            }));
+        }
     }
 
     protected _updateSort(nodes: UiAssetTreeNode[], sortFunction: (a: UiAssetTreeNode, b: UiAssetTreeNode) => number) {
@@ -722,18 +720,30 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         nodes.forEach((node) => this._updateSort(node.children, sortFunction));
     }
 
-    protected _toggleExpander(expander: HTMLElement, node: UiAssetTreeNode | null, silent: boolean = false) {
+    protected async _toggleExpander(expander: HTMLElement, node: UiAssetTreeNode | null, silent: boolean = false) {
         if (node && node.expandable) {
             node.expanded = !node.expanded;
 
             if (node.expanded) {
                 this._expandedNodes.push(node);
+
+                // Load children (from cache or using WebSocket) of the now 'expanded' node
+                const hasCachedChildren = node.children?.length;
+                if(hasCachedChildren) {
+                    console.debug(`Reusing cache for loading children of asset ${node.asset?.id}...`);
+                } else {
+                    const cache: Asset[] = [];
+                    OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => n.asset && cache.push(n.asset));
+                    await this._loadAssets(node.asset?.id, 0, cache).catch(e => console.warn(e));
+                }
+
             } else {
                 this._expandedNodes = this._expandedNodes.filter(n => n !== node);
             }
 
+            // Update HTML attributes of the now 'expanded' node
             const elem = expander.parentElement!.parentElement!.parentElement!;
-            elem.toggleAttribute("data-expanded");
+            elem.toggleAttribute("data-expanded", node.expanded);
             if (!silent) {
                 this.dispatchEvent(new OrAssetTreeToggleExpandEvent({node: node}));
             }
@@ -809,9 +819,17 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         const isExpander = evt && (evt.target as HTMLElement).className.indexOf("expander") >= 0;
         const isParentCheckbox = evt && (evt.target as OrIcon)?.icon?.includes("checkbox-multiple");
+        const isLoadMoreButton = evt && (evt.target as OrMwcInput)?.parentElement?.classList.contains("loadmore-element");
 
         if (isExpander) {
             this._toggleExpander((evt.target as HTMLElement), node);
+
+        } else if (isLoadMoreButton) {
+            if(node) {
+                const cache: Asset[] = [];
+                OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => n.asset && cache.push(n.asset));
+                this._loadAssets(node.asset?.id, node.children?.length ?? 0, cache);
+            }
         } else {
             let canSelect = true;
 
@@ -1095,45 +1113,27 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         this._doFiltering();
     }
 
-    protected _onFilterInputEvent(_e: KeyboardEvent) {
-        this._onFilterInput(this._filterInput?.nativeValue, false);
-    }
-
-    protected _onFilterInput(newValue: string | undefined, force: boolean): void {
+    protected _onFilterInput(newValue: string | undefined): void {
         this.applyFilter(newValue);
-
-        if (this._searchInputTimer) {
-            clearTimeout(this._searchInputTimer);
-        }
-
-        if (!force) {
-            this._searchInputTimer = window.setTimeout(() => {
-                this._doFiltering();
-            }, 350);
-        } else {
-            this._doFiltering();
-        }
+        this._doFiltering();
     }
 
     protected async _doFiltering() {
-        // Clear timeout in case we got here from value change
-        if (this._searchInputTimer) {
-            clearTimeout(this._searchInputTimer);
-            this._searchInputTimer = undefined;
-        }
 
         if (this.isConnected && this._nodes) {
 
-            if (!this._filter.asset && !this._filter.attribute && !this._filter.assetType && !this._filter.attributeValue) {
-                // Clear the filter
+            // Clear filter if everything is not set anymore
+            if (!this._filter.asset?.length && !this._filter.attribute?.length && !this._filter.assetType?.length && !this._filter.attributeValue?.length) {
+                console.debug("Clearing asset tree filter...");
                 OrAssetTree._forEachNodeRecursive(this._nodes!, (node) => {
                     node.notMatchingFilter = false;
                     node.hidden = false;
                 });
-                this.requestUpdate("_nodes");
+                this.refresh(); // Clear cache, and refetch the assets
                 return;
             }
 
+            console.debug("Filtering asset tree using filter:", this._filter);
             this.disabled = true;
 
             // Use a matcher function - this can be altered independent of the filtering logic
@@ -1145,11 +1145,29 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     queryRequired = true;
                 }
 
-                this.getMatcher(queryRequired).then((matcher: (asset: Asset) => boolean) => {
+                this.getMatcher(queryRequired).then(({ matcher, assets }) => {
+                    assets ??= [];
                     if (this._nodes) {
-                        this._nodes.forEach((node: UiAssetTreeNode) => {
-                            this.filterTreeNode(node, matcher);
+
+                        // Add nodes to the tree if not done yet
+                        const cache: Asset[] = [];
+                        OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => n.asset && cache.push(n.asset));
+                        const assetsWithoutDuplicates = new Map([...cache, ...assets].map(item => [item.id, item])).values();
+                        this._buildTreeNodes([...assetsWithoutDuplicates]);
+
+                        // Filter out nodes that should not be visible
+                        const visibleNodes = new Map<string, boolean>();
+                        OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => {
+                            const visible = this.filterTreeNode(n, matcher);
+                            if(visible && !n.notMatchingFilter && n.asset?.id) {
+                                visibleNodes.set(n.asset.id, visible);
+                            }
                         });
+                        // If only 1 asset is shown, automatically select it
+                        if(visibleNodes.size === 1) {
+                            console.debug("Only 1 asset is shown, automatically selecting it...");
+                            this.selectedIds = Array.from(visibleNodes.keys());
+                        }
                         this.disabled = false;
                     }
                 });
@@ -1157,11 +1175,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
     }
 
-    protected getMatcher(requireQuery: boolean): Promise<((asset: Asset) => boolean)> {
+    protected async getMatcher(requireQuery: boolean): Promise<{ matcher: ((asset: Asset) => boolean), assets?: Asset[]}> {
         if (requireQuery) {
             return this.getMatcherFromQuery();
         } else {
-            return this.getSimpleNameMatcher();
+            return { matcher: await this.getSimpleNameMatcher() };
         }
     }
 
@@ -1179,7 +1197,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         };
     }
 
-    protected async getMatcherFromQuery(): Promise<((asset: Asset) => boolean)> {
+    protected async getMatcherFromQuery(): Promise<{ assets: Asset[], matcher: ((asset: Asset) => boolean)}> {
         let assetCond: StringPredicate[] | undefined;
         let attributeCond: LogicGroup<AttributePredicate> | undefined;
         let assetTypeCond: string[] | undefined;
@@ -1216,17 +1234,27 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         assetQueries.push({
+            realm: {
+                name: manager.displayRealm
+            },
             select: {
                 attributes: attributeCond ? undefined : []
             },
+            orderBy: {
+                property: this._getOrderBy(this.sortBy)
+            },
             names: assetCond,
             types: assetTypeCond,
-            attributes: attributeCond
+            attributes: attributeCond,
+            limit: Math.max(this.queryLimit, 1)
         });
 
         // If the "Asset string input" is 22 characters long, we also query for the asset id
         if(this._filter.asset && this._filter.asset.length === 22) {
             assetQueries.push({
+                realm: {
+                    name: manager.displayRealm
+                },
                 select: {
                     attributes: attributeCond ? undefined : []
                 },
@@ -1237,26 +1265,46 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             });
         }
 
-        let foundAssets: Asset[];
+        let foundAssets: Asset[] = [];
         let foundAssetIds: string[];
 
-       try {
-           const promises = assetQueries.map(q => manager.rest.api.AssetResource.queryAssets(q));
-           const responses = await Promise.all(promises);
-           foundAssets = responses.flatMap(r => r.data);
-           foundAssetIds = foundAssets.map(a => a.id!);
+        try {
+            console.debug(`Querying assets using filter '${this._filterInput.nativeValue}'...`);
+            const promises = assetQueries.map(q => manager.rest.api.AssetResource.queryAssets(q));
+            const responses = await Promise.all(promises);
+            foundAssets = responses.flatMap(r => r.data);
+            foundAssetIds = foundAssets.map(a => a.id!);
+            console.debug(`The filter query found ${foundAssets.length} assets!`);
 
-       } catch (e) {
-           console.error("Error querying Asset Tree assets with filter:", e);
-           this._filter.assetType.forEach((assetT: string) => {
-               if (this._assetTypes.findIndex((assetD: AssetDescriptor) => assetD.name === assetT) === -1) {
-                   showSnackbar(undefined, "filter.assetTypeDoesNotExist", "dismiss");
-               }
-           });
-           foundAssetIds = [];
-       }
+        } catch (e) {
+            console.error("Error querying Asset Tree assets with filter:", e);
+            this._filter.assetType.forEach((assetT: string) => {
+                if (this._assetTypes.findIndex((assetD: AssetDescriptor) => assetD.name === assetT) === -1) {
+                    showSnackbar(undefined, "filter.assetTypeDoesNotExist", "dismiss");
+                }
+            });
+            foundAssetIds = [];
+        }
 
-        return (asset) => {
+        // Query parents of the found assets if not cached yet.
+        const parentIds = new Set(foundAssets.filter(a => a.path && a.path.length > 1).flatMap(a => a.path!.slice(0, -1)));
+        const unknownParentIds = Array.from(parentIds).filter(id => id && !this.assets?.some(a => a.id === id));
+        if (unknownParentIds.length > 0) {
+            try {
+                console.debug(`Querying parents of ${unknownParentIds.length} assets...`);
+                const parentAssets = await manager.rest.api.AssetResource.queryAssets({
+                    select: { attributes: attributeCond ? undefined : [] },
+                    ids: unknownParentIds
+                });
+                console.debug(`The filter query found ${parentAssets.data.length} parents!`);
+                foundAssetIds = foundAssets.map(a => a.id!);
+                foundAssets = [...foundAssets, ...parentAssets.data];
+            } catch (e) {
+                console.error("Error querying Asset Tree parents of found assets:", e);
+            }
+        }
+
+        return { assets: foundAssets, matcher: (asset) => {
             let attrValueCheck = true;
 
             if (this._filter.attribute.length > 0 && this._filter.attributeValue.length > 0 && foundAssetIds.includes(asset.id!)) {
@@ -1350,7 +1398,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             }
 
             return foundAssetIds.includes(asset.id!) && attrValueCheck;
-        };
+        }};
     }
 
     protected isAnyFilter(): boolean {
@@ -1580,17 +1628,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             }, {
                 paramsSerializer: params => Qs.stringify(params, {arrayFormat: 'repeat'})
             }).then((response) => {
-                // Clear nodes to re-fetch them
-                this.refresh();
-                this.disabled = false;
-
+                this._onDeselectClicked();
                 if (response.status !== 204) {
                     showErrorDialog(i18next.t("deleteAssetsFailed"));
                 }
             }).catch((reason) => {
-                this.refresh();
-                this.disabled = false;
                 showErrorDialog(i18next.t("deleteAssetsFailed"));
+            }).finally(() => {
+                this.disabled = false;
             });
         };
 
@@ -1667,66 +1712,110 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
     }
 
-    protected _loadAssets() {
+    protected _getOrderBy(sortBy?: string): AssetQueryOrderBy$Property {
+        switch (sortBy) {
+            case "createdOn": return AssetQueryOrderBy$Property.CREATED_ON;
+            case "type": return AssetQueryOrderBy$Property.ASSET_TYPE;
+            default: return AssetQueryOrderBy$Property.NAME;
+        }
+    }
 
-        const sortFunction = this._getSortFunction();
+    /**
+     * Main function to load assets and populate the tree.
+     * Based on the HTML attributes of this component, it either fetches using a WebSocket connection or using a dataProvider.
+     * Once retrieved, these assets will be passed along to the {@link _buildTreeNodes} to construct the tree nodes.
+     * If the user has applied a filter, it will also be taken into count using {@link _doFiltering}.
+     *
+     * @param parentId - The parent ID an asset MUST be a child of during WebSocket retrieval. This is useful for pagination.
+     * @param offset - Offset number of the assets to request through WebSocket. This is useful for pagination.
+     * @param cache - An array of assets to populate the tree with alongside the retrieved nodes.
+     * @protected
+     */
+    protected async _loadAssets(parentId?: string, offset = 0, cache?: Asset[]): Promise<AssetTreeEvent | undefined> {
+        console.debug(`Loading assets with ${parentId ? `parent ${parentId}` : `no parents`}...`);
 
-        if (!this.assets) {
-
-            if (!this._connected) {
-                return;
-            }
-
-            if (this._loading) {
-                return;
-            }
-
-            this._loading = true;
-
-            if(this.dataProvider) {
-                this.dataProvider().then(assets => {
-                    this._loading = false;
-                    this._buildTreeNodes(assets, sortFunction);
-                    if(this._filterInput?.value) {
-                        this._doFiltering();
-                    }
-                })
-
-            } else {
-
-                const query: AssetQuery = {
-                    realm: {
-                        name: manager.displayRealm
-                    },
-                    select: { // Just need the basic asset info
-                        attributes: []
-                    }
-                };
-
-                if (this.assetIds) {
-                    query.ids = this.assetIds;
-                    query.recursive = true;
-                } else if (this.rootAssets) {
-                    query.ids = this.rootAssets.map((asset) => asset.id!);
-                    query.recursive = true;
-                } else if (this.rootAssetIds) {
-                    query.ids = this.rootAssetIds;
-                    query.recursive = true;
-                }
-                this._sendEventWithReply({
-                    eventType: "read-assets",
-                    assetQuery: query
-                }).then((ev) => {
-                    this._loading = false;
-                    this._buildTreeNodes((ev as AssetsEvent).assets!, sortFunction);
-                    if(this._filterInput?.value) {
-                        this._doFiltering();
-                    }
-                });
-            }
-        } else {
+        // If asset objects are provided in the HTML attribute, load these instead.
+        if (this.assets) {
+            console.debug(`Assets already pre-loaded using HTML attributes; reusing them to construct the tree UI...`);
             this._loading = false;
-            this._buildTreeNodes(this.assets, sortFunction);
+            this._buildTreeNodes(this.assets);
+            return;
+        }
+
+        if (!this._connected) {
+            throw new Error("Not connected to the server; cannot load assets.");
+        }
+
+        if (this._loading) {
+            throw new Error("Already loading assets for asset tree; ignoring request.");
+        }
+
+        this._loading = true;
+
+        if(this.dataProvider) {
+            this.dataProvider().then(assets => {
+                this._loading = false;
+                this._buildTreeNodes(assets);
+                if(this._filterInput?.value) {
+                    this._doFiltering();
+                }
+            });
+
+        } else {
+            const query: AssetQuery = {
+                realm: {
+                    name: manager.displayRealm
+                },
+                parents: parentId ? [{ id: parentId }] : [], // Filters by parent ID. If parentId is null, it will only request 'top level' assets.
+                select: { // Just need the basic asset info
+                    attributes: []
+                },
+                orderBy: {
+                    property: this._getOrderBy(this.sortBy)
+                },
+                offset: offset,
+                limit: Math.max(this.queryLimit, 1)
+            };
+
+            if (this.assetIds) {
+                query.ids = this.assetIds;
+                query.recursive = true;
+            } else if (this.rootAssets) {
+                query.ids = this.rootAssets.map((asset) => asset.id!);
+                query.recursive = true;
+            } else if (this.rootAssetIds) {
+                query.ids = this.rootAssetIds;
+                query.recursive = true;
+            }
+            const eventPromise = this._sendEventWithReply({
+                eventType: "read-asset-tree",
+                assetQuery: query
+            });
+            eventPromise.then(ev => {
+                const newAssets = (ev as AssetTreeEvent).assetTree?.assets ?? [];
+                const hasMore = (ev as AssetTreeEvent).assetTree?.hasMore ?? false;
+                if(!parentId) {
+                    this._hasMoreParents = hasMore;
+                } else if(parentId && this._incompleteParentIds.includes(parentId) && !hasMore) {
+                    this._incompleteParentIds = this._incompleteParentIds.filter(id => id !== parentId);
+                } else if(parentId && hasMore) {
+                    this._incompleteParentIds = [...this._incompleteParentIds, parentId];
+                }
+                console.debug(`Received read-assets-tree event with ${newAssets.length} assets.`);
+                console.debug(`Combining these assets with the cache of ${cache?.length ?? 0} assets...`);
+                this._loading = false;
+                if(cache) {
+                    const assets = [...cache, ...newAssets.filter(a => !cache.find(c => c.id === a.id))];
+                    this._buildTreeNodes(assets);
+                } else {
+                    this._buildTreeNodes(newAssets);
+                }
+                if(this._filterInput?.value) {
+                    this._doFiltering();
+                }
+            }) as Promise<AssetTreeEvent>;
+
+            return eventPromise as Promise<AssetTreeEvent>;
         }
     }
 
@@ -1741,7 +1830,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     public onEventsConnect() {
         this._connected = true;
-        this._loadAssets();
+        this._loadAssets().catch(console.warn);
     }
 
     public onEventsDisconnect() {
@@ -1757,7 +1846,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         if (event.eventType === "assets") {
             const assetsEvent = event as AssetsEvent;
-            this._buildTreeNodes(assetsEvent.assets!, this._getSortFunction());
+            this._buildTreeNodes(assetsEvent.assets!);
             return;
         }
 
@@ -1787,7 +1876,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             }
 
             // In case of filter already active, do not override the actual state of assetTree
-            this._buildTreeNodes(assets, this._getSortFunction());
+            this._buildTreeNodes(assets);
             if (this._filterInput?.value) {
                 this._doFiltering();
             }
@@ -1795,9 +1884,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
     }
 
-
-
-    protected _buildTreeNodes(assets: Asset[], sortFunction: (a: UiAssetTreeNode, b: UiAssetTreeNode) => number) {
+    /**
+     * Function that creates and constructs the tree node objects to display.
+     * @param assets - List of assets to display in the tree
+     * @param sortFunction - Optional sorting function for ordering the nodes
+     * @protected
+     */
+    protected _buildTreeNodes(assets: Asset[], sortFunction = this._getSortFunction()) {
+        console.debug(`Building asset tree nodes for ${assets.length} assets...`);
         if (!assets || assets.length === 0) {
             this._nodes = [];
         } else {
@@ -1875,7 +1969,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             const newExpanded: UiAssetTreeNode[] = [];
             this._expandedNodes.forEach(expandedNode => {
                 OrAssetTree._forEachNodeRecursive(this._nodes!, n => {
-                    if (n.asset && expandedNode && expandedNode.asset && n.asset.id === expandedNode.asset.id) {
+                    if (n.asset?.id && expandedNode?.asset?.id && n.asset.id === expandedNode.asset.id && this.isExpandable(expandedNode.asset.id)) {
                         n.expanded = true;
                         newExpanded.push(n);
 
@@ -1894,6 +1988,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             this._expandedNodes = newExpanded;
         }
 
+        console.debug(`Asset tree nodes built. Now selecting ${this.selectedIds?.length} nodes...`);
         if (this.selectedIds && this.selectedIds.length > 0) {
             this._updateSelectedNodes();
         }
@@ -1910,10 +2005,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _buildChildTreeNodes(treeNode: UiAssetTreeNode, assets: AssetWithReparentId[], sortFunction: (a: UiAssetTreeNode, b: UiAssetTreeNode) => number) {
         let children: UiAssetTreeNode[] | undefined = this.assetsChildren[treeNode.asset!.id!];
         treeNode.children = children ? children.sort(sortFunction) : [];
-
-        if (treeNode.children.length > 0) {
-            treeNode.expandable = true;
-        }
+        treeNode.expandable = (treeNode.asset as any)?.hasChildren || treeNode.children?.length;
 
         treeNode.children.forEach((childNode) => {
             childNode.parent = treeNode;
@@ -2004,7 +2096,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     public _onDragEnter(ev: any): void {
-       let currentElement = ev.currentTarget as HTMLElement;
+        let currentElement = ev.currentTarget as HTMLElement;
 
         currentElement.classList.add('over');
 
@@ -2022,6 +2114,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         this._expandTimer = undefined;
     }
 
+    /**
+     * Generates the HTML TemplateResult for an individual node / tree item.
+     * @param treeNode Node to display
+     * @param level Level of depth in the tree from 0 to infinite. (0 = top level. If it has 2 parents, level = 2)
+     * @protected
+     */
     protected _treeNodeTemplate(treeNode: UiAssetTreeNode, level: number): TemplateResult | string | undefined {
         const descriptor = AssetModelUtil.getAssetDescriptor(treeNode.asset!.type!);
 
@@ -2045,6 +2143,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         if (treeNode.expanded && treeNode.children.length === 0) {
+            console.debug("Tree node has no children, collapsing it...");
             treeNode.expanded = false;
         }
 
@@ -2076,6 +2175,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 </div>
                 <ol>
                     ${!treeNode.children || (treeNode.expandable && !treeNode.expanded)  ? `` : treeNode.children.map((childNode) => this._treeNodeTemplate(childNode, level + 1)).filter(t => !!t)}
+                    ${when(treeNode.asset?.id && this._incompleteParentIds.includes(treeNode.asset.id), () => html`
+                        <li class="asset-list-element loadmore-element">
+                            <or-mwc-input type=${InputType.BUTTON} outlined label="loadMore" style="padding-left: ${(level + 1) * 22}px;"></or-mwc-input>
+                        </li>
+                    `)}
                 </ol>
             </li>
         `;

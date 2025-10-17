@@ -367,7 +367,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         event.detail.allow = false;
 
         this._confirmContinue(() => {
-            this._onAssetSelectionChanged(true, event.detail.detail.newNodes.map((node) => node.asset.id!));
+            this._onAssetSelectionChanged(true, event.detail.detail.newNodes?.map((node) => node.asset.id!));
         });
     }
 
@@ -393,6 +393,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         } else {
             this._assetIds = assetIds;
             if (this._viewer) {
+                console.debug(`Asset viewer is now showing asset ${assetIds && assetIds.length === 1 ? assetIds[0] : 'undefined'}`);
                 this._viewer.assetId = assetIds && assetIds.length === 1 ? assetIds[0] : undefined;
             }
             this._updateRoute(false);

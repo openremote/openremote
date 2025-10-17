@@ -629,6 +629,7 @@
   "dismiss": "dismiss",
   "createAssetFailed": "Failed to create asset",
   "moveAssetFailed": "Failed to move asset",
+  "loadMore": "Load more",
   "logCategory": {},
   "readPermissions": "Read permissions",
   "writePermissions": "Write permissions",
