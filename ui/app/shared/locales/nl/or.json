@@ -915,6 +915,9 @@
   "MEDIAN": "Mediaan",
   "MODE": "Modus",
   "SUM": "Som",
+  "mapPage": {
+    "legendTitle": "Legend"
+  },
   "alarm": {
     "": "Alarm",
     "alarm_plural": "Alarmen",
