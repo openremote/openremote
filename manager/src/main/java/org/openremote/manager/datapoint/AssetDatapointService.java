@@ -290,40 +290,48 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         return scheduledExecutorService.schedule(() -> {
             String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
             if (format == 2) {
+                String attributeFilter = getAttributeFilter(attributeRefs);
                 StringBuilder sb = new StringBuilder(String.format(
                         "copy (select * from crosstab( " +
                                 "'select ad.timestamp, a.name || '' \\: '' || ad.attribute_name as header, ad.value " +
                                 "from asset_datapoint ad " +
                                 "join asset a on ad.entity_id = a.id " +
-                                "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                                "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (%s) " +
                                 "order by ad.timestamp, header', " +
                                 "'select distinct a.name || '' \\: '' || ad.attribute_name as header " +
                                 "from asset_datapoint ad " +
                                 "join asset a on ad.entity_id = a.id " +
+                                "where %s " +
                                 "order by header') " +
                                 "as ct(timestamp timestamp, %s) " +
                                 ") to '/storage/" + EXPORT_STORAGE_DIR_NAME + "/" + fileName + "' delimiter ',' CSV HEADER;",
-                        fromTimestamp / 1000, toTimestamp / 1000, getAttributeColumns(attributeRefs)
+                        fromTimestamp / 1000, toTimestamp / 1000, attributeFilter, attributeFilter, getAttributeColumns(attributeRefs)
                 ));
                 persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
             } else if (format == 3) {
+                String attributeFilter = getAttributeFilter(attributeRefs);
                 StringBuilder sb = new StringBuilder(String.format(
                         "copy (select * from crosstab( " +
                                 "'select public.time_bucket(''%s'', ad.timestamp) as bucket_timestamp, " +
                                 "a.name || '' \\: '' || ad.attribute_name as header, " +
-                                "round(avg(ad.value::numeric), 3) as value " + // Using avg() with rounding to 3 decimal places
+                                "CASE " +
+                                "  WHEN jsonb_typeof((array_agg(ad.value))[1]) = ''number'' THEN " +
+                                "    round(avg((ad.value#>>''{}'')::numeric) FILTER (WHERE jsonb_typeof(ad.value) = ''number''), 3)::text " +
+                                "  ELSE (array_agg(ad.value ORDER BY ad.timestamp DESC) FILTER (WHERE jsonb_typeof(ad.value) != ''number''))[1]#>>''{}''" +
+                                "END as value " +
                                 "from asset_datapoint ad " +
                                 "join asset a on ad.entity_id = a.id " +
-                                "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                                "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (%s) " +
                                 "group by bucket_timestamp, header " +
                                 "order by bucket_timestamp, header', " +
                                 "'select distinct a.name || '' \\: '' || ad.attribute_name as header " +
                                 "from asset_datapoint ad " +
                                 "join asset a on ad.entity_id = a.id " +
+                                "where %s " +
                                 "order by header') " +
                                 "as ct(timestamp timestamp, %s) " +
                                 ") to '/storage/" + EXPORT_STORAGE_DIR_NAME + "/" + fileName + "' delimiter ',' CSV HEADER;",
-                        "1 minute", fromTimestamp / 1000, toTimestamp / 1000, getAttributeColumns(attributeRefs)
+                        "1 minute", fromTimestamp / 1000, toTimestamp / 1000, attributeFilter, attributeFilter, getAttributeColumns(attributeRefs)
                 ));
 
                 persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
@@ -344,6 +352,18 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
             // The same path must resolve in both the postgresql container and the manager container
             return exportPath.resolve(fileName).toFile();
         }, 0, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Function for building a WHERE clause filter for the requested attributes.
+     * Used in crosstab queries to ensure only the requested attributes are included.
+     * Note: Uses double single quotes for SQL string escaping within crosstab queries.
+     */
+    private String getAttributeFilter(AttributeRef[] attributeRefs) {
+        return Arrays.stream(attributeRefs)
+                .map(attr -> String.format("(ad.entity_id = ''%s'' and ad.attribute_name = ''%s'')",
+                        attr.getId(), attr.getName()))
+                .collect(Collectors.joining(" or "));
     }
 
     /**

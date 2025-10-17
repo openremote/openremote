@@ -207,7 +207,7 @@ export class PageExport extends Page<AppStateKeyed> {
     @property()
     protected _loading: boolean = false;
 
-    protected _exportFormats: {[key: number]: string} = {1: 'CSV: Default', 2: "CSV: Multicolumn", 3: "CSV: Multicolumn | 1min averages"};
+    protected _exportFormats: {[key: number]: string} = {1: 'CSVDefault', 2: "CSVCrosstab", 3: "CSVCrosstab | 1min interval"};
 
     @property()
     private selectedFormat: number = 1;
@@ -418,7 +418,7 @@ export class PageExport extends Page<AppStateKeyed> {
             link.setAttribute("download", "dataexport.zip");
             document.body.appendChild(link);
             link.click();
-
+            this._loading = false;
         }).catch(ex => {
             if(isAxiosError(ex)) {
                 if(ex.response?.status === 413) {
@@ -431,8 +431,8 @@ export class PageExport extends Page<AppStateKeyed> {
                     showSnackbar(undefined, "errorOccurred");
                 }
             }
+            this._loading = false;
         });
-        this._loading = false;
     }
     
     protected async loadConfig() {
