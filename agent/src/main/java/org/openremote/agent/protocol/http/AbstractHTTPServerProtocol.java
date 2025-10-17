@@ -78,7 +78,6 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
      */
     public static final Pattern PATH_REGEX = Pattern.compile("^[\\w/_]+$", Pattern.CASE_INSENSITIVE);
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractHTTPServerProtocol.class);
-    protected WebService.DeploymentInstance deployment;
     protected Container container;
     protected boolean devMode;
     protected IdentityService identityService;
@@ -118,7 +117,7 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
              getApiSingletons()).flatMap(Collection::stream).toList());
 
         ResteasyDeployment deployment = createResteasyDeployment(application, identityService, secure);
-        DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, deploymentPath, deploymentName);
+        DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, deploymentPath, deploymentName, devMode);
         deploy(deploymentInfo, agent.getRealm());
     }
 
@@ -169,7 +168,7 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
         return "HttpServerProtocol=" + getClass().getSimpleName() + ", Agent ID=" + agent.getId();
     }
 
-    public static WebService.RequestHandler deploy(DeploymentInfo deploymentInfo, String agentRealm) {
+    protected void deploy(DeploymentInfo deploymentInfo, String agentRealm) {
         LOG.log(INFO, "Deploying JAX-RS deployment for protocol instance : " + this);
         DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
         manager.deploy();

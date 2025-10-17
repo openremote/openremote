@@ -128,7 +128,6 @@ public class ManagerWebService extends WebService {
         initialised = true;
 
         // Serve REST API
-
        Collection<Object> deploymentSingletons = Stream.of(
           devMode ? getStandardProviders(devMode, 1) : getStandardProviders(devMode, 1,
              getCORSAllowedOrigins(container),
@@ -144,45 +143,9 @@ public class ManagerWebService extends WebService {
                deploymentSingletons);
 
        ResteasyDeployment deployment = createResteasyDeployment(APIApplication, container.getService(IdentityService.class), true);
-       DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, API_PATH, "Manager HTTP API");
-       RequestHandler apiRequestHandler = deploy(deploymentInfo);
+       DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, API_PATH, "Manager HTTP API", devMode);
+       deploy(deploymentInfo, true);
 
-
-        HttpHandler apiHandler = createApiHandler(container, resteasyDeployment);
-
-        if (apiHandler != null) {
-
-            // Authenticating requests requires a realm, either we receive this in a header or
-            // we extract it (e.g. from request path segment) and set it as a header before
-            // processing the request
-            HttpHandler baseApiHandler = apiHandler;
-
-            apiHandler = exchange -> {
-
-                String path = exchange.getRelativePath().substring(API_PATH.length());
-                Matcher realmSubMatcher = PATTERN_REALM_SUB.matcher(path);
-
-                if (!realmSubMatcher.matches()) {
-                    exchange.setStatusCode(NOT_FOUND.getStatusCode());
-                    throw new WebApplicationException(NOT_FOUND);
-                }
-
-                // Extract realm from path and push it into REQUEST_HEADER_REALM header
-                String realm = realmSubMatcher.group(1);
-
-                // Move the realm from path segment to header
-                exchange.getRequestHeaders().put(HttpString.tryFromString(REALM_PARAM_NAME), realm);
-
-                URI url = fromUri(exchange.getRequestURL())
-                        .replacePath(realmSubMatcher.group(2))
-                        .build();
-                exchange.setRequestURI(url.toString(), true);
-                exchange.setRequestPath(url.getPath());
-                exchange.setRelativePath(url.getPath());
-
-                baseApiHandler.handleRequest(exchange);
-            };
-        }
 
         // Serve deployment files unsecured (explicitly map deployment folders to request paths)
         builtInAppDocRoot = Paths.get(getString(container.getConfig(), OR_APP_DOCROOT, OR_APP_DOCROOT_DEFAULT));

@@ -148,51 +148,31 @@ public abstract class WebService implements ContainerService {
     }
 
     public void deploy(DeploymentInfo deploymentInfo, boolean secure) {
-        LOG.log(INFO, "Deploying undertow servlet deployment: name=" + deploymentInfo.getDeploymentName() + ", path=" + deploymentInfo.getContextPath());
+        LOG.log(INFO, "Deploying undertow servlet deployment: name=" + deploymentInfo.getDeploymentName() + ", path=" + deploymentInfo.getContextPath() + ", secure=" + secure);
 
        try {
            DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
            manager.deploy();
            HttpHandler httpHandler = manager.start();
            Servlets.defaultContainer().addDeployment(deploymentInfo);
-
            pathHandler.addPrefixPath(deploymentInfo.getContextPath(), httpHandler);
         } catch (ServletException e) {
             LOG.log(ERROR, "Servlet deployment failed: " + e.getMessage());
         }
     }
 
-    public static void undeploy(String deploymentName) {
-
+    public void undeploy(String deploymentName) {
        try {
           DeploymentManager manager = Servlets.defaultContainer().getDeployment(deploymentName);
           DeploymentInfo deploymentInfo = manager.getDeployment().getDeploymentInfo();
           LOG.log(INFO, "Un-deploying undertow servlet deployment: name=" + deploymentInfo.getDeploymentName() + ", path=" + deploymentInfo.getContextPath());
+          pathHandler.removePrefixPath(deploymentName);
           manager.stop();
           manager.undeploy();
           Servlets.defaultContainer().removeDeployment(deploymentInfo);
        } catch (Exception ex) {
-           LOG.log(ERROR, "Servlet un-deployment failed: " + ex.getMessage());
+           LOG.log(ERROR, "Servlet un-deployment failed: name=" + deploymentName + ", exception=" + ex.getMessage());
        }
-
-        try {
-            LOG.info("Un-registering HTTP Server Protocol request handler '"
-                    + this.getClass().getSimpleName()
-                    + "' for request path: "
-                    + deployment.getDeploymentInfo().getContextPath());
-            webService.getRequestHandlers().remove(deployment.getRequestHandler());
-            DeploymentManager manager = Servlets.defaultContainer().getDeployment(deployment.getDeploymentInfo().getDeploymentName());
-            if (manager != null) {
-                manager.stop();
-                manager.undeploy();
-            }
-            Servlets.defaultContainer().removeDeployment(deployment.getDeploymentInfo());
-        } catch (Exception ex) {
-            LOG.log(Level.WARNING,
-                    "An exception occurred whilst un-deploying protocol instance: " + this,
-                    ex);
-            throw new RuntimeException(ex);
-        }
     }
 
     /**
@@ -224,6 +204,7 @@ public abstract class WebService implements ContainerService {
             boolean allowCredentials) {
 
         List<Object> providers = Lists.newArrayList(
+           new RequestLogger(),
            new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode),
            new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode),
            new WebServiceExceptions.ServletUndertowExceptionHandler(devMode),
@@ -263,43 +244,7 @@ public abstract class WebService implements ContainerService {
 
     protected Undertow.Builder build(Container container, Undertow.Builder builder) {
 
-        LOG.log(INFO, () -> "Building web routing with handler(s): " + getRequestHandlers().stream().map(h -> h.name).collect(Collectors.joining("\n")));
-
-        HttpHandler handler = exchange -> {
-
-            RequestLogger.REQUEST_LOG.log(DEBUG, () -> {
-                String requestPath = exchange.getRequestURI();
-                String address = exchange.getSourceAddress().toString();
-                HeaderMap headers = exchange.getRequestHeaders();
-                String forwardedAddress = headers.getFirst("X-Forwarded-For");
-                String responseType = headers.getFirst(HttpHeaders.ACCEPT);
-                SecurityContext securityContext = exchange.getSecurityContext();
-                Account account = securityContext != null ? securityContext.getAuthenticatedAccount() : null;
-                String userAndRealm
-                    = account != null
-                    ? KeycloakIdentityProvider.getSubjectNameAndRealm(account.getPrincipal())
-                    : null;
-
-                return "Client request '" + requestPath +" (responseType=" + responseType +")': user=" + userAndRealm  + ", origin=" +
-                    address +", forwarded-for=" + forwardedAddress;
-            });
-
-            boolean handled = false;
-            for (RequestHandler requestHandler : getRequestHandlers()) {
-                if (requestHandler.handlePredicate.test(exchange)) {
-                    LOG.log(TRACE, () -> "Handling '" + exchange.getRequestURI() + "' with handler: " + requestHandler.name);
-                    requestHandler.handler.handleRequest(exchange);
-                    handled = true;
-                    break;
-                }
-            }
-
-            if (!handled) {
-                LOG.log(WARNING, "No handler found for request: " + exchange.getRequestURI());
-            }
-        };
-
-        handler = new WebServiceExceptions.RootUndertowExceptionHandler(devMode, handler);
+        HttpHandler handler = new WebServiceExceptions.RootUndertowExceptionHandler(devMode, pathHandler);
 
         if (getBoolean(container.getConfig(), OR_WEBSERVER_DUMP_REQUESTS, OR_WEBSERVER_DUMP_REQUESTS_DEFAULT)) {
             handler = new RequestDumpingHandler(handler);
@@ -323,7 +268,7 @@ public abstract class WebService implements ContainerService {
       return resteasyDeployment;
    }
 
-   static public DeploymentInfo createDeploymentInfo(ResteasyDeployment resteasyDeployment, String deploymentPath, String deploymentName) {
+   static public DeploymentInfo createDeploymentInfo(ResteasyDeployment resteasyDeployment, String deploymentPath, String deploymentName, boolean devMode) {
 
       ServletInfo resteasyServlet = Servlets.servlet("ResteasyServlet", HttpServlet30Dispatcher.class)
          .setAsyncSupported(true)
@@ -338,7 +283,7 @@ public abstract class WebService implements ContainerService {
          .setClassLoader(Container.class.getClassLoader());
 
       // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
-      deploymentInfo.setExceptionHandler(undertowExceptionHandler);
+      deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
       return deploymentInfo;
    }
 
