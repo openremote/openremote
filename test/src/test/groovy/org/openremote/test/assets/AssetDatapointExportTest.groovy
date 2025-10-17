@@ -66,7 +66,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
                 ]
         )
 
-        then: "the CSV export should return a file"
+        then: "the default CSV export should return a file"
         def csvExport1Future = assetDatapointService.exportDatapoints(
                 [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
                 dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
@@ -87,11 +87,68 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
 
         /* ------------------------- */
 
+        when: "exporting with format 2 (crosstab)"
+        def csvExport2Future = assetDatapointService.exportDatapoints(
+                [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
+                dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                2
+        )
+        assert csvExport2Future != null
+        def csvExport2 = csvExport2Future.get()
+        assert csvExport2 != null
+
+        then: "the crosstab CSV export should contain all 5 data points in columnar format"
+        def csvExport2Lines = csvExport2.readLines()
+        assert csvExport2Lines.size() == 6 // header + 5 data rows
+        assert csvExport2Lines[0].contains("timestamp")
+        assert csvExport2Lines[0].contains(assetName + ": " + attributeName)
+
+        /* ------------------------- */
+
+        when: "exporting with format 3 (time-bucketed)"
+        def csvExport3Future = assetDatapointService.exportDatapoints(
+                [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
+                dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                3
+        )
+        assert csvExport3Future != null
+        def csvExport3 = csvExport3Future.get()
+        assert csvExport3 != null
+
+        then: "the time-bucketed CSV export should contain aggregated data with correct values"
+        def csvExport3Lines = csvExport3.readLines()
+        assert csvExport3Lines.size() >= 2 // header + at least 1 aggregated row
+        assert csvExport3Lines[0].contains("timestamp")
+        assert csvExport3Lines[0].contains(assetName + ": " + attributeName)
+
+        and: "the aggregated values should be correct averages within 1-minute buckets"
+        // Each datapoint is 5 minutes apart, so each should be in its own 1-minute bucket
+        // Therefore we should have 5 rows of data (one per bucket)
+        assert csvExport3Lines.size() == 6 // header + 5 buckets
+
+        // Extract the values from the CSV (skip header, get last column which is the brightness value)
+        def values = csvExport3Lines[1..5].collect { line ->
+            def parts = line.split(',')
+            parts.size() > 1 ? parts[1].trim() : null
+        }.findAll { it != null && it != '' }
+
+        // Should have 5 values, one per bucket, matching our input: 10, 20, 30, 40, 50
+        assert values.size() == 5
+        assert values.contains("10.000") || values.contains("10")
+        assert values.contains("20.000") || values.contains("20")
+        assert values.contains("30.000") || values.contains("30")
+        assert values.contains("40.000") || values.contains("40")
+        assert values.contains("50.000") || values.contains("50")
+
+        /* ------------------------- */
+
         when: "the limit of data export is lowered to 4"
         assetDatapointService.datapointExportLimit = 4
 
         and: "we try to export the same amount of data points"
-        def csvExport2Future = assetDatapointService.exportDatapoints(
+        def csvExport4Future = assetDatapointService.exportDatapoints(
                 [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
                 dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
                 dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()

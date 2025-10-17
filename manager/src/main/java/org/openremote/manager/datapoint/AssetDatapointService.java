@@ -250,6 +250,17 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     /**
      * Exports datapoints as CSV using SQL; the export path used in the SQL query must also be mapped into the manager
      * container so it can be accessed by this process.
+     * Backwards compatible overload with default format.
+     */
+    public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs,
+                                                  long fromTimestamp,
+                                                  long toTimestamp) {
+        return exportDatapoints(attributeRefs, fromTimestamp, toTimestamp, 1);
+    }
+
+    /**
+     * Exports datapoints as CSV using SQL; the export path used in the SQL query must also be mapped into the manager
+     * container so it can be accessed by this process.
      */
     public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs,
                                                   long fromTimestamp,
