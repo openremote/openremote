@@ -25,8 +25,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaFormat;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
 import net.fortuna.ical4j.model.Recur;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
@@ -38,6 +36,7 @@ import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.JSONSchemaUtil;
+import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.value.AbstractNameValueHolder;
 
 import java.io.Serializable;
@@ -276,16 +275,16 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         @JsonPropertyDescription("Set a start date, if not provided, starts immediately." +
                 " When the replay datapoint timestamp is 0 it will insert it at 00:00.")
         @JsonSchemaFormat("date-time")
-        @JsonSchemaInject(jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_STRING_TYPE)
+        @JsonSchemaTypeRemap(type = String.class)
         protected Date start;
 
         @JsonPropertyDescription("Not implemented, within the recurrence rule you can specify an end date.")
         @JsonSchemaFormat("date-time")
-        @JsonSchemaInject(jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_STRING_TYPE)
+        @JsonSchemaTypeRemap(type = String.class)
         protected Date end;
 
         @JsonPropertyDescription("The recurrence schedule follows the RFC 5545 RRULE format.")
-        @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_STRING_TYPE)
+        @JsonSchemaTypeRemap(type = String.class)
         @JsonSerialize(converter = RecurStringConverter.class)
         protected Recur<LocalDateTime> recurrence;
 
