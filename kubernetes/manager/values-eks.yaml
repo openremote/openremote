@@ -25,7 +25,7 @@ ingress:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/group.name: eric-test-ig
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:eu-west-1:463235666115:certificate/...
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:eu-west-1:<openremote account id>:certificate/...
   tls: {}
 service:
   mqtt:
@@ -40,7 +40,15 @@ service:
       service.beta.kubernetes.io/aws-load-balancer-type: "external"
       service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
       service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
-      service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:eu-west-1:463235666115:certificate/...
+      service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:eu-west-1:<openremote account id>:certificate/...
+  metrics:
+    enabled: true
+    type: LoadBalancer
+    port: 8405
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+      service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+      service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
 affinity:
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:

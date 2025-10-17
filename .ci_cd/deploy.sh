@@ -267,6 +267,16 @@ fi
 echo "Deleting existing deployment data volume"
 docker volume rm or_deployment-data 1>/dev/null
 
+# Get IP of interface on private subnet to expose metrics
+TOKEN=\$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 60" 2>/dev/null)
+
+if [ -n "\$TOKEN" ]; then
+  export PRIVATE_IP=\$(curl -H "X-aws-ec2-metadata-token: \$TOKEN" -s http://169.254.169.254/latest/meta-data/local-ipv4 2>/dev/null)
+else
+  echo "Could not get token to query for private IP"
+fi
+echo "Private IP \$PRIVATE_IP"
+
 # Start the stack
 echo "Starting the stack"
 docker-compose -f temp/docker-compose.yml -p or up -d
@@ -276,38 +286,7 @@ if [ \$? -ne 0 ]; then
   exit 1
 fi
 
-echo "Waiting for up to 5mins for all services to be healthy"
-COUNT=1
-STATUSES_OK=false
-IFS=\$'\n'
-while [ "\$STATUSES_OK" != 'true' ] && [ \$COUNT -le 60 ]; do
-
-   echo "Checking service health...attempt \$COUNT"
-   STATUSES=\$(docker ps --format "{{.Names}} {{.Status}}")
-   STATUSES_OK=true
-
-   for STATUS in \$STATUSES; do
-     if [[ "\$STATUS" != *"healthy"* ]]; then
-       STATUSES_OK=false
-       break
-     fi
-   done
-
-   if [ "\$STATUSES_OK" == 'true' ]; then
-      break
-   fi
-
-   sleep 5
-   COUNT=\$((COUNT+1))
-done
-
-if [ "\$STATUSES_OK" == 'true' ]; then
-  echo "All services are healthy"
-else
-  echo "One or more services are unhealthy"
-  docker ps -a
-  exit 1
-fi
+temp/host_init/healthy.sh
 
 # Run host post init
 hostPostInitCmd=
@@ -436,37 +415,7 @@ if [ \$? -ne 0 ]; then
   exit 1
 fi
 
-echo "Waiting for up to 5mins for all services to be healthy"
-COUNT=1
-STATUSES_OK=false
-IFS=\$'\n'
-while [ "\$STATUSES_OK" != 'true' ] && [ \$COUNT -le 60 ]; do
-
-   echo "Checking service health...attempt \$COUNT"
-   STATUSES=\$(docker ps --format "{{.Names}} {{.Status}}")
-   STATUSES_OK=true
-
-   for STATUS in \$STATUSES; do
-     if [[ "\$STATUS" != *"healthy"* ]]; then
-       STATUSES_OK=false
-       break
-     fi
-   done
-
-   if [ "\$STATUSES_OK" == 'true' ]; then
-      break
-   fi
-
-   sleep 5
-   COUNT=\$((COUNT+1))
-done
-
-if [ "\$STATUSES_OK" == 'true' ]; then
-  echo "All services are healthy"
-else
-  echo "One or more services are unhealthy"
-  exit 1
-fi
+temp/host_init/healthy.sh
 
 # Run host post init
 hostPostInitCmd=

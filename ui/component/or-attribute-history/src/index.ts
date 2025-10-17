@@ -1,6 +1,10 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 declare function require(name: string): any;
-import {ECharts, EChartsOption, init} from "echarts";
+import * as echarts from "echarts/core";
+import {GridComponent, GridComponentOption, DataZoomComponent, DataZoomComponentOption, TooltipComponent, TooltipComponentOption, DatasetComponentOption} from "echarts/components";
+import {LineChart, LineSeriesOption} from "echarts/charts";
+import {UniversalTransition} from "echarts/features";
+import {CanvasRenderer} from "echarts/renderers";
 import {debounce} from "lodash";
 import {
     css,
@@ -14,12 +18,11 @@ import {customElement, property, query} from "lit/decorators.js";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 import {AssetModelUtil, Attribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueDescriptor} from "@openremote/model";
-import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5} from "@openremote/core";
+import manager, {DefaultColor2, DefaultColor3, DefaultColor4} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import "@openremote/or-chart";
-import "chartjs-adapter-moment";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {MDCDataTable} from "@material/data-table";
 import {JSONPath} from "jsonpath-plus";
@@ -27,6 +30,8 @@ import moment from "moment";
 import {isAxiosError} from "@openremote/rest";
 import {styleMap} from "lit/directives/style-map.js";
 import { when } from "lit/directives/when.js";
+
+echarts.use([GridComponent, TooltipComponent, DataZoomComponent, LineChart, CanvasRenderer, UniversalTransition]);
 
 export class OrAttributeHistoryEvent extends CustomEvent<OrAttributeHistoryEventDetail> {
 
@@ -97,6 +102,14 @@ export interface HistoryConfig {
     table?: TableConfig;
     chart?: ChartConfig;
 }
+
+export type ECAttributeHistoryOption = echarts.ComposeOption<
+    | LineSeriesOption
+    | TooltipComponentOption
+    | GridComponentOption
+    | DatasetComponentOption
+    | DataZoomComponentOption
+>;
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
@@ -260,11 +273,11 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
     @query("#chart")
     protected _chartElem!: HTMLDivElement;
-    protected _chartOptions: EChartsOption = {};
+    protected _chartOptions: ECAttributeHistoryOption = {};
     @query("#table")
     protected _tableElem!: HTMLDivElement;
     protected _table?: MDCDataTable;
-    protected _chart?: ECharts;
+    protected _chart?: echarts.ECharts;
     protected _type?: ValueDescriptor;
     protected _style!: CSSStyleDeclaration;
     protected _error?: string;
@@ -425,15 +438,15 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             hideOverlap: true,
                             fontSize: 10,
                             formatter: {
-                                year: '{yyyy}-{MMM}',
-                                month: '{yy}-{MMM}',
-                                day: '{d}-{MMM}',
-                                hour: '{HH}:{mm}',
-                                minute: '{HH}:{mm}',
-                                second: '{HH}:{mm}:{ss}',
-                                millisecond: '{d}-{MMM} {HH}:{mm}',
+                                year: "1-{MMM}-{yyyy}",
+                                month: "1-{MMM}-'{yy}",
+                                day: "{d}-{MMM}",
+                                hour: "{HH}:{mm}",
+                                minute: "{HH}:{mm}",
+                                second: "{HH}:{mm}:{ss}",
+                                millisecond: "{d}-{MMM} {HH}:{mm}",
                                 // @ts-ignore
-                                none: '{MMM}-{dd} {HH}:{mm}'
+                                none: "{MMM}-{dd} {HH}:{mm}"
                             }
                         }
                     },
@@ -497,7 +510,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     ]
                 }
                 // Initialize echarts instance
-                this._chart = init(this._chartElem);
+                this._chart = echarts.init(this._chartElem);
                 // Set chart options to default
                 this._chart.setOption(this._chartOptions);
                 // Make chart size responsive

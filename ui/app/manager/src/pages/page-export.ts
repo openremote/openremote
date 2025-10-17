@@ -293,6 +293,8 @@ export class PageExport extends Page<AppStateKeyed> {
                         <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="clearTable" @click="${() => this.clearSelection()}"></or-mwc-input>
                         <div>
                         <or-mwc-input .disabled="${this.isExportBtnDisabled || this._loading}" class="button" raised .type="${InputType.BUTTON}" label="export" @click="${() => this.export()}"></or-mwc-input>
+                        <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="clearTable" @or-mwc-input-changed="${() => this.clearSelection()}"></or-mwc-input>
+                        <or-mwc-input .disabled="${this.isExportBtnDisabled}" class="button" raised .type="${InputType.BUTTON}" label="export" @or-mwc-input-changed="${() => this.export()}"></or-mwc-input>
                     </div>
                 </div>
             </div>

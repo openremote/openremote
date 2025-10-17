@@ -43,6 +43,7 @@
 #                           an openremote submodule).
 # - CLEAN_INSTALL         - Should the .ci_cd/host_init/clean.sh script be run during deployment (warning this will delete
 #                           assets, rules, etc.)
+# - PUSH_SNAPSHOT         - Should a SNAPSHOT docker image be pushed to AWS ECR
 # - COMMIT                - Which branch/SHA should be checked out for the deployment (defaults to trigger commit)
 # - OR_HOSTNAME           - FQDN of host to deploy to (e.g. demo.openremote.app)
 # - SSH_USER              - Set/override the SSH user to use for SSH/SCP commands
@@ -75,6 +76,9 @@ on:
       CLEAN_INSTALL:
         description: 'Delete data before starting'
         type: boolean
+      PUSH_SNAPSHOT:
+        description: 'Push SNAPSHOT docker image to ECR'
+        type: boolean
       COMMIT:
         description: 'Repo branch or commit SHA to checkout'
       OR_HOSTNAME:
@@ -89,6 +93,11 @@ on:
       secrets:
         SECRETS:
           required: false
+
+permissions:
+  id-token: write
+  contents: read
+  security-events: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -203,8 +212,8 @@ jobs:
         if: steps.backend-files-changed.outputs.any_modified != 'true'
         run: echo "value=true" >> $GITHUB_OUTPUT
 
-      - name: Set skip UI tests
-        id: skip-ui-tests
+      - name: Set skip UI component tests
+        id: skip-ui-component-tests
         if: steps.ui-files-changed.outputs.any_modified != 'true'
         run: echo "value=true" >> $GITHUB_OUTPUT
 
@@ -288,6 +297,7 @@ jobs:
           eventName = os.getenv('GITHUB_EVENT_NAME')
           refName = os.getenv('GITHUB_REF_NAME')
           refType = os.getenv('GITHUB_REF_TYPE')
+          repoOwner = os.getenv('GITHUB_REPOSITORY_OWNER')
           isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
           isRelease = os.getenv('IS_RELEASE') == 'true'
           managerVersion = os.getenv('MANAGER_VERSION')
@@ -335,20 +345,21 @@ jobs:
               os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
               os.system(f" echo 'Manager tags to push to docker hub: {dockerPublishTags}'")
               dockerPublishTags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", dockerPublishTags.split(",")))
-              os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
+              if repoOwner == 'openremote':
+                os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
 
-            if mavenPublishTag is not None:
+            if mavenPublishTag is not None and repoOwner == 'openremote':
               mavenPublishTag = mavenPublishTag.replace("$version", version)
               os.system(f" echo 'Maven publish version: {mavenPublishTag}'")
               os.system(f"echo 'mavenTag={mavenPublishTag}' >> $GITHUB_OUTPUT")
 
-            if npmPublishTag is not None:
+            if npmPublishTag is not None and repoOwner == 'openremote':
               npmPublishTag = npmPublishTag.replace("$version", version)
               os.system(f" echo 'npm publish version: {npmPublishTag}'")
               os.system(f"echo 'npmTag={npmPublishTag}' >> $GITHUB_OUTPUT")
 
           deployStr = None
-          if deploys is not None:
+          if deploys is not None and repoOwner == 'openremote':
             if not isinstance(deploys, list):
               deploys = [deploys]
 
@@ -391,7 +402,9 @@ jobs:
         shell: python
         run: |
           import os
+          import sys
 
+          repoOwner = os.getenv('GITHUB_REPOSITORY_OWNER')
           isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
           deployments = os.getenv('DEPLOYMENTS')
           eventName = os.getenv('GITHUB_EVENT_NAME')
@@ -400,7 +413,7 @@ jobs:
           inputEnv = os.getenv('INPUT_ENVIRONMENT')
           managerVersion = os.getenv('MANAGER_VERSION')
 
-          if eventName == 'workflow_dispatch' and refType != 'tag':
+          if eventName == 'workflow_dispatch' and refType != 'tag' and repoOwner == 'openremote':
             if isMainRepo:
               tag=inputTag
               if not inputTag:
@@ -411,26 +424,37 @@ jobs:
 
           if not isMainRepo:
             if "-SNAPSHOT" in deployments:
-              os.system("SNAPSHOT manager docker images not currently supported for custom project deployment")
+              os.system("echo 'SNAPSHOT manager docker images not currently supported for custom project deployment'")
               sys.exit(1)
-
           os.system(f"echo 'value={deployments}' >> $GITHUB_OUTPUT")
+
+          pushSnapshot = os.getenv('INPUT_PUSH_SNAPSHOT')
+          if pushSnapshot == 'true' and repoOwner != 'openremote':
+            os.system("echo 'Only Openremote organisation can push to ECR'")
+            sys.exit(1)
+          else:
+            os.system(f"echo 'pushSnapshot={pushSnapshot}' >> $GITHUB_OUTPUT")
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
           DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
           INPUT_ENVIRONMENT: ${{ steps.inputs-and-secrets.outputs.ENVIRONMENT }}
           INPUT_MANAGER_TAG: ${{steps.inputs-and-secrets.outputs.MANAGER_TAG }}
+          INPUT_PUSH_SNAPSHOT: ${{ steps.inputs-and-secrets.outputs.PUSH_SNAPSHOT }}
 
       - name: Define backend test command
         id: test-backend-command
         if: ${{ steps.skip-backend-tests.outputs.value != 'true' }}
-        run: echo "value=./gradlew -p test test" >> $GITHUB_OUTPUT
+        run: echo "value=./gradlew test -x npmTest" >> $GITHUB_OUTPUT
 
-      - name: Define UI test command
-        id: test-ui-command
-        if: ${{ steps.skip-ui-tests.outputs.value != 'true' }}
-        run: echo ""
+      - name: Define UI component test command
+        id: test-ui-components-command
+        if: ${{ steps.skip-ui-component-tests.outputs.value != 'true' }}
+        run: echo "value=./gradlew -p ui/component npmTest" >> $GITHUB_OUTPUT
+
+      - name: Define UI app test command
+        id: test-ui-apps-command
+        run: echo "value=./gradlew -p ui/app npmTest" >> $GITHUB_OUTPUT
 
       - name: Define manager docker build command
         id: manager-docker-command
@@ -441,13 +465,21 @@ jobs:
           commitSha=$(git rev-parse HEAD)
           commitShaShort=$(git rev-parse --short HEAD)
 
+          if [ "$(uname -m)" == "aarch64" ]; then
+            PLATFORM=linux/aarch64
+          fi
+
           if [ -n "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"#ref"* ]] || [ -n "$TEST_UI_CMD" ]; then
             if [ -n "$MANAGER_TAGS" ]; then
-              command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
-              echo "pushRequired=true" >> $GITHUB_OUTPUT
+              command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath"
+              echo "pushToDockerHub=true" >> $GITHUB_OUTPUT
               echo "managerDockerImage=openremote/manager:$FIRST_MANAGER_TAG" >> $GITHUB_OUTPUT
             else
-              command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
+              if [ "$PUSH_SNAPSHOT" == "true" ]; then
+                command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t ${{ steps.inputs-and-secrets.outputs.OR_AWS_DEVELOPERS_ACCOUNT_ID }}.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:SNAPSHOT-$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath"
+              else
+                command="docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${OTHER_PLATFORM:-linux/aarch64} -t openremote/manager:$commitShaShort $buildPath"
+              fi
               echo "managerDockerImage=openremote/manager:$commitShaShort" >> $GITHUB_OUTPUT
             fi
             echo "value=$command" >> $GITHUB_OUTPUT
@@ -458,7 +490,8 @@ jobs:
           FIRST_MANAGER_TAG: ${{ steps.ci-cd-output.outputs.firstDockerTag }}
           MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.dockerTags }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
-          TEST_UI_CMD: ${{ steps.test-ui-command.outputs.value }}
+          PUSH_SNAPSHOT: ${{ steps.deployments.outputs.pushSnapshot }}
+          TEST_UI_CMD: ${{ steps.test-ui-apps-command.outputs.value }}
 
       - name: Define maven publish command
         id: maven-publish-command
@@ -514,11 +547,22 @@ jobs:
           DEPLOYMENT_DOCKER_CMD: ${{ steps.deployment-docker-command.outputs.value }}
 
       - name: Login to DockerHub
-        if: ${{ steps.manager-docker-command.outputs.pushRequired == 'true' }}
+        if: ${{ steps.manager-docker-command.outputs.pushToDockerHub == 'true' }}
         uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
         with:
           username: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_USER }}
           password: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_PASSWORD }}
+
+      - name: Configure AWS Credentials
+        if: ${{ steps.deployments.outputs.pushSnapshot == 'true' }}
+        uses: aws-actions/configure-aws-credentials@a03048d87541d1d9fcf2ecf528a4a65ba9bd7838 # v5.0.0
+        with:
+          aws-region: eu-west-1
+          role-to-assume: "arn:aws:iam::${{ steps.inputs-and-secrets.outputs.OR_AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ steps.inputs-and-secrets.outputs.OR_GH_AWS_ECR_PUSH_ROLE }}"
+
+      - name: Login to private ECR
+        if: ${{ steps.deployments.outputs.pushSnapshot == 'true' }}
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
       - name: set up QEMU
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
@@ -571,7 +615,8 @@ jobs:
           echo 'Deployment commit SHA: ${{ steps.deployment-docker-command.outputs.refTag }}'
           echo 'Deployments: ${{ steps.deployments.outputs.value }}'
           echo 'Test backend command: ${{ steps.test-backend-command.outputs.value }}'
-          echo 'Test UI command: ${{ steps.test-ui-command.outputs.value }}'
+          echo 'Test UI components command: ${{ steps.test-ui-components-command.outputs.value }}'
+          echo 'End-To-End test command: ${{ steps.test-ui-apps-command.outputs.value }}'
           echo 'Manager docker build command: ${{ steps.manager-docker-command.outputs.value }}'
           echo 'Manager docker image: ${{ steps.manager-docker-command.outputs.managerDockerImage }}'
           echo 'Maven publish command: ${{ steps.maven-publish-command.outputs.value }}'
@@ -584,19 +629,10 @@ jobs:
           echo "************************************************************"
 
       - name: Pull docker images
-        if: ${{ steps.test-backend-command.outputs.value != '' || steps.test-ui-command.outputs.value != '' }}
+        if: ${{ steps.test-backend-command.outputs.value != '' || steps.test-ui-apps-command.outputs.value != '' }}
         run: |
-          # Only need keycloak and postgres services for backend testing
-          if [ -z $TEST_UI_COMMAND ]; then
-            composeProfile='profile/dev-testing.yml'
-          else
-            composeProfile='profile/dev-ui.yml'
-          fi
-
-          # Pull the images
-          docker compose -f $composeProfile pull
-        env:
-          TEST_UI_COMMAND: ${{ steps.test-ui-command.outputs.value }}
+          # Only need keycloak and postgres services for backend and end-to-end testing
+          docker compose -f profile/dev-testing.yml pull
 
       # Use docker layer caching to speed up image building
       - uses: jpribyl/action-docker-layer-caching@c632825d12ec837065f49726ea27ddd40bcc7894 # v0.1.1
@@ -664,28 +700,8 @@ jobs:
           path: test/build/reports/tests
 
       - name: Cleanup backend tests
-        if: ${{ steps.test-backend-command.outputs.value != '' && steps.test-ui-command.outputs.value != '' }}
+        if: ${{ steps.test-backend-command.outputs.value != '' }}
         run: ${{ steps.run-backend-tests.outputs.cleanup }}
-
-      - name: Run frontend tests
-        if: steps.test-ui-command.outputs.value != ''
-        run: |
-          composeProfile='profile/dev-ui.yml'
-
-          if [ $IS_MAIN_REPO == 'false' ]; then
-            composeProfile="openremote/$composeProfile"
-          fi
-
-          # Start the stack
-          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
-
-          # Run the tests
-          ${{ steps.test-ui-command.outputs.value }}
-        env:
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
-        timeout-minutes: 20
-        continue-on-error: true
 
       - name: Run install dist
         if: steps.install-command.outputs.value != ''
@@ -725,13 +741,63 @@ jobs:
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
         timeout-minutes: 20
 
+      - name: Run install playwright browser(s)
+        if: (steps.test-ui-components-command.outputs.value != '' || steps.test-ui-apps-command.outputs.value != '') && steps.is_main_repo.outputs.value == 'true'
+        run: npx playwright install --with-deps chromium
+        timeout-minutes: 20
+
+      - name: Run UI component tests
+        if: steps.test-ui-components-command.outputs.value != ''
+        run: ${{ steps.test-ui-components-command.outputs.value }}
+        timeout-minutes: 20
+        # continue-on-error: true
+
+      - name: Archive UI component test results
+        if: always()
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
+        with:
+          name: ui-component-test-results
+          path: ui/component/*/component-test-report/**
+
       - name: Run manager docker build command
         if: steps.manager-docker-command.outputs.value != ''
         run: |
           ${{ steps.manager-docker-command.outputs.value }}
 
+      - name: Run UI app tests
+        # Skip UI app tests for custom projects until we want to use them there.
+        # .ci_cd/host_init/healthy.sh is missing initially for custom projects .ci_cd/host_init/healthy.sh
+        if: steps.test-ui-apps-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
+        run: |
+          composeProfile='profile/dev-ui.yml'
+
+          if [ $IS_MAIN_REPO == 'false' ]; then
+            composeProfile="openremote/$composeProfile"
+          fi
+
+          # Start the stack
+          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
+
+          # Wait for services to be healthy
+          bash .ci_cd/host_init/healthy.sh profile
+
+          # Run the tests
+          ${{ steps.test-ui-apps-command.outputs.value }}
+        env:
+          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
+          MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
+        timeout-minutes: 20
+        # continue-on-error: true
+
+      - name: Archive UI app test results
+        if: always()
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
+        with:
+          name: ui-app-test-results
+          path: ui/app/*/app-test-report/**
+
       - name: Scan manager docker image
-        if: steps.manager-docker-command.outputs.pushRequired == 'true'
+        if: steps.manager-docker-command.outputs.pushToDockerHub == 'true'
         uses: anchore/scan-action@2c901ab7378897c01b8efaa2d0c9bf519cc64b9e # v6.2.0
         id: manager-anchore-scan
         with:
@@ -742,7 +808,7 @@ jobs:
       - name: Upload Anchore scan SARIF report
         if: |
           !cancelled() &&
-          steps.manager-docker-command.outputs.pushRequired == 'true'
+          steps.manager-docker-command.outputs.pushToDockerHub == 'true'
         uses: github/codeql-action/upload-sarif@e488e3c8239c26bf8e6704904a8cb59be658d450 # v3
         with:
           sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
@@ -750,7 +816,7 @@ jobs:
       - name: Inspect Anchore scan SARIF report
         if: |
           !cancelled() &&
-          steps.manager-docker-command.outputs.pushRequired == 'true'
+          steps.manager-docker-command.outputs.pushToDockerHub == 'true'
         run: cat ${{ steps.manager-anchore-scan.outputs.sarif }}
 
       - name: Run maven publish command
@@ -794,6 +860,11 @@ jobs:
           ipv6 = os.getenv("IPV6")
 
           failure = False
+
+          # Clean-up AWS credentials related variable that might have been set by Configure AWS Credentials for ECR upload
+          os.environ.pop("AWS_ACCESS_KEY_ID", None)
+          os.environ.pop("AWS_SECRET_ACCESS_KEY", None)
+          os.environ.pop("AWS_SESSION_TOKEN", None)
 
           # Determine deploy script to use
           deployScript = ".ci_cd/deploy.sh"

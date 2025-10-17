@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-timeline",
-  "version": "1.7.0-snapshot",
+  "version": "1.8.0-snapshot",
   "description": "OpenRemote Timeline",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -13,12 +13,12 @@
   "scripts": {
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "test": "echo \"No tests\" && exit 0",
-    "prepack": "npx webpack"
+    "prepack": "npx rspack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "lit": "^2.0.2",
+    "lit": "^3.3.1",
     "moment": "^2.29.4"
   },
   "devDependencies": {
