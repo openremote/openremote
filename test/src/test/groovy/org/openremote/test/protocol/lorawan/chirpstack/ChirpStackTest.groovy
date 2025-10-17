@@ -52,7 +52,7 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.model.Constants.*
 import static org.openremote.setup.integration.model.asset.ChirpStackTestAsset.*
 
-class ChirpStackTest extends Specification implements ManagerContainerTrait{
+class ChirpStackTest extends Specification implements ManagerContainerTrait {
 
     static final String APPLICATION_ID = "807036d9-9d96-4305-82c9-92f681a11908"
     static final String CLIENT_ID = "chirpstackAgentClientId"

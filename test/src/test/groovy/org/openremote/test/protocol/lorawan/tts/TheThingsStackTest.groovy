@@ -56,7 +56,7 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.model.Constants.*
 import static org.openremote.setup.integration.model.asset.TheThingsStackTestAsset.*
 
-class TheThingsStackTest extends Specification implements ManagerContainerTrait{
+class TheThingsStackTest extends Specification implements ManagerContainerTrait {
 
     static final String TENANT_ID = "ttn"
     static final String API_KEY = "NNSXS.1234"
