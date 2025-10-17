@@ -79,8 +79,10 @@ import java.util.List;
  * }</pre></blockquote>
  */
 public class CalendarEvent implements Serializable {
+
     protected Date start;
     protected Date end;
+
     @JsonSerialize(converter = RecurStringConverter.class)
     protected Recur<LocalDateTime> recurrence;
 
