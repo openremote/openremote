@@ -38,63 +38,6 @@ assets.forEach(({ type, name, attributes }) => {
    * @given Assets are set up in the "smartcity" realm
    * @when Logging in to the OpenRemote "smartcity" realm
    * @and Navigating to the "asset" tab
-   * @and Searching for the asset by name
-   * @and Selecting the asset from the list
-   * @then The asset detail page is displayed
-   */
-  test(`Search for and select a ${name} asset`, async ({ page, manager, assetTree }) => {
-    await manager.setup("smartcity", { assets });
-    await manager.goToRealmStartPage("smartcity");
-    await manager.navigateToTab("asset");
-    await assetTree.fillFilterInput(name);
-    await expect(assetTree.getAssetNodes()).toHaveCount(1);
-    await page.click(`text=${name}`);
-    await expect(page.locator(`#asset-header`, { hasText: name })).toBeVisible();
-  });
-
-  /**
-   * @given Assets are set up in the "smartcity" realm
-   * @when Logging in to the OpenRemote "smartcity" realm
-   * @and Navigating to the "asset" tab
-   * @and Searching for the asset by ID
-   * @and Selecting the asset from the list
-   * @then The asset detail page is displayed
-   */
-  test(`Search by Asset ID and select the ${name} asset`, async ({ page, manager, assetTree }) => {
-    await manager.setup("smartcity", { assets });
-    const id = manager.assets.find(asset => asset.name === name)?.id;
-    expect(id).toBeDefined();
-    await manager.goToRealmStartPage("smartcity");
-    await manager.navigateToTab("asset");
-    await assetTree.fillFilterInput(id!);
-    await expect(assetTree.getAssetNodes()).toHaveCount(1);
-    await page.click(`text=${name}`);
-    await expect(page.locator(`#asset-header`, { hasText: name })).toBeVisible();
-  })
-
-  /**
-   * @given Assets are set up in the "smartcity" realm
-   * @when Logging in to the OpenRemote "smartcity" realm
-   * @and Navigating to the "/assets/false/{id}" page directly
-   * @then The filter should contain the ID as input
-   * @and The asset list should contain the asset with the given ID
-   * @and The asset detail page is displayed
-   */
-  test(`Open browser tab directly to the ${name} asset`, async ({ page, manager, assetsPage, assetTree }) => {
-    await manager.setup("smartcity", { assets });
-    const id = manager.assets.find(asset => asset.name === name)?.id;
-    expect(id).toBeDefined();
-    await assetsPage.gotoAssetId("smartcity", id!);
-    await expect(assetTree.getFilterInput()).toHaveValue(id!);
-    await expect(assetTree.getAssetNodes()).toHaveCount(1);
-    await expect(assetTree.getSelectedNodes()).toHaveCount(1);
-    await expect(page.locator(`#asset-header`, { hasText: name })).toBeVisible();
-  })
-
-  /**
-   * @given Assets are set up in the "smartcity" realm
-   * @when Logging in to the OpenRemote "smartcity" realm
-   * @and Navigating to the "asset" tab
    * @and Selecting an asset by name
    * @and Updating a specific attribute with a new value and type
    * @and Switching to modify mode
@@ -242,6 +185,8 @@ test("Add all primitive configuration items", async ({ page, manager, assetViewe
   }
 });
 
+// TODO: Add test for the "Load more" button, by modifying the LIMIT variable in or-asset-tree
+
 test.fixme("Add all complex configuration items", async ({ page, manager, shared }) => {});
 
 /**
@@ -256,8 +201,8 @@ test("Delete specified assets and verify they are removed", async ({ page, manag
   await manager.setup("smartcity", { assets });
   await manager.goToRealmStartPage("smartcity");
   await manager.navigateToTab("Assets");
-  await assetsPage.deleteSelectedAsset("Battery");
-  await assetsPage.deleteSelectedAsset("Solar Panel");
+  await assetsPage.deleteSelectedAsset(manager, "Battery");
+  await assetsPage.deleteSelectedAsset(manager, "Solar Panel");
   await expect(page.locator("text=Console")).toHaveCount(1);
   await expect(page.locator("text=Solar Panel")).toHaveCount(0);
   await expect(page.locator("text=Battery")).toHaveCount(0);

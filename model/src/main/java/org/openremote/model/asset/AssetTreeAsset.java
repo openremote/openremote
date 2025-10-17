@@ -31,14 +31,18 @@ public class AssetTreeAsset {
     String id;
     String name;
     String type;
+    String parentId;
+    String[] path;
 
     boolean hasChildren;
     Date createdOn;
 
-    public AssetTreeAsset(String id, String name, String type, boolean hasChildren, Date createdOn) {
+    public AssetTreeAsset(String id, String name, String type, String parentId, String[] path, boolean hasChildren, Date createdOn) {
         this.id = id;
         this.name = name;
         this.type = type;
+        this.parentId = parentId;
+        this.path = path;
         this.hasChildren = hasChildren;
         this.createdOn = createdOn;
     }
@@ -67,6 +71,22 @@ public class AssetTreeAsset {
         this.type = type;
     }
 
+    public String getParentId() {
+        return parentId;
+    }
+
+    public void setParentId(String parentId) {
+        this.parentId = parentId;
+    }
+
+    public String[] getPath() {
+        return path;
+    }
+
+    public void setPath(String[] path) {
+        this.path = path;
+    }
+
     public boolean hasChildren() {
         return hasChildren;
     }
@@ -92,7 +112,7 @@ public class AssetTreeAsset {
      * @return The optimized asset tree asset.
      */
     public static AssetTreeAsset fromAsset(Asset<?> asset, Boolean hasChildren) {
-        return new AssetTreeAsset(asset.getId(), asset.getName(), asset.getType(), hasChildren, asset.getCreatedOn());
+        return new AssetTreeAsset(asset.getId(), asset.getName(), asset.getType(), asset.getParentId(), asset.getPath(), hasChildren, asset.getCreatedOn());
     }
 
     @Override

@@ -16,6 +16,14 @@ export class AssetViewer {
   }
 
   /**
+   * Get a locator to the asset header.
+   * @param assetName The asset name
+   */
+  getHeaderLocator(assetName: string) {
+    return this.page.locator(`#asset-header`, { hasText: assetName });
+  }
+
+  /**
    * Get a locator to an attribute.
    * @param attribute The attribute name
    */
