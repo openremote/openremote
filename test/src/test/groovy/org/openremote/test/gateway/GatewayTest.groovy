@@ -1289,6 +1289,9 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     /**
      * This test requires a manager instance with tunnelling configured, so is manual for now unfortunately.
      * Refer to "Gateway Tunnelling Setup" in the docs for setting up the required environment.
+     *
+     * Make sure to make the relevant gateway in the central instance, and change the rest of the variables below
+     * to reflect your setup, but most of these should be unchanged if you use the same setup as the documentation.
      */
     @Ignore
     def "Gateway Tunneling Edge Gateway Integration test"() {
