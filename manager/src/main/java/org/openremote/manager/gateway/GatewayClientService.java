@@ -55,6 +55,8 @@ import org.openremote.model.util.ValueUtil;
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -86,6 +88,9 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     protected Map<String, Map<AttributeRef, Long>> clientAttributeTimestamps = new ConcurrentHashMap<>();
     protected Consumer<AssetEvent> realmAssetEventConsumer;
     protected Consumer<AttributeEvent> realmAttributeEventConsumer;
+    protected final ConcurrentHashMap<String, GatewayTunnelInfo> activeTunnels = new ConcurrentHashMap<>();
+    protected final ConcurrentHashMap<String, ScheduledFuture<?>> tunnelAutoCloseTasks = new ConcurrentHashMap<>();
+    protected ScheduledExecutorService scheduledExecutorService;
 
 
     @Override
@@ -96,6 +101,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         clientEventService = container.getService(ClientEventService.class);
         timerService = container.getService(TimerService.class);
         identityService = container.getService(ManagerIdentityService.class);
+        scheduledExecutorService = container.getScheduledExecutor();
 
         String tunnelKeyFile = getString(container.getConfig(), GatewayService.OR_GATEWAY_TUNNEL_SSH_KEY_FILE, null);
         String localhostRewrite = getString(container.getConfig(), OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE, null);
@@ -439,7 +445,9 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 }
             } else if (event instanceof GatewayCapabilitiesRequestEvent) {
                 LOG.fine("Central manager requested specifications / capabilities of the gateway.");
-                GatewayCapabilitiesResponseEvent responseEvent = new GatewayCapabilitiesResponseEvent(gatewayTunnelFactory != null);
+                GatewayCapabilitiesResponseEvent responseEvent = new GatewayCapabilitiesResponseEvent(
+                    gatewayTunnelFactory != null, true
+                );
                 responseEvent.setMessageID(event.getMessageID());
                 sendCentralManagerMessage(
                         connection.getLocalRealm(),
@@ -454,6 +462,10 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
                 try {
                     gatewayTunnelFactory.startTunnel(gatewayTunnelStartRequestEvent);
+                    // Track active tunnel and schedule auto-close
+                    GatewayTunnelInfo tunnelInfo = gatewayTunnelStartRequestEvent.getInfo();
+                    activeTunnels.put(tunnelInfo.getId(), tunnelInfo);
+                    scheduleAutoCloseTunnel(tunnelInfo);
                 } catch (Exception e) {
                     error = e.getMessage();
                 }
@@ -472,6 +484,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 String error = null;
 
                 try {
+                    cancelAutoCloseTunnel(stopRequestEvent.getInfo().getId());
                     gatewayTunnelFactory.stopTunnel(stopRequestEvent.getInfo());
                 } catch (Exception e) {
                     error = e.getMessage();
@@ -636,6 +649,67 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             if (addMetaRules != null && !addMetaRules.isEmpty()) {
                 meta.addAll(addMetaRules);
             }
+        }
+    }
+
+    /**
+     * Schedule tunnel autoclose using autoCloseTime provided by tunnel info
+     */
+    protected void scheduleAutoCloseTunnel(GatewayTunnelInfo tunnelInfo) {
+        if (tunnelInfo.getAutoCloseTime() == null) {
+            LOG.fine("No auto-close time set for tunnel: " + tunnelInfo.getId());
+            return;
+        }
+
+        long delayMillis = tunnelInfo.getAutoCloseTime().toEpochMilli() - timerService.getCurrentTimeMillis();
+        if (delayMillis <= 0) {
+            LOG.warning("Auto-close time for tunnel " + tunnelInfo.getId() + " is in the past, closing immediately");
+            autoCloseTunnel(tunnelInfo.getId());
+            return;
+        }
+
+        LOG.info("Scheduling auto-close for tunnel '" + tunnelInfo.getId() + "' at " + tunnelInfo.getAutoCloseTime() + " (in " + delayMillis + "ms)");
+
+        ScheduledFuture<?> task = scheduledExecutorService.schedule(
+            () -> autoCloseTunnel(tunnelInfo.getId()),
+            delayMillis,
+            java.util.concurrent.TimeUnit.MILLISECONDS
+        );
+
+        tunnelAutoCloseTasks.put(tunnelInfo.getId(), task);
+    }
+
+    /**
+     * Cancel the scheduled auto-close task for a tunnel and remove it from the active tunnel map.
+     */
+    protected void cancelAutoCloseTunnel(String tunnelId) {
+        ScheduledFuture<?> task = tunnelAutoCloseTasks.remove(tunnelId);
+        if (task != null && !task.isDone()) {
+            task.cancel(false);
+            LOG.fine("Cancelled auto-close task for tunnel: " + tunnelId);
+        }
+        activeTunnels.remove(tunnelId);
+    }
+
+    /**
+     * Automatically closes a tunnel when its timeout expires, called by the scheduled task started in scheduleAutoCloseTunnel.
+     */
+    protected void autoCloseTunnel(String tunnelId) {
+        GatewayTunnelInfo tunnelInfo = activeTunnels.get(tunnelId);
+        if (tunnelInfo == null) {
+            LOG.fine("Tunnel '" + tunnelId + "' not found in active tunnels, it may have already been closed");
+            return;
+        }
+
+        LOG.info("Automatically closing tunnel due to timeout: " + tunnelId);
+
+        try {
+            if (gatewayTunnelFactory != null) {
+                gatewayTunnelFactory.stopTunnel(tunnelInfo);
+            }
+            cancelAutoCloseTunnel(tunnelId);
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to automatically close tunnel: " + tunnelId, e);
         }
     }
 }

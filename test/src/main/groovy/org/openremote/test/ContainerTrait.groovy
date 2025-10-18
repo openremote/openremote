@@ -19,6 +19,7 @@
  */
 package org.openremote.test
 
+import groovy.json.JsonSlurper
 import jakarta.persistence.TypedQuery
 import jakarta.ws.rs.core.UriBuilder
 import org.apache.camel.ProducerTemplate
@@ -34,10 +35,12 @@ import org.openremote.container.security.ClientCredentialsAuthForm
 import org.openremote.container.security.IdentityService
 import org.openremote.container.security.PasswordAuthForm
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
+import org.openremote.container.security.keycloak.KeycloakResource
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.LogUtil
 import org.openremote.container.util.MapAccess
 import org.openremote.container.web.WebClient
+import org.openremote.container.web.WebTargetBuilder
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -52,6 +55,7 @@ import org.openremote.model.asset.Asset
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.Protocol
+import org.openremote.model.auth.OAuthClientCredentialsGrant
 import org.openremote.model.gateway.GatewayConnection
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.RulesetQuery
@@ -63,13 +67,17 @@ import org.openremote.model.security.User
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+import javax.net.ssl.HostnameVerifier
+import javax.net.ssl.SSLSession
 import java.util.concurrent.TimeUnit
+import java.util.function.UnaryOperator
 import java.util.logging.Handler
 import java.util.stream.Collectors
 import java.util.stream.IntStream
 
 import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.container.web.WebService.OR_WEBSERVER_LISTEN_PORT
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 
@@ -479,6 +487,45 @@ trait ContainerTrait {
     UriBuilder serverUri(int serverPort) {
         UriBuilder.fromUri("")
                 .scheme("http").host("127.0.0.1").port(serverPort)
+    }
+    UriBuilder serverUri(boolean secure, String serverHost, int serverPort) {
+        UriBuilder.fromUri("")
+                .scheme(secure ? "https" : "http").host(serverHost).port(serverPort)
+    }
+
+    /**
+     * Makes a call to a remote OpenRemote manager to retrieve an access token for a given user
+     * */
+    AccessTokenResponse authenticate(boolean secure,
+                             String host,
+                             String realm,
+                             String clientId,
+                             String username,
+                             String password) {
+
+        String scheme   = secure ? "https" : "http"
+        String basePath = "/auth"
+        String baseUrl  = "${scheme}://${host}${basePath}"
+
+        UnaryOperator<ResteasyClientBuilderImpl> builderConfigurator =
+                { ResteasyClientBuilderImpl b ->
+                    b.hostnameVerifier({ String h, SSLSession s -> true } as HostnameVerifier)
+                    b
+                } as UnaryOperator<ResteasyClientBuilderImpl>
+
+        ResteasyClient client = ResteasyClientBuilder.newBuilder().hostnameVerifier {String h, SSLSession s -> true}.build()
+        ResteasyWebTarget target = (ResteasyWebTarget) client.target(baseUrl)
+
+        KeycloakResource keycloak = target.proxy(KeycloakResource)
+
+        try {
+            return keycloak.getAccessToken(
+                    realm,
+                    new PasswordAuthForm(clientId, username, password)
+            )
+        } finally {
+            client.close()
+        }
     }
 
     void stopContainer() {

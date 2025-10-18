@@ -83,7 +83,8 @@ public class GatewayConnector {
     String expectedSyncResponseName;
     protected boolean tunnellingSupported;
     protected final Map<Class<? extends SharedEvent>, Consumer<SharedEvent>> eventConsumerMap = new HashMap<>();
-
+    protected boolean tunnelTimeoutManagementSupported;
+    protected String gatewayVersion;
     protected static List<Integer> ALPHA_NUMERIC_CHARACTERS = new ArrayList<>(62);
 
     static {
@@ -257,6 +258,12 @@ public class GatewayConnector {
                     }
                 }
                 tunnellingSupported = response != null && response.isTunnelingSupported();
+                this.gatewayVersion = response.getVersion();
+                this.tunnelTimeoutManagementSupported = response.isTunnelTimeoutManagementSupported();
+
+                if(!Objects.equals(getGatewayVersion(), GatewayCapabilitiesResponseEvent.CURRENT_VERSION)){
+                    LOG.warning("Gateway Version is not up to date, latest version is "+GatewayCapabilitiesResponseEvent.CURRENT_VERSION + ", Gateway version is " + getGatewayVersion() + ". GatewayId: " + gatewayId);
+                }
                 LOG.finest("Tunnelling supported=" + tunnellingSupported + ": " + getGatewayIdString());
                 publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));
                 LOG.finest("Setting connection status=" + ConnectionStatus.CONNECTED + ": " + getGatewayIdString());
@@ -663,6 +670,14 @@ public class GatewayConnector {
         return GatewayConnector.class.getSimpleName() + "{" +
             "gatewayId='" + gatewayId + '\'' +
             '}';
+    }
+
+    public String getGatewayVersion() {
+        return gatewayVersion;
+    }
+
+    public boolean isTunnelTimeoutManagementSupported() {
+        return tunnelTimeoutManagementSupported;
     }
 
     protected String getGatewayIdString() {
