@@ -4,7 +4,7 @@ import io.netty.channel.ChannelHandler
 import jakarta.ws.rs.ForbiddenException
 import org.apache.http.client.utils.URIBuilder
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl
-import org.junit.Ignore
+import spock.lang.Ignore
 import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.io.AbstractNettyIOClient
@@ -1078,7 +1078,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
      * Change the test url and key path to match the instance to connect to.
      * Recommended to run profile/dev-proxy.yml profile.
      */
-//    @Ignore
+    @Ignore
     def "Verify gateway tunnel factory"() {
         given: "an ssh private key and the URL of a manager instance with tunnelling configured"
         def keyPath = Paths.get("/Users/panos/IdeaProjects/openremote/deployment/sish/client/client")
