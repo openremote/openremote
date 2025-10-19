@@ -348,7 +348,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the gateway returns the capabilities"
-        def capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true)
+        def capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, false)
         capabilitiesReplyEvent.setMessageID(messageId)
         gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(capabilitiesReplyEvent).get())
 
@@ -702,6 +702,20 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         readAssetsReplyEvent.setMessageID(messageId)
         gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
 
+        then: "the central manager should have requested the capabilities of the gateway"
+        conditions.eventually {
+            assert clientReceivedMessages.size() == 3
+            assert clientReceivedMessages.get(2).contains(GatewayCapabilitiesRequestEvent.TYPE)
+            def gatewayCapabilitiesRequest = ValueUtil.JSON.readValue(clientReceivedMessages[2].substring(SharedEvent.MESSAGE_PREFIX.length()), GatewayCapabilitiesRequestEvent.class)
+            messageId = gatewayCapabilitiesRequest.messageID
+        }
+
+        when: "The Gateway also sends a Gateway Capabilities response indicating tunnelling is supported"
+        capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, false)
+        capabilitiesReplyEvent.setMessageID(messageId)
+        gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(capabilitiesReplyEvent).get())
+
+
         then: "the gateway connector sync should be completed"
         conditions.eventually {
             def gatewayConnector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
@@ -719,6 +733,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             gateway = assetStorageService.find(gateway.getId())
             assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert gateway.getTunnelingSupported().get() == true
         }
 
         and: "the gateway should have the correct assets"
