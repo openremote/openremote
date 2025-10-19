@@ -23,7 +23,6 @@ import io.netty.bootstrap.AbstractBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import org.openremote.container.Container;
