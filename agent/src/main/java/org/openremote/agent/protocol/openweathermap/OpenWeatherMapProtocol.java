@@ -69,8 +69,7 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
  * with common weather attributes (temperature, humidity, wind, etc.), each
  * linked to a corresponding {@link OpenWeatherMapProperty}.
  * <p>
- * The agent requires a valid OpenWeatherMap API key and location information on
- * each linked asset. Attribution to OpenWeather is automatically applied.
+ * The agent requires a valid OpenWeatherMap API key
  */
 public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent, OpenWeatherMapAgentLink> {
 
