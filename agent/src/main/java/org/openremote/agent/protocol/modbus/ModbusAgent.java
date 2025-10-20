@@ -19,6 +19,7 @@
  */
 package org.openremote.agent.protocol.modbus;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.persistence.Entity;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.attribute.MetaItem;
@@ -31,6 +32,18 @@ import org.openremote.model.value.ValueType;
 public abstract class ModbusAgent<T extends ModbusAgent<T, U>, U extends AbstractModbusProtocol<U, T>> extends Agent<T, U, ModbusAgentLink> {
 
     public static final AttributeDescriptor<Integer> UNIT_ID = new AttributeDescriptor<>("unitId", ValueType.INTEGER, new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.Min(1), new ValueConstraint.Max(255))));
+
+    public enum EndianFormat {
+        BIG_ENDIAN,              // ABCD - Big byte order, Big word order
+        LITTLE_ENDIAN,           // DCBA - Little byte order, Little word order
+        BIG_ENDIAN_BYTE_SWAP,    // BADC - Big byte order, Little word order
+        LITTLE_ENDIAN_BYTE_SWAP; // CDAB - Little byte order, Big word order
+
+        @JsonValue
+        public String getJsonValue() {
+            return toString();
+        }
+    }
 
     // For Hydrators
     protected ModbusAgent() {}
@@ -46,4 +59,6 @@ public abstract class ModbusAgent<T extends ModbusAgent<T, U>, U extends Abstrac
     public void setUnitId(Integer unitId) {
         getAttributes().getOrCreate(UNIT_ID).setValue(unitId);
     }
+
+    public abstract EndianFormat getEndianFormat();
 }
