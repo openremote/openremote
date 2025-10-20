@@ -162,7 +162,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
 
             if (!schema && !schemas.has(type)) {
                 const response = await manager.rest.api.AssetModelResource.getValueDescriptorSchema({
-                    version: hash,
+                    hash,
                     descriptorType: valueDescriptor.type,
                     arrayDimensions: valueDescriptor.arrayDimensions,
                 });
