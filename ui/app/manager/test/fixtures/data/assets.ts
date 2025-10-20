@@ -3,7 +3,7 @@ import { Asset } from "@openremote/model";
 
 export const assetMap = {
   Battery: "ElectricityBatteryAsset",
-  "Solar Panel": "ElectricityProducerSolarAsset",
+  "Solar Panel": "ElectricityProducerSolarAsset"
 };
 const assets = [
   {
@@ -16,8 +16,8 @@ const assets = [
       energyLevel: { name: "energyLevel", type: "positiveNumber", meta: { readOnly: true } },
       power: { name: "power", type: "number", meta: { readOnly: false } },
       powerSetpoint: { name: "powerSetpoint", type: "number" },
-      energyCapacity: { name: "energyCapacity", type: "positiveNumber" },
-    },
+      energyCapacity: { name: "energyCapacity", type: "positiveNumber" }
+    }
   },
   {
     name: "Solar Panel",
@@ -28,9 +28,9 @@ const assets = [
       location: { name: "location", type: "GEO_JSONPoint" },
       panelPitch: { name: "panelPitch", type: "positiveInteger", meta: { readOnly: true } },
       power: { name: "power", type: "number", meta: { readOnly: false } },
-      powerForecast: { name: "powerForecast", type: "number", meta: { readOnly: true } },
-    },
-  },
+      powerForecast: { name: "powerForecast", type: "number", meta: { readOnly: true } }
+    }
+  }
 ] as const;
 
 export const preparedAssetsWithLocation = Object.values(
@@ -38,7 +38,7 @@ export const preparedAssetsWithLocation = Object.values(
     structuredClone(assets),
     [
       { attributes: { location: { value: { type: "Point", coordinates: [4.482259693115793, 51.91756799273] } } } },
-      { attributes: { location: { value: { type: "Point", coordinates: [4.4845127486877345, 51.917435642781214] } } } },
+      { attributes: { location: { value: { type: "Point", coordinates: [4.4845127486877345, 51.917435642781214] } } } }
     ],
     true
   )
@@ -51,15 +51,15 @@ export const preparedAssetsForRules = Object.values(
       {
         attributes: {
           energyLevel: { meta: { ruleState: true, storeDataPoints: true } },
-          power: { meta: { ruleState: true, storeDataPoints: true } },
-        },
+          power: { meta: { ruleState: true, storeDataPoints: true } }
+        }
       },
       {
         attributes: {
           power: { meta: { ruleState: true, storeDataPoints: true } },
-          powerForecast: { meta: { ruleState: true, storeDataPoints: true } },
-        },
-      },
+          powerForecast: { meta: { ruleState: true, storeDataPoints: true } }
+        }
+      }
     ],
     true
   )
@@ -98,8 +98,8 @@ export const assetPatches: Record<
     value2: "70",
     value3: "100",
     x: 600,
-    y: 200,
-  },
+    y: 200
+  }
 };
 
 export type DefaultAssets = typeof assets;
@@ -123,6 +123,6 @@ export const agent: Asset = {
     notes: { name: "notes", type: "text", meta: {} },
     agentDisabled: { name: "agentDisabled", type: "boolean", meta: {} },
     location: { name: "location", type: "GEO_JSONPoint", meta: {} },
-    agentStatus: { name: "agentStatus", type: "connectionStatus", meta: { readOnly: true } },
-  },
+    agentStatus: { name: "agentStatus", type: "connectionStatus", meta: { readOnly: true } }
+  }
 };
