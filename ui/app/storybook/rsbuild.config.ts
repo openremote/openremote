@@ -29,5 +29,14 @@ export default defineConfig({
         },
         // Enable symlinks resolution for workspace packages
         symlinks: true
+    },
+    tools: {
+        bundlerChain: (chain, { CHAIN_ID }) => {
+            chain.module.rule(CHAIN_ID.RULE.CSS).exclude.add(/(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/); // Exclude the external CSS imports from default bundling.
+        },
+        rspack: (config, { addRules }) => {
+            addRules([{test: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/, type: "asset/source"}]); // Add rule to treat external CSS imports as raw strings.
+            return config;
+        }
     }
 });

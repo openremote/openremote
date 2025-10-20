@@ -18,7 +18,6 @@ const storybookConfig: StorybookConfig = {
     rsbuildFinal: (config, { configType }) => {
         config.output ??= {};
         config.output.assetPrefix = "/storybook/";
-        console.debug(`Using RSBuild config for ${configType}:`, config);
         return config;
     }
 };
