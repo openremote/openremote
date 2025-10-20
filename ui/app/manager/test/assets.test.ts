@@ -1,7 +1,7 @@
 import { expect } from "@openremote/test";
 import { test, userStatePath } from "./fixtures/manager.js";
 import assets, { assetMap, assetPatches, thing } from "./fixtures/data/assets.js";
-import { WellknownMetaItems } from "@openremote/model";
+import {WellknownMetaItems} from "@openremote/model";
 import * as Util from "@openremote/core/lib/util";
 
 test.use({ storageState: userStatePath });
@@ -32,23 +32,6 @@ assets.forEach(({ type, name, attributes }) => {
     await saveBtn.click();
     await expect(saveBtn).toBeDisabled();
     await expect(page.locator(`text=${name}`)).toHaveCount(1);
-  });
-
-  /**
-   * @given Assets are set up in the "smartcity" realm
-   * @when Logging in to the OpenRemote "smartcity" realm
-   * @and Navigating to the "asset" tab
-   * @and Searching for the asset by name
-   * @and Selecting the asset from the list
-   * @then The asset detail page is displayed
-   */
-  test(`Search for and select a ${name} asset`, async ({ page, manager }) => {
-    await manager.setup("smartcity", { assets });
-    await manager.goToRealmStartPage("smartcity");
-    await manager.navigateToTab("asset");
-    await page.fill('#filterInput input[type="text"]', name);
-    await page.click(`text=${name}`);
-    await expect(page.locator(`#asset-header`, { hasText: name })).toBeVisible();
   });
 
   /**
@@ -202,6 +185,8 @@ test("Add all primitive configuration items", async ({ page, manager, assetViewe
   }
 });
 
+// TODO: Add test for the "Load more" button, by modifying the LIMIT variable in or-asset-tree
+
 test.fixme("Add all complex configuration items", async ({ page, manager, shared }) => {});
 
 /**
@@ -216,8 +201,8 @@ test("Delete specified assets and verify they are removed", async ({ page, manag
   await manager.setup("smartcity", { assets });
   await manager.goToRealmStartPage("smartcity");
   await manager.navigateToTab("Assets");
-  await assetsPage.deleteSelectedAsset("Battery");
-  await assetsPage.deleteSelectedAsset("Solar Panel");
+  await assetsPage.deleteSelectedAsset(manager, "Battery");
+  await assetsPage.deleteSelectedAsset(manager, "Solar Panel");
   await expect(page.locator("text=Console")).toHaveCount(1);
   await expect(page.locator("text=Solar Panel")).toHaveCount(0);
   await expect(page.locator("text=Battery")).toHaveCount(0);

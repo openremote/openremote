@@ -51,11 +51,18 @@ securityContext: {}
 
 # This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
 service:
-  # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-  type: LoadBalancer
-  # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
-  port: 80
-  annotations: {}
+  http:
+    # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: LoadBalancer
+    # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
+    port: 80
+    annotations: {}
+  metrics:
+    enabled: true
+    # Service type, typically use ClusterIP for local deployment and LoadBalancer for cloud deployments
+    type: ClusterIP
+    port: 8404
+    annotations: { }
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious

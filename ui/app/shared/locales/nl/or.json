@@ -628,6 +628,7 @@
   "dismiss": "sluiten",
   "createAssetFailed": "Asset aanmaken is niet gelukt",
   "moveAssetFailed": "Failed to move asset",
+  "loadMore": "Meer laden",
   "logCategory": {},
   "readPermissions": "Leesrechten",
   "writePermissions": "Schrijfrechten",
@@ -966,5 +967,14 @@
     "source": "Bron"
   },
   "expandAll": "Alles uitklappen",
-  "collapseAll": "Alles inklappen"
+  "collapseAll": "Alles inklappen",
+  "services": "Services",
+  "service": {
+    "noServiceSelected": "Selecteer een service aan de linkerkant",
+    "servicesLoadError": "Er is iets misgegaan bij het ophalen van de services",
+    "realmServicesLoadError": "Er is iets misgegaan bij het ophalen van de realm services",
+    "globalServicesLoadError": "Er is iets misgegaan bij het ophalen van de globale services",
+    "noServices": "Geen services gevonden, controleer de documentatie op hoe je services kunt toevoegen",
+    "iframeLoadError": "De geselecteerde service kon niet worden geladen"
+  }
 }

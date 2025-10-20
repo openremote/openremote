@@ -629,6 +629,7 @@
   "dismiss": "dismiss",
   "createAssetFailed": "Failed to create asset",
   "moveAssetFailed": "Failed to move asset",
+  "loadMore": "Load more",
   "logCategory": {},
   "readPermissions": "Read permissions",
   "writePermissions": "Write permissions",
@@ -967,5 +968,14 @@
     "source": "Source"
   },
   "expandAll": "Expand all",
-  "collapseAll": "Collapse all"
+  "collapseAll": "Collapse all",
+  "services": "Services",
+  "service": {
+    "noServiceSelected": "Please select a service on the left",
+    "servicesLoadError": "Something went wrong while retrieving services",
+    "realmServicesLoadError": "Something went wrong while retrieving realm services",
+    "globalServicesLoadError": "Something went wrong while retrieving global services",
+    "noServices": "No services found, check the documentation on how to add services",
+    "iframeLoadError": "The selected service could not be loaded"
+  }
 }

@@ -12,6 +12,8 @@ import { AssetsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages
 import { AssetViewer } from "../../../../component/or-asset-viewer/test/fixtures";
 import { CollapsiblePanel } from "../../../../component/or-components/test/fixtures";
 import { JsonForms } from "../../../../component/or-json-forms/test/fixtures";
+import { AssetTree } from "../../../../component/or-asset-tree/test/fixtures";
+import { type AxiosRequestConfig } from "axios";
 
 export const adminStatePath = path.join(__dirname, "data/.auth/admin.json");
 export const userStatePath = path.join(__dirname, "data/.auth/user.json");
@@ -116,7 +118,7 @@ export class Manager {
    * Expects a realm to be configured
    * @param config The axios request config
    */
-  async getClientRoles(config) {
+  async getClientRoles(config?: AxiosRequestConfig<any>) {
     try {
       const response = await rest.api.UserResource.getClientRoles(this.realm!, this.clientId, config);
       expect(response.status).toBe(200);
@@ -136,7 +138,7 @@ export class Manager {
    * @param roles The current stored roles to add the new role to
    * @param config The axios request config
    */
-  async createRole(newRole: Role, roles: Role[], config) {
+  async createRole(newRole: Role, roles: Role[], config?: AxiosRequestConfig<any>) {
     if (newRole.compositeRoleIds) {
       newRole.compositeRoleIds = newRole.compositeRoleIds
         .map((name) => roles.find((r) => r.name === name)?.id)
@@ -159,7 +161,7 @@ export class Manager {
    * @param user The user to create
    * @param config The axios request config
    */
-  async createUser(user: UserModel, config) {
+  async createUser(user: UserModel, config?: AxiosRequestConfig<any>) {
     try {
       const response = await rest.api.UserResource.create(this.realm!, user, config);
       expect(response.status).toBe(200);
@@ -176,7 +178,7 @@ export class Manager {
    * @param roles A list of roles to add to the user
    * @param config The axios request config
    */
-  async addUserRoles(roles: string[], config) {
+  async addUserRoles(roles: string[], config?: AxiosRequestConfig<any>) {
     try {
       const response = await rest.api.UserResource.updateUserClientRoles(
         this.realm!,
@@ -197,7 +199,7 @@ export class Manager {
    * Expects a realm and user to be configured
    * @param config The axios request config
    */
-  async resetUserPassword(config) {
+  async resetUserPassword(config?: AxiosRequestConfig<any>) {
     try {
       const response = await rest.api.UserResource.resetPassword(
         this.realm!,
@@ -216,7 +218,11 @@ export class Manager {
    * @param asset The asset to create
    * @param config The axios request config
    */
-  async createAsset(asset: Asset, config) {
+  async createAsset(asset: Asset, config?: AxiosRequestConfig<any>) {
+    if(!config) {
+      const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
+      config = { headers: { Authorization: `Bearer ${access_token}` } };
+    }
     await rest.api.AssetResource.create(asset, config)
       .then((response) => {
         expect(response.status).toBe(200);
@@ -226,6 +232,26 @@ export class Manager {
         expect(e.response.status, { message: "Failed to create asset" }).toBe(409);
       });
   }
+
+  /**
+   * Updates an asset
+   * @param asset The asset to update
+   * @param config The axios request config
+   */
+  async updateAsset(asset: Asset, config?: AxiosRequestConfig<any>) {
+      if(!config) {
+        const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
+        config = { ...(config || {}), headers: { Authorization: `Bearer ${access_token}` } };
+      }
+      await rest.api.AssetResource.update(asset.id!, asset, config)
+        .then((response) => {
+          expect(response.status).toBe(200);
+          this.assets = [...this.assets.filter(a => a.id !== response.data.id), response.data as Asset];
+        })
+        .catch((e) => {
+          expect(e.response.status, { message: "Failed to update asset" }).toBe(409);
+        });
+    }
 
   /**
    * Setup the testing environment by giving the realm name and additional parameters
@@ -272,7 +298,7 @@ export class Manager {
    * Deletes rules in the active realm
    * @param config The axios request config
    */
-  async deleteRealmRulesets(config) {
+  async deleteRealmRulesets(config?: AxiosRequestConfig<any>) {
     for (const [i, id] of this.rules.entries()) {
       try {
         const response = await rest.api.RulesResource.deleteRealmRuleset(id!, config);
@@ -288,7 +314,7 @@ export class Manager {
    * Deletes assets
    * @param config The axios request config
    */
-  async deleteAssets(config) {
+  async deleteAssets(config?: AxiosRequestConfig<any>) {
     const assetIds = this.assets.map(({ id }) => id!);
     try {
       const response = await rest.api.AssetResource.delete({ assetId: assetIds }, config);
@@ -340,7 +366,7 @@ export class Manager {
     }
   }
 
-  protected getAppUrl(realm: string) {
+  getAppUrl(realm: string) {
     return `${new URL(this.baseURL).origin}/manager/?realm=${realm}`;
   }
 }
@@ -362,6 +388,7 @@ interface PageFixtures {
 
 interface ComponentFixtures extends ComponentTestFixtures {
   assetViewer: AssetViewer;
+  assetTree: AssetTree;
   collapsiblePanel: CollapsiblePanel;
   jsonForms: JsonForms;
 }
@@ -380,6 +407,7 @@ export const test = base.extend<Fixtures>({
   usersPage: withManager(UsersPage),
   // Components
   assetViewer: withPage(AssetViewer),
+  assetTree: withPage(AssetTree),
   collapsiblePanel: withPage(CollapsiblePanel),
   jsonForms: withPage(JsonForms),
 });
