@@ -124,6 +124,20 @@ public class WaterMeterSontexSQ1 extends Asset<WaterMeterSontexSQ1> {
 
     public WaterMeterSontexSQ1(String name) {
         super(name);
+        setShowOnMap(false);
+    }
+
+    public WaterMeterSontexSQ1 setShowOnMap(boolean showOnMap) {
+        getAttributes()
+            .getOrCreate(LOCATION)
+            .getMetaItem(MetaItemType.SHOW_ON_DASHBOARD)
+            .ifPresentOrElse(
+                meta -> meta.setValue(showOnMap),
+                () -> getAttributes()
+                    .getOrCreate(LOCATION)
+                    .addMeta(new MetaItem<>(MetaItemType.SHOW_ON_DASHBOARD, showOnMap))
+            );
+        return this;
     }
 
     public Optional<Double> getVolumeTotalizer() {

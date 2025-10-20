@@ -180,6 +180,20 @@ public class WaterMeterIntegraTopasSonic extends Asset<WaterMeterIntegraTopasSon
 
     public WaterMeterIntegraTopasSonic(String name) {
         super(name);
+        setShowOnMap(false);
+    }
+
+    public WaterMeterIntegraTopasSonic setShowOnMap(boolean showOnMap) {
+        getAttributes()
+            .getOrCreate(LOCATION)
+            .getMetaItem(MetaItemType.SHOW_ON_DASHBOARD)
+            .ifPresentOrElse(
+                meta -> meta.setValue(showOnMap),
+                () -> getAttributes()
+                    .getOrCreate(LOCATION)
+                    .addMeta(new MetaItem<>(MetaItemType.SHOW_ON_DASHBOARD, showOnMap))
+            );
+        return this;
     }
 
     public Optional<String> getTimestamp() {

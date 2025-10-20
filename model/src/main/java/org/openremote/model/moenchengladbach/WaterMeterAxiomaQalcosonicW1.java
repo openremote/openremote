@@ -211,6 +211,20 @@ public class WaterMeterAxiomaQalcosonicW1 extends Asset<WaterMeterAxiomaQalcoson
 
     public WaterMeterAxiomaQalcosonicW1(String name) {
         super(name);
+        setShowOnMap(false);
+    }
+
+    public WaterMeterAxiomaQalcosonicW1 setShowOnMap(boolean showOnMap) {
+        getAttributes()
+            .getOrCreate(LOCATION)
+            .getMetaItem(MetaItemType.SHOW_ON_DASHBOARD)
+            .ifPresentOrElse(
+                meta -> meta.setValue(showOnMap),
+                () -> getAttributes()
+                    .getOrCreate(LOCATION)
+                    .addMeta(new MetaItem<>(MetaItemType.SHOW_ON_DASHBOARD, showOnMap))
+            );
+        return this;
     }
 
     public Optional<String> getTimestamp() {
