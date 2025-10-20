@@ -17,6 +17,7 @@
     "prepack": "npx rspack"
   },
   "author": "OpenRemote",
+  "repository": "https://github.com/openremote/openremote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "i18next": "^21.5.3",

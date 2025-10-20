@@ -17,6 +17,10 @@ const preview: Preview = {
             toc: {
                 disable: false,
                 headingSelector: "h2,h3"
+            },
+            source: {
+                // TODO: Use a proper code formatter like Prettier
+                transform: async (source) => source.replaceAll(/&quot;/g,'"')
             }
         },
         options: {
