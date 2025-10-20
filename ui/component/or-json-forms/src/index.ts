@@ -7,6 +7,7 @@ import {
     CoreActions,
     coreReducer,
     createAjv,
+    createDefaultValue,
     Dispatch,
     generateDefaultUISchema,
     generateJsonSchema,
@@ -117,6 +118,10 @@ export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPr
 
         if (!this.schema) {
             this.schema = this.data !== undefined ? generateJsonSchema(this.data) : {};
+        }
+
+        if (!this.data) {
+          this.data = createDefaultValue(this.schema, this.schema);
         }
 
         if (!this.uischema) {

@@ -73,7 +73,7 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     }
 
     @Override
-    public Response getValueDescriptorSchema(RequestParams requestParams, String version, String descriptorType, Integer arrayDimensions) {
+    public Response getValueDescriptorSchema(RequestParams requestParams, String hash, String descriptorType, Integer arrayDimensions) {
         try {
             JsonNode schema = assetModelService.getValueDescriptorSchema(descriptorType, arrayDimensions);
             // A 1-year immutable cache, as the responses are versioned, making invalidation largely automatic
