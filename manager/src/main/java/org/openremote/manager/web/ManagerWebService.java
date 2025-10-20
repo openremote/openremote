@@ -32,6 +32,7 @@ import io.swagger.v3.oas.models.security.*;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.servers.ServerVariable;
 import io.swagger.v3.oas.models.servers.ServerVariables;
+import io.undertow.Handlers;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.PathHandler;
@@ -95,14 +96,8 @@ public class ManagerWebService extends WebService {
     public static final String INSIGHTS_APP_PATH = "/insights";
     public static final String SWAGGER_APP_PATH = "/swagger";
     public static final String SHARED_PATH = "/shared";
-
     public static final List<String> APP_PATHS = List.of(MANAGER_APP_PATH, INSIGHTS_APP_PATH, SWAGGER_APP_PATH, SHARED_PATH);
-
-    public static final String UI_CLASSPATH_PREFIX = "org/openremote/web";
-
     private static final Logger LOG = Logger.getLogger(ManagerWebService.class.getName());
-    protected static final Pattern PATTERN_REALM_SUB = Pattern.compile("/([a-zA-Z0-9\\-_]+)/(.*)");
-
     protected boolean initialised;
     protected Path builtInAppDocRoot;
     protected Path customAppDocRoot;
@@ -144,7 +139,8 @@ public class ManagerWebService extends WebService {
 
        ResteasyDeployment deployment = createResteasyDeployment(APIApplication, container.getService(IdentityService.class), true);
        DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, API_PATH, "Manager HTTP API", devMode);
-       deploy(deploymentInfo, true);
+       deploy(deploymentInfo, true, false);
+
 
 
         // Serve deployment files unsecured (explicitly map deployment folders to request paths)
@@ -161,12 +157,11 @@ public class ManagerWebService extends WebService {
                 }
                 customBaseFileHandler.handleRequest(exchange);
             };
+        } else {
+           LOG.info("Custom app doc root does not exist:" + customAppDocRoot.toAbsolutePath());
         }
 
-        PathHandler deploymentHandler = defaultHandler != null ? new PathHandler(defaultHandler) : new PathHandler();
-
         serveFilesFromBuiltInAppDocRoot(container, deploymentHandler);
-        serveFilesFromClassPath(container, deploymentHandler);
 
         // Add all route handlers required by the manager in priority order
 
@@ -196,7 +191,7 @@ public class ManagerWebService extends WebService {
         );
     }
 
-    private void addOpenApiResource() {
+   private void addOpenApiResource() {
         // Modify swagger object mapper to match ours
         configureObjectMapper(Json.mapper());
         Json.mapper().addMixIn(StringSchema.class, StringSchemaMixin.class);
@@ -261,27 +256,6 @@ public class ManagerWebService extends WebService {
                 }
             });
         }
-    }
-
-    protected void serveFilesFromClassPath(Container container, PathHandler deploymentHandler) {
-        HttpHandler classPathFileHandler = createFileHandler(container, new ClassPathResourceManager(ManagerWebService.class.getClassLoader(), UI_CLASSPATH_PREFIX), null);
-        HttpHandler appFileHandler = exchange -> {
-            if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
-                exchange.setRelativePath("index.html");
-            }
-
-            // Reinstate the full path
-            exchange.setRelativePath(exchange.getRequestPath());
-            classPathFileHandler.handleRequest(exchange);
-        };
-
-        APP_PATHS.forEach(path -> {
-            URL url = ManagerWebService.class.getClassLoader().getResource(UI_CLASSPATH_PREFIX + path);
-            if (url != null) {
-                deploymentHandler.addPrefixPath(path, appFileHandler);
-                LOG.info("Serving " + path + " from classpath: " + url);
-            }
-        });
     }
 
     /**

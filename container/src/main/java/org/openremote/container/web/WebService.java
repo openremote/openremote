@@ -25,6 +25,7 @@ import io.undertow.Undertow;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RequestDumpingHandler;
 import io.undertow.servlet.Servlets;
@@ -147,13 +148,22 @@ public abstract class WebService implements ContainerService {
         }
     }
 
-    public void deploy(DeploymentInfo deploymentInfo, boolean secure) {
+   /**
+    * Deploys a servlet undertow deployment.
+    */
+    public void deploy(DeploymentInfo deploymentInfo, boolean secure, boolean useCanonicalPathHandler) {
         LOG.log(INFO, "Deploying undertow servlet deployment: name=" + deploymentInfo.getDeploymentName() + ", path=" + deploymentInfo.getContextPath() + ", secure=" + secure);
 
        try {
            DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
            manager.deploy();
            HttpHandler httpHandler = manager.start();
+
+           if (useCanonicalPathHandler) {
+              LOG.log(INFO, "Using canonical path handler for deployment");
+              httpHandler = new CanonicalPathHandler(httpHandler);
+           }
+
            Servlets.defaultContainer().addDeployment(deploymentInfo);
            pathHandler.addPrefixPath(deploymentInfo.getContextPath(), httpHandler);
         } catch (ServletException e) {
@@ -166,7 +176,7 @@ public abstract class WebService implements ContainerService {
           DeploymentManager manager = Servlets.defaultContainer().getDeployment(deploymentName);
           DeploymentInfo deploymentInfo = manager.getDeployment().getDeploymentInfo();
           LOG.log(INFO, "Un-deploying undertow servlet deployment: name=" + deploymentInfo.getDeploymentName() + ", path=" + deploymentInfo.getContextPath());
-          pathHandler.removePrefixPath(deploymentName);
+          pathHandler.removePrefixPath(deploymentInfo.getContextPath());
           manager.stop();
           manager.undeploy();
           Servlets.defaultContainer().removeDeployment(deploymentInfo);
@@ -197,11 +207,11 @@ public abstract class WebService implements ContainerService {
     public static List<Object> getStandardProviders(
             boolean devMode,
             Integer realmIndex,
-            Set<String> allowedOrigins,
-            String allowedMethods,
-            String exposedHeaders,
+            Set<String> corsAllowedOrigins,
+            String corsAllowedMethods,
+            String corsExposedHeaders,
             int corsMaxAge,
-            boolean allowCredentials) {
+            boolean corsAllowCredentials) {
 
         List<Object> providers = Lists.newArrayList(
            new RequestLogger(),
@@ -220,13 +230,13 @@ public abstract class WebService implements ContainerService {
            providers.addFirst(new RealmPathExtractorFilter(realmIndex));
         }
 
-        if (allowedOrigins != null) {
+        if (corsAllowedOrigins != null) {
            CorsFilter corsFilter = new CorsFilter();
-           corsFilter.getAllowedOrigins().addAll(allowedOrigins);
-           corsFilter.setAllowedMethods(allowedMethods);
-           corsFilter.setExposedHeaders(exposedHeaders);
+           corsFilter.getAllowedOrigins().addAll(corsAllowedOrigins);
+           corsFilter.setAllowedMethods(corsAllowedMethods);
+           corsFilter.setExposedHeaders(corsExposedHeaders);
            corsFilter.setCorsMaxAge(corsMaxAge);
-           corsFilter.setAllowCredentials(allowCredentials);
+           corsFilter.setAllowCredentials(corsAllowCredentials);
            providers.add(corsFilter);
         }
 
