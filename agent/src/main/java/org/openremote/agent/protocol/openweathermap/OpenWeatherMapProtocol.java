@@ -336,10 +336,10 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
         return switch (weatherProperty) {
             case TEMPERATURE -> weatherData.getTemperature();
             case ATMOSPHERIC_PRESSURE -> weatherData.getPressure();
-            case HUMIDITY_PERCENTAGE -> weatherData.getHumidity();
+            case HUMIDITY -> weatherData.getHumidity();
             case CLOUD_COVERAGE -> weatherData.getClouds();
             case WIND_SPEED -> convertMsToKmh(weatherData.getWindSpeed());
-            case WIND_DIRECTION_DEGREES -> weatherData.getWindDegrees();
+            case WIND_DIRECTION -> weatherData.getWindDegrees();
             case WIND_GUST_SPEED -> convertMsToKmh(weatherData.getWindGust());
             case PROBABILITY_OF_PRECIPITATION -> weatherData.getPop();
             case ULTRAVIOLET_INDEX -> weatherData.getUvi();
@@ -409,7 +409,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
 
         // Humidity
         weatherAsset.getAttribute(WeatherAsset.HUMIDITY).ifPresent(attribute -> attribute.addOrReplaceMeta(
-                new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.HUMIDITY_PERCENTAGE))));
+                new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.HUMIDITY))));
 
         // Atmospheric Pressure
         weatherAsset.getAttribute(WeatherAsset.ATMOSPHERIC_PRESSURE).ifPresent(attribute -> attribute.addOrReplaceMeta(
@@ -421,7 +421,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
 
         // Wind Direction
         weatherAsset.getAttribute(WeatherAsset.WIND_DIRECTION).ifPresent(attribute -> attribute.addOrReplaceMeta(
-                new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.WIND_DIRECTION_DEGREES))));
+                new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.WIND_DIRECTION))));
 
         // Wind Gust Speed
         weatherAsset.getAttribute(WeatherAsset.WIND_GUST_SPEED).ifPresent(attribute -> attribute.addOrReplaceMeta(
@@ -464,11 +464,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
 
     /**
      * Convert meters per second to kilometers per hour
-     *
-     * <p>
-     * Rounds the value to 2 decimal places
-     * </p>
-     *
+     * 
      * @param value the value to convert
      * @return the converted value rounded to 2 decimal places
      */

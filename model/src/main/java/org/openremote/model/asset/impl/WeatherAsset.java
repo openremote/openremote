@@ -77,7 +77,7 @@ public class WeatherAsset extends Asset<WeatherAsset> {
     ).withUnits(UNITS_KILO, UNITS_METRE, UNITS_PER, UNITS_HOUR);
     public static final AttributeDescriptor<Double> PROBABILITY_OF_PRECIPITATION = new AttributeDescriptor<>("probabilityOfPrecipitation", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+    ).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(1));
 
     public static final AssetDescriptor<WeatherAsset> DESCRIPTOR = new AssetDescriptor<>("weather-partly-cloudy", "49B0D8", WeatherAsset.class);
 
