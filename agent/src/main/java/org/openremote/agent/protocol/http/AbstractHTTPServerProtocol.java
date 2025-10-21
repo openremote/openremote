@@ -19,33 +19,28 @@
  */
 package org.openremote.agent.protocol.http;
 
-import io.undertow.server.HttpHandler;
-import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.DeploymentManager;
-import io.undertow.util.HttpString;
-import jakarta.servlet.ServletException;
+import jakarta.ws.rs.core.Application;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.container.security.IdentityService;
-import org.openremote.container.web.*;
-import org.openremote.model.Constants;
+import org.openremote.container.web.WebApplication;
+import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.syslog.SyslogCategory;
 
-import jakarta.ws.rs.core.Application;
-import org.openremote.model.util.TextUtil;
-
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.lang.System.Logger.Level.INFO;
+import static java.util.logging.Level.INFO;
 import static org.openremote.container.web.WebService.*;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
@@ -116,14 +111,14 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
                 DEFAULT_CORS_ALLOW_CREDENTIALS),
              getApiSingletons()).flatMap(Collection::stream).toList());
 
-        ResteasyDeployment deployment = createResteasyDeployment(application, identityService, secure);
-        DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, deploymentPath, deploymentName, devMode);
-        deploy(deploymentInfo, agent.getRealm());
+        ResteasyDeployment deployment = webService.createResteasyDeployment(application, secure);
+        DeploymentInfo deploymentInfo = webService.createDeploymentInfo(deployment, deploymentPath, deploymentName, devMode, secure);
+        deploy(deploymentInfo, secure);
     }
 
     @Override
     protected void doStop(Container container) throws Exception {
-        undeploy();
+        undeploy(getDeploymentName());
     }
 
     /**
@@ -168,37 +163,14 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
         return "HttpServerProtocol=" + getClass().getSimpleName() + ", Agent ID=" + agent.getId();
     }
 
-    protected void deploy(DeploymentInfo deploymentInfo, String agentRealm) {
-        LOG.log(INFO, "Deploying JAX-RS deployment for protocol instance : " + this);
-        DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
-        manager.deploy();
-        HttpHandler httpHandler;
+    protected void deploy(DeploymentInfo deploymentInfo, boolean secure) {
+       LOG.log(INFO, "Deploying JAX-RS deployment for protocol instance: " + this);
+       webService.deploy(deploymentInfo, secure, false);
+    }
 
-        if (TextUtil.isNullOrEmpty(agentRealm)) {
-            throw new IllegalStateException("Cannot determine the realm that this agent belongs to");
-        }
-
-        try {
-            httpHandler = manager.start();
-
-            // Wrap the handler to inject the realm
-            HttpHandler handlerWrapper = exchange -> {
-                exchange.getRequestHeaders().put(HttpString.tryFromString(Constants.REALM_PARAM_NAME), agentRealm);
-                httpHandler.handleRequest(exchange);
-            };
-            WebService.RequestHandler requestHandler = pathStartsWithHandler(deploymentInfo.getDeploymentName(), deploymentInfo.getContextPath(), handlerWrapper);
-
-            LOG.info("Registering HTTP Server Protocol request handler '"
-                    + this.getClass().getSimpleName()
-                    + "' for request path: "
-                    + deploymentInfo.getContextPath());
-            // Add the handler before the greedy deployment handler
-            webService.getRequestHandlers().addFirst(requestHandler);
-
-            deployment = new WebService.DeploymentInstance(deploymentInfo, requestHandler);
-        } catch (ServletException e) {
-            LOG.severe("Failed to deploy deployment: " + deploymentInfo.getDeploymentName());
-        }
+    protected void undeploy(String deploymentName) {
+       LOG.log(INFO, "Un-deploying JAX-RS deployment for protocol instance: " + this);
+       webService.undeploy(deploymentName);
     }
 
     @Override

@@ -22,14 +22,10 @@ package org.openremote.container.web;
 import com.google.common.collect.Lists;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
-import io.undertow.security.api.SecurityContext;
-import io.undertow.security.idm.Account;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RequestDumpingHandler;
-import io.undertow.server.handlers.encoding.GzipEncodingProvider;
-import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
@@ -38,13 +34,11 @@ import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
-import io.undertow.util.HeaderMap;
 import io.undertow.websockets.core.WebSocketChannel;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.ServletException;
 import jakarta.ws.rs.core.Application;
-import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.core.ResteasyDeploymentImpl;
 import org.jboss.resteasy.plugins.interceptors.AcceptEncodingGZIPFilter;
@@ -55,8 +49,6 @@ import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.IdentityService;
-import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
-import org.openremote.container.web.file.FileServlet;
 import org.openremote.container.web.file.GzipResponseFilter;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -65,12 +57,10 @@ import org.xnio.Options;
 
 import java.net.Inet4Address;
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.stream.Collectors;
 
-import static java.lang.System.Logger.Level.*;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
 import static org.openremote.container.util.MapAccess.*;
 import static org.openremote.container.web.file.FileServlet.MIME_TYPES_TO_ZIP;
 import static org.openremote.model.Constants.OR_ADDITIONAL_HOSTNAMES;
@@ -99,6 +89,7 @@ public abstract class WebService implements ContainerService {
     public static final boolean DEFAULT_CORS_ALLOW_CREDENTIALS = true;
     protected boolean devMode;
     protected String host;
+    protected IdentityService identityService;
     protected int port;
     protected Undertow undertow;
     protected URI containerHostUri;
@@ -115,6 +106,7 @@ public abstract class WebService implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
+       identityService = container.getService(IdentityService.class);
         devMode = container.isDevMode();
         host = getString(container.getConfig(), OR_WEBSERVER_LISTEN_HOST, OR_WEBSERVER_LISTEN_HOST_DEFAULT);
         port = getInteger(container.getConfig(), OR_WEBSERVER_LISTEN_PORT, OR_WEBSERVER_LISTEN_PORT_DEFAULT);
@@ -275,7 +267,7 @@ public abstract class WebService implements ContainerService {
         return builder;
     }
 
-   static public ResteasyDeployment createResteasyDeployment(Application application, IdentityService identityService, boolean secure) {
+   public ResteasyDeployment createResteasyDeployment(Application application, boolean secure) {
       ResteasyDeployment resteasyDeployment = new ResteasyDeploymentImpl();
       resteasyDeployment.setApplication(application);
       if (secure) {
@@ -283,14 +275,14 @@ public abstract class WebService implements ContainerService {
             throw new RuntimeException("Role based security can only be enabled when an identity service is available");
          }
          resteasyDeployment.setSecurityEnabled(true);
-         identityService.secureDeployment(resteasyDeployment);
+         //identityService.secureDeployment(resteasyDeployment);
       }
       return resteasyDeployment;
    }
 
-   static public DeploymentInfo createDeploymentInfo(ResteasyDeployment resteasyDeployment, String deploymentPath, String deploymentName, boolean devMode) {
+   public DeploymentInfo createDeploymentInfo(ResteasyDeployment resteasyDeployment, String deploymentPath, String deploymentName, boolean devMode, boolean secure) {
 
-      ServletInfo resteasyServlet = Servlets.servlet("ResteasyServlet", DefaultServlet HttpServlet30Dispatcher.class)
+      ServletInfo resteasyServlet = Servlets.servlet("ResteasyServlet", HttpServlet30Dispatcher.class)
          .setAsyncSupported(true)
          .setLoadOnStartup(1)
          .addMapping("/*");
@@ -302,12 +294,20 @@ public abstract class WebService implements ContainerService {
          .addServlet(resteasyServlet)
          .setClassLoader(Container.class.getClassLoader());
 
+      if (secure) {
+         if (identityService == null)
+            throw new IllegalStateException(
+               "No identity service found, make sure " + IdentityService.class.getName() + " is added before this service"
+            );
+         identityService.secureDeployment(deploymentInfo);
+      }
+
       // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
       deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
       return deploymentInfo;
    }
 
-   static public DeploymentInfo createFilesDeploymentInfo(ResourceManager resourceManager, String deploymentPath, String deploymentName, boolean devMode, String[] requiredRoles) {
+   public DeploymentInfo createFilesDeploymentInfo(ResourceManager resourceManager, String deploymentPath, String deploymentName, boolean devMode, String[] requiredRoles) {
        //FileServlet fileServlet = new FileServlet(devMode, resourceManager, requiredRoles);
        //ServletInfo servletInfo = Servlets.servlet("Manager File Servlet", FileServlet.class, () -> new ImmediateInstanceHandle<>(fileServlet));
        //servletInfo.addMapping("/*");
