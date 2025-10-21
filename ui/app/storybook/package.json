@@ -14,6 +14,7 @@
   "dependencies": {
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
+    "@openremote/or-chart": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
@@ -22,7 +23,7 @@
     "lit": "^3.3.1"
   },
   "devDependencies": {
-    "@rsbuild/core": "~1.5.13",
+    "@rsbuild/core": "~1.5.17",
     "@storybook/addon-a11y": "~9.1.10",
     "@storybook/addon-docs": "~9.1.10",
     "@storybook/web-components": "~9.1.10",
