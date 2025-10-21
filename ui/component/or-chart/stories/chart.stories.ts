@@ -63,14 +63,10 @@ export {customElements, packageJson};
 /* ------------------------------------------------------- */
 
 async function loadOrChart(args: any) {
-
-    const newArgs = Object.fromEntries(Object.entries(args).filter(([key, value]) => (
+    const newArgs = Object.fromEntries(Object.entries(args).filter(([_key, value]) => (
         value != null && String(value).length > 0
     )));
-
-    const orChart = Object.assign(new OrChart(), newArgs);
-
-    return orChart;
+    return Object.assign(new OrChart(), newArgs);
 }
 
 export default meta;

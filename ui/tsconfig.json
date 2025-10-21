@@ -16,7 +16,6 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "composite": true,
-    "useDefineForClassFields": false,
-    "resolveJsonModule": true
+    "useDefineForClassFields": false
   }
 }
