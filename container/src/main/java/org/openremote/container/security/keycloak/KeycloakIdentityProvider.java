@@ -70,7 +70,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebClient.getTarget;
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
 import static org.openremote.model.Constants.*;
 
 public abstract class KeycloakIdentityProvider implements IdentityProvider {
@@ -424,12 +423,8 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         if (authProxyHandler == null)
             throw new IllegalStateException("Initialize this service first");
 
-
         LOG.info("Enabling auth reverse proxy (passing requests through to Keycloak) on web context: /" + keycloakPath);
-        webService.getRequestHandlers().addFirst(pathStartsWithHandler(
-            "Keycloak auth proxy",
-            "/" + keycloakPath,
-            authProxyHandler));
+        webService.deployHttpHandler(keycloakPath, authProxyHandler);
     }
 
     /**

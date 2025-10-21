@@ -299,12 +299,12 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         and: "the test resource (to be deployed by the protocol)"
         def authenticatedTestResource = getClientTarget(
             serverUri(serverPort)
-                    .path(AbstractHTTPServerProtocol.DEFAULT_DEPLOYMENT_PATH_PREFIX)
+                    .path(AbstractHTTPServerProtocol.DEPLOYMENT_PATH_PREFIX)
                     .path("test"),
             accessToken).proxy(TestResource.class)
         def testResource = getClientTarget(
                 serverUri(serverPort)
-                        .path(AbstractHTTPServerProtocol.DEFAULT_DEPLOYMENT_PATH_PREFIX)
+                        .path(AbstractHTTPServerProtocol.DEPLOYMENT_PATH_PREFIX)
                         .path("test"),
                 null).proxy(TestResource.class)
 
@@ -369,7 +369,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         and: "an un-authenticated test resource proxy is created for the new deployment"
         def testResource2 = getClientTarget(
                 serverUri(serverPort)
-                        .path(AbstractHTTPServerProtocol.DEFAULT_DEPLOYMENT_PATH_PREFIX)
+                        .path(AbstractHTTPServerProtocol.DEPLOYMENT_PATH_PREFIX)
                         .path("test2"),
                 null).proxy(TestResource.class)
 

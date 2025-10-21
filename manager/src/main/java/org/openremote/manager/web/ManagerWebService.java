@@ -32,27 +32,18 @@ import io.swagger.v3.oas.models.security.*;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.servers.ServerVariable;
 import io.swagger.v3.oas.models.servers.ServerVariables;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.handlers.CanonicalPathHandler;
-import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RedirectHandler;
-import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceManager;
-import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.ServletInfo;
-import io.undertow.util.HttpString;
-import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
+import jakarta.ws.rs.core.Application;
 import org.jboss.resteasy.spi.ResteasyDeployment;
-import org.openremote.container.security.IdentityService;
+import org.openremote.container.web.CompositeResourceManager;
+import org.openremote.container.web.WebApplication;
 import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
+import org.openremote.model.util.TextUtil;
 
-import jakarta.ws.rs.WebApplicationException;
-
-import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -61,14 +52,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
-import static io.undertow.util.RedirectBuilder.redirect;
-import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
-import static jakarta.ws.rs.core.UriBuilder.fromUri;
 import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.model.Constants.REALM_PARAM_NAME;
 import static org.openremote.model.util.ValueUtil.configureObjectMapper;
 
 public class ManagerWebService extends WebService {
@@ -92,18 +78,7 @@ public class ManagerWebService extends WebService {
     public static final String OR_ROOT_REDIRECT_PATH_DEFAULT = "/manager";
 
     public static final String API_PATH = "/api";
-    public static final String MANAGER_APP_PATH = "/manager";
-    public static final String INSIGHTS_APP_PATH = "/insights";
-    public static final String SWAGGER_APP_PATH = "/swagger";
-    public static final String SHARED_PATH = "/shared";
-
-    public static final List<String> APP_PATHS = List.of(MANAGER_APP_PATH, INSIGHTS_APP_PATH, SWAGGER_APP_PATH, SHARED_PATH);
-
-    public static final String UI_CLASSPATH_PREFIX = "org/openremote/web";
-
     private static final Logger LOG = Logger.getLogger(ManagerWebService.class.getName());
-    protected static final Pattern PATTERN_REALM_SUB = Pattern.compile("/([a-zA-Z0-9\\-_]+)/(.*)");
-
     protected boolean initialised;
     protected Path builtInAppDocRoot;
     protected Path customAppDocRoot;
@@ -122,100 +97,55 @@ public class ManagerWebService extends WebService {
     public void init(Container container) throws Exception {
         super.init(container);
 
-        String rootRedirectPath = getString(container.getConfig(), OR_ROOT_REDIRECT_PATH, OR_ROOT_REDIRECT_PATH_DEFAULT);
-
-        addOpenApiResource();
-
-        initialised = true;
-        ResteasyDeployment resteasyDeployment = createResteasyDeployment(container, getApiClasses(), apiSingletons, true);
-
-        // Serve REST API
-        HttpHandler apiHandler = createApiHandler(container, resteasyDeployment);
-
-        if (apiHandler != null) {
-
-            // Authenticating requests requires a realm, either we receive this in a header or
-            // we extract it (e.g. from request path segment) and set it as a header before
-            // processing the request
-            HttpHandler baseApiHandler = apiHandler;
-
-            apiHandler = exchange -> {
-
-                String path = exchange.getRelativePath().substring(API_PATH.length());
-                Matcher realmSubMatcher = PATTERN_REALM_SUB.matcher(path);
-
-                if (!realmSubMatcher.matches()) {
-                    exchange.setStatusCode(NOT_FOUND.getStatusCode());
-                    throw new WebApplicationException(NOT_FOUND);
-                }
-
-                // Extract realm from path and push it into REQUEST_HEADER_REALM header
-                String realm = realmSubMatcher.group(1);
-
-                // Move the realm from path segment to header
-                exchange.getRequestHeaders().put(HttpString.tryFromString(REALM_PARAM_NAME), realm);
-
-                URI url = fromUri(exchange.getRequestURL())
-                        .replacePath(realmSubMatcher.group(2))
-                        .build();
-                exchange.setRequestURI(url.toString(), true);
-                exchange.setRequestPath(url.getPath());
-                exchange.setRelativePath(url.getPath());
-
-                baseApiHandler.handleRequest(exchange);
-            };
-        }
-
-        // Serve deployment files unsecured (explicitly map deployment folders to request paths)
         builtInAppDocRoot = Paths.get(getString(container.getConfig(), OR_APP_DOCROOT, OR_APP_DOCROOT_DEFAULT));
         customAppDocRoot = Paths.get(getString(container.getConfig(), OR_CUSTOM_APP_DOCROOT, OR_CUSTOM_APP_DOCROOT_DEFAULT));
+        String rootRedirectPath = getString(container.getConfig(), OR_ROOT_REDIRECT_PATH, OR_ROOT_REDIRECT_PATH_DEFAULT);
 
-        HttpHandler defaultHandler = null;
+       // Add a handler to redirect requests for the exact root path "/" to the configured default path
+       if (!TextUtil.isNullOrEmpty(rootRedirectPath)) {
+          LOG.info("Adding root redirect to: " + rootRedirectPath);
+          pathHandler.addExactPath("/", new RedirectHandler(rootRedirectPath));
+       }
 
-        if (Files.isDirectory(customAppDocRoot)) {
-            HttpHandler customBaseFileHandler = createFileHandler(container, new PathResourceManager(customAppDocRoot), null);
-            defaultHandler = exchange -> {
-                if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
-                    exchange.setRelativePath("/index.html");
-                }
-                customBaseFileHandler.handleRequest(exchange);
-            };
+       addOpenApiResource();
+
+        initialised = true;
+
+        // Serve REST API
+       Collection<Object> deploymentSingletons = Stream.of(
+          devMode ? getStandardProviders(devMode, 1) : getStandardProviders(devMode, 1,
+             getCORSAllowedOrigins(container),
+             getString(container.getConfig(), OR_WEBSERVER_ALLOWED_METHODS, DEFAULT_CORS_ALLOW_ALL),
+             getString(container.getConfig(), OR_WEBSERVER_EXPOSED_HEADERS, DEFAULT_CORS_ALLOW_ALL),
+             DEFAULT_CORS_MAX_AGE,
+             DEFAULT_CORS_ALLOW_CREDENTIALS),
+          apiSingletons).flatMap(Collection::stream).toList();
+
+        Application APIApplication = new WebApplication(
+                container,
+               apiClasses,
+               deploymentSingletons);
+
+       ResteasyDeployment deployment = createResteasyDeployment(APIApplication, true);
+       DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, API_PATH, "Manager HTTP API", devMode, true);
+       deploy(deploymentInfo, true, false);
+
+       // Deploy static app files unsecured
+       ResourceManager filesResourceManager = new PathResourceManager(builtInAppDocRoot);
+
+       // If custom app docroot is a directory then make it the default file handler
+        if (customAppDocRoot != null && Files.isDirectory(customAppDocRoot)) {
+            ResourceManager customAppResourceManager = new PathResourceManager(customAppDocRoot);
+            filesResourceManager = new CompositeResourceManager(filesResourceManager, customAppResourceManager);
+        } else if (customAppDocRoot != null) {
+           LOG.info("Custom app doc root does not exist: " + customAppDocRoot.toAbsolutePath());
         }
 
-        PathHandler deploymentHandler = defaultHandler != null ? new PathHandler(defaultHandler) : new PathHandler();
-
-        serveFilesFromBuiltInAppDocRoot(container, deploymentHandler);
-        serveFilesFromClassPath(container, deploymentHandler);
-
-        // Add all route handlers required by the manager in priority order
-
-        // Redirect / to default app
-        if (rootRedirectPath != null) {
-            getRequestHandlers().add(
-                    new RequestHandler(
-                            "Default app redirect",
-                            exchange -> exchange.getRequestPath().equals("/"),
-                            exchange -> {
-                                LOG.finest("Handling root request, redirecting client to default app");
-                                new RedirectHandler(redirect(exchange, rootRedirectPath)).handleRequest(exchange);
-                            }));
-        }
-
-        if (apiHandler != null) {
-            getRequestHandlers().add(pathStartsWithHandler("REST API Handler", API_PATH, apiHandler));
-        }
-
-        // This will try and handle any request that makes it to this handler
-        getRequestHandlers().add(
-                new RequestHandler(
-                        "Deployment files",
-                        exchange -> true,
-                        deploymentHandler
-                )
-        );
+        deploymentInfo = createFilesDeploymentInfo(filesResourceManager, "/", "App Files", devMode, null);
+        deploy(deploymentInfo, false, true);
     }
 
-    private void addOpenApiResource() {
+   private void addOpenApiResource() {
         // Modify swagger object mapper to match ours
         configureObjectMapper(Json.mapper());
         Json.mapper().addMixIn(StringSchema.class, StringSchemaMixin.class);
@@ -243,9 +173,9 @@ public class ManagerWebService extends WebService {
                 )).security(List.of(new SecurityRequirement().addList("openid")));
 
         Info info = new Info()
-                .title("OpenRemote Manager REST API")
+                .title("OpenRemote Manager HTTP API")
                 .version("3.0.0")
-                .description("This is the documentation for the OpenRemote Manager HTTP REST API.  Please see the [documentation](https://docs.openremote.io) for more info.")
+                .description("This is the documentation for the OpenRemote Manager HTTP API.  Please see the [documentation](https://docs.openremote.io) for more info.")
                 .contact(new Contact().email("info@openremote.io"))
                 .license(new License().name("AGPL 3.0").url("https://www.gnu.org/licenses/agpl-3.0.en.html"));
 
@@ -259,55 +189,14 @@ public class ManagerWebService extends WebService {
         addApiSingleton(openApiResource);
     }
 
-    protected void serveFilesFromBuiltInAppDocRoot(Container container, PathHandler deploymentHandler) {
-        if (Files.isDirectory(builtInAppDocRoot)) {
-            HttpHandler appBaseFileHandler = createFileHandler(container, new PathResourceManager(builtInAppDocRoot), null);
-            HttpHandler appFileHandler = exchange -> {
-                if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
-                    exchange.setRelativePath("/index.html");
-                }
-
-                // Reinstate the full path
-                exchange.setRelativePath(exchange.getRequestPath());
-                appBaseFileHandler.handleRequest(exchange);
-            };
-
-            APP_PATHS.forEach(path -> {
-                Path diskPath =  builtInAppDocRoot.resolve(path.substring(1));
-                if (Files.isDirectory(diskPath)) {
-                    deploymentHandler.addPrefixPath(path, appFileHandler);
-                    LOG.info("Serving " + path + " from disk: " + diskPath.toAbsolutePath());
-                }
-            });
-        }
-    }
-
-    protected void serveFilesFromClassPath(Container container, PathHandler deploymentHandler) {
-        HttpHandler classPathFileHandler = createFileHandler(container, new ClassPathResourceManager(ManagerWebService.class.getClassLoader(), UI_CLASSPATH_PREFIX), null);
-        HttpHandler appFileHandler = exchange -> {
-            if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
-                exchange.setRelativePath("index.html");
-            }
-
-            // Reinstate the full path
-            exchange.setRelativePath(exchange.getRequestPath());
-            classPathFileHandler.handleRequest(exchange);
-        };
-
-        APP_PATHS.forEach(path -> {
-            URL url = ManagerWebService.class.getClassLoader().getResource(UI_CLASSPATH_PREFIX + path);
-            if (url != null) {
-                deploymentHandler.addPrefixPath(path, appFileHandler);
-                LOG.info("Serving " + path + " from classpath: " + url);
-            }
-        });
-    }
-
     /**
      * Add resource/provider/etc. classes to enable REST API
      */
-    public Collection<Class<?>> getApiClasses() {
-        return apiClasses;
+    public void addApiClasses(Class<?> apiClass) {
+       if (this.initialised) {
+          throw new IllegalStateException("API classes must be added before the service is initialised");
+       }
+       apiClasses.add(apiClass);
     }
 
     /**
@@ -326,40 +215,6 @@ public class ManagerWebService extends WebService {
 
     public Path getCustomAppDocRoot() {
         return customAppDocRoot;
-    }
-
-    protected HttpHandler createApiHandler(Container container, ResteasyDeployment resteasyDeployment) {
-        if (resteasyDeployment == null)
-            return null;
-
-        ServletInfo restServlet = Servlets.servlet("RESTEasy Servlet", HttpServlet30Dispatcher.class)
-                .setAsyncSupported(true)
-                .setLoadOnStartup(1)
-                .addMapping("/*");
-
-        DeploymentInfo deploymentInfo = new DeploymentInfo()
-                .setDeploymentName("RESTEasy Deployment")
-                .setContextPath(API_PATH)
-                .addServletContextAttribute(ResteasyDeployment.class.getName(), resteasyDeployment)
-                .addServlet(restServlet)
-                .setClassLoader(Container.class.getClassLoader());
-
-        IdentityService identityService = container.getService(IdentityService.class);
-
-        if (identityService != null) {
-            resteasyDeployment.setSecurityEnabled(true);
-        } else {
-            throw new RuntimeException("No identity service deployed, can't enable API security");
-        }
-
-        return addServletDeployment(container, deploymentInfo, resteasyDeployment.isSecurityEnabled());
-    }
-
-    public static HttpHandler createFileHandler(Container container, ResourceManager resourceManager, String[] requiredRoles) {
-        boolean devMode = container.isDevMode();
-        requiredRoles = requiredRoles == null ? new String[0] : requiredRoles;
-        DeploymentInfo deploymentInfo = ManagerFileServlet.createDeploymentInfo(devMode, "", resourceManager, requiredRoles);
-        return new CanonicalPathHandler(addServletDeployment(container, deploymentInfo, requiredRoles.length != 0));
     }
 
     @Override
