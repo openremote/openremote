@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.http.RequestParams;
@@ -26,8 +27,8 @@ import org.openremote.model.system.StatusResource;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
+import org.jboss.resteasy.annotations.cache.Cache;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Response;
 
 import java.util.Map;
 
@@ -110,6 +111,7 @@ public interface AssetModelResource {
     @GET
     @Path("getValueDescriptorSchema")
     @Produces(APPLICATION_JSON)
+    @Cache(maxAge = 31536000) // A 1-year cache, the supplied hash parameter serves as cache key on the client
     @Operation(operationId = "getValueDescriptorSchema", summary = "Retrieve the valueDescriptor JSON Schema.")
-    Response getValueDescriptorSchema(@BeanParam RequestParams requestParams, @QueryParam("hash") String hash, @QueryParam("name") String name);
+    JsonNode getValueDescriptorSchema(@BeanParam RequestParams requestParams, @QueryParam("name") String name, @QueryParam("hash") String hash);
 }

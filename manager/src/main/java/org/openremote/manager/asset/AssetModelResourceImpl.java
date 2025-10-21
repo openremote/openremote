@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.asset;
 
+import jakarta.ws.rs.WebApplicationException;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
@@ -36,7 +37,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import jakarta.ws.rs.core.Response;
+import static jakarta.ws.rs.core.Response.Status.*;
 
 public class AssetModelResourceImpl extends ManagerWebResource implements AssetModelResource {
 
@@ -74,13 +75,12 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     }
 
     @Override
-    public Response getValueDescriptorSchema(RequestParams requestParams, String hash, String name) {
+    public JsonNode getValueDescriptorSchema(RequestParams requestParams, String name, String hash) {
         JsonNode schema = assetModelService.getValueDescriptorSchema(name);
         if (schema == null) {
             LOG.log(Level.INFO, "Could not find value descriptor: '" + name + "'");
-            return Response.status(404).build();
+            throw new WebApplicationException(NOT_FOUND);
         }
-        // A 1-year immutable cache, as the responses are versioned, making invalidation largely automatic
-        return Response.ok(schema).header("Cache-Control", "public,max-age=" + 31536000 + ",immutable").build();
+        return schema;
     }
 }
