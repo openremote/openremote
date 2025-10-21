@@ -42,6 +42,7 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.ScheduledExecutorService
@@ -308,8 +309,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                         new SimulatorReplayDatapoint(HOUR * 25, "test"),
                         new SimulatorReplayDatapoint(HOUR * 49, "test")
                 ).setSchedule(new SimulatorProtocol.Schedule(
-                        Date.from(Instant.parse("1970-01-02T00:00:00.000Z")),
-                        null,
+                        LocalDate.of(1970, 1, 2),
                         null
                 ))
         )))
@@ -371,8 +371,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                         new SimulatorReplayDatapoint(HOUR * 2, "test")
                 ).setSchedule(new SimulatorProtocol.Schedule(
                         // First day should be 1970-01-05 (in 4 days) a Monday
-                        Date.from(Instant.parse("1970-01-05T00:00:00.000Z")),
-                        null,
+                        LocalDate.of(1970, 1, 5),
                         // Recur every Monday until 1970-01-31
                         "FREQ=WEEKLY;UNTIL=19700131T000000Z;BYDAY=MO"
                 ))
@@ -554,8 +553,8 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                         new SimulatorReplayDatapoint(HOUR, "test"),
                         new SimulatorReplayDatapoint(HOUR * 2, "test"),
                 ).setSchedule(new SimulatorProtocol.Schedule(
-                        Date.from(Instant.parse("1970-01-01T00:00:00.000Z")),
-                        null, null
+                        LocalDate.of(1970, 1, 1),
+                        null
                 ))),
                 new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
         )
