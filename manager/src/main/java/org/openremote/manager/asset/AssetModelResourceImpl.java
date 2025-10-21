@@ -26,6 +26,7 @@ import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetModelResource;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.asset.AssetTypeInfo;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
@@ -39,7 +40,7 @@ import jakarta.ws.rs.core.Response;
 
 public class AssetModelResourceImpl extends ManagerWebResource implements AssetModelResource {
 
-    private static final Logger LOG = Logger.getLogger(AssetModelResourceImpl.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.MODEL_AND_VALUES, AssetModelResourceImpl.class);
     protected AssetModelService assetModelService;
 
     public AssetModelResourceImpl(TimerService timerService, ManagerIdentityService identityService, AssetModelService assetModelService) {
