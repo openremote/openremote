@@ -546,12 +546,6 @@ jobs:
           MANAGER_DOCKER_CMD: ${{ steps.manager-docker-command.outputs.value }}
           DEPLOYMENT_DOCKER_CMD: ${{ steps.deployment-docker-command.outputs.value }}
 
-      - name: Define translation processor command
-        id: translation-processor-command
-        shell: bash
-        run: |
-            echo "value=./gradlew -p ui/app/shared processTranslations --no-parallel" >> $GITHUB_OUTPUT
-
       - name: Login to DockerHub
         if: ${{ steps.manager-docker-command.outputs.pushToDockerHub == 'true' }}
         uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
@@ -676,19 +670,18 @@ jobs:
         env:
           VERSION: ${{ steps.get-version-details.outputs.version_with_qualifier }}
 
-      - name: Run translations processor
-        if: ${{ steps.translation-processor-command.outputs.value != '' }}
+      - name: Check for outdated translations
         run: |
           set -e
 
           # Run the tests
-          ${{ steps.translation-processor-command.outputs.value }}
+          ./gradlew -p ui/app/shared processTranslations --no-parallel
 
           out=$(git status --porcelain | grep "ui/app/shared/locales" || true)
           if [[ -z "$out" ]]; then
               echo "✅ No pipeline changes detected."
           else
-              echo "❌ Pipeline files have changed. Please run '${{ steps.translation-processor-command.outputs.value }}'"
+              echo "❌ Pipeline files have changed. Please run './gradlew -p ui/app/shared processTranslations --no-parallel'"
               echo "$out"
               exit 1
           fi
