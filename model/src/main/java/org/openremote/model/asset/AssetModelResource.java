@@ -104,12 +104,12 @@ public interface AssetModelResource {
 
     /**
      * Retrieve the JSON Schema for a {@link ValueDescriptor} available in this system. A value descriptor schema is only meant to be retrieved
-     * once per client. Either when a new {@code hash}, {@code descriptorType} or {@code arrayDimensions} are requested. The HTTP client should cache the response based on the
+     * once per client. Either when a new {@code hash} or {@code name} are requested. The HTTP client should cache the response based on the
      * {@code Cache-Control} header. The {@code hash} for actively cached descriptors can be found by requesting the {@link StatusResource#getInfo()} endpoint.
      */
     @GET
     @Path("getValueDescriptorSchema")
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getValueDescriptorSchema", summary = "Retrieve the valueDescriptor JSON Schema.")
-    Response getValueDescriptorSchema(@BeanParam RequestParams requestParams, @QueryParam("hash") String hash, @QueryParam("descriptorType") String descriptorType, @QueryParam("arrayDimensions") Integer arrayDimensions);
+    Response getValueDescriptorSchema(@BeanParam RequestParams requestParams, @QueryParam("hash") String hash, @QueryParam("name") String name);
 }

@@ -209,7 +209,6 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
     protected GatewayService gatewayService;
     protected PersistenceService persistenceService;
     protected Map<String, AssetTypeInfo> dynamicAssetTypeInfos;
-    protected Map<String, ObjectNode> dynamicJsonSchemas = new ConcurrentHashMap<>();
     protected Path storageDir;
 
     @Override
@@ -247,8 +246,6 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         );
 
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
-
-        dynamicJsonSchemas.putAll(ValueUtil.getJsonSchemas());
     }
 
     protected void initDynamicModel() {
@@ -382,9 +379,8 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         return ValueUtil.getMetaItemDescriptors();
     }
 
-    public JsonNode getValueDescriptorSchema(String descriptorType, Integer arrayDimensions) throws ClassNotFoundException {
-        Class<?> type = ValueUtil.wrapTypeWithArrayDimensions(Class.forName(descriptorType), Optional.ofNullable(arrayDimensions).orElse(0));
-        return dynamicJsonSchemas.computeIfAbsent(type.getTypeName(), key -> (ObjectNode)ValueUtil.getSchema(type));
+    public JsonNode getValueDescriptorSchema(String name) {
+        return ValueUtil.getValueDescriptorSchema(name);
     }
 
     protected <T> T parse(String jsonString, Class<T> type) throws JsonProcessingException {

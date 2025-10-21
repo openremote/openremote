@@ -44,6 +44,7 @@ import jakarta.validation.constraints.NotNull;
 import org.apache.commons.codec.binary.BinaryCodec;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.internal.util.SerializationHelper;
 import org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorContext;
 import org.openremote.model.*;
@@ -955,7 +956,7 @@ public class ValueUtil {
                 })
                 .map(ValueDescriptor::getType)
                 .collect(Collectors.toMap(
-                        Class::getTypeName,
+                        type -> StringUtils.uncapitalize(type.getSimpleName()),
                         type -> (ObjectNode) getSchema(type)
                 )));
         jsonSchemaCacheKeys.putAll(jsonSchemas.entrySet().stream().collect(Collectors.toMap(
@@ -968,6 +969,13 @@ public class ValueUtil {
         generator = new SchemaGenerator(JSONSchemaUtil.getJsonSchemaConfig(JSON));
     }
 
+    public static JsonNode getValueDescriptorSchema(String name) {
+        if (ValueUtil.getValueDescriptor(name).isEmpty()) {
+            return null;
+        }
+        ValueDescriptor<?> vd = ValueUtil.getValueDescriptor(name).get();
+        return jsonSchemas.computeIfAbsent(vd.getType().getSimpleName(), key -> (ObjectNode)ValueUtil.getSchema(vd.getType()));
+    }
 
     protected static Class<?>[] getAgentLinkClasses() {
         return Arrays.stream(getAssetDescriptors(null))
@@ -1467,9 +1475,5 @@ public class ValueUtil {
         matcher.appendTail(result);
 
         return result.toString();
-    }
-
-    public static Class<?> wrapTypeWithArrayDimensions(Class<?> type, int arrayDimensions) {
-        return arrayDimensions > 0 ? Array.newInstance(type, new int[arrayDimensions]).getClass() : type;
     }
 }

@@ -157,20 +157,19 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
               metaItemHashes = response.data.metaItems;
             }
 
-            const type = valueDescriptor.type + "[]".repeat(valueDescriptor.arrayDimensions ?? 0);
-            const hash = metaItemHashes[type];
+            const descriptor = valueDescriptor.name + "[]".repeat(valueDescriptor.arrayDimensions ?? 0);
+            const hash = metaItemHashes[descriptor];
 
-            if (!schema && !schemas.has(type)) {
+            if (!schema && !schemas.has(descriptor)) {
                 const response = await manager.rest.api.AssetModelResource.getValueDescriptorSchema({
                     hash,
-                    descriptorType: valueDescriptor.type,
-                    arrayDimensions: valueDescriptor.arrayDimensions,
+                    name: descriptor,
                 });
                 schema = response.data;
-                schemas.set(type, schema);
+                schemas.set(descriptor, schema);
                 // label ||= schema.title
             } else {
-                schema = schemas.get(type);
+                schema = schemas.get(descriptor);
             }
 
             if (jsonForms.value && loadingWrapper.value) {
