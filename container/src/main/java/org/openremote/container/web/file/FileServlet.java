@@ -19,13 +19,23 @@
  */
 package org.openremote.container.web.file;
 
+import io.undertow.servlet.Servlets;
+import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.FilterInfo;
+import io.undertow.servlet.api.ServletInfo;
+import io.undertow.servlet.util.ImmediateInstanceHandle;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import io.undertow.server.handlers.resource.ResourceManager;
+import org.openremote.model.Container;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -39,6 +49,48 @@ public class FileServlet extends AbstractFileServlet {
 
     public static final long DEFAULT_EXPIRE_SECONDS = 600; // 10 minutes
     public static final long EXPIRES_SECONDS_CACHE_JS = 60 * 60 * 24 * 14; // 14 days
+    public static final Map<String, String> MIME_TYPES = new HashMap<>() {
+        {
+            put("pbf", "application/x-protobuf");
+            put("woff2", "font/woff2");
+            put("wsdl", "application/xml");
+            put("xsl", "text/xsl");
+        }
+    };
+
+    public static final String[] FILE_EXTENSIONS_ALREADY_ZIPPED = {
+            ".pbf"
+    };
+
+    public static final Map<String, Integer> MIME_TYPES_EXPIRE_SECONDS = new HashMap<String, Integer>() {
+        {
+            put("image/png", 60 * 60 * 12); // 12 hours
+            put("image/jpg", 60 * 60 * 12); // 12 hours
+            put("text/html", 0); // No cache
+            put("text/xml", 1800);
+            put("text/css", 1800);
+            put("text/javascript", 60 * 60 * 12); // 12 hours
+            put("application/javascript", 60 * 60 * 12); // 12 hours
+            put("application/json", 1800);
+            put("application/font-woff2", 60 * 60 * 12); // 12 hours
+            put("application/x-protobuf", 60 * 60 * 12); // 12 hours
+        }
+    };
+
+    public static final String[] MIME_TYPES_TO_ZIP = {
+            "text/plain",
+            "text/html",
+            "text/xml",
+            "text/css",
+            "text/javascript",
+            "text/csv",
+            "text/rtf",
+            "application/xml",
+            "application/xhtml+xml",
+            "application/javascript",
+            "application/json",
+            "image/svg+xml"
+    };
 
     final protected boolean devMode;
     final protected ResourceManager resourceManager;
@@ -46,6 +98,12 @@ public class FileServlet extends AbstractFileServlet {
     final protected Map<String, String> mimeTypes;
     final protected Map<String, Integer> mimeTypesExpireSeconds;
     final protected String[] alreadyZippedExtensions;
+
+    public FileServlet(boolean devMode,
+                              ResourceManager resourceManager,
+                              String[] requiredRoles) {
+        this(devMode, resourceManager, requiredRoles, MIME_TYPES, MIME_TYPES_EXPIRE_SECONDS, FILE_EXTENSIONS_ALREADY_ZIPPED);
+    }
 
     public FileServlet(boolean devMode, ResourceManager resourceManager, String[] requiredRoles, Map<String, String> mimeTypes, Map<String, Integer> mimeTypesExpireSeconds, String[] alreadyZippedExtensions) {
         this.devMode = devMode;
@@ -180,5 +238,4 @@ public class FileServlet extends AbstractFileServlet {
         int i = fileName.lastIndexOf('.');
         return i > 0 ? fileName.substring(i + 1) : "";
     }
-
 }

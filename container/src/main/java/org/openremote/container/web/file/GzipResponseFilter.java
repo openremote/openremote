@@ -17,6 +17,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.openremote.container.web.HttpFilter;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Enumeration;

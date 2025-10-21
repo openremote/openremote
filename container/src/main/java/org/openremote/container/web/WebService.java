@@ -28,12 +28,20 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RequestDumpingHandler;
+import io.undertow.server.handlers.encoding.GzipEncodingProvider;
+import io.undertow.server.handlers.resource.PathResourceManager;
+import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
+import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.ServletInfo;
+import io.undertow.servlet.handlers.DefaultServlet;
+import io.undertow.servlet.util.ImmediateInstanceHandle;
 import io.undertow.util.HeaderMap;
 import io.undertow.websockets.core.WebSocketChannel;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
 import jakarta.servlet.ServletException;
 import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -46,9 +54,10 @@ import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.json.JacksonConfig;
-import org.openremote.container.security.CORSFilter;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
+import org.openremote.container.web.file.FileServlet;
+import org.openremote.container.web.file.GzipResponseFilter;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
@@ -56,12 +65,14 @@ import org.xnio.Options;
 
 import java.net.Inet4Address;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.*;
 import static org.openremote.container.util.MapAccess.*;
+import static org.openremote.container.web.file.FileServlet.MIME_TYPES_TO_ZIP;
 import static org.openremote.model.Constants.OR_ADDITIONAL_HOSTNAMES;
 import static org.openremote.model.Constants.OR_HOSTNAME;
 
@@ -222,8 +233,7 @@ public abstract class WebService implements ContainerService {
            new ClientErrorExceptionHandler(),
            new GZIPEncodingInterceptor(),
            new GZIPDecodingInterceptor(),
-           new AcceptEncodingGZIPFilter(),
-           new AlreadyGzippedWriterInterceptor()
+           new AcceptEncodingGZIPFilter()
         );
 
         if (realmIndex != null) {
@@ -280,7 +290,7 @@ public abstract class WebService implements ContainerService {
 
    static public DeploymentInfo createDeploymentInfo(ResteasyDeployment resteasyDeployment, String deploymentPath, String deploymentName, boolean devMode) {
 
-      ServletInfo resteasyServlet = Servlets.servlet("ResteasyServlet", HttpServlet30Dispatcher.class)
+      ServletInfo resteasyServlet = Servlets.servlet("ResteasyServlet", DefaultServlet HttpServlet30Dispatcher.class)
          .setAsyncSupported(true)
          .setLoadOnStartup(1)
          .addMapping("/*");
@@ -295,6 +305,26 @@ public abstract class WebService implements ContainerService {
       // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
       deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
       return deploymentInfo;
+   }
+
+   static public DeploymentInfo createFilesDeploymentInfo(ResourceManager resourceManager, String deploymentPath, String deploymentName, boolean devMode, String[] requiredRoles) {
+       //FileServlet fileServlet = new FileServlet(devMode, resourceManager, requiredRoles);
+       //ServletInfo servletInfo = Servlets.servlet("Manager File Servlet", FileServlet.class, () -> new ImmediateInstanceHandle<>(fileServlet));
+       //servletInfo.addMapping("/*");
+
+       Filter gzipFilter = new GzipResponseFilter(MIME_TYPES_TO_ZIP);
+       FilterInfo gzipFilterInfo = Servlets.filter("Gzip Filter", GzipResponseFilter.class, () -> new ImmediateInstanceHandle<>(gzipFilter))
+               .setAsyncSupported(true);
+
+       return new DeploymentInfo()
+               .setDeploymentName(deploymentName)
+               .setResourceManager(resourceManager)
+               .setContextPath(deploymentPath)
+               .addServlet(Servlets.servlet("DefaultServlet", DefaultServlet.class))
+               .addFilter(gzipFilterInfo)
+               .addFilterUrlMapping(gzipFilterInfo.getName(), "/*", DispatcherType.REQUEST)
+               .addWelcomePages("index.html", "index.htm")
+               .setClassLoader(Container.class.getClassLoader());
    }
 
     public Undertow getUndertow() {
