@@ -68,7 +68,7 @@ public class StatusResourceImpl implements StatusResource {
         serverInfo = Map.of(
             "version", version,
             "authServerUrl", authServerUrl,
-            "metaItems", ValueUtil.getJsonSchemaCacheKeys()
+            "valueDescriptorSchemaHashes", ValueUtil.getValueDescriptorSchemaHashes()
         );
 
         LOG.info("Starting OpenRemote version: v"+version);

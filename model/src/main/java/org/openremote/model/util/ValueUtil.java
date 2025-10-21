@@ -43,7 +43,6 @@ import jakarta.validation.constraints.NotNull;
 import org.apache.commons.codec.binary.BinaryCodec;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.hibernate.internal.util.SerializationHelper;
 import org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorContext;
 import org.openremote.model.*;
@@ -163,8 +162,8 @@ public class ValueUtil {
     protected static Map<String, Class<? extends AgentLink<?>>> agentTypeMap = new HashMap<>();
     protected static Map<String, MetaItemDescriptor<?>> metaItemDescriptors = new HashMap<>();
     protected static Map<String, ValueDescriptor<?>> valueDescriptors = new HashMap<>();
-    protected static Map<String, ObjectNode> jsonSchemas = new HashMap<>();
-    protected static Map<String, String> jsonSchemaCacheKeys = new HashMap<>();
+    protected static Map<String, ObjectNode> valueDescriptorJsonSchemas = new HashMap<>();
+    protected static Map<String, String> valueDescriptorSchemaHashes = new HashMap<>();
     protected static Validator validator;
     protected static SchemaGenerator generator;
     protected static MessageDigest md;
@@ -657,12 +656,8 @@ public class ValueUtil {
         return Optional.ofNullable(metaItemDescriptors.get(name));
     }
 
-    public static Map<String, ObjectNode> getJsonSchemas() {
-        return jsonSchemas;
-    }
-
-    public static Map<String, String> getJsonSchemaCacheKeys() {
-        return jsonSchemaCacheKeys;
+    public static Map<String, String> getValueDescriptorSchemaHashes() {
+        return valueDescriptorSchemaHashes;
     }
 
     public static Map<String, ValueDescriptor<?>> getValueDescriptors() {
@@ -947,18 +942,17 @@ public class ValueUtil {
 
         // Add JSON schemas for complex meta items and generate cache keys
         Map<String, MetaItemDescriptor<?>> metaItems = getMetaItemDescriptors();
-        jsonSchemas.putAll(metaItems.values().stream()
+        valueDescriptorJsonSchemas.putAll(metaItems.values().stream()
                 .map(AbstractNameValueDescriptorHolder::getType)
                 .filter(v -> {
                     String jsonType = v.getJsonType();
                     return jsonType.equals("array") || jsonType.equals("object");
                 })
-                .map(ValueDescriptor::getType)
                 .collect(Collectors.toMap(
-                        type -> StringUtils.uncapitalize(type.getSimpleName()),
-                        type -> (ObjectNode) getSchema(type)
+                        ValueDescriptor::getName,
+                        vd -> (ObjectNode) getSchema(vd.getType())
                 )));
-        jsonSchemaCacheKeys.putAll(jsonSchemas.entrySet().stream().collect(Collectors.toMap(
+        valueDescriptorSchemaHashes.putAll(valueDescriptorJsonSchemas.entrySet().stream().collect(Collectors.toMap(
                 Map.Entry::getKey,
                 v -> hash(v.getValue().toString())
         )));
@@ -973,7 +967,11 @@ public class ValueUtil {
             return null;
         }
         ValueDescriptor<?> vd = ValueUtil.getValueDescriptor(name).get();
-        return jsonSchemas.computeIfAbsent(vd.getType().getSimpleName(), key -> (ObjectNode)ValueUtil.getSchema(vd.getType()));
+        return valueDescriptorJsonSchemas.computeIfAbsent(vd.getName(), key -> {
+            ObjectNode schema = (ObjectNode) ValueUtil.getSchema(vd.getType());
+            valueDescriptorSchemaHashes.put(vd.getName(), hash(schema.toString()));
+            return schema;
+        });
     }
 
     protected static Class<?>[] getAgentLinkClasses() {
