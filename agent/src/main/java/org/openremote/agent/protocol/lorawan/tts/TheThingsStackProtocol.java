@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.openremote.agent.protocol.lorawan.AbstractLoRaWANProtocol;
 import org.openremote.agent.protocol.lorawan.CsvRecord;
 import org.openremote.agent.protocol.mqtt.MQTTAgentLink;
+import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.query.filter.NumberPredicate;
@@ -109,6 +110,11 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
         }
 
         return isOk;
+    }
+
+    @Override
+    protected AssetTreeNode[] discoverDevices() {
+        return new AssetTreeNode[0];
     }
 
     @Override

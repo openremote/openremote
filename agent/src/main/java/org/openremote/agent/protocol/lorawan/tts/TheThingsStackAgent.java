@@ -35,7 +35,6 @@ public class TheThingsStackAgent extends LoRaWANAgent<TheThingsStackAgent, TheTh
     public static final AttributeDescriptor<String> HOST = Agent.HOST.withOptional(false);
     public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
     public static final AttributeDescriptor<String> TENANT_ID = new AttributeDescriptor<>("tenantId", ValueType.TEXT);
-    public static final AttributeDescriptor<String> API_KEY = new AttributeDescriptor<>("apiKey", ValueType.TEXT);
 
     public static final AgentDescriptor<TheThingsStackAgent, TheThingsStackProtocol, MQTTAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         TheThingsStackAgent.class, TheThingsStackProtocol.class, MQTTAgentLink.class
@@ -62,15 +61,6 @@ public class TheThingsStackAgent extends LoRaWANAgent<TheThingsStackAgent, TheTh
 
     public TheThingsStackAgent setTenantId(String tenantId) {
         getAttributes().getOrCreate(TENANT_ID).setValue(tenantId);
-        return this;
-    }
-
-    public Optional<String> getApiKey() {
-        return getAttributes().getValue(API_KEY);
-    }
-
-    public TheThingsStackAgent setApiKey(String apiKey) {
-        getAttributes().getOrCreate(API_KEY).setValue(apiKey);
         return this;
     }
 }
