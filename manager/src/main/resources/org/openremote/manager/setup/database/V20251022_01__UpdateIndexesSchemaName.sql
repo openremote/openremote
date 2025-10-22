@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, OpenRemote Inc.
+ * Copyright 2025, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -18,6 +18,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* Add an index for entity ID, attribute name and timestamp to improve data point retrieval */
-CREATE index if not exists asset_datapoint_entity_id_attribute_name_timestamp_idx on openremote.asset_datapoint (entity_id, attribute_name, timestamp DESC);
-CREATE index if not exists asset_predicted_datapoint_entity_id_attribute_name_timestamp_idx on openremote.asset_predicted_datapoint (entity_id, attribute_name, timestamp DESC);
+/* Drop and recreate indexes with parameterized schema name for flexibility */
+DROP INDEX IF EXISTS openremote.asset_datapoint_entity_id_attribute_name_timestamp_idx;
+DROP INDEX IF EXISTS openremote.asset_predicted_datapoint_entity_id_attribute_name_timestamp_idx;
+
+CREATE INDEX IF NOT EXISTS asset_datapoint_entity_id_attribute_name_timestamp_idx ON ${schemaName}.asset_datapoint (entity_id, attribute_name, timestamp DESC);
+CREATE INDEX IF NOT EXISTS asset_predicted_datapoint_entity_id_attribute_name_timestamp_idx ON ${schemaName}.asset_predicted_datapoint (entity_id, attribute_name, timestamp DESC);
