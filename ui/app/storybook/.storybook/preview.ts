@@ -19,7 +19,8 @@
  */
 import type {Preview} from "@storybook/web-components";
 import {setStorybookHelpersConfig} from "@wc-toolkit/storybook-helpers";
-import './styles.css';
+import {themes} from "storybook/theming";
+import "./styles.css";
 
 setStorybookHelpersConfig({ hideArgRef: true });
 
@@ -32,6 +33,7 @@ const preview: Preview = {
             }
         },
         docs: {
+            theme: themes.light,
             story: {
                 inline: false
             },
@@ -41,7 +43,7 @@ const preview: Preview = {
             },
             source: {
                 // TODO: Use a proper code formatter like Prettier
-                transform: async (source) => source.replaceAll(/&quot;/g,'"')
+                transform: async source => source.replaceAll(/&quot;/g,'"')
             }
         },
         options: {
