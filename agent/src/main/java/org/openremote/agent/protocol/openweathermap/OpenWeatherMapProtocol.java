@@ -407,13 +407,8 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
                 new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.TEMPERATURE))));
 
         // Humidity
-        weatherAsset.getAttribute(WeatherAsset.HUMIDITY).ifPresent(attribute -> attribute.addOrReplaceMeta(
-                new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.HUMIDITY))));
-
-        // Atmospheric Pressure
-        weatherAsset.getAttribute(WeatherAsset.ATMOSPHERIC_PRESSURE).ifPresent(attribute -> attribute.addOrReplaceMeta(
-                new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.ATMOSPHERIC_PRESSURE))));
-
+        weatherAsset.getAttribute(WeatherAsset.HUMIDITY).ifPresent(attribute -> attribute
+                .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.HUMIDITY))));
         // Wind Speed
         weatherAsset.getAttribute(WeatherAsset.WIND_SPEED).ifPresent(attribute -> attribute.addOrReplaceMeta(
                 new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.WIND_SPEED))));
@@ -422,18 +417,6 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
         weatherAsset.getAttribute(WeatherAsset.WIND_DIRECTION).ifPresent(attribute -> attribute.addOrReplaceMeta(
                 new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.WIND_DIRECTION))));
 
-        // Wind Gust Speed
-        weatherAsset.getAttribute(WeatherAsset.WIND_GUST_SPEED).ifPresent(attribute -> attribute.addOrReplaceMeta(
-                new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.WIND_GUST_SPEED))));
-
-        // Cloud Coverage
-        weatherAsset.getAttribute(WeatherAsset.CLOUD_COVERAGE).ifPresent(attribute -> attribute.addOrReplaceMeta(
-                new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.CLOUD_COVERAGE))));
-
-        // Probability of Precipitation
-        weatherAsset.getAttribute(WeatherAsset.PROBABILITY_OF_PRECIPITATION).ifPresent(attribute -> attribute.addOrReplaceMeta(new MetaItem<>(AGENT_LINK,
-                new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.PROBABILITY_OF_PRECIPITATION))));
-
         // Rain Amount
         weatherAsset.getAttribute(WeatherAsset.RAINFALL).ifPresent(attribute -> attribute.addOrReplaceMeta(
                 new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.RAIN_AMOUNT))));
@@ -441,6 +424,22 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
         // Ultraviolet Index
         weatherAsset.getAttribute(WeatherAsset.UV_INDEX).ifPresent(attribute -> attribute.addOrReplaceMeta(
                 new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.ULTRAVIOLET_INDEX))));
+
+        // Atmospheric Pressure (optional attribute)
+        weatherAsset.getAttributes().getOrCreate(WeatherAsset.ATMOSPHERIC_PRESSURE).addOrReplaceMeta(
+                new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.ATMOSPHERIC_PRESSURE)));
+
+        // Wind Gust Speed (optional attribute)
+        weatherAsset.getAttributes().getOrCreate(WeatherAsset.WIND_GUST_SPEED).addOrReplaceMeta(
+                new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.WIND_GUST_SPEED)));
+
+        // Cloud Coverage (optional attribute)
+        weatherAsset.getAttributes().getOrCreate(WeatherAsset.CLOUD_COVERAGE).addOrReplaceMeta(
+                new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.CLOUD_COVERAGE)));
+
+        // Probability of Precipitation (optional attribute)
+        weatherAsset.getAttributes().getOrCreate(WeatherAsset.PROBABILITY_OF_PRECIPITATION).addOrReplaceMeta(
+                new MetaItem<>(AGENT_LINK, new OpenWeatherMapAgentLink(agent.getId()).setWeatherProperty(OpenWeatherMapProperty.PROBABILITY_OF_PRECIPITATION)));
 
         return assetService.mergeAsset(weatherAsset);
     }
@@ -463,7 +462,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
 
     /**
      * Convert meters per second to kilometers per hour
-     * 
+     *
      * @param value the value to convert
      * @return the converted value rounded to 2 decimal places
      */

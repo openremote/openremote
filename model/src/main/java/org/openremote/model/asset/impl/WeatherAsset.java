@@ -68,16 +68,21 @@ public class WeatherAsset extends Asset<WeatherAsset> {
     ).withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
     public static final AttributeDescriptor<Double> ATMOSPHERIC_PRESSURE = new AttributeDescriptor<>("atmosphericPressure", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_HECTO, UNITS_PASCAL);
+    ).withUnits(UNITS_HECTO, UNITS_PASCAL)
+    .withOptional(true);
     public static final AttributeDescriptor<Integer> CLOUD_COVERAGE = new AttributeDescriptor<>("cloudCoverage", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+    ).withUnits(UNITS_PERCENTAGE)
+    .withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100))
+    .withOptional(true);
     public static final AttributeDescriptor<Double> WIND_GUST_SPEED = new AttributeDescriptor<>("windGustSpeed", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_METRE, UNITS_PER, UNITS_HOUR);
+    ).withUnits(UNITS_KILO, UNITS_METRE, UNITS_PER, UNITS_HOUR)
+    .withOptional(true);
     public static final AttributeDescriptor<Double> PROBABILITY_OF_PRECIPITATION = new AttributeDescriptor<>("probabilityOfPrecipitation", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(1));
+    ).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(1))
+    .withOptional(true);
 
     public static final AssetDescriptor<WeatherAsset> DESCRIPTOR = new AssetDescriptor<>("weather-partly-cloudy", "49B0D8", WeatherAsset.class);
 
