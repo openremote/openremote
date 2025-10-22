@@ -27,21 +27,17 @@ import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetModelResource;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.asset.AssetTypeInfo;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static jakarta.ws.rs.core.Response.Status.*;
 
 public class AssetModelResourceImpl extends ManagerWebResource implements AssetModelResource {
 
-    private static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.MODEL_AND_VALUES, AssetModelResourceImpl.class);
     protected AssetModelService assetModelService;
 
     public AssetModelResourceImpl(TimerService timerService, ManagerIdentityService identityService, AssetModelService assetModelService) {
@@ -78,7 +74,6 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     public JsonNode getValueDescriptorSchema(RequestParams requestParams, String name, String hash) {
         JsonNode schema = assetModelService.getValueDescriptorSchema(name);
         if (schema == null) {
-            LOG.log(Level.INFO, "Could not find value descriptor: '" + name + "'");
             throw new WebApplicationException(NOT_FOUND);
         }
         return schema;
