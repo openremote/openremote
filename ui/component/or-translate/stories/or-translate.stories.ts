@@ -1,3 +1,22 @@
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {setCustomElementsManifest, type Meta, type StoryObj } from "@storybook/web-components";
 import {getStorybookHelpers} from "@wc-toolkit/storybook-helpers";
 import customElements from "../custom-elements.json" with { type: "json" };
@@ -17,7 +36,7 @@ const meta: Meta = {
     component: tagName,
     args: args,
     argTypes: argTypes,
-    render: (args) => template(args),
+    render: storyArgs => template(storyArgs),
     excludeStories: /^[a-z].*/,
     parameters: {
         actions: {
@@ -25,7 +44,7 @@ const meta: Meta = {
         },
         docs: {
             subtitle: `<${tagName}>`,
-            description: "Useful elements for automatically translating text for in UI apps",
+            description: "Useful elements for automatically translating text for in UI apps"
         }
     }
 };
@@ -35,8 +54,8 @@ export const Primary: Story = {
         value: "monday"
     },
     loaders: [
-        async (args: any) => ({
-            orTranslate: await loadOrTranslate(args.allArgs)
+        async storyArgs => ({
+            orTranslate: await loadOrTranslate(storyArgs.allArgs)
         })
     ]
 };
@@ -50,14 +69,14 @@ export {customElements, packageJson};
 /**
  * Initialises {@link OrTranslate}, awaits initialization, and returns the HTML object.
  */
-async function loadOrTranslate(args: any) {
+async function loadOrTranslate(storyArgs: any) {
     console.debug("Loading OrTranslate...");
-    const orTranslate = Object.assign(new OrTranslate(), args);
+    const orTranslate = Object.assign(new OrTranslate(), storyArgs);
     console.debug("Waiting for i18next initialization...");
     if(window.location.href.includes("localhost")) {
-        await i18next.use(i18nextBackend).init({lng: 'en', backend: {loadPath: () => "http://localhost:8080/shared/locales/{{lng}}/or.json"}});
+        await i18next.use(i18nextBackend).init({lng: "en", backend: {loadPath: () => "http://localhost:8080/shared/locales/{{lng}}/or.json"}});
     } else {
-        await i18next.use(i18nextBackend).init({lng: 'en', backend: {loadPath: () => "/shared/locales/{{lng}}/or.json"}});
+        await i18next.use(i18nextBackend).init({lng: "en", backend: {loadPath: () => "/shared/locales/{{lng}}/or.json"}});
     }
     console.debug("OrTranslate loaded");
     return orTranslate;
