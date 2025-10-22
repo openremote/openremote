@@ -164,7 +164,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
                 const response = await manager.rest.api.AssetModelResource.getValueDescriptorSchema({
                     name: descriptor,
                     hash,
-                });
+                }, { headers: !hash ? { "Cache-Control": "no-cache" } : {} });
                 schema = response.data;
                 schemas.set(descriptor, schema);
                 // label ||= schema.title
