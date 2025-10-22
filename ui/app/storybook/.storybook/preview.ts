@@ -1,6 +1,9 @@
 import type {Preview} from "@storybook/web-components";
+import {setStorybookHelpersConfig} from "@wc-toolkit/storybook-helpers";
+import rest from "@openremote/rest";
 import './styles.css';
 
+setStorybookHelpersConfig({ hideArgRef: true });
 
 const preview: Preview = {
     parameters: {

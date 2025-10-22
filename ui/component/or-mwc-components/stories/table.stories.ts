@@ -1,5 +1,5 @@
 import {setCustomElementsManifest, type Meta, type StoryObj } from "@storybook/web-components";
-import { getStorybookHelpers, setStorybookHelpersConfig } from "@wc-toolkit/storybook-helpers";
+import {getStorybookHelpers} from "@wc-toolkit/storybook-helpers";
 import customElements from "../custom-elements.json" with { type: "json" };
 import packageJson from "../package.json" with { type: "json" };
 import "../src/or-mwc-table";
@@ -7,7 +7,6 @@ import "../src/or-mwc-table";
 const tagName = "or-mwc-table";
 type Story = StoryObj;
 setCustomElementsManifest(customElements);
-setStorybookHelpersConfig({});
 
 const { events, args, argTypes, template } = getStorybookHelpers(tagName);
 

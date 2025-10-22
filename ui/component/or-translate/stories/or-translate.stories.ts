@@ -1,5 +1,5 @@
 import {setCustomElementsManifest, type Meta, type StoryObj } from "@storybook/web-components";
-import { getStorybookHelpers, setStorybookHelpersConfig } from "@wc-toolkit/storybook-helpers";
+import {getStorybookHelpers} from "@wc-toolkit/storybook-helpers";
 import customElements from "../custom-elements.json" with { type: "json" };
 import packageJson from "../package.json" with { type: "json" };
 import i18nextBackend from "i18next-http-backend";
@@ -9,7 +9,6 @@ import "../src/index";
 const tagName = "or-translate";
 type Story = StoryObj;
 setCustomElementsManifest(customElements);
-setStorybookHelpersConfig({});
 
 const { events, args, argTypes, template } = getStorybookHelpers(tagName);
 
@@ -31,7 +30,7 @@ const meta: Meta = {
     }
 };
 
-export const Primary = {
+export const Primary: Story = {
     args: {
         value: "monday"
     },
