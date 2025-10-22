@@ -162,7 +162,7 @@ public class ValueUtil {
     protected static Map<String, Class<? extends AgentLink<?>>> agentTypeMap = new HashMap<>();
     protected static Map<String, MetaItemDescriptor<?>> metaItemDescriptors = new HashMap<>();
     protected static Map<String, ValueDescriptor<?>> valueDescriptors = new HashMap<>();
-    protected static Map<String, ObjectNode> valueDescriptorJsonSchemas = new HashMap<>();
+    protected static Map<String, ObjectNode> valueDescriptorSchemas = new HashMap<>();
     protected static Map<String, String> valueDescriptorSchemaHashes = new HashMap<>();
     protected static Validator validator;
     protected static SchemaGenerator generator;
