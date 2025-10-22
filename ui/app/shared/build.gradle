@@ -87,36 +87,22 @@ tasks.register('installDist', Copy) {
     into project(':manager').layout.buildDirectory.dir("install/manager/web/${project.name}")
 }
 
-tasks.register('processTranslations') {
+tasks.register('processTranslations', JavaCompile) {
     dependsOn(":model:classes")
-    doLast {
-        def compiler = ToolProvider.systemJavaCompiler
-        def fileManager = compiler.getStandardFileManager(null, null, null)
+    outputs.upToDateWhen { false } // Always invalidate
 
-        // Sources to process (model sources)
-        def modelSources = project(":model").fileTree("src/main/java") {
-            include "**/*.java"
-        }.files
-        def units = fileManager.getJavaFileObjectsFromFiles(modelSources)
+    def modelSourceSet = project(":model").sourceSets.main
 
-        // Include compiled model classes + all dependencies
-        def classPaths = project(":model").sourceSets.main.compileClasspath.asPath as String
-        def processorPath = project(":model").sourceSets.main.output.classesDirs.asPath as String
-
-        // Pass classpath to compiler
-        def options = List.of(
-            "-classpath", classPaths,
-            "-processorpath", processorPath + File.pathSeparator + classPaths,
-            "-processor", "org.openremote.model.util.I18nAnnotationProcessor",
-            "-proc:only", // only run processor, don’t emit .class files
-            "-Ashared=${project.getProjectDir()}".toString()
-        )
-
-        // Run javac with processor
-        def task = compiler.getTask(null, fileManager, null, options, null, units)
-        def success = task.call()
-        println "Processor success: $success"
-    }
+    source = modelSourceSet.allJava
+    classpath = modelSourceSet.compileClasspath
+    destinationDirectory = layout.buildDirectory.dir("generated/i18n") // unused
+    options.compilerArgs += [
+        "-proc:only", // Only run the processor
+        "-processor", "org.openremote.model.util.I18nAnnotationProcessor",
+        "-Ashared=${project.getProjectDir()}".toString()
+    ]
+    // Pass classpath to compiler
+    options.annotationProcessorPath = modelSourceSet.output + modelSourceSet.compileClasspath
 }
 
 jar.dependsOn(generateSources)
