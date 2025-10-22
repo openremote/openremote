@@ -48,9 +48,15 @@ dependencies {
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:$jacksonVersion"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
 
+    implementation "io.grpc:grpc-netty-shaded:$grpcVersion"
+    implementation "io.grpc:grpc-protobuf:$grpcVersion"
+    implementation "io.grpc:grpc-stub:$grpcVersion"
+
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+
+    api files("libs/chirpstack-api-4.14.1.jar")
 }
 
 base {

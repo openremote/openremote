@@ -33,6 +33,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaMap;
+import org.openremote.model.protocol.ProtocolAssetDiscovery;
 import org.openremote.model.protocol.ProtocolAssetImport;
 import org.openremote.model.protocol.ProtocolAssetService;
 import org.openremote.model.syslog.SyslogCategory;
@@ -65,7 +66,7 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK_CONFIG;
 
 
-public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<S,T>, T extends LoRaWANAgent<T, S>> implements Protocol<T>, ProtocolAssetImport {
+public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<S,T>, T extends LoRaWANAgent<T, S>> implements Protocol<T>, ProtocolAssetImport, ProtocolAssetDiscovery {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractLoRaWANProtocol.class);
 
@@ -221,6 +222,23 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         },  null);
     }
 
+    @Override
+    public Future<Void> startAssetDiscovery(Consumer<AssetTreeNode[]> assetConsumer) {
+        return executorService.submit(() -> {
+            if (!checkAutoDiscoveryPrerequisites()) {
+                assetConsumer.accept(new AssetTreeNode[0]);
+                return;
+            }
+
+            try {
+                AssetTreeNode[] assetTreeNodes = discoverDevices();
+                assetConsumer.accept(assetTreeNodes);
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Auto discovery failed", e);
+            }
+        },  null);
+    }
+
     protected boolean checkCSVImportPrerequisites() {
         Optional<String> applicationId = getAgent().getApplicationId();
         boolean isOk = applicationId.map(id -> !id.trim().isEmpty()).orElse(false);
@@ -230,6 +248,16 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         return isOk;
     }
 
+    protected boolean checkAutoDiscoveryPrerequisites() {
+        Optional<String> applicationId = getAgent().getApplicationId();
+        boolean isOk = applicationId.map(id -> !id.trim().isEmpty()).orElse(false);
+        if (!isOk) {
+            LOG.log(Level.WARNING, "Device auto discovery failed because agent attribute '" + APPLICATION_ID.getName() + "'  is missing");
+        }
+        return isOk;
+    }
+
+    protected abstract AssetTreeNode[] discoverDevices();
     protected abstract List<String> createWildcardSubscriptionTopicList();
     protected abstract boolean configureMQTTSubscriptionTopic(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord);
     protected abstract boolean configureMQTTPublishTopic(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord);
@@ -348,7 +376,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         return true;
     }
 
-    private boolean duplicateAssetCheck(String devEUI) {
+    protected boolean duplicateAssetCheck(String devEUI) {
         return Optional.ofNullable(devEUI)
             .map(String::trim)
             .filter(s -> !s.isEmpty())
@@ -357,7 +385,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
             .orElse(false);
     }
 
-    private Optional<Asset<?>> createAsset(CsvRecord csvRecord) {
+    protected Optional<Asset<?>> createAsset(CsvRecord csvRecord) {
         if (csvRecord == null) {
             return Optional.empty();
         }
@@ -395,7 +423,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         return asset;
     }
 
-    private Optional<Asset<?>> configureAsset(Asset<?> asset, CsvRecord csvRecord) {
+    protected Optional<Asset<?>> configureAsset(Asset<?> asset, CsvRecord csvRecord) {
         if (asset == null || csvRecord == null) {
             return Optional.empty();
         }
