@@ -3,7 +3,7 @@ import {StorybookConfig} from "storybook-web-components-rsbuild";
 // @ts-ignore
 const storybookConfig: StorybookConfig = {
     framework: "storybook-web-components-rsbuild",
-    staticDirs: ["../images"],
+    /*staticDirs: ["../images"],*/
     stories: [
         "../../../component/**/*.stories.@(js|jsx|mjs|ts|tsx)",
         "../docs/**/*.mdx"
