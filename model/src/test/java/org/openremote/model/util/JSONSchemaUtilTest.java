@@ -52,7 +52,7 @@ public class JSONSchemaUtilTest {
         assertEquals(expected.toString(), actual.toString(), true);
     }
 
-    @JsonSchemaTitle("Test Title")
+    @JsonSchemaTitle(value = "Test Title", i18n = false)
     static class ItemType { }
 
     static class MembersShouldNotHaveTitle {
@@ -242,8 +242,8 @@ public class JSONSchemaUtilTest {
     }
 
     static class AnnotationsForFields {
-        @JsonSchemaTitle("test")
-        @JsonSchemaDescription("test")
+        @JsonSchemaTitle(value = "test", i18n = false)
+        @JsonSchemaDescription(value = "test", i18n = false)
         @JsonSchemaFormat("test")
         @JsonSchemaDefault("false")
         @JsonSchemaExamples({ "test" })
@@ -275,8 +275,8 @@ public class JSONSchemaUtilTest {
         assertEquals(expected.toString(), actual.toString(), true);
     }
 
-    @JsonSchemaTitle("test")
-    @JsonSchemaDescription("test")
+    @JsonSchemaTitle(value = "test", i18n = false)
+    @JsonSchemaDescription(value = "test", i18n = false)
     @JsonSchemaFormat("test")
     @JsonSchemaDefault("{}")
     @JsonSchemaExamples({ "test" })
@@ -301,6 +301,48 @@ public class JSONSchemaUtilTest {
         );
 
         JsonNode actual = ValueUtil.getSchema(AnnotationsForTypes.class);
+        assertEquals(expected.toString(), actual.toString(), true);
+    }
+
+    @JsonSchemaTitle("test")
+    @JsonSchemaDescription("test")
+    static class I18nAnnotations {
+    }
+
+    @Test
+    public void shouldApplyI18nAnnotations() throws JsonProcessingException, JSONException {
+        JsonNode expected = ValueUtil.JSON.readTree("""
+            {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "title": "I 18n Annotations",
+                "i18n": "org.openremote.model.util.JSONSchemaUtilTest.I18nAnnotations",
+                "additionalProperties": true
+            }"""
+        );
+
+        JsonNode actual = ValueUtil.getSchema(I18nAnnotations.class);
+        assertEquals(expected.toString(), actual.toString(), true);
+    }
+
+    @JsonSchemaTitle(value = "test", i18n = false)
+    @JsonSchemaDescription("Translated description")
+    static class I18nAnnotationsPartiallyDisabled {
+    }
+
+    @Test
+    public void shouldApplyI18nAnnotationsPartiallyDisabled() throws JsonProcessingException, JSONException {
+        JsonNode expected = ValueUtil.JSON.readTree("""
+            {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "title": "test",
+                "i18n": "org.openremote.model.util.JSONSchemaUtilTest.I18nAnnotationsPartiallyDisabled",
+                "additionalProperties": true
+            }"""
+        );
+
+        JsonNode actual = ValueUtil.getSchema(I18nAnnotationsPartiallyDisabled.class);
         assertEquals(expected.toString(), actual.toString(), true);
     }
 

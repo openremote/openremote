@@ -132,8 +132,10 @@ public class JSONSchemaUtil {
     public @interface JsonSchemaTitle {
         String keyword() default "title";
         String value();
-        /* Whether to put the title on the root of the schema even when the class is wrapped in an array. */
+        /** Whether to put the title on the root of the schema even when the class is wrapped in an array. */
         boolean container() default true;
+        boolean i18n() default true;
+        String i18nSuffix() default "label";
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -141,7 +143,9 @@ public class JSONSchemaUtil {
     public @interface JsonSchemaDescription {
         String keyword() default "description";
         String value();
+        /** Whether to put the title on the root of the schema even when the class is wrapped in an array. */
         boolean container() default true;
+        boolean i18n() default true;
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -149,6 +153,7 @@ public class JSONSchemaUtil {
     public @interface JsonSchemaFormat {
         String keyword() default "format";
         String value();
+        /** Whether to put the title on the root of the schema even when the class is wrapped in an array. */
         boolean container() default true;
     }
 
@@ -157,6 +162,7 @@ public class JSONSchemaUtil {
     public @interface JsonSchemaDefault {
         String keyword() default "default";
         String value();
+        /** Whether to put the title on the root of the schema even when the class is wrapped in an array. */
         boolean container() default true;
     }
 
@@ -165,6 +171,7 @@ public class JSONSchemaUtil {
     public @interface JsonSchemaExamples {
         String keyword() default "examples";
         String[] value();
+        /** Whether to put the title on the root of the schema even when the class is wrapped in an array. */
         boolean container() default true;
     }
 
@@ -270,11 +277,16 @@ public class JSONSchemaUtil {
                     // Avoids annotation also being applied to the `items` in an array. See https://victools.github.io/jsonschema-generator/#generator-individual-configurations
                     if (!fieldScope.isFakeContainerItemScope()) {
                         applyFieldAnnotation(fieldScope, JsonSchemaFormat.class, attrs);
-                        applyFieldAnnotation(fieldScope, JsonSchemaTitle.class, attrs);
-                        applyFieldAnnotation(fieldScope, JsonSchemaDescription.class, attrs);
-                        applyFieldAnnotation(fieldScope, JsonSchemaFormat.class, attrs);
                         applyFieldAnnotation(fieldScope, JsonSchemaDefault.class, attrs);
                         applyFieldAnnotation(fieldScope, JsonSchemaExamples.class, attrs);
+
+                        String key = getCanonicalMemberKey(fieldScope);
+                        if (!applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaTitle.class), key, attrs)) {
+                            applyFieldAnnotation(fieldScope, JsonSchemaTitle.class, attrs);
+                        }
+                        if (!applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaDescription.class), key, attrs)) {
+                            applyFieldAnnotation(fieldScope, JsonSchemaDescription.class, attrs);
+                        }
                     }
                     String description = jacksonResolvers.resolveDescription(fieldScope);
                     if (description != null) {
@@ -350,11 +362,18 @@ public class JSONSchemaUtil {
 
                 // These will be overwritten by member scope when colliding
                 if (!erasedType.isArray()) {
-                    applyTypeAnnotation(erasedType, JsonSchemaTitle.class, targetNode);
-                    applyTypeAnnotation(erasedType, JsonSchemaDescription.class, targetNode);
                     applyTypeAnnotation(erasedType, JsonSchemaFormat.class, targetNode);
                     applyTypeAnnotation(erasedType, JsonSchemaDefault.class, targetNode);
                     applyTypeAnnotation(erasedType, JsonSchemaExamples.class, targetNode);
+
+                    // TODO: Is it possible to avoid object merging here?
+                    String key = erasedType.getCanonicalName();
+                    if (!(attrs.has("type") && applyI18nAnnotation(erasedType.getAnnotation(JsonSchemaTitle.class), key, attrs))) {
+                        applyTypeAnnotation(erasedType, JsonSchemaTitle.class, targetNode);
+                    }
+                    if (!(attrs.has("type") && applyI18nAnnotation(erasedType.getAnnotation(JsonSchemaDescription.class), key, attrs))) {
+                        applyTypeAnnotation(erasedType, JsonSchemaDescription.class, targetNode);
+                    }
                 }
             });
 
@@ -429,6 +448,10 @@ public class JSONSchemaUtil {
                 } catch (Exception ignored) {}
                 return null;
             });
+        }
+
+        private String getCanonicalMemberKey(FieldScope fieldScope) {
+            return fieldScope.getMember().getDeclaringType().getErasedType().getCanonicalName() + "." + fieldScope.getMember().getName();
         }
 
         private static void setFormat(ObjectNode node, String format) {
@@ -622,6 +645,21 @@ public class JSONSchemaUtil {
             } catch (Exception e) {
                 return new TextNode(input);
             }
+        }
+
+        // TODO: handle other annotations from Jackson (or replace existing annotations)
+        private static <A extends Annotation> boolean applyI18nAnnotation(A annotation, String key, ObjectNode schema) {
+            if (annotation == null) return false;
+            Class<?> annotationClass = annotation.getClass();
+            try {
+                if ((boolean)annotationClass.getMethod("i18n").invoke(annotation)) {
+                    schema.set("i18n", new TextNode(key));
+                    return true;
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to apply i18n annotation " + annotationClass.getSimpleName(), e);
+            }
+            return false;
         }
 
         private static List<ResolvedType> findSubtypes(ResolvedType resolvedType, SchemaGenerationContext context) {
