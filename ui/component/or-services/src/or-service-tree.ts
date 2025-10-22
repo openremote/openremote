@@ -154,7 +154,7 @@ export class OrServiceTree extends OrTreeMenu {
         return html`
             <div id="tree-header">
                 <h3 id="tree-header-title">
-                    <or-translate value="services.title"></or-translate>
+                    <or-translate value="services"></or-translate>
                 </h3>
                 <div id="tree-header-actions">
                     ${this._getSortActionTemplate(this.sortBy, this.sortOptions)}

@@ -64,6 +64,11 @@ public class TimerService implements ContainerService, RulesClock {
             }
 
             @Override
+            public void stopAtTime(long time) {
+                // NOOP
+            }
+
+            @Override
             public void start() {
                 // NOOP
             }
@@ -105,6 +110,12 @@ public class TimerService implements ContainerService, RulesClock {
             }
 
             @Override
+            public void stopAtTime(long time) {
+                stopTime = time;
+                LOG.info("Clock stopped at: " + (stopTime) + "/" + new Date(stopTime));
+            }
+
+            @Override
             public void start() {
                 stopTime = null;
                 LOG.info("Clock started at: " + (System.currentTimeMillis()) + "/" + new Date(System.currentTimeMillis()));
@@ -120,6 +131,7 @@ public class TimerService implements ContainerService, RulesClock {
         public abstract void init();
         public abstract long getCurrentTimeMillis();
         public abstract void stop();
+        public abstract void stopAtTime(long time);
         public abstract void start();
         public abstract void reset();
         public abstract long advanceTime(long amount, TimeUnit unit);
