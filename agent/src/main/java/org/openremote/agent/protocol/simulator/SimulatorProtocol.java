@@ -277,7 +277,10 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     public static class Schedule implements Serializable {
 
         @JsonPropertyDescription("Set a start date, if not provided, considers 00:00 of the current date." +
-                " When the replay datapoint timestamp is 0 it will insert it at 00:00.")
+                " When the replay datapoint timestamp is 0 it will insert it at 00:00, unless the recurrence rule" +
+                " specifies any of the following rule parts: FREQ=(HOURLY/MINUTELY/SECONDLY);" +
+                " BYSECOND=...;BYMINUTE=...;BYHOUR=...;BYSETPOS=... This will cause the datapoint timestamp to be" +
+                " relative to when the first occurrence is scheduled.")
         @JsonDeserialize(using = LocalDateDeserializer.class)
         @JsonSerialize(using = LocalDateSerializer.class)
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
