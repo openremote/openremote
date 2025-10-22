@@ -942,7 +942,7 @@ public class ValueUtil {
 
         // Add JSON schemas for complex meta items and generate cache keys
         Map<String, MetaItemDescriptor<?>> metaItems = getMetaItemDescriptors();
-        valueDescriptorJsonSchemas.putAll(metaItems.values().stream()
+        valueDescriptorSchemas.putAll(metaItems.values().stream()
                 .map(AbstractNameValueDescriptorHolder::getType)
                 .filter(v -> {
                     String jsonType = v.getJsonType();
@@ -952,7 +952,7 @@ public class ValueUtil {
                         ValueDescriptor::getName,
                         vd -> (ObjectNode) getSchema(vd.getType())
                 )));
-        valueDescriptorSchemaHashes.putAll(valueDescriptorJsonSchemas.entrySet().stream().collect(Collectors.toMap(
+        valueDescriptorSchemaHashes.putAll(valueDescriptorSchemas.entrySet().stream().collect(Collectors.toMap(
                 Map.Entry::getKey,
                 v -> hash(v.getValue().toString())
         )));
@@ -967,7 +967,7 @@ public class ValueUtil {
             return null;
         }
         ValueDescriptor<?> vd = ValueUtil.getValueDescriptor(name).get();
-        return valueDescriptorJsonSchemas.computeIfAbsent(vd.getName(), key -> {
+        return valueDescriptorSchemas.computeIfAbsent(vd.getName(), key -> {
             ObjectNode schema = (ObjectNode) ValueUtil.getSchema(vd.getType());
             valueDescriptorSchemaHashes.put(vd.getName(), hash(schema.toString()));
             return schema;
