@@ -1,6 +1,6 @@
 {
   "name": "@openremote/rest",
-  "version": "1.8.0-snapshot",
+  "version": "1.9.0-mg-feature-testing-1",
   "description": "OpenRemote 3.x REST API",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
