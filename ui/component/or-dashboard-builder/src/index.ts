@@ -32,6 +32,10 @@ import {AttributeInputWidget} from "./widgets/attribute-input-widget";
 import {TableWidget} from "./widgets/table-widget";
 import {GatewayWidget} from "./widgets/gateway-widget";
 import {BarChartWidget} from "./widgets/barchart-widget";
+import {AttributeWidget} from "./widgets/attribute-widget";
+import { BatteryWidget } from "./widgets/battery-widget";
+import { ParkingWidget } from "./widgets/parking-widget";
+import { SliderWidget } from "./widgets/slider-widget";
 
 // language=CSS
 const styling = css`
@@ -219,7 +223,14 @@ export function registerWidgetTypes() {
     widgetTypes.set("attributeinput", AttributeInputWidget.getManifest());
     widgetTypes.set("table", TableWidget.getManifest());
     widgetTypes.set("gateway", GatewayWidget.getManifest());
+<<<<<<< HEAD
     widgetTypes.set("barchart", BarChartWidget.getManifest());
+=======
+    widgetTypes.set("attribute", AttributeWidget.getManifest());
+    widgetTypes.set("battery", BatteryWidget.getManifest());
+    widgetTypes.set("parking", ParkingWidget.getManifest());
+    widgetTypes.set("slider", SliderWidget.getManifest());
+>>>>>>> lisa-wng/widgets
 }
 
 @customElement("or-dashboard-builder")
