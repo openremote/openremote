@@ -22,7 +22,7 @@ package org.openremote.agent.protocol.udp;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
@@ -64,7 +64,7 @@ public abstract class AbstractUDPServer<T> extends AbstractNettyIOServer<T, Data
     @Override
     protected Bootstrap createAndConfigureBootstrap() {
         Bootstrap b = new Bootstrap();
-        b.group(new NioEventLoopGroup())
+        b.group(new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory()))
                 .channel(NioDatagramChannel.class)
                 .localAddress(localAddress)
                 .option(ChannelOption.SO_BROADCAST, true);
