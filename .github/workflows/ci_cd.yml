@@ -253,6 +253,14 @@ jobs:
             profile
           sparse-checkout-cone-mode: false
 
+      - name: Install node_modules
+        if: steps.ui-files-changed.outputs.any_modified == 'true'
+        run: yarn --immutable
+
+      - name: Check UI dependencies
+        if: steps.ui-files-changed.outputs.any_modified == 'true'
+        run: npx knip -c ui/knip.json
+
       - name: Check deployment build.gradle
         id: check_deployment_gradle
         uses: andstor/file-existence-action@076e0072799f4942c8bc574a82233e1e4d13e9d6 # v3

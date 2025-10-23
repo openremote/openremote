@@ -18,19 +18,27 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "@lit/task": "^1.0.3",
+    "@material/data-table": "^9.0.0",
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
+    "@openremote/or-asset-tree": "workspace:*",
+    "@openremote/or-attribute-barchart": "workspace:*",
     "@openremote/or-attribute-card": "workspace:*",
     "@openremote/or-attribute-input": "workspace:*",
+    "@openremote/or-attribute-picker": "workspace:*",
     "@openremote/or-chart": "workspace:*",
+    "@openremote/or-components": "workspace:*",
     "@openremote/or-gauge": "workspace:*",
+    "@openremote/or-icon": "workspace:*",
     "@openremote/or-map": "workspace:*",
+    "@openremote/or-mwc-components": "workspace:*",
+    "@openremote/or-translate": "workspace:*",
     "@openremote/rest": "workspace:*",
     "gridstack": "^7.2.0",
-    "lit": "^3.3.1"
-  },
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
+    "lit": "^3.3.1",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.4"
   },
   "publishConfig": {
     "access": "public"
