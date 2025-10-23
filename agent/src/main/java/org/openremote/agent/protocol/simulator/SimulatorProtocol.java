@@ -19,12 +19,12 @@
  */
 package org.openremote.agent.protocol.simulator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import net.fortuna.ical4j.model.Recur;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
@@ -35,12 +35,13 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.JSONSchemaUtil;
 import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.value.AbstractNameValueHolder;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.chrono.ChronoLocalDateTime;
 import java.util.*;
@@ -199,7 +200,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }
 
         OptionalLong nextRun = getDelay(nextDatapoint.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
-        if (nextRun.isEmpty()) {
+        if (nextRun.isEmpty() || nextRun.getAsLong() < 0) {
             LOG.warning("Replay schedule has ended for: " + attributeRef);
             return null;
         }
@@ -220,7 +221,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             }
         }
 
-        LOG.fine("Next update for asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " in " + nextRun + " second(s)");
+        LOG.fine("Next update for asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " in " + nextRun.getAsLong() + " second(s)");
         return scheduledExecutorService.schedule(() -> {
             LOG.fine("Updating asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " with value " + nextDatapoint.value.toString());
             try {
@@ -272,16 +273,16 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
     public static class Schedule implements Serializable {
 
-        @JsonPropertyDescription("Set a start date, if not provided, starts immediately." +
-                " When the replay datapoint timestamp is 0 it will insert it at 00:00.")
-        @JsonSchemaFormat("date-time")
-        @JsonSchemaTypeRemap(type = String.class)
-        protected Date start;
-
-        @JsonPropertyDescription("Not implemented, within the recurrence rule you can specify an end date.")
-        @JsonSchemaFormat("date-time")
-        @JsonSchemaTypeRemap(type = String.class)
-        protected Date end;
+        @JsonPropertyDescription("Set a start date, if not provided, considers 00:00 of the current date." +
+                " When the replay datapoint timestamp is 0 it will insert it at 00:00, unless the recurrence rule" +
+                " specifies any of the following rule parts: FREQ=(HOURLY/MINUTELY/SECONDLY);" +
+                " BYSECOND=...;BYMINUTE=...;BYHOUR=...;BYSETPOS=... This will cause the datapoint timestamp to be" +
+                " relative to when the first occurrence is scheduled.")
+        @JsonDeserialize(using = LocalDateDeserializer.class)
+        @JsonSerialize(using = LocalDateSerializer.class)
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        @JsonSchemaFormat("date")
+        protected LocalDate start;
 
         @JsonPropertyDescription("The recurrence schedule follows the RFC 5545 RRULE format.")
         @JsonSchemaTypeRemap(type = String.class)
@@ -297,25 +298,20 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }
 
         @JsonCreator
-        public Schedule(@JsonProperty("start") Date start, @JsonProperty("end") Date end, @JsonProperty("recurrence") String recurrence) {
+        public Schedule(@JsonProperty("start") LocalDate start, @JsonProperty("recurrence") String recurrence) {
             Recur<LocalDateTime> recur = null;
 
             try {
                 recur = new Recur<>(recurrence);
             } catch (Exception ignored) {}
 
-            this.start = start;
-            this.end = end;
+            this.start = Optional.ofNullable(start).orElse(LocalDate.now());
             this.recurrence = recur;
-            this.startTime = start.getTime() / 1000;
+            this.startTime = this.start.toEpochDay() * 86400;
         }
 
-        public Date getStart() {
+        public LocalDate getStart() {
             return start;
-        }
-
-        public Date getEnd() {
-            return end;
         }
 
         public Recur<LocalDateTime> getRecurrence() {
@@ -358,6 +354,12 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 return epoch - currentOccurrence;
             }
             if (dates.size() > 1 || count == 0) count++;
+
+            // If the epoch is between the start time and the first occurrence
+            if (dates.isEmpty()) {
+                currentOccurrence = startTime;
+                return epoch - startTime;
+            }
 
             currentOccurrence = dates.getLast().toEpochSecond(ZoneOffset.UTC);
             return epoch - currentOccurrence;
