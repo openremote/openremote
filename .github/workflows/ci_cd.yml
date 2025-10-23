@@ -671,13 +671,9 @@ jobs:
           VERSION: ${{ steps.get-version-details.outputs.version_with_qualifier }}
 
       - name: Check for outdated translations
+        if: steps.is_main_repo.outputs.value == 'true'
         run: |
           set -e
-
-          if [[ ! -d ui/app/shared ]]; then
-              echo "Skipping. No shared translation directory."
-              exit 0
-          fi
 
           # Run the tests
           ./gradlew -p ui/app/shared processTranslations --no-parallel
