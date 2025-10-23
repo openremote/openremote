@@ -15,8 +15,10 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller
 
-PSQL_VOLUMEID=$(aws ec2 create-volume --size 1 --availability-zone eu-west-1a --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=psql-data}]" --query VolumeId)
-MANAGER_VOLUMEID=$(aws ec2 create-volume --size 1 --availability-zone eu-west-1a --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=manager-data}]" --query VolumeId)
+PSQL_VOLUMEID=$(aws ec2 create-volume --size $(grep "psqlVolumeSize:" values-or-setup-eks-load.yaml | awk '{print $2}' | tr -d '"Gi') \
+  --availability-zone eu-west-1a --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=psql-data}]" --query VolumeId)
+MANAGER_VOLUMEID=$(aws ec2 create-volume --size $(grep "managerVolumeSize:" values-or-setup-eks-load.yaml | awk '{print $2}' | tr -d '"Gi') \
+  --availability-zone eu-west-1a --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=manager-data}]" --query VolumeId)
 
 # Wait for AWS LB ctrl to be ready
 kubectl rollout status deployment aws-load-balancer-controller -n kube-system --timeout=300s
