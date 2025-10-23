@@ -765,7 +765,7 @@ jobs:
         timeout-minutes: 20
 
       - name: Run UI component tests
-        if: steps.test-ui-components-command.outputs.value != ''
+        if: steps.test-ui-components-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
         run: ${{ steps.test-ui-components-command.outputs.value }}
         timeout-minutes: 20
         # continue-on-error: true
