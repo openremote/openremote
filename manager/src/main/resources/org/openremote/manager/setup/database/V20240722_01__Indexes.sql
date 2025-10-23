@@ -19,5 +19,5 @@
  */
 
 /* Add an index for entity ID, attribute name and timestamp to improve data point retrieval */
-CREATE index if not exists asset_datapoint_entity_id_attribute_name_timestamp_idx on ${schemaName}.asset_datapoint (entity_id, attribute_name, timestamp DESC);
-CREATE index if not exists asset_predicted_datapoint_entity_id_attribute_name_timestamp_idx on ${schemaName}.asset_predicted_datapoint (entity_id, attribute_name, timestamp DESC);
+CREATE index if not exists asset_datapoint_entity_id_attribute_name_timestamp_idx on openremote.asset_datapoint (entity_id, attribute_name, timestamp DESC);
+CREATE index if not exists asset_predicted_datapoint_entity_id_attribute_name_timestamp_idx on openremote.asset_predicted_datapoint (entity_id, attribute_name, timestamp DESC);
