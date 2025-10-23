@@ -671,6 +671,7 @@ jobs:
           VERSION: ${{ steps.get-version-details.outputs.version_with_qualifier }}
 
       - name: Check for outdated translations
+        if: steps.is_main_repo.outputs.value == 'true'
         run: |
           set -e
 
