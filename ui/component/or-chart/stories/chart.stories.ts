@@ -1,0 +1,154 @@
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+import {type Meta, setCustomElementsManifest, type StoryObj} from "@storybook/web-components";
+import {getStorybookHelpers} from "@wc-toolkit/storybook-helpers";
+import {Asset, AssetQuery, WellknownMetaItems} from "@openremote/model";
+import manager from "@openremote/core";
+import {html} from "lit";
+import customElements from "../custom-elements.json" with {type: "json"};
+import packageJson from "../package.json" with {type: "json"};
+import {OrChart} from "../src/index";
+import "../src/index";
+
+const tagName = "or-chart";
+type Story = StoryObj;
+setCustomElementsManifest(customElements);
+
+const { events, args, argTypes, template } = getStorybookHelpers(tagName);
+
+const meta: Meta = {
+    title: "Playground/or-chart",
+    component: tagName,
+    args: args,
+    argTypes: argTypes,
+    render: storyArgs => template(storyArgs),
+    excludeStories: /^[a-z].*/,
+    parameters: {
+        actions: {
+            handles: events
+        },
+        docs: {
+            subtitle: `<${tagName}>`,
+            description: "These line charts can be used as a graphical representation for data visualization.",
+            story: {
+                height: "370px"
+            }
+        }
+    }
+};
+
+export const Primary: Story = {
+    render: storyArgs => html`
+        ${template(storyArgs)}
+        <script>
+            const component = document.querySelector('or-chart');
+            component.style.height = "300px";
+            component.attributeControls = false;
+            component.timestampControls = false;
+            component.timeframe = [new Date(Date.now() - (60000 * 60)), new Date()];
+            component.dataProvider = async () => ([{
+                type: 'line',
+                data: [
+                    {x: new Date(Date.now() - 60000 * 60).getTime(), y: 5},
+                    {x: new Date(Date.now() - 50000 * 60).getTime(), y: 8},
+                    {x: new Date(Date.now() - 40000 * 60).getTime(), y: 3},
+                    {x: new Date(Date.now() - 30000 * 60).getTime(), y: 4},
+                    {x: new Date(Date.now() - 20000 * 60).getTime(), y: 10},
+                    {x: new Date(Date.now() - 10000 * 60).getTime(), y: 2},
+                    {x: new Date().getTime(), y: 4}
+                ]
+            }])
+        </script>
+    `,
+    loaders: [
+        async storyArgs => ({
+            orChart: await loadOrChart(storyArgs.allArgs)
+        })
+    ]
+};
+
+export const AssetsExample: Story = {
+    name: "Asset example",
+    parameters: {
+        title: "Using asset data",
+        summary: "You can show historic asset data in the chart using the `assets`, `assetAttributes`, `attributeColors`, `datapointQuery` and a `timeframe`."
+    },
+    args: {
+        datapointQuery: JSON.stringify({ type: "lttb", amountOfPoints: 100, fromTimestamp: Date.now() - 120000 * 60, toTimestamp: Date.now() })
+    },
+    render: (storyArgs, { loaded }) => {
+        const query: AssetQuery = { limit: 1, attributes: { items: [{ meta: [{ name: { predicateType: "string", value: WellknownMetaItems.STOREDATAPOINTS }}]}]}};
+        loaded.orManager.rest.api.AssetResource.queryAssets(query).then((response: any) => {
+            const component = document.querySelector("or-chart") as OrChart;
+            const data = response.data as Asset[];
+            if(data.length === 0) {
+                console.error("There are no attributes in the Manager that have data points.");
+                return;
+            }
+            console.debug("Displaying asset: ", data[0]);
+            const datapointAttr = Object.values(data[0].attributes!).find(attr => Object.keys(attr.meta!).includes(WellknownMetaItems.STOREDATAPOINTS));
+            component.assets = data;
+            component.assetAttributes = [[0, datapointAttr!]];
+            component.attributeColors = [[{ id: component.assets[0].id, name: datapointAttr!.name }, OrChart.DEFAULT_COLORS[0]]];
+            component.timeframe = [new Date(Date.now() - (60000 * 60)), new Date()];
+        });
+        return html`
+            ${template(storyArgs)}
+            <script>
+                const component = document.querySelector('or-chart');
+                component.style.height = "300px";
+                component.attributeControls = false;
+            </script>
+        `;
+    },
+    loaders: [
+        async storyArgs => ({
+            orChart: await loadOrChart(storyArgs.allArgs),
+            orManager: await loadOrManager()
+        })
+    ]
+};
+
+export const examples: Story[] = [AssetsExample];
+
+export {customElements, packageJson};
+
+/* ------------------------------------------------------- */
+/*                   UTILITY FUNCTIONS                     */
+/* ------------------------------------------------------- */
+
+async function loadOrChart(storyArgs: any) {
+    const newArgs = Object.fromEntries(Object.entries(storyArgs).filter(([_key, value]) => (
+        value != null && String(value).length > 0
+    )));
+    return Object.assign(new OrChart(), newArgs);
+}
+
+async function loadOrManager() {
+    if(await manager.init({ managerUrl: "http://localhost:8080", realm: "smartcity" })) {
+        if(!manager.authenticated) {
+            manager.login();
+        }
+        return manager;
+    }
+    throw new Error("Manager could not be initialized");
+}
+
+export default meta;

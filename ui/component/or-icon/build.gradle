@@ -13,6 +13,12 @@ tasks.register('clean') {
     }
 }
 
+tasks.register('npmAnalyze', Exec) {
+    mustRunAfter npmClean
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "run", "analyze"
+}
+
 tasks.register('prepareUi') {
     dependsOn clean, npmAnalyze, npmPrepare
 }
