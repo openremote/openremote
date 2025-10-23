@@ -674,6 +674,11 @@ jobs:
         run: |
           set -e
 
+          if [[ ! -d ui/app/shared ]]; then
+              echo "Skipping. No shared translation directory."
+              exit 0
+          fi
+
           # Run the tests
           ./gradlew -p ui/app/shared processTranslations --no-parallel
 
