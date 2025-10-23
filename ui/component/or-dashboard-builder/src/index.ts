@@ -223,14 +223,11 @@ export function registerWidgetTypes() {
     widgetTypes.set("attributeinput", AttributeInputWidget.getManifest());
     widgetTypes.set("table", TableWidget.getManifest());
     widgetTypes.set("gateway", GatewayWidget.getManifest());
-<<<<<<< HEAD
     widgetTypes.set("barchart", BarChartWidget.getManifest());
-=======
     widgetTypes.set("attribute", AttributeWidget.getManifest());
     widgetTypes.set("battery", BatteryWidget.getManifest());
     widgetTypes.set("parking", ParkingWidget.getManifest());
     widgetTypes.set("slider", SliderWidget.getManifest());
->>>>>>> lisa-wng/widgets
 }
 
 @customElement("or-dashboard-builder")
