@@ -51,6 +51,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
+import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler.UNIQUE_ID_PLACEHOLDER;
 import static org.openremote.model.Constants.MASTER_REALM;
@@ -61,6 +62,7 @@ import static org.openremote.setup.load2.KeycloakSetup.OR_SETUP_USERS;
 
 public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
     public static final String OR_SETUP_ASSETS = "OR_SETUP_ASSETS";
+    public static final String OR_SETUP_STORE_DATA_POINTS = "OR_SETUP_STORE_DATA_POINTS";
 
     protected ProvisioningService provisioningService;
     protected Container container;
@@ -80,12 +82,13 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
     public void onStart() throws Exception {
         int accounts = getInteger(container.getConfig(), OR_SETUP_USERS, 0);
         int assets = getInteger(container.getConfig(), OR_SETUP_ASSETS, 0);
+        boolean storeDataPoints = getBoolean(container.getConfig(), OR_SETUP_STORE_DATA_POINTS, false);
 
         AtomicInteger createdAccounts = new AtomicInteger(0);
         if (accounts > 1) {
             IntStream.rangeClosed(1, accounts).forEach(i -> {
                 executor.execute(() -> {
-                    createAssets(i, assets);
+                    createAssets(i, assets, storeDataPoints);
                     createdAccounts.incrementAndGet();
                 });
             });
@@ -102,7 +105,7 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
         }
     }
 
-    private void createAssets(int account, int assets) {
+    private void createAssets(int account, int assets, boolean storeDataPoints) {
         String userName = "user" + account;
         String serviceUserName = User.SERVICE_ACCOUNT_PREFIX + "serviceuser" + account;
 
@@ -123,6 +126,9 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
             Asset<?> asset = new LightAsset("Light - " + account + " - " + i);
             asset.getAttribute(LightAsset.BRIGHTNESS).ifPresent( attribute -> {
                 attribute.addMeta(new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_WRITE));
+                if (storeDataPoints) {
+                    attribute.addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS));
+                }
             });
             asset.setId(assetId);
             asset.setRealm(MASTER_REALM);
