@@ -135,13 +135,13 @@
     "TEXT_SWITCH": "文本逻辑",
     "ROUND_NODE": "四舍五入",
     "LOG_OUTPUT": "Write to Logs",
-    "DERIVATIVE":  "Attribute derivative",
+    "DERIVATIVE": "Attribute derivative",
     "INTEGRAL": "Attribute integral",
     "HISTORIC_VALUE": "Attribute history",
     "MAX_PROCESSOR": "Maximum",
-    "MIN_PROCESSOR":  "Minimum",
-    "AVERAGE_PROCESSOR":  "Average",
-    "MEDIAN_PROCESSOR":  "Median",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Average",
+    "MEDIAN_PROCESSOR": "Median",
     "SUM_OPERATOR": "Sum",
     "max": "Max",
     "min": "Min",
@@ -225,10 +225,10 @@
   "buttonTextConfirm": "确认按键文本",
   "buttonTextDecline": "拒绝按键文本",
   "custom": "自定义参数",
-  "realm": "租户",
-  "realm_plural": "租户",
-  "displayName":"昵称",
-  "deleteRealmConfirm":"您确定你要删除该产所吗?",
+  "realm": "场所",
+  "realm_plural": "场所",
+  "displayName": "昵称",
+  "deleteRealmConfirm": "您确定你要删除该产所吗?",
   "user_plural": "用户",
   "regularUser_plural": "普通用户",
   "serviceUser_plural": "服务用户",
@@ -236,12 +236,12 @@
   "role": "角色",
   "role_plural": "角色",
   "description": "描述",
-  "passwordMismatch":"密码错误",
-  "username":"用户名",
-  "firstName":"名",
-  "surname":"姓",
-  "deleteUserConfirm":"您确认要删除该用户吗?",
-  "deleteRoleConfirm":"您确认要删除该策略吗?",
+  "passwordMismatch": "密码错误",
+  "username": "用户名",
+  "firstName": "名",
+  "surname": "姓",
+  "deleteUserConfirm": "您确认要删除该用户吗?",
+  "deleteRoleConfirm": "您确认要删除该策略吗?",
   "realmRules": "场所",
   "globalRules": "全局",
   "recipients": "收件人",
@@ -258,8 +258,6 @@
   "secured": "安全",
   "clientSecret": "客户端密钥",
   "clientId": "客户端标识",
-  "realm": "场所",
-  "realm_plural": "场所",
   "port": "端口",
   "host": "主机名",
   "errorOccurred": "出现错误",
@@ -286,8 +284,8 @@
   "resetPasswordConfirmation": "已发送电子邮件重置您的密码。",
   "repeatPassword": "重复密码",
   "details": "Details",
-  "permissions":"权限",
-  "fullAccessLabel":"管理员: 完整权限，管理用户与角色",
+  "permissions": "权限",
+  "fullAccessLabel": "管理员: 完整权限，管理用户与角色",
   "noChildAssets": "没有下属子资源",
   "account": "账号",
   "editAttribute": "改变参数",
@@ -361,42 +359,31 @@
     "hertz": "Hz",
     "rpm": "rpm",
     "carbon": "CO2",
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "format": {
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "constraints": {
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "label": {
     "asset": {
       "ElectricityProducerSolarAsset": "PV solar asset",
       "ElectricityProducerWindAsset": "Wind turbine asset"
     },
-    "meta": {
-    },
-    "attribute": {
-    },
-    "value": {
-    }
+    "meta": {},
+    "attribute": {},
+    "value": {}
   },
   "metaOverrides": {
-    "label": {
-    }
+    "label": {}
   },
   "attributeOverrides": {
-    "label": {
-    }
+    "label": {}
   },
   "addMetaItems": "添加配置项目",
   "loseChanges": "放弃变更?",
@@ -411,14 +398,14 @@
       "description": "连接KNX的协议"
     }
   },
-  "validityType":"日程类型",
-  "validityAlways":"总是激活",
-  "validityPeriod":"计划一个事件",
-  "validityRecurrence":"计划一个重复事件",
+  "validityType": "日程类型",
+  "validityAlways": "总是激活",
+  "validityPeriod": "计划一个事件",
+  "validityRecurrence": "计划一个重复事件",
   "activeFromTo": "在 {{start}} 到 {{end}} 之间激活",
-  "fromTo":"从 {{start}} 到 {{end}}",
-  "fromToDays":"从 {{start}} 到 {{end}} 后 {{days}} 天",
-  "forDays":"持续 {{days}} 天",
+  "fromTo": "从 {{start}} 到 {{end}}",
+  "fromToDays": "从 {{start}} 到 {{end}} 后 {{days}} 天",
+  "forDays": "持续 {{days}} 天",
   "scheduleRuleActivity": "安排定时策略",
   "allDay": "全天",
   "apply": "应用",
@@ -431,8 +418,7 @@
   "dismiss": "忽略",
   "createAssetFailed": "创建资源失败",
   "moveAssetFailed": "Failed to move asset",
-  "logCategory": {
-  },
+  "logCategory": {},
   "readPermissions": "读权限",
   "writePermissions": "写权限",
   "valueType": "值类型",
@@ -471,5 +457,135 @@
     "attributeLabel": "Attribute",
     "attributeValueLabel": "Attribute value",
     "assetTypeDoesNotExist": "Filter : Asset type does not exist"
+  },
+  "org": {
+    "openremote": {
+      "model": {
+        "query": {
+          "filter": {
+            "ValueEmptyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RadialGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ValueAnyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "CalendarEventPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RectangularGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ArrayPredicate": {
+              "description": ""
+            },
+            "StringPredicate": {
+              "description": ""
+            },
+            "NumberPredicate": {
+              "description": ""
+            },
+            "DateTimePredicate": {
+              "description": ""
+            },
+            "BooleanPredicate": {
+              "description": ""
+            }
+          }
+        },
+        "simulator": {
+          "SimulatorReplayDatapoint": {
+            "label": ""
+          }
+        },
+        "value": {
+          "MathExpressionValueFilter": {
+            "label": ""
+          },
+          "SubStringValueFilter": {
+            "label": ""
+          },
+          "JsonPathFilter": {
+            "label": ""
+          },
+          "RegexValueFilter": {
+            "label": ""
+          },
+          "ValueConstraint": {
+            "description": "",
+            "Size": {
+              "description": ""
+            },
+            "Min": {
+              "description": ""
+            },
+            "Max": {
+              "description": ""
+            },
+            "Pattern": {
+              "description": ""
+            },
+            "AllowedValues": {
+              "description": ""
+            },
+            "Past": {
+              "description": ""
+            },
+            "PastOrPresent": {
+              "description": ""
+            },
+            "Future": {
+              "description": ""
+            },
+            "FutureOrPresent": {
+              "description": ""
+            },
+            "NotEmpty": {
+              "description": ""
+            },
+            "NotBlank": {
+              "description": ""
+            },
+            "NotNull": {
+              "description": ""
+            }
+          }
+        },
+        "asset": {
+          "agent": {
+            "AgentLink": {
+              "valueFilters": {
+                "description": ""
+              },
+              "valueConverter": {
+                "description": ""
+              },
+              "writeValueConverter": {
+                "description": ""
+              },
+              "writeValue": {
+                "description": ""
+              },
+              "messageMatchPredicate": {
+                "description": ""
+              },
+              "messageMatchFilters": {
+                "description": ""
+              },
+              "updateOnWrite": {
+                "description": ""
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

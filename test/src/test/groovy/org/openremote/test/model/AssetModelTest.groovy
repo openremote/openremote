@@ -1,5 +1,6 @@
 package org.openremote.test.model
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import jakarta.ws.rs.WebApplicationException
 import org.jboss.resteasy.api.validation.ViolationReport
@@ -8,6 +9,7 @@ import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.agent.protocol.velbus.VelbusTCPAgent
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.container.timer.TimerService
+import org.openremote.model.attribute.AttributeLink
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetModelService
 import org.openremote.manager.asset.AssetStorageService
@@ -34,6 +36,7 @@ import org.openremote.setup.integration.protocol.http.HTTPServerTestAgent
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.lang.reflect.Array
 import java.nio.file.Files
@@ -603,5 +606,40 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         attributeEventObjectNode2.get("deleted").asBoolean()
         !attributeEventObjectNode2.has("source")
         !attributeEventObjectNode2.has("meta")
+    }
+
+    @Unroll
+    def "Get valueDescriptor schema for #name"(String name, Class<?> clazz) {
+        given: "required services are setup"
+        def assetModelService = container.getService(AssetModelService.class)
+
+        when: "we ask to generate a schema for #clazz"
+        def schema = assetModelService.getValueDescriptorSchema(name)
+        def expected = ValueUtil.getSchema(clazz)
+
+        then: "the schema to be the same"
+        Objects.equals(schema, expected)
+
+        where:
+        name                    | clazz
+        "text"                  | String
+        "text[]"                | String[]
+        "text[][]"              | String[][]
+        "agentLink"             | AgentLink
+        "attributeLink"         | AttributeLink
+        "valueConstraint[]"     | ValueConstraint[]
+        "forecastConfiguration" | ForecastConfiguration
+        "valueFormat"           | ValueFormat
+    }
+
+    def "Get unknown valueDescriptor schema"() {
+        given: "required services are setup"
+        def assetModelService = container.getService(AssetModelService.class)
+
+        when: "we ask to generate a schema for a nonexistent value descriptor"
+        def schema = assetModelService.getValueDescriptorSchema("String")
+
+        then: "to return null"
+        Objects.equals(schema, null)
     }
 }
