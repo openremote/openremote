@@ -31,10 +31,10 @@ volumeSize: "16Gi"
 or:
   env:
     - name: OR_SETUP_USERS
-      value: "1000"
+      value: "5000"
     - name: OR_SETUP_ASSETS
       value: "5"
     - name: OR_SETUP_STORE_DATA_POINTS
-      value: "true"
+      value: "false"
     - name: OR_JAVA_OPTS
       value: "-Dhibernate.generate_statistics=true -XX:InitialRAMPercentage=75 -XX:MaxRAMPercentage=75 -XX:NativeMemoryTracking=summary -Xlog:all=warning:stdout:uptime,level,tags -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof"
