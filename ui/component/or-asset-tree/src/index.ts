@@ -293,9 +293,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     @property({type: Boolean})
     public expandAllNodes?: boolean = false;
 
-    @property({type: Array})
-    public expandedIds?: string[] = [];
-
     @property({type: Boolean})
     public checkboxes?: boolean = false;
 
@@ -2145,10 +2142,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         if (treeNode.expanded && treeNode.children.length === 0) {
             console.debug("Tree node has no children, collapsing it...");
             treeNode.expanded = false;
-        }
-
-        if (this.expandedIds && this.expandedIds.findIndex((expandId: string) => { return expandId === treeNode.asset!.id!; }) !== -1) {
-            treeNode.expanded = true;
         }
 
         return html`
