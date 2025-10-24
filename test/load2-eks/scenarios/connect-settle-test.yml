@@ -1,0 +1,38 @@
+settings:
+  env:
+    JMETER_VERSION: # Set by environment variable in docker image
+    JMETER_PLUGIN_MANAGER_VERSION: # Set by environment variable in docker image
+    MANAGER_HOSTNAME: # Must be supplied
+    THREAD_COUNT: 10000
+    RAMP_RATE: 50
+    MILLIS_BETWEEN_PUBLISHES: 300000
+
+reporting:
+  - module: final-stats
+    summary: true  # overall samples count and percent of failures
+    percentiles: true  # display average times and percentiles
+    summary-labels: true # provides list of sample labels, status, percentage of completed, avg time and errors
+    failed-labels: true  # provides list of sample labels with failures
+    test-duration: true  # provides test duration
+#    dump-csv: filename to export data in CSV format
+
+modules:
+  jmeter:
+    version: ${JMETER_VERSION}
+    detect-plugins: true
+    fix-jars: true
+    plugins-manager:
+      version: ${JMETER_PLUGIN_MANAGER_VERSION}
+    properties:
+      MANAGER_HOSTNAME: ${MANAGER_HOSTNAME}
+      THREAD_COUNT: ${THREAD_COUNT}
+      RAMP_RATE: ${RAMP_RATE}
+      MILLIS_BETWEEN_PUBLISHES: ${MILLIS_BETWEEN_PUBLISHES}
+
+execution:
+  - scenario: simple
+
+scenarios:
+  simple:
+    script: connect-settle-test.jmx
+
