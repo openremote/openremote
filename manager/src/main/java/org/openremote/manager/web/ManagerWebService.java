@@ -113,7 +113,7 @@ public class ManagerWebService extends WebService {
 
         // Serve REST API
        Collection<Object> deploymentSingletons = Stream.of(
-          devMode ? getStandardProviders(devMode, 1) : getStandardProviders(devMode, 1,
+          devMode ? getStandardProviders(devMode, 0) : getStandardProviders(devMode, 0,
              getCORSAllowedOrigins(container),
              getString(container.getConfig(), OR_WEBSERVER_ALLOWED_METHODS, DEFAULT_CORS_ALLOW_ALL),
              getString(container.getConfig(), OR_WEBSERVER_EXPOSED_HEADERS, DEFAULT_CORS_ALLOW_ALL),

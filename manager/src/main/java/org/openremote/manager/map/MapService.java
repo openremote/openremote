@@ -55,7 +55,6 @@ import java.util.stream.StreamSupport;
 
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
 import static org.openremote.manager.web.ManagerWebService.API_PATH;
 
 public class MapService implements ContainerService {
