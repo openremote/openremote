@@ -19,6 +19,7 @@
  */
 package org.openremote.test.protocol.simulator
 
+import net.fortuna.ical4j.model.Recur
 import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
@@ -33,6 +34,7 @@ import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
+import org.openremote.model.calendar.CalendarEvent
 import org.openremote.model.datapoint.query.AssetDatapointAllQuery
 import org.openremote.model.simulator.SimulatorReplayDatapoint
 import org.openremote.model.value.ValueType
@@ -42,7 +44,7 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
-import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.ScheduledExecutorService
@@ -308,10 +310,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                         new SimulatorReplayDatapoint(HOUR, "test"),
                         new SimulatorReplayDatapoint(HOUR * 25, "test"),
                         new SimulatorReplayDatapoint(HOUR * 49, "test")
-                ).setSchedule(new SimulatorProtocol.Schedule(
-                        LocalDate.of(1970, 1, 2),
-                        null
-                ))
+                ).setSchedule(new CalendarEvent(Date.from(Instant.parse("1970-01-02T00:00:00.000Z")), null, (Recur<LocalDateTime>)null))
         )))
         asset = assetStorageService.merge(asset)
         def attribute = asset.getAttribute("test3").get()
@@ -369,9 +368,10 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                 new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
                         new SimulatorReplayDatapoint(HOUR, "test"),
                         new SimulatorReplayDatapoint(HOUR * 2, "test")
-                ).setSchedule(new SimulatorProtocol.Schedule(
+                ).setSchedule(new CalendarEvent(
                         // First day should be 1970-01-05 (in 4 days) a Monday
-                        LocalDate.of(1970, 1, 5),
+                        Date.from(Instant.parse("1970-01-05T00:00:00.000Z")),
+                        null,
                         // Recur every Monday until 1970-01-31
                         "FREQ=WEEKLY;UNTIL=19700131T000000Z;BYDAY=MO"
                 ))
@@ -388,6 +388,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         then: "the delay is 4 days and 1 hour"
         conditions.eventually {
+            Instant.ofEpochMilli(getClockTimeOf(container)) == Instant.parse("1970-01-01T00:00:00.000Z")
             delay == 4 * DAY + HOUR
         }
 
@@ -401,26 +402,28 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
             getDatapointTimestamp(attribute) == 4 * DAY + HOUR
         }
 
-        and: "the delay is 1 hour"
-        conditions.eventually {
-            delay == HOUR
-        }
-
-        when: "fast forward 1 hour"
-        advancePseudoClock(1, HOURS, container)
-        future.get() // resolve future manually, because we surpassed the delay
-
-        then: "datapoint is present"
-        conditions.eventually {
-            getDatapointTimestamp(attribute) == 4 * DAY + 2 * HOUR
-        }
-
-        (1..3).each { i ->
+        (0..2).each { i ->
             def weeks = i * WEEK // Starts at 0 weeks, increments with 1 week
             def firstWeekOffset = 4 * DAY;
 
+            and: "the delay is 1 hour"
+            conditions.eventually {
+                Instant.ofEpochMilli(getClockTimeOf(container)) == Instant.parse("1970-01-05T01:00:00.000Z").plusSeconds(weeks)
+                delay == HOUR
+            }
+
+            when: "fast forward 1 hour"
+            advancePseudoClock(1, HOURS, container)
+            future.get() // resolve future manually, because we surpassed the delay
+
+            then: "datapoint is present"
+            conditions.eventually {
+                getDatapointTimestamp(attribute) == firstWeekOffset + weeks + 2 * HOUR
+            }
+
             and: "the delay is 1 week and -1 hour"
             conditions.eventually {
+                Instant.ofEpochMilli(getClockTimeOf(container)) == Instant.parse("1970-01-05T02:00:00.000Z").plusSeconds(weeks)
                 delay == WEEK - HOUR
             }
 
@@ -431,31 +434,11 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
             then: "datapoint is present"
             conditions.eventually {
-                getDatapointTimestamp(attribute) == firstWeekOffset + weeks + HOUR
+                getDatapointTimestamp(attribute) == firstWeekOffset + WEEK + weeks + HOUR
             }
-
-            and: "the delay is 1 hour"
-            conditions.eventually {
-                delay == HOUR
-            }
-
-            when: "fast forward 1 hour"
-            advancePseudoClock(1, HOURS, container)
-            future.get() // resolve future manually, because we surpassed the delay
-
-            then: "datapoint is present"
-            conditions.eventually {
-                getDatapointTimestamp(attribute) == firstWeekOffset + weeks + HOUR * 2
-            }
-        }
-
-        and: "the delay is 1 hour"
-        conditions.eventually {
-            delay == HOUR
         }
 
         when: "fast forward past the end date"
-        advancePseudoClock(1000, HOURS, container)
         future.get() // resolve future manually, because we surpassed the delay
 
         then: "the attributeRef is removed from the replayMap"
@@ -552,9 +535,57 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                 new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
                         new SimulatorReplayDatapoint(HOUR, "test"),
                         new SimulatorReplayDatapoint(HOUR * 2, "test"),
-                ).setSchedule(new SimulatorProtocol.Schedule(
-                        LocalDate.of(1970, 1, 1),
-                        null
+                ).setSchedule(new CalendarEvent(
+                        Date.from(Instant.parse("1970-01-01T00:00:00.000Z")), null, (Recur<LocalDateTime>) null
+                ))),
+                new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
+        )
+        asset = assetStorageService.merge(asset)
+        def attribute = asset.getAttribute("test7").get()
+        def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
+
+        then: "the agent status should become CONNECTED and the attribute linked to the protocol"
+        conditions.eventually {
+            assetStorageService.find(agent.getId(), Agent.class).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            protocol.linkedAttributes.get(attributeRef) == attribute
+        }
+
+        and: "the delay is 1 hour"
+        conditions.eventually {
+            delay == HOUR
+        }
+
+        and: "the predicted datapoints are present"
+        conditions.eventually {
+            def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+            datapoints.get(1).getTimestamp()/1000 == HOUR * 1
+            datapoints.get(0).getTimestamp()/1000 == HOUR * 2
+        }
+
+        when: "fast forward 1 hour"
+        advancePseudoClock(1, HOURS, container)
+        future.get() // resolve future manually, because we surpassed the delay
+
+        then: "the predicted datapoints are present"
+        conditions.eventually {
+            def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+            datapoints.get(1).getTimestamp()/1000 == HOUR * 1
+            datapoints.get(0).getTimestamp()/1000 == HOUR * 2
+        }
+    }
+
+    def "Check Simulator Agent protocol adds predicted datapoints recurringly until"() {
+        when: "replayData is configured for both attributes to add a datapoint in 1 and 2 hours until"
+        asset.addOrReplaceAttributes(new Attribute<>("test7", ValueType.TEXT).addMeta(
+                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+                        new SimulatorReplayDatapoint(HOUR, "test"),
+                        new SimulatorReplayDatapoint(HOUR * 2, "test"),
+                        new SimulatorReplayDatapoint(HOUR * 3, "test"),
+                        new SimulatorReplayDatapoint(HOUR * 4, "test"),
+                ).setSchedule(new CalendarEvent(
+                        Date.from(Instant.parse("1970-01-01T00:00:00.000Z")),
+                        null,
+                        "FREQ=DAILY;UNTIL=19700101T000300"
                 ))),
                 new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
         )
