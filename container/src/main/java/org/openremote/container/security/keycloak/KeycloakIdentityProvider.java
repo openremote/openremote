@@ -91,7 +91,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final String OR_KEYCLOAK_PORT = "OR_KEYCLOAK_PORT";
     public static final int OR_KEYCLOAK_PORT_DEFAULT = 8081;
     public static final String OR_KEYCLOAK_PATH = "OR_KEYCLOAK_PATH";
-    public static final String OR_KEYCLOAK_PATH_DEFAULT = "auth";
+    public static final String OR_KEYCLOAK_PATH_DEFAULT = "/auth";
     public static final String KEYCLOAK_CONNECT_TIMEOUT = "KEYCLOAK_CONNECT_TIMEOUT";
     public static final int KEYCLOAK_CONNECT_TIMEOUT_DEFAULT = 2000;
     public static final String KEYCLOAK_REQUEST_TIMEOUT = "KEYCLOAK_REQUEST_TIMEOUT";
@@ -208,7 +208,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
         if (container.isDevMode()) {
             authProxyHandler = ProxyHandler.builder()
-                .setProxyClient(new LoadBalancingProxyClient().addHost(keycloakServiceUri.clone().replacePath("").build()))
+                .setProxyClient(new LoadBalancingProxyClient().addHost(keycloakServiceUri.build()))
                 .setMaxRequestTime(getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT))
                 .setNext(ResponseCodeHandler.HANDLE_404)
                 .setReuseXForwarded(true)

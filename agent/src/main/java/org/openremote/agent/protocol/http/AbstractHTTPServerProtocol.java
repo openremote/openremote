@@ -101,7 +101,7 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
           container,
           null,
           Stream.of(
-             devMode ? getStandardProviders(devMode, 1) : getStandardProviders(devMode, 1,
+             devMode ? getStandardProviders(devMode, 0) : getStandardProviders(devMode, 0,
                 agent.getAllowedOrigins().map(Set::of).orElse(null),
                 agent.getAllowedHTTPMethods().map(methods ->
                         Arrays.stream(methods).map(Enum::name)
@@ -112,8 +112,8 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
              getApiSingletons()).flatMap(Collection::stream).toList());
 
         ResteasyDeployment deployment = webService.createResteasyDeployment(application, secure);
-        DeploymentInfo deploymentInfo = webService.createDeploymentInfo(deployment, deploymentPath, deploymentName, devMode, secure);
-        deploy(deploymentInfo, secure);
+        DeploymentInfo deploymentInfo = webService.createDeploymentInfo(deployment, deploymentPath, deploymentName, 0, secure);
+        deploy(deploymentInfo);
     }
 
     @Override
@@ -163,9 +163,9 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
         return "HttpServerProtocol=" + getClass().getSimpleName() + ", Agent ID=" + agent.getId();
     }
 
-    protected void deploy(DeploymentInfo deploymentInfo, boolean secure) {
+    protected void deploy(DeploymentInfo deploymentInfo) {
        LOG.log(INFO, "Deploying JAX-RS deployment for protocol instance: " + this);
-       webService.deploy(deploymentInfo, secure, false);
+       webService.deploy(deploymentInfo, false);
     }
 
     protected void undeploy(String deploymentName) {

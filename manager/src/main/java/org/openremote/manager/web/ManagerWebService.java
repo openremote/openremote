@@ -127,8 +127,8 @@ public class ManagerWebService extends WebService {
                deploymentSingletons);
 
        ResteasyDeployment deployment = createResteasyDeployment(APIApplication, true);
-       DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, API_PATH, "Manager HTTP API", devMode, true);
-       deploy(deploymentInfo, true, false);
+       DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, API_PATH, "Manager HTTP API", 0, true);
+       deploy(deploymentInfo, false);
 
        // Deploy static app files unsecured
        ResourceManager filesResourceManager = new PathResourceManager(builtInAppDocRoot);
@@ -142,7 +142,7 @@ public class ManagerWebService extends WebService {
         }
 
         deploymentInfo = createFilesDeploymentInfo(filesResourceManager, "/", "App Files", devMode, null);
-        deploy(deploymentInfo, false, true);
+        deploy(deploymentInfo, true);
     }
 
    private void addOpenApiResource() {

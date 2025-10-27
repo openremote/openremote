@@ -30,6 +30,8 @@ import org.apache.camel.component.undertow.HttpHandlerRegistrationInfo;
 import org.apache.camel.component.undertow.UndertowConsumer;
 import org.apache.camel.component.undertow.UndertowHostKey;
 import org.apache.camel.component.undertow.UndertowHostOptions;
+import org.openremote.container.security.IdentityService;
+import org.openremote.container.security.WebsocketAuthParamHandler;
 import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
 
@@ -38,6 +40,7 @@ import java.net.URI;
 /**
  * Customised to use existing undertow instance so websocket doesn't have to be on a separate web server instance
  */
+// TODO: Move realm into request URI if possible and remove Realm query parameter support
 public class UndertowHost implements org.apache.camel.component.undertow.UndertowHost {
 
     public static final String DEPLOYMENT_NAME = "Camel WebSocket Deployment";
@@ -68,12 +71,15 @@ public class UndertowHost implements org.apache.camel.component.undertow.Underto
         }
 
        WebService webService = container.getService(WebService.class);
+       IdentityService identityService = container.getService(IdentityService.class);
 
         String path = registrationInfo.getUri().getPath();
         deployment = Servlets.deployment()
             .setDeploymentName(DEPLOYMENT_NAME)
             .setContextPath(path)
             .setClassLoader(getClass().getClassLoader())
+            // Add handler to extract authorization and realm query params
+            .addInnerHandlerChainWrapper(WebsocketAuthParamHandler::new)
             //httpHandler for servlet is ignored, camel handler is used instead of it
             .addInnerHandlerChainWrapper(h -> handler);
 
@@ -84,8 +90,8 @@ public class UndertowHost implements org.apache.camel.component.undertow.Underto
         constraint.setEmptyRoleSemantic(SecurityInfo.EmptyRoleSemantic.PERMIT);
         constraint.addWebResourceCollection(resourceCollection);
         deployment.addSecurityConstraints(constraint);
-
-        webService.deploy(deployment, true, false);
+        identityService.secureDeployment(deployment);
+        webService.deploy(deployment, false);
         // Caller expects a CamelWebSocketHandler instance
         camelHandler = handler;
         return handler;

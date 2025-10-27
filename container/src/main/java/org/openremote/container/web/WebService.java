@@ -34,6 +34,7 @@ import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
+import io.undertow.util.HttpString;
 import io.undertow.websockets.core.WebSocketChannel;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -59,12 +60,10 @@ import java.net.Inet4Address;
 import java.net.URI;
 import java.util.*;
 
-import static java.lang.System.Logger.Level.ERROR;
-import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.*;
 import static org.openremote.container.util.MapAccess.*;
 import static org.openremote.container.web.file.FileServlet.MIME_TYPES_TO_ZIP;
-import static org.openremote.model.Constants.OR_ADDITIONAL_HOSTNAMES;
-import static org.openremote.model.Constants.OR_HOSTNAME;
+import static org.openremote.model.Constants.*;
 
 public abstract class WebService implements ContainerService {
 
@@ -154,8 +153,14 @@ public abstract class WebService implements ContainerService {
    /**
     * Deploys a servlet undertow deployment.
     */
-    public void deploy(DeploymentInfo deploymentInfo, boolean secure, boolean useCanonicalPathHandler) {
-        LOG.log(INFO, "Deploying undertow servlet deployment: name=" + deploymentInfo.getDeploymentName() + ", path=" + deploymentInfo.getContextPath() + ", secure=" + secure);
+    public void deploy(DeploymentInfo deploymentInfo, boolean useCanonicalPathHandler) {
+       String pathPrefix = deploymentInfo.getContextPath();
+
+       if (!pathPrefix.startsWith("/")) {
+          pathPrefix = "/" + pathPrefix;
+       }
+
+        LOG.log(INFO, "Deploying undertow servlet deployment: name=" + deploymentInfo.getDeploymentName() + ", path=" + pathPrefix + ", secure=" + !deploymentInfo.isSecurityDisabled());
 
        try {
            DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
@@ -163,7 +168,7 @@ public abstract class WebService implements ContainerService {
            HttpHandler httpHandler = manager.start();
 
            if (useCanonicalPathHandler) {
-              LOG.log(INFO, "Using canonical path handler for deployment");
+              LOG.log(DEBUG, "Using canonical path handler for deployment");
               httpHandler = new CanonicalPathHandler(httpHandler);
            }
 
@@ -175,7 +180,11 @@ public abstract class WebService implements ContainerService {
     }
 
     public void deployHttpHandler(String pathPrefix, HttpHandler httpHandler) {
-        LOG.log(INFO, "Deploying undertow handler: path=" + pathPrefix);
+       if (!pathPrefix.startsWith("/")) {
+          pathPrefix = "/" + pathPrefix;
+       }
+
+        LOG.log(INFO, "Deploying undertow http handler: path=" + pathPrefix);
         pathHandler.addPrefixPath(pathPrefix, httpHandler);
     }
 
@@ -293,12 +302,13 @@ public abstract class WebService implements ContainerService {
             throw new RuntimeException("Role based security can only be enabled when an identity service is available");
          }
          resteasyDeployment.setSecurityEnabled(true);
+         // TODO: Use servlet security once implemented in identity service
          //identityService.secureDeployment(resteasyDeployment);
       }
       return resteasyDeployment;
    }
 
-   public DeploymentInfo createDeploymentInfo(ResteasyDeployment resteasyDeployment, String deploymentPath, String deploymentName, boolean devMode, boolean secure) {
+   public DeploymentInfo createDeploymentInfo(ResteasyDeployment resteasyDeployment, String deploymentPath, String deploymentName, Integer realmIndex, boolean secure) {
 
       ServletInfo resteasyServlet = Servlets.servlet("ResteasyServlet", HttpServlet30Dispatcher.class)
          .setAsyncSupported(true)
@@ -311,6 +321,53 @@ public abstract class WebService implements ContainerService {
          .addServletContextAttribute(ResteasyDeployment.class.getName(), resteasyDeployment)
          .addServlet(resteasyServlet)
          .setClassLoader(Container.class.getClassLoader());
+
+
+      // TODO: Remove this handler wrapper once JAX-RS RealmPathExtractorFilter can be utilised before security is applied
+      if (realmIndex != null) {
+         deploymentInfo.addInitialHandlerChainWrapper(handler -> {
+
+            return exchange -> {
+               // Do nothing if the realm header is already set
+               if (exchange.getRequestHeaders().contains(REALM_PARAM_NAME)) {
+                  handler.handleRequest(exchange);
+                  return;
+               }
+
+               String relativePath = exchange.getRelativePath();
+               StringBuilder newRelativePathBuilder = new StringBuilder();
+               String realm = null;
+               int segmentIndex = 0;
+               int start = 1; // Path starts with '/'
+
+               for (int i = 1; i <= relativePath.length(); i++) {
+                  if (i == relativePath.length() || relativePath.charAt(i) == '/') {
+                     if (i > start) { // Found a segment
+                        if (segmentIndex == realmIndex) {
+                           realm = relativePath.substring(start, i);
+                        } else {
+                           newRelativePathBuilder.append('/').append(relativePath, start, i);
+                        }
+                        segmentIndex++;
+                     }
+                     start = i + 1;
+                  }
+               }
+
+               if (realm != null) {
+                  exchange.getRequestHeaders().put(HttpString.tryFromString(REALM_PARAM_NAME), realm);
+
+                  String newRelativePath = !newRelativePathBuilder.isEmpty() ? newRelativePathBuilder.toString() : "/";
+                  String newRequestPath = deploymentInfo.getContextPath() + newRelativePath;
+                  exchange.setRequestURI(newRequestPath);
+                  exchange.setRelativePath(newRelativePath);
+                  exchange.setRequestPath(newRequestPath);
+               }
+
+               handler.handleRequest(exchange);
+            };
+         });
+      }
 
       if (secure) {
          if (identityService == null)
