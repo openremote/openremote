@@ -488,44 +488,10 @@ trait ContainerTrait {
         UriBuilder.fromUri("")
                 .scheme("http").host("127.0.0.1").port(serverPort)
     }
+
     UriBuilder serverUri(boolean secure, String serverHost, int serverPort) {
         UriBuilder.fromUri("")
                 .scheme(secure ? "https" : "http").host(serverHost).port(serverPort)
-    }
-
-    /**
-     * Makes a call to a remote OpenRemote manager to retrieve an access token for a given user
-     * */
-    AccessTokenResponse authenticate(boolean secure,
-                             String host,
-                             String realm,
-                             String clientId,
-                             String username,
-                             String password) {
-
-        String scheme   = secure ? "https" : "http"
-        String basePath = "/auth"
-        String baseUrl  = "${scheme}://${host}${basePath}"
-
-        UnaryOperator<ResteasyClientBuilderImpl> builderConfigurator =
-                { ResteasyClientBuilderImpl b ->
-                    b.hostnameVerifier({ String h, SSLSession s -> true } as HostnameVerifier)
-                    b
-                } as UnaryOperator<ResteasyClientBuilderImpl>
-
-        ResteasyClient client = ResteasyClientBuilder.newBuilder().hostnameVerifier {String h, SSLSession s -> true}.build()
-        ResteasyWebTarget target = (ResteasyWebTarget) client.target(baseUrl)
-
-        KeycloakResource keycloak = target.proxy(KeycloakResource)
-
-        try {
-            return keycloak.getAccessToken(
-                    realm,
-                    new PasswordAuthForm(clientId, username, password)
-            )
-        } finally {
-            client.close()
-        }
     }
 
     void stopContainer() {
@@ -577,6 +543,41 @@ trait ContainerTrait {
     AccessTokenResponse authenticate(Container container, String realm, String clientId, String clientSecret) {
         ((KeycloakIdentityProvider)container.getService(IdentityService.class).getIdentityProvider()).getKeycloak()
                 .getAccessToken(realm, new ClientCredentialsAuthForm(clientId, clientSecret))
+    }
+
+    /**
+     * Makes a call to a remote OpenRemote manager to retrieve an access token for a given user
+     * */
+    AccessTokenResponse authenticate(boolean secure,
+                                     String host,
+                                     String realm,
+                                     String clientId,
+                                     String username,
+                                     String password) {
+
+        String scheme   = secure ? "https" : "http"
+        String basePath = "/auth"
+        String baseUrl  = "${scheme}://${host}${basePath}"
+
+        UnaryOperator<ResteasyClientBuilderImpl> builderConfigurator =
+                { ResteasyClientBuilderImpl b ->
+                    b.hostnameVerifier({ String h, SSLSession s -> true } as HostnameVerifier)
+                    b
+                } as UnaryOperator<ResteasyClientBuilderImpl>
+
+        ResteasyClient client = ResteasyClientBuilder.newBuilder().hostnameVerifier {String h, SSLSession s -> true}.build()
+        ResteasyWebTarget target = (ResteasyWebTarget) client.target(baseUrl)
+
+        KeycloakResource keycloak = target.proxy(KeycloakResource)
+
+        try {
+            return keycloak.getAccessToken(
+                    realm,
+                    new PasswordAuthForm(clientId, username, password)
+            )
+        } finally {
+            client.close()
+        }
     }
 
     ProducerTemplate getMessageProducerTemplate(Container container) {
