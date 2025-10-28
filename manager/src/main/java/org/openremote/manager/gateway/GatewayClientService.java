@@ -707,9 +707,11 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             if (gatewayTunnelFactory != null) {
                 gatewayTunnelFactory.stopTunnel(tunnelInfo);
             }
-            cancelAutoCloseTunnel(tunnelId);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to automatically close tunnel: " + tunnelId, e);
+        }
+        finally {
+            cancelAutoCloseTunnel(tunnelId);
         }
     }
 }
