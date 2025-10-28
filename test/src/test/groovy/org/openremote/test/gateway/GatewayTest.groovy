@@ -1316,7 +1316,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     def "Gateway Tunneling Edge Gateway Integration test"() {
         given: "the container environment is started"
 
-        def sshKeyPath = Paths.get("/Users/panos/IdeaProjects/openremote/deployment/sish/client/client")
+        def sshKeyPath = Paths.get("deployment/sish/client/client")
 
 
         def conditions = new PollingConditions(timeout: 6000, delay: 0.2)
