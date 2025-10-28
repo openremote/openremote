@@ -670,6 +670,24 @@ jobs:
         env:
           VERSION: ${{ steps.get-version-details.outputs.version_with_qualifier }}
 
+      - name: Check for outdated translations
+        if: steps.is_main_repo.outputs.value == 'true'
+        run: |
+          set -e
+
+          # Run the tests
+          ./gradlew -p ui/app/shared processTranslations --no-parallel
+
+          out=$(git status --porcelain | grep "ui/app/shared/locales" || true)
+          if [[ -z "$out" ]]; then
+              echo "✅ No pipeline changes detected."
+          else
+              echo "❌ Pipeline files have changed. Please run './gradlew -p ui/app/shared processTranslations --no-parallel'"
+              echo "$out"
+              exit 1
+          fi
+        timeout-minutes: 20
+
       - name: Run backend tests
         id: run-backend-tests
         if: ${{ steps.test-backend-command.outputs.value != '' }}
@@ -747,7 +765,7 @@ jobs:
         timeout-minutes: 20
 
       - name: Run UI component tests
-        if: steps.test-ui-components-command.outputs.value != ''
+        if: steps.test-ui-components-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
         run: ${{ steps.test-ui-components-command.outputs.value }}
         timeout-minutes: 20
         # continue-on-error: true

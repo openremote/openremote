@@ -114,7 +114,7 @@
   "clearTable": "Limpar",
   "addAssetAttribute": "Adicionar atributo de ativo",
   "add": "Adicionar",
-  "flow":{
+  "flow": {
     "EQUALS_COMPARATOR": "Igual a",
     "GREATER_THAN": "Maior que",
     "LESS_THAN": "Menor que",
@@ -135,13 +135,13 @@
     "TEXT_SWITCH": "Mudança de texto",
     "ROUND_NODE": "Rodada",
     "LOG_OUTPUT": "Write to Logs",
-    "DERIVATIVE":  "Attribute derivative",
+    "DERIVATIVE": "Attribute derivative",
     "INTEGRAL": "Attribute integral",
     "HISTORIC_VALUE": "Attribute history",
     "MAX_PROCESSOR": "Maximum",
-    "MIN_PROCESSOR":  "Minimum",
-    "AVERAGE_PROCESSOR":  "Average",
-    "MEDIAN_PROCESSOR":  "Median",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Average",
+    "MEDIAN_PROCESSOR": "Median",
     "SUM_OPERATOR": "Sum",
     "max": "Max",
     "min": "Min",
@@ -228,8 +228,8 @@
   "custom": "Atributo personalizado",
   "realm": "Reino",
   "realm_plural": "Reinos",
-  "displayName":"Nome amigável",
-  "deleteRealmConfirm":"Tem certeza que deseja excluir este Reino?",
+  "displayName": "Nome amigável",
+  "deleteRealmConfirm": "Tem certeza que deseja excluir este Reino?",
   "user_plural": "Usuários",
   "regularUser_plural": "Usuários regulares",
   "serviceUser_plural": "Usuários do serviço",
@@ -237,12 +237,12 @@
   "role": "Função",
   "role_plural": "Funções",
   "description": "Descrição",
-  "passwordMismatch":"As senhas não correspondem",
-  "username":"Nome de usuário",
-  "firstName":"Primeiro nome",
-  "surname":"Sobrenome",
-  "deleteUserConfirm":"Tem certeza de que deseja excluir este usuário?",
-  "deleteRoleConfirm":"Tem certeza de que deseja excluir esta função?",
+  "passwordMismatch": "As senhas não correspondem",
+  "username": "Nome de usuário",
+  "firstName": "Primeiro nome",
+  "surname": "Sobrenome",
+  "deleteUserConfirm": "Tem certeza de que deseja excluir este usuário?",
+  "deleteRoleConfirm": "Tem certeza de que deseja excluir esta função?",
   "realmRules": "Reino",
   "globalRules": "Global",
   "recipients": "Destinatários",
@@ -285,8 +285,8 @@
   "resetPasswordConfirmation": "Um e-mail foi enviado para redefinir sua senha.",
   "repeatPassword": "Repetir senha",
   "details": "Detalhes",
-  "permissions":"Permissões",
-  "fullAccessLabel":"Admin: acesso total; gerenciar usuários e funções",
+  "permissions": "Permissões",
+  "fullAccessLabel": "Admin: acesso total; gerenciar usuários e funções",
   "noChildAssets": "Nenhuma criança activos",
   "account": "Conta",
   "editAttribute": "Alterar atributo",
@@ -399,14 +399,14 @@
       "description": "Protocolo para conectar a um KNX"
     }
   },
-  "validityType":"Tipo de programação",
-  "validityAlways":"Sempre ativo",
-  "validityPeriod":"Planeje uma ocorrência",
-  "validityRecurrence":"Planeje uma ocorrência repetida",
+  "validityType": "Tipo de programação",
+  "validityAlways": "Sempre ativo",
+  "validityPeriod": "Planeje uma ocorrência",
+  "validityRecurrence": "Planeje uma ocorrência repetida",
   "activeFromTo": "Ativo de {{start}} a {{end}}",
-  "fromTo":"De {{start}} a {{end}}",
-  "fromToDays":"De {{start}} a {{days}} dias depois{{end}}",
-  "forDays":"por {{days}} dias",
+  "fromTo": "De {{start}} a {{end}}",
+  "fromToDays": "De {{start}} a {{days}} dias depois{{end}}",
+  "forDays": "por {{days}} dias",
   "scheduleRuleActivity": "Agendar Atividade de Regra",
   "allDay": "Todo o dia",
   "apply": "aplicar",
@@ -458,5 +458,135 @@
     "attributeLabel": "Attribute",
     "attributeValueLabel": "Attribute value",
     "assetTypeDoesNotExist": "Filter : Asset type does not exist"
+  },
+  "org": {
+    "openremote": {
+      "model": {
+        "query": {
+          "filter": {
+            "ValueEmptyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RadialGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ValueAnyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "CalendarEventPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RectangularGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ArrayPredicate": {
+              "description": ""
+            },
+            "StringPredicate": {
+              "description": ""
+            },
+            "NumberPredicate": {
+              "description": ""
+            },
+            "DateTimePredicate": {
+              "description": ""
+            },
+            "BooleanPredicate": {
+              "description": ""
+            }
+          }
+        },
+        "simulator": {
+          "SimulatorReplayDatapoint": {
+            "label": ""
+          }
+        },
+        "value": {
+          "MathExpressionValueFilter": {
+            "label": ""
+          },
+          "SubStringValueFilter": {
+            "label": ""
+          },
+          "JsonPathFilter": {
+            "label": ""
+          },
+          "RegexValueFilter": {
+            "label": ""
+          },
+          "ValueConstraint": {
+            "description": "",
+            "Size": {
+              "description": ""
+            },
+            "Min": {
+              "description": ""
+            },
+            "Max": {
+              "description": ""
+            },
+            "Pattern": {
+              "description": ""
+            },
+            "AllowedValues": {
+              "description": ""
+            },
+            "Past": {
+              "description": ""
+            },
+            "PastOrPresent": {
+              "description": ""
+            },
+            "Future": {
+              "description": ""
+            },
+            "FutureOrPresent": {
+              "description": ""
+            },
+            "NotEmpty": {
+              "description": ""
+            },
+            "NotBlank": {
+              "description": ""
+            },
+            "NotNull": {
+              "description": ""
+            }
+          }
+        },
+        "asset": {
+          "agent": {
+            "AgentLink": {
+              "valueFilters": {
+                "description": ""
+              },
+              "valueConverter": {
+                "description": ""
+              },
+              "writeValueConverter": {
+                "description": ""
+              },
+              "writeValue": {
+                "description": ""
+              },
+              "messageMatchPredicate": {
+                "description": ""
+              },
+              "messageMatchFilters": {
+                "description": ""
+              },
+              "updateOnWrite": {
+                "description": ""
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

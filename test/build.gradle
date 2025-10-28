@@ -35,7 +35,8 @@ dependencies {
     testImplementation "net.solarnetwork.common:nifty-modbus-api:$niftyModbusVersion"
     testImplementation "net.solarnetwork.common:nifty-modbus-core:$niftyModbusVersion"
 
-
+    testImplementation "com.github.moquette-io:moquette:$moquetteVersion"
+    testImplementation "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
 }
 
 tasks.withType(Test) {
