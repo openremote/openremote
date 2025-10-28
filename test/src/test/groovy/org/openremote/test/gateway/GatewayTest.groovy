@@ -1100,53 +1100,24 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     @Ignore
     def "Verify gateway tunnel factory"() {
         given: "an ssh private key and the URL of a manager instance with tunnelling configured"
-        def keyPath = Paths.get("deployment/sish/client/client")
-        def tunnelSSHHost = "localhost"
+        def keyPath = Paths.get(System.getProperty("user.home"), ".ssh", "test_key")
+        def tunnelSSHHost = "test.openremote.app"
         def tunnelSSHPort = 2222
 
         and: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 3, delay: 0.5)
-        def config = defaultConfig();
-        def container = startContainer(config << [(GatewayService.OR_GATEWAY_TUNNEL_SSH_KEY_FILE): keyPath.toAbsolutePath().toString()], defaultServices())
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+        def container = startContainer(defaultConfig() << [(GatewayService.OR_GATEWAY_TUNNEL_SSH_KEY_FILE): keyPath.toAbsolutePath().toString()], defaultServices())
         def gatewayClientService = container.getService(GatewayClientService)
         def tunnelFactory = gatewayClientService.gatewayTunnelFactory as JSchGatewayTunnelFactory
-//
-//
-//
-        // --- DANGER: trust-all SSL context (dev/testing only) ---
-        X509TrustManager trustAll = [
-                getAcceptedIssuers: { -> new X509Certificate[0] },
-                checkClientTrusted : { X509Certificate[] chain, String authType -> /* no-op */ },
-                checkServerTrusted : { X509Certificate[] chain, String authType -> /* no-op */ }
-        ] as X509TrustManager
-
-        SSLContext sslContext = SSLContext.getInstance("TLS")
-        sslContext.init(null, [trustAll] as TrustManager[], new SecureRandom())
-        HostnameVerifier permissiveHv = { String h, SSLSession s -> true } as HostnameVerifier
-
-        UnaryOperator<ResteasyClientBuilderImpl> builderConfigurator =
-                { ResteasyClientBuilderImpl b ->
-                    // configure in-place and return the same instance
-                    b.sslContext(sslContext)
-                    b.hostnameVerifier(permissiveHv)
-                    b
-                } as UnaryOperator<ResteasyClientBuilderImpl>
-
-
-        def client = WebTargetBuilder.createClient(container.getScheduledExecutor(), 10, 10000, builderConfigurator )
-
-
+        def client = WebTargetBuilder.createClient(container.getScheduledExecutor())
         def tunnelInfo = new GatewayTunnelInfo(
                 "",
                 UniqueIdentifierGenerator.generateId(),
                 GatewayTunnelInfo.Type.HTTPS,
                 "localhost",
-                444)
-
-        tunnelInfo.setGatewayId("test-gateway-id")
-
+                443)
         def target = client.target("https://${tunnelInfo.getId()}.${tunnelSSHHost}/auth/")
-        LOG.error(target.getUri().toString())
+
         expect: "the tunnel factory to be created"
         tunnelFactory != null
 
@@ -1154,6 +1125,8 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def startEvent = new GatewayTunnelStartRequestEvent(
                 tunnelSSHHost,
                 tunnelSSHPort,
+                null,
+                null,
                 tunnelInfo)
         tunnelFactory.startTunnel(startEvent)
 
