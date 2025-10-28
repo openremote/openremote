@@ -194,7 +194,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         keycloakConfigResolver = request -> {
             // The realm we authenticate against must be available as a request header
             String realm = request.getHeader(REALM_PARAM_NAME);
-            if (realm == null || realm.length() == 0) {
+            if (realm == null || realm.isEmpty()) {
                 LOG.finest("No realm in request, no authentication will be attempted: " + request.getURI());
                 return notAuthenticatedKeycloakDeployment;
             }
