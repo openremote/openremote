@@ -1125,8 +1125,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def startEvent = new GatewayTunnelStartRequestEvent(
                 tunnelSSHHost,
                 tunnelSSHPort,
-                null,
-                null,
                 tunnelInfo)
         tunnelFactory.startTunnel(startEvent)
 
