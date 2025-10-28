@@ -22,6 +22,7 @@ package org.openremote.manager.gateway;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
+ import org.openremote.manager.system.StatusResourceImpl;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.impl.GatewayAsset;
@@ -258,11 +259,12 @@ public class GatewayConnector {
                     }
                 }
                 tunnellingSupported = response != null && response.isTunnelingSupported();
-                this.gatewayVersion = response.getVersion();
+                this.gatewayVersion = Objects.requireNonNull(response).getVersion();
                 this.tunnelTimeoutManagementSupported = response.isTunnelTimeoutManagementSupported();
 
-                if(!Objects.equals(getGatewayVersion(), GatewayCapabilitiesResponseEvent.CURRENT_VERSION)){
-                    LOG.warning("Gateway Version is not up to date, latest version is "+GatewayCapabilitiesResponseEvent.CURRENT_VERSION + ", Gateway version is " + getGatewayVersion() + ". GatewayId: " + gatewayId);
+                String currentManagerVersion = StatusResourceImpl.getManagerVersion();
+                if(!Objects.equals(getGatewayVersion(), currentManagerVersion)) {
+                    LOG.warning("Gateway Version is not up to date, latest version is "+currentManagerVersion + ", Gateway version is " + getGatewayVersion() + ". GatewayId: " + gatewayId);
                 }
                 LOG.finest("Tunnelling supported=" + tunnellingSupported + ": " + getGatewayIdString());
                 publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));

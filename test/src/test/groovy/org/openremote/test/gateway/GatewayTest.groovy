@@ -21,6 +21,7 @@ import org.openremote.manager.gateway.*
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
+import org.openremote.manager.system.StatusResourceImpl
 import org.openremote.model.Constants
 import org.openremote.model.asset.*
 import org.openremote.model.asset.agent.ConnectionStatus
@@ -352,7 +353,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the gateway returns the capabilities"
-        def capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, false)
+        def capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, StatusResourceImpl.getManagerVersion())
         capabilitiesReplyEvent.setMessageID(messageId)
         gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(capabilitiesReplyEvent).get())
 
@@ -715,7 +716,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "The Gateway also sends a Gateway Capabilities response indicating tunnelling is supported"
-        capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, false)
+        capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, StatusResourceImpl.getManagerVersion())
         capabilitiesReplyEvent.setMessageID(messageId)
         gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(capabilitiesReplyEvent).get())
 
