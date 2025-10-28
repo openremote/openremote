@@ -24,17 +24,17 @@ import jakarta.ws.rs.core.Application;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.container.security.IdentityService;
+import org.openremote.container.web.RealmInjectorFilter;
 import org.openremote.container.web.WebApplication;
 import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.syslog.SyslogCategory;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -71,7 +71,6 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
     /**
      * The regex used to validate the deployment path.
      */
-    public static final Pattern PATH_REGEX = Pattern.compile("^[\\w/_]+$", Pattern.CASE_INSENSITIVE);
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractHTTPServerProtocol.class);
     protected Container container;
     protected boolean devMode;
@@ -101,7 +100,8 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
           container,
           null,
           Stream.of(
-             devMode ? getStandardProviders(devMode, 0) : getStandardProviders(devMode, 0,
+             List.of((Object)new RealmInjectorFilter(agent.getRealm())), // Need this as realm is in the context path of the deployment
+             devMode ? getStandardProviders(devMode, 0) : getStandardProviders(devMode, null,
                 agent.getAllowedOrigins().map(Set::of).orElse(null),
                 agent.getAllowedHTTPMethods().map(methods ->
                         Arrays.stream(methods).map(Enum::name)
@@ -112,8 +112,9 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
              getApiSingletons()).flatMap(Collection::stream).toList());
 
         ResteasyDeployment deployment = webService.createResteasyDeployment(application, secure);
-        DeploymentInfo deploymentInfo = webService.createDeploymentInfo(deployment, deploymentPath, deploymentName, 0, secure);
+        DeploymentInfo deploymentInfo = webService.createDeploymentInfo(deployment, deploymentPath, deploymentName, null, secure);
         deploy(deploymentInfo);
+        setConnectionStatus(ConnectionStatus.CONNECTED);
     }
 
     @Override
@@ -127,40 +128,20 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
     abstract protected Set<Object> getApiSingletons();
 
     /**
-     * Deployment path will always be prefixed with {@link #DEPLOYMENT_PATH_PREFIX}; and {@link Agent#getRealm()} then
-     * combines the prefix with the value of {@link AbstractHTTPServerAgent#DEPLOYMENT_PATH}, for example an agent in
-     * a realm called manufacturer:
-     * <ul>
-     * <li>{@link AbstractHTTPServerAgent#DEPLOYMENT_PATH} = "complaints"</li>
-     * </ul>
+     * Deployment path will always be prefixed with {@link #DEPLOYMENT_PATH_PREFIX}, {@link Agent#getRealm()} and
+     * {@link Agent#getId()}, For example, an agent in a realm called manufacturer:
      * <p>
-     * Full path to deployment = "{@value #DEPLOYMENT_PATH_PREFIX}/manufacturer/complaints"
-     * <p>
-     * If the {@link AbstractHTTPServerAgent#DEPLOYMENT_PATH} is missing or not a String or the generated path does
-     * not match the {@link #PATH_REGEX} regex then an {@link IllegalArgumentException} will is thrown.
+     * Full path to deployment = "{@value #DEPLOYMENT_PATH_PREFIX}/manufacturer/6lMDrFZ5Qhd78BTmoF9Pwn"
      */
-    protected String getDeploymentPath() throws IllegalArgumentException {
-        String path = agent.getDeploymentPath()
-                .map(String::toLowerCase)
-                .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Required deployment path attribute is missing or invalid: " + agent));
-
-        String deploymentPath = DEPLOYMENT_PATH_PREFIX + "/" + agent.getRealm() + "/" + path;
-
-        if (!PATH_REGEX.matcher(deploymentPath).find()) {
-            throw new IllegalArgumentException(
-                    "Required deployment path attribute is missing or invalid: " + agent);
-        }
-
-        return deploymentPath;
+    protected String getDeploymentPath() {
+       return DEPLOYMENT_PATH_PREFIX + "/" + agent.getRealm() + "/" + agent.getId();
     }
 
     /**
      * Get a unique deployment name for this instance.
      */
     protected String getDeploymentName() {
-        return "HttpServerProtocol=" + getClass().getSimpleName() + ", Agent ID=" + agent.getId();
+        return getDeploymentName(getClass(), agent.getId());
     }
 
     protected void deploy(DeploymentInfo deploymentInfo) {
@@ -176,5 +157,9 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
     @Override
     public String getProtocolInstanceUri() {
         return "httpServer://" + getDeploymentPath();
+    }
+
+    public static String getDeploymentName(Class<? extends AbstractHTTPServerProtocol> protocolClass, String agentId) {
+       return "HttpServerProtocol=" + protocolClass.getSimpleName() + ", Agent ID=" + agentId;
     }
 }

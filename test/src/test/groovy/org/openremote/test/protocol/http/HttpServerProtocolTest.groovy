@@ -22,35 +22,36 @@ package org.openremote.test.protocol.http
 import com.fasterxml.jackson.databind.node.ObjectNode
 import io.undertow.servlet.Servlets
 import io.undertow.servlet.api.DeploymentManager
+import jakarta.ws.rs.ForbiddenException
+import jakarta.ws.rs.HttpMethod
+import jakarta.ws.rs.client.ClientRequestContext
+import jakarta.ws.rs.client.ClientRequestFilter
+import jakarta.ws.rs.core.*
 import org.jboss.resteasy.specimpl.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.http.AbstractHTTPServerProtocol
-import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.container.web.OAuthServerResponse
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.model.asset.Asset
+import org.openremote.model.asset.agent.Agent
+import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.auth.OAuthGrant
 import org.openremote.model.auth.OAuthPasswordGrant
 import org.openremote.model.auth.OAuthRefreshTokenGrant
 import org.openremote.model.geo.GeoJSONPoint
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
+import org.openremote.setup.integration.protocol.http.HTTPServerTestAgent
+import org.openremote.setup.integration.protocol.http.TestHTTPServerProtocol
+import org.openremote.setup.integration.protocol.http.TestResource
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
-import org.openremote.setup.integration.protocol.http.HTTPServerTestAgent
-import org.openremote.setup.integration.protocol.http.TestHTTPServerProtocol
-import org.openremote.setup.integration.protocol.http.TestResource
-
-import jakarta.ws.rs.ForbiddenException
-import jakarta.ws.rs.HttpMethod
-import jakarta.ws.rs.client.ClientRequestContext
-import jakarta.ws.rs.client.ClientRequestFilter
-import jakarta.ws.rs.core.*
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
@@ -273,7 +274,9 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         // There's some weird behaviour where sometimes a forbidden exception is thrown and sometimes not
         try {
             authenticatedTestResource.postAsset(testAsset)
-        } catch (Exception ignored) {}
+        } catch (Exception ex) {
+           getLOG().warn("Failed to call post: " + ex.getMessage())
+        }
     }
 
     def "Check HTTP server protocol and JAX-RS deployment"() {
@@ -300,11 +303,13 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         def authenticatedTestResource = getClientTarget(
             serverUri(serverPort)
                     .path(AbstractHTTPServerProtocol.DEPLOYMENT_PATH_PREFIX)
+                    .path(MASTER_REALM)
                     .path("test"),
             accessToken).proxy(TestResource.class)
         def testResource = getClientTarget(
                 serverUri(serverPort)
                         .path(AbstractHTTPServerProtocol.DEPLOYMENT_PATH_PREFIX)
+                        .path(MASTER_REALM)
                         .path("test"),
                 null).proxy(TestResource.class)
 
@@ -316,21 +321,28 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
 
         and: "the agent is added to the asset service"
         agent = assetStorageService.merge(agent)
+        TestHTTPServerProtocol protocolInstance
+        def testAsset = new ThingAsset("Test Asset")
+           .setId("12345")
+           .addOrReplaceAttributes(
+              new Attribute<>("attribute1", TEXT, "Test")
+           )
+           .setLocation(new GeoJSONPoint(1d, 2d))
 
         then: "the protocol should be deployed"
         conditions.eventually {
             assert agentService.getProtocolInstance(agent.id) != null
-            assert ((TestHTTPServerProtocol)agentService.getProtocolInstance(agent.id)).deployment != null
+            protocolInstance = agentService.getProtocolInstance(agent.id) as TestHTTPServerProtocol
+            agent = assetStorageService.find(agent.id)
+            assert agent.getAttribute(Agent.STATUS).flatMap {it.value}.orElse(null) == ConnectionStatus.CONNECTED
+            assert Servlets.defaultContainer().getDeployment(AbstractHTTPServerProtocol.getDeploymentName(TestHTTPServerProtocol.class, agent.id)) != null
         }
 
-        when: "the authenticated test resource is used to post an asset"
-        def testAsset = new ThingAsset("Test Asset")
-            .setId("12345")
-            .addOrReplaceAttributes(
-                new Attribute<>("attribute1", TEXT, "Test")
-            )
-            .setLocation(new GeoJSONPoint(1d, 2d))
-        authenticatedTestResource.postAsset(testAsset)
+        then: "it should be possible to post an asset to this protocol's endpoint"
+        conditions.eventually {
+           tryPost(authenticatedTestResource, testAsset)
+           assert protocolInstance.resource1.postedAssets.size() == 1
+        }
 
         then: "the asset should be stored in the test protocol"
         conditions.eventually {
@@ -409,14 +421,12 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         assert asset.getLocation().map{it.coordinates.y}.orElse(-1d) == testAsset.getLocation().map{it.coordinates.y}.orElse(0d)
 
         when: "an agent is deleted"
-        def protocolInstance = agentService.getProtocolInstance(agent.id) as TestHTTPServerProtocol
-        def deploymentManager = Servlets.defaultContainer().getDeployment(protocolInstance.deployment.deploymentInfo.getDeploymentName());
         assetStorageService.delete([agent.id])
 
         then: "the associated protocol instance should be un-deployed"
         conditions.eventually {
             assert agentService.getProtocolInstance(agent.id) == null
-            assert deploymentManager.getState() == DeploymentManager.State.UNDEPLOYED
+            assert Servlets.defaultContainer().getDeployment(AbstractHTTPServerProtocol.getDeploymentName(TestHTTPServerProtocol.class, agent.id)) == null
         }
 
         then: "if an attempt is made to use the removed endpoint then no asset should be posted"

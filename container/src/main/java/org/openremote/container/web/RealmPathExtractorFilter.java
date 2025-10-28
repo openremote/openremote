@@ -14,8 +14,8 @@ import java.net.URI;
 import java.util.List;
 
 /**
- * A JAX-RS filter that removes the realm from the request path at the specified path segment index and adds it as a
- * {@link org.openremote.model.Constants#REALM_PARAM_NAME} request header. If the
+ * A JAX-RS filter that removes the realm from the full request path at the specified path segment index and adds it as
+ * a {@link org.openremote.model.Constants#REALM_PARAM_NAME} request header. If the
  * {@link org.openremote.model.Constants#REALM_PARAM_NAME} header is already set, this filter does nothing.
  */
 @Provider
