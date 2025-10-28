@@ -914,7 +914,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                       user.lastName = e.detail.value;
                                       this.onUserChanged(suffix)
                                   }}"></or-mwc-input>
-                    <or-mwc-input id="new-tag" ?readonly="${readonly}"
+                    <or-mwc-input id="new-tag" ?readonly="${readonly || isGatewayServiceUser}"
                                   class= "validate"
                                   .label="${i18next.t("tag")}"
                                   .type="${InputType.TEXT}" minLength="1"
@@ -978,7 +978,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                 <div class="column">
                     <h5>${i18next.t("settings")}</h5>
                     <!-- enabled -->
-                    <or-mwc-input ?readonly="${readonly}"
+                    <or-mwc-input ?readonly="${readonly || isGatewayServiceUser}"
                                   class="validate"
                                   .label="${i18next.t("active")}"
                                   .type="${InputType.CHECKBOX}"
