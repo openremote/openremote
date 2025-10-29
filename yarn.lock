@@ -1966,6 +1966,7 @@ __metadata:
     "@rspack/core": "npm:^1.4.4"
     "@typescript-eslint/eslint-plugin": "npm:^5.9.0"
     "@typescript-eslint/parser": "npm:^5.9.0"
+    "@wc-toolkit/jsx-types": "npm:^1.4.2"
     cross-env: "npm:^7.0.3"
     css-loader: "npm:^7.1.2"
     eslint: "npm:^8.6.0"
@@ -2918,6 +2919,13 @@ __metadata:
   version: 1.2.0
   resolution: "@ungap/structured-clone@npm:1.2.0"
   checksum: 10c0/8209c937cb39119f44eb63cf90c0b73e7c754209a6411c707be08e50e29ee81356dca1a848a405c8bdeebfe2f5e4f831ad310ae1689eeef65e7445c090c6657d
+  languageName: node
+  linkType: hard
+
+"@wc-toolkit/jsx-types@npm:^1.4.2":
+  version: 1.4.2
+  resolution: "@wc-toolkit/jsx-types@npm:1.4.2"
+  checksum: 10c0/cb61a7c796ccad24ae90b93a022d8596697b897c841e64cfed6d10639922b5474acedb120bbcb0fd56a5178c3a1c5e148c779855ee5429a4c3dfe69f790c0681
   languageName: node
   linkType: hard
 
