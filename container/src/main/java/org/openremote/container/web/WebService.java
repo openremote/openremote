@@ -28,16 +28,14 @@ import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RequestDumpingHandler;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.Servlets;
-import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.DeploymentManager;
-import io.undertow.servlet.api.FilterInfo;
-import io.undertow.servlet.api.ServletInfo;
+import io.undertow.servlet.api.*;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
 import io.undertow.util.HttpString;
 import io.undertow.websockets.core.WebSocketChannel;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
+import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletException;
 import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.UriBuilder;
@@ -61,7 +59,7 @@ import java.net.URI;
 import java.util.*;
 
 import static java.lang.System.Logger.Level.*;
-import static org.openremote.container.util.MapAccess.*;
+import static org.openremote.model.util.MapAccess.*;
 import static org.openremote.container.web.file.FileServlet.MIME_TYPES_TO_ZIP;
 import static org.openremote.model.Constants.*;
 
@@ -307,21 +305,36 @@ public abstract class WebService implements ContainerService {
       return resteasyDeployment;
    }
 
+   public DeploymentInfo createDeploymentInfo(Class<? extends ServletContainerInitializer> servletContainerInitializerClass, String deploymentPath, String deploymentName, Integer realmIndex, boolean secure) {
+       DeploymentInfo deploymentInfo = new DeploymentInfo()
+               .setDeploymentName(deploymentName)
+               .setContextPath(deploymentPath)
+               .addServletContainerInitializer(new ServletContainerInitializerInfo(servletContainerInitializerClass, null))
+               .setClassLoader(Container.class.getClassLoader());
+
+       configureDeploymentInfo(deploymentInfo, realmIndex, secure);
+       return deploymentInfo;
+   }
+
    public DeploymentInfo createDeploymentInfo(ResteasyDeployment resteasyDeployment, String deploymentPath, String deploymentName, Integer realmIndex, boolean secure) {
 
-      ServletInfo resteasyServlet = Servlets.servlet("ResteasyServlet", HttpServlet30Dispatcher.class)
-         .setAsyncSupported(true)
-         .setLoadOnStartup(1)
-         .addMapping("/*");
+       ServletInfo resteasyServlet = Servlets.servlet("ResteasyServlet", HttpServlet30Dispatcher.class)
+               .setAsyncSupported(true)
+               .setLoadOnStartup(1)
+               .addMapping("/*");
 
-      DeploymentInfo deploymentInfo = new DeploymentInfo()
-         .setDeploymentName(deploymentName)
-         .setContextPath(deploymentPath)
-         .addServletContextAttribute(ResteasyDeployment.class.getName(), resteasyDeployment)
-         .addServlet(resteasyServlet)
-         .setClassLoader(Container.class.getClassLoader());
+       DeploymentInfo deploymentInfo = new DeploymentInfo()
+               .setDeploymentName(deploymentName)
+               .setContextPath(deploymentPath)
+               .addServletContextAttribute(ResteasyDeployment.class.getName(), resteasyDeployment)
+               .addServlet(resteasyServlet)
+               .setClassLoader(Container.class.getClassLoader());
 
+       configureDeploymentInfo(deploymentInfo, realmIndex, secure);
+       return deploymentInfo;
+   }
 
+   protected void configureDeploymentInfo(DeploymentInfo deploymentInfo, Integer realmIndex, boolean secure) {
       // TODO: Remove this handler wrapper once JAX-RS RealmPathExtractorFilter can be utilised before security is applied
       if (realmIndex != null) {
          deploymentInfo.addInitialHandlerChainWrapper(handler -> {
@@ -378,7 +391,6 @@ public abstract class WebService implements ContainerService {
 
       // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
       deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
-      return deploymentInfo;
    }
 
    public DeploymentInfo createFilesDeploymentInfo(ResourceManager resourceManager, String deploymentPath, String deploymentName, boolean devMode, String[] requiredRoles) {

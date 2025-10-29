@@ -36,10 +36,7 @@ import io.undertow.server.handlers.RedirectHandler;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.api.DeploymentInfo;
-import jakarta.ws.rs.core.Application;
-import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.web.CompositeResourceManager;
-import org.openremote.container.web.WebApplication;
 import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
 import org.openremote.model.util.TextUtil;
@@ -54,7 +51,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.model.util.ValueUtil.configureObjectMapper;
 
 public class ManagerWebService extends WebService {
@@ -101,39 +98,37 @@ public class ManagerWebService extends WebService {
         customAppDocRoot = Paths.get(getString(container.getConfig(), OR_CUSTOM_APP_DOCROOT, OR_CUSTOM_APP_DOCROOT_DEFAULT));
         String rootRedirectPath = getString(container.getConfig(), OR_ROOT_REDIRECT_PATH, OR_ROOT_REDIRECT_PATH_DEFAULT);
 
-       // Add a handler to redirect requests for the exact root path "/" to the configured default path
-       if (!TextUtil.isNullOrEmpty(rootRedirectPath)) {
-          LOG.info("Adding root redirect to: " + rootRedirectPath);
-          pathHandler.addExactPath("/", new RedirectHandler(rootRedirectPath));
-       }
+        // Add a handler to redirect requests for the exact root path "/" to the configured default path
+        if (!TextUtil.isNullOrEmpty(rootRedirectPath)) {
+           LOG.info("Adding root redirect to: " + rootRedirectPath);
+           pathHandler.addExactPath("/", new RedirectHandler(rootRedirectPath));
+        }
 
-       addOpenApiResource();
+        // Include Open API resource
+        addApiSingleton(getOpenApiResource());
 
         initialised = true;
 
-        // Serve REST API
-       Collection<Object> deploymentSingletons = Stream.of(
-          devMode ? getStandardProviders(devMode, 0) : getStandardProviders(devMode, 0,
-             getCORSAllowedOrigins(container),
-             getString(container.getConfig(), OR_WEBSERVER_ALLOWED_METHODS, DEFAULT_CORS_ALLOW_ALL),
-             getString(container.getConfig(), OR_WEBSERVER_EXPOSED_HEADERS, DEFAULT_CORS_ALLOW_ALL),
-             DEFAULT_CORS_MAX_AGE,
-             DEFAULT_CORS_ALLOW_CREDENTIALS),
-          apiSingletons).flatMap(Collection::stream).toList();
+        // Configure the JAX-RS Manager API
+        Stream.of(
+                devMode ? getStandardProviders(devMode, 0) : getStandardProviders(devMode, 0,
+                        getCORSAllowedOrigins(container),
+                        getString(container.getConfig(), OR_WEBSERVER_ALLOWED_METHODS, DEFAULT_CORS_ALLOW_ALL),
+                        getString(container.getConfig(), OR_WEBSERVER_EXPOSED_HEADERS, DEFAULT_CORS_ALLOW_ALL),
+                        DEFAULT_CORS_MAX_AGE,
+                        DEFAULT_CORS_ALLOW_CREDENTIALS),
+                        apiSingletons)
+                .flatMap(Collection::stream)
+                .forEach(ManagerAPIApplication::addSingleton);
+        apiClasses.forEach(ManagerAPIApplication::addClass);
 
-        Application APIApplication = new WebApplication(
-                container,
-               apiClasses,
-               deploymentSingletons);
+        DeploymentInfo deploymentInfo = createDeploymentInfo(ManagerAPIServletContainerInitializer.class, API_PATH, "Manager HTTP API", 0, true);
+        deploy(deploymentInfo, false);
 
-       ResteasyDeployment deployment = createResteasyDeployment(APIApplication, true);
-       DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, API_PATH, "Manager HTTP API", 0, true);
-       deploy(deploymentInfo, false);
+        // Deploy static app files unsecured
+        ResourceManager filesResourceManager = new PathResourceManager(builtInAppDocRoot);
 
-       // Deploy static app files unsecured
-       ResourceManager filesResourceManager = new PathResourceManager(builtInAppDocRoot);
-
-       // If custom app docroot is a directory then make it the default file handler
+        // If custom app docroot is a directory then make it the default file handler
         if (customAppDocRoot != null && Files.isDirectory(customAppDocRoot)) {
             ResourceManager customAppResourceManager = new PathResourceManager(customAppDocRoot);
             filesResourceManager = new CompositeResourceManager(filesResourceManager, customAppResourceManager);
@@ -145,7 +140,7 @@ public class ManagerWebService extends WebService {
         deploy(deploymentInfo, true);
     }
 
-   private void addOpenApiResource() {
+   protected Object getOpenApiResource() {
         // Modify swagger object mapper to match ours
         configureObjectMapper(Json.mapper());
         Json.mapper().addMixIn(StringSchema.class, StringSchemaMixin.class);
@@ -186,7 +181,7 @@ public class ManagerWebService extends WebService {
                 .defaultResponseCode("200");
         OpenApiResource openApiResource = new OpenApiResource();
         openApiResource.openApiConfiguration(oasConfig);
-        addApiSingleton(openApiResource);
+        return openApiResource;
     }
 
     /**

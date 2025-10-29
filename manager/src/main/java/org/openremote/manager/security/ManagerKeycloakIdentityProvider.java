@@ -77,8 +77,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.openremote.container.util.MapAccess.getBoolean;
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getBoolean;
+import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.util.ValueUtil.convert;
 

@@ -28,7 +28,7 @@ import org.openremote.model.Container;
 import java.util.Locale;
 import java.util.logging.Logger;
 
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getString;
 
 public class ManagerIdentityService extends IdentityService {
 

@@ -21,7 +21,6 @@ package org.openremote.test.protocol.http
 
 import com.fasterxml.jackson.databind.node.ObjectNode
 import io.undertow.servlet.Servlets
-import io.undertow.servlet.api.DeploymentManager
 import jakarta.ws.rs.ForbiddenException
 import jakarta.ws.rs.HttpMethod
 import jakarta.ws.rs.client.ClientRequestContext
@@ -53,7 +52,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*

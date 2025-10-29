@@ -29,7 +29,7 @@ import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.logging.LogManager;
 
-import static org.openremote.model.Container.OR_DEV_MODE;
+import static org.openremote.model.util.Config.OR_DEV_MODE;
 
 /**
  * If system property <code>java.util.logging.config.file</code> or <code>java.util.logging.config.file</code> has been

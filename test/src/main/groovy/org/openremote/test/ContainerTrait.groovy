@@ -36,7 +36,7 @@ import org.openremote.container.security.PasswordAuthForm
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.LogUtil
-import org.openremote.container.util.MapAccess
+import org.openremote.model.util.MapAccess
 import org.openremote.container.web.WebClient
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService

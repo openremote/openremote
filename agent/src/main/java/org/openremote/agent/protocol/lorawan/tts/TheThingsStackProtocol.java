@@ -51,7 +51,7 @@ import static org.openremote.agent.protocol.lorawan.tts.TheThingsStackAgent.API_
 import static org.openremote.agent.protocol.lorawan.tts.TheThingsStackAgent.HOST;
 import static org.openremote.agent.protocol.lorawan.tts.TheThingsStackAgent.TENANT_ID;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
-import static org.openremote.container.util.MapAccess.getBoolean;
+import static org.openremote.model.util.MapAccess.getBoolean;
 
 public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsStackProtocol, TheThingsStackAgent> {
 
