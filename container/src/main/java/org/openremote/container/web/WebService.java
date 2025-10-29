@@ -172,7 +172,6 @@ public abstract class WebService implements ContainerService {
               httpHandler = new CanonicalPathHandler(httpHandler);
            }
 
-           Servlets.defaultContainer().addDeployment(deploymentInfo);
            pathHandler.addPrefixPath(deploymentInfo.getContextPath(), httpHandler);
         } catch (ServletException e) {
             LOG.log(ERROR, "Servlet deployment failed: " + e.getMessage());

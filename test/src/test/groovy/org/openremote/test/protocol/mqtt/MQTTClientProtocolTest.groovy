@@ -530,11 +530,12 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
-        def brokerService = container.getService(MQTTBrokerService.class)
+        def mqttBrokerService = container.getService(MQTTBrokerService.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
-        def mqttHost = brokerService.host
-        def mqttPort = brokerService.port
+        def mqttHost = mqttBrokerService.host
+        def mqttPort = mqttBrokerService.port
         def mqttAgentClientId = UniqueIdentifierGenerator.generateId()
+        def defaultMQTTHandler = mqttBrokerService.getCustomHandlers().find {it instanceof DefaultMQTTHandler} as DefaultMQTTHandler
 
         and: "test assets are created"
         def testThing1 = new ThingAsset("Test thing 1")
@@ -643,6 +644,8 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).size() == 1
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).containsKey(pressureTopic)
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).get(pressureTopic).size() == 1
+            def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 3
         }
 
         when: "mqtt data is published"

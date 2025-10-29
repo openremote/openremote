@@ -299,24 +299,9 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
         ).token
 
-        and: "the test resource (to be deployed by the protocol)"
-        def authenticatedTestResource = getClientTarget(
-            serverUri(serverPort)
-                    .path(AbstractHTTPServerProtocol.DEPLOYMENT_PATH_PREFIX)
-                    .path(MASTER_REALM)
-                    .path("test"),
-            accessToken).proxy(TestResource.class)
-        def testResource = getClientTarget(
-                serverUri(serverPort)
-                        .path(AbstractHTTPServerProtocol.DEPLOYMENT_PATH_PREFIX)
-                        .path(MASTER_REALM)
-                        .path("test"),
-                null).proxy(TestResource.class)
-
         when: "a test HTTP server agent with a test deployment is created"
         def agent = new HTTPServerTestAgent("Test agent")
             .setRealm(MASTER_REALM)
-            .setDeploymentPath("test")
             .setRoleBasedSecurity(true)
 
         and: "the agent is added to the asset service"
@@ -337,6 +322,16 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
             assert agent.getAttribute(Agent.STATUS).flatMap {it.value}.orElse(null) == ConnectionStatus.CONNECTED
             assert Servlets.defaultContainer().getDeployment(AbstractHTTPServerProtocol.getDeploymentName(TestHTTPServerProtocol.class, agent.id)) != null
         }
+
+        when: "the client proxy for the test resource (to be deployed by the protocol) is defined"
+        def authenticatedTestResource = getClientTarget(
+                serverUri(serverPort)
+                        .path(protocolInstance.getDeploymentPath()),
+                accessToken).proxy(TestResource.class)
+        def testResource = getClientTarget(
+                serverUri(serverPort)
+                        .path(protocolInstance.getDeploymentPath()),
+                null).proxy(TestResource.class)
 
         then: "it should be possible to post an asset to this protocol's endpoint"
         conditions.eventually {
@@ -373,24 +368,24 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         when: "an additional instance of the Test HTTP Server protocol is deployed without security enabled"
         def agent2 = new HTTPServerTestAgent("Test agent 2")
                 .setRealm(MASTER_REALM)
-                .setDeploymentPath("test2")
                 .setRoleBasedSecurity(false)
-
+        TestHTTPServerProtocol protocolInstance2
         agent2 = assetStorageService.merge(agent2)
-
-        and: "an un-authenticated test resource proxy is created for the new deployment"
-        def testResource2 = getClientTarget(
-                serverUri(serverPort)
-                        .path(AbstractHTTPServerProtocol.DEPLOYMENT_PATH_PREFIX)
-                        .path("test2"),
-                null).proxy(TestResource.class)
 
         then: "the protocol should be deployed"
         conditions.eventually {
-            assert agentService.getProtocolInstance(agent2.id) != null
+            protocolInstance2 = agentService.getProtocolInstance(agent2.id) as TestHTTPServerProtocol
+            assert protocolInstance2 != null
+            assert Servlets.defaultContainer().getDeployment(AbstractHTTPServerProtocol.getDeploymentName(TestHTTPServerProtocol.class, agent2.id)) != null
         }
 
-        when: "the new test resource is used to post an asset"
+        when: "an un-authenticated test resource proxy is created for the new deployment"
+        def testResource2 = getClientTarget(
+                serverUri(serverPort)
+                        .path(protocolInstance2.getDeploymentPath()),
+                null).proxy(TestResource.class)
+
+        and: "the new test resource is used to post an asset"
         testAsset = new ThingAsset("Test Asset 2")
         testAsset.setId(UniqueIdentifierGenerator.generateId())
         testAsset.addOrReplaceAttributes(
