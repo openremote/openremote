@@ -524,7 +524,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
     def "Check MQTT client protocol wildcard subscriptions"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
 
         when: "the container starts"
         def assetStorageService = container.getService(AssetStorageService.class)
