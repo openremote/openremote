@@ -2342,14 +2342,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/storybook@workspace:ui/app/storybook"
   dependencies:
-    "@openremote/core": "workspace:*"
-    "@openremote/model": "workspace:*"
-    "@openremote/or-chart": "workspace:*"
-    "@openremote/or-icon": "workspace:*"
-    "@openremote/or-mwc-components": "workspace:*"
-    "@openremote/or-translate": "workspace:*"
-    "@openremote/or-tree-menu": "workspace:*"
-    "@openremote/rest": "workspace:*"
     "@rsbuild/core": "npm:~1.5.17"
     "@storybook/addon-a11y": "npm:~9.1.10"
     "@storybook/addon-docs": "npm:~9.1.10"
