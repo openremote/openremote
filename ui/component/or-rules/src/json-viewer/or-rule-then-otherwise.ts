@@ -20,7 +20,7 @@ import {
     RuleRecurrence,
     WellknownAssets
 } from "@openremote/model";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate"
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";

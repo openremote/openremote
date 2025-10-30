@@ -26,6 +26,7 @@
     "@openremote/or-chart": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
+    "@openremote/or-translate": "workspace:*",
     "@openremote/rest": "workspace:*",
     "chart.js": "^3.6.0",
     "chartjs-adapter-moment": "^1.0.0",

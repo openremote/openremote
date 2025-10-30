@@ -12,7 +12,7 @@ import {
 import {Util} from "@openremote/core";
 import "@openremote/or-attribute-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate"
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {translate} from "@openremote/or-translate";
 import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";

@@ -23,7 +23,7 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-attribute-input";
 import {Util} from "@openremote/core";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate"
 import {buttonStyle} from "../style";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {translate} from "@openremote/or-translate";

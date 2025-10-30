@@ -29,7 +29,7 @@ import manager, {
     DefaultColor6,
     Util
 } from "@openremote/core";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate"
 import "@openremote/or-icon";
 import {
     AssetModelUtil,

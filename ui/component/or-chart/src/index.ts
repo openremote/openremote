@@ -1,6 +1,6 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state, query} from "lit/decorators.js";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate"
 import {translate} from "@openremote/or-translate";
 import {
     Asset,

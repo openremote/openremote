@@ -24,7 +24,7 @@ import manager, {DefaultBoxShadow, DefaultColor5, Util} from "@openremote/core";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {createSlice, Store, createSelector} from "@reduxjs/toolkit";
 import {DialogAction, OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate"
 import {Asset, AssetEventCause, WellknownAssets} from "@openremote/model";
 import "@openremote/or-json-forms";
 import {getAlarmsRoute, getAssetsRoute, getUsersRoute} from "../routes";
