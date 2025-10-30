@@ -19,7 +19,6 @@
  */
 package org.openremote.test.protocol.simulator
 
-import net.fortuna.ical4j.model.Recur
 import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
@@ -34,7 +33,6 @@ import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
-import org.openremote.model.calendar.CalendarEvent
 import org.openremote.model.datapoint.query.AssetDatapointAllQuery
 import org.openremote.model.simulator.SimulatorReplayDatapoint
 import org.openremote.model.value.ValueType
@@ -310,7 +308,9 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                         new SimulatorReplayDatapoint(HOUR, "test"),
                         new SimulatorReplayDatapoint(HOUR * 25, "test"),
                         new SimulatorReplayDatapoint(HOUR * 49, "test")
-                ).setSchedule(new CalendarEvent(Date.from(Instant.parse("1970-01-02T00:00:00.000Z")), null, (Recur<LocalDateTime>)null))
+                ).setSchedule(new SimulatorProtocol.Schedule(
+                        LocalDateTime.ofInstant(Instant.parse("1970-01-02T00:00:00.000Z"), java.time.ZoneOffset.UTC), null, null
+                ))
         )))
         asset = assetStorageService.merge(asset)
         def attribute = asset.getAttribute("test3").get()
@@ -368,9 +368,9 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                 new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
                         new SimulatorReplayDatapoint(HOUR, "test"),
                         new SimulatorReplayDatapoint(HOUR * 2, "test")
-                ).setSchedule(new CalendarEvent(
+                ).setSchedule(new SimulatorProtocol.Schedule(
                         // First day should be 1970-01-05 (in 4 days) a Monday
-                        Date.from(Instant.parse("1970-01-05T00:00:00.000Z")),
+                        LocalDateTime.ofInstant(Instant.parse("1970-01-05T00:00:00.000Z"), java.time.ZoneOffset.UTC),
                         null,
                         // Recur every Monday until 1970-01-31
                         "FREQ=WEEKLY;UNTIL=19700131T000000Z;BYDAY=MO"
@@ -535,8 +535,8 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                 new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
                         new SimulatorReplayDatapoint(HOUR, "test"),
                         new SimulatorReplayDatapoint(HOUR * 2, "test"),
-                ).setSchedule(new CalendarEvent(
-                        Date.from(Instant.parse("1970-01-01T00:00:00.000Z")), null, (Recur<LocalDateTime>) null
+                ).setSchedule(new SimulatorProtocol.Schedule(
+                        LocalDateTime.ofInstant(Instant.parse("1970-01-01T00:00:00.000Z"), java.time.ZoneOffset.UTC), null, null
                 ))),
                 new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
         )
@@ -582,8 +582,8 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                         new SimulatorReplayDatapoint(HOUR * 2, "test"),
                         new SimulatorReplayDatapoint(HOUR * 3, "test"),
                         new SimulatorReplayDatapoint(HOUR * 4, "test"),
-                ).setSchedule(new CalendarEvent(
-                        Date.from(Instant.parse("1970-01-01T00:00:00.000Z")),
+                ).setSchedule(new SimulatorProtocol.Schedule(
+                        LocalDateTime.ofInstant(Instant.parse("1970-01-01T00:00:00.000Z"), java.time.ZoneOffset.UTC),
                         null,
                         "FREQ=DAILY;UNTIL=19700101T000300"
                 ))),
