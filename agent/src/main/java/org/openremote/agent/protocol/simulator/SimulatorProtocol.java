@@ -19,6 +19,19 @@
  */
 package org.openremote.agent.protocol.simulator;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.deser.std.DateDeserializers;
+import com.fasterxml.jackson.databind.ser.std.DateSerializer;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+import net.fortuna.ical4j.model.Recur;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -29,8 +42,10 @@ import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.value.AbstractNameValueHolder;
 
+import java.io.Serializable;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -168,7 +183,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
         LOG.finest("Scheduling linked attribute replay update");
 
-        Optional<CalendarEvent> schedule = agentLink.getSchedule();
+        Optional<Schedule> schedule = agentLink.getSchedule();
 
         long defaultReplayLoopDuration = 86400; // 1 day in seconds
         long now = timerService.getNow().getEpochSecond(); // UTC
@@ -196,7 +211,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             return null;
         }
 
-        OptionalLong nextRun = CalendarEvent.getDelay(nextDatapoint.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
+        OptionalLong nextRun = Schedule.getDelay(nextDatapoint.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
         if (nextRun.isEmpty() || nextRun.getAsLong() < 0) {
             LOG.warning("Replay schedule has ended for: " + attributeRef);
             return null;
@@ -243,7 +258,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
     public List<ValueDatapoint<?>> calculatePredictedDatapoints(
             SimulatorReplayDatapoint[] simulatorReplayDatapoints,
-            Optional<CalendarEvent> schedule,
+            Optional<Schedule> schedule,
             PredictedDatapointWindow status,
             long timeSinceOccurrenceStarted,
             long now
@@ -254,7 +269,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         if (status.equals(PredictedDatapointWindow.BOTH)) {
             if (schedule.map(s -> s.getCurrent() == null).orElse(false)) return predictedDatapoints;
             for (SimulatorReplayDatapoint d : simulatorReplayDatapoints) {
-                OptionalLong delay = CalendarEvent.getDelay(d.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
+                OptionalLong delay = Schedule.getDelay(d.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
                 if (delay.isEmpty()) {
                     return predictedDatapoints;
                 }
@@ -268,14 +283,14 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             }
         }
 
-        if (!schedule.map(CalendarEvent::getIsSingleOccurrence).orElse(false)) {
+        if (!schedule.map(Schedule::getIsSingleOccurrence).orElse(false)) {
             if (status.equals(PredictedDatapointWindow.BOTH) || status.equals(PredictedDatapointWindow.NEXT)) {
                 if (schedule.map(s -> s.getUpcoming() == null).orElse(false)) return predictedDatapoints;
                 for (SimulatorReplayDatapoint d : simulatorReplayDatapoints) {
                     long timeSinceUpcoming = schedule
                             .map(s -> now - s.getUpcoming().toEpochSecond(ZoneOffset.UTC))
                             .orElse(timeSinceOccurrenceStarted - 86400L);
-                    OptionalLong delay = CalendarEvent.getDelay(d.timestamp, timeSinceUpcoming, schedule.orElse(null));
+                    OptionalLong delay = Schedule.getDelay(d.timestamp, timeSinceUpcoming, schedule.orElse(null));
                     if (delay.isEmpty()) {
                         return predictedDatapoints;
                     }
@@ -298,5 +313,193 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         BOTH,
         NONE,
         NEXT
+    }
+
+    public static class Schedule implements Serializable {
+
+        @JsonSchemaDescription("Set a start date, if not provided, considers 00:00 of the current date." +
+                " When the replay datapoint timestamp is 0 it will insert it at 00:00, unless the recurrence rule" +
+                " specifies any of the following rule parts: FREQ=(HOURLY/MINUTELY/SECONDLY);" +
+                " BYSECOND=...;BYMINUTE=...;BYHOUR=...;BYSETPOS=... This will cause the datapoint timestamp to be" +
+                " relative to when the first occurrence is scheduled.")
+        @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+        @JsonSerialize(using = LocalDateTimeSerializer.class)
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+        @JsonSchemaFormat("date-time")
+        protected LocalDateTime start;
+
+        @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+        @JsonSerialize(using = LocalDateTimeSerializer.class)
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+        @JsonSchemaFormat("date-time")
+        protected LocalDateTime end;
+
+        @JsonSchemaDescription("The recurrence schedule follows the RFC 5545 RRULE format.")
+        @JsonSchemaTypeRemap(type = String.class)
+        @JsonSerialize(converter = CalendarEvent.RecurStringConverter.class)
+        protected Recur<LocalDateTime> recurrence;
+
+        @JsonIgnore
+        private LocalDateTime current;
+        @JsonIgnore
+        private LocalDateTime upcoming;
+
+        @JsonCreator
+        public Schedule(@JsonProperty("start") LocalDateTime start, @JsonProperty("end") LocalDateTime end, @JsonProperty("recurrence") String recurrence) {
+            Recur<LocalDateTime> recur = null;
+
+            try {
+                recur = new Recur<>(recurrence);
+            } catch (Exception ignored) {}
+
+            this.start = Optional.ofNullable(start).orElse(LocalDate.now().atStartOfDay());
+            this.end = end;
+            this.recurrence = recur;
+            this.upcoming = this.start;
+        }
+
+        public LocalDateTime getStart() {
+            return start;
+        }
+
+        public LocalDateTime getEnd() {
+            return end;
+        }
+
+        public Recur<LocalDateTime> getRecurrence() {
+            return recurrence;
+        }
+
+        protected LocalDateTime getCurrent() {
+            return current;
+        }
+
+        protected LocalDateTime getUpcoming() {
+            return upcoming;
+        }
+
+        /**
+         * Try to advance to the next occurrence once {@code secondsSinceEpoch} surpasses previously active.
+         * <p>
+         * An occurrence can be a single event or part of a recurring event.
+         * <p>
+         * If a recurrence rule has been configured, the start of the current occurrence is used.
+         *
+         * @param secondsSinceEpoch Seconds since the epoch (1970-01-01T00:00:00Z)
+         * @return The start time of the active occurrence. If not started, the start of the schedule is returned.
+         */
+        public OptionalLong tryAdvanceActive(long secondsSinceEpoch) {
+            long startInSeconds = start.toEpochSecond(ZoneOffset.UTC);
+
+            if (recurrence == null) {
+                current = start;
+                if (end == null) {
+                    return OptionalLong.of(startInSeconds);
+                } else if (secondsSinceEpoch > end.toEpochSecond(ZoneOffset.UTC)) {
+                    return OptionalLong.empty();
+                }
+                return OptionalLong.of(startInSeconds);
+            }
+
+            // Preemptively get next to determine whether to advance the occurrence or to end the recurrence
+            LocalDateTime now = LocalDateTime.ofEpochSecond(secondsSinceEpoch, 0, ZoneOffset.UTC);
+            LocalDateTime next = recurrence.getNextDate(start, now);
+
+            // Recurrence has ended
+            if (next == null) {
+                return OptionalLong.empty();
+            }
+
+            // Track active and upcoming occurrence
+            if (upcoming.isBefore(next) && current != null) {
+                current = upcoming;
+            }
+            upcoming = next;
+
+            // Check if this is the first time
+            if (current == null) {
+                LocalDateTime epoch = LocalDateTime.ofEpochSecond(0,0, ZoneOffset.UTC);
+                LocalDateTime firstOccurrence = recurrence.getNextDate(start, epoch);
+                // If the first occurrence does not equal 'start' when using a BYxxx rule part
+                if (startInSeconds != firstOccurrence.toEpochSecond(ZoneOffset.UTC)) {
+                    current = next;
+                    return OptionalLong.of(current.toEpochSecond(ZoneOffset.UTC));
+                }
+                // Get the previous (active) occ to catch up with the current occurrence for the first time this method is called
+                List<LocalDateTime> dates = recurrence.getDates(start, start, now); // TODO: consider limiting number of occurrences
+                if (!dates.isEmpty()) {
+                    current = dates.getLast();
+                    return OptionalLong.of(current.toEpochSecond(ZoneOffset.UTC));
+                }
+                current = start;
+                return OptionalLong.of(startInSeconds);
+            }
+
+            return OptionalLong.of(current.toEpochSecond(ZoneOffset.UTC));
+        }
+
+        /**
+         * Gets the time until the next occurrence starts.
+         *
+         * @param timeSinceOccurrenceStarted Seconds since the current occurrence started
+         * @return Seconds until the next occurrence starts.
+         * <p>
+         * If this is a one-time event, or if the recurrence rule has ended returns {@code null} instead.
+         */
+        public OptionalLong getTimeUntilNextOccurrence(long timeSinceOccurrenceStarted) {
+            Recur<LocalDateTime> recurrence = getRecurrence();
+
+            // Single event schedule has ended.
+            if (recurrence == null || current == null || upcoming == null) {
+                return OptionalLong.empty();
+            }
+
+            long duration = upcoming.toEpochSecond(ZoneOffset.UTC) - current.toEpochSecond(ZoneOffset.UTC);
+            return OptionalLong.of(duration - timeSinceOccurrenceStarted);
+        }
+
+        public boolean getIsSingleOccurrence() {
+            return Optional.ofNullable(start).map(s -> recurrence == null).orElse(false);
+        }
+
+        public boolean getHasRecurrenceEnded(long timestamp) {
+            return recurrence.getNextDate(current, LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC)) == null;
+        }
+
+        /**
+         * Calculates the remaining occurrence delay in seconds relative to the current time.
+         *
+         * @param offset The offset from the current occurrence.
+         * @param timeSinceOccurrenceStarted The time since the occurrence started in seconds.
+         * @return The remaining occurrence delay in seconds relative to the current time.
+         * <p>
+         * If this is a one-time event, or if the recurrence rule has ended returns {@code null} instead.
+         */
+        public static OptionalLong getDelay(long offset, long timeSinceOccurrenceStarted, Schedule schedule) {
+            if (offset <= timeSinceOccurrenceStarted) {
+                return getTimeUntilNextOccurrence(timeSinceOccurrenceStarted, schedule)
+                        .stream()
+                        .map(n -> offset + n)
+                        .findFirst();
+            }
+            return OptionalLong.of(offset - timeSinceOccurrenceStarted);
+        }
+
+        /**
+         * Calculates the time in seconds until the next occurrence starts.
+         * <p>
+         * If no schedule has been defined uses the default 1-day schedule.
+         *
+         * @param timeSinceOccurrenceStarted The time since the occurrence started in seconds.
+         * @return The delay in seconds until the next occurrence.
+         * <p>
+         * If this is a one-time event, or if the recurrence rule has ended returns {@code null} instead.
+         */
+        public static OptionalLong getTimeUntilNextOccurrence(long timeSinceOccurrenceStarted, Schedule schedule) {
+            if (schedule != null) {
+                return schedule.getTimeUntilNextOccurrence(timeSinceOccurrenceStarted);
+            }
+            return OptionalLong.of(86400L - timeSinceOccurrenceStarted);
+        }
     }
 }

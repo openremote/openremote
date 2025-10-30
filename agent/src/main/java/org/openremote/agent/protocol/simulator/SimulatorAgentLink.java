@@ -20,7 +20,6 @@
 package org.openremote.agent.protocol.simulator;
 
 import org.openremote.model.asset.agent.AgentLink;
-import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.util.JSONSchemaUtil.*;
 
@@ -41,8 +40,8 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         " at which the dataset is replayed and at what times following the RFC 5545 RRULE format." +
         " If not provided defaults to 24 hours. If the replay data contains datapoints scheduled after the" +
         " default 24 hours or the recurrence rule the datapoints will be ignored.")
-    @JsonSchemaFormat("calendar-event") // TODO: reuse the `or-rule-validity` component.
-    protected CalendarEvent schedule;
+    @JsonSchemaFormat("or-calendar-event") // TODO: reuse the `or-rule-validity` component.
+    protected SimulatorProtocol.Schedule schedule;
 
     // For Hydrators
     protected SimulatorAgentLink() {
@@ -61,11 +60,11 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         return this;
     }
 
-    public Optional<CalendarEvent> getSchedule() {
+    public Optional<SimulatorProtocol.Schedule> getSchedule() {
         return Optional.ofNullable(schedule);
     }
 
-    public SimulatorAgentLink setSchedule(CalendarEvent schedule) {
+    public SimulatorAgentLink setSchedule(SimulatorProtocol.Schedule schedule) {
         this.schedule = schedule;
         return this;
     }
