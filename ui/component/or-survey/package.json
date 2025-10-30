@@ -26,9 +26,6 @@
     "lodash-es": "^4.17.15",
     "moment": "2.29.4"
   },
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
-  },
   "publishConfig": {
     "access": "public"
   }
