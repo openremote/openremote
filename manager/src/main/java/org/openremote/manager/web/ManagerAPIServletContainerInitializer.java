@@ -5,6 +5,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRegistration;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
+import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 
 import java.util.Set;
 
@@ -24,6 +25,8 @@ public class ManagerAPIServletContainerInitializer implements ServletContainerIn
                 "jakarta.ws.rs.Application",
                 ManagerAPIApplication.class.getName()
         );
+
+        servlet.setInitParameter(ResteasyContextParameters.RESTEASY_ROLE_BASED_SECURITY, "true");
 
         servlet.addMapping("/*");
         servlet.setLoadOnStartup(1);

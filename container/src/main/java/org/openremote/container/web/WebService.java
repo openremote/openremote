@@ -309,6 +309,7 @@ public abstract class WebService implements ContainerService {
        DeploymentInfo deploymentInfo = new DeploymentInfo()
                .setDeploymentName(deploymentName)
                .setContextPath(deploymentPath)
+               .setSecurityDisabled(!secure)
                .addServletContainerInitializer(new ServletContainerInitializerInfo(servletContainerInitializerClass, null))
                .setClassLoader(Container.class.getClassLoader());
 
