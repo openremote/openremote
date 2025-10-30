@@ -21,21 +21,19 @@
     "@material/data-table": "^9.0.0",
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
+    "@openremote/or-asset-tree": "workspace:*",
     "@openremote/or-attribute-history": "workspace:*",
     "@openremote/or-attribute-input": "workspace:*",
     "@openremote/or-chart": "workspace:*",
     "@openremote/or-components": "workspace:*",
     "@openremote/or-icon": "workspace:*",
-    "@openremote/or-json-forms": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
-    "@openremote/or-survey": "workspace:*",
-    "@openremote/or-survey-results": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "@openremote/rest": "workspace:*",
+    "i18next": "^21.5.3",
     "lit": "^3.3.1"
   },
   "devDependencies": {
-    "@openremote/util": "workspace:*"
+    "axios": "0.24.0"
   },
   "publishConfig": {
     "access": "public"
