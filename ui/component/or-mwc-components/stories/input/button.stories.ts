@@ -56,7 +56,7 @@ export const Primary: Story = {
 };
 
 export const OutlinedExample: Story = {
-    name: "Tree Example",
+    name: "Outlined Button Example",
     parameters: {
         title: "Outlined button",
         summary: "You can outline the button using the `outlined` HTML attribute."
