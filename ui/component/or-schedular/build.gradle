@@ -1,0 +1,20 @@
+buildDir = "dist"
+
+tasks.register('clean') {
+    doLast {
+        delete "dist"
+        delete "lib"
+    }
+}
+
+tasks.register('installDist') {
+    dependsOn npmAnalyze
+}
+
+tasks.register('prepareUi') {
+    dependsOn clean, npmAnalyze, npmPrepare
+}
+
+tasks.register('publishUi') {
+    dependsOn clean, npmPublish
+}

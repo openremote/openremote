@@ -40,7 +40,7 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         " at which the dataset is replayed and at what times following the RFC 5545 RRULE format." +
         " If not provided defaults to 24 hours. If the replay data contains datapoints scheduled after the" +
         " default 24 hours or the recurrence rule the datapoints will be ignored.")
-    @JsonSchemaFormat("or-calendar-event") // TODO: reuse the `or-rule-validity` component.
+    @JsonSchemaFormat("or-calendar-event")
     protected SimulatorProtocol.Schedule schedule;
 
     // For Hydrators

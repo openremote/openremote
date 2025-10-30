@@ -28,6 +28,7 @@
     "@openremote/or-json-forms": "workspace:*",
     "@openremote/or-map": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
+    "@openremote/or-schedular": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "lit": "^3.3.1"
   },
