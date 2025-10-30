@@ -26,17 +26,16 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RequestDumpingHandler;
+import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.*;
 import io.undertow.servlet.handlers.DefaultServlet;
+import io.undertow.servlet.util.ImmediateInstanceFactory;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
 import io.undertow.util.HttpString;
 import io.undertow.websockets.core.WebSocketChannel;
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.Filter;
-import jakarta.servlet.ServletContainerInitializer;
-import jakarta.servlet.ServletException;
+import jakarta.servlet.*;
 import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.core.ResteasyDeploymentImpl;
@@ -44,7 +43,7 @@ import org.jboss.resteasy.plugins.interceptors.AcceptEncodingGZIPFilter;
 import org.jboss.resteasy.plugins.interceptors.CorsFilter;
 import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
 import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
-import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
+import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.IdentityService;
@@ -56,12 +55,13 @@ import org.xnio.Options;
 
 import java.net.Inet4Address;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.*;
 
 import static java.lang.System.Logger.Level.*;
-import static org.openremote.model.util.MapAccess.*;
 import static org.openremote.container.web.file.FileServlet.MIME_TYPES_TO_ZIP;
 import static org.openremote.model.Constants.*;
+import static org.openremote.model.util.MapAccess.*;
 
 public abstract class WebService implements ContainerService {
 
@@ -142,6 +142,11 @@ public abstract class WebService implements ContainerService {
 
     @Override
     public void stop(Container container) throws Exception {
+        // Remove all deployments
+        Servlets.defaultContainer().listDeployments().forEach(this::undeploy);
+
+        pathHandler.clearPaths();
+
         if (undertow != null) {
             undertow.stop();
             undertow = null;
@@ -149,7 +154,7 @@ public abstract class WebService implements ContainerService {
     }
 
    /**
-    * Deploys a servlet undertow deployment.
+    * Deploys the undertow specific deployment and wires up the path handler
     */
     public void deploy(DeploymentInfo deploymentInfo, boolean useCanonicalPathHandler) {
        String pathPrefix = deploymentInfo.getContextPath();
@@ -176,7 +181,7 @@ public abstract class WebService implements ContainerService {
         }
     }
 
-    public void deployHttpHandler(String pathPrefix, HttpHandler httpHandler) {
+    public void deploy(String pathPrefix, HttpHandler httpHandler) {
        if (!pathPrefix.startsWith("/")) {
           pathPrefix = "/" + pathPrefix;
        }
@@ -291,128 +296,152 @@ public abstract class WebService implements ContainerService {
         return builder;
     }
 
-   public ResteasyDeployment createResteasyDeployment(Application application, boolean secure) {
-      ResteasyDeployment resteasyDeployment = new ResteasyDeploymentImpl();
-      resteasyDeployment.setApplication(application);
-      if (secure) {
-         if (identityService == null) {
-            throw new RuntimeException("Role based security can only be enabled when an identity service is available");
-         }
-         resteasyDeployment.setSecurityEnabled(true);
-         // TODO: Use servlet security once implemented in identity service
-         //identityService.secureDeployment(resteasyDeployment);
-      }
-      return resteasyDeployment;
-   }
-
-   public DeploymentInfo createDeploymentInfo(Class<? extends ServletContainerInitializer> servletContainerInitializerClass, String deploymentPath, String deploymentName, Integer realmIndex, boolean secure) {
-       DeploymentInfo deploymentInfo = new DeploymentInfo()
+   public void deployServlet(Class<? extends ServletContainerInitializer> servletContainerInitializerClass, String deploymentPath, String deploymentName, Integer realmIndex, boolean secure) throws IllegalArgumentException {
+       DeploymentInfo deploymentInfo = Servlets.deployment()
                .setDeploymentName(deploymentName)
                .setContextPath(deploymentPath)
                .setSecurityDisabled(!secure)
                .addServletContainerInitializer(new ServletContainerInitializerInfo(servletContainerInitializerClass, null))
-               .setClassLoader(Container.class.getClassLoader());
+               .setClassLoader(this.getClass().getClassLoader());
 
        configureDeploymentInfo(deploymentInfo, realmIndex, secure);
-       return deploymentInfo;
+       deploy(deploymentInfo, false);
    }
 
-   public DeploymentInfo createDeploymentInfo(ResteasyDeployment resteasyDeployment, String deploymentPath, String deploymentName, Integer realmIndex, boolean secure) {
+   public void deployJaxRsApplication(Application application, String deploymentPath, String deploymentName, Integer realmIndex, boolean secure) {
+       ServletContextListener jaxRsListener = new ServletContextListener() {
+           @Override
+           public void contextInitialized(ServletContextEvent sce) {
+               ServletContext ctx = sce.getServletContext();
+               ResteasyDeployment deployment = new ResteasyDeploymentImpl();
+               deployment.setApplication(application);
+               ctx.setAttribute(ResteasyDeployment.class.getName(), deployment);
 
-       ServletInfo resteasyServlet = Servlets.servlet("ResteasyServlet", HttpServlet30Dispatcher.class)
-               .setAsyncSupported(true)
-               .setLoadOnStartup(1)
-               .addMapping("/*");
+               ServletRegistration.Dynamic servlet = ctx.addServlet("ResteasyServlet", HttpServletDispatcher.class);
+               servlet.setAsyncSupported(true);
+               servlet.setLoadOnStartup(1);
+               servlet.addMapping("/*");
 
-       DeploymentInfo deploymentInfo = new DeploymentInfo()
+               if (secure) {
+                   deployment.setSecurityEnabled(true);
+                   //servlet.setInitParameter(ResteasyContextParameters.RESTEASY_ROLE_BASED_SECURITY, "true");
+               }
+           }
+       };
+       Class<? extends EventListener> listenerClass = jaxRsListener.getClass();
+       InstanceFactory<? extends EventListener> factory = new ImmediateInstanceFactory<>(jaxRsListener);
+
+       DeploymentInfo deploymentInfo = Servlets.deployment()
                .setDeploymentName(deploymentName)
                .setContextPath(deploymentPath)
-               .addServletContextAttribute(ResteasyDeployment.class.getName(), resteasyDeployment)
-               .addServlet(resteasyServlet)
-               .setClassLoader(Container.class.getClassLoader());
+               .addListeners(Servlets.listener(listenerClass, factory))
+               .setClassLoader(this.getClass().getClassLoader());
 
        configureDeploymentInfo(deploymentInfo, realmIndex, secure);
-       return deploymentInfo;
+       deploy(deploymentInfo, false);
    }
 
-   protected void configureDeploymentInfo(DeploymentInfo deploymentInfo, Integer realmIndex, boolean secure) {
-      // TODO: Remove this handler wrapper once JAX-RS RealmPathExtractorFilter can be utilised before security is applied
-      if (realmIndex != null) {
-         deploymentInfo.addInitialHandlerChainWrapper(handler -> {
+   @SuppressWarnings("resource")
+   public void deployFileServlet(String deploymentPath, String deploymentName, Path[] filePaths, String[] requiredRoles) {
 
-            return exchange -> {
-               // Do nothing if the realm header is already set
-               if (exchange.getRequestHeaders().contains(REALM_PARAM_NAME)) {
-                  handler.handleRequest(exchange);
-                  return;
-               }
+        if (filePaths == null || filePaths.length == 0) {
+            throw new IllegalArgumentException("No file paths specified");
+        }
 
-               String relativePath = exchange.getRelativePath();
-               StringBuilder newRelativePathBuilder = new StringBuilder();
-               String realm = null;
-               int segmentIndex = 0;
-               int start = 1; // Path starts with '/'
-
-               for (int i = 1; i <= relativePath.length(); i++) {
-                  if (i == relativePath.length() || relativePath.charAt(i) == '/') {
-                     if (i > start) { // Found a segment
-                        if (segmentIndex == realmIndex) {
-                           realm = relativePath.substring(start, i);
-                        } else {
-                           newRelativePathBuilder.append('/').append(relativePath, start, i);
-                        }
-                        segmentIndex++;
-                     }
-                     start = i + 1;
-                  }
-               }
-
-               if (realm != null) {
-                  exchange.getRequestHeaders().put(HttpString.tryFromString(REALM_PARAM_NAME), realm);
-
-                  String newRelativePath = !newRelativePathBuilder.isEmpty() ? newRelativePathBuilder.toString() : "/";
-                  String newRequestPath = deploymentInfo.getContextPath() + newRelativePath;
-                  exchange.setRequestURI(newRequestPath);
-                  exchange.setRelativePath(newRelativePath);
-                  exchange.setRequestPath(newRequestPath);
-               }
-
-               handler.handleRequest(exchange);
-            };
-         });
-      }
-
-      if (secure) {
-         if (identityService == null)
-            throw new IllegalStateException(
-               "No identity service found, make sure " + IdentityService.class.getName() + " is added before this service"
-            );
-         identityService.secureDeployment(deploymentInfo);
-      }
-
-      // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
-      deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
-   }
-
-   public DeploymentInfo createFilesDeploymentInfo(ResourceManager resourceManager, String deploymentPath, String deploymentName, boolean devMode, String[] requiredRoles) {
-       //FileServlet fileServlet = new FileServlet(devMode, resourceManager, requiredRoles);
-       //ServletInfo servletInfo = Servlets.servlet("Manager File Servlet", FileServlet.class, () -> new ImmediateInstanceHandle<>(fileServlet));
-       //servletInfo.addMapping("/*");
+       ResourceManager filesResourceManager;
+       if (filePaths.length == 1) {
+            filesResourceManager = new PathResourceManager(filePaths[0]);
+       } else {
+           CompositeResourceManager compositeResourceManager = new CompositeResourceManager();
+           for (Path path : filePaths) {
+               compositeResourceManager.addResourceManager(new PathResourceManager(path));
+           }
+           filesResourceManager = compositeResourceManager;
+       }
 
        Filter gzipFilter = new GzipResponseFilter(MIME_TYPES_TO_ZIP);
        FilterInfo gzipFilterInfo = Servlets.filter("Gzip Filter", GzipResponseFilter.class, () -> new ImmediateInstanceHandle<>(gzipFilter))
                .setAsyncSupported(true);
 
-       return new DeploymentInfo()
+       DeploymentInfo deploymentInfo = Servlets.deployment()
                .setDeploymentName(deploymentName)
-               .setResourceManager(resourceManager)
+               .setResourceManager(filesResourceManager)
                .setContextPath(deploymentPath)
                .addServlet(Servlets.servlet("DefaultServlet", DefaultServlet.class))
                .addFilter(gzipFilterInfo)
                .addFilterUrlMapping(gzipFilterInfo.getName(), "/*", DispatcherType.REQUEST)
                .addWelcomePages("index.html", "index.htm")
-               .setClassLoader(Container.class.getClassLoader());
+               .setClassLoader(getClass().getClassLoader());
+
+       if (requiredRoles != null && requiredRoles.length > 0) {
+           Filter securityFilter = new SecurityFilter(requiredRoles);
+           FilterInfo securityFilterInfo = Servlets.filter("Security Filter", SecurityFilter.class, () -> new ImmediateInstanceHandle<>(securityFilter))
+                   .setAsyncSupported(true);
+           deploymentInfo = Servlets.deployment().addFilter(securityFilterInfo);
+       }
+
+       configureDeploymentInfo(deploymentInfo, null, requiredRoles != null && requiredRoles.length > 0);
+       deploy(deploymentInfo, true);
    }
+
+    public void configureDeploymentInfo(DeploymentInfo deploymentInfo, Integer realmIndex, boolean secure) {
+        // TODO: Remove this handler wrapper once JAX-RS RealmPathExtractorFilter can be utilised before security is applied
+        if (realmIndex != null) {
+            deploymentInfo.addInitialHandlerChainWrapper(handler -> {
+
+                return exchange -> {
+                    // Do nothing if the realm header is already set
+                    if (exchange.getRequestHeaders().contains(REALM_PARAM_NAME)) {
+                        handler.handleRequest(exchange);
+                        return;
+                    }
+
+                    String relativePath = exchange.getRelativePath();
+                    StringBuilder newRelativePathBuilder = new StringBuilder();
+                    String realm = null;
+                    int segmentIndex = 0;
+                    int start = 1; // Path starts with '/'
+
+                    for (int i = 1; i <= relativePath.length(); i++) {
+                        if (i == relativePath.length() || relativePath.charAt(i) == '/') {
+                            if (i > start) { // Found a segment
+                                if (segmentIndex == realmIndex) {
+                                    realm = relativePath.substring(start, i);
+                                } else {
+                                    newRelativePathBuilder.append('/').append(relativePath, start, i);
+                                }
+                                segmentIndex++;
+                            }
+                            start = i + 1;
+                        }
+                    }
+
+                    if (realm != null) {
+                        exchange.getRequestHeaders().put(HttpString.tryFromString(REALM_PARAM_NAME), realm);
+
+                        String newRelativePath = !newRelativePathBuilder.isEmpty() ? newRelativePathBuilder.toString() : "/";
+                        String newRequestPath = deploymentInfo.getContextPath() + newRelativePath;
+                        exchange.setRequestURI(newRequestPath);
+                        exchange.setRelativePath(newRelativePath);
+                        exchange.setRequestPath(newRequestPath);
+                    }
+
+                    handler.handleRequest(exchange);
+                };
+            });
+        }
+
+        if (secure) {
+            if (identityService == null)
+                throw new IllegalStateException(
+                        "No identity service found, make sure " + IdentityService.class.getName() + " is added before this service"
+                );
+            identityService.secureDeployment(deploymentInfo);
+        }
+
+        // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
+        deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
+    }
 
     public Undertow getUndertow() {
         return undertow;

@@ -30,8 +30,6 @@ import java.util.logging.Logger;
 
 public class WebApplication extends Application {
 
-    private static final Logger LOG = Logger.getLogger(WebApplication.class.getName());
-
     protected final Container container;
     protected final Set<Class<?>> classes;
     protected final Set<Object> singletons;

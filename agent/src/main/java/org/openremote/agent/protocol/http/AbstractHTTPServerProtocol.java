@@ -19,9 +19,7 @@
  */
 package org.openremote.agent.protocol.http;
 
-import io.undertow.servlet.api.DeploymentInfo;
 import jakarta.ws.rs.core.Application;
-import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.RealmInjectorFilter;
@@ -34,9 +32,11 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.syslog.SyslogCategory;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -52,7 +52,6 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * The deployment is deployed by creating an instance of a concrete {@link AbstractHTTPServerAgent} implementation with
  * the following {@link Attribute}s:
  * <ul>
- * <li>{@link AbstractHTTPServerAgent#DEPLOYMENT_PATH} <b>(required)</b></li>
  * <li>{@link AbstractHTTPServerAgent#ALLOWED_ORIGINS}</li>
  * <li>{@link AbstractHTTPServerAgent#ALLOWED_HTTP_METHODS}</li>
  * </ul>
@@ -92,10 +91,6 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
 
         webService = container.getService(WebService.class);
 
-        boolean secure = agent.isRoleBasedSecurity().orElse(false);
-        String deploymentPath = getDeploymentPath();
-        String deploymentName = getDeploymentName();
-
        Application application = new WebApplication(
           container,
           null,
@@ -111,9 +106,7 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
                 DEFAULT_CORS_ALLOW_CREDENTIALS),
              getApiSingletons()).flatMap(Collection::stream).toList());
 
-        ResteasyDeployment deployment = webService.createResteasyDeployment(application, secure);
-        DeploymentInfo deploymentInfo = webService.createDeploymentInfo(deployment, deploymentPath, deploymentName, null, secure);
-        deploy(deploymentInfo);
+        deploy(application);
         setConnectionStatus(ConnectionStatus.CONNECTED);
     }
 
@@ -144,9 +137,17 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
         return getDeploymentName(getClass(), agent.getId());
     }
 
-    protected void deploy(DeploymentInfo deploymentInfo) {
-       LOG.log(INFO, "Deploying JAX-RS deployment for protocol instance: " + this);
-       webService.deploy(deploymentInfo, false);
+    protected boolean isSecure() {
+        return agent.isRoleBasedSecurity().orElse(false);
+    }
+
+    protected void deploy(Application application) {
+       LOG.log(INFO, "Deploying JAX-RS application for protocol instance: " + this);
+
+        boolean secure = isSecure();
+        String deploymentPath = getDeploymentPath();
+        String deploymentName = getDeploymentName();
+       webService.deployJaxRsApplication(application, deploymentPath, deploymentName, null, secure);
     }
 
     protected void undeploy(String deploymentName) {

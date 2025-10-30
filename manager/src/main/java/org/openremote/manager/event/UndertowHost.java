@@ -78,10 +78,10 @@ public class UndertowHost implements org.apache.camel.component.undertow.Underto
             .setDeploymentName(DEPLOYMENT_NAME)
             .setContextPath(path)
             .setClassLoader(getClass().getClassLoader())
-            //httpHandler for servlet is ignored, camel handler is used instead of it
-            .addInnerHandlerChainWrapper(h -> handler)
             // Add handler to extract authorization and realm query params
-            .addInitialHandlerChainWrapper(WebsocketAuthParamHandler::new);
+            .addInitialHandlerChainWrapper(WebsocketAuthParamHandler::new)
+            //httpHandler for servlet is ignored, camel handler is used instead of it
+            .addInnerHandlerChainWrapper(h -> handler);
 
         // Require authentication, but authorize specific roles later in Camel
         WebResourceCollection resourceCollection = new WebResourceCollection();

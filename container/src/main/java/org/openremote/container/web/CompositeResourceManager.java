@@ -20,6 +20,7 @@
 package org.openremote.container.web;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -34,10 +35,14 @@ import io.undertow.server.handlers.resource.ResourceManager;
  */
 public class CompositeResourceManager implements ResourceManager {
 
-    protected final List<ResourceManager> resourceManagers;
+    protected final List<ResourceManager> resourceManagers = new ArrayList<>();
 
     public CompositeResourceManager(ResourceManager... resourceManagers) {
-        this.resourceManagers = Arrays.asList(resourceManagers);
+        this.resourceManagers.addAll(Arrays.asList(resourceManagers));
+    }
+
+    public void addResourceManager(ResourceManager resourceManager) {
+        this.resourceManagers.add(resourceManager);
     }
 
     @Override

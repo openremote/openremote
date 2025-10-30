@@ -424,7 +424,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             throw new IllegalStateException("Initialize this service first");
 
         LOG.info("Enabling auth reverse proxy (passing requests through to Keycloak) on web context: /" + keycloakPath);
-        webService.deployHttpHandler(keycloakPath, authProxyHandler);
+        webService.deploy(keycloakPath, authProxyHandler);
     }
 
     /**

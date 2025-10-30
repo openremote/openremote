@@ -33,10 +33,8 @@ import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.servers.ServerVariable;
 import io.swagger.v3.oas.models.servers.ServerVariables;
 import io.undertow.server.handlers.RedirectHandler;
-import io.undertow.server.handlers.resource.PathResourceManager;
-import io.undertow.server.handlers.resource.ResourceManager;
-import io.undertow.servlet.api.DeploymentInfo;
-import org.openremote.container.web.CompositeResourceManager;
+import jakarta.ws.rs.core.Application;
+import org.openremote.container.web.WebApplication;
 import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
 import org.openremote.model.util.TextUtil;
@@ -93,11 +91,7 @@ public class ManagerWebService extends WebService {
     @Override
     public void init(Container container) throws Exception {
         super.init(container);
-
-        // Clear out previously added singletons (this is more for testing purposes where the container is restarted in
-        // the same VM process so static vars need to be cleared)
-        ManagerAPIApplication.clear();
-
+        Set<Path> staticFilePaths = new HashSet<>();
         builtInAppDocRoot = Paths.get(getString(container.getConfig(), OR_APP_DOCROOT, OR_APP_DOCROOT_DEFAULT));
         customAppDocRoot = Paths.get(getString(container.getConfig(), OR_CUSTOM_APP_DOCROOT, OR_CUSTOM_APP_DOCROOT_DEFAULT));
         String rootRedirectPath = getString(container.getConfig(), OR_ROOT_REDIRECT_PATH, OR_ROOT_REDIRECT_PATH_DEFAULT);
@@ -113,8 +107,8 @@ public class ManagerWebService extends WebService {
 
         initialised = true;
 
-        // Configure the JAX-RS Manager API
-        Stream.of(
+        // Configure the JAX-RS Manager API including resources added at startup
+        List<Object> singletons = Stream.of(
                 devMode ? getStandardProviders(devMode, 0) : getStandardProviders(devMode, 0,
                         getCORSAllowedOrigins(container),
                         getString(container.getConfig(), OR_WEBSERVER_ALLOWED_METHODS, DEFAULT_CORS_ALLOW_ALL),
@@ -123,28 +117,25 @@ public class ManagerWebService extends WebService {
                         DEFAULT_CORS_ALLOW_CREDENTIALS),
                         apiSingletons)
                 .flatMap(Collection::stream)
-                .forEach(ManagerAPIApplication::addSingleton);
-        apiClasses.forEach(ManagerAPIApplication::addClass);
+                .toList();
+        Application application = new WebApplication(container, apiClasses, singletons);
 
-        DeploymentInfo deploymentInfo = createDeploymentInfo(ManagerAPIServletContainerInitializer.class, API_PATH, "Manager HTTP API", 0, true);
-        deploy(deploymentInfo, false);
+        deployJaxRsApplication(application, API_PATH, "Manager HTTP API", 0, true);
 
-        // Deploy static app files unsecured
-        ResourceManager filesResourceManager = new PathResourceManager(builtInAppDocRoot);
+        staticFilePaths.add(builtInAppDocRoot);
 
         // If custom app docroot is a directory then make it the default file handler
         if (customAppDocRoot != null && Files.isDirectory(customAppDocRoot)) {
-            ResourceManager customAppResourceManager = new PathResourceManager(customAppDocRoot);
-            filesResourceManager = new CompositeResourceManager(filesResourceManager, customAppResourceManager);
+            staticFilePaths.add(customAppDocRoot);
         } else if (customAppDocRoot != null) {
            LOG.info("Custom app doc root does not exist: " + customAppDocRoot.toAbsolutePath());
         }
 
-        deploymentInfo = createFilesDeploymentInfo(filesResourceManager, "/", "App Files", devMode, null);
-        deploy(deploymentInfo, true);
+        // Deploy static app files unsecured
+        deployFileServlet("/", "App Files", staticFilePaths.toArray(Path[]::new), null);
     }
 
-   protected Object getOpenApiResource() {
+    protected Object getOpenApiResource() {
         // Modify swagger object mapper to match ours
         configureObjectMapper(Json.mapper());
         Json.mapper().addMixIn(StringSchema.class, StringSchemaMixin.class);
