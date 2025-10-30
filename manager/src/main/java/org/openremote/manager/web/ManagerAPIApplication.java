@@ -31,4 +31,9 @@ public class ManagerAPIApplication extends Application {
     public Set<Class<?>> getClasses() {
         return CLASSES;
     }
+
+    public static void clear() {
+        SINGLETONS.clear();
+        CLASSES.clear();
+    }
 }

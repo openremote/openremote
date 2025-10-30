@@ -94,6 +94,10 @@ public class ManagerWebService extends WebService {
     public void init(Container container) throws Exception {
         super.init(container);
 
+        // Clear out previously added singletons (this is more for testing purposes where the container is restarted in
+        // the same VM process so static vars need to be cleared)
+        ManagerAPIApplication.clear();
+
         builtInAppDocRoot = Paths.get(getString(container.getConfig(), OR_APP_DOCROOT, OR_APP_DOCROOT_DEFAULT));
         customAppDocRoot = Paths.get(getString(container.getConfig(), OR_CUSTOM_APP_DOCROOT, OR_CUSTOM_APP_DOCROOT_DEFAULT));
         String rootRedirectPath = getString(container.getConfig(), OR_ROOT_REDIRECT_PATH, OR_ROOT_REDIRECT_PATH_DEFAULT);
