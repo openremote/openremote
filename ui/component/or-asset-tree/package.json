@@ -25,6 +25,7 @@
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "lit": "^3.3.1",
+    "lodash": "^4.17.21",
     "qs": "^6.8.0"
   },
   "publishConfig": {
