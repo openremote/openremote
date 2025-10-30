@@ -1307,9 +1307,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         if (query.userIds != null && query.userIds.length == 0) {
             return Collections.emptyList();
         }
-        if (query.parents != null && query.parents.length == 0) {
-            return Collections.emptyList();
-        }
 
         // Default to order by creation date if the query may return multiple results
         if (query.orderBy == null && query.ids == null)
@@ -1715,27 +1712,32 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         if (query.parents != null) {
 
             sb.append(" and (");
-            boolean isFirst = true;
 
-            for (ParentPredicate pred : query.parents) {
-                if (!isFirst) {
-                    sb.append(" or (");
-                } else {
-                    sb.append("(");
+            if(query.parents.length == 0) {
+                sb.append("A.PARENT_ID is null");
+            } else {
+                boolean isFirst = true;
+
+                for (ParentPredicate pred : query.parents) {
+                    if (!isFirst) {
+                        sb.append(" or (");
+                    } else {
+                        sb.append("(");
+                    }
+                    isFirst = false;
+
+                    if (level == 1 && pred.id != null) {
+                        final int pos = binders.size() + 1;
+                        sb.append("A.PARENT_ID = ?").append(pos);
+                        binders.add((em, st) -> st.setParameter(pos, pred.id));
+                    } else if (level == 1) {
+                        sb.append("A.PARENT_ID is null");
+                    } else {
+                        sb.append("true");
+                    }
+
+                    sb.append(")");
                 }
-                isFirst = false;
-
-                if (level == 1 && pred.id != null) {
-                    final int pos = binders.size() + 1;
-                    sb.append("A.PARENT_ID = ?").append(pos);
-                    binders.add((em, st) -> st.setParameter(pos, pred.id));
-                } else if (level == 1) {
-                    sb.append("A.PARENT_ID is null");
-                } else {
-                    sb.append("true");
-                }
-
-                sb.append(")");
             }
 
             sb.append(")");
