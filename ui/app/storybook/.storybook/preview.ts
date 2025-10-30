@@ -49,7 +49,7 @@ const preview: Preview = {
         options: {
             storySort: {
                 method: "alphabetical",
-                order: ["Introduction", "How to Install"]
+                order: ["Introduction"]
             }
         }
     }
