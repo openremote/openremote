@@ -22,10 +22,14 @@ package org.openremote.container.web;
 import com.google.common.collect.Lists;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
+import io.undertow.predicate.Predicates;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RequestDumpingHandler;
+import io.undertow.server.handlers.encoding.ContentEncodingRepository;
+import io.undertow.server.handlers.encoding.EncodingHandler;
+import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.Servlets;
@@ -39,15 +43,11 @@ import jakarta.servlet.*;
 import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.core.ResteasyDeploymentImpl;
-import org.jboss.resteasy.plugins.interceptors.AcceptEncodingGZIPFilter;
 import org.jboss.resteasy.plugins.interceptors.CorsFilter;
-import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
-import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.IdentityService;
-import org.openremote.container.web.file.GzipResponseFilter;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
@@ -59,7 +59,6 @@ import java.nio.file.Path;
 import java.util.*;
 
 import static java.lang.System.Logger.Level.*;
-import static org.openremote.container.web.file.FileServlet.MIME_TYPES_TO_ZIP;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.util.MapAccess.*;
 
@@ -251,10 +250,7 @@ public abstract class WebService implements ContainerService {
            new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode),
            new WebServiceExceptions.ServletUndertowExceptionHandler(devMode),
            new JacksonConfig(),
-           new ClientErrorExceptionHandler(),
-           new GZIPEncodingInterceptor(),
-           new GZIPDecodingInterceptor(),
-           new AcceptEncodingGZIPFilter()
+           new ClientErrorExceptionHandler()
         );
 
         if (realmIndex != null) {
@@ -290,6 +286,12 @@ public abstract class WebService implements ContainerService {
         if (getBoolean(container.getConfig(), OR_WEBSERVER_DUMP_REQUESTS, OR_WEBSERVER_DUMP_REQUESTS_DEFAULT)) {
             handler = new RequestDumpingHandler(handler);
         }
+
+        // Add GZIP encoding/decoding support at the undertow level
+        handler = new EncodingHandler(new ContentEncodingRepository()
+            .addEncodingHandler("gzip",
+                    new GzipEncodingProvider(), 50,
+                    Predicates.requestLargerThan(5120))).setNext(handler);
 
         builder.setHandler(handler);
 
@@ -359,17 +361,11 @@ public abstract class WebService implements ContainerService {
            filesResourceManager = compositeResourceManager;
        }
 
-       Filter gzipFilter = new GzipResponseFilter(MIME_TYPES_TO_ZIP);
-       FilterInfo gzipFilterInfo = Servlets.filter("Gzip Filter", GzipResponseFilter.class, () -> new ImmediateInstanceHandle<>(gzipFilter))
-               .setAsyncSupported(true);
-
        DeploymentInfo deploymentInfo = Servlets.deployment()
                .setDeploymentName(deploymentName)
                .setResourceManager(filesResourceManager)
                .setContextPath(deploymentPath)
                .addServlet(Servlets.servlet("DefaultServlet", DefaultServlet.class))
-               .addFilter(gzipFilterInfo)
-               .addFilterUrlMapping(gzipFilterInfo.getName(), "/*", DispatcherType.REQUEST)
                .addWelcomePages("index.html", "index.htm")
                .setClassLoader(getClass().getClassLoader());
 
