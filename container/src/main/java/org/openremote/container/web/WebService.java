@@ -102,7 +102,7 @@ public abstract class WebService implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
-       identityService = container.getService(IdentityService.class);
+        identityService = container.getService(IdentityService.class);
         devMode = container.isDevMode();
         host = getString(container.getConfig(), OR_WEBSERVER_LISTEN_HOST, OR_WEBSERVER_LISTEN_HOST_DEFAULT);
         port = getInteger(container.getConfig(), OR_WEBSERVER_LISTEN_PORT, OR_WEBSERVER_LISTEN_PORT_DEFAULT);
@@ -162,7 +162,7 @@ public abstract class WebService implements ContainerService {
           pathPrefix = "/" + pathPrefix;
        }
 
-        LOG.log(INFO, "Deploying undertow servlet deployment: name=" + deploymentInfo.getDeploymentName() + ", path=" + pathPrefix + ", secure=" + !deploymentInfo.isSecurityDisabled());
+       LOG.log(INFO, "Deploying undertow servlet deployment: name=" + deploymentInfo.getDeploymentName() + ", path=" + pathPrefix + ", secure=" + !deploymentInfo.isSecurityDisabled());
 
        try {
            DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);

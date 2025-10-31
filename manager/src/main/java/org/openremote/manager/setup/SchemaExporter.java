@@ -19,12 +19,12 @@
  */
 package org.openremote.manager.setup;
 
-import jakarta.persistence.Persistence;
 import org.openremote.container.Container;
 import org.openremote.container.persistence.Database;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.persistence.ManagerPersistenceService;
 
+import jakarta.persistence.Persistence;
 import java.io.File;
 import java.util.Properties;
 import java.util.logging.Logger;

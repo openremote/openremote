@@ -127,7 +127,7 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
      * Full path to deployment = "{@value #DEPLOYMENT_PATH_PREFIX}/manufacturer/6lMDrFZ5Qhd78BTmoF9Pwn"
      */
     protected String getDeploymentPath() {
-       return DEPLOYMENT_PATH_PREFIX + "/" + agent.getRealm() + "/" + agent.getId();
+        return DEPLOYMENT_PATH_PREFIX + "/" + agent.getRealm() + "/" + agent.getId();
     }
 
     /**
@@ -142,12 +142,12 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
     }
 
     protected void deploy(Application application) {
-       LOG.log(INFO, "Deploying JAX-RS application for protocol instance: " + this);
+        LOG.log(INFO, "Deploying JAX-RS application for protocol instance: " + this);
 
         boolean secure = isSecure();
         String deploymentPath = getDeploymentPath();
         String deploymentName = getDeploymentName();
-       webService.deployJaxRsApplication(application, deploymentPath, deploymentName, null, secure);
+        webService.deployJaxRsApplication(application, deploymentPath, deploymentName, null, secure);
     }
 
     protected void undeploy(String deploymentName) {
