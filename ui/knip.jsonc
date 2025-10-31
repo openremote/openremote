@@ -1,8 +1,12 @@
 {
     "$schema": "https://unpkg.com/knip@5/schema-jsonc.json",
+    "ignore": [
+        "**/*.stories.ts"
+    ],
     "ignoreWorkspaces": [
         "ui/util", // Many dev dependencies like eslint are considered unused
-        "ui/test" // Only ignoring because the index.js file in the Playwright app doesn't want to parse
+        "ui/test" // Only ignoring because the index.js file in the Playwright app doesn't want to parse]
+
     ],
     "ignoreDependencies": [
         "@types/mapbox", // Global types under the L namespace (no direct import)

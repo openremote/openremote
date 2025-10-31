@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-mwc-components",
-  "version": "1.8.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "Material Design Components packaged as web components (The official components are hardcoded to use Material Design font which has limited icons)",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -23,6 +23,7 @@
     "prepack": "npx tsc -b"
   },
   "author": "OpenRemote",
+  "repository": "https://github.com/openremote/openremote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@material/base": "^9.0.0",
