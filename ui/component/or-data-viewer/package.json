@@ -24,7 +24,6 @@
     "@openremote/or-chart": "workspace:*",
     "@openremote/or-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "i18next": "^21.5.3",
     "lit": "^3.3.1"
   },
   "publishConfig": {

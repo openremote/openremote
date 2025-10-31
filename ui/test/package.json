@@ -32,7 +32,6 @@
     "@sand4rt/experimental-ct-web": "1.54.2",
     "css-loader": "^6.5.1",
     "html-webpack-plugin": "^5.6.3",
-    "i18next": "^21.5.3",
     "playwright": "1.54.2",
     "playwright-core": "1.54.2",
     "ts-loader": "~9.5.2",

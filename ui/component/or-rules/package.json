@@ -31,7 +31,6 @@
     "@openremote/or-tree-menu": "workspace:*",
     "@openremote/rest": "workspace:*",
     "ace-builds": "^1.41.0",
-    "i18next": "^21.5.3",
     "iso-639-1": "^3.1.3",
     "linqts": "^1.12.6",
     "lit": "^3.3.1",
