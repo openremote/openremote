@@ -575,7 +575,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 animation: false,
                 grid: {
                     show: true,
-                    backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
+                    backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color") || '#FFFFFF',
                     borderColor: this._style.getPropertyValue("--internal-or-chart-border-color"),
                     left: 10,
                     right: 10,
@@ -583,7 +583,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     bottom: this.showZoomBar ? 68 : 10,
                     containLabel: true
                 },
-                backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
+                backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color") || '#FFFFFF',
                 tooltip: {
                     trigger: "axis",
                     confine: true,
@@ -1236,7 +1236,8 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
-        if ((this._data && !this._zoomChanged) || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
+        if (!this.dataProvider && ((this._data && !this._zoomChanged) || !this.assetAttributes || !this.assets || this.assets.length === 0 || this.assetAttributes.length === 0 || !this.datapointQuery)) {
+            console.debug("Aborting or-chart data load, not all HTML attributes are provided correctly.");
             return;
         }
 
@@ -1263,12 +1264,13 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         try {
             if(this.dataProvider && !this._zoomChanged) {
-                await this.dataProvider(this._startOfPeriod, this._endOfPeriod).then(dataset => {
+                console.debug("Loading data using the data provider...", typeof this.dataProvider);
+                promises = [this.dataProvider(this._startOfPeriod, this._endOfPeriod).then(dataset => {
                     dataset.forEach(set => data.push(set));
-                });
+                })];
             } else {
                 this._dataAbortController = new AbortController();
-                promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
+                promises = this.assetAttributes?.map(async ([assetIndex, attribute], index) => {
 
                     const asset = this.assets[assetIndex];
                     const shownOnRightAxis = !!this.attributeConfig?.rightAxisAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
