@@ -504,6 +504,9 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         }
 
         return server.getActiveMQServer().getRemotingService().getConnections().stream().filter(connection -> {
+            if (!connection.getTransportConnection().isOpen()) {
+                return false;
+            }
             Subject subject = connection.getSubject();
             String subjectID = KeycloakIdentityProvider.getSubjectId(subject);
             return userID.equals(subjectID);
