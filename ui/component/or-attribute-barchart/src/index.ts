@@ -48,6 +48,7 @@ import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-m
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {when} from "lit/directives/when.js";
 import {createRef, Ref, ref} from "lit/directives/ref.js";
+import "@openremote/or-translate";
 
 echarts.use([GridComponent, TooltipComponent, DataZoomComponent, BarChart, CanvasRenderer, UniversalTransition]);
 
