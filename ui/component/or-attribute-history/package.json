@@ -27,7 +27,6 @@
     "@openremote/or-translate": "workspace:*",
     "@openremote/rest": "workspace:*",
     "echarts": "~5.6.0",
-    "i18next": "^21.5.3",
     "jsonpath-plus": "^6.0.1",
     "lit": "^3.3.1",
     "lodash": "^4.17.21",
