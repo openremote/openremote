@@ -3715,10 +3715,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@wc-toolkit/jsx-types@npm:^1.4.2":
-  version: 1.4.2
-  resolution: "@wc-toolkit/jsx-types@npm:1.4.2"
-  checksum: 10c0/cb61a7c796ccad24ae90b93a022d8596697b897c841e64cfed6d10639922b5474acedb120bbcb0fd56a5178c3a1c5e148c779855ee5429a4c3dfe69f790c0681
 "@vitest/expect@npm:3.2.4":
   version: 3.2.4
   resolution: "@vitest/expect@npm:3.2.4"
@@ -3779,6 +3775,12 @@ __metadata:
   checksum: 10c0/024a9b8c8bcc12cf40183c246c244b52ecff861c6deb3477cbf487ac8781ad44c68a9c5fd69f8c1361878e55b97c10d99d511f2597f1f7244b5e5101d028ba64
   languageName: node
   linkType: hard
+
+"@wc-toolkit/jsx-types@npm:^1.4.2":
+  version: 1.4.2
+  resolution: "@wc-toolkit/jsx-types@npm:1.4.2"
+  checksum: 10c0/cb61a7c796ccad24ae90b93a022d8596697b897c841e64cfed6d10639922b5474acedb120bbcb0fd56a5178c3a1c5e148c779855ee5429a4c3dfe69f790c0681
+
 
 "@wc-toolkit/storybook-helpers@npm:^9.0.1":
   version: 9.0.1
