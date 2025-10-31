@@ -1,7 +1,5 @@
 import { expect } from "@openremote/test";
-import { adminStatePath, test as setup, userStatePath } from "./fixtures/manager";
-import { users } from "./fixtures/data/users";
-import permissions from "./fixtures/data/permissions";
+import { adminStatePath, test} from "./fixtures/manager";
 
 
 test.use({ storageState: adminStatePath });
