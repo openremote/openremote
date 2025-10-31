@@ -1,8 +1,6 @@
 package org.openremote.manager.rules.flow;
 
-import org.openremote.model.Container;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.util.MapAccess;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.http.RequestParams;

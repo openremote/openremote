@@ -599,7 +599,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         long startTime = System.currentTimeMillis();
-        String assetId = asset.getId() != null ? asset.getId() : "";
+        String assetId = asset.getId();
 
         // We skip all standard checks as asset is coming from a gateway and would be validated from there
         if (requestingGatewayAsset != null) {
@@ -641,189 +641,191 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
         }
 
-        return withAssetLock(assetId, () -> persistenceService.doReturningTransaction(em -> {
+        Supplier<T> assetSupplier = () -> persistenceService.doReturningTransaction(em -> {
 
-            T existingAsset = TextUtil.isNullOrEmpty(asset.getId()) ? null : (T)em.find(Asset.class, asset.getId());
+           T existingAsset = TextUtil.isNullOrEmpty(asset.getId()) ? null : (T)em.find(Asset.class, asset.getId());
 
-            if (existingAsset != null) {
+           if (existingAsset != null) {
 
-                // Verify type has not been changed
-                if (!existingAsset.getType().equals(asset.getType())) {
-                    String msg = "Asset type cannot be changed: asset=" + asset;
-                    LOG.warning(msg);
-                    throw new IllegalStateException(msg);
-                }
+              // Verify type has not been changed
+              if (!existingAsset.getType().equals(asset.getType())) {
+                 String msg = "Asset type cannot be changed: asset=" + asset;
+                 LOG.warning(msg);
+                 throw new IllegalStateException(msg);
+              }
 
-                if (!existingAsset.getRealm().equals(asset.getRealm())) {
-                    String msg = "Asset realm cannot be changed: asset=" + asset;
-                    LOG.warning(msg);
-                    throw new IllegalStateException(msg);
-                }
+              if (!existingAsset.getRealm().equals(asset.getRealm())) {
+                 String msg = "Asset realm cannot be changed: asset=" + asset;
+                 LOG.warning(msg);
+                 throw new IllegalStateException(msg);
+              }
 
-                // Update timestamp on modified attributes this allows fast equality checking
-                asset.getAttributes().stream().forEach(attr ->
-                    existingAsset.getAttribute(attr.getName()).ifPresent(existingAttr -> {
-                        // If attribute is modified make sure the timestamp is also updated to allow simple equality
-                        if (!attr.deepEquals(existingAttr) && attr.getTimestamp().orElse(0L) <= existingAttr.getTimestamp().orElse(0L)) {
-                            // In the unlikely situation that we are in the same millisecond as last update
-                            // we will always ensure a delta of >= 1ms
-                            attr.setTimestamp(Math.max(existingAttr.getTimestamp().orElse(0L)+1, timerService.getCurrentTimeMillis()));
-                        }
-                }));
-
-                // If this is real merge and desired, copy the persistent version number over the detached
-                // version, so the detached state always wins and this update will go through and ignore
-                // concurrent updates
-                if (overrideVersion) {
-                    asset.setVersion(existingAsset.getVersion());
-                }
-            }
-
-            if (!identityService.getIdentityProvider().realmExists(asset.getRealm())) {
-                String msg = "Asset realm not found or is inactive: asset=" + asset;
-                LOG.warning(msg);
-                throw new IllegalStateException(msg);
-            }
-
-            if (asset.getParentId() != null && asset.getParentId().equals(asset.getId())) {
-                String msg = "Asset parent cannot be the asset: asset=" + asset;
-                LOG.warning(msg);
-                throw new IllegalStateException(msg);
-            }
-
-            // Validate parent only if asset is new or parent has changed
-            if ((existingAsset == null && asset.getParentId() != null)
-                || (existingAsset != null && asset.getParentId() != null && !asset.getParentId().equals(existingAsset.getParentId()))) {
-
-                Asset<?> parent = find(em, asset.getParentId(), true);
-
-                // The parent must exist
-                if (parent == null) {
-                    String msg = "Asset parent not found: asset=" + asset;
-                    LOG.warning(msg);
-                    throw new IllegalStateException(msg);
-                }
-
-                // The parent can not be a child of the asset
-                if (parent.pathContains(asset.getId())) {
-                    String msg = "Asset parent cannot be a descendant of the asset: asset=" + asset;
-                    LOG.warning(msg);
-                    throw new IllegalStateException(msg);
-                }
-
-                // The parent should be in the same realm
-                if (!parent.getRealm().equals(asset.getRealm())) {
-                    String msg = "Asset parent must be in the same realm: asset=" + asset;
-                    LOG.warning(msg);
-                    throw new IllegalStateException(msg);
-                }
-
-                // if parent is of type group then this child asset must have the correct type
-                if (parent instanceof GroupAsset) {
-                    String childAssetType = parent.getAttributes().getValue(GroupAsset.CHILD_ASSET_TYPE)
-                        .orElseThrow(() -> {
-                            String msg = "Asset parent is of type GROUP but the childAssetType attribute is invalid: asset=" + asset;
-                            LOG.warning(msg);
-                            return new IllegalStateException(msg);
-                        });
-
-                    // Look through type hierarchy for a match - this allows sub types
-                    Class<?> clazz = asset.getClass();
-                    boolean typeMatch = childAssetType.equals(clazz.getSimpleName());
-
-                    while (!typeMatch && clazz != Asset.class) {
-                        clazz = clazz.getSuperclass();
-                        typeMatch = childAssetType.equals(clazz.getSimpleName());
+              // Update timestamp on modified attributes this allows fast equality checking
+              asset.getAttributes().stream().forEach(attr ->
+                 existingAsset.getAttribute(attr.getName()).ifPresent(existingAttr -> {
+                    // If attribute is modified make sure the timestamp is also updated to allow simple equality
+                    if (!attr.deepEquals(existingAttr) && attr.getTimestamp().orElse(0L) <= existingAttr.getTimestamp().orElse(0L)) {
+                       // In the unlikely situation that we are in the same millisecond as last update
+                       // we will always ensure a delta of >= 1ms
+                       attr.setTimestamp(Math.max(existingAttr.getTimestamp().orElse(0L)+1, timerService.getCurrentTimeMillis()));
                     }
+                 }));
 
-                    if (!typeMatch) {
-                        String msg = "Asset type does not match parent GROUP asset's childAssetType attribute: asset=" + asset;
-                        LOG.warning(msg);
-                        throw new IllegalStateException(msg);
-                    }
-                }
-            }
+              // If this is real merge and desired, copy the persistent version number over the detached
+              // version, so the detached state always wins and this update will go through and ignore
+              // concurrent updates
+              if (overrideVersion) {
+                 asset.setVersion(existingAsset.getVersion());
+              }
+           }
 
-            // Validate group child asset type attribute
-            if (asset instanceof GroupAsset groupAsset) {
+           if (!identityService.getIdentityProvider().realmExists(asset.getRealm())) {
+              String msg = "Asset realm not found or is inactive: asset=" + asset;
+              LOG.warning(msg);
+              throw new IllegalStateException(msg);
+           }
 
-                // Ensure the asset has a childAssetType (set to empty if missing)
-                String childAssetType = groupAsset.getChildAssetType()
-                        .orElseGet(() -> {
-                            groupAsset.setChildAssetType(""); // Set empty on the asset
-                            return "";
-                        });
+           if (asset.getParentId() != null && asset.getParentId().equals(asset.getId())) {
+              String msg = "Asset parent cannot be the asset: asset=" + asset;
+              LOG.warning(msg);
+              throw new IllegalStateException(msg);
+           }
 
-                String existingChildAssetType = existingAsset != null ? ((GroupAsset)existingAsset)
-                    .getChildAssetType()
+           // Validate parent only if asset is new or parent has changed
+           if ((existingAsset == null && asset.getParentId() != null)
+              || (existingAsset != null && asset.getParentId() != null && !asset.getParentId().equals(existingAsset.getParentId()))) {
+
+              Asset<?> parent = find(em, asset.getParentId(), true);
+
+              // The parent must exist
+              if (parent == null) {
+                 String msg = "Asset parent not found: asset=" + asset;
+                 LOG.warning(msg);
+                 throw new IllegalStateException(msg);
+              }
+
+              // The parent can not be a child of the asset
+              if (parent.pathContains(asset.getId())) {
+                 String msg = "Asset parent cannot be a descendant of the asset: asset=" + asset;
+                 LOG.warning(msg);
+                 throw new IllegalStateException(msg);
+              }
+
+              // The parent should be in the same realm
+              if (!parent.getRealm().equals(asset.getRealm())) {
+                 String msg = "Asset parent must be in the same realm: asset=" + asset;
+                 LOG.warning(msg);
+                 throw new IllegalStateException(msg);
+              }
+
+              // if parent is of type group then this child asset must have the correct type
+              if (parent instanceof GroupAsset) {
+                 String childAssetType = parent.getAttributes().getValue(GroupAsset.CHILD_ASSET_TYPE)
                     .orElseThrow(() -> {
-                        String msg = "Asset of type GROUP childAssetType attribute must be a valid string: asset=" + asset;
-                        LOG.warning(msg);
-                        return new IllegalStateException(msg);
-                    }) : childAssetType;
+                       String msg = "Asset parent is of type GROUP but the childAssetType attribute is invalid: asset=" + asset;
+                       LOG.warning(msg);
+                       return new IllegalStateException(msg);
+                    });
 
-                if (!childAssetType.isEmpty() && !existingChildAssetType.isEmpty() && !childAssetType.equals(existingChildAssetType)) {
-                    String msg = "Asset of type GROUP so childAssetType attribute cannot be changed: asset=" + asset;
+                 // Look through type hierarchy for a match - this allows sub types
+                 Class<?> clazz = asset.getClass();
+                 boolean typeMatch = childAssetType.equals(clazz.getSimpleName());
+
+                 while (!typeMatch && clazz != Asset.class) {
+                    clazz = clazz.getSuperclass();
+                    typeMatch = childAssetType.equals(clazz.getSimpleName());
+                 }
+
+                 if (!typeMatch) {
+                    String msg = "Asset type does not match parent GROUP asset's childAssetType attribute: asset=" + asset;
                     LOG.warning(msg);
                     throw new IllegalStateException(msg);
-                }
-            }
+                 }
+              }
+           }
 
-            // Update all empty attribute timestamps with server-time (a caller which doesn't have a
-            // reliable time source such as a browser should clear the timestamp when setting an attribute
-            // value).
-            asset.getAttributes().forEach(attribute -> {
-                if (!attribute.hasExplicitTimestamp()) {
-                    attribute.setTimestamp(timerService.getCurrentTimeMillis());
-                }
-            });
+           // Validate group child asset type attribute
+           if (asset instanceof GroupAsset groupAsset) {
 
-            // If username present
-            User user = null;
-            if (!TextUtil.isNullOrEmpty(userName)) {
-                user = identityService.getIdentityProvider().getUserByUsername(asset.getRealm(), userName);
-                if (user == null) {
-                    String msg = "User not found: " + userName;
+              // Ensure the asset has a childAssetType (set to empty if missing)
+              String childAssetType = groupAsset.getChildAssetType()
+                 .orElseGet(() -> {
+                    groupAsset.setChildAssetType(""); // Set empty on the asset
+                    return "";
+                 });
+
+              String existingChildAssetType = existingAsset != null ? ((GroupAsset)existingAsset)
+                 .getChildAssetType()
+                 .orElseThrow(() -> {
+                    String msg = "Asset of type GROUP childAssetType attribute must be a valid string: asset=" + asset;
                     LOG.warning(msg);
-                    throw new IllegalStateException(msg);
-                }
-            }
+                    return new IllegalStateException(msg);
+                 }) : childAssetType;
 
-            T updatedAsset;
+              if (!childAssetType.isEmpty() && !existingChildAssetType.isEmpty() && !childAssetType.equals(existingChildAssetType)) {
+                 String msg = "Asset of type GROUP so childAssetType attribute cannot be changed: asset=" + asset;
+                 LOG.warning(msg);
+                 throw new IllegalStateException(msg);
+              }
+           }
 
-            if (existingAsset instanceof UnknownAsset && !(asset instanceof UnknownAsset)) {
-                // This occurs when an existing asset is merged but the type is unknown
-                // We'll copy updates into existing asset
-                existingAsset.setAttributes(asset.getAttributes());
-                existingAsset.setName(asset.getName());
-                existingAsset.setVersion(asset.getVersion());
-                existingAsset.setParentId(asset.getParentId());
-                existingAsset.setAccessPublicRead(asset.isAccessPublicRead());
-                updatedAsset = em.merge(existingAsset);
-            } else {
-                updatedAsset = em.merge(asset);
-            }
+           // Update all empty attribute timestamps with server-time (a caller which doesn't have a
+           // reliable time source such as a browser should clear the timestamp when setting an attribute
+           // value).
+           asset.getAttributes().forEach(attribute -> {
+              if (!attribute.hasExplicitTimestamp()) {
+                 attribute.setTimestamp(timerService.getCurrentTimeMillis());
+              }
+           });
 
-            if (LOG.isLoggable(FINE)) {
-                LOG.fine("Asset merge took: " + (System.currentTimeMillis() - startTime) + "ms");
-            }
+           // If username present
+           User user = null;
+           if (!TextUtil.isNullOrEmpty(userName)) {
+              user = identityService.getIdentityProvider().getUserByUsername(asset.getRealm(), userName);
+              if (user == null) {
+                 String msg = "User not found: " + userName;
+                 LOG.warning(msg);
+                 throw new IllegalStateException(msg);
+              }
+           }
 
-            if (user != null) {
-                createUserAssetLinks(em, Collections.singletonList(new UserAssetLink(user.getRealm(), user.getId(), updatedAsset.getId())));
-            }
+           T updatedAsset;
 
-            if (existingAsset == null && updatedAsset instanceof ThingAsset && !ThingAsset.DESCRIPTOR.getName().equals(updatedAsset.getType())) {
-                // When an asset is first saved then any custom type is not persisted as JPA will set it to ThingAsset so we need to override
-                // We don't need to do this when updating an existing asset as JPA doesn't overwrite the type - if this changes in future it
-                // should be detected by tests
-                em.createNativeQuery("update ASSET set type = ? where id = ?;")
-                    .setParameter(1, updatedAsset.getType())
-                    .setParameter(2, updatedAsset.getId())
-                    .executeUpdate();
-            }
+           if (existingAsset instanceof UnknownAsset && !(asset instanceof UnknownAsset)) {
+              // This occurs when an existing asset is merged but the type is unknown
+              // We'll copy updates into existing asset
+              existingAsset.setAttributes(asset.getAttributes());
+              existingAsset.setName(asset.getName());
+              existingAsset.setVersion(asset.getVersion());
+              existingAsset.setParentId(asset.getParentId());
+              existingAsset.setAccessPublicRead(asset.isAccessPublicRead());
+              updatedAsset = em.merge(existingAsset);
+           } else {
+              updatedAsset = em.merge(asset);
+           }
 
-            return updatedAsset;
-        }));
+           if (LOG.isLoggable(FINE)) {
+              LOG.fine("Asset merge took: " + (System.currentTimeMillis() - startTime) + "ms");
+           }
+
+           if (user != null) {
+              createUserAssetLinks(em, Collections.singletonList(new UserAssetLink(user.getRealm(), user.getId(), updatedAsset.getId())));
+           }
+
+           if (existingAsset == null && updatedAsset instanceof ThingAsset && !ThingAsset.DESCRIPTOR.getName().equals(updatedAsset.getType())) {
+              // When an asset is first saved then any custom type is not persisted as JPA will set it to ThingAsset so we need to override
+              // We don't need to do this when updating an existing asset as JPA doesn't overwrite the type - if this changes in future it
+              // should be detected by tests
+              em.createNativeQuery("update ASSET set type = ? where id = ?;")
+                 .setParameter(1, updatedAsset.getType())
+                 .setParameter(2, updatedAsset.getId())
+                 .executeUpdate();
+           }
+
+           return updatedAsset;
+        });
+
+        return assetId == null ? assetSupplier.get() : withAssetLock(assetId, assetSupplier);
     }
 
     /**

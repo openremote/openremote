@@ -17,7 +17,7 @@ import spock.util.concurrent.PollingConditions
 import java.nio.file.Files
 import java.nio.file.Path
 
-import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.*
 import static org.openremote.model.Constants.*
 

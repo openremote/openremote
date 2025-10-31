@@ -29,16 +29,16 @@ import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.openremote.model.Constants.REALM_PARAM_NAME;
 
 /**
- * If a client can't set Authorization header (e.g. Javascript websocket API), use a request
- * parameter. This handler grabs the parameter and sets it as a regular header. This handler
- * will also grab {@link org.openremote.model.Constants#REALM_PARAM_NAME} as
- * a request parameter and set it as a regular header.
+ * For use by websocket requests where Authorization header cannot be set; grabs the
+ * {@link jakarta.ws.rs.core.HttpHeaders#AUTHORIZATION} query parameter and sets it as a regular header. This handler
+ * will also grab {@link org.openremote.model.Constants#REALM_PARAM_NAME} as a request parameter and set it as a regular
+ * header.
  */
-public class AuthOverloadHandler implements HttpHandler {
+public class WebsocketAuthParamHandler implements HttpHandler {
 
     final protected HttpHandler next;
 
-    public AuthOverloadHandler(HttpHandler next) {
+    public WebsocketAuthParamHandler(HttpHandler next) {
         this.next = next;
     }
 

@@ -77,8 +77,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.openremote.container.util.MapAccess.getBoolean;
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getBoolean;
+import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.util.ValueUtil.convert;
 
@@ -1316,7 +1316,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         if (container.isDevMode()) {
             headers.computeIfPresent("contentSecurityPolicy", (hdrName, hdrValue) -> "frame-src *; frame-ancestors *; object-src 'none'");
         } else {
-            String allowedOriginsStr = String.join(" ", WebService.getAllowedOrigins(container));
+            String allowedOriginsStr = String.join(" ", WebService.getCORSAllowedOrigins(container));
             if (!TextUtil.isNullOrEmpty(allowedOriginsStr)) {
                 headers.compute("contentSecurityPolicy", (hdrName, hdrValue) ->
                     "frame-src 'self' " +
