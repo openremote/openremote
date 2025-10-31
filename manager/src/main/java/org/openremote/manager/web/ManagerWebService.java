@@ -94,10 +94,11 @@ public class ManagerWebService extends WebService {
     public static final String API_PATH = "/api";
     public static final String MANAGER_APP_PATH = "/manager";
     public static final String INSIGHTS_APP_PATH = "/insights";
+    public static final String STORYBOOK_APP_PATH = "/storybook";
     public static final String SWAGGER_APP_PATH = "/swagger";
     public static final String SHARED_PATH = "/shared";
 
-    public static final List<String> APP_PATHS = List.of(MANAGER_APP_PATH, INSIGHTS_APP_PATH, SWAGGER_APP_PATH, SHARED_PATH);
+    public static final List<String> APP_PATHS = List.of(MANAGER_APP_PATH, INSIGHTS_APP_PATH, STORYBOOK_APP_PATH, SWAGGER_APP_PATH, SHARED_PATH);
 
     public static final String UI_CLASSPATH_PREFIX = "org/openremote/web";
 

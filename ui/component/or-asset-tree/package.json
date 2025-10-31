@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-asset-tree",
-  "version": "1.8.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "OpenRemote Asset Tree",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -27,12 +27,9 @@
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "@openremote/rest": "workspace:*",
     "lit": "^3.3.1",
-    "moment": "^2.29.4"
-  },
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
+    "lodash": "^4.17.21",
+    "qs": "^6.8.0"
   },
   "publishConfig": {
     "access": "public"

@@ -7,8 +7,7 @@ import {
     unsafeCSS
 } from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate"
 import * as Model from "@openremote/model";
 import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";

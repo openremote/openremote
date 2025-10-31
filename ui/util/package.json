@@ -1,6 +1,6 @@
 {
   "name": "@openremote/util",
-  "version": "1.8.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "Build Util",
   "author": "OpenRemote",
   "main": "webpack.util.js",
@@ -15,6 +15,8 @@
     "@typescript-eslint/eslint-plugin": "^5.9.0",
     "@typescript-eslint/parser": "^5.9.0",
     "@wc-toolkit/jsx-types": "^1.4.2",
+    "@wc-toolkit/storybook-helpers": "^9.0.1",
+    "@webcomponents/webcomponentsjs": "^2.6.0",
     "cross-env": "^7.0.3",
     "css-loader": "^7.1.2",
     "eslint": "^8.6.0",

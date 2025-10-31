@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-mwc-components",
-  "version": "1.8.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "Material Design Components packaged as web components (The official components are hardcoded to use Material Design font which has limited icons)",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -26,8 +26,10 @@
     "prepack": "npx tsc -b"
   },
   "author": "OpenRemote",
+  "repository": "https://github.com/openremote/openremote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "@material/base": "^9.0.0",
     "@material/button": "^9.0.0",
     "@material/checkbox": "^9.0.0",
     "@material/data-table": "^9.0.0",
@@ -38,23 +40,26 @@
     "@material/form-field": "^9.0.0",
     "@material/icon-button": "^9.0.0",
     "@material/line-ripple": "^9.0.0",
+    "@material/list": "^9.0.0",
     "@material/menu": "^9.0.0",
+    "@material/menu-surface": "^9.0.0",
     "@material/radio": "^9.0.0",
     "@material/ripple": "^9.0.0",
     "@material/select": "^9.0.0",
     "@material/slider": "^9.0.0",
     "@material/snackbar": "^9.0.0",
     "@material/switch": "^9.0.0",
+    "@material/tab": "^9.0.0",
     "@material/tab-bar": "^9.0.0",
+    "@material/tab-indicator": "^9.0.0",
+    "@material/tab-scroller": "^9.0.0",
     "@material/textfield": "^9.0.0",
     "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "lit": "^3.3.1"
-  },
-  "devDependencies": {
-    "@openremote/test": "workspace:*",
-    "@openremote/util": "workspace:*"
+    "lit": "^3.3.1",
+    "moment": "^2.29.4"
   },
   "publishConfig": {
     "access": "public"

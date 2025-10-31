@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-attribute-card",
-  "version": "1.8.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "OpenRemote attribute card",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -23,16 +23,19 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
+    "@openremote/or-asset-tree": "workspace:*",
     "@openremote/or-attribute-picker": "workspace:*",
     "@openremote/or-chart": "workspace:*",
+    "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
+    "@openremote/or-translate": "workspace:*",
+    "@openremote/rest": "workspace:*",
     "chart.js": "^3.6.0",
     "chartjs-adapter-moment": "^1.0.0",
     "lit": "^3.3.1",
+    "lodash": "^4.17.21",
     "moment": "^2.29.4"
-  },
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

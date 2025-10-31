@@ -376,6 +376,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                         .clients()
                         .get(clientRepresentation.getId()).getServiceAccountUser();
                     userRepresentation.setEnabled(user.getEnabled());
+                    userRepresentation.setAttributes(user.getAttributeMap());
                     realmsResource.realm(realm).users().get(userRepresentation.getId()).update(userRepresentation);
 
                 } else {
