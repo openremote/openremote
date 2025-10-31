@@ -39,7 +39,6 @@ import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
 import org.openremote.model.util.TextUtil;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -124,11 +123,8 @@ public class ManagerWebService extends WebService {
 
         staticFilePaths.add(builtInAppDocRoot);
 
-        // If custom app docroot is a directory then make it the default file handler
-        if (customAppDocRoot != null && Files.isDirectory(customAppDocRoot)) {
-            staticFilePaths.add(customAppDocRoot);
-        } else if (customAppDocRoot != null) {
-           LOG.info("Custom app doc root does not exist: " + customAppDocRoot.toAbsolutePath());
+                baseApiHandler.handleRequest(exchange);
+            };
         }
 
         // Deploy static app files unsecured

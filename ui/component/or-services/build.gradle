@@ -7,6 +7,12 @@ task clean() {
     }
 }
 
+tasks.register('npmAnalyze', Exec) {
+    mustRunAfter npmClean
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "run", "analyze"
+}
+
 task installDist() {
     dependsOn npmAnalyze
 }
