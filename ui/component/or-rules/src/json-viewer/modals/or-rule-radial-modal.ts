@@ -11,9 +11,8 @@ import {
 } from "../../index";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
-import {i18next} from "@openremote/or-translate"
+import {i18next, translate} from "@openremote/or-translate"
 import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";
-import {translate} from "@openremote/or-translate";
 
 import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMap, OrMapClickedEvent, LngLatLike} from "@openremote/or-map";

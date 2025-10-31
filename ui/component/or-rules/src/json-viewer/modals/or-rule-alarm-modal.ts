@@ -27,8 +27,7 @@ import {
 
 import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {i18next} from "@openremote/or-translate"
-import {translate} from "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate"
 
 import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";

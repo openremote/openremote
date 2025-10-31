@@ -4,12 +4,11 @@ import {AssetDescriptor, JsonRule, LogicGroup, LogicGroupOperator, RuleCondition
 import {OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
 import {buttonStyle} from "../style";
 import "./or-rule-condition";
-import {i18next} from "@openremote/or-translate"
+import {i18next, translate} from "@openremote/or-translate"
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {getWhenTypesMenu, updateRuleConditionType} from "./or-rule-condition";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import { translate } from "@openremote/or-translate";
 
 enum ResetOption {
     NO_LONGER_MATCHES = "noLongerMatches",

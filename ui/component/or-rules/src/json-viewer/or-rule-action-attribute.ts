@@ -12,9 +12,8 @@ import {
 import {Util} from "@openremote/core";
 import "@openremote/or-attribute-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {i18next} from "@openremote/or-translate"
+import {i18next, translate} from "@openremote/or-translate"
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
-import {translate} from "@openremote/or-translate";
 import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { when } from "lit/directives/when.js";

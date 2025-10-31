@@ -23,8 +23,7 @@ import {CalendarEvent, RulesetUnion, WellknownRulesetMetaItems} from "@openremot
 import {OrRulesRuleChangedEvent} from "./index";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {i18next} from "@openremote/or-translate"
-import {translate} from "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate"
 
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {ByWeekday, RRule, Weekday} from 'rrule'

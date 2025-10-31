@@ -29,7 +29,7 @@ import manager, {
     DefaultColor6,
     Util
 } from "@openremote/core";
-import {i18next} from "@openremote/or-translate"
+import {i18next, translate} from "@openremote/or-translate"
 import "@openremote/or-icon";
 import {
     AssetModelUtil,
@@ -52,7 +52,6 @@ import {
 } from "@openremote/model";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-drawer";
-import {translate} from "@openremote/or-translate";
 import "./or-rule-viewer";
 import "./or-rule-group-viewer";
 import "./or-rule-tree";

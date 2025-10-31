@@ -35,9 +35,8 @@ import "./or-rule-text-viewer";
 import "./or-rule-validity";
 import "./flow-viewer/components/flow-editor";
 import "@openremote/or-mwc-components/or-mwc-input";
-import {translate} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {i18next} from "@openremote/or-translate"
+import {i18next, translate} from "@openremote/or-translate"
 import {GenericAxiosResponse} from "@openremote/rest";
 import {showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {project} from "./flow-viewer/components/flow-editor";
