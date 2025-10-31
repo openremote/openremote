@@ -24,7 +24,6 @@ const calendarEventTester: RankedTester = rankWith(
     // and(uiTypeIs("Control"), formatIs("or-calendar-event"))
 );
 const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
-    console.log("schedule : ", state)
     props = {
         ...props,
         ...mapStateToControlProps({jsonforms: {...state}}, props),
@@ -66,7 +65,7 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
     //     </style>
     //     ${until(loadedTemplatePromise, html`<or-mwc-input class="agent-id-picker" .type="${InputType.SELECT}"></or-mwc-input>`)}
     //     `;
-
+    console.log(props.data)
     return getTemplateWrapper(html`<or-schedular></or-schedular>`, undefined);
 };
 

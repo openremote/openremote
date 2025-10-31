@@ -136,7 +136,6 @@ export const inputControlTester: RankedTester = rankWith(
     )
 );
 export const inputControlRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
-  console.log(state, props)
     const contentProps: ControlProps = {
         ...mapStateToControlProps({jsonforms: {...state}}, props),
         ...mapDispatchToControlProps(state.dispatch)
