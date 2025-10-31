@@ -4,6 +4,7 @@
   "description": "OpenRemote Storybook UI",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
+  "private": true,
   "type": "module",
   "scripts": {
     "clean": "npx shx rm -rf dist lib",
