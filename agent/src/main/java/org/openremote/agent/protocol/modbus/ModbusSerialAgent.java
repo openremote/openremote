@@ -43,11 +43,10 @@ public class ModbusSerialAgent extends ModbusAgent<ModbusSerialAgent, ModbusSeri
     public static final ValueDescriptor<ModbusClientParity> VALUE_MODBUS_PARITY = new ValueDescriptor<>("ModbusParity", ModbusClientParity.class);
     public static final AttributeDescriptor<ModbusClientParity> PARITY = new AttributeDescriptor<>("parity", VALUE_MODBUS_PARITY);
 
-    public static final AttributeDescriptor<String> ILLEGAL_REGISTERS = new AttributeDescriptor<>("illegalRegisters", ValueType.TEXT);
-    public static final AttributeDescriptor<Integer> MAX_REGISTER_LENGTH = new AttributeDescriptor<>("maxRegisterLength", ValueType.POSITIVE_INTEGER);
-
-    public static final ValueDescriptor<ModbusAgent.EndianFormat> VALUE_ENDIAN_FORMAT = new ValueDescriptor<>("EndianFormat", ModbusAgent.EndianFormat.class);
-    public static final AttributeDescriptor<ModbusAgent.EndianFormat> ENDIAN_FORMAT = new AttributeDescriptor<>("endianFormat", VALUE_ENDIAN_FORMAT);
+    // Map-based attributes for per-unitId configuration (key "default" for default values)
+    public static final AttributeDescriptor<ValueType.StringMap> ILLEGAL_REGISTERS_MAP = new AttributeDescriptor<>("illegalRegistersMap", ValueType.TEXT_MAP);
+    public static final AttributeDescriptor<ValueType.IntegerMap> MAX_REGISTER_LENGTH_MAP = new AttributeDescriptor<>("maxRegisterLengthMap", ValueType.INTEGER_MAP);
+    public static final AttributeDescriptor<ModbusAgent.EndianFormatMap> ENDIAN_FORMAT_MAP = new AttributeDescriptor<>("endianFormatMap", ModbusAgent.VALUE_ENDIAN_FORMAT_MAP);
 
     public enum ModbusClientParity {
         NO(0),
@@ -119,17 +118,16 @@ public class ModbusSerialAgent extends ModbusAgent<ModbusSerialAgent, ModbusSeri
         return getParity().getValue();
     }
 
-    public Optional<String> getIllegalRegisters() {
-        return getAttributes().getValue(ILLEGAL_REGISTERS);
+    public Optional<ValueType.StringMap> getIllegalRegistersMap() {
+        return getAttributes().getValue(ILLEGAL_REGISTERS_MAP);
     }
 
-    public Integer getMaxRegisterLength() {
-        return getAttributes().getValue(MAX_REGISTER_LENGTH).orElse(1); // Batch processing disabled by default.
+    public Optional<ValueType.IntegerMap> getMaxRegisterLengthMap() {
+        return getAttributes().getValue(MAX_REGISTER_LENGTH_MAP);
     }
 
-    @Override
-    public ModbusAgent.EndianFormat getEndianFormat() {
-        return getAttribute(ENDIAN_FORMAT).map(attr -> attr.getValue().orElse(ModbusAgent.EndianFormat.BIG_ENDIAN)).orElse(ModbusAgent.EndianFormat.BIG_ENDIAN);
+    public Optional<ModbusAgent.EndianFormatMap> getEndianFormatMap() {
+        return getAttributes().getValue(ENDIAN_FORMAT_MAP);
     }
 
     @Override

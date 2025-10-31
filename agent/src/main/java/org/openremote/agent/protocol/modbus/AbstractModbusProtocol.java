@@ -26,6 +26,7 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.value.ValueType;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,11 +54,56 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected final Set<String> failedMessageIds = ConcurrentHashMap.newKeySet();
 
     /**
-     * Get Java ByteOrder based on EndianFormat.
+     * Get per-unitId EndianFormat from the agent's map configuration.
+     * Falls back to "default" key if specific unitId is not configured.
+     */
+    protected abstract Optional<ModbusAgent.EndianFormatMap> getEndianFormatMap();
+
+    /**
+     * Get per-unitId illegal registers configuration from the agent's map.
+     * Falls back to "default" key if specific unitId is not configured.
+     */
+    protected abstract Optional<ValueType.StringMap> getIllegalRegistersMap();
+
+    /**
+     * Get per-unitId max register length from the agent's map.
+     * Falls back to "default" key if specific unitId is not configured.
+     */
+    protected abstract Optional<ValueType.IntegerMap> getMaxRegisterLengthMap();
+
+    /**
+     * Look up a value from a map using unitId, falling back to "default" key.
+     */
+    protected <V> V getConfigForUnitId(Map<String, V> configMap, Integer unitId, V defaultValue) {
+        if (configMap == null || configMap.isEmpty()) {
+            return defaultValue;
+        }
+
+        // Try specific unitId first
+        if (unitId != null && configMap.containsKey(String.valueOf(unitId))) {
+            return configMap.get(String.valueOf(unitId));
+        }
+
+        // Fall back to "default" key
+        return configMap.getOrDefault("default", defaultValue);
+    }
+
+    /**
+     * Get EndianFormat for a specific unitId.
+     * @param unitId The unit ID to look up configuration for
+     * @return The EndianFormat for this unitId, or BIG_ENDIAN if not configured
+     */
+    protected ModbusAgent.EndianFormat getEndianFormat(Integer unitId) {
+        ModbusAgent.EndianFormatMap map = getEndianFormatMap().orElse(null);
+        return getConfigForUnitId(map, unitId, ModbusAgent.EndianFormat.BIG_ENDIAN);
+    }
+
+    /**
+     * Get Java ByteOrder based on EndianFormat for a specific unitId.
      * Extracts byte order from the combined endian format.
      */
-    protected java.nio.ByteOrder getJavaByteOrder() {
-        ModbusAgent.EndianFormat format = agent.getEndianFormat();
+    protected java.nio.ByteOrder getJavaByteOrder(Integer unitId) {
+        ModbusAgent.EndianFormat format = getEndianFormat(unitId);
         // BIG_ENDIAN and BIG_ENDIAN_BYTE_SWAP use big-endian byte order
         // LITTLE_ENDIAN and LITTLE_ENDIAN_BYTE_SWAP use little-endian byte order
         return (format == ModbusAgent.EndianFormat.BIG_ENDIAN || format == ModbusAgent.EndianFormat.BIG_ENDIAN_BYTE_SWAP)
@@ -66,11 +112,11 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     }
 
     /**
-     * Apply word order swapping to multi-register data based on EndianFormat.
+     * Apply word order swapping to multi-register data based on EndianFormat for a specific unitId.
      * Word order determines how 16-bit registers are arranged within multi-register values.
      */
-    protected byte[] applyWordOrder(byte[] data, int registerCount) {
-        ModbusAgent.EndianFormat format = agent.getEndianFormat();
+    protected byte[] applyWordOrder(byte[] data, int registerCount, Integer unitId) {
+        ModbusAgent.EndianFormat format = getEndianFormat(unitId);
 
         // No swapping needed for single register or BIG_ENDIAN/LITTLE_ENDIAN formats
         if (registerCount <= 1 || format == ModbusAgent.EndianFormat.BIG_ENDIAN || format == ModbusAgent.EndianFormat.LITTLE_ENDIAN) {
@@ -90,10 +136,10 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     }
 
     /**
-     * Parse multi-register value from raw bytes based on data type.
+     * Parse multi-register value from raw bytes based on data type for a specific unitId.
      * Handles byte order, word order, and type conversion.
      */
-    protected Object parseMultiRegisterValue(byte[] dataBytes, int registerCount, ModbusAgentLink.ModbusDataType dataType) {
+    protected Object parseMultiRegisterValue(byte[] dataBytes, int registerCount, ModbusAgentLink.ModbusDataType dataType, Integer unitId) {
         if (registerCount == 1) {
             // Single 16-bit register
             int high = (dataBytes[0] & 0xFF) << 8;
@@ -101,11 +147,11 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             return high | low;
         } else if (registerCount == 2) {
             // Two registers - could be IEEE754 float or 32-bit integer
-            byte[] processedBytes = applyWordOrder(dataBytes, 2);
+            byte[] processedBytes = applyWordOrder(dataBytes, 2, unitId);
 
             if (dataType == ModbusAgentLink.ModbusDataType.REAL) {
                 java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(processedBytes);
-                buffer.order(getJavaByteOrder());
+                buffer.order(getJavaByteOrder(unitId));
                 float value = buffer.getFloat();
 
                 // Filter out NaN and Infinity values
@@ -117,16 +163,16 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             } else {
                 // Return as 32-bit integer
                 java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(processedBytes);
-                buffer.order(getJavaByteOrder());
+                buffer.order(getJavaByteOrder(unitId));
                 return buffer.getInt();
             }
         } else if (registerCount == 4) {
             // Four registers - could be 64-bit integer or double precision float
-            byte[] processedBytes = applyWordOrder(dataBytes, 4);
+            byte[] processedBytes = applyWordOrder(dataBytes, 4, unitId);
 
             if (dataType == ModbusAgentLink.ModbusDataType.LREAL) {
                 java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(processedBytes);
-                buffer.order(getJavaByteOrder());
+                buffer.order(getJavaByteOrder(unitId));
                 double value = buffer.getDouble();
 
                 if (Double.isNaN(value) || Double.isInfinite(value)) {
@@ -136,11 +182,11 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 return value;
             } else if (dataType == ModbusAgentLink.ModbusDataType.LINT) {
                 java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(processedBytes);
-                buffer.order(getJavaByteOrder());
+                buffer.order(getJavaByteOrder(unitId));
                 return buffer.getLong();
             } else if (dataType == ModbusAgentLink.ModbusDataType.ULINT) {
                 java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(processedBytes);
-                buffer.order(getJavaByteOrder());
+                buffer.order(getJavaByteOrder(unitId));
                 long signedValue = buffer.getLong();
 
                 if (signedValue >= 0) {
@@ -150,7 +196,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 }
             } else {
                 java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(processedBytes);
-                buffer.order(getJavaByteOrder());
+                buffer.order(getJavaByteOrder(unitId));
                 return buffer.getLong();
             }
         }
@@ -245,16 +291,10 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
         return illegalRanges.stream().anyMatch(range -> range.contains(register));
     }
 
-    /**
-     * Get illegal registers configuration from agent. Subclasses must implement.
-     */
-    protected abstract Optional<String> getIllegalRegistersConfig();
-
     @Override
     protected void doStart(Container container) throws Exception {
-        // Parse illegal registers from agent config
-        illegalRegisters = parseIllegalRegisters(getIllegalRegistersConfig().orElse(""));
-        LOG.info("Loaded " + illegalRegisters.size() + " illegal register ranges for modbus agent " + agent.getId());
+        // Illegal registers are now loaded per-unitId during batch creation
+        // No global illegal registers parsing needed here
 
         // Call protocol-specific start
         doStartProtocol(container);
@@ -288,28 +328,30 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) throws RuntimeException {
             AttributeRef ref = new AttributeRef(assetId, attribute.getName());
 
-            // Check if read configuration is present (all three parameters required for reading)
+            // Check if read configuration is present (all required parameters)
             boolean hasReadConfig = agentLink.getReadMemoryArea() != null
                     && agentLink.getReadValueType() != null
-                    && agentLink.getReadAddress() != null;
+                    && agentLink.getReadAddress() != null
+                    && agentLink.getUnitId() != null;
 
             if (hasReadConfig) {
                 // Setup read polling using batching (works for single or multiple attributes)
-                String groupKey = agent.getId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
+                // Group by agent, unitId, memory area, and polling interval
+                String groupKey = agent.getId() + "_" + agentLink.getUnitId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
 
                 batchGroups.computeIfAbsent(groupKey, k -> new ConcurrentHashMap<>()).put(ref, agentLink);
                 cachedBatches.remove(groupKey); // Invalidate cache
 
                 // Only schedule task if one doesn't exist yet for this group
                 if (!batchPollingTasks.containsKey(groupKey)) {
-                    ScheduledFuture<?> batchTask = scheduleBatchedPollingTask(groupKey, agentLink.getReadMemoryArea(), agentLink.getPollingMillis());
+                    ScheduledFuture<?> batchTask = scheduleBatchedPollingTask(groupKey, agentLink.getReadMemoryArea(), agentLink.getPollingMillis(), agentLink.getUnitId());
                     batchPollingTasks.put(groupKey, batchTask);
                     LOG.fine("Scheduled new polling task for batch group " + groupKey);
                 }
 
                 LOG.fine("Added attribute " + ref + " to batch group " + groupKey + " (total attributes in group: " + batchGroups.get(groupKey).size() + ")");
             } else {
-                LOG.fine("Skipping read polling for " + ref + " - read configuration incomplete (readMemoryArea, readValueType, and readAddress all required)");
+                LOG.fine("Skipping read polling for " + ref + " - read configuration incomplete (unitId, readMemoryArea, readValueType, and readAddress all required)");
             }
 
             // Check if write polling is enabled and reading is not
@@ -356,10 +398,19 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     }
 
     /**
-     * Get the maximum register length for batching. Override in subclass if agent supports this configuration.
+     * Get the maximum register length for batching for a specific unitId.
      */
-    protected Integer getMaxRegisterLength() {
-        return 1; // Default: no batching
+    protected Integer getMaxRegisterLength(Integer unitId) {
+        ValueType.IntegerMap map = getMaxRegisterLengthMap().orElse(null);
+        return getConfigForUnitId(map, unitId, 1); // Default: no batching (1 register at a time)
+    }
+
+    /**
+     * Get illegal registers string for a specific unitId.
+     */
+    protected String getIllegalRegistersString(Integer unitId) {
+        ValueType.StringMap map = getIllegalRegistersMap().orElse(null);
+        return getConfigForUnitId(map, unitId, ""); // Default: no illegal registers
     }
 
     /**
@@ -446,7 +497,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     /**
      * Schedule a batched polling task for a group of attributes
      */
-    protected ScheduledFuture<?> scheduleBatchedPollingTask(String groupKey, ModbusAgentLink.ReadMemoryArea memoryArea, long pollingMillis) {
+    protected ScheduledFuture<?> scheduleBatchedPollingTask(String groupKey, ModbusAgentLink.ReadMemoryArea memoryArea, long pollingMillis, Integer unitId) {
         LOG.info("Scheduling batched polling task for group " + groupKey + " every " + pollingMillis + "ms");
 
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
@@ -460,8 +511,13 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 synchronized (cachedBatches) {
                     batches = cachedBatches.get(groupKey);
                     if (batches == null) {
-                        LOG.info("Creating batch requests for group " + groupKey + " with " + group.size() + " attribute(s) (maxRegisterLength=" + getMaxRegisterLength() + ")");
-                        batches = createBatchRequests(group, illegalRegisters, getMaxRegisterLength());
+                        // Get per-unitId configuration
+                        int maxRegisterLength = getMaxRegisterLength(unitId);
+                        String illegalRegistersStr = getIllegalRegistersString(unitId);
+                        Set<RegisterRange> illegalRegistersForUnit = parseIllegalRegisters(illegalRegistersStr);
+
+                        LOG.info("Creating batch requests for group " + groupKey + " with " + group.size() + " attribute(s) (unitId=" + unitId + ", maxRegisterLength=" + maxRegisterLength + ")");
+                        batches = createBatchRequests(group, illegalRegistersForUnit, maxRegisterLength);
                         cachedBatches.put(groupKey, batches);
                     }
                 }
@@ -471,7 +527,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                     BatchReadRequest batch = batches.get(i);
                     int endAddress = batch.startAddress + batch.quantity - 1;
                     LOG.finest("Executing batch " + (i + 1) + "/" + batches.size() + ": registers=" + batch.startAddress + "-" + endAddress + " (quantity=" + batch.quantity + ", attributes=" + batch.attributes.size() + ")");
-                    executeBatchRead(batch, memoryArea, group);
+                    executeBatchRead(batch, memoryArea, group, unitId);
                 }
 
             } catch (Exception e) {
@@ -483,7 +539,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     /**
      * Execute a batch read request. Must be implemented by subclasses for protocol-specific communication.
      */
-    protected abstract void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group);
+    protected abstract void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group, Integer unitId);
 
     /**
      * Schedule a polling write request for an attribute with writeWithPollingRate enabled.

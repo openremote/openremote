@@ -33,6 +33,7 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.value.ValueType;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -59,18 +60,28 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
     }
 
     @Override
-    protected Optional<String> getIllegalRegistersConfig() {
-        return agent.getIllegalRegisters();
+    protected Optional<ModbusAgent.EndianFormatMap> getEndianFormatMap() {
+        return agent.getEndianFormatMap();
+    }
+
+    @Override
+    protected Optional<ValueType.StringMap> getIllegalRegistersMap() {
+        return agent.getIllegalRegistersMap();
+    }
+
+    @Override
+    protected Optional<ValueType.IntegerMap> getMaxRegisterLengthMap() {
+        return agent.getMaxRegisterLengthMap();
     }
 
     @Override
     protected void doStartProtocol(Container container) throws Exception {
         setConnectionStatus(ConnectionStatus.CONNECTING);
 
+        // Use default unit-identifier of 1 for connection (can be overridden per-tag in requests)
         connectionString = "modbus-tcp://" + agent.getHost().orElseThrow()
                 + ":" + agent.getPort().orElseThrow()
-                + "?unit-identifier=" + agent.getUnitId()
-                + "&byte-order=" + agent.getEndianFormat().getJsonValue();
+                + "?unit-identifier=1";
 
         // Retry logic with exponential backoff
         int maxRetries = 3;
@@ -145,24 +156,22 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
     }
 
     @Override
-    protected Integer getMaxRegisterLength() {
-        return agent.getMaxRegisterLength();
-    }
-
-    @Override
     protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
+        // For TCP, unitId defaults to 1 if not specified (common convention)
+        int unitId = Optional.ofNullable(agentLink.getUnitId()).orElse(1);
         LOG.finest("DEBUG doLinkedAttributeWrite triggered: " + agentLink + ", event: " + event + ", processedValue: " + processedValue);
         int writeAddress = getOrThrowAgentLinkProperty(Optional.ofNullable(agentLink.getWriteAddress()), "write address");
         int registersCount = Optional.ofNullable(agentLink.getRegistersAmount()).orElse(1);
-        String messageId = "tcp_write_" + event.getRef().getId() + "_" + event.getRef().getName() + "_" + writeAddress;
+        String messageId = "tcp_write_" + unitId + "_" + event.getRef().getId() + "_" + event.getRef().getName() + "_" + writeAddress;
 
         PlcWriteRequest.Builder builder = client.writeRequestBuilder();
 
         String amountString = registersCount <= 1 ? "" : "[" + registersCount + "]";
 
+        // PLC4X Modbus TCP format: type:unitId:address
         switch (agentLink.getWriteMemoryArea()){
-            case COIL -> builder.addTagAddress("coil", "coil:" + writeAddress + amountString, processedValue);
-            case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + writeAddress + amountString, processedValue);
+            case COIL -> builder.addTagAddress("coil", "coil:" + unitId + ":" + writeAddress + amountString, processedValue);
+            case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + unitId + ":" + writeAddress + amountString, processedValue);
             default -> throw new IllegalStateException("Only COIL and HOLDING memory areas are supported for writing");
         }
 
@@ -199,8 +208,10 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
     }
 
     @Override
-    protected void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group) {
-        String messageId = "tcp_batch_" + memoryArea + "_" + batch.startAddress + "_" + batch.quantity;
+    protected void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group, Integer unitId) {
+        // For TCP, unitId defaults to 1 if not specified
+        int effectiveUnitId = unitId != null ? unitId : 1;
+        String messageId = "tcp_batch_" + effectiveUnitId + "_" + memoryArea + "_" + batch.startAddress + "_" + batch.quantity;
         try {
             PlcReadRequest.Builder builder = client.readRequestBuilder();
 
@@ -212,7 +223,8 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                 case INPUT -> "input-register";
             };
 
-            String tagAddress = memoryAreaTag + ":" + batch.startAddress;
+            // PLC4X Modbus TCP format: type:unitId:address
+            String tagAddress = memoryAreaTag + ":" + effectiveUnitId + ":" + batch.startAddress;
             if (batch.quantity > 1) {
                 tagAddress += "[" + batch.quantity + "]";
             }
@@ -245,7 +257,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                     ModbusAgentLink.ModbusDataType dataType = agentLink.getReadValueType();
 
                     // Extract value using helper method that handles multi-register conversion
-                    Object value = extractValueFromBatchResponse(response, "batchRead", offset, registerCount, dataType);
+                    Object value = extractValueFromBatchResponse(response, "batchRead", offset, registerCount, dataType, effectiveUnitId);
 
                     if (value != null) {
                         LOG.fine("Extracted value from batch for " + ref + ": " + value + " (type: " + dataType + ", registers: " + registerCount + ")");
@@ -308,7 +320,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
      * PLC4X batch reads return raw SHORT arrays without data type conversion,
      * so we need to manually convert based on the data type.
      */
-    private Object extractValueFromBatchResponse(PlcReadResponse response, String tag, int offset, int registerCount, ModbusAgentLink.ModbusDataType dataType) {
+    private Object extractValueFromBatchResponse(PlcReadResponse response, String tag, int offset, int registerCount, ModbusAgentLink.ModbusDataType dataType, Integer unitId) {
         try {
             if (registerCount == 1) {
                 // Single register - PLC4X handles this correctly
@@ -323,7 +335,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                 dataBytes[i * 2 + 1] = (byte) (value & 0xFF);
             }
 
-            return parseMultiRegisterValue(dataBytes, registerCount, dataType);
+            return parseMultiRegisterValue(dataBytes, registerCount, dataType, unitId);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to extract value from batch response at offset " + offset + ": " + e.getMessage(), e);
             return null;

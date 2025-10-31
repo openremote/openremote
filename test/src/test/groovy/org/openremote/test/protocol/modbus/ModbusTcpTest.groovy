@@ -229,7 +229,6 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
 
         agent.setHost("127.0.0.1")
         agent.setPort(modbusServerPort)
-        agent.setUnitId(1)
 
         agent = assetStorageService.merge(agent)
 
@@ -253,6 +252,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("partialReadConfig", ValueType.INTEGER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadAddress(550)
@@ -278,6 +278,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 AGENT_LINK,
                 new ModbusAgentLink(
                         id: agent.getId(),
+                        unitId: 1,
                         pollingMillis: 1000,
                         readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                         readValueType: ModbusAgentLink.ModbusDataType.UINT,
@@ -327,6 +328,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 AGENT_LINK,
                 new ModbusAgentLink(
                         id: agent.getId(),
+                        unitId: 1,
                         pollingMillis: 1000,
                         readMemoryArea: ModbusAgentLink.ReadMemoryArea.COIL,
                         readValueType: ModbusAgentLink.ModbusDataType.BOOL,
@@ -391,9 +393,8 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         agent.setRealm(MASTER_REALM)
         agent.setHost("127.0.0.1")
         agent.setPort(modbusServerPort)
-        agent.setUnitId(1)
         agent.addOrReplaceAttributes(
-                new Attribute<>(ModbusTcpAgent.MAX_REGISTER_LENGTH, 50) // Enable batching
+                new Attribute<>(ModbusTcpAgent.MAX_REGISTER_LENGTH_MAP, ["default": 50] as ValueType.IntegerMap) // Enable batching
         )
         agent = assetStorageService.merge(agent)
 
@@ -411,6 +412,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("register1", ValueType.POSITIVE_INTEGER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.UINT)
@@ -421,6 +423,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("register2", ValueType.POSITIVE_INTEGER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.UINT)
@@ -431,6 +434,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("register3", ValueType.POSITIVE_INTEGER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.UINT)
@@ -477,9 +481,8 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         agent.setRealm(MASTER_REALM)
         agent.setHost("127.0.0.1")
         agent.setPort(modbusServerPort)
-        agent.setUnitId(1)
         agent.addOrReplaceAttributes(
-                new Attribute<>(ModbusTcpAgent.MAX_REGISTER_LENGTH, 50)
+                new Attribute<>(ModbusTcpAgent.MAX_REGISTER_LENGTH_MAP, ["default": 50] as ValueType.IntegerMap)
         )
         agent = assetStorageService.merge(agent)
 
@@ -497,6 +500,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("longSignedValue", ValueType.LONG).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.LINT)
@@ -509,6 +513,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("longUnsignedValue", ValueType.BIG_INTEGER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.ULINT)
@@ -521,6 +526,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("doubleValue", ValueType.NUMBER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.LREAL)
@@ -569,9 +575,8 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         agent.setRealm(MASTER_REALM)
         agent.setHost("127.0.0.1")
         agent.setPort(modbusServerPort)
-        agent.setUnitId(1)
         agent.addOrReplaceAttributes(
-                new Attribute<>(ModbusTcpAgent.ENDIAN_FORMAT, ModbusAgent.EndianFormat.BIG_ENDIAN)
+                new Attribute<>(ModbusTcpAgent.ENDIAN_FORMAT_MAP, ["default": ModbusAgent.EndianFormat.BIG_ENDIAN] as ModbusAgent.EndianFormatMap)
         )
         agent = assetStorageService.merge(agent)
 
@@ -588,6 +593,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("int32Value", ValueType.INTEGER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.DINT)
@@ -599,6 +605,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("floatValue", ValueType.NUMBER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.REAL)
@@ -642,7 +649,6 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         agent.setRealm(MASTER_REALM)
         agent.setHost("127.0.0.1")
         agent.setPort(modbusServerPort)
-        agent.setUnitId(1)
         agent = assetStorageService.merge(agent)
 
         then: "the agent should connect successfully"
@@ -659,6 +665,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("floatWriteValue", ValueType.NUMBER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.REAL)
@@ -673,6 +680,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("dintWriteValue", ValueType.INTEGER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.DINT)
@@ -747,7 +755,6 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         agent.setRealm(MASTER_REALM)
         agent.setHost("127.0.0.1")
         agent.setPort(modbusServerPort)
-        agent.setUnitId(1)
         agent = assetStorageService.merge(agent)
 
         then: "the agent should connect successfully"
@@ -763,6 +770,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("pollingWriteValue", ValueType.INTEGER, 42).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setPollingMillis(1000)  // Write every 500ms
                                     it.setWriteMemoryArea(ModbusAgentLink.WriteMemoryArea.HOLDING)
                                     it.setWriteAddress(400)
@@ -840,7 +848,6 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         agent.setRealm(MASTER_REALM)
         agent.setHost("127.0.0.1")
         agent.setPort(modbusServerPort)
-        agent.setUnitId(1)
         agent = assetStorageService.merge(agent)
 
         then: "the agent should connect successfully"
@@ -857,6 +864,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("writeOnlyValue", ValueType.INTEGER, 555).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setWriteMemoryArea(ModbusAgentLink.WriteMemoryArea.HOLDING)
                                     it.setWriteAddress(500)
                                     it.setPollingMillis(1000)
@@ -902,7 +910,6 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         agent.setRealm(MASTER_REALM)
         agent.setHost("127.0.0.1")
         agent.setPort(modbusServerPort)
-        agent.setUnitId(1)
         agent = assetStorageService.merge(agent)
 
         then: "the agent should connect successfully"

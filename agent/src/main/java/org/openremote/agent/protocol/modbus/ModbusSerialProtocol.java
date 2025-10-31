@@ -20,21 +20,18 @@
 package org.openremote.agent.protocol.modbus;
 
 import com.fazecast.jSerialComm.SerialPort;
-import org.openremote.agent.protocol.serial.SerialPortManager;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.value.ValueType;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
 
@@ -42,8 +39,9 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
 
     public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ModbusSerialProtocol.class);
 
-    private org.openremote.agent.protocol.serial.SerialPortWrapper serialPort;
+    private SerialPort serialPort;
     private String connectionString;
+    private final Object serialLock = new Object(); // Synchronization lock for serial port operations
 
     public ModbusSerialProtocol(ModbusSerialAgent agent) {
         super(agent);
@@ -60,13 +58,26 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
     }
 
     @Override
-    protected Optional<String> getIllegalRegistersConfig() {
-        return agent.getIllegalRegisters();
+    protected Optional<ModbusAgent.EndianFormatMap> getEndianFormatMap() {
+        return agent.getEndianFormatMap();
     }
 
     @Override
-    protected Integer getMaxRegisterLength() {
-        return agent.getMaxRegisterLength();
+    protected Optional<ValueType.StringMap> getIllegalRegistersMap() {
+        return agent.getIllegalRegistersMap();
+    }
+
+    @Override
+    protected Optional<ValueType.IntegerMap> getMaxRegisterLengthMap() {
+        return agent.getMaxRegisterLengthMap();
+    }
+
+    /**
+     * Factory method for creating SerialPort instance.
+     * This method can be overridden in tests to provide a mock serial port.
+     */
+    protected SerialPort createSerialPort(String portName) {
+        return SerialPort.getCommPort(portName);
     }
 
     @Override
@@ -82,57 +93,46 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         connectionString = "modbus-rtu://" + portName + "?baud=" + baudRate + "&data=" + dataBits + "&stop=" + stopBits + "&parity=" + parity;
 
         try {
-            // Acquire shared serial port through SerialPortManager
-            org.openremote.agent.protocol.serial.SerialPortWrapper wrapper = SerialPortManager.getInstance().acquirePort(
-                    portName,
-                    baudRate,
-                    dataBits,
-                    stopBits,
-                    mapParityToSerialPort(parity)
-            );
-            Thread.sleep(100); //Delay to allow connectionStatus attribute processing, this may still cause failure on slow systems...
-            if (wrapper != null && wrapper.isOpen()) {
-                serialPort = wrapper;
+            // Open serial port directly (no shared port management)
+            serialPort = createSerialPort(portName);
+            serialPort.setBaudRate(baudRate);
+            serialPort.setNumDataBits(dataBits);
+            serialPort.setNumStopBits(stopBits);
+            serialPort.setParity(mapParityToSerialPort(parity));
+            serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 100, 0);
+
+            if (serialPort.openPort()) {
+                Thread.sleep(100); // Delay to allow port initialization
                 setConnectionStatus(ConnectionStatus.CONNECTED);
-                String parityName = agent.getParity().name();
-                LOG.info("Modbus on serial device started successfully, " + connectionString);
-                return; // Success - exit method
+                LOG.info("Modbus Serial Protocol started successfully: " + connectionString);
+                return; // Success
             } else {
-                LOG.warning("Serial port acquisition failed");
+                LOG.warning("Failed to open serial port: " + portName);
             }
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Exception during serial port acquisition: " + e.getMessage(), e);
-            LOG.finest("Here3");
+            LOG.log(Level.WARNING, "Exception during serial port opening: " + e.getMessage(), e);
         }
 
-        // All retries exhausted
+        // Failed to open port
         LOG.log(Level.SEVERE, "Failed to start Modbus Serial Protocol for " + connectionString);
         setConnectionStatus(ConnectionStatus.ERROR);
     }
 
     @Override
     protected void doStopProtocol(Container container) throws Exception {
-        // Release shared serial port through SerialPortManager
-        // IMPORTANT: Always release if we have a port reference, even if isOpen() is false
-        // The port might appear "closed" during async cleanup but we still hold a reference count
-        if (serialPort != null) {
-            String portName = agent.getSerialPort().orElse("unknown");
-            SerialPortManager.getInstance().releasePort(
-                    portName,
-                    agent.getBaudRate(),
-                    agent.getDataBits(),
-                    agent.getStopBits(),
-                    mapParityToSerialPort(agent.getParityValue())
-            );
-            serialPort = null; // Clear reference after release
-            //LOG.info("Released Modbus RTU device: " + portName);
+        // Close serial port directly
+        if (serialPort != null && serialPort.isOpen()) {
+            serialPort.closePort();
+            LOG.info("Closed Modbus Serial port: " + agent.getSerialPort().orElse("unknown"));
         }
+        serialPort = null;
 
         setConnectionStatus(ConnectionStatus.DISCONNECTED);
     }
 
     @Override
     protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
+        int unitId = getOrThrowAgentLinkProperty(Optional.ofNullable(agentLink.getUnitId()), "unit ID");
         int writeAddress = getOrThrowAgentLinkProperty(Optional.ofNullable(agentLink.getWriteAddress()), "write address");
         int registersCount = Optional.ofNullable(agentLink.getRegistersAmount()).orElse(1);
 
@@ -143,13 +143,13 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         try {
             switch (agentLink.getWriteMemoryArea()) {
                 case COIL:
-                    writeSuccess = writeSingleCoil(agent.getUnitId(), protocolAddress, (Boolean) processedValue);
+                    writeSuccess = writeSingleCoil(unitId, protocolAddress, (Boolean) processedValue);
                     break;
                 case HOLDING:
                     if (registersCount > 1) {
-                        writeSuccess = writeMultipleHoldingRegisters(agent.getUnitId(), protocolAddress, registersCount, processedValue);
+                        writeSuccess = writeMultipleHoldingRegisters(unitId, protocolAddress, registersCount, processedValue, agentLink);
                     } else {
-                        writeSuccess = writeSingleHoldingRegister(agent.getUnitId(), protocolAddress, processedValue);
+                        writeSuccess = writeSingleHoldingRegister(unitId, protocolAddress, processedValue);
                     }
                     break;
                 default:
@@ -177,8 +177,8 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
     }
     
     private boolean writeSingleCoil(int unitId, int address, boolean value) {
-        // Synchronize on the serial port's shared lock to ensure atomic write-read cycles across all agents sharing the port
-        synchronized (serialPort.getSynchronizationLock()) {
+        // Synchronize to ensure atomic write-read cycles
+        synchronized (serialLock) {
             String messageId = "write_coil_" + unitId + "_" + address;
             try {
                 byte[] request = createWriteCoilRequest(unitId, (byte) 0x05, address, value);
@@ -210,8 +210,8 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
     }
     
     private boolean writeSingleHoldingRegister(int unitId, int address, Object value) {
-        // Synchronize on the serial port's shared lock to ensure atomic write-read cycles across all agents sharing the port
-        synchronized (serialPort.getSynchronizationLock()) {
+        // Synchronize to ensure atomic write-read cycles
+        synchronized (serialLock) {
             String messageId = "write_holding_" + unitId + "_" + address;
             try {
                 int registerValue;
@@ -251,13 +251,13 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         }
     }
 
-    private boolean writeMultipleHoldingRegisters(int unitId, int address, int quantity, Object value) {
-        // Synchronize on the serial port's shared lock to ensure atomic write-read cycles across all agents sharing the port
-        synchronized (serialPort.getSynchronizationLock()) {
+    private boolean writeMultipleHoldingRegisters(int unitId, int address, int quantity, Object value, ModbusAgentLink agentLink) {
+        // Synchronize to ensure atomic write-read cycles
+        synchronized (serialLock) {
             String messageId = "write_multiple_" + unitId + "_" + address + "_" + quantity;
             try {
-                // Convert value to byte array based on quantity
-                byte[] registerData = convertValueToRegisters(value, quantity);
+                // Convert value to byte array based on quantity, using unitId-specific endian format
+                byte[] registerData = convertValueToRegisters(value, quantity, unitId);
 
                 byte[] request = createWriteMultipleRegistersRequest(unitId, (byte) 0x10, address, quantity, registerData);
 
@@ -392,9 +392,9 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
 
     /**
      * Convert a value to register bytes based on the number of registers.
-     * Applies byte and word order based on agent configuration.
+     * Applies byte and word order based on unitId-specific configuration.
      */
-    private byte[] convertValueToRegisters(Object value, int registerCount) {
+    private byte[] convertValueToRegisters(Object value, int registerCount, Integer unitId) {
         byte[] data;
 
         if (registerCount == 1) {
@@ -415,47 +415,47 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
             data = new byte[4];
             if (value instanceof Float) {
                 java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(4);
-                buffer.order(getJavaByteOrder());
+                buffer.order(getJavaByteOrder(unitId));
                 buffer.putFloat((Float) value);
                 data = buffer.array();
             } else if (value instanceof Integer) {
                 java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(4);
-                buffer.order(getJavaByteOrder());
+                buffer.order(getJavaByteOrder(unitId));
                 buffer.putInt((Integer) value);
                 data = buffer.array();
             } else if (value instanceof Number) {
                 java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(4);
-                buffer.order(getJavaByteOrder());
+                buffer.order(getJavaByteOrder(unitId));
                 buffer.putInt(((Number) value).intValue());
                 data = buffer.array();
             } else {
                 throw new IllegalArgumentException("Cannot convert value to 2 registers: " + value);
             }
             // Apply word order
-            data = applyWordOrder(data, 2);
+            data = applyWordOrder(data, 2, unitId);
         } else if (registerCount == 4) {
             // Four registers (64-bit int or double)
             data = new byte[8];
             if (value instanceof Double) {
                 java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(8);
-                buffer.order(getJavaByteOrder());
+                buffer.order(getJavaByteOrder(unitId));
                 buffer.putDouble((Double) value);
                 data = buffer.array();
             } else if (value instanceof Long) {
                 java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(8);
-                buffer.order(getJavaByteOrder());
+                buffer.order(getJavaByteOrder(unitId));
                 buffer.putLong((Long) value);
                 data = buffer.array();
             } else if (value instanceof Number) {
                 java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(8);
-                buffer.order(getJavaByteOrder());
+                buffer.order(getJavaByteOrder(unitId));
                 buffer.putLong(((Number) value).longValue());
                 data = buffer.array();
             } else {
                 throw new IllegalArgumentException("Cannot convert value to 4 registers: " + value);
             }
             // Apply word order
-            data = applyWordOrder(data, 4);
+            data = applyWordOrder(data, 4, unitId);
         } else {
             throw new IllegalArgumentException("Unsupported register count for write: " + registerCount);
         }
@@ -505,7 +505,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
      * Execute a batch read request and distribute values to attributes
      */
     @Override
-    protected void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group) {
+    protected void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group, Integer unitId) {
         byte functionCode;
         switch (memoryArea) {
             case COIL:
@@ -528,7 +528,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         int protocolAddress = batch.startAddress - 1;
 
         // Perform the batch read
-        byte[] response = performModbusBatchRead(agent.getUnitId(), functionCode, protocolAddress, batch.quantity);
+        byte[] response = performModbusBatchRead(unitId, functionCode, protocolAddress, batch.quantity);
 
         if (response == null) {
             return;
@@ -545,7 +545,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
             }
 
             try {
-                Object value = extractValueFromBatchResponse(response, offset, agentLink.getReadValueType(), functionCode);
+                Object value = extractValueFromBatchResponse(response, offset, agentLink.getReadValueType(), functionCode, unitId);
                 if (value != null) {
                     updateLinkedAttribute(attrRef, value);
                 }
@@ -559,8 +559,8 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
      * Perform a batch Modbus read and return the raw response data
      */
     private byte[] performModbusBatchRead(int unitId, byte functionCode, int address, int quantity) {
-        // Synchronize on the serial port's shared lock to ensure atomic write-read cycles across all agents sharing the port
-        synchronized (serialPort.getSynchronizationLock()) {
+        // Synchronize to ensure atomic write-read cycles
+        synchronized (serialLock) {
             String messageId = "batch_" + unitId + "_" + functionCode + "_" + address + "_" + quantity;
             LOG.fine("Performing batch Modbus read: unit=" + unitId + ", function=" + functionCode + ", address=" + address + ", quantity=" + quantity);
             try {
@@ -625,7 +625,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
     /**
      * Extract a value from a batch response at a specific offset
      */
-    private Object extractValueFromBatchResponse(byte[] response, int registerOffset, ModbusAgentLink.ModbusDataType dataType, byte functionCode) {
+    private Object extractValueFromBatchResponse(byte[] response, int registerOffset, ModbusAgentLink.ModbusDataType dataType, byte functionCode, Integer unitId) {
         int byteCount = response[2] & 0xFF;
 
         if (functionCode == 0x01 || functionCode == 0x02) {
@@ -643,7 +643,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
             if (byteOffset + (registerCount * 2) <= response.length) {
                 byte[] dataBytes = new byte[registerCount * 2];
                 System.arraycopy(response, byteOffset, dataBytes, 0, registerCount * 2);
-                return parseMultiRegisterValue(dataBytes, registerCount, dataType);
+                return parseMultiRegisterValue(dataBytes, registerCount, dataType, unitId);
             }
         }
 

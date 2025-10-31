@@ -24,8 +24,6 @@ import org.openremote.agent.protocol.modbus.ModbusAgent
 import org.openremote.agent.protocol.modbus.ModbusAgentLink
 import org.openremote.agent.protocol.modbus.ModbusSerialAgent
 import org.openremote.agent.protocol.modbus.ModbusSerialProtocol
-import org.openremote.agent.protocol.serial.SerialPortManager
-import org.openremote.agent.protocol.serial.SerialPortWrapper
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -55,41 +53,28 @@ import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS
 class ModbusSerialTest extends Specification implements ManagerContainerTrait {
 
     @Shared
-    MockSerialPort mockSerialPort
-
-    @Shared
     AtomicReference<byte[]> latestRequest = new AtomicReference<>(null)
 
+    @Shared
+    SerialPort globalMockPort
+
     def setupSpec() {
-        // Create mock serial port that simulates a Modbus RTU device
-        mockSerialPort = new MockSerialPort(latestRequest)
-        // Set the mock factory for all protocol instances created during tests
-        SerialPortManager.setMockFactoryForTesting(new SerialPortManager.SerialPortWrapperFactory() {
-            @Override
-            SerialPortWrapper createWrapper(String portDescriptor, int baudRate, int dataBits, int stopBits, int parity) {
-                return mockSerialPort
-            }
-        })
+        // Create a global mock serial port
+        globalMockPort = createMockSerialPort()
+
+        // Intercept SerialPort.getCommPort() to return our mock
+        SerialPort.metaClass.static.getCommPort = { String portName ->
+            return globalMockPort
+        }
     }
 
     def cleanupSpec() {
-        // Clean up the mock
-        SerialPortManager.setMockFactoryForTesting(null)
+        // Restore original SerialPort.getCommPort() method
+        SerialPort.metaClass = null
     }
 
     def setup() {
-        // Ensure all async port cleanup operations from previous test complete BEFORE starting new test
-        try {
-            SerialPortManager.getInstance().awaitPendingCleanups(5000)
-        } catch (Exception e) {
-            println "Warning: Error waiting for pending cleanups in setup: ${e.message}"
-        }
-
-        // Give extra time for any OS-level resource cleanup
-        Thread.sleep(200)
-
         // Reset mock state before each test
-        mockSerialPort.reset()
         latestRequest.set(null)
     }
 
@@ -112,10 +97,9 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
                 new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
-                new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
-                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30),
-                new Attribute<>(ModbusSerialAgent.ILLEGAL_REGISTERS, "101,151-161"),
-                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT, ModbusAgent.EndianFormat.BIG_ENDIAN)
+                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH_MAP, ["default": 30] as ValueType.IntegerMap),
+                new Attribute<>(ModbusSerialAgent.ILLEGAL_REGISTERS_MAP, ["default": "101,151-161"] as ValueType.StringMap),
+                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT_MAP, ["default": ModbusAgent.EndianFormat.BIG_ENDIAN] as ModbusAgent.EndianFormatMap)
         )
 
         agent = assetStorageService.merge(agent)
@@ -141,6 +125,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         AGENT_LINK,
                         new ModbusAgentLink(
                                 id: agent.getId(),
+                                unitId: 1,
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readAddress: 50
@@ -175,6 +160,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         AGENT_LINK,
                         new ModbusAgentLink(
                                 id: agent.getId(),
+                                unitId: 1,
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
@@ -187,6 +173,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         AGENT_LINK,
                         new ModbusAgentLink(
                                 id: agent.getId(),
+                                unitId: 1,
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
@@ -199,6 +186,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         AGENT_LINK,
                         new ModbusAgentLink(
                                 id: agent.getId(),
+                                unitId: 1,
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.INPUT,
                                 readValueType: ModbusAgentLink.ModbusDataType.REAL,
@@ -211,6 +199,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         AGENT_LINK,
                         new ModbusAgentLink(
                                 id: agent.getId(),
+                                unitId: 1,
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.COIL,
                                 readValueType: ModbusAgentLink.ModbusDataType.BOOL,
@@ -274,10 +263,9 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
                 new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
-                new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
-                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30),
-                new Attribute<>(ModbusSerialAgent.ILLEGAL_REGISTERS, "6-11,21-26"),
-                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT, ModbusAgent.EndianFormat.BIG_ENDIAN)
+                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH_MAP, ["default": 30] as ValueType.IntegerMap),
+                new Attribute<>(ModbusSerialAgent.ILLEGAL_REGISTERS_MAP, ["default": "6-11,21-26"] as ValueType.StringMap),
+                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT_MAP, ["default": ModbusAgent.EndianFormat.BIG_ENDIAN] as ModbusAgent.EndianFormatMap)
         )
 
         agent = assetStorageService.merge(agent)
@@ -291,6 +279,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         AGENT_LINK,
                         new ModbusAgentLink(
                                 id: agent.getId(),
+                                unitId: 1,
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
@@ -302,6 +291,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         AGENT_LINK,
                         new ModbusAgentLink(
                                 id: agent.getId(),
+                                unitId: 1,
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
@@ -313,6 +303,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         AGENT_LINK,
                         new ModbusAgentLink(
                                 id: agent.getId(),
+                                unitId: 1,
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
@@ -342,7 +333,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         }
     }
 
-    def "Modbus Serial Test - Multiple Unit IDs on Same Port"() {
+    def "Modbus Serial Test - Multiple Unit IDs via AgentLink"() {
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 15, delay: 0.5)
 
@@ -351,56 +342,38 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         def assetStorageService = container.getService(AssetStorageService.class)
         def agentService = container.getService(AgentService.class)
 
-        and: "two Modbus Serial agents with different unit IDs on the same port are created"
-        def agent1 = new ModbusSerialAgent("Modbus RTU Unit 1")
-        agent1.setRealm(MASTER_REALM)
-        agent1.addOrReplaceAttributes(
+        and: "a single Modbus Serial agent is created for the serial port"
+        def agent = new ModbusSerialAgent("Modbus RTU Agent")
+        agent.setRealm(MASTER_REALM)
+        agent.addOrReplaceAttributes(
                 new Attribute<>(ModbusSerialAgent.SERIAL_PORT, "/dev/ttyUSB0"),
                 new Attribute<>(ModbusSerialAgent.BAUD_RATE, 9600),
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
                 new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
-                new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
-                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30),
-                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT, ModbusAgent.EndianFormat.BIG_ENDIAN)
+                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH_MAP, ["default": 30] as ValueType.IntegerMap),
+                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT_MAP, ["default": ModbusAgent.EndianFormat.BIG_ENDIAN] as ModbusAgent.EndianFormatMap)
         )
 
-        def agent2 = new ModbusSerialAgent("Modbus RTU Unit 2")
-        agent2.setRealm(MASTER_REALM)
-        agent2.addOrReplaceAttributes(
-                new Attribute<>(ModbusSerialAgent.SERIAL_PORT, "/dev/ttyUSB0"),  // Same port
-                new Attribute<>(ModbusSerialAgent.BAUD_RATE, 9600),
-                new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
-                new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
-                new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
-                new Attribute<>(ModbusSerialAgent.UNIT_ID, 2),  // Different unit ID
-                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 30),
-                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT, ModbusAgent.EndianFormat.BIG_ENDIAN)
-        )
+        agent = assetStorageService.merge(agent)
 
-        agent1 = assetStorageService.merge(agent1)
-        agent2 = assetStorageService.merge(agent2)
-
-        then: "both agents should connect"
+        then: "agent should connect"
         conditions.eventually {
-            assert agentService.getProtocolInstance(agent1.id) != null
-            assert agentService.getProtocolInstance(agent2.id) != null
+            assert agentService.getProtocolInstance(agent.id) != null
 
-            agent1 = assetStorageService.find(agent1.getId())
-            agent2 = assetStorageService.find(agent2.getId())
-
-            assert agent1.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
-            assert agent2.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
+            agent = assetStorageService.find(agent.getId())
+            assert agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
         }
 
-        when: "devices are created for each agent"
+        when: "devices are created with different unit IDs via agentLink"
         ThingAsset device1 = new ThingAsset("Device on Unit 1")
         device1.setRealm(MASTER_REALM)
         device1.addOrReplaceAttributes(
                 new Attribute<>("register1", ValueType.POSITIVE_INTEGER).addOrReplaceMeta(new MetaItem<>(
                         AGENT_LINK,
                         new ModbusAgentLink(
-                                id: agent1.getId(),
+                                id: agent.getId(),
+                                unitId: 1,  // Unit ID 1 via agentLink
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
@@ -416,7 +389,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("register1", ValueType.POSITIVE_INTEGER).addOrReplaceMeta(new MetaItem<>(
                         AGENT_LINK,
                         new ModbusAgentLink(
-                                id: agent2.getId(),
+                                id: agent.getId(),
+                                unitId: 2,  // Unit ID 2 via agentLink
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
@@ -562,9 +536,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
                 new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
-                new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
-                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 50),
-                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT, ModbusAgent.EndianFormat.BIG_ENDIAN)
+                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH_MAP, ["default": 50] as ValueType.IntegerMap),
+                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT_MAP, ["default": ModbusAgent.EndianFormat.BIG_ENDIAN] as ModbusAgent.EndianFormatMap)
         )
 
         agent = assetStorageService.merge(agent)
@@ -578,6 +551,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("doubleValue", ValueType.NUMBER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.LREAL)
@@ -589,6 +563,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("longSignedValue", ValueType.LONG).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.LINT)
@@ -600,6 +575,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("longUnsignedValue", ValueType.BIG_INTEGER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.ULINT)
@@ -666,8 +642,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.BAUD_RATE, 9600),
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
                 new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
-                new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
-                new Attribute<>(ModbusSerialAgent.UNIT_ID, 1)
+                new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN)
         )
         agent = assetStorageService.merge(agent)
 
@@ -686,6 +661,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         AGENT_LINK,
                         new ModbusAgentLink(
                                 id: agent.getId(),
+                                unitId: 1,
                                 pollingMillis: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.REAL,
@@ -738,8 +714,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.BAUD_RATE, 9600),
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
                 new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
-                new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
-                new Attribute<>(ModbusSerialAgent.UNIT_ID, 1)
+                new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN)
         )
         agent = assetStorageService.merge(agent)
 
@@ -758,6 +733,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         AGENT_LINK,
                         new ModbusAgentLink(
                                 id: agent.getId(),
+                                unitId: 1,
                                 pollingMillis: 1000,  // Write every 1000ms
                                 writeMemoryArea: ModbusAgentLink.WriteMemoryArea.HOLDING,
                                 writeAddress: 61,
@@ -819,9 +795,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
                 new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
-                new Attribute<>(ModbusSerialAgent.UNIT_ID, 1),
-                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH, 50),
-                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT, endianFormat)
+                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH_MAP, ["default": 50] as ValueType.IntegerMap),
+                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT_MAP, ["default": endianFormat] as ModbusAgent.EndianFormatMap)
         )
         return assetStorageService.merge(agent)
     }
@@ -836,6 +811,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("floatValue", ValueType.NUMBER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.REAL)
@@ -858,6 +834,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>("doubleValue", ValueType.NUMBER).addOrReplaceMeta(
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
+                                    it.setUnitId(1)
                                     it.setPollingMillis(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.LREAL)
@@ -871,270 +848,232 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
     }
 
     /**
-     * Mock Serial Port implementation for testing - implements SerialPortWrapper interface
+     * Create a mock SerialPort using plain Groovy object that simulates Modbus RTU responses
      */
-    static class MockSerialPort implements SerialPortWrapper {
-        private boolean open = false
-        private byte[] readBuffer = new byte[0]
-        private int readPosition = 0
-        private final AtomicReference<byte[]> requestCapture
-        private final Object lock = new Object()
+    def createMockSerialPort() {
+        def readBuffer = new AtomicReference<byte[]>(new byte[0])
+        def readPosition = new AtomicReference<Integer>(0)
 
-        MockSerialPort(AtomicReference<byte[]> requestCapture) {
-            this.requestCapture = requestCapture
-        }
+        // Create a simple object with the methods we need (no need to extend SerialPort)
+        return [
+            openPort: { -> true },
+            closePort: { -> true },
+            isOpen: { -> true },
+            setBaudRate: { int rate -> true },
+            setNumDataBits: { int bits -> true },
+            setNumStopBits: { int bits -> true },
+            setParity: { int parity -> true },
+            setComPortTimeouts: { int mode, int read, int write -> true },
+            bytesAvailable: { -> Math.max(0, readBuffer.get().length - readPosition.get()) },
+            readBytes: { byte[] buffer, long bytesToRead ->
+                def available = Math.max(0, readBuffer.get().length - readPosition.get())
+                def toRead = Math.min(available, bytesToRead as int)
 
-        @Override
-        synchronized boolean openPort() {
-            // In shared port mode, this will be called once per SharedSerialPort instance
-            // Always succeed and mark as open
-            open = true
-            return true
-        }
+                if (toRead > 0) {
+                    System.arraycopy(readBuffer.get(), readPosition.get(), buffer, 0, toRead)
+                    readPosition.set(readPosition.get() + toRead)
+                }
 
-        @Override
-        synchronized boolean closePort() {
-            // In shared port mode, this is called from async cleanup
-            // Don't actually mark as closed - let the next openPort() call handle it
-            // This prevents issues when one SharedSerialPort closes while another is being created
-            return true
-        }
+                return toRead
+            },
+            writeBytes: { byte[] buffer, long bytesToWrite ->
+                latestRequest.set(Arrays.copyOfRange(buffer, 0, bytesToWrite as int))
 
-        @Override
-        synchronized boolean isOpen() {
-            // For shared port testing, always return true once opened
-            // The SerialPortManager's refCount is the real indicator of port availability
-            return open
-        }
+                // Generate Modbus RTU response
+                byte[] response = generateModbusResponse(buffer, 0, bytesToWrite as int)
+                readBuffer.set(response)
+                readPosition.set(0)
 
-        @Override
-        synchronized int bytesAvailable() {
-            return Math.max(0, readBuffer.length - readPosition)
-        }
-
-        @Override
-        synchronized int readBytes(byte[] buffer, long bytesToRead, long offset) {
-            int available = bytesAvailable()
-            int toRead = Math.min(available, bytesToRead as int)
-
-            if (toRead > 0) {
-                System.arraycopy(readBuffer, readPosition, buffer, offset as int, toRead)
-                readPosition += toRead
+                return bytesToWrite as int
             }
+        ] as SerialPort
+    }
 
-            return toRead
-        }
+    /**
+     * Generate Modbus RTU responses for various function codes
+     */
+    private static byte[] generateModbusResponse(byte[] request, int offset, int length) {
+        if (length < 6) return new byte[0]
 
-        @Override
-        synchronized int writeBytes(byte[] buffer, long bytesToWrite) {
-            requestCapture.set(Arrays.copyOfRange(buffer, 0, bytesToWrite as int))
+        int unitId = request[offset] & 0xFF
+        int functionCode = request[offset + 1] & 0xFF
+        int address = ((request[offset + 2] & 0xFF) << 8) | (request[offset + 3] & 0xFF)
+        int quantity = ((request[offset + 4] & 0xFF) << 8) | (request[offset + 5] & 0xFF)
 
-            // Generate Modbus RTU response based on request
-            byte[] response = generateModbusResponse(buffer, 0, bytesToWrite as int)
-            readBuffer = response
-            readPosition = 0
+        byte[] response
 
-            return bytesToWrite as int
-        }
-
-        @Override
-        Object getSynchronizationLock() {
-            return lock
-        }
-
-        synchronized void reset() {
-            // Reset to initial state for new test
-            open = false
-            readBuffer = new byte[0]
-            readPosition = 0
-        }
-
-        /**
-         * Generate Modbus RTU responses for various function codes
-         */
-        private static byte[] generateModbusResponse(byte[] request, int offset, int length) {
-            if (length < 6) return new byte[0]
-
-            int unitId = request[offset] & 0xFF
-            int functionCode = request[offset + 1] & 0xFF
-            int address = ((request[offset + 2] & 0xFF) << 8) | (request[offset + 3] & 0xFF)
-            int quantity = ((request[offset + 4] & 0xFF) << 8) | (request[offset + 5] & 0xFF)
-
-            byte[] response
-
-            switch (functionCode) {
-                case 0x01: // Read Coils
-                case 0x02: // Read Discrete Inputs
-                    int byteCount = (quantity + 7) / 8
-                    response = new byte[5 + byteCount]
-                    response[0] = (byte) unitId
-                    response[1] = (byte) functionCode
-                    response[2] = (byte) byteCount
-                    // Fill with alternating bits
-                    for (int i = 0; i < byteCount; i++) {
-                        response[3 + i] = (byte) 0xAA
-                    }
-                    break
-
-                case 0x03: // Read Holding Registers
-                case 0x04: // Read Input Registers
-                    int registerBytes = quantity * 2
-                    response = new byte[5 + registerBytes]
-                    response[0] = (byte) unitId
-                    response[1] = (byte) functionCode
-                    response[2] = (byte) registerBytes
-
-                    // Generate test data based on address
-                    // Handle special test data addresses for different data types
-                    for (int i = 0; i < quantity; i++) {
-                        int currentAddress = address + i
-                        int responseOffset = 3 + i * 2
-
-                        // Check if this register is part of a special test value
-                        if (currentAddress >= 200 && currentAddress < 202 && address == 200 && quantity == 2) {
-                            // Return float value 23.5
-                            ByteBuffer bb = ByteBuffer.allocate(4)
-                            bb.order(ByteOrder.BIG_ENDIAN)
-                            bb.putFloat(23.5f)
-                            byte[] floatBytes = bb.array()
-                            System.arraycopy(floatBytes, 0, response, 3, 4)
-                            break
-                        } else if (currentAddress >= 300 && currentAddress < 304) {
-                            // Return double value 123.456789 at registers 300-303
-                            if (i == 0 || currentAddress == 300) {
-                                int regOffset = currentAddress - 300
-                                ByteBuffer bb = ByteBuffer.allocate(8)
-                                bb.order(ByteOrder.BIG_ENDIAN)
-                                bb.putDouble(123.456789d)
-                                byte[] doubleBytes = bb.array()
-                                int copyLen = Math.min(registerBytes - (responseOffset - 3), 8 - (regOffset * 2))
-                                System.arraycopy(doubleBytes, regOffset * 2, response, responseOffset, Math.min(copyLen, 8))
-                            }
-                        } else if (currentAddress >= 310 && currentAddress < 314) {
-                            // Return 64-bit signed integer: -9223372036854775000L at registers 310-313
-                            int regOffset = currentAddress - 310
-                            ByteBuffer bb = ByteBuffer.allocate(8)
-                            bb.order(ByteOrder.BIG_ENDIAN)
-                            bb.putLong(-9223372036854775000L)
-                            byte[] longBytes = bb.array()
-                            response[responseOffset] = longBytes[regOffset * 2]
-                            response[responseOffset + 1] = longBytes[regOffset * 2 + 1]
-                        } else if (currentAddress >= 320 && currentAddress < 324) {
-                            // Return 64-bit unsigned integer at registers 320-323
-                            int regOffset = currentAddress - 320
-                            ByteBuffer bb = ByteBuffer.allocate(8)
-                            bb.order(ByteOrder.BIG_ENDIAN)
-                            bb.putLong(-616L) // This represents 18446744073709551000 as unsigned
-                            byte[] longBytes = bb.array()
-                            response[responseOffset] = longBytes[regOffset * 2]
-                            response[responseOffset + 1] = longBytes[regOffset * 2 + 1]
-                        } else if (currentAddress >= 400 && currentAddress < 402) {
-                            // Return float value 42.5 for byte/word order test (BIG-BIG) at 400-401
-                            if (i == 0 || currentAddress == 400) {
-                                ByteBuffer bb = ByteBuffer.allocate(4)
-                                bb.order(ByteOrder.BIG_ENDIAN)
-                                bb.putFloat(42.5f)
-                                byte[] floatBytes = bb.array()
-                                System.arraycopy(floatBytes, 0, response, 3, 4)
-                                break
-                            }
-                        } else if (currentAddress >= 410 && currentAddress < 412) {
-                            // Return float value 42.5 for byte/word order test (BIG-LITTLE) at 410-411
-                            if (i == 0 || currentAddress == 410) {
-                                ByteBuffer bb = ByteBuffer.allocate(4)
-                                bb.order(ByteOrder.BIG_ENDIAN)
-                                bb.putFloat(42.5f)
-                                byte[] floatBytes = bb.array()
-                                System.arraycopy(floatBytes, 0, response, 3, 4)
-                                break
-                            }
-                        } else if (currentAddress >= 420 && currentAddress < 422) {
-                            // Return float value 42.5 for byte/word order test (LITTLE-BIG) at 420-421
-                            if (i == 0 || currentAddress == 420) {
-                                ByteBuffer bb = ByteBuffer.allocate(4)
-                                bb.order(ByteOrder.BIG_ENDIAN)
-                                bb.putFloat(42.5f)
-                                byte[] floatBytes = bb.array()
-                                System.arraycopy(floatBytes, 0, response, 3, 4)
-                                break
-                            }
-                        } else if (currentAddress >= 430 && currentAddress < 432) {
-                            // Return float value 42.5 for byte/word order test (LITTLE-LITTLE) at 430-431
-                            if (i == 0 || currentAddress == 430) {
-                                ByteBuffer bb = ByteBuffer.allocate(4)
-                                bb.order(ByteOrder.BIG_ENDIAN)
-                                bb.putFloat(42.5f)
-                                byte[] floatBytes = bb.array()
-                                System.arraycopy(floatBytes, 0, response, 3, 4)
-                                break
-                            }
-                        } else if (currentAddress >= 500 && currentAddress < 504) {
-                            // Return double value 999.888 for byte/word order test (BIG-BIG) at 500-503
-                            int regOffset = currentAddress - 500
-                            ByteBuffer bb = ByteBuffer.allocate(8)
-                            bb.order(ByteOrder.BIG_ENDIAN)
-                            bb.putDouble(999.888d)
-                            byte[] doubleBytes = bb.array()
-                            int copyLen = Math.min(2, 8 - (regOffset * 2))
-                            System.arraycopy(doubleBytes, regOffset * 2, response, responseOffset, copyLen)
-                        } else if (currentAddress >= 510 && currentAddress < 514) {
-                            // Return double value 999.888 for byte/word order test (LITTLE-LITTLE) at 510-513
-                            int regOffset = currentAddress - 510
-                            ByteBuffer bb = ByteBuffer.allocate(8)
-                            bb.order(ByteOrder.BIG_ENDIAN)
-                            bb.putDouble(999.888d)
-                            byte[] doubleBytes = bb.array()
-                            int copyLen = Math.min(2, 8 - (regOffset * 2))
-                            System.arraycopy(doubleBytes, regOffset * 2, response, responseOffset, copyLen)
-                        } else {
-                            // Return incrementing values
-                            int value = currentAddress
-                            response[responseOffset] = (byte) (value >> 8)
-                            response[responseOffset + 1] = (byte) (value & 0xFF)
-                        }
-                    }
-                    break
-
-                case 0x05: // Write Single Coil
-                    response = new byte[8]
-                    System.arraycopy(request, offset, response, 0, 6)
-                    break
-
-                case 0x06: // Write Single Register
-                    response = new byte[8]
-                    System.arraycopy(request, offset, response, 0, 6)
-                    break
-
-                default:
-                    // Exception response
-                    response = new byte[5]
-                    response[0] = (byte) unitId
-                    response[1] = (byte) (functionCode | 0x80)
-                    response[2] = (byte) 0x01  // Illegal function
-                    return addCRC(response, 3)
+        switch (functionCode) {
+        case 0x01: // Read Coils
+        case 0x02: // Read Discrete Inputs
+            int byteCount = (quantity + 7) / 8
+            response = new byte[5 + byteCount]
+            response[0] = (byte) unitId
+            response[1] = (byte) functionCode
+            response[2] = (byte) byteCount
+            // Fill with alternating bits
+            for (int i = 0; i < byteCount; i++) {
+                response[3 + i] = (byte) 0xAA
             }
+            break
 
-            return addCRC(response, response.length - 2)
-        }
+        case 0x03: // Read Holding Registers
+        case 0x04: // Read Input Registers
+            int registerBytes = quantity * 2
+            response = new byte[5 + registerBytes]
+            response[0] = (byte) unitId
+            response[1] = (byte) functionCode
+            response[2] = (byte) registerBytes
 
-        /**
-         * Calculate and add CRC16 to Modbus RTU frame
-         */
-        private static byte[] addCRC(byte[] data, int length) {
-            int crc = 0xFFFF
-            for (int i = 0; i < length; i++) {
-                crc ^= (data[i] & 0xFF)
-                for (int j = 0; j < 8; j++) {
-                    if ((crc & 1) != 0) {
-                        crc = (crc >> 1) ^ 0xA001
-                    } else {
-                        crc = crc >> 1
+            // Generate test data based on address
+            // Handle special test data addresses for different data types
+            for (int i = 0; i < quantity; i++) {
+                int currentAddress = address + i
+                int responseOffset = 3 + i * 2
+
+                // Check if this register is part of a special test value
+                if (currentAddress >= 200 && currentAddress < 202 && address == 200 && quantity == 2) {
+                    // Return float value 23.5
+                    ByteBuffer bb = ByteBuffer.allocate(4)
+                    bb.order(ByteOrder.BIG_ENDIAN)
+                    bb.putFloat(23.5f)
+                    byte[] floatBytes = bb.array()
+                    System.arraycopy(floatBytes, 0, response, 3, 4)
+                    break
+                } else if (currentAddress >= 300 && currentAddress < 304) {
+                    // Return double value 123.456789 at registers 300-303
+                    if (i == 0 || currentAddress == 300) {
+                        int regOffset = currentAddress - 300
+                        ByteBuffer bb = ByteBuffer.allocate(8)
+                        bb.order(ByteOrder.BIG_ENDIAN)
+                        bb.putDouble(123.456789d)
+                        byte[] doubleBytes = bb.array()
+                        int copyLen = Math.min(registerBytes - (responseOffset - 3), 8 - (regOffset * 2))
+                        System.arraycopy(doubleBytes, regOffset * 2, response, responseOffset, Math.min(copyLen, 8))
                     }
+                } else if (currentAddress >= 310 && currentAddress < 314) {
+                    // Return 64-bit signed integer: -9223372036854775000L at registers 310-313
+                    int regOffset = currentAddress - 310
+                    ByteBuffer bb = ByteBuffer.allocate(8)
+                    bb.order(ByteOrder.BIG_ENDIAN)
+                    bb.putLong(-9223372036854775000L)
+                    byte[] longBytes = bb.array()
+                    response[responseOffset] = longBytes[regOffset * 2]
+                    response[responseOffset + 1] = longBytes[regOffset * 2 + 1]
+                } else if (currentAddress >= 320 && currentAddress < 324) {
+                    // Return 64-bit unsigned integer at registers 320-323
+                    int regOffset = currentAddress - 320
+                    ByteBuffer bb = ByteBuffer.allocate(8)
+                    bb.order(ByteOrder.BIG_ENDIAN)
+                    bb.putLong(-616L) // This represents 18446744073709551000 as unsigned
+                    byte[] longBytes = bb.array()
+                    response[responseOffset] = longBytes[regOffset * 2]
+                    response[responseOffset + 1] = longBytes[regOffset * 2 + 1]
+                } else if (currentAddress >= 400 && currentAddress < 402) {
+                    // Return float value 42.5 for byte/word order test (BIG-BIG) at 400-401
+                    if (i == 0 || currentAddress == 400) {
+                        ByteBuffer bb = ByteBuffer.allocate(4)
+                        bb.order(ByteOrder.BIG_ENDIAN)
+                        bb.putFloat(42.5f)
+                        byte[] floatBytes = bb.array()
+                        System.arraycopy(floatBytes, 0, response, 3, 4)
+                        break
+                    }
+                } else if (currentAddress >= 410 && currentAddress < 412) {
+                    // Return float value 42.5 for byte/word order test (BIG-LITTLE) at 410-411
+                    if (i == 0 || currentAddress == 410) {
+                        ByteBuffer bb = ByteBuffer.allocate(4)
+                        bb.order(ByteOrder.BIG_ENDIAN)
+                        bb.putFloat(42.5f)
+                        byte[] floatBytes = bb.array()
+                        System.arraycopy(floatBytes, 0, response, 3, 4)
+                        break
+                    }
+                } else if (currentAddress >= 420 && currentAddress < 422) {
+                    // Return float value 42.5 for byte/word order test (LITTLE-BIG) at 420-421
+                    if (i == 0 || currentAddress == 420) {
+                        ByteBuffer bb = ByteBuffer.allocate(4)
+                        bb.order(ByteOrder.BIG_ENDIAN)
+                        bb.putFloat(42.5f)
+                        byte[] floatBytes = bb.array()
+                        System.arraycopy(floatBytes, 0, response, 3, 4)
+                        break
+                    }
+                } else if (currentAddress >= 430 && currentAddress < 432) {
+                    // Return float value 42.5 for byte/word order test (LITTLE-LITTLE) at 430-431
+                    if (i == 0 || currentAddress == 430) {
+                        ByteBuffer bb = ByteBuffer.allocate(4)
+                        bb.order(ByteOrder.BIG_ENDIAN)
+                        bb.putFloat(42.5f)
+                        byte[] floatBytes = bb.array()
+                        System.arraycopy(floatBytes, 0, response, 3, 4)
+                        break
+                    }
+                } else if (currentAddress >= 500 && currentAddress < 504) {
+                    // Return double value 999.888 for byte/word order test (BIG-BIG) at 500-503
+                    int regOffset = currentAddress - 500
+                    ByteBuffer bb = ByteBuffer.allocate(8)
+                    bb.order(ByteOrder.BIG_ENDIAN)
+                    bb.putDouble(999.888d)
+                    byte[] doubleBytes = bb.array()
+                    int copyLen = Math.min(2, 8 - (regOffset * 2))
+                    System.arraycopy(doubleBytes, regOffset * 2, response, responseOffset, copyLen)
+                } else if (currentAddress >= 510 && currentAddress < 514) {
+                    // Return double value 999.888 for byte/word order test (LITTLE-LITTLE) at 510-513
+                    int regOffset = currentAddress - 510
+                    ByteBuffer bb = ByteBuffer.allocate(8)
+                    bb.order(ByteOrder.BIG_ENDIAN)
+                    bb.putDouble(999.888d)
+                    byte[] doubleBytes = bb.array()
+                    int copyLen = Math.min(2, 8 - (regOffset * 2))
+                    System.arraycopy(doubleBytes, regOffset * 2, response, responseOffset, copyLen)
+                } else {
+                    // Return incrementing values
+                    int value = currentAddress
+                    response[responseOffset] = (byte) (value >> 8)
+                    response[responseOffset + 1] = (byte) (value & 0xFF)
                 }
             }
-            data[length] = (byte) (crc & 0xFF)
-            data[length + 1] = (byte) (crc >> 8)
-            return data
+            break
+
+        case 0x05: // Write Single Coil
+            response = new byte[8]
+            System.arraycopy(request, offset, response, 0, 6)
+            break
+
+        case 0x06: // Write Single Register
+            response = new byte[8]
+            System.arraycopy(request, offset, response, 0, 6)
+            break
+
+        default:
+            // Exception response
+            response = new byte[5]
+            response[0] = (byte) unitId
+            response[1] = (byte) (functionCode | 0x80)
+            response[2] = (byte) 0x01  // Illegal function
+            return addCRC(response, 3)
         }
+
+        return addCRC(response, response.length - 2)
+    }
+
+    /**
+     * Calculate and add CRC16 to Modbus RTU frame
+     */
+    private static byte[] addCRC(byte[] data, int length) {
+        int crc = 0xFFFF
+        for (int i = 0; i < length; i++) {
+            crc ^= (data[i] & 0xFF)
+            for (int j = 0; j < 8; j++) {
+                if ((crc & 1) != 0) {
+                    crc = (crc >> 1) ^ 0xA001
+                } else {
+                    crc = crc >> 1
+                }
+            }
+        }
+        data[length] = (byte) (crc & 0xFF)
+        data[length + 1] = (byte) (crc >> 8)
+        return data
     }
 }

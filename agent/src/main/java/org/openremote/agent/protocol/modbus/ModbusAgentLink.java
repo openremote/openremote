@@ -32,6 +32,10 @@ import java.util.Optional;
 //TODO: Make non-primitive parameters required
 public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
 
+    @JsonPropertyDescription("Modbus unit ID (1-255). Required for Serial, optional for TCP (defaults to 1)")
+    @Min(1)
+    private Integer unitId;
+
     @NotNull()
     @JsonPropertyDescription("Poll interval in milliseconds")
     @Min(1000)
@@ -58,6 +62,14 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
 
     @JsonPropertyDescription("If enabled, the current attribute value will be written to the modbus register at pollingMillis interval, not just on attribute events.")
     private Boolean writeWithPollingRate;
+
+    public Integer getUnitId() {
+        return unitId;
+    }
+
+    public void setUnitId(Integer unitId) {
+        this.unitId = unitId;
+    }
 
     public long getPollingMillis() {
         return pollingMillis;
