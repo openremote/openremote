@@ -258,7 +258,7 @@ jobs:
         run: yarn --immutable
 
       - name: Check UI dependencies
-        if: steps.ui-files-changed.outputs.any_modified == 'true'
+        if: steps.ui-files-changed.outputs.any_modified == 'true' && steps.is_main_repo.outputs.value == 'true'
         run: npx knip -c ui/knip.jsonc
 
       - name: Check deployment build.gradle
