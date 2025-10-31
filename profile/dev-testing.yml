@@ -37,3 +37,35 @@ services:
     # Access directly if needed on localhost
     ports:
       - "5432:5432"
+
+  # A database using tmpfs for faster test runs.
+  postgresql-test:
+    extends:
+      file: deploy.yml
+      service: postgresql
+    volumes:
+      - ../tmp:/storage
+    ports:
+      - "54321:5432"
+    tmpfs:
+      - /var/lib/postgresql/data:uid=70,gid=70
+
+  keycloak-test:
+    extends:
+      file: deploy.yml
+      service: keycloak
+    # volumes:
+    #   Map custom themes
+    #  - ../deployment:/deployment
+    ports:
+      - "8082:8080"
+    depends_on:
+      postgresql-test:
+        condition: service_healthy
+    environment:
+      KC_HOSTNAME_STRICT_HTTPS: 'false'
+      KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT:-8080}
+      KC_LOG_CONSOLE_FORMAT: '%-5p [%c] (%t) %s%e%n'
+      # Prevent theme caching during dev
+      KEYCLOAK_START_OPTS: --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
+      KC_DB_URL_HOST: 'postgresql-test'

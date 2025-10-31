@@ -4,6 +4,9 @@ import com.google.common.collect.Lists
 import org.apache.camel.spi.BrowsableEndpoint
 import org.openremote.container.Container
 import org.openremote.container.message.MessageBrokerService
+import org.openremote.container.persistence.PersistenceService
+import org.openremote.container.security.IdentityService
+import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.model.ContainerService
@@ -32,11 +35,13 @@ trait ManagerContainerTrait extends ContainerTrait {
         }
         def config = [
                 (OR_WEBSERVER_LISTEN_PORT): Integer.toString(serverPort),
-                (MQTT_SERVER_LISTEN_HOST) : "127.0.0.1", // Works best for cross platform test running,
+                (MQTT_SERVER_LISTEN_HOST): "127.0.0.1", // Works best for cross platform test running,
                 (MQTTBrokerService.MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS): "10",
                 (OR_RULES_QUICK_FIRE_MILLIS): "500",
                 (OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS): "500",
-                (TIMER_CLOCK_TYPE)        : PSEUDO.name()
+                (TIMER_CLOCK_TYPE): PSEUDO.name(),
+                (PersistenceService.OR_DB_PORT): "54321",
+                (KeycloakIdentityProvider.OR_KEYCLOAK_PORT): "8082"
         ] << System.getenv()
 
         config.values().removeIf { TextUtil.isNullOrEmpty(it)}
