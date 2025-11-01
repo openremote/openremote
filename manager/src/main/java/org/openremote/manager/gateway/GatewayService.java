@@ -540,10 +540,14 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             pendingTunnelCounter.incrementAndGet();
             startFuture.get();
             tunnelInfos.put(tunnelInfo.getId(), tunnelInfo);
-            if (tunnelInfo.getAutoCloseTime() != null) {
+            if (tunnelInfo.getAutoCloseTime() != null && !connector.isTunnelTimeoutManagementSupported()) {
+                LOG.warning("Gateway tunnel does not support auto-close management, handling auto-close from central instance: id=" + tunnelInfo.getId());
                 Duration delay = Duration.between(timerService.getNow(), tunnelInfo.getAutoCloseTime());
                 scheduledExecutorService.schedule(() -> autoCloseTunnel(tunnelInfo.getId()), delay.toMillis(), TimeUnit.MILLISECONDS);
                 LOG.fine("Scheduled job to automatically close tunnel '" + tunnelInfo.getId() + "' at " + tunnelInfo.getAutoCloseTime());
+            }
+            if(connector.isTunnelTimeoutManagementSupported()) {
+                LOG.info("Gateway supports tunnel timeout management, not scheduling auto-close from central instance for tunnel: id=" + tunnelInfo.getId());
             }
             return tunnelInfo;
         } catch (ExecutionException e) {
@@ -868,7 +872,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         }
 
         try {
-            LOG.info("Automatically closing tunnel: " + tunnelId);
+            LOG.info("Automatically closing tunnel from central instance, since gateway does not support auto-close management: " + tunnelId);
             stopTunnel(tunnelInfo);
         } catch (IllegalArgumentException | IllegalStateException e) {
             LOG.log(Level.WARNING, "Failed to automatically close tunnel: " + tunnelId, e);
