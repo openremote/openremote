@@ -431,20 +431,8 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
                 // Why this is a problem: The device will subsequently disconnect from the broker and try to reconnect.
                 // The service user will be created in a different realm than the one that the device is trying to connect to.
                 // Which means that when the device reconnects it will fail to authenticate as the service user won't exist in that realm.
-                // Instead of making a weird decision about which realm to use, we just reject the connection outright. 
+                // Instead of making a weird decision about which realm to use, we just reject the connection outright.
                 LOG.info(() -> "mTLS certificate subject realm doesn't match provisioning config realm: " + MQTTBrokerService.connectionToString(connection));
-                publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
-                return;
-            }
-        }
-
-        if (isMTLS) {
-            X500Principal principal = clientCertificate.getSubjectX500Principal();
-
-
-            // Check that DN of principal equals configured realm
-            if (!realm.equalsIgnoreCase(principal.getName())) {
-                LOG.info(() -> "MTLS principal DN doesn't match provisioning config realm: " + MQTTBrokerService.connectionToString(connection));
                 publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
                 return;
             }

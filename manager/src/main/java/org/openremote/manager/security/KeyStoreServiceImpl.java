@@ -20,40 +20,22 @@
 
 package org.openremote.manager.security;
 
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.cert.X509v3CertificateBuilder;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.agent.protocol.mqtt.CustomKeyManagerFactory;
 import org.openremote.agent.protocol.mqtt.CustomX509TrustManagerFactory;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
-import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
-import org.openremote.model.query.UserQuery;
-import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.security.KeyStoreService;
-import org.openremote.model.security.Realm;
-import org.openremote.model.security.RealmResource;
-import org.openremote.model.security.User;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.*;
-import java.math.BigInteger;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.*;
-import java.security.cert.X509Certificate;
-import java.util.*;
+import java.security.KeyStore;
+import java.security.UnrecoverableKeyException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD;
 import static org.openremote.container.util.MapAccess.getString;
@@ -89,21 +71,15 @@ public class KeyStoreServiceImpl implements KeyStoreService {
     protected Path keyStorePath;
     protected Path trustStorePath;
 
-    public KeyStore mtlsKeyStore;
-
-    private KeyPair caKeyPair;
-    private X509Certificate caCert;
-
     private String keyStorePassword;
 
     @Override
     public int getPriority() {
-        return ManagerWebService.PRIORITY + 10;
+        return ManagerIdentityService.PRIORITY + 10;
     }
 
     @Override
     public void init(Container container) throws Exception {
-        Security.addProvider(new BouncyCastleProvider());
         persistenceService = container.getService(PersistenceService.class);
         identityService = container.getService(ManagerIdentityService.class);
 
@@ -194,44 +170,6 @@ public class KeyStoreServiceImpl implements KeyStoreService {
             }
             this.trustStorePath = defaultTrustStorePath;
         }
-
-        this.mtlsKeyStore = createKeyStore(persistenceService.resolvePath(Paths.get("keystores").resolve("mtls_keystore.p12")));
-
-        initCA();
-//        this.mtlsKeyStore = KeyStore.getInstance(, "".toCharArray());
-
-        KeycloakIdentityProvider idp = (KeycloakIdentityProvider) identityService.identityProvider;
-
-        List<RealmRepresentation> realms = new ArrayList<>();
-//        idp.getRealms(rr -> {
-//
-//            rr.findAll().forEach(realm -> {
-//                realms.add(realm);
-////                realm.getUsers().forEach(user -> {
-////                    LOG.info("Realm: " + realm.getDisplayName() + ", User: " + user.getUsername() + ", Roles: " + Arrays.toString(user.getRealmRoles().toArray()));
-////                });
-//            });
-//            return null;
-//        });
-
-        Map<RealmRepresentation, List<User>> usersByRealm = realms.stream()
-                .collect(Collectors.toMap(
-                        realm -> realm, // or use your actual Realm object if available
-                        realm -> Arrays.asList(identityService.getIdentityProvider()
-                                .queryUsers(new UserQuery().realm(new RealmPredicate(realm.getRealm()))))
-                ));
-        usersByRealm.forEach((realm, users) -> (users).forEach(user -> {
-            LOG.info("Realm: " + user.getRealm() + ", User: " + user.getUsername() + ", Roles: " + user.getAttributes().toString());
-            try {
-                createUserKeyStoreEntryWithCA(user, realm);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }));
-
-        Arrays.stream(identityService.identityProvider.getRealms()).sequential().forEach(realm -> {
-
-        });
     }
 
     private KeyStore getKeyStore() {
@@ -323,101 +261,5 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 
     private Logger getLogger() {
         return LOG;
-    }
-
-    private void initCA() throws Exception {
-        String caAlias = "rootCA";
-
-        if (mtlsKeyStore.containsAlias(caAlias)) {
-            Key caPrivateKey = mtlsKeyStore.getKey(caAlias, getKeyStorePassword());
-            java.security.cert.Certificate certificate = mtlsKeyStore.getCertificate(caAlias);
-            this.caKeyPair = new KeyPair(certificate.getPublicKey(), (PrivateKey) caPrivateKey);
-            this.caCert = (X509Certificate) certificate;
-        } else {
-            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA", "BC");
-            keyGen.initialize(4096);
-            caKeyPair = keyGen.generateKeyPair();
-
-            caCert = generateCACertificate("CN=OpenRemote Root CA", caKeyPair);
-
-            mtlsKeyStore.setKeyEntry(caAlias, caKeyPair.getPrivate(), getKeyStorePassword(), new java.security.cert.Certificate[]{caCert});
-            storeMltsKeystore(mtlsKeyStore);
-        }
-    }
-
-    private void storeMltsKeystore(KeyStore keystore) {
-        try {
-            keystore.store(new FileOutputStream(persistenceService.resolvePath(Paths.get("keystores").resolve("mtls_keystore.p12")).toFile()), getKeyStorePassword());
-            this.mtlsKeyStore = keystore;
-        } catch (Exception e) {
-            getLogger().severe("Couldn't store MTLS KeyStore to Storage! " + e.getMessage());
-        }
-    }
-
-    private X509Certificate generateCACertificate(String dn, KeyPair keyPair) throws Exception {
-        long now = System.currentTimeMillis();
-        Date startDate = new Date(now);
-        Date endDate = new Date(now + (30L * 365 * 24 * 60 * 60 * 1000)); // 10 years validity
-
-        X500Name issuer = new X500Name(dn);
-
-        BigInteger serial = BigInteger.valueOf(now);
-
-        X509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(
-                issuer, serial, startDate, endDate, issuer, keyPair.getPublic());
-
-        JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder("SHA256WithRSAEncryption")
-                .setProvider("BC");
-        ContentSigner signer = signerBuilder.build(keyPair.getPrivate());
-
-        X509CertificateHolder certHolder = certBuilder.build(signer);
-
-        return new JcaX509CertificateConverter()
-                .setProvider("BC")
-                .getCertificate(certHolder);
-    }
-    private X509Certificate generateUserCertificate(String dn, KeyPair userKeyPair) throws Exception {
-        long now = System.currentTimeMillis();
-        Date startDate = new Date(now);
-        Date endDate = new Date(now + (10L * 365L * 24 * 60 * 60 * 1000)); // 10 year validity
-
-        BigInteger serial = BigInteger.valueOf(now);
-
-        X509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(
-                new X500Name(caCert.getSubjectX500Principal().getName()), // Issuer
-                serial,
-                startDate,
-                endDate,
-                new X500Name(dn), // Subject
-                userKeyPair.getPublic()
-        );
-
-        JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder("SHA256WithRSAEncryption")
-                .setProvider("BC");
-        ContentSigner signer = signerBuilder.build(caKeyPair.getPrivate());
-
-        X509CertificateHolder certHolder = certBuilder.build(signer);
-
-        return new JcaX509CertificateConverter()
-                .setProvider("BC")
-                .getCertificate(certHolder);
-    }
-
-    private void createUserKeyStoreEntryWithCA(User user, RealmRepresentation realm) throws Exception {
-        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA", "BC");
-        keyGen.initialize(2048);
-        KeyPair userKeyPair = keyGen.generateKeyPair();
-
-        String dn = "CN=" + user.getId() + ", OU=" + realm.getId();
-        X509Certificate userCert = generateUserCertificate(dn, userKeyPair);
-
-        mtlsKeyStore.setKeyEntry(
-                user.getUsername() + "_" + realm.getRealm(),
-                userKeyPair.getPrivate(),
-                getKeyStorePassword(),
-                new java.security.cert.Certificate[]{userCert, caCert} // certificate chain
-        );
-
-        storeMltsKeystore(mtlsKeyStore);
     }
 }
