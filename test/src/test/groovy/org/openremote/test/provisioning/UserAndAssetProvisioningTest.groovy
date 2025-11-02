@@ -1414,11 +1414,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             } catch (Exception ignored) {
             }
         }
-
-        // Clean up temporary directory and files
-        if (tempDir?.exists()) {
-            tempDir.deleteDir()
-            tempManagerDir.deleteDir()
-        }
+        and: "delete the created temporary directories"
+        tempDir.deleteDir()
+        tempManagerDir.deleteDir()
     }
 }
