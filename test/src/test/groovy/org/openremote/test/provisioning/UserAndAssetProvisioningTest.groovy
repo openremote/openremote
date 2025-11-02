@@ -1404,16 +1404,11 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         }
 
         cleanup: "disconnect the client and cleanup temporary files"
-        if (device1Client != null) {
-            device1Client.disconnect()
-        }
+        device1Client.disconnect()
+
         and: "disconnect unprovisioned client"
-        if (unprovisionedClient != null) {
-            try {
-                unprovisionedClient.disconnect()
-            } catch (Exception ignored) {
-            }
-        }
+        unprovisionedClient.disconnect()
+
         and: "delete the created temporary directories"
         tempDir.deleteDir()
         tempManagerDir.deleteDir()
