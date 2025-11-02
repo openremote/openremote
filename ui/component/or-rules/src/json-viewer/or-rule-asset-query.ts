@@ -23,10 +23,9 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-attribute-input";
 import {Util} from "@openremote/core";
-import i18next from "i18next";
+import {i18next, translate} from "@openremote/or-translate"
 import {buttonStyle} from "../style";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
-import {translate} from "@openremote/or-translate";
 import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import "./modals/or-rule-radial-modal";
 import { ifDefined } from "lit/directives/if-defined.js";

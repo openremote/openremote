@@ -149,13 +149,13 @@
     "TEXT_SWITCH": "Textueller Schalter",
     "ROUND_NODE": "Runden",
     "LOG_OUTPUT": "Write to Logs",
-    "DERIVATIVE":  "Attribute derivative",
+    "DERIVATIVE": "Attribute derivative",
     "INTEGRAL": "Attribute integral",
     "HISTORIC_VALUE": "Attribute history",
     "MAX_PROCESSOR": "Maximum",
-    "MIN_PROCESSOR":  "Minimum",
-    "AVERAGE_PROCESSOR":  "Average",
-    "MEDIAN_PROCESSOR":  "Median",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Average",
+    "MEDIAN_PROCESSOR": "Median",
     "SUM_OPERATOR": "Sum",
     "max": "Max",
     "min": "Min",
@@ -303,14 +303,14 @@
   "resetPasswordConfirmation": "Eine E-Mail zum Zurücksetzen Ihres Passworts wurde gesendet.",
   "repeatPassword": "Passwort wiederholen",
   "details": "Details",
-  "permissions":"Berechtigungen",
-  "linkedAssets":"Verbunden assets",
-  "realm_role_plural":"Realm rollen",
-  "manager_role_plural":"Manager rollen",
+  "permissions": "Berechtigungen",
+  "linkedAssets": "Verbunden assets",
+  "realm_role_plural": "Realm rollen",
+  "manager_role_plural": "Manager rollen",
   "restrictAccess": "Zugriff einschränken",
   "selectRestrictedAssets": "{{number}} Assets",
   "restrictedAccessToAssets": "Eingeschränkter Zugriff auf",
-  "fullAccessLabel":"Administrator: Vollzugriff; Benutzer und Rollen verwalten",
+  "fullAccessLabel": "Administrator: Vollzugriff; Benutzer und Rollen verwalten",
   "noChildAssets": "Keine zugrunde liegenden Assets",
   "account": "Account",
   "editAttribute": "Attribut ändern",
@@ -479,7 +479,7 @@
   "autoProvisioning": "Auto provisioning",
   "provisioningConfigs": "Provisioning configurations",
   "loadFailedProvisioningConfigs": "Failed to load provisioning configurations",
-  "deleteProvisioningConfigConfirm":"Are you sure you want to delete this provisioning config?\nClients that use this config will no longer be able to connect.",
+  "deleteProvisioningConfigConfirm": "Are you sure you want to delete this provisioning config?\nClients that use this config will no longer be able to connect.",
   "assetTemplate": "Asset template",
   "createAsRestrictedUser": "Create restricted user",
   "ignoreExpiryDate": "Ignore expiry date",
@@ -503,5 +503,135 @@
     "attributeLabel": "Attribute",
     "attributeValueLabel": "Attribute value",
     "assetTypeDoesNotExist": "Filter : Asset type does not exist"
+  },
+  "org": {
+    "openremote": {
+      "model": {
+        "query": {
+          "filter": {
+            "ValueEmptyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RadialGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ValueAnyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "CalendarEventPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RectangularGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ArrayPredicate": {
+              "description": ""
+            },
+            "StringPredicate": {
+              "description": ""
+            },
+            "NumberPredicate": {
+              "description": ""
+            },
+            "DateTimePredicate": {
+              "description": ""
+            },
+            "BooleanPredicate": {
+              "description": ""
+            }
+          }
+        },
+        "simulator": {
+          "SimulatorReplayDatapoint": {
+            "label": ""
+          }
+        },
+        "value": {
+          "MathExpressionValueFilter": {
+            "label": ""
+          },
+          "SubStringValueFilter": {
+            "label": ""
+          },
+          "JsonPathFilter": {
+            "label": ""
+          },
+          "RegexValueFilter": {
+            "label": ""
+          },
+          "ValueConstraint": {
+            "description": "",
+            "Size": {
+              "description": ""
+            },
+            "Min": {
+              "description": ""
+            },
+            "Max": {
+              "description": ""
+            },
+            "Pattern": {
+              "description": ""
+            },
+            "AllowedValues": {
+              "description": ""
+            },
+            "Past": {
+              "description": ""
+            },
+            "PastOrPresent": {
+              "description": ""
+            },
+            "Future": {
+              "description": ""
+            },
+            "FutureOrPresent": {
+              "description": ""
+            },
+            "NotEmpty": {
+              "description": ""
+            },
+            "NotBlank": {
+              "description": ""
+            },
+            "NotNull": {
+              "description": ""
+            }
+          }
+        },
+        "asset": {
+          "agent": {
+            "AgentLink": {
+              "valueFilters": {
+                "description": ""
+              },
+              "valueConverter": {
+                "description": ""
+              },
+              "writeValueConverter": {
+                "description": ""
+              },
+              "writeValue": {
+                "description": ""
+              },
+              "messageMatchPredicate": {
+                "description": ""
+              },
+              "messageMatchFilters": {
+                "description": ""
+              },
+              "updateOnWrite": {
+                "description": ""
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

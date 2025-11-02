@@ -1,8 +1,7 @@
 import {HeaderConfig, Languages} from "./or-header";
 import {AppStateKeyed} from "./app";
 import {LitElement, TemplateResult} from "lit";
-import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate"
 import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
 import Navigo from "navigo";
 

@@ -73,7 +73,7 @@ const styles = css`
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0 15px;
+        padding: 0px 5px 0px 15px;
         min-height: 48px;
         background: var(--or-app-color4, #4d9d2a);
         color: var(--or-app-color7, white);
@@ -93,6 +93,9 @@ const styles = css`
 `;
 
 /**
+ * A component for displaying a hierarchical, tree-like structure of elements.
+ * Common use cases are visualizing parent-child relationships, or for grouping elements together.
+ *
  * @event {OrTreeSelectEvent} or-tree-select - Triggers upon selecting a node, and dispatches a list of the nodes selected.
  * @event {OrTreeDragEvent} or-tree-drag - Triggers upon dragging a node to a new group, and dispatches a list of dragged nodes, the group node, and the updated list of all nodes.
  */

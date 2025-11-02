@@ -1,6 +1,6 @@
 {
   "name": "@openremote/demo-core",
-  "version": "1.8.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "Demo",
   "private": true,
   "scripts": {
@@ -15,9 +15,9 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "i18next": "^21.5.3",
     "lit": "^3.3.1"
   },
   "devDependencies": {

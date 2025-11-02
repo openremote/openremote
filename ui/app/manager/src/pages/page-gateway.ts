@@ -1,6 +1,6 @@
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, state} from "lit/decorators.js";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate"
 import {when} from "lit/directives/when.js";
 import {until} from "lit/directives/until.js";
 import {createRef, Ref, ref} from "lit/directives/ref.js";

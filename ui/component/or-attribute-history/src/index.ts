@@ -15,8 +15,7 @@ import {
     unsafeCSS
 } from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate"
 import {AssetModelUtil, Attribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueDescriptor} from "@openremote/model";
 import manager, {DefaultColor2, DefaultColor3, DefaultColor4} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -438,15 +437,15 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             hideOverlap: true,
                             fontSize: 10,
                             formatter: {
-                                year: '{yyyy}-{MMM}',
-                                month: '{yy}-{MMM}',
-                                day: '{d}-{MMM}',
-                                hour: '{HH}:{mm}',
-                                minute: '{HH}:{mm}',
-                                second: '{HH}:{mm}:{ss}',
-                                millisecond: '{d}-{MMM} {HH}:{mm}',
+                                year: "1-{MMM}-{yyyy}",
+                                month: "1-{MMM}-'{yy}",
+                                day: "{d}-{MMM}",
+                                hour: "{HH}:{mm}",
+                                minute: "{HH}:{mm}",
+                                second: "{HH}:{mm}:{ss}",
+                                millisecond: "{d}-{MMM} {HH}:{mm}",
                                 // @ts-ignore
-                                none: '{MMM}-{dd} {HH}:{mm}'
+                                none: "{MMM}-{dd} {HH}:{mm}"
                             }
                         }
                     },
