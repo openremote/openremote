@@ -27,10 +27,12 @@ import javax.security.auth.x500.X500Principal;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.Base64;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -60,6 +62,18 @@ public class ProvisioningUtil {
         }
 
         return certificate;
+    }
+    public static String getPemString(X509Certificate certificate) throws Exception {
+        StringWriter sw = new StringWriter();
+        sw.write("-----BEGIN CERTIFICATE-----\n");
+
+        // Encode the binary certificate data to Base64, with line wrapping at 64 chars
+        String base64 = Base64.getMimeEncoder(64, new byte[]{'\n'})
+                .encodeToString(certificate.getEncoded());
+        sw.write(base64);
+        sw.write("\n-----END CERTIFICATE-----\n");
+
+        return sw.toString();
     }
 
     public static String getSubjectCN(X500Principal principal) {

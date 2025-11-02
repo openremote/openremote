@@ -128,6 +128,7 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
                             Constants.MASTER_REALM,
                             ((ManagerKeycloakIdentityProvider)identityService.getIdentityProvider()),
                             uniqueId,
+                            null,
                             finalProvisioningConfig
                         );
                         UserAssetProvisioningMQTTHandler.getCreateClientAsset(

@@ -52,24 +52,19 @@ import org.apache.activemq.artemis.core.settings.impl.AddressFullMessagePolicy;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
 import org.apache.activemq.artemis.core.settings.impl.PageFullMessagePolicy;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
-import org.apache.activemq.artemis.spi.core.security.jaas.GuestLoginModule;
-import org.apache.activemq.artemis.spi.core.security.jaas.PrincipalConversionLoginModule;
-import org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal;
-import org.apache.activemq.artemis.spi.core.security.jaas.UserPrincipal;
+import org.apache.activemq.artemis.spi.core.security.jaas.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.client.utils.URIBuilder;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.adapters.jaas.AbstractKeycloakLoginModule;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
-import org.openremote.manager.security.AuthorisationService;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
-import org.openremote.manager.security.MultiTenantClientCredentialsGrantsLoginModule;
+import org.openremote.manager.security.*;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -83,6 +78,8 @@ import org.openremote.model.util.UniqueIdentifierGenerator;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.Principal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -107,6 +104,13 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public static final int PRIORITY = MED_PRIORITY;
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
     public static final String MQTT_SERVER_LISTEN_PORT = "MQTT_SERVER_LISTEN_PORT";
+    public static final String OR_MQTT_MTLS_SERVER_LISTEN_HOST = "OR_MQTT_MTLS_SERVER_LISTEN_HOST";
+    public static final String OR_MQTT_MTLS_SERVER_LISTEN_PORT = "OR_MQTT_MTLS_SERVER_LISTEN_PORT";
+    public static final String OR_MQTT_MTLS_KEYSTORE_PATH = "OR_MQTT_MTLS_KEYSTORE_PATH";
+    public static final String OR_MQTT_MTLS_KEYSTORE_PASSWORD = "OR_MQTT_MTLS_KEYSTORE_PASSWORD";
+    public static final String OR_MQTT_MTLS_TRUSTSTORE_PATH = "OR_MQTT_MTLS_TRUSTSTORE_PATH";
+    public static final String OR_MQTT_MTLS_TRUSTSTORE_PASSWORD = "OR_MQTT_MTLS_TRUSTSTORE_PASSWORD";
+//    public static final String OR_MQTT_MTLS_ENABLED = "MQTT_MTLS_ENABLED";
     public static final String ANONYMOUS_USERNAME = "anonymous";
     // Allow 5 min durable session but this will not enable retained topics etc. as we delete queues aggressively for now
     public static final int DEFAULT_SESSION_EXPIRY_MILLIS = 300000;
@@ -121,6 +125,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected ExecutorService executorService;
     protected TimerService timerService;
     protected AssetProcessingService assetProcessingService;
+    protected PersistenceService persistenceService;
     protected List<MQTTHandler> customHandlers = new ArrayList<>();
     protected ConcurrentMap<String, RemotingConnection> clientIDConnectionMap = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, RemotingConnection> connectionIDConnectionMap = new ConcurrentHashMap<>();
@@ -155,6 +160,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         executorService = container.getExecutor();
         timerService = container.getService(TimerService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
+        persistenceService = container.getService(PersistenceService.class);
 
         userAssetDisconnectDebouncer = new Debouncer<>(container.getScheduledExecutor(), id -> processUserAssetLinkChange(id, userAssetLinkChangeMap.remove(id)), debounceMillis);
         // This allows last will messages to be processed
@@ -182,6 +188,10 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             .setParameter("defaultMqttSessionExpiryInterval", Integer.toString(DEFAULT_SESSION_EXPIRY_MILLIS))
             .build().toString();
         serverConfiguration.addAcceptorConfiguration("tcp", serverURI);
+
+        // Add mTLS acceptor if enabled
+        addMTLSAcceptor(container);
+
         serverConfiguration.registerBrokerPlugin(this);
         if (container.getMeterRegistry() != null) {
             serverConfiguration.setMetricsConfiguration(new MetricsConfiguration().setJvmMemory(false).setPlugin(new org.apache.activemq.artemis.core.server.metrics.plugins.SimpleMetricsPlugin() {
@@ -262,16 +272,16 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         server = new EmbeddedActiveMQ();
         server.setConfiguration(serverConfiguration);
 
-        securityManager = new ActiveMQORSecurityManager(authorisationService, this, realm -> identityProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), "", new SecurityConfiguration() {
+        securityManager = new ActiveMQORSecurityManager(identityProvider, this, realm -> identityProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), "", new SecurityConfiguration() {
             @Override
             public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
                 return new AppConfigurationEntry[]{
-                    new AppConfigurationEntry(GuestLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.SUFFICIENT, Map.of("debug", "true", "credentialsInvalidate", "true", "org.apache.activemq.jaas.guest.user", ANONYMOUS_USERNAME, "org.apache.activemq.jaas.guest.role", ANONYMOUS_USERNAME)),
                     new AppConfigurationEntry(MultiTenantClientCredentialsGrantsLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(
                         MultiTenantClientCredentialsGrantsLoginModule.INCLUDE_REALM_ROLES_OPTION, "true",
                         AbstractKeycloakLoginModule.ROLE_PRINCIPAL_CLASS_OPTION, RolePrincipal.class.getName()
                     )),
-                    new AppConfigurationEntry(PrincipalConversionLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(PrincipalConversionLoginModule.PRINCIPAL_CLASS_LIST, KeycloakPrincipal.class.getName()))
+                    new AppConfigurationEntry(PrincipalConversionLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(PrincipalConversionLoginModule.PRINCIPAL_CLASS_LIST, KeycloakPrincipal.class.getName())),
+                    new AppConfigurationEntry(GuestLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.SUFFICIENT, Map.of("debug", "true", "credentialsInvalidate", "true", "org.apache.activemq.jaas.guest.user", ANONYMOUS_USERNAME, "org.apache.activemq.jaas.guest.role", ANONYMOUS_USERNAME)),
                 };
             }
         });
@@ -637,6 +647,44 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             connection.setSubject(null); // Clear existing subject
             securityManager.authenticate(realm + ":" + username, password, connection, null);
             notifyConnectionAuthenticated(connection);
+        }
+    }
+
+    /**
+     * Add mTLS acceptor configuration to the server
+     */
+    protected void addMTLSAcceptor(Container container) throws Exception {
+        String mtlsHost = getString(container.getConfig(), OR_MQTT_MTLS_SERVER_LISTEN_HOST, "0.0.0.0");
+        int mtlsPort = getInteger(container.getConfig(), OR_MQTT_MTLS_SERVER_LISTEN_PORT, 8884);
+        final Path keystoreDirPath = Paths.get("keystores");
+        String keystorePath = getString(container.getConfig(), OR_MQTT_MTLS_KEYSTORE_PATH, persistenceService.resolvePath(keystoreDirPath.resolve("server_keystore.p12")).toString());
+        String keystorePassword = getString(container.getConfig(), OR_MQTT_MTLS_KEYSTORE_PASSWORD, "secret");
+        String truststorePath = getString(container.getConfig(), OR_MQTT_MTLS_TRUSTSTORE_PATH, persistenceService.resolvePath(keystoreDirPath.resolve("server_truststore.p12")).toString());
+        String truststorePassword = getString(container.getConfig(), OR_MQTT_MTLS_TRUSTSTORE_PASSWORD, "secret");
+
+        try {
+            String mtlsServerURI = new URIBuilder()
+                .setScheme("tcp")
+                .setHost(mtlsHost)
+                .setPort(mtlsPort)
+                .setParameter("protocols", "MQTT")
+                .setParameter("allowLinkStealing", "false")
+                .setParameter("defaultMqttSessionExpiryInterval", Integer.toString(DEFAULT_SESSION_EXPIRY_MILLIS))
+                // SSL/TLS configuration for mTLS
+                .setParameter("sslEnabled", "true")
+                .setParameter("needClientAuth", "true") // Require client certificates (mTLS)
+                .setParameter("keyStorePath", keystorePath)
+                .setParameter("keyStorePassword", keystorePassword)
+                .setParameter("trustStorePath", truststorePath)
+                .setParameter("trustStorePassword", truststorePassword)
+                .build().toString();
+
+            serverConfiguration.addAcceptorConfiguration("mqtt-mtls", mtlsServerURI);
+            LOG.log(INFO, "Added mTLS MQTT acceptor listening on " + mtlsHost + ":" + mtlsPort);
+
+        } catch (Exception e) {
+            LOG.log(WARNING, "Failed to configure mTLS acceptor: " + e.getMessage());
+            throw new Exception("mTLS acceptor configuration failed", e);
         }
     }
 }

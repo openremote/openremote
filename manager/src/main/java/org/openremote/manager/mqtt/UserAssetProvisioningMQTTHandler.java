@@ -23,6 +23,7 @@ import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import io.undertow.security.idm.X509CertificateCredential;
 import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
@@ -308,9 +309,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             return;
         }
 
-        if (provisioningMessage instanceof X509ProvisioningMessage) {
-            processX509ProvisioningMessage(connection, topic, (X509ProvisioningMessage)provisioningMessage);
-        }
+        processX509ProvisioningMessage(connection, topic, provisioningMessage);
     }
 
     protected static boolean isProvisioningTopic(Topic topic) {
@@ -329,23 +328,43 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         return PROVISIONING_TOKEN + "/" + topicTokenIndexToString(topic, 1) + "/" + RESPONSE_TOKEN;
     }
 
-    protected void processX509ProvisioningMessage(RemotingConnection connection, Topic topic, X509ProvisioningMessage provisioningMessage) {
+    protected void processX509ProvisioningMessage(RemotingConnection connection, Topic topic, ProvisioningMessage provisioningMessage) {
 
         LOG.fine(() -> "Processing X.509 provisioning message: " + MQTTBrokerService.connectionToString(connection));
 
-        if (TextUtil.isNullOrEmpty(provisioningMessage.getCert())) {
-            LOG.info("Certificate is missing from X509 provisioning message" + MQTTBrokerService.connectionToString(connection));
-            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
-            return;
-        }
-
-        // Parse client cert
         X509Certificate clientCertificate;
-        try {
-            clientCertificate = ProvisioningUtil.getX509Certificate(provisioningMessage.getCert());
-        } catch (CertificateException e) {
-            LOG.log(Level.INFO, "Failed to parse X.509 certificate: " + MQTTBrokerService.connectionToString(connection), e);
-            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
+
+        String certUniqueId;
+        String uniqueId;
+        boolean isMTLS = provisioningMessage instanceof MTLSProvisioningMessage;
+
+        if (provisioningMessage instanceof X509ProvisioningMessage) {
+            try {
+                clientCertificate = ProvisioningUtil.getX509Certificate(((X509ProvisioningMessage) provisioningMessage).getCert());
+            } catch (CertificateException e) {
+                LOG.log(Level.INFO, "Failed to parse X.509 certificate: " + MQTTBrokerService.connectionToString(connection), e);
+                publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
+                return;
+            }
+
+            certUniqueId = ProvisioningUtil.getSubjectCN(clientCertificate.getSubjectX500Principal());
+            uniqueId = topicTokenIndexToString(topic, 1);
+        } else if (provisioningMessage instanceof MTLSProvisioningMessage) {
+            clientCertificate = connection.getSubject().getPrivateCredentials(X509CertificateCredential.class).stream()
+                .findFirst()
+                .map(X509CertificateCredential::getCertificate)
+                .orElse(null);
+            if(clientCertificate == null){
+                LOG.info("No client certificate found in MTLS provisioning message: " + MQTTBrokerService.connectionToString(connection));
+                publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
+                return;
+            }
+
+            certUniqueId = ProvisioningUtil.getSubjectCN(clientCertificate.getSubjectX500Principal());
+            uniqueId = ProvisioningUtil.getSubjectCN(clientCertificate.getSubjectX500Principal());
+        } else {
+            LOG.info("Unsupported provisioning message type: " + provisioningMessage.getClass().getName() + " " + MQTTBrokerService.connectionToString(connection));
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.MESSAGE_INVALID), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
@@ -363,10 +382,6 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CONFIG_DISABLED), MqttQoS.AT_MOST_ONCE);
             return;
         }
-
-        // Validate unique ID
-        String certUniqueId = ProvisioningUtil.getSubjectCN(clientCertificate.getSubjectX500Principal());
-        String uniqueId = topicTokenIndexToString(topic, 1);
 
         if (TextUtil.isNullOrEmpty(certUniqueId)) {
             LOG.info(() -> "X.509 certificate missing unique ID in subject CN: " + MQTTBrokerService.connectionToString(connection));
@@ -387,7 +402,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         try {
             LOG.finest("Checking service user: " + uniqueId);
-            serviceUser = getCreateClientServiceUser(realm, identityProvider, uniqueId, matchingConfig);
+            serviceUser =  getCreateClientServiceUser(realm, identityProvider, uniqueId, isMTLS ? "" : null, matchingConfig);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to retrieve/create service user: " + MQTTBrokerService.connectionToString(connection), e);
             publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
@@ -404,7 +419,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         Asset<?> asset;
 
         try {
-            LOG.finest(() -> "Checking provisioned asset: " + uniqueId);
+            LOG.finest("Checking provisioned asset: " + uniqueId);
             asset = getCreateClientAsset(assetStorageService, realm, uniqueId, serviceUser, matchingConfig);
 
             if (asset != null) {
@@ -475,8 +490,9 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             .orElse(null);
     }
 
-    public static User getCreateClientServiceUser(String realm, ManagerKeycloakIdentityProvider identityProvider, String uniqueId, ProvisioningConfig<?, ?> provisioningConfig) throws RuntimeException {
-        String username = (PROVISIONING_USER_PREFIX + uniqueId);
+    public static User  getCreateClientServiceUser(String realm, ManagerKeycloakIdentityProvider identityProvider, String uniqueId, String userPrefix, ProvisioningConfig<?, ?> provisioningConfig) throws RuntimeException {
+        String prefix = userPrefix != null ? userPrefix : PROVISIONING_USER_PREFIX;
+        String username = (prefix + uniqueId);
         User serviceUser = identityProvider.getUserByUsername(realm, User.SERVICE_ACCOUNT_PREFIX + username);
 
         if (serviceUser != null) {
