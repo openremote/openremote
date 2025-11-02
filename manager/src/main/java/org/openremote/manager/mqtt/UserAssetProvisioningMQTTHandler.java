@@ -49,6 +49,7 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.util.ValueUtil;
 
+import javax.security.auth.x500.X500Principal;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
@@ -396,6 +397,58 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         }
 
         String realm = matchingConfig.getRealm();
+
+        if (isMTLS) {
+            X500Principal principal = clientCertificate.getSubjectX500Principal();
+
+            // Extract OU from the certificate DN and compare to configured realm
+            String dn = principal.getName(X500Principal.RFC2253);
+            String ou = null;
+            try {
+                javax.naming.ldap.LdapName ldapName = new javax.naming.ldap.LdapName(dn);
+                for (javax.naming.ldap.Rdn rdn : ldapName.getRdns()) {
+                    if ("OU".equalsIgnoreCase(rdn.getType())) {
+                        ou = String.valueOf(rdn.getValue());
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                // Couldn't parse subject to then parse out the realm and service user name
+                LOG.log(Level.INFO, "Failed to parse DN for client certificate subject: " + MQTTBrokerService.connectionToString(connection), e);
+                publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
+                return;
+            }
+
+            if (ou == null) {
+                // OU RDN not found in subject, meaning that no realm was supplied in the DN
+                LOG.info(() -> "mTLS Subject DN missing OU (realm): " + MQTTBrokerService.connectionToString(connection));
+                publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
+                return;
+            }
+
+            if (!realm.equalsIgnoreCase(ou)) {
+                // Realm that was configured in the Provisioning Config doesn't match the realm supplied in the certificate DN.
+                // Why this is a problem: The device will subsequently disconnect from the broker and try to reconnect.
+                // The service user will be created in a different realm than the one that the device is trying to connect to.
+                // Which means that when the device reconnects it will fail to authenticate as the service user won't exist in that realm.
+                // Instead of making a weird decision about which realm to use, we just reject the connection outright. 
+                LOG.info(() -> "mTLS certificate subject realm doesn't match provisioning config realm: " + MQTTBrokerService.connectionToString(connection));
+                publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
+                return;
+            }
+        }
+
+        if (isMTLS) {
+            X500Principal principal = clientCertificate.getSubjectX500Principal();
+
+
+            // Check that DN of principal equals configured realm
+            if (!realm.equalsIgnoreCase(principal.getName())) {
+                LOG.info(() -> "MTLS principal DN doesn't match provisioning config realm: " + MQTTBrokerService.connectionToString(connection));
+                publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
+                return;
+            }
+        }
 
         // Get/create service user
         User serviceUser;
