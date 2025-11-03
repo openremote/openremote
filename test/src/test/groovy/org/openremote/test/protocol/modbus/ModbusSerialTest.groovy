@@ -126,7 +126,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         new ModbusAgentLink(
                                 id: agent.getId(),
                                 unitId: 1,
-                                pollingMillis: 1000,
+                                requestInterval: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readAddress: 50
                                 // Missing: readValueType
@@ -161,7 +161,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         new ModbusAgentLink(
                                 id: agent.getId(),
                                 unitId: 1,
-                                pollingMillis: 1000,
+                                requestInterval: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
                                 readAddress: 1,
@@ -174,7 +174,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         new ModbusAgentLink(
                                 id: agent.getId(),
                                 unitId: 1,
-                                pollingMillis: 1000,
+                                requestInterval: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
                                 readAddress: 3,
@@ -187,7 +187,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         new ModbusAgentLink(
                                 id: agent.getId(),
                                 unitId: 1,
-                                pollingMillis: 1000,
+                                requestInterval: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.INPUT,
                                 readValueType: ModbusAgentLink.ModbusDataType.REAL,
                                 readAddress: 201,
@@ -200,7 +200,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         new ModbusAgentLink(
                                 id: agent.getId(),
                                 unitId: 1,
-                                pollingMillis: 1000,
+                                requestInterval: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.COIL,
                                 readValueType: ModbusAgentLink.ModbusDataType.BOOL,
                                 readAddress: 6,
@@ -280,7 +280,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         new ModbusAgentLink(
                                 id: agent.getId(),
                                 unitId: 1,
-                                pollingMillis: 1000,
+                                requestInterval: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
                                 readAddress: 1,
@@ -292,7 +292,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         new ModbusAgentLink(
                                 id: agent.getId(),
                                 unitId: 1,
-                                pollingMillis: 1000,
+                                requestInterval: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
                                 readAddress: 16,
@@ -304,7 +304,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         new ModbusAgentLink(
                                 id: agent.getId(),
                                 unitId: 1,
-                                pollingMillis: 1000,
+                                requestInterval: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
                                 readAddress: 31,
@@ -375,7 +375,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         new ModbusAgentLink(
                                 id: agent.getId(),
                                 unitId: 1,  // Unit ID 1 via agentLink
-                                pollingMillis: 1000,
+                                requestInterval: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
                                 readAddress: 1,
@@ -392,7 +392,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         new ModbusAgentLink(
                                 id: agent.getId(),
                                 unitId: 2,  // Unit ID 2 via agentLink
-                                pollingMillis: 1000,
+                                requestInterval: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.UINT,
                                 readAddress: 1,
@@ -664,7 +664,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         new ModbusAgentLink(
                                 id: agent.getId(),
                                 unitId: 1,
-                                pollingMillis: 1000,
+                                requestInterval: 1000,
                                 readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                                 readValueType: ModbusAgentLink.ModbusDataType.REAL,
                                 readAddress: 51,
@@ -726,20 +726,19 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
         }
 
-        when: "a device with writeWithPollingRate enabled is created"
-        def device = new ThingAsset("Polling Write Serial Device")
+        when: "a device with write requestInterval (continuous writes) is created"
+        def device = new ThingAsset("Continuous Write Serial Device")
         device.setRealm(MASTER_REALM)
         device.addOrReplaceAttributes(
-                new Attribute<>("pollingWrite", ValueType.INTEGER, 77).addOrReplaceMeta(
+                new Attribute<>("continuousWrite", ValueType.INTEGER, 77).addOrReplaceMeta(
                         new MetaItem<>(
                         AGENT_LINK,
                         new ModbusAgentLink(
                                 id: agent.getId(),
                                 unitId: 1,
-                                pollingMillis: 1000,  // Write every 1000ms
+                                requestInterval: 1000,  // Write every 1000ms
                                 writeMemoryArea: ModbusAgentLink.WriteMemoryArea.HOLDING,
-                                writeAddress: 61,
-                                writeWithPollingRate: true
+                                writeAddress: 61
                         )
                         ),
                         new MetaItem<>(STORE_DATA_POINTS)
@@ -747,7 +746,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         )
         device = assetStorageService.merge(device)
 
-        then: "write polling task should be created"
+        then: "write request task should be created"
         conditions.eventually {
             def protocol = agentService.getProtocolInstance(agent.id) as ModbusSerialProtocol
             assert protocol != null
@@ -755,7 +754,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         }
 
         def assetDatapointService = container.getService(org.openremote.manager.datapoint.AssetDatapointService.class)
-        def attributeRef = new org.openremote.model.attribute.AttributeRef(device.getId(), "pollingWrite")
+        def attributeRef = new org.openremote.model.attribute.AttributeRef(device.getId(), "continuousWrite")
 
         then: "multiple write events should be observed"
         def writeRequests = []
@@ -769,14 +768,14 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 }
             }
             // Wait to accumulate multiple writes
-            Thread.sleep(2500) // Wait for ~2-3 write cycles at 1000ms polling
+            Thread.sleep(2500) // Wait for ~2-3 write cycles at 1000ms interval
             assert writeRequests.size() >= 2  // Should have at least 2 writes
         }
 
 
         then: "database should show 1 datapoint"
         conditions.eventually {
-            // Query datapoints stored for this attribute - writeWithPollingRate should no extra datapoints for writes
+            // Query datapoints stored for this attribute - continuous writes should create no extra datapoints
             def datapoints = assetDatapointService.getDatapoints(attributeRef)
             println "Datapoints found: ${datapoints.size()}"
             datapoints.each { println "  - timestamp: ${it.timestamp}, value: ${it.value}" }

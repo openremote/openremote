@@ -265,7 +265,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
 
     @Override
     protected ScheduledFuture<?> scheduleModbusPollingWriteRequest(AttributeRef ref, ModbusAgentLink agentLink) {
-        LOG.fine("Scheduling Modbus Write polling request to execute every " + agentLink.getPollingMillis() + "ms for attributeRef: " + ref);
+        LOG.fine("Scheduling Modbus Write polling request to execute every " + agentLink.getRequestInterval() + "ms for attributeRef: " + ref);
 
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
@@ -292,7 +292,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
             } catch (Exception e) {
                 LOG.log(Level.WARNING, "Exception during Modbus Write polling for " + ref + ": " + e.getMessage(), e);
             }
-        }, 0, agentLink.getPollingMillis(), TimeUnit.MILLISECONDS);
+        }, 0, agentLink.getRequestInterval(), TimeUnit.MILLISECONDS);
     }
 
     @Override

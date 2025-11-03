@@ -36,10 +36,9 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     @Min(1)
     private Integer unitId;
 
-    @NotNull()
-    @JsonPropertyDescription("Poll interval in milliseconds")
+    @JsonPropertyDescription("Request interval in milliseconds. If not set: reads execute once on connection, writes execute on demand only.")
     @Min(1000)
-    private Long pollingMillis;
+    private Long requestInterval;
 
     @JsonPropertyDescription("Memory area to read from during read request")
     private ReadMemoryArea readMemoryArea;
@@ -60,9 +59,6 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     @JsonAlias("readRegisterAmount")  // Support old field name for backward compatibility
     private Integer registersAmount;
 
-    @JsonPropertyDescription("If enabled, the current attribute value will be written to the modbus register at pollingMillis interval, not just on attribute events.")
-    private Boolean writeWithPollingRate;
-
     public Integer getUnitId() {
         return unitId;
     }
@@ -71,12 +67,12 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
         this.unitId = unitId;
     }
 
-    public long getPollingMillis() {
-        return pollingMillis;
+    public Long getRequestInterval() {
+        return requestInterval;
     }
 
-    public void setPollingMillis(long pollingMillis) {
-        this.pollingMillis = pollingMillis;
+    public void setRequestInterval(Long requestInterval) {
+        this.requestInterval = requestInterval;
     }
 
     public ReadMemoryArea getReadMemoryArea() {
@@ -125,14 +121,6 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
 
     public void setRegistersAmount(Integer registersAmount) {
         this.registersAmount = registersAmount;
-    }
-
-    public Boolean getWriteWithPollingRate() {
-        return writeWithPollingRate;
-    }
-
-    public void setWriteWithPollingRate(Boolean writeWithPollingRate) {
-        this.writeWithPollingRate = writeWithPollingRate;
     }
 
     public enum ReadMemoryArea {

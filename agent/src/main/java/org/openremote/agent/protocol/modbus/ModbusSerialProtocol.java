@@ -642,7 +642,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
 
     @Override
     protected ScheduledFuture<?> scheduleModbusPollingWriteRequest(AttributeRef ref, ModbusAgentLink agentLink) {
-        LOG.fine("Scheduling Modbus Write polling request to execute every " + agentLink.getPollingMillis() + "ms for attributeRef: " + ref);
+        LOG.fine("Scheduling Modbus Write polling request to execute every " + agentLink.getRequestInterval() + "ms for attributeRef: " + ref);
 
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
@@ -669,7 +669,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
             } catch (Exception e) {
                 LOG.log(Level.FINE, "Exception during Modbus Write polling for " + ref + ": " + e.getMessage(), e);
             }
-        }, 0, agentLink.getPollingMillis(), TimeUnit.MILLISECONDS);
+        }, 0, agentLink.getRequestInterval(), TimeUnit.MILLISECONDS);
     }
 
 }

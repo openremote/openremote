@@ -279,7 +279,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 new ModbusAgentLink(
                         id: agent.getId(),
                         unitId: 1,
-                        pollingMillis: 1000,
+                        requestInterval: 1000,
                         readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
                         readValueType: ModbusAgentLink.ModbusDataType.UINT,
                         readAddress: 2,
@@ -329,7 +329,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                 new ModbusAgentLink(
                         id: agent.getId(),
                         unitId: 1,
-                        pollingMillis: 1000,
+                        requestInterval: 1000,
                         readMemoryArea: ModbusAgentLink.ReadMemoryArea.COIL,
                         readValueType: ModbusAgentLink.ModbusDataType.BOOL,
                         readAddress: 5,

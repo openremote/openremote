@@ -331,30 +331,36 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                     && agentLink.getUnitId() != null;
 
             if (hasReadConfig) {
-                // Setup read polling using batching (works for single or multiple attributes)
-                // Group by agent, unitId, memory area, and polling interval
-                String groupKey = agent.getId() + "_" + agentLink.getUnitId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
+                if (agentLink.getRequestInterval() != null) {
+                    // Setup continuous read polling using batching
+                    // Group by agent, unitId, memory area, and request interval
+                    String groupKey = agent.getId() + "_" + agentLink.getUnitId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getRequestInterval();
 
-                batchGroups.computeIfAbsent(groupKey, k -> new ConcurrentHashMap<>()).put(ref, agentLink);
-                cachedBatches.remove(groupKey); // Invalidate cache
+                    batchGroups.computeIfAbsent(groupKey, k -> new ConcurrentHashMap<>()).put(ref, agentLink);
+                    cachedBatches.remove(groupKey); // Invalidate cache
 
-                // Only schedule task if one doesn't exist yet for this group
-                if (!batchPollingTasks.containsKey(groupKey)) {
-                    ScheduledFuture<?> batchTask = scheduleBatchedPollingTask(groupKey, agentLink.getReadMemoryArea(), agentLink.getPollingMillis(), agentLink.getUnitId());
-                    batchPollingTasks.put(groupKey, batchTask);
-                    LOG.fine("Scheduled new polling task for batch group " + groupKey);
+                    // Only schedule task if one doesn't exist yet for this group
+                    if (!batchPollingTasks.containsKey(groupKey)) {
+                        ScheduledFuture<?> batchTask = scheduleBatchedPollingTask(groupKey, agentLink.getReadMemoryArea(), agentLink.getRequestInterval(), agentLink.getUnitId());
+                        batchPollingTasks.put(groupKey, batchTask);
+                        LOG.fine("Scheduled new polling task for batch group " + groupKey);
+                    }
+
+                    LOG.fine("Added attribute " + ref + " to batch group " + groupKey + " (total attributes in group: " + batchGroups.get(groupKey).size() + ")");
+                } else {
+                    // No requestInterval: execute one-time read on connection
+                    LOG.fine("Scheduling one-time read on connection for " + ref);
+                    scheduleOneTimeRead(ref, agentLink);
                 }
-
-                LOG.fine("Added attribute " + ref + " to batch group " + groupKey + " (total attributes in group: " + batchGroups.get(groupKey).size() + ")");
             } else {
                 LOG.fine("Skipping read polling for " + ref + " - read configuration incomplete (unitId, readMemoryArea, readValueType, and readAddress all required)");
             }
 
-            // Check if write polling is enabled and reading is not
-            if (Optional.ofNullable(agentLink.getWriteWithPollingRate()).orElse(false) && Optional.ofNullable(agentLink.getWriteAddress()).isPresent() && agentLink.getReadAddress() == null) {
+            // Check if write polling is enabled (requestInterval set, writeAddress present, no read address)
+            if (agentLink.getRequestInterval() != null && agentLink.getWriteAddress() != null && agentLink.getReadAddress() == null) {
                 ScheduledFuture<?> writeTask = scheduleModbusPollingWriteRequest(ref, agentLink);
                 writePollingMap.put(ref, writeTask);
-                LOG.fine("Scheduled write polling task for attribute " + ref + " every " + agentLink.getPollingMillis() + "ms");
+                LOG.fine("Scheduled write polling task for attribute " + ref + " every " + agentLink.getRequestInterval() + "ms");
             }
     }
 
@@ -371,7 +377,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
         // Remove from batch group (if read config was present)
         if (agentLink.getReadMemoryArea() != null) {
-            String groupKey = agent.getId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getPollingMillis();
+            String groupKey = agent.getId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getRequestInterval();
             Map<AttributeRef, ModbusAgentLink> group = batchGroups.get(groupKey);
             if (group != null) {
                 group.remove(attributeRef);
@@ -538,7 +544,35 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected abstract void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group, Integer unitId);
 
     /**
-     * Schedule a polling write request for an attribute with writeWithPollingRate enabled.
+     * Schedule a one-time read for an attribute on connection (no continuous polling).
+     * Executes a single read request immediately using the batch read mechanism.
+     */
+    protected void scheduleOneTimeRead(AttributeRef ref, ModbusAgentLink agentLink) {
+        // Execute the read request once, asynchronously
+        scheduledExecutorService.execute(() -> {
+            try {
+                // Create a temporary batch for this single read
+                int registerCount = Optional.ofNullable(agentLink.getRegistersAmount()).orElse(agentLink.getReadValueType().getRegisterCount());
+                BatchReadRequest batch = new BatchReadRequest(agentLink.getReadAddress(), registerCount);
+                batch.attributes.add(ref);
+                batch.offsets.add(0);
+
+                // Create a temporary group with this single attribute
+                Map<AttributeRef, ModbusAgentLink> tempGroup = new ConcurrentHashMap<>();
+                tempGroup.put(ref, agentLink);
+
+                // Execute the batch read
+                executeBatchRead(batch, agentLink.getReadMemoryArea(), tempGroup, agentLink.getUnitId());
+
+                LOG.fine("One-time read executed for " + ref);
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Exception during one-time read for " + ref + ": " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * Schedule a polling write request for an attribute with requestInterval set.
      * Subclasses must implement protocol-specific polling write logic.
      */
     protected abstract ScheduledFuture<?> scheduleModbusPollingWriteRequest(
