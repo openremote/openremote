@@ -4,7 +4,7 @@
     "outDir": "./lib",
     "rootDir": "src",
     "strict": false,
-    "skipLibCheck": true
+    "types": ["node", "react", "mapbox"]
   },
   "include": [
     "./src"
