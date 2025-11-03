@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -175,22 +176,25 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
             }
             onRequestSuccess(messageId);
 
-            // Only update attribute value when:
-            // -the event source isn't a synthetic polling task write
-            // -there is no reading action set (the read action should trigger the update)
-            if (event.getSource() != null & agentLink.getReadAddress() == null) {
-                // First update the local map so polling sees the new value immediately
-                Attribute<?> attribute = linkedAttributes.get(event.getRef());
-                if (attribute != null) {
-                    @SuppressWarnings("unchecked")
-                    Attribute<Object> attr = (Attribute<Object>) attribute;
-                    attr.setValue(processedValue);
+            // Handle attribute update based on read configuration
+            if (event.getSource() != null) {
+                // Not a synthetic write (from continuous write task)
+                if (agentLink.getReadAddress() == null) {
+                    // Write-only: update immediately based on write success
+                    Attribute<?> attribute = linkedAttributes.get(event.getRef());
+                    if (attribute != null) {
+                        @SuppressWarnings("unchecked")
+                        Attribute<Object> attr = (Attribute<Object>) attribute;
+                        attr.setValue(processedValue);
+                    }
+                    updateLinkedAttribute(event.getRef(), processedValue);
+                    LOG.finest("DEBUG doLinkedAttributeWrite triggered an updateLinkedAttribute: " + event.getRef());
+                } else {
+                    // Write + Read: trigger immediate read to verify write
+                    LOG.finest("Triggering verification read after write for " + event.getRef());
+                    triggerImmediateRead(event.getRef(), agentLink);
                 }
-                // Then send the event to the system
-                updateLinkedAttribute(event.getRef(), processedValue);
-                LOG.finest("DEBUG doLinkedAttributeWrite triggered an updateLinkedAttribute: " + event.getRef());
             }
-            // Polling writes have null source, so they don't trigger updateLinkedAttribute
         } catch (Exception e) {
             onRequestFailure(messageId, "Modbus TCP write address=" + writeAddress, e);
             throw new RuntimeException(e);
@@ -303,6 +307,32 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
     @Override
     public String getProtocolInstanceUri() {
         return connectionString;
+    }
+
+    /**
+     * Trigger an immediate read operation to verify a write.
+     * Used when both read and write are configured to ensure attribute gets updated with actual device value.
+     */
+    private void triggerImmediateRead(AttributeRef ref, ModbusAgentLink agentLink) {
+        scheduledExecutorService.execute(() -> {
+            try {
+                // Create a single-attribute batch for this verification read
+                int registerCount = Optional.ofNullable(agentLink.getRegistersAmount()).orElse(agentLink.getReadValueType().getRegisterCount());
+                BatchReadRequest batch = new BatchReadRequest(agentLink.getReadAddress(), registerCount);
+                batch.attributes.add(ref);
+                batch.offsets.add(0);
+
+                // Create temporary group
+                Map<AttributeRef, ModbusAgentLink> tempGroup = new ConcurrentHashMap<>();
+                tempGroup.put(ref, agentLink);
+
+                // Execute the verification read
+                executeBatchRead(batch, agentLink.getReadMemoryArea(), tempGroup, agentLink.getUnitId());
+                LOG.finest("Verification read completed for " + ref);
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Failed to execute verification read for " + ref + ": " + e.getMessage(), e);
+            }
+        });
     }
 
     /**
