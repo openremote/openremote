@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
+import {html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {CalendarEvent, RulesetUnion, WellknownRulesetMetaItems} from "@openremote/model";
-import "@openremote/or-mwc-components/or-mwc-input";
+import {CalendarEvent} from "@openremote/model";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {translate,i18next} from "@openremote/or-translate";
 
@@ -41,10 +40,6 @@ export class OrSchedular extends translate(i18next)(LitElement) {
     protected _rrule?: RRule;
 
     protected _dialog?: OrMwcDialog;
-
-    constructor() {
-        super();
-    }
 
     protected updated(changedProps: PropertyValues) {
         super.updated(changedProps);
@@ -196,10 +191,7 @@ export class OrSchedular extends translate(i18next)(LitElement) {
     }
 
     setValidityType(value: any) {
-    //     if (!this.ruleset) return;
-
-    //     if (!this.ruleset.meta) this.ruleset.meta = {};
-    console.log(this._calendar, this.getEventTypes())
+        console.log(this._calendar, this.getEventTypes())
 
         switch (value) {
             case "always":
@@ -317,7 +309,7 @@ export class OrSchedular extends translate(i18next)(LitElement) {
         return html`
             <div style="min-width: 635px; display:grid; flex-direction: row;">
                 <div class="layout horizontal">
-                    <or-mwc-input style="min-width: 280px;" .value="${eventType}" .type="${InputType.SELECT}" .options="${eventTypes}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setValidityType(e.detail.value)}" ></or-mwc-input>
+                    <or-mwc-input style="min-width: 280px;" .value="${eventType}" .type="${InputType.SELECT}" .options="${eventTypes}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setValidityType(e.detail.value)}"></or-mwc-input>
                 </div>
 
                 ${calendar && (eventType  === "period" || eventType  === "recurrence") ? html`
