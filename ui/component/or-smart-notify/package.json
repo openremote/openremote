@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-smart-notify",
-  "version": "1.8.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "OpenRemote Smarty Notify element",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -23,12 +23,8 @@
     "@fortawesome/free-solid-svg-icons": "^5.6.3",
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
-    "@openremote/rest": "workspace:*",
     "lit": "^3.3.1",
     "moment": "^2.29.4"
-  },
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

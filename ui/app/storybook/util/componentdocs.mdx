@@ -1,0 +1,54 @@
+import {Title, Subtitle, Canvas, Markdown, ArgTypes} from "@storybook/addon-docs/blocks";
+import {getCustomElements} from "./util.js";
+import {DocsBadge} from "./elements.mdx";
+
+export const ComponentDocs = (props) => {
+
+    // Load objects from the MDX props
+    const story = props?.story;
+    const options = props?.options;
+    if(!story) return (<i>Error: Could not find story.</i>)
+    if(!story.default?.component) return (<i>Error: Could not find tag name of the component. Please define in `story.meta.component`.</i>)
+    if(!story.default?.parameters?.docs?.subtitle) return (<i>Error: Could not find subtitle of the story. Please define in `story.meta.parameters.docs.subtitle`.</i>)
+    if(!story.packageJson) return (<i>Error: Could not find package.json of the story. Please export it inside the story file.</i>)
+    if(!props?.elementsjson) return (<i>Error: Could not find custom-elements.json specification of the story.</i>)
+
+    // Load custom elements from the story
+    const customElements = getCustomElements(story.default.component, props?.elementsjson);
+    if(!customElements) return (<i>Error: Could not parse custom-elements.json specification of the story.</i>)
+
+    return (
+        <>
+            <Title>{options.displayName || customElements.tagName || "Title"}</Title>
+            <Subtitle of={story}></Subtitle>
+
+            <div className="badge-section">
+                {story.packageJson && !options.hideNpm ? (<DocsBadge type="NPM" packageJson={story.packageJson} />) : null}
+                {story.packageJson && !options.hideLicense ? (<DocsBadge type="License" packageJson={story.packageJson} />) : null}
+                {story.packageJson && !options.hideDownloads ? (<DocsBadge type="Downloads" packageJson={story.packageJson} />) : null}
+            </div>
+
+            {/* Description of the component */}
+            {story.default?.parameters?.docs?.description || customElements.description
+                ? <p>{story.default?.parameters?.docs?.description ?? customElements.description}</p>
+                : <i>Could not find description of the story. Please place a comment above the TypeScript class of the component.</i>
+            }
+
+            {/* Primary interactive example of this component */}
+            {story.Primary ? <Canvas of={story.Primary}/> : <i>Could not find story. Please define a story, and export it as "Primary".</i>}
+
+            {/* Examples section */}
+            {story.examples?.length ? <div id="examples-section">
+                {story?.examples.map((s, index) => <div key={("Example" + index)}>
+                    <Markdown>{"### " + (s.parameters?.title ?? s.name ?? ("Example " + index))}</Markdown>
+                    {s.parameters?.summary ? <Markdown>{s.parameters?.summary}</Markdown> : null}
+                    <Canvas of={s}></Canvas>
+                </div>)}
+            </div> : null}
+
+            {/* Attributes & Properties section */}
+            <Markdown>## API Specification</Markdown>
+            <ArgTypes of={story}/>
+        </>
+    );
+};
