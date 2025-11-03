@@ -9,6 +9,7 @@
 
     ],
     "ignoreDependencies": [
+        "@types/react", // Required by mdx which is used in Storybook
         "@types/mapbox", // Global types under the L namespace (no direct import)
         "@webcomponents/webcomponentsjs", // Imported through index.html files for apps
         "@types/offscreencanvas" // Referenced in the tsconfig file
