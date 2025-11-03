@@ -27,7 +27,7 @@ import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dial
 import {ByWeekday, RRule, Weekday} from 'rrule'
 import moment from "moment";
 
-@customElement("or-schedular")
+@customElement("or-calendar-event")
 export class OrSchedular extends translate(i18next)(LitElement) {
 
     @query("#radial-modal")

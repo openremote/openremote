@@ -12,7 +12,7 @@ import {
 import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { html } from "lit";
-import "@openremote/or-schedular";
+import "@openremote/or-calendar-event";
 import { i18next } from "@openremote/or-translate";
 import { until } from "lit/directives/until.js";
 
@@ -65,7 +65,7 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
     //     ${until(loadedTemplatePromise, html`<or-mwc-input class="agent-id-picker" .type="${InputType.SELECT}"></or-mwc-input>`)}
     //     `;
     console.log(props.data)
-    return getTemplateWrapper(html`<or-schedular></or-schedular>`, undefined);
+    return getTemplateWrapper(html`<or-calendar-event></or-calendar-event>`, undefined);
 };
 
 export const calendarEventRendererRegistryEntry: JsonFormsRendererRegistryEntry = {

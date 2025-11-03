@@ -1,7 +1,7 @@
 {
-    "name": "@openremote/or-schedular",
+    "name": "@openremote/or-calendar-event",
     "version": "1.8.0-snapshot",
-    "description": "OpenRemote schedular UI component",
+    "description": "OpenRemote calendar event UI component",
     "customElements": "custom-elements.json",
     "main": "dist/umd/index.bundle.js",
     "module": "lib/index.js",
