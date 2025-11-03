@@ -3,8 +3,7 @@
   "compilerOptions": {
     "outDir": "./lib",
     "rootDir": "src",
-    "strict": false,
-    "types": ["node", "react", "mapbox"]
+    "strict": false
   },
   "include": [
     "./src"
