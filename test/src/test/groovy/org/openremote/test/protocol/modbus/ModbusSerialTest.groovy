@@ -97,9 +97,9 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
                 new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
-                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH_MAP, ["default": 30] as ValueType.IntegerMap),
-                new Attribute<>(ModbusSerialAgent.ILLEGAL_REGISTERS_MAP, ["default": "101,151-161"] as ValueType.StringMap),
-                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT_MAP, ["default": ModbusAgent.EndianFormat.BIG_ENDIAN] as ModbusAgent.EndianFormatMap)
+                new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
+                        "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "101,151-161", 30)
+                ] as ModbusAgent.DeviceConfigMap)
         )
 
         agent = assetStorageService.merge(agent)
@@ -263,9 +263,9 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
                 new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
-                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH_MAP, ["default": 30] as ValueType.IntegerMap),
-                new Attribute<>(ModbusSerialAgent.ILLEGAL_REGISTERS_MAP, ["default": "6-11,21-26"] as ValueType.StringMap),
-                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT_MAP, ["default": ModbusAgent.EndianFormat.BIG_ENDIAN] as ModbusAgent.EndianFormatMap)
+                new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
+                        "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "6-11,21-26", 30)
+                ] as ModbusAgent.DeviceConfigMap)
         )
 
         agent = assetStorageService.merge(agent)
@@ -351,8 +351,9 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
                 new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
-                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH_MAP, ["default": 30] as ValueType.IntegerMap),
-                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT_MAP, ["default": ModbusAgent.EndianFormat.BIG_ENDIAN] as ModbusAgent.EndianFormatMap)
+                new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
+                        "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "", 30)
+                ] as ModbusAgent.DeviceConfigMap)
         )
 
         agent = assetStorageService.merge(agent)
@@ -536,8 +537,9 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
                 new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
-                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH_MAP, ["default": 50] as ValueType.IntegerMap),
-                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT_MAP, ["default": ModbusAgent.EndianFormat.BIG_ENDIAN] as ModbusAgent.EndianFormatMap)
+                new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
+                        "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "", 50)
+                ] as ModbusAgent.DeviceConfigMap)
         )
 
         agent = assetStorageService.merge(agent)
@@ -795,8 +797,9 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
                 new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
                 new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
-                new Attribute<>(ModbusSerialAgent.MAX_REGISTER_LENGTH_MAP, ["default": 50] as ValueType.IntegerMap),
-                new Attribute<>(ModbusSerialAgent.ENDIAN_FORMAT_MAP, ["default": endianFormat] as ModbusAgent.EndianFormatMap)
+                new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
+                        "default": new ModbusAgent.ModbusDeviceConfig(endianFormat, "", 50)
+                ] as ModbusAgent.DeviceConfigMap)
         )
         return assetStorageService.merge(agent)
     }

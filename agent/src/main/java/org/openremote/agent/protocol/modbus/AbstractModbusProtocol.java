@@ -54,29 +54,19 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected final Set<String> failedMessageIds = ConcurrentHashMap.newKeySet();
 
     /**
-     * Get per-unitId EndianFormat from the agent's map configuration.
-     * Falls back to "default" key if specific unitId is not configured.
+     * Get per-unitId device configuration from the agent.
+     * Returns map of unitId string -> ModbusDeviceConfig, with "default" key for default config.
      */
-    protected abstract Optional<ModbusAgent.EndianFormatMap> getEndianFormatMap();
+    protected abstract Optional<ModbusAgent.DeviceConfigMap> getDeviceConfig();
 
     /**
-     * Get per-unitId illegal registers configuration from the agent's map.
-     * Falls back to "default" key if specific unitId is not configured.
+     * Get ModbusDeviceConfig for a specific unitId, falling back to "default" key.
      */
-    protected abstract Optional<ValueType.StringMap> getIllegalRegistersMap();
+    protected ModbusAgent.ModbusDeviceConfig getDeviceConfigForUnitId(Integer unitId) {
+        ModbusAgent.DeviceConfigMap configMap = getDeviceConfig().orElse(null);
 
-    /**
-     * Get per-unitId max register length from the agent's map.
-     * Falls back to "default" key if specific unitId is not configured.
-     */
-    protected abstract Optional<ValueType.IntegerMap> getMaxRegisterLengthMap();
-
-    /**
-     * Look up a value from a map using unitId, falling back to "default" key.
-     */
-    protected <V> V getConfigForUnitId(Map<String, V> configMap, Integer unitId, V defaultValue) {
         if (configMap == null || configMap.isEmpty()) {
-            return defaultValue;
+            return ModbusAgent.ModbusDeviceConfig.createDefault();
         }
 
         // Try specific unitId first
@@ -84,8 +74,8 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             return configMap.get(String.valueOf(unitId));
         }
 
-        // Fall back to "default" key
-        return configMap.getOrDefault("default", defaultValue);
+        // Fall back to "default" key, or create default config if not present
+        return configMap.getOrDefault("default", ModbusAgent.ModbusDeviceConfig.createDefault());
     }
 
     /**
@@ -94,8 +84,8 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
      * @return The EndianFormat for this unitId, or BIG_ENDIAN if not configured
      */
     protected ModbusAgent.EndianFormat getEndianFormat(Integer unitId) {
-        ModbusAgent.EndianFormatMap map = getEndianFormatMap().orElse(null);
-        return getConfigForUnitId(map, unitId, ModbusAgent.EndianFormat.BIG_ENDIAN);
+        ModbusAgent.ModbusDeviceConfig config = getDeviceConfigForUnitId(unitId);
+        return config.getEndianFormat();
     }
 
     /**
@@ -293,8 +283,14 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
     @Override
     protected void doStart(Container container) throws Exception {
-        // Illegal registers are now loaded per-unitId during batch creation
-        // No global illegal registers parsing needed here
+        // Initialize deviceConfig if it's empty
+        Optional<ModbusAgent.DeviceConfigMap> deviceConfigOpt = getDeviceConfig();
+        if (deviceConfigOpt.isEmpty() || deviceConfigOpt.get().isEmpty()) {
+            LOG.info("Initializing deviceConfig with default configuration for agent: " + agent.getName());
+            ModbusAgent.DeviceConfigMap defaultConfig = new ModbusAgent.DeviceConfigMap();
+            defaultConfig.put("default", ModbusAgent.ModbusDeviceConfig.createDefault());
+            sendAttributeEvent(new AttributeEvent(agent.getId(), ModbusAgent.DEVICE_CONFIG, defaultConfig));
+        }
 
         // Call protocol-specific start
         doStartProtocol(container);
@@ -401,16 +397,16 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
      * Get the maximum register length for batching for a specific unitId.
      */
     protected Integer getMaxRegisterLength(Integer unitId) {
-        ValueType.IntegerMap map = getMaxRegisterLengthMap().orElse(null);
-        return getConfigForUnitId(map, unitId, 1); // Default: no batching (1 register at a time)
+        ModbusAgent.ModbusDeviceConfig config = getDeviceConfigForUnitId(unitId);
+        return config.getMaxRegisterLength();
     }
 
     /**
      * Get illegal registers string for a specific unitId.
      */
     protected String getIllegalRegistersString(Integer unitId) {
-        ValueType.StringMap map = getIllegalRegistersMap().orElse(null);
-        return getConfigForUnitId(map, unitId, ""); // Default: no illegal registers
+        ModbusAgent.ModbusDeviceConfig config = getDeviceConfigForUnitId(unitId);
+        return config.getIllegalRegisters();
     }
 
     /**

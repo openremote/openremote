@@ -42,11 +42,6 @@ public class ModbusTcpAgent extends ModbusAgent<ModbusTcpAgent, ModbusTcpProtoco
     @NotNull
     public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
 
-    // Map-based attributes for per-unitId configuration (key "default" for default values)
-    public static final AttributeDescriptor<ValueType.StringMap> ILLEGAL_REGISTERS_MAP = new AttributeDescriptor<>("illegalRegistersMap", ValueType.TEXT_MAP);
-    public static final AttributeDescriptor<ValueType.IntegerMap> MAX_REGISTER_LENGTH_MAP = new AttributeDescriptor<>("maxRegisterLengthMap", ValueType.INTEGER_MAP);
-    public static final AttributeDescriptor<ModbusAgent.EndianFormatMap> ENDIAN_FORMAT_MAP = new AttributeDescriptor<>("endianFormatMap", ModbusAgent.VALUE_ENDIAN_FORMAT_MAP);
-
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
@@ -57,16 +52,8 @@ public class ModbusTcpAgent extends ModbusAgent<ModbusTcpAgent, ModbusTcpProtoco
         super(name);
     }
 
-    public Optional<ValueType.StringMap> getIllegalRegistersMap() {
-        return getAttributes().getValue(ILLEGAL_REGISTERS_MAP);
-    }
-
-    public Optional<ValueType.IntegerMap> getMaxRegisterLengthMap() {
-        return getAttributes().getValue(MAX_REGISTER_LENGTH_MAP);
-    }
-
-    public Optional<ModbusAgent.EndianFormatMap> getEndianFormatMap() {
-        return getAttributes().getValue(ENDIAN_FORMAT_MAP);
+    public Optional<ModbusAgent.DeviceConfigMap> getDeviceConfig() {
+        return getAttributes().getValue(ModbusAgent.DEVICE_CONFIG);
     }
 
     @Override

@@ -58,18 +58,8 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
     }
 
     @Override
-    protected Optional<ModbusAgent.EndianFormatMap> getEndianFormatMap() {
-        return agent.getEndianFormatMap();
-    }
-
-    @Override
-    protected Optional<ValueType.StringMap> getIllegalRegistersMap() {
-        return agent.getIllegalRegistersMap();
-    }
-
-    @Override
-    protected Optional<ValueType.IntegerMap> getMaxRegisterLengthMap() {
-        return agent.getMaxRegisterLengthMap();
+    protected Optional<ModbusAgent.DeviceConfigMap> getDeviceConfig() {
+        return agent.getDeviceConfig();
     }
 
     /**

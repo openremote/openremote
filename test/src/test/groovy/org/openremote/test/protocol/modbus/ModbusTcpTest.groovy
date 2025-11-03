@@ -394,7 +394,9 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         agent.setHost("127.0.0.1")
         agent.setPort(modbusServerPort)
         agent.addOrReplaceAttributes(
-                new Attribute<>(ModbusTcpAgent.MAX_REGISTER_LENGTH_MAP, ["default": 50] as ValueType.IntegerMap) // Enable batching
+                new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
+                        "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "", 50)
+                ] as ModbusAgent.DeviceConfigMap) // Enable batching
         )
         agent = assetStorageService.merge(agent)
 
@@ -482,7 +484,9 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         agent.setHost("127.0.0.1")
         agent.setPort(modbusServerPort)
         agent.addOrReplaceAttributes(
-                new Attribute<>(ModbusTcpAgent.MAX_REGISTER_LENGTH_MAP, ["default": 50] as ValueType.IntegerMap)
+                new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
+                        "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "", 50)
+                ] as ModbusAgent.DeviceConfigMap)
         )
         agent = assetStorageService.merge(agent)
 
@@ -576,7 +580,9 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         agent.setHost("127.0.0.1")
         agent.setPort(modbusServerPort)
         agent.addOrReplaceAttributes(
-                new Attribute<>(ModbusTcpAgent.ENDIAN_FORMAT_MAP, ["default": ModbusAgent.EndianFormat.BIG_ENDIAN] as ModbusAgent.EndianFormatMap)
+                new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
+                        "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "", 1)
+                ] as ModbusAgent.DeviceConfigMap)
         )
         agent = assetStorageService.merge(agent)
 
