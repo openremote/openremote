@@ -1,4 +1,4 @@
-# @openremote/or-schedular \<or-schedular\>
+# @openremote/or-calendar-event \<or-calendar-event\>
 [![NPM Version][npm-image]][npm-url]
 [![Linux Build][travis-image]][travis-url]
 [![Test Coverage][coveralls-image]][coveralls-url]
@@ -7,8 +7,8 @@ Web Component for displaying a scheduling dialog.
 
 ## Install
 ```bash
-npm i @openremote/or-schedular
-yarn add @openremote/or-schedular
+npm i @openremote/or-calendar-event
+yarn add @openremote/or-calendar-event
 ```
 
 ## Usage
@@ -24,7 +24,7 @@ Internet Explorer 11 is also supported.
 [GNU AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
 [npm-image]: https://img.shields.io/npm/v/live-xxx.svg
-[npm-url]: https://npmjs.org/package/@openremote/or-schedular
+[npm-url]: https://npmjs.org/package/@openremote/or-calendar-event
 [travis-image]: https://img.shields.io/travis/live-js/live-xxx/master.svg
 [travis-url]: https://travis-ci.org/live-js/live-xxx
 [coveralls-image]: https://img.shields.io/coveralls/live-js/live-xxx/master.svg
