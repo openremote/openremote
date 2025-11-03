@@ -12,7 +12,6 @@ import {
 import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { html } from "lit";
-import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-schedular";
 import { i18next } from "@openremote/or-translate";
 import { until } from "lit/directives/until.js";
