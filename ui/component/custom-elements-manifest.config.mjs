@@ -5,5 +5,5 @@ export default {
     litelement: true,
     plugins: [
         jsxTypesPlugin({fileName: "custom-elements-jsx.d.ts"})
-    ],
+    ]
 }

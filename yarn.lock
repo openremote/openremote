@@ -3795,10 +3795,11 @@ __metadata:
   linkType: hard
 
 "@wc-toolkit/jsx-types@npm:^1.4.2":
-  version: 1.4.2
-  resolution: "@wc-toolkit/jsx-types@npm:1.4.2"
-  checksum: 10c0/cb61a7c796ccad24ae90b93a022d8596697b897c841e64cfed6d10639922b5474acedb120bbcb0fd56a5178c3a1c5e148c779855ee5429a4c3dfe69f790c0681
-
+  version: 1.4.3
+  resolution: "@wc-toolkit/jsx-types@npm:1.4.3"
+  checksum: 10c0/54971ff6666858e26ae7156f0d38588c6ee2a914c2085880459767186575f36bf0a8e1e0d1e781e2ed29fa43d69d5ef562f8cf625e009ecf6954e0911d3eca46
+  languageName: node
+  linkType: hard
 
 "@wc-toolkit/storybook-helpers@npm:^9.0.1":
   version: 9.0.1
