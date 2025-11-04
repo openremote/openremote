@@ -41,6 +41,7 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
+import org.openremote.container.web.CORSConfig;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.apps.ConsoleAppService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -146,7 +147,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         // Allow all external hostnames with wildcard and same host with wildcard
         validRedirectUris = new ArrayList<>();
         validRedirectUris.add("/*");
-        validRedirectUris.addAll(WebService.getExternalHostnames(container).stream().map(host -> "https://" + host + "/*").toList());
+        validRedirectUris.addAll(WebService.getExternalHostnames().stream().map(host -> "https://" + host + "/*").toList());
     }
 
     @Override
@@ -1316,7 +1317,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         if (container.isDevMode()) {
             headers.computeIfPresent("contentSecurityPolicy", (hdrName, hdrValue) -> "frame-src *; frame-ancestors *; object-src 'none'");
         } else {
-            String allowedOriginsStr = String.join(" ", WebService.getCORSAllowedOrigins(container));
+            String allowedOriginsStr = String.join(" ", CORSConfig.getCORSAllowedOrigins());
             if (!TextUtil.isNullOrEmpty(allowedOriginsStr)) {
                 headers.compute("contentSecurityPolicy", (hdrName, hdrValue) ->
                     "frame-src 'self' " +

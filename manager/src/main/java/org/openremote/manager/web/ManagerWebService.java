@@ -108,19 +108,12 @@ public class ManagerWebService extends WebService {
         initialised = true;
 
         // Configure the JAX-RS Manager API including resources added at startup
-        List<Object> singletons = Stream.of(
-                devMode ? getStandardProviders(devMode, 0) : getStandardProviders(devMode, 0,
-                        getCORSAllowedOrigins(container),
-                        getString(container.getConfig(), OR_WEBSERVER_ALLOWED_METHODS, DEFAULT_CORS_ALLOW_ALL),
-                        getString(container.getConfig(), OR_WEBSERVER_EXPOSED_HEADERS, DEFAULT_CORS_ALLOW_ALL),
-                        DEFAULT_CORS_MAX_AGE,
-                        DEFAULT_CORS_ALLOW_CREDENTIALS),
-                        apiSingletons)
+        List<Object> singletons = Stream.of(getStandardProviders(devMode, 0), apiSingletons)
                 .flatMap(Collection::stream)
                 .toList();
         Application application = new WebApplication(container, apiClasses, singletons);
 
-        deployJaxRsApplication(application, API_PATH, "Manager HTTP API", 0, true);
+        deployJaxRsApplication(application, API_PATH, "Manager HTTP API", 0, true, null);
 
         staticFilePaths.add(builtInAppDocRoot);
 
@@ -132,7 +125,7 @@ public class ManagerWebService extends WebService {
         }
 
         // Deploy static app files unsecured
-        deployFileServlet("/", "App Files", staticFilePaths.toArray(Path[]::new), null);
+        deployFileServlet("/", "App Files", staticFilePaths.toArray(Path[]::new), null, null);
     }
 
     protected Object getOpenApiResource() {

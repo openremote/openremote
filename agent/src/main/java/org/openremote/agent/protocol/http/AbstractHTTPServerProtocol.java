@@ -22,6 +22,7 @@ package org.openremote.agent.protocol.http;
 import jakarta.ws.rs.core.Application;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.container.security.IdentityService;
+import org.openremote.container.web.CORSConfig;
 import org.openremote.container.web.RealmInjectorFilter;
 import org.openremote.container.web.WebApplication;
 import org.openremote.container.web.WebService;
@@ -31,6 +32,7 @@ import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.TextUtil;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -41,7 +43,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.logging.Level.INFO;
-import static org.openremote.container.web.WebService.*;
+import static org.openremote.container.web.WebService.getStandardProviders;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
@@ -96,14 +98,7 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
           null,
           Stream.of(
              List.of((Object)new RealmInjectorFilter(agent.getRealm())), // Need this as realm is in the context path of the deployment
-             devMode ? getStandardProviders(devMode, 0) : getStandardProviders(devMode, null,
-                agent.getAllowedOrigins().map(Set::of).orElse(null),
-                agent.getAllowedHTTPMethods().map(methods ->
-                        Arrays.stream(methods).map(Enum::name)
-                                .collect(Collectors.joining(","))).orElse(DEFAULT_CORS_ALLOW_ALL),
-                DEFAULT_CORS_ALLOW_ALL,
-                DEFAULT_CORS_MAX_AGE,
-                DEFAULT_CORS_ALLOW_CREDENTIALS),
+             getStandardProviders(devMode, 0),
              getApiSingletons()).flatMap(Collection::stream).toList());
 
         deploy(application);
@@ -147,7 +142,22 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
         boolean secure = isSecure();
         String deploymentPath = getDeploymentPath();
         String deploymentName = getDeploymentName();
-        webService.deployJaxRsApplication(application, deploymentPath, deploymentName, null, secure);
+
+        Set<String> allowedOrigins = agent.getAllowedOrigins().map(Set::of).orElse(null);
+        String allowedMethods = agent.getAllowedHTTPMethods().map(methods ->
+                Arrays.stream(methods).map(Enum::name)
+                        .collect(Collectors.joining(","))).orElse(null);
+
+        CORSConfig corsConfig = new CORSConfig();
+
+        if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
+            allowedOrigins.forEach(corsConfig::addCorsAllowedOrigin);
+        }
+        if (!TextUtil.isNullOrEmpty(allowedMethods)) {
+            corsConfig.setCorsAllowedMethods(allowedMethods);
+        }
+
+        webService.deployJaxRsApplication(application, deploymentPath, deploymentName, null, secure, corsConfig);
     }
 
     protected void undeploy(String deploymentName) {

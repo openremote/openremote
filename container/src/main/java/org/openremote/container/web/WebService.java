@@ -20,6 +20,9 @@
 package org.openremote.container.web;
 
 import com.google.common.collect.Lists;
+import com.thetransactioncompany.cors.CORSConfiguration;
+import com.thetransactioncompany.cors.CORSConfigurationException;
+import com.thetransactioncompany.cors.CORSFilter;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.predicate.Predicates;
@@ -43,13 +46,13 @@ import jakarta.servlet.*;
 import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.core.ResteasyDeploymentImpl;
-import org.jboss.resteasy.plugins.interceptors.CorsFilter;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.IdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.util.Config;
 import org.openremote.model.util.TextUtil;
 import org.xnio.Options;
 
@@ -80,9 +83,6 @@ public abstract class WebService implements ContainerService {
     public static final String OR_WEBSERVER_WORKER_THREADS_MAX = "OR_WEBSERVER_WORKER_THREADS_MAX";
     public static final int OR_WEBSERVER_WORKER_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 10);
     private static final System.Logger LOG = System.getLogger(WebService.class.getName());
-    public static final int DEFAULT_CORS_MAX_AGE = 1209600;
-    public static final String DEFAULT_CORS_ALLOW_ALL = "*";
-    public static final boolean DEFAULT_CORS_ALLOW_CREDENTIALS = true;
     protected boolean devMode;
     protected String host;
     protected IdentityService identityService;
@@ -218,32 +218,9 @@ public abstract class WebService implements ContainerService {
 
     /**
      * Get standard JAX-RS providers that are used in the deployment with optional realm extraction from the request
-     * path and default CORS behaviour
+     * path
      */
     public static List<Object> getStandardProviders(boolean devMode, Integer realmIndex) {
-        return getStandardProviders(
-            devMode,
-            realmIndex,
-            devMode ? Collections.singleton(DEFAULT_CORS_ALLOW_ALL) : null,
-            devMode ? DEFAULT_CORS_ALLOW_ALL : null,
-            devMode ? DEFAULT_CORS_ALLOW_ALL : null,
-            DEFAULT_CORS_MAX_AGE,
-            DEFAULT_CORS_ALLOW_CREDENTIALS);
-    }
-
-    /**
-     * Get standard JAX-RS providers that are used in the deployment with optional realm extraction from the request
-     * path and custom CORS behaviour
-     */
-    public static List<Object> getStandardProviders(
-            boolean devMode,
-            Integer realmIndex,
-            Set<String> corsAllowedOrigins,
-            String corsAllowedMethods,
-            String corsExposedHeaders,
-            int corsMaxAge,
-            boolean corsAllowCredentials) {
-
         List<Object> providers = Lists.newArrayList(
            new RequestLogger(),
            new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode),
@@ -255,16 +232,6 @@ public abstract class WebService implements ContainerService {
 
         if (realmIndex != null) {
            providers.addFirst(new RealmPathExtractorFilter(realmIndex));
-        }
-
-        if (corsAllowedOrigins != null) {
-           CorsFilter corsFilter = new CorsFilter();
-           corsFilter.getAllowedOrigins().addAll(corsAllowedOrigins);
-           corsFilter.setAllowedMethods(corsAllowedMethods);
-           corsFilter.setExposedHeaders(corsExposedHeaders);
-           corsFilter.setCorsMaxAge(corsMaxAge);
-           corsFilter.setAllowCredentials(corsAllowCredentials);
-           providers.add(corsFilter);
         }
 
         return providers;
@@ -298,7 +265,13 @@ public abstract class WebService implements ContainerService {
         return builder;
     }
 
-   public void deployServlet(Class<? extends ServletContainerInitializer> servletContainerInitializerClass, String deploymentPath, String deploymentName, Integer realmIndex, boolean secure) throws IllegalArgumentException {
+   public void deployServlet(
+           Class<? extends ServletContainerInitializer> servletContainerInitializerClass,
+           String deploymentPath,
+           String deploymentName,
+           Integer realmIndex,
+           boolean secure,
+           CORSConfig corsOverride) throws IllegalArgumentException {
        DeploymentInfo deploymentInfo = Servlets.deployment()
                .setDeploymentName(deploymentName)
                .setContextPath(deploymentPath)
@@ -306,11 +279,17 @@ public abstract class WebService implements ContainerService {
                .addServletContainerInitializer(new ServletContainerInitializerInfo(servletContainerInitializerClass, null))
                .setClassLoader(this.getClass().getClassLoader());
 
-       configureDeploymentInfo(deploymentInfo, realmIndex, secure);
+       configureDeploymentInfo(deploymentInfo, realmIndex, secure, corsOverride);
        deploy(deploymentInfo, false);
    }
 
-   public void deployJaxRsApplication(Application application, String deploymentPath, String deploymentName, Integer realmIndex, boolean secure) {
+   public void deployJaxRsApplication(
+           Application application,
+           String deploymentPath,
+           String deploymentName,
+           Integer realmIndex,
+           boolean secure,
+           CORSConfig corsOverride) throws IllegalArgumentException {
        ServletContextListener jaxRsListener = new ServletContextListener() {
            @Override
            public void contextInitialized(ServletContextEvent sce) {
@@ -339,12 +318,17 @@ public abstract class WebService implements ContainerService {
                .addListeners(Servlets.listener(listenerClass, factory))
                .setClassLoader(this.getClass().getClassLoader());
 
-       configureDeploymentInfo(deploymentInfo, realmIndex, secure);
+       configureDeploymentInfo(deploymentInfo, realmIndex, secure, corsOverride);
        deploy(deploymentInfo, false);
    }
 
    @SuppressWarnings("resource")
-   public void deployFileServlet(String deploymentPath, String deploymentName, Path[] filePaths, String[] requiredRoles) {
+   public void deployFileServlet(
+           String deploymentPath,
+           String deploymentName,
+           Path[] filePaths,
+           String[] requiredRoles,
+           CORSConfig corsOverride) {
 
         if (filePaths == null || filePaths.length == 0) {
             throw new IllegalArgumentException("No file paths specified");
@@ -373,14 +357,22 @@ public abstract class WebService implements ContainerService {
            Filter securityFilter = new SecurityFilter(requiredRoles);
            FilterInfo securityFilterInfo = Servlets.filter("Security Filter", SecurityFilter.class, () -> new ImmediateInstanceHandle<>(securityFilter))
                    .setAsyncSupported(true);
-           deploymentInfo = Servlets.deployment().addFilter(securityFilterInfo);
+           deploymentInfo.addFilter(securityFilterInfo);
        }
 
-       configureDeploymentInfo(deploymentInfo, null, requiredRoles != null && requiredRoles.length > 0);
+       configureDeploymentInfo(
+               deploymentInfo,
+               null,
+               requiredRoles != null && requiredRoles.length > 0,
+               corsOverride);
        deploy(deploymentInfo, true);
    }
 
-    public void configureDeploymentInfo(DeploymentInfo deploymentInfo, Integer realmIndex, boolean secure) {
+    public void configureDeploymentInfo(
+            DeploymentInfo deploymentInfo,
+            Integer realmIndex,
+            boolean secure,
+            CORSConfig corsOverride) {
         // TODO: Remove this handler wrapper once JAX-RS RealmPathExtractorFilter can be utilised before security is applied
         if (realmIndex != null) {
             deploymentInfo.addInitialHandlerChainWrapper(handler -> {
@@ -435,6 +427,19 @@ public abstract class WebService implements ContainerService {
             identityService.secureDeployment(deploymentInfo);
         }
 
+        if (corsOverride == null) {
+            // Just use default CORS config
+            corsOverride = new CORSConfig();
+        }
+
+        CORSFilter corsFilter = new CORSFilter(getCORSConfiguration(corsOverride));
+
+        FilterInfo corsFilterInfo = Servlets.filter(
+                "CORS Filter",
+                CORSFilter.class,
+                () -> new ImmediateInstanceHandle<>(corsFilter));
+        deploymentInfo.addFilter(corsFilterInfo);
+
         // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
         deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
     }
@@ -443,11 +448,11 @@ public abstract class WebService implements ContainerService {
         return undertow;
     }
 
-    public static List<String> getExternalHostnames(Container container) {
+    public static List<String> getExternalHostnames() {
 
         // Get list of external hostnames
-        String defaultHostname = getString(container.getConfig(), OR_HOSTNAME, null);
-        String additionalHostnamesStr = getString(container.getConfig(), OR_ADDITIONAL_HOSTNAMES, null);
+        String defaultHostname = Config.getString(OR_HOSTNAME, null);
+        String additionalHostnamesStr = Config.getString(OR_ADDITIONAL_HOSTNAMES, null);
 
         List<String> externalHostnames = new ArrayList<>();
 
@@ -463,18 +468,22 @@ public abstract class WebService implements ContainerService {
         return externalHostnames;
     }
 
-    public static Set<String> getCORSAllowedOrigins(Container container) {
-        // Set allowed origins using external hostnames and WEBSERVER_ALLOWED_ORIGINS
-        Set<String> allowedOrigins = new HashSet<>(
-            getExternalHostnames(container)
-                .stream().map(hostname -> "https://" + hostname).toList()
-        );
-        String allowedOriginsStr = getString(container.getConfig(), OR_WEBSERVER_ALLOWED_ORIGINS, null);
+    public static CORSConfiguration getCORSConfiguration(CORSConfig corsConfig) {
+        Properties props = new Properties();
 
-        if (!TextUtil.isNullOrEmpty(allowedOriginsStr)) {
-            allowedOrigins.addAll(Arrays.stream(allowedOriginsStr.split(",")).toList());
+        if (corsConfig != null) {
+            props.put("cors.supportsCredentials", Boolean.toString(corsConfig.isCorsAllowCredentials()));
+            props.put("cors.maxAge", corsConfig.getCorsMaxAge());
+            props.put("cors.exposedHeaders", corsConfig.getCorsExposedHeaders());
+            props.put("cors.supportedMethods", corsConfig.getCorsAllowedMethods());
+            props.put("cors.allowOrigin", String.join(",", corsConfig.getCorsAllowedOrigins()));
         }
 
-        return allowedOrigins;
+        try {
+            return new CORSConfiguration(props);
+        } catch (CORSConfigurationException e) {
+            LOG.log(WARNING, "Failed to construct CORS Configuration: " + e.getMessage());
+        }
+        return null;
     }
 }
