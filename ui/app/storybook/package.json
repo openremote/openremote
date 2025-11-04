@@ -4,6 +4,7 @@
   "description": "OpenRemote Storybook UI",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
+  "private": true,
   "type": "module",
   "scripts": {
     "clean": "npx shx rm -rf dist lib",
@@ -19,6 +20,7 @@
     "@storybook/addon-a11y": "~9.1.10",
     "@storybook/addon-docs": "~9.1.10",
     "@storybook/web-components": "~9.1.10",
+    "@types/react": "^18.3.12",
     "@wc-toolkit/storybook-helpers": "^9.0.1",
     "storybook": "~9.1.10",
     "storybook-web-components-rsbuild": "~2.1.2",
