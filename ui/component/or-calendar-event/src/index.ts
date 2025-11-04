@@ -24,24 +24,24 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-m
 import {translate,i18next} from "@openremote/or-translate";
 
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {ByWeekday, Options, RRule, Weekday, WeekdayStr} from 'rrule'
+import {ByWeekday, Frequency, Options, RRule, Weekday, WeekdayStr} from 'rrule'
 import moment from "moment";
 import { Days } from "rrule/dist/esm/rrule";
 
 /**
- * Supported recurrence rule parts:
- * - `freq`
- * - `until`
- * - `count`
+ * Supported recurrence rule parts in evaluation order:
  * - `interval`
- * - `bysecond`
- * - `byminute`
- * - `byhour`
- * - `byweekday` = `byday` in {@link https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10|rfc5545#section-3.3.10}.
- * - `bymonthday`
- * - `byyearday`
- * - `byweekno`
+ * - `freq`
  * - `bymonth`
+ * - `byweekno`
+ * - `byyearday`
+ * - `bymonthday`
+ * - `byweekday` = `byday` in {@link https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10|rfc5545#section-3.3.10}.
+ * - `byhour`
+ * - `byminute`
+ * - `bysecond`
+ * - `count`
+ * - `until`
  * @todo wkst not implemented
  *
  * Ignored
@@ -55,22 +55,45 @@ import { Days } from "rrule/dist/esm/rrule";
  * @see {@link RRule} and {@link https://labix.org/python-dateutil/#head-a65103993a21b717f6702063f3717e6e75b4ba66|python-dateutil}.
  */
 export type RuleParts = Pick<Options,
-    | 'freq' // Must exist (should default to DAILY?)
-    | 'until'
-    | 'count'
     | 'interval'
-    | 'bysecond'
-    | 'byminute'
-    | 'byhour'
-    | 'byweekday'
-    | 'bymonthday'
-    | 'byyearday'
-    | 'byweekno'
+    | 'freq' // Must exist (should default to DAILY?)
     | 'bymonth'
+    | 'byweekno'
+    | 'byyearday'
+    | 'bymonthday'
+    | 'byweekday'
+    | 'byhour'
+    | 'byminute'
+    | 'bysecond'
+    | 'count'
+    | 'until'
 >;
 enum EventTypes { default = 'default', period = 'period', recurrence = 'recurrence' }
 export type LabeledEventTypes = Record<EventTypes, string>
-export type RulePartKeys = (keyof RuleParts)[]
+export type RulePartKey = keyof RuleParts
+
+// Evaluation order: BYMONTH, BYWEEKNO, BYYEARDAY, BYMONTHDAY, BYDAY, BYHOUR, BYMINUTE and BYSECOND.
+// As per https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10 page 44
+const BY_RULE_PARTS = [
+    "bymonth",
+    "byweekno",
+    "byyearday",
+    "bymonthday",
+    "byweekday",
+    "byhour",
+    "byminute",
+    "bysecond",
+] as const
+
+// As per https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10 page 44
+const NOT_APPLICABLE_BY_RULE_PARTS = {
+    "SECONDLY":	["BYWEEKNO"],
+    "MINUTELY":	["BYWEEKNO"],
+    "HOURLY":	["BYWEEKNO"],
+    "DAILY":	["BYWEEKNO", "BYYEARDAY"],
+    "WEEKLY":	["BYWEEKNO", "BYYEARDAY", "BYMONTHDAY"],
+    "MONTHLY":	["BYWEEKNO", "BYYEARDAY"]
+} as Record<keyof typeof Frequency, string[]>
 
 @customElement("or-calendar-event")
 export class OrCalendarEvent extends translate(i18next)(LitElement) {
@@ -85,7 +108,7 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
     protected _rrule?: RRule;
 
     @property()
-    protected _excludeRuleParts?: keyof RuleParts[];// observedAttributes -> make reactive
+    protected _excludeRuleParts?: RulePartKey[];// observedAttributes -> make reactive
 
     @property()
     protected _eventTypes: LabeledEventTypes = EventTypes; // TODO: what about translations?? -> reactive?
@@ -115,7 +138,7 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
             && moment(this._calendar.end).hours() === 23 && moment(this._calendar.end).minutes() === 59;
     }
 
-    protected setRRuleValue(value: any, key: string) {
+    protected setRRuleValue(value: any, key: keyof RuleParts | "all-day" | "start" | "end" | "never-ends" | "dtstart-time" | "until-time") {
         let origOptions = this._rrule ? this._rrule.origOptions : undefined;
         const calendarEvent = this._calendar!;
 
@@ -335,7 +358,6 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
 
     protected getDialogContent(): TemplateResult {
         const eventType = this.getEventType();
-        const selectedOptions = this._rrule && this._rrule.options && this._rrule.options.byweekday ? this._rrule.options.byweekday.map(day => new Weekday(day).toString()) : [];
         const calendar = this._calendar;
 
         return html`
@@ -344,44 +366,106 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
                     <or-mwc-input style="min-width: 280px;" .value="${eventType}" .type="${InputType.SELECT}" .options="${Object.entries(this._eventTypes)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setCalendarEventType(e.detail.value)}"></or-mwc-input>
                 </div>
 
-                ${calendar && (eventType  === EventTypes.period || eventType  === EventTypes.recurrence) ? html`
-                    <label style="display:block; margin-top: 20px;"><or-translate value="period"></or-translate></label>
-                    <div style="display: flex; justify-content: space-between;" class="layout horizontal">
-                        <div>
-                            <or-mwc-input value="${moment(calendar.start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-mwc-input>
-                            <or-mwc-input .disabled=${this.isAllDay()} .value="${moment(calendar.start).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "dtstart-time")}" .label="${i18next.t("from")}"></or-mwc-input>
-                        </div>
-                        <div>
-                            <or-mwc-input .value="${moment(calendar.end).format("YYYY-MM-DD")}"  .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end")}" .label="${i18next.t("to")}"></or-mwc-input>
-                            <or-mwc-input .disabled=${this.isAllDay()} .value="${moment(calendar.end).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until-time")}" .label="${i18next.t("to")}"></or-mwc-input>
-                        </div>
-                    </div>
-
-                    <div class="layout horizontal">
-                        <or-mwc-input .value=${this.isAllDay()} @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "all-day")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("allDay")}"></or-mwc-input>
-                    </div>
-                ` : ``}
-
-                ${eventType  === "recurrence" ? html`
-                    <label style="display: block; margin-top: 20px;"><or-translate value="repeatOccurrenceEvery"></or-translate></label>
-                    <div class="layout horizontal">
-                        <or-mwc-input .value="${selectedOptions}" 
-                                      .type="${InputType.CHECKBOX_LIST}" 
-                                      .options="${Object.entries(Days)}" 
-                                      .label="${i18next.t("daysOfTheWeek")}" 
-                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => { 
-                                          this.setRRuleValue(e.detail.value, "byweekday"); 
-                                        }}"></or-mwc-input>
-                    </div>
-
-                    <label style="display:block; margin-top: 20px;"><or-translate value="repetitionEnds"></or-translate></label>
-                    <div class="layout horizontal">
-                        <or-mwc-input .value="${!this._rrule!.options.until}"  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "never-ends")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("never")}"></or-mwc-input>
-                    </div>
-                    <div class="layout horizontal">
-                        <or-mwc-input ?disabled="${!this._rrule!.options.until}" .value="${this._rrule!.options.until ? moment(this._rrule!.options.until).format("YYYY-MM-DD") : moment().add(1, 'year').format('YYYY-MM-DD')}"  .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}" .label="${i18next.t("to")}"></or-mwc-input>
-                    </div>
-                ` : ``}
+                ${eventType === EventTypes.recurrence ? this.getRepeat() : ``}
+                ${calendar && (eventType === EventTypes.period || eventType === EventTypes.recurrence) ? this.getPeriod(calendar) : ``}
+                ${eventType === EventTypes.recurrence ? this.getRepetitionEnds() : ``}
             </div>`;
+    }
+
+    /**
+     * Applicable rule parts
+     * - `interval`
+     * - `freq`
+     * - `bysecond`
+     * - `byminute`
+     * - `byhour`
+     * - `byweekday`
+     * - `bymonthday`
+     * - `byyearday`
+     * - `byweekno`
+     * - `bymonth`
+     * 
+     * Evaluation order: BYMONTH, BYWEEKNO, BYYEARDAY, BYMONTHDAY, BYDAY, BYHOUR, BYMINUTE and BYSECOND.
+     * 
+     * @returns 
+     */
+    protected getRepeat(): TemplateResult {
+      const interval = (this._rrule && this._rrule.options && this._rrule.options.interval) ?? 1;
+      const frequency = (this._rrule && this._rrule.options && this._rrule.options.freq) ?? Frequency.DAILY;
+      const selectedOptions = this._rrule && this._rrule.options && this._rrule.options.byweekday ? this._rrule.options.byweekday.map(day => new Weekday(day).toString()) : [];
+
+      return html`
+          <label style="display: block; margin-top: 20px;"><or-translate value="repeatEvery"></or-translate></label>
+          <div class="layout horizontal">
+              <or-mwc-input style="width: 10%" 
+                            .value="${interval}" 
+                            .type="${InputType.NUMBER}"
+                            min="1"
+                            max="9"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "interval")}"></or-mwc-input>
+              <or-mwc-input style="width: 70%"
+                            .value="${frequency}"
+                            .type="${InputType.SELECT}"
+                            .options="${Object.keys(Frequency).filter(f => isNaN(Number(f)))}"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "freq")}"></or-mwc-input>
+          </div>
+
+          <div class="layout horizontal">
+              <or-mwc-input .value="${selectedOptions}" 
+                            .type="${InputType.CHECKBOX_LIST}" 
+                            .options="${Object.entries(Days)}" 
+                            .label="${i18next.t("daysOfTheWeek")}" 
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => { 
+                                this.setRRuleValue(e.detail.value, "byweekday"); 
+                              }}"></or-mwc-input>
+              ${BY_RULE_PARTS
+                  .filter(p => !NOT_APPLICABLE_BY_RULE_PARTS[frequency.toString() as keyof typeof Frequency]?.includes(p))
+                  .filter(p => !this._excludeRuleParts?.includes(p))
+                  .map(p => {
+                      return html`<br>${p}`
+                  })
+              }
+          </div>`
+    }
+
+    /**
+     * @todo limit by freq length
+     * @param calendar 
+     * @returns 
+     */
+    protected getPeriod(calendar: CalendarEvent): TemplateResult {
+        return html`
+            <label style="display:block; margin-top: 20px;"><or-translate value="period"></or-translate></label>
+            <div style="display: flex; justify-content: space-between;" class="layout horizontal">
+                <div>
+                    <or-mwc-input value="${moment(calendar.start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-mwc-input>
+                    <or-mwc-input .disabled=${this.isAllDay()} .value="${moment(calendar.start).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "dtstart-time")}" .label="${i18next.t("from")}"></or-mwc-input>
+                </div>
+                <div>
+                    <or-mwc-input .value="${moment(calendar.end).format("YYYY-MM-DD")}"  .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end")}" .label="${i18next.t("to")}"></or-mwc-input>
+                    <or-mwc-input .disabled=${this.isAllDay()} .value="${moment(calendar.end).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until-time")}" .label="${i18next.t("to")}"></or-mwc-input>
+                </div>
+            </div>
+
+            <div class="layout horizontal">
+                <or-mwc-input .value=${this.isAllDay()} @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "all-day")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("allDay")}"></or-mwc-input>
+            </div>`
+    }
+
+    /**
+     * Applicable rule parts
+     * - `until`
+     * - `count`
+     * @returns 
+     */
+    protected getRepetitionEnds(): TemplateResult {
+        return html`
+            <label style="display:block; margin-top: 20px;"><or-translate value="repetitionEnds"></or-translate></label>
+            <div class="layout horizontal">
+                <or-mwc-input .value="${!this._rrule!.options.until}"  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "never-ends")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("never")}"></or-mwc-input>
+            </div>
+            <div class="layout horizontal">
+                <or-mwc-input ?disabled="${!this._rrule!.options.until}" .value="${this._rrule!.options.until ? moment(this._rrule!.options.until).format("YYYY-MM-DD") : moment().add(1, 'year').format('YYYY-MM-DD')}"  .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}" .label="${i18next.t("to")}"></or-mwc-input>
+            </div>`
     }
 }

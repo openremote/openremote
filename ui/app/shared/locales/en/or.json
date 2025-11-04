@@ -624,7 +624,7 @@
   "from": "from",
   "never": "Never",
   "repetitionEnds": "Repetition ends",
-  "repeatOccurrenceEvery": "Repeat occurrence every",
+  "repeatEvery": "Repeat every",
   "daysOfTheWeek": "days of the week",
   "dismiss": "dismiss",
   "createAssetFailed": "Failed to create asset",

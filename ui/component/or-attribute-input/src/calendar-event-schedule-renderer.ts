@@ -8,7 +8,7 @@ import {
 } from "@jsonforms/core";
 import { html } from "lit";
 import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
-import { RulePartKeys, RuleParts } from "@openremote/or-calendar-event";
+import { RulePartKey, RuleParts } from "@openremote/or-calendar-event";
 import { CalendarEvent } from "@openremote/model";
 import "@openremote/or-calendar-event";
 
@@ -65,7 +65,7 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
             .calendarEvent="${props.data as CalendarEvent}"
             .excludeRuleParts="${[
                 'bysecond' // Disallowed as we cannot gaurentee second acurracy in the SimulatorProtocol
-            ] as RulePartKeys}"></or-calendar-event>
+            ] as RulePartKey[]}"></or-calendar-event>
     `, undefined);
 };
 
