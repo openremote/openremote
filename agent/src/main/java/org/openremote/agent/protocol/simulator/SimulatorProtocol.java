@@ -322,16 +322,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 " specifies any of the following rule parts: FREQ=(HOURLY/MINUTELY/SECONDLY);" +
                 " BYSECOND=...;BYMINUTE=...;BYHOUR=...;BYSETPOS=... This will cause the datapoint timestamp to be" +
                 " relative to when the first occurrence is scheduled.")
-        @JsonDeserialize(using = LocalDateTimeDeserializer.class)
-        @JsonSerialize(using = LocalDateTimeSerializer.class)
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-        @JsonSchemaFormat("date-time")
         protected LocalDateTime start;
 
-        @JsonDeserialize(using = LocalDateTimeDeserializer.class)
-        @JsonSerialize(using = LocalDateTimeSerializer.class)
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-        @JsonSchemaFormat("date-time")
         protected LocalDateTime end;
 
         @JsonSchemaDescription("The recurrence schedule follows the RFC 5545 RRULE format.")

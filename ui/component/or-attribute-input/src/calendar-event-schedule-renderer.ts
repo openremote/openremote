@@ -1,21 +1,17 @@
 import {
     RankedTester,
     rankWith,
-    and,
     ControlProps,
     mapStateToControlProps,
     mapDispatchToControlProps,
-    uiTypeIs,
-    formatIs,
     scopeEndsWith
 } from "@jsonforms/core";
-import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { html } from "lit";
-import "@openremote/or-calendar-event";
 import { i18next } from "@openremote/or-translate";
-import { until } from "lit/directives/until.js";
-
+import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
+import { Frequencies, RulePartKey, LabeledEventTypes } from "@openremote/or-calendar-event";
+import { CalendarEvent } from "@openremote/model";
+import "@openremote/or-calendar-event";
 
 const calendarEventTester: RankedTester = rankWith(
     6,
@@ -64,8 +60,32 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
     //     </style>
     //     ${until(loadedTemplatePromise, html`<or-mwc-input class="agent-id-picker" .type="${InputType.SELECT}"></or-mwc-input>`)}
     //     `;
-    console.log(props.data)
-    return getTemplateWrapper(html`<or-calendar-event></or-calendar-event>`, undefined);
+    return getTemplateWrapper(html`
+        <or-calendar-event
+            .calendarEvent="${props.data as CalendarEvent}"
+            .header="${i18next.t("simulatorSchedule")}"
+            .eventTypes="${{
+                default: i18next.t("defaultSimulatorSchedule"),
+                period: i18next.t("planPeriod"),
+                recurrence: i18next.t("planRecurrence"),
+            } as LabeledEventTypes}"
+            .excludeFrequencies="${[
+                // Disallowed as we cannot guarantee second accuracy in the SimulatorProtocol
+                'SECONDLY'
+            ] as Frequencies[]}"
+            .excludeRuleParts="${[
+                // Disabled for now, to reduce complexity
+                'bymonth',
+                'byweekno',
+                'byyearday',
+                'bymonthday',
+                'byhour',
+                'byminute',
+                // Disallowed as we cannot guarantee second accuracy in the SimulatorProtocol
+                'bysecond'
+            ] as RulePartKey[]}">
+        </or-calendar-event>
+    `, undefined);
 };
 
 export const calendarEventRendererRegistryEntry: JsonFormsRendererRegistryEntry = {

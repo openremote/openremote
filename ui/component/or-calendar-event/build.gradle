@@ -28,3 +28,13 @@ tasks.register('npmBuild', Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "run", "build"
 }
+
+tasks.register('npmTest', Exec) {
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "run", "test"
+}
+
+tasks.register('npmTestUI', Exec) {
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "run", "test", "--ui"
+}
