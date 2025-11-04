@@ -403,6 +403,8 @@ public class JSONSchemaUtilTest {
                     { "$ref": "#/definitions/TestAgentLinkAnnotationResolving" },
                     { "$ref": "#/definitions/TestAgentLinkSuperclassAnnotationResolving" }
                 ],
+                "type": "object",
+                "additionalProperties": true,
                 "title": "Test Agent Link"
             }"""
         );
@@ -450,6 +452,7 @@ public class JSONSchemaUtilTest {
                     { "$ref": "#/definitions/TestAgentLinkReflectionResolving" }
                 ],
                 "type": "object",
+                "additionalProperties": true,
                 "properties": {
                     "type": {
                         "const": "JSONSchemaUtilTest$TestAgentLinkReflections"
@@ -460,8 +463,6 @@ public class JSONSchemaUtilTest {
                 ]
             }"""
         );
-
-
 
         JsonNode actual = ValueUtil.getSchema(TestAgentLinkReflections.class);
         assertEquals(expected.toString(), actual.toString(), true);
