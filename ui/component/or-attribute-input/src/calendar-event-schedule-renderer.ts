@@ -1,21 +1,16 @@
 import {
     RankedTester,
     rankWith,
-    and,
     ControlProps,
     mapStateToControlProps,
     mapDispatchToControlProps,
-    uiTypeIs,
-    formatIs,
     scopeEndsWith
 } from "@jsonforms/core";
-import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { html } from "lit";
+import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
+import { RulePartKeys, RuleParts } from "@openremote/or-calendar-event";
+import { CalendarEvent } from "@openremote/model";
 import "@openremote/or-calendar-event";
-import { i18next } from "@openremote/or-translate";
-import { until } from "lit/directives/until.js";
-
 
 const calendarEventTester: RankedTester = rankWith(
     6,
@@ -64,8 +59,14 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
     //     </style>
     //     ${until(loadedTemplatePromise, html`<or-mwc-input class="agent-id-picker" .type="${InputType.SELECT}"></or-mwc-input>`)}
     //     `;
-    console.log(props.data)
-    return getTemplateWrapper(html`<or-calendar-event></or-calendar-event>`, undefined);
+    console.log("calendar-event-schedule-renderer", props.data)
+    return getTemplateWrapper(html`
+        <or-calendar-event
+            .calendarEvent="${props.data as CalendarEvent}"
+            .excludeRuleParts="${[
+                'bysecond' // Disallowed as we cannot gaurentee second acurracy in the SimulatorProtocol
+            ] as RulePartKeys}"></or-calendar-event>
+    `, undefined);
 };
 
 export const calendarEventRendererRegistryEntry: JsonFormsRendererRegistryEntry = {
