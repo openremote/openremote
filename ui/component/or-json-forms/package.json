@@ -22,7 +22,7 @@
     "@jsonforms/core": "^3.5.1",
     "@openremote/or-components": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
-    "@polymer/polymer": "^3.3.1",
+    "@polymer/polymer": "^3.0.0",
     "ajv": "^8.8.2",
     "lit": "^3.3.1"
   },

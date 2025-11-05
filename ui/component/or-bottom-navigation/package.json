@@ -16,7 +16,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@polymer/polymer": "^3.3.1"
+    "@polymer/polymer": "^3.0.0"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*"

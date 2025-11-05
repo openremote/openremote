@@ -56,6 +56,8 @@ export default defineConfig({
         },
         rspack: (config, { addRules }) => {
             addRules([{test: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/, type: "asset/source"}]); // Add rule to treat external CSS imports as raw strings.
+            console.log(config.module.rules);
+            console.log(config.plugins);
             return config;
         }
     }

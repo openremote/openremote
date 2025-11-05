@@ -28,6 +28,9 @@
     "@material/elevation": "^9.0.0",
     "@openremote/core": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
+    "@vaadin/aura": "25.0.0-beta1",
+    "@vaadin/combo-box": "25.0.0-beta1",
+    "@vaadin/vaadin-lumo-styles": "25.0.0-beta1",
     "ace-builds": "^1.41.0",
     "lit": "^3.3.1",
     "simplebar": "^5.3.6"

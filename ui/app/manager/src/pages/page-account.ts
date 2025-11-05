@@ -2,6 +2,7 @@ import {css, html, TemplateResult, unsafeCSS, CSSResult} from "lit";
 import {customElement, query, state} from "lit/decorators.js";
 import manager, {DefaultColor3} from "@openremote/core";
 import "@openremote/or-components/or-panel";
+import "@openremote/or-components/or-vaadin-combobox";
 import "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
 import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
@@ -340,6 +341,9 @@ export class PageAccount extends Page<AppStateKeyed> {
                         ${when(this._passwordPolicy, () => until(this._getPasswordPolicyTemplate(user, this._passwordPolicy)))}
                     `}
                 </div>
+            </div>
+            <div class="row" style="margin-top: 16px;">
+                <or-vaadin-combobox label="Test"></or-vaadin-combobox>
             </div>
 
         `;

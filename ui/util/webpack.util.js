@@ -7,12 +7,20 @@ function getStandardModuleRules() {
     return {
         rules: [
             {
-                test: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/, //output css as strings
-                type: "asset/source"
+                test: /(maplibre|mapbox|@material|gridstack|@mdi|@vaadin).*\.css$/, //output css as strings
+                type: "asset/source",
+                /*use: [{
+                    loader: "builtin:lightningcss-loader",
+                    options: {
+                        targets: ["chrome >= 87", "edge >= 88", "> 0.5%"],
+                        minify: false,
+                        errorRecovery: false
+                    }
+                }]*/
             },
             {
                 test: /\.css$/, //
-                exclude: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/,
+                exclude: /(maplibre|mapbox|@material|gridstack|@mdi|@vaadin).*\.css$/,
                 use: [
                     { loader: "css-loader" }
                 ]

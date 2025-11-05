@@ -10,8 +10,8 @@
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
     "@custom-elements-manifest/analyzer": "^0.10.4",
-    "@rspack/cli": "^1.4.4",
-    "@rspack/core": "^1.4.4",
+    "@rspack/cli": "~1.5.8",
+    "@rspack/core": "~1.5.8",
     "@typescript-eslint/eslint-plugin": "^5.9.0",
     "@typescript-eslint/parser": "^5.9.0",
     "@wc-toolkit/storybook-helpers": "^9.0.1",
@@ -28,6 +28,7 @@
     "querystring-es3": "^0.2.1",
     "shx": "~0.4.0",
     "source-map-loader": "^5.0.0",
+    "style-loader": "^4.0.0",
     "ts-loader": "~9.5.2",
     "typescript": "~5.8.3",
     "webpack": "^5.99.8"
