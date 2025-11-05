@@ -1,5 +1,5 @@
 plugins {
-    id 'com.adarshr.test-logger' version '3.1.0'
+    id 'com.adarshr.test-logger' version '4.0.0'
 }
 
 apply plugin: "java-library"
@@ -35,7 +35,8 @@ dependencies {
     testImplementation "net.solarnetwork.common:nifty-modbus-api:$niftyModbusVersion"
     testImplementation "net.solarnetwork.common:nifty-modbus-core:$niftyModbusVersion"
 
-
+    testImplementation "com.github.moquette-io:moquette:$moquetteVersion"
+    testImplementation "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
 }
 
 tasks.withType(Test) {

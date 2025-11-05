@@ -43,6 +43,7 @@
 #                           an openremote submodule).
 # - CLEAN_INSTALL         - Should the .ci_cd/host_init/clean.sh script be run during deployment (warning this will delete
 #                           assets, rules, etc.)
+# - PUSH_SNAPSHOT         - Should a SNAPSHOT docker image be pushed to AWS ECR
 # - COMMIT                - Which branch/SHA should be checked out for the deployment (defaults to trigger commit)
 # - OR_HOSTNAME           - FQDN of host to deploy to (e.g. demo.openremote.app)
 # - SSH_USER              - Set/override the SSH user to use for SSH/SCP commands
@@ -74,6 +75,9 @@ on:
         description: 'Manager docker tag to pull'
       CLEAN_INSTALL:
         description: 'Delete data before starting'
+        type: boolean
+      PUSH_SNAPSHOT:
+        description: 'Push SNAPSHOT docker image to ECR'
         type: boolean
       COMMIT:
         description: 'Repo branch or commit SHA to checkout'
@@ -249,6 +253,14 @@ jobs:
             profile
           sparse-checkout-cone-mode: false
 
+      - name: Install node_modules
+        if: steps.ui-files-changed.outputs.any_modified == 'true'
+        run: yarn --immutable
+
+      - name: Check UI dependencies
+        if: steps.ui-files-changed.outputs.any_modified == 'true' && steps.is_main_repo.outputs.value == 'true'
+        run: npx knip -c ui/knip.jsonc
+
       - name: Check deployment build.gradle
         id: check_deployment_gradle
         uses: andstor/file-existence-action@076e0072799f4942c8bc574a82233e1e4d13e9d6 # v3
@@ -293,6 +305,7 @@ jobs:
           eventName = os.getenv('GITHUB_EVENT_NAME')
           refName = os.getenv('GITHUB_REF_NAME')
           refType = os.getenv('GITHUB_REF_TYPE')
+          repoOwner = os.getenv('GITHUB_REPOSITORY_OWNER')
           isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
           isRelease = os.getenv('IS_RELEASE') == 'true'
           managerVersion = os.getenv('MANAGER_VERSION')
@@ -340,20 +353,21 @@ jobs:
               os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
               os.system(f" echo 'Manager tags to push to docker hub: {dockerPublishTags}'")
               dockerPublishTags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", dockerPublishTags.split(",")))
-              os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
+              if repoOwner == 'openremote':
+                os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
 
-            if mavenPublishTag is not None:
+            if mavenPublishTag is not None and repoOwner == 'openremote':
               mavenPublishTag = mavenPublishTag.replace("$version", version)
               os.system(f" echo 'Maven publish version: {mavenPublishTag}'")
               os.system(f"echo 'mavenTag={mavenPublishTag}' >> $GITHUB_OUTPUT")
 
-            if npmPublishTag is not None:
+            if npmPublishTag is not None and repoOwner == 'openremote':
               npmPublishTag = npmPublishTag.replace("$version", version)
               os.system(f" echo 'npm publish version: {npmPublishTag}'")
               os.system(f"echo 'npmTag={npmPublishTag}' >> $GITHUB_OUTPUT")
 
           deployStr = None
-          if deploys is not None:
+          if deploys is not None and repoOwner == 'openremote':
             if not isinstance(deploys, list):
               deploys = [deploys]
 
@@ -396,7 +410,9 @@ jobs:
         shell: python
         run: |
           import os
+          import sys
 
+          repoOwner = os.getenv('GITHUB_REPOSITORY_OWNER')
           isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
           deployments = os.getenv('DEPLOYMENTS')
           eventName = os.getenv('GITHUB_EVENT_NAME')
@@ -405,7 +421,7 @@ jobs:
           inputEnv = os.getenv('INPUT_ENVIRONMENT')
           managerVersion = os.getenv('MANAGER_VERSION')
 
-          if eventName == 'workflow_dispatch' and refType != 'tag' and inputEnv and inputEnv.strip():
+          if eventName == 'workflow_dispatch' and refType != 'tag' and repoOwner == 'openremote':
             if isMainRepo:
               tag=inputTag
               if not inputTag:
@@ -416,16 +432,23 @@ jobs:
 
           if not isMainRepo:
             if "-SNAPSHOT" in deployments:
-              os.system("SNAPSHOT manager docker images not currently supported for custom project deployment")
+              os.system("echo 'SNAPSHOT manager docker images not currently supported for custom project deployment'")
               sys.exit(1)
-
           os.system(f"echo 'value={deployments}' >> $GITHUB_OUTPUT")
+
+          pushSnapshot = os.getenv('INPUT_PUSH_SNAPSHOT')
+          if pushSnapshot == 'true' and repoOwner != 'openremote':
+            os.system("echo 'Only Openremote organisation can push to ECR'")
+            sys.exit(1)
+          else:
+            os.system(f"echo 'pushSnapshot={pushSnapshot}' >> $GITHUB_OUTPUT")
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
           DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
           INPUT_ENVIRONMENT: ${{ steps.inputs-and-secrets.outputs.ENVIRONMENT }}
           INPUT_MANAGER_TAG: ${{steps.inputs-and-secrets.outputs.MANAGER_TAG }}
+          INPUT_PUSH_SNAPSHOT: ${{ steps.inputs-and-secrets.outputs.PUSH_SNAPSHOT }}
 
       - name: Define backend test command
         id: test-backend-command
@@ -460,7 +483,11 @@ jobs:
               echo "pushToDockerHub=true" >> $GITHUB_OUTPUT
               echo "managerDockerImage=openremote/manager:$FIRST_MANAGER_TAG" >> $GITHUB_OUTPUT
             else
-              command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t ${{ steps.inputs-and-secrets.outputs.OR_AWS_DEVELOPERS_ACCOUNT_ID }}.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:SNAPSHOT-$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath"
+              if [ "$PUSH_SNAPSHOT" == "true" ]; then
+                command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t ${{ steps.inputs-and-secrets.outputs.OR_AWS_DEVELOPERS_ACCOUNT_ID }}.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:SNAPSHOT-$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath"
+              else
+                command="docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${OTHER_PLATFORM:-linux/aarch64} -t openremote/manager:$commitShaShort $buildPath"
+              fi
               echo "managerDockerImage=openremote/manager:$commitShaShort" >> $GITHUB_OUTPUT
             fi
             echo "value=$command" >> $GITHUB_OUTPUT
@@ -471,6 +498,7 @@ jobs:
           FIRST_MANAGER_TAG: ${{ steps.ci-cd-output.outputs.firstDockerTag }}
           MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.dockerTags }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
+          PUSH_SNAPSHOT: ${{ steps.deployments.outputs.pushSnapshot }}
           TEST_UI_CMD: ${{ steps.test-ui-apps-command.outputs.value }}
 
       - name: Define maven publish command
@@ -534,14 +562,14 @@ jobs:
           password: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_PASSWORD }}
 
       - name: Configure AWS Credentials
-        if: ${{ steps.manager-docker-command.outputs.pushToDockerHub != 'true' }}
+        if: ${{ steps.deployments.outputs.pushSnapshot == 'true' }}
         uses: aws-actions/configure-aws-credentials@a03048d87541d1d9fcf2ecf528a4a65ba9bd7838 # v5.0.0
         with:
           aws-region: eu-west-1
           role-to-assume: "arn:aws:iam::${{ steps.inputs-and-secrets.outputs.OR_AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ steps.inputs-and-secrets.outputs.OR_GH_AWS_ECR_PUSH_ROLE }}"
 
       - name: Login to private ECR
-        if: ${{ steps.manager-docker-command.outputs.pushToDockerHub != 'true' }}
+        if: ${{ steps.deployments.outputs.pushSnapshot == 'true' }}
         uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
       - name: set up QEMU
@@ -650,6 +678,24 @@ jobs:
         env:
           VERSION: ${{ steps.get-version-details.outputs.version_with_qualifier }}
 
+      - name: Check for outdated translations
+        if: steps.is_main_repo.outputs.value == 'true'
+        run: |
+          set -e
+
+          # Run the tests
+          ./gradlew -p ui/app/shared processTranslations --no-parallel
+
+          out=$(git status --porcelain | grep "ui/app/shared/locales" || true)
+          if [[ -z "$out" ]]; then
+              echo "✅ No pipeline changes detected."
+          else
+              echo "❌ Pipeline files have changed. Please run './gradlew -p ui/app/shared processTranslations --no-parallel'"
+              echo "$out"
+              exit 1
+          fi
+        timeout-minutes: 20
+
       - name: Run backend tests
         id: run-backend-tests
         if: ${{ steps.test-backend-command.outputs.value != '' }}
@@ -727,7 +773,7 @@ jobs:
         timeout-minutes: 20
 
       - name: Run UI component tests
-        if: steps.test-ui-components-command.outputs.value != ''
+        if: steps.test-ui-components-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
         run: ${{ steps.test-ui-components-command.outputs.value }}
         timeout-minutes: 20
         # continue-on-error: true

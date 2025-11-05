@@ -55,8 +55,9 @@ export class UsersPage implements BasePage {
    *
    * @param username The users' username
    * @param password The users' password
+   * @param tag Optional tag for the user
    */
-  async addUser(username: string, password: string) {
+  async addUser(username: string, password: string, tag?: string) {
     await this.page
       .locator("#content")
       .filter({ hasText: "Regular users" })
@@ -68,11 +69,58 @@ export class UsersPage implements BasePage {
       .filter({ hasText: /Password/ })
       .fill(password);
     await this.page.locator("label").filter({ hasText: "Repeat password" }).fill(password);
+    if (tag) {
+      await this.page.locator("label").filter({ hasText: "Tag" }).fill(tag);
+    }
     await this.toggleUserRoles("Read", "Write");
     await this.toHavePermissions(...permissions);
     await this.shared.interceptResponse<UserModel>(`user/${this.manager.realm}/users`, (user) => {
       if (user) this.manager.user = user;
     });
     await this.page.getByRole("button", { name: "Create" }).click();
+  }
+
+  /**
+   * Create a service user for the current realm.
+   *
+   * @param username The service user's username
+   * @param tag Optional tag for the service user
+   */
+  async addServiceUser(username: string, tag?: string): Promise<void> {
+    await this.page
+      .locator("#content")
+      .filter({ hasText: "Service users" })
+      .getByRole("button", { name: "Add User" })
+      .click();
+    await this.page.locator("label").filter({ hasText: "Username" }).fill(username);
+    if (tag) {
+      await this.page.locator("label").filter({ hasText: "Tag" }).fill(tag);
+    }
+    await this.toggleUserRoles("Read", "Write");
+    await this.toHavePermissions(...permissions);
+    await this.shared.interceptResponse<UserModel>(`user/${this.manager.realm}/users`, (user) => {
+      if (user) this.manager.user = user;
+    });
+    await this.page.getByRole("button", { name: "Create" }).click();
+  }
+
+  /**
+   * Search for users in the regular user table.
+   * @param searchTerm The term to search for
+   */
+  async searchRegularUsers(searchTerm: string) {
+    const panel = this.page.locator("#content").filter({ hasText: "Regular users" }).first();
+    const input = panel.locator('or-mwc-input[placeholder="Search"] input');
+    await input.fill(searchTerm);
+  }
+
+  /**
+   * Search for users in the service user table.
+   * @param searchTerm The term to search for
+   */
+  async searchServiceUsers(searchTerm: string) {
+    const panel = this.page.locator("#content").filter({ hasText: "Service users" }).first();
+    const input = panel.locator('or-mwc-input[placeholder="Search"] input');
+    await input.fill(searchTerm);
   }
 }

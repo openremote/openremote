@@ -1,0 +1,26 @@
+buildDir = "dist"
+
+task clean() {
+    doLast {
+        delete "dist"
+        delete "lib"
+    }
+}
+
+tasks.register('npmAnalyze', Exec) {
+    mustRunAfter npmClean
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "run", "analyze"
+}
+
+task installDist() {
+    dependsOn npmAnalyze
+}
+
+task prepareUi() {
+    dependsOn clean, npmAnalyze, npmPrepare
+}
+
+task publishUi() {
+    dependsOn clean, npmPublish
+}

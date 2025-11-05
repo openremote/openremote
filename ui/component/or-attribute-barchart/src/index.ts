@@ -19,7 +19,7 @@
  */
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state, query} from "lit/decorators.js";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate"
 import {
     Asset, AssetDatapointIntervalQuery,
     AssetDatapointIntervalQueryFormula,
@@ -48,6 +48,7 @@ import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-m
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {when} from "lit/directives/when.js";
 import {createRef, Ref, ref} from "lit/directives/ref.js";
+import "@openremote/or-translate";
 
 echarts.use([GridComponent, TooltipComponent, DataZoomComponent, BarChart, CanvasRenderer, UniversalTransition]);
 
@@ -1246,9 +1247,9 @@ export class OrAttributeBarChart extends LitElement {
                     interval: this._intervalConfig?.millis,
                     fontSize: 10,
                     formatter: {
-                        year: "{yyyy}",
-                        month: "{MMMM} '{yy}",
-                        day: "{MMM} {d}th",
+                        year: "1-{MMM}-{yyyy}",
+                        month: "1-{MMM}-'{yy}",
+                        day: "{d}-{MMM}",
                         hour: "{HH}:{mm}",
                         minute: "{HH}:{mm}",
                         second: "{HH}:{mm}:{ss}",

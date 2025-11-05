@@ -231,7 +231,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         redirectUrls.add(realmManagerCallbackUrl);
     }
 
-    protected <T> T withClientResource(String realm, String client, RealmsResource realmsResource, BiFunction<ClientRepresentation, ClientResource, T> clientResourceConsumer, Supplier<T> notFoundProvider) {
+    protected <T> T withClientResource(String realm, String client, RealmsResource realmsResource, BiFunction<ClientRepresentation, ClientResource, T> clientResourceConsumer, Supplier<T> notFoundProvider) throws ClientErrorException {
         ClientRepresentation clientRepresentation = null;
         ClientResource clientResource = null;
 
@@ -277,7 +277,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public User createUpdateUser(String realm, final User user, String passwordSecret, boolean allowUpdate) throws WebApplicationException {
+    public User createUpdateUser(String realm, final User user, String passwordSecret, boolean allowUpdate) throws ClientErrorException {
         return getRealms(realmsResource -> {
 
             // Force lowercase username
@@ -376,6 +376,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                         .clients()
                         .get(clientRepresentation.getId()).getServiceAccountUser();
                     userRepresentation.setEnabled(user.getEnabled());
+                    userRepresentation.setAttributes(user.getAttributeMap());
                     realmsResource.realm(realm).users().get(userRepresentation.getId()).update(userRepresentation);
 
                 } else {
@@ -429,7 +430,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public void deleteUser(String realm, String userId) {
+    public void deleteUser(String realm, String userId) throws ClientErrorException {
 
         User user = getUser(userId);
 
@@ -465,7 +466,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public void requestPasswordReset(String realm, String userId) {
+    public void requestPasswordReset(String realm, String userId) throws ClientErrorException {
         getRealms(realmsResource -> {
             RealmResource realmResource = realmsResource.realm(realm);
             if (realmResource.toRepresentation().getSmtpServer().isEmpty())
@@ -478,7 +479,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public void resetPassword(String realm, String userId, Credential credential) {
+    public void resetPassword(String realm, String userId, Credential credential) throws ClientErrorException {
         getRealms(realmsResource -> {
             realmsResource.realm(realm).users().get(userId).resetPassword(
                 convert(credential, CredentialRepresentation.class)
@@ -488,7 +489,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public String resetSecret(String realm, String userId, String secret) {
+    public String resetSecret(String realm, String userId, String secret) throws ClientErrorException {
         return getRealms(realmsResource -> {
             UserRepresentation userRepresentation = null;
             try {
@@ -519,7 +520,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public Role[] getClientRoles(String realm, String client) {
+    public Role[] getClientRoles(String realm, String client) throws ClientErrorException {
         return getRealms(realmsResource -> {
             RealmResource realmResource = realmsResource.realm(realm);
             ClientsResource clientsResource = realmResource.clients();
@@ -547,7 +548,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public void updateClientRoles(String realm, String clientId, Role[] roles) {
+    public void updateClientRoles(String realm, String clientId, Role[] roles) throws ClientErrorException {
 
         getRealms(realmsResource -> {
             RealmResource realmResource = realmsResource.realm(realm);
@@ -561,7 +562,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
             List<RoleRepresentation> removedRoles = existingRoles.stream()
                 .filter(existingRole -> Arrays.stream(roles).noneMatch(r -> existingRole.getId().equals(r.getId())))
-                .collect(Collectors.toList());
+                .toList();
 
             removedRoles.forEach(removedRole -> {
                 realmResource.rolesById().deleteRole(removedRole.getId());
@@ -629,7 +630,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         });
     }
 
-    protected RoleRepresentation saveClientRole(RealmResource realmResource, ClientResource clientResource, Role role, RoleRepresentation representation) {
+    protected RoleRepresentation saveClientRole(RealmResource realmResource, ClientResource clientResource, Role role, RoleRepresentation representation) throws ClientErrorException {
         if (representation == null) {
             representation = new RoleRepresentation();
         }
@@ -646,7 +647,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public String[] getUserClientRoles(String realm, String userId, String client) {
+    public String[] getUserClientRoles(String realm, String userId, String client) throws ClientErrorException {
         return getRealms(realmsResource -> {
             RealmResource realmResource = realmsResource.realm(realm);
             RoleMappingResource roleMappingResource = realmResource.users().get(userId).roles();
@@ -660,7 +661,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public String[] getUserRealmRoles(String realm, String userId) {
+    public String[] getUserRealmRoles(String realm, String userId) throws ClientErrorException {
         return getRealms(realmsResource -> {
             RealmResource realmResource = realmsResource.realm(realm);
             RoleMappingResource roleMappingResource = realmResource.users().get(userId).roles();
@@ -672,7 +673,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public void updateUserClientRoles(@NotNull String realm, @NotNull String userId, @NotNull String client, String... roles) {
+    public void updateUserClientRoles(@NotNull String realm, @NotNull String userId, @NotNull String client, String... roles) throws ClientErrorException, IllegalStateException {
         getRealms(realmsResource -> {
             RealmResource realmResource = realmsResource.realm(realm);
             UserRepresentation user = realmResource.users().get(userId).toRepresentation();
@@ -724,7 +725,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public void updateUserRealmRoles(String realm, String userId, String... roles) {
+    public void updateUserRealmRoles(String realm, String userId, String... roles) throws ClientErrorException, IllegalStateException {
         getRealms(realmsResource -> {
             RealmResource realmResource = realmsResource.realm(realm);
             UserRepresentation user = realmResource.users().get(userId).toRepresentation();
@@ -770,7 +771,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public boolean isMasterRealmAdmin(String userId) {
+    public boolean isMasterRealmAdmin(String userId) throws ClientErrorException {
         Optional<UserRepresentation> adminUser = getRealms(realmsResource ->
             realmsResource.realm(MASTER_REALM)
                 .users()
@@ -818,7 +819,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public void updateRealm(Realm realm) {
+    public void updateRealm(Realm realm) throws ClientErrorException {
         LOG.fine("Update realm: " + realm);
         getRealms(realmsResource -> {
 
@@ -901,7 +902,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public Realm createRealm(Realm realm) {
+    public Realm createRealm(Realm realm) throws ClientErrorException {
         LOG.fine("Create realm: " + realm);
         return getRealms(realmsResource -> {
 
@@ -949,7 +950,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public void deleteRealm(String realmName) {
+    public void deleteRealm(String realmName) throws ClientErrorException {
         Realm realm = getRealm(realmName);
 
         if (realm == null) {
@@ -1019,19 +1020,19 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     // TODO: Provide an implementation agnostic client
-    public ClientRepresentation getClient(String realm, String client) {
+    public ClientRepresentation getClient(String realm, String client) throws ClientErrorException {
         return getRealms(realmsResource ->
             withClientResource(realm, client, realmsResource, (clientRepresentation, clientResource) ->
                 clientRepresentation, null));
     }
 
     // TODO: Provide an implementation agnostic client
-    public ClientRepresentation[] getClients(String realm) {
+    public ClientRepresentation[] getClients(String realm) throws ClientErrorException {
         return getRealms(realmsResource -> realmsResource.realm(realm).clients().findAll().toArray(new ClientRepresentation[0]));
     }
 
     // TODO: Provide an implementation agnostic client
-    public ClientRepresentation createUpdateClient(String realm, ClientRepresentation client) {
+    public ClientRepresentation createUpdateClient(String realm, ClientRepresentation client) throws ClientErrorException {
 
         if (client == null || client.getClientId() == null) {
             throw new IllegalArgumentException("Client is null or clientId is missing");
@@ -1071,7 +1072,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
      * @return the imported configuration parameters which can be added to the {@link Map} provided to
      * {@link #createUpdateIdentityProvider(String, String, String, String, Map)} when creating or updating an identity provider.
      */
-    public Map<String, String> getIdentityProviderImportConfig(String realm, Map<String, Object> importData) {
+    public Map<String, String> getIdentityProviderImportConfig(String realm, Map<String, Object> importData) throws ClientErrorException {
         if (importData == null || importData.isEmpty()) {
             throw new IllegalArgumentException("Import data is null or empty");
         }
@@ -1079,7 +1080,22 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         return getRealms(realmsResource -> realmsResource.realm(realm).identityProviders().importFrom(importData));
     }
 
-    public void createUpdateIdentityProvider(String realm, String alias, String providerId, String displayName, Map<String, String> config) {
+    public List<IdentityProviderRepresentation> getIdentityProviders(String realm) throws ClientErrorException {
+        return getRealms(realmsResource -> {
+            IdentityProvidersResource identityProvidersResource = realmsResource.realm(realm).identityProviders();
+            return identityProvidersResource.findAll();
+        });
+    }
+
+    public void deleteIdentityProvider(String realm, String alias) throws ClientErrorException {
+        getRealms(realmsResource -> {
+            IdentityProvidersResource identityProvidersResource = realmsResource.realm(realm).identityProviders();
+            identityProvidersResource.get(alias).remove();
+            return null;
+        });
+    }
+
+    public void createUpdateIdentityProvider(String realm, String alias, String providerId, String displayName, Map<String, String> config) throws ClientErrorException {
         IdentityProviderRepresentation representation = new IdentityProviderRepresentation();
         representation.setAlias(alias);
         representation.setProviderId(providerId);
@@ -1103,7 +1119,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         });
     }
 
-    public void createUpdateIdentityProviderMapper(String realm, String idpAlias, String mapperName, String idpMapper, Map<String, String> mapperConfig) {
+    public void createUpdateIdentityProviderMapper(String realm, String idpAlias, String mapperName, String idpMapper, Map<String, String> mapperConfig) throws ClientErrorException {
         getRealms(realmsResource -> {
             IdentityProviderResource idpResource = realmsResource.realm(realm).identityProviders().get(idpAlias);
 
@@ -1115,6 +1131,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
             Optional<IdentityProviderMapperRepresentation> existingMapper = idpResource.getMappers().stream().filter(m -> mapperName.equals(m.getName())).findFirst();
             if (existingMapper.isPresent()) {
+                mapper.setId(existingMapper.get().getId());
                 idpResource.update(existingMapper.get().getId(), mapper);
             } else {
                 try (Response response = idpResource.addMapper(mapper)) {
@@ -1128,7 +1145,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         });
     }
 
-    public void addAuthenticationExecutionConfig(String realm, String flowAlias, String executionProviderId, String authenticatorAlias, Map<String, String> authenticatorConfig) {
+    public void addAuthenticationExecutionConfig(String realm, String flowAlias, String executionProviderId, String authenticatorAlias, Map<String, String> authenticatorConfig) throws ClientErrorException {
         getRealms(realmsResource -> {
             AuthenticationManagementResource authenticationManagementResource = realmsResource.realm(realm).flows();
             List<AuthenticationExecutionInfoRepresentation> executions = authenticationManagementResource.getExecutions(flowAlias);
@@ -1150,7 +1167,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         });
     }
 
-    public void deleteClient(String realm, String clientId) {
+    public void deleteClient(String realm, String clientId) throws ClientErrorException {
 
         if (TextUtil.isNullOrEmpty(realm)
             || TextUtil.isNullOrEmpty(clientId)) {
@@ -1158,12 +1175,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         }
 
         getRealms(realmsResource -> {
-            RealmResource realmResource = realmsResource.realm(realm);
-
-            if (realmResource == null) {
-                LOG.fine("Invalid realm provided for deleteClient call: " + realm);
-                return null;
-            }
 
             LOG.fine("Deleting client: realm=" + realm + ", client ID=" + clientId);
             return withClientResource(realm, clientId, realmsResource, (clientRepresentation, clientResource) -> {
@@ -1334,7 +1345,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         }
     }
 
-    public String addLDAPConfiguration(String realm, ComponentRepresentation componentRepresentation) {
+    public String addLDAPConfiguration(String realm, ComponentRepresentation componentRepresentation) throws ClientErrorException {
 
         return getRealms(realmsResource -> {
             RealmResource realmResource = realmsResource.realm(realm);
@@ -1354,7 +1365,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         });
     }
 
-    public String addLDAPMapper(String realm, ComponentRepresentation componentRepresentation) {
+    public String addLDAPMapper(String realm, ComponentRepresentation componentRepresentation) throws ClientErrorException {
         return getRealms(realmsResource -> {
             RealmResource realmResource = realmsResource.realm(realm);
             Response response = realmResource.components().add(componentRepresentation);
