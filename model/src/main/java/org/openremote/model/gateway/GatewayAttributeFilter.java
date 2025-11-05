@@ -57,10 +57,12 @@ public class GatewayAttributeFilter {
     public Optional<Long> getDurationParsed() {
         if (durationParsedMillis == null) {
             durationParsedMillis = Optional.empty();
-            try {
-                durationParsedMillis = Optional.of(TimeUtil.parseTimeDuration(duration));
-            } catch (RuntimeException e) {
-                durationParsedMillis = Optional.empty();
+            if (duration != null) {
+                try {
+                    durationParsedMillis = Optional.of(TimeUtil.parseTimeDuration(duration));
+                } catch (RuntimeException e) {
+                    durationParsedMillis = Optional.empty();
+                }
             }
         }
         return durationParsedMillis;

@@ -412,9 +412,13 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             LOG.log(Level.WARNING, "An exception occurred whilst trying to disconnect the gateway IO client", e);
         }
 
-        if (connection != null) {
+        if (realmAttributeEventConsumer != null) {
             clientEventService.removeSubscription(realmAttributeEventConsumer);
+            realmAttributeEventConsumer = null;
+        }
+        if (realmAssetEventConsumer != null) {
             clientEventService.removeSubscription(realmAssetEventConsumer);
+            realmAssetEventConsumer = null;
         }
     }
 
