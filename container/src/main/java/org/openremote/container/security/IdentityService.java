@@ -85,9 +85,9 @@ public abstract class IdentityService implements ContainerService {
                                 return;
                             }
 
-                            String origin = exchange.getRequestHeaders().getFirst(CorsHeaders.ORIGIN);
-                            exchange.getResponseHeaders().add(HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_ORIGIN), origin);
-                            exchange.getResponseHeaders().add(HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS), "true");
+//                            String origin = exchange.getRequestHeaders().getFirst(CorsHeaders.ORIGIN);
+//                            exchange.getResponseHeaders().add(HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_ORIGIN), origin);
+//                            exchange.getResponseHeaders().add(HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS), "true");
                             handler.handleRequest(exchange);
                         }
                     };

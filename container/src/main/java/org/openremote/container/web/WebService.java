@@ -25,6 +25,7 @@ import com.thetransactioncompany.cors.CORSConfigurationException;
 import com.thetransactioncompany.cors.CORSFilter;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
+import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.predicate.Predicates;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.CanonicalPathHandler;
@@ -40,6 +41,7 @@ import io.undertow.servlet.api.*;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.undertow.servlet.util.ImmediateInstanceFactory;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
+import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.websockets.core.WebSocketChannel;
 import jakarta.servlet.*;
@@ -254,11 +256,14 @@ public abstract class WebService implements ContainerService {
             handler = new RequestDumpingHandler(handler);
         }
 
-        // Add GZIP encoding/decoding support at the undertow level
-        handler = new EncodingHandler(new ContentEncodingRepository()
-            .addEncodingHandler("gzip",
-                    new GzipEncodingProvider(), 50,
-                    Predicates.requestLargerThan(5120))).setNext(handler);
+//        // Add GZIP encoding/decoding support at the undertow level
+//        handler = new EncodingHandler(new ContentEncodingRepository()
+//            .addEncodingHandler("gzip",
+//                    new GzipEncodingProvider(), 50,
+//                    Predicates.and(
+//                            Predicates.requestLargerThan(5120),
+//                            Predicates.not(Predicates.contains(ExchangeAttributes.responseHeader(Headers.CONTENT_TYPE), "application/vnd.mapbox-vector-tile")))))
+//                .setNext(handler);
 
         builder.setHandler(handler);
 
@@ -358,6 +363,7 @@ public abstract class WebService implements ContainerService {
            FilterInfo securityFilterInfo = Servlets.filter("Security Filter", SecurityFilter.class, () -> new ImmediateInstanceHandle<>(securityFilter))
                    .setAsyncSupported(true);
            deploymentInfo.addFilter(securityFilterInfo);
+           deploymentInfo.addFilterUrlMapping(     "Security Filter","/*", DispatcherType.REQUEST);
        }
 
        configureDeploymentInfo(
@@ -437,8 +443,9 @@ public abstract class WebService implements ContainerService {
         FilterInfo corsFilterInfo = Servlets.filter(
                 "CORS Filter",
                 CORSFilter.class,
-                () -> new ImmediateInstanceHandle<>(corsFilter));
+                () -> new ImmediateInstanceHandle<>(corsFilter)).setAsyncSupported(true);
         deploymentInfo.addFilter(corsFilterInfo);
+        deploymentInfo.addFilterUrlMapping(     "CORS Filter","/*", DispatcherType.REQUEST);
 
         // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
         deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
@@ -474,7 +481,7 @@ public abstract class WebService implements ContainerService {
         if (corsConfig != null) {
             props.put("cors.supportsCredentials", Boolean.toString(corsConfig.isCorsAllowCredentials()));
             props.put("cors.maxAge", corsConfig.getCorsMaxAge());
-            props.put("cors.exposedHeaders", corsConfig.getCorsExposedHeaders());
+            props.put("cors.supportedHeaders", corsConfig.getCorsExposedHeaders());
             props.put("cors.supportedMethods", corsConfig.getCorsAllowedMethods());
             props.put("cors.allowOrigin", String.join(",", corsConfig.getCorsAllowedOrigins()));
         }
