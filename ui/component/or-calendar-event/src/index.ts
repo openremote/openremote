@@ -27,6 +27,7 @@ import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dial
 import {ByWeekday, Frequency, Options, RRule, Weekday, WeekdayStr} from 'rrule'
 import moment from "moment";
 import { Days } from "rrule/dist/esm/rrule";
+import { getMonthDays, isLeapYear, MONTH_DAYS } from "rrule/dist/esm/dateutil";
 
 /**
  * Supported recurrence rule parts in evaluation order:
@@ -94,6 +95,33 @@ const NOT_APPLICABLE_BY_RULE_PARTS = {
     "WEEKLY":	["BYWEEKNO", "BYYEARDAY", "BYMONTHDAY"],
     "MONTHLY":	["BYWEEKNO", "BYYEARDAY"]
 } as Record<keyof typeof Frequency, string[]>
+
+// January (31 days)
+// February (28 days in a common year and 29 days in leap years)
+// March (31 days)
+// April (30 days)
+// May (31 days)
+// June (30 days)
+// July (31 days)
+// August (31 days)
+// September (30 days)
+// October (31 days)
+// November (30 days)
+// December (31 days)
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+]
 
 @customElement("or-calendar-event")
 export class OrCalendarEvent extends translate(i18next)(LitElement) {
@@ -363,7 +391,11 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
         return html`
             <div style="min-width: 635px; display:grid; flex-direction: row;">
                 <div class="layout horizontal">
-                    <or-mwc-input style="min-width: 280px;" .value="${eventType}" .type="${InputType.SELECT}" .options="${Object.entries(this._eventTypes)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setCalendarEventType(e.detail.value)}"></or-mwc-input>
+                    <or-mwc-input style="min-width: 280px;" 
+                                  .value="${eventType}" 
+                                  .type="${InputType.SELECT}" 
+                                  .options="${Object.entries(this._eventTypes)}" 
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setCalendarEventType(e.detail.value)}"></or-mwc-input>
                 </div>
 
                 ${eventType === EventTypes.recurrence ? this.getRepeat() : ``}
@@ -392,7 +424,6 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
     protected getRepeat(): TemplateResult {
       const interval = (this._rrule && this._rrule.options && this._rrule.options.interval) ?? 1;
       const frequency = (this._rrule && this._rrule.options && this._rrule.options.freq) ?? Frequency.DAILY;
-      const selectedOptions = this._rrule && this._rrule.options && this._rrule.options.byweekday ? this._rrule.options.byweekday.map(day => new Weekday(day).toString()) : [];
 
       return html`
           <label style="display: block; margin-top: 20px;"><or-translate value="repeatEvery"></or-translate></label>
@@ -411,21 +442,37 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
           </div>
 
           <div class="layout horizontal">
-              <or-mwc-input .value="${selectedOptions}" 
-                            .type="${InputType.CHECKBOX_LIST}" 
-                            .options="${Object.entries(Days)}" 
-                            .label="${i18next.t("daysOfTheWeek")}" 
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => { 
-                                this.setRRuleValue(e.detail.value, "byweekday"); 
-                              }}"></or-mwc-input>
               ${BY_RULE_PARTS
                   .filter(p => !NOT_APPLICABLE_BY_RULE_PARTS[frequency.toString() as keyof typeof Frequency]?.includes(p))
                   .filter(p => !this._excludeRuleParts?.includes(p))
-                  .map(p => {
-                      return html`<br>${p}`
+                  .map(part => {
+                      switch (part) {
+                          case "bymonth":   return html`${this.getByRulePart(part, InputType.CHECKBOX_LIST, MONTHS)}`  
+                          case "byweekno":  return html`${this.getByRulePart(part, InputType.SELECT, [])}`  
+                          case "byyearday": return html`${this.getByRulePart(part, InputType.SELECT, Array.from(Array(isLeapYear(new Date(this._calendar!.start!).getFullYear()) ? 366 : 365).keys()))}`  
+                          case "bymonthday":return html`${this.getByRulePart(part, InputType.SELECT, [])}`  
+                          case "byweekday": return html`${this.getByRulePart(part, InputType.CHECKBOX_LIST, Object.entries(Days))}`  
+                          case "byhour":    return html`<br>${this.getByRulePart(part, InputType.SELECT, Array.from(Array(24).keys()))}`  
+                          case "byminute":  return html`${this.getByRulePart(part, InputType.SELECT, Array.from(Array(60).keys()))}`  
+                          case "bysecond":  return html`${this.getByRulePart(part, InputType.SELECT, Array.from(Array(60).keys()))}`  
+                      }
+
+                      return html`<br>${part}`
                   })
               }
           </div>`
+    }
+
+    protected getByRulePart<T>(part: RulePartKey, type: InputType, options: T[]): TemplateResult {
+        return html`<br><or-mwc-input style="width: 100%;"
+                                      .value="${this._rrule?.options[part]}"
+                                      .type="${type}"
+                                      .options="${options}"
+                                      .label="${i18next.t(part)}"
+                                      .multiple="${true}";
+                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                          this.setRRuleValue(e.detail.value, part);
+                                      }}"></or-mwc-input>`
     }
 
     /**
