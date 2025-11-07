@@ -5,7 +5,7 @@ export default {
     litelement: true,
     plugins: [
         jsxTypesPlugin({fileName: "custom-elements-jsx.d.ts", componentTypePath: (_name, _tag, path) => {
-            return path.toString().replace("src", "lib").replace(".ts", ".d.ts");
+            return path.toString().replace("src", "./lib").replace(".ts", ".d.ts");
         }})
     ]
 }
