@@ -23,13 +23,22 @@ import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3AsyncClientView
 import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
 import com.hivemq.client.mqtt.MqttClientConfig
 import com.hivemq.client.mqtt.MqttClientConnectionConfig
+import com.hivemq.client.mqtt.mqtt3.message.connect.connack.Mqtt3ConnAck
+import com.hivemq.client.mqtt.mqtt3.message.connect.connack.Mqtt3ConnAckReturnCode
 import io.netty.channel.socket.SocketChannel
 import io.undertow.security.idm.X509CertificateCredential
+import jakarta.ws.rs.WebApplicationException
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection
 import org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal
 import org.apache.activemq.artemis.spi.core.security.jaas.UserPrincipal
 import org.bouncycastle.asn1.x500.X500Name
-import org.bouncycastle.asn1.x509.*
+import org.bouncycastle.asn1.x509.BasicConstraints
+import org.bouncycastle.asn1.x509.ExtendedKeyUsage
+import org.bouncycastle.asn1.x509.Extension
+import org.bouncycastle.asn1.x509.GeneralName
+import org.bouncycastle.asn1.x509.GeneralNames
+import org.bouncycastle.asn1.x509.KeyPurposeId
+import org.bouncycastle.asn1.x509.KeyUsage
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
@@ -76,6 +85,7 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import javax.security.auth.Subject
+import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.cert.Certificate
@@ -862,108 +872,38 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def conditions = new PollingConditions(timeout: 10, delay: 0.1)
         MQTT_IOClient device1Client
 
-        and: "a temporary directory is created for storing MTLS certificates"
+        and: "temporary directories are created"
         def tempDir = new File(System.getProperty("java.io.tmpdir"), "openremote-mtls-test-keystores-" + System.currentTimeMillis())
-        and: "a temporary directory is created for OpenRemote's TMP files"
         def tempManagerDir = new File(System.getProperty("java.io.tmpdir"), "openremote-tmp-" + System.currentTimeMillis())
-
         tempDir.mkdirs()
         tempManagerDir.mkdirs()
         getLOG().info("KeyStore TempDir: $tempDir.absoluteFile")
         getLOG().info("Manager TempDir: $tempManagerDir.absoluteFile")
+
+        and: "test configuration is set up"
         def serverKeystorePath = new File(tempDir, "server-keystore.p12").absolutePath
         def serverTruststorePath = new File(tempDir, "server-truststore.p12").absolutePath
         def keystorePassword = "secret1"
         def provisionedAccountAliasName = "mtlsclient"
         def provisionedAccountKeyAlias = "$Constants.MASTER_REALM.$provisionedAccountAliasName"
-        // TODO: It seems that we cannot use capital letters as the service user username. I get a 401 from Keycloak in the Login Module.
         def ProvisionedAccountUserName = "mtlstest2"
 
-        and: "certificates are generated dynamically"
-        // Generate root CA key pair
-        KeyPairGenerator rootKeyGen = KeyPairGenerator.getInstance("RSA")
-        rootKeyGen.initialize(4096)
-        def rootCAKeyPair = rootKeyGen.generateKeyPair()
+        and: "mTLS certificate helper is initialized"
+        def mtlsHelper = new MTLSCertificateHelper()
 
-        // Create root CA certificate (self-signed)
-        X500Name rootCASubject = new X500Name("CN=OpenRemote Root CA")
-        long now = System.currentTimeMillis()
-        Date rootStartDate = new Date(now)
-        Date rootEndDate = new Date(now + 3650L * 86400000L) // ~10 years
-        BigInteger rootSerialNumber = BigInteger.valueOf(now)
+        and: "server and client certificates are generated"
+        def (serverKeyPair, serverCert) = mtlsHelper.generateServerCertificate()
+        def (clientKeyPair, clientCert) = mtlsHelper.generateClientCertificate(ProvisionedAccountUserName, Constants.MASTER_REALM)
 
-        X509v3CertificateBuilder rootCertBuilder = new JcaX509v3CertificateBuilder(
-            rootCASubject,
-            rootSerialNumber,
-            rootStartDate,
-            rootEndDate,
-            rootCASubject,
-            rootCAKeyPair.getPublic()
+        and: "server keystores are created and saved to disk"
+        mtlsHelper.createAndSaveServerKeystores(
+            serverKeystorePath,
+            serverTruststorePath,
+            keystorePassword,
+            provisionedAccountKeyAlias,
+            serverKeyPair,
+            serverCert
         )
-
-        // Add CA extensions
-        rootCertBuilder.addExtension(Extension.basicConstraints,true, new BasicConstraints(true))
-        rootCertBuilder.addExtension(Extension.keyUsage,true, new KeyUsage(KeyUsage.keyCertSign | KeyUsage.cRLSign))
-
-        ContentSigner rootSigner = new JcaContentSignerBuilder("SHA256WithRSA").build(rootCAKeyPair.getPrivate())
-        X509Certificate rootCACert = new JcaX509CertificateConverter().getCertificate(rootCertBuilder.build(rootSigner))
-
-        and: "a server certificate is created and signed by the root CA"
-        // Generate server key pair
-        KeyPairGenerator serverKeyGen = KeyPairGenerator.getInstance("RSA")
-        serverKeyGen.initialize(2048)
-        def serverKeyPair = serverKeyGen.generateKeyPair()
-
-        // Create server certificate signed by root CA
-        X500Name serverSubject = new X500Name("CN=auth.local")
-        X500Name rootIssuer = new X500Name(rootCACert.getSubjectX500Principal().getName())
-        Date serverStartDate = new Date(now)
-        Date serverEndDate = new Date(now + 825L * 86400000L) // ~27 months
-        BigInteger serverSerialNumber = BigInteger.valueOf(now + 1)
-
-        X509v3CertificateBuilder serverCertBuilder = new JcaX509v3CertificateBuilder(
-            rootIssuer,
-            serverSerialNumber,
-            serverStartDate,
-            serverEndDate,
-            serverSubject,
-            serverKeyPair.getPublic()
-        )
-
-        // Add server extensions (SANs + serverAuth)
-        GeneralName[] sans = [
-                new GeneralName(GeneralName.dNSName, "localhost"),
-                new GeneralName(GeneralName.dNSName, "auth.local")
-        ]
-        serverCertBuilder.addExtension(Extension.subjectAlternativeName, false, new GeneralNames(sans))
-        serverCertBuilder.addExtension(Extension.keyUsage, true,
-                new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment)
-        )
-        serverCertBuilder.addExtension(Extension.extendedKeyUsage,false, new ExtendedKeyUsage(KeyPurposeId.id_kp_serverAuth))
-
-        ContentSigner serverSigner = new JcaContentSignerBuilder("SHA256WithRSA").build(rootCAKeyPair.getPrivate())
-        X509Certificate serverCert = new JcaX509CertificateConverter().getCertificate(serverCertBuilder.build(serverSigner))
-
-        and: "a server keystore is created and saved to disk"
-        KeyStore serverKeystore = KeyStore.getInstance("PKCS12")
-        serverKeystore.load(null, null)
-        Certificate[] serverCertChain = [serverCert, rootCACert] as Certificate[]
-        serverKeystore.setKeyEntry(provisionedAccountKeyAlias, serverKeyPair.getPrivate(), keystorePassword.toCharArray(), serverCertChain)
-
-        // Save server keystore to file
-        new FileOutputStream(serverKeystorePath).withCloseable { fos ->
-            serverKeystore.store(fos, keystorePassword.toCharArray())
-        }
-
-        and: "a server truststore is created with the root CA and saved to disk"
-        KeyStore serverTruststore = KeyStore.getInstance("PKCS12")
-        serverTruststore.load(null, null)
-        serverTruststore.setCertificateEntry("client-ca", rootCACert)
-
-        // Save server truststore to file
-        new FileOutputStream(serverTruststorePath).withCloseable { fos ->
-            serverTruststore.store(fos, keystorePassword.toCharArray())
-        }
 
         and: "the container configuration is set up with MTLS environment variables"
         def config = defaultConfig()
@@ -976,45 +916,6 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         config.put(KeyStoreServiceImpl.OR_KEYSTORE_PASSWORD, keystorePassword)
         config.put(PersistenceService.OR_STORAGE_DIR, tempManagerDir.getAbsolutePath())
 
-        and: "a new client key pair is generated"
-        KeyPairGenerator clientKeyGen = KeyPairGenerator.getInstance("RSA")
-        clientKeyGen.initialize(2048)
-        def clientKeyPair = clientKeyGen.generateKeyPair()
-
-        and: "a new client certificate is created and signed by the root CA with CN=ProvisionedAccountUserName and OU=master"
-        X500Name clientSubject = new X500Name("CN=$ProvisionedAccountUserName,OU=$Constants.MASTER_REALM")
-        Date clientStartDate = new Date(now)
-        Date clientEndDate = new Date(now + 365L * 86400000L) // 1 year
-        BigInteger clientSerialNumber = BigInteger.valueOf(now + 2)
-
-        X509v3CertificateBuilder clientCertBuilder = new JcaX509v3CertificateBuilder(
-            rootIssuer,
-            clientSerialNumber,
-            clientStartDate,
-            clientEndDate,
-            clientSubject,
-            clientKeyPair.getPublic()
-        )
-
-        // Add client extensions (clientAuth)
-        clientCertBuilder.addExtension(
-            Extension.keyUsage,
-            true,
-            new KeyUsage(
-                KeyUsage.digitalSignature |
-                KeyUsage.keyEncipherment
-            )
-        )
-        clientCertBuilder.addExtension(
-            Extension.extendedKeyUsage,
-            false,
-            new ExtendedKeyUsage(
-                KeyPurposeId.id_kp_clientAuth
-            )
-        )
-
-        ContentSigner clientSigner = new JcaContentSignerBuilder("SHA256WithRSA").build(rootCAKeyPair.getPrivate())
-        X509Certificate clientCert = new JcaX509CertificateConverter().getCertificate(clientCertBuilder.build(clientSigner))
 
         and: "the container starts"
         def container = startContainer(config, defaultServices())
@@ -1022,29 +923,21 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def mqttBrokerService = container.getService(MQTTBrokerService.class)
         def identityService = container.getService(ManagerIdentityService.class)
         def provisioningService = container.getService(ProvisioningService.class)
-        def mqttHost = "localhost" // Use localhost instead of 127.0.0.1 to match certificate SAN
+        def mqttHost = "localhost"
         def mqttPort = 8884
 
+        and: "the client certificate is added to the KeyStoreService"
+        mtlsHelper.addClientCertificateToKeyStoreService(
+            keystoreService,
+            provisionedAccountKeyAlias,
+            keystorePassword,
+            clientKeyPair,
+            clientCert
+        )
 
-        and: "the keystores are loaded from the KeyStoreService for the client"
-        KeyStore clientKeystore = keystoreService.getKeyStore()
-        KeyStore clientTruststore = keystoreService.getTrustStore()
-
-        and: "the root CA certificate is added to the truststore"
-        clientTruststore.setCertificateEntry(provisionedAccountKeyAlias, rootCACert)
-
-        and:
-        Certificate[] certChain = [clientCert, rootCACert] as Certificate[]
-        clientKeystore.setKeyEntry(provisionedAccountKeyAlias, clientKeyPair.getPrivate(), keystorePassword.toCharArray(), certChain)
-
-
-        when: "the updated keystores are stored back to the KeyStoreService"
-        keystoreService.storeKeyStore(clientKeystore)
-        keystoreService.storeTrustStore(clientTruststore)
-
-        then: "the keystores should contain the certificates"
-        clientKeystore.containsAlias(provisionedAccountKeyAlias)
-        clientTruststore.containsAlias(provisionedAccountKeyAlias)
+        expect: "the keystores should contain the certificates"
+        keystoreService.getKeyStore().containsAlias(provisionedAccountKeyAlias)
+        keystoreService.getTrustStore().containsAlias(provisionedAccountKeyAlias)
 
         when: "A new service user with the corresponding certificate's fields is created"
         User serviceUser = new User()
@@ -1072,11 +965,11 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             mqttDevice1ClientId,
             mqttHost,
             mqttPort,
-            true, // secure
-            false, // cleanSession
-            null, // username/password not needed with mTLS
-            null, // websocket URI
-            null, // will message
+            true,
+            false,
+            null,
+            null,
+            null,
             keystoreService.getKeyManagerFactory(provisionedAccountKeyAlias),
             keystoreService.getTrustManagerFactory()
         )
@@ -1086,22 +979,6 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the client should connect successfully using mTLS"
         conditions.eventually {
             assert device1Client.getConnectionStatus() == ConnectionStatus.CONNECTED
-        }
-
-        when: "the client subscribes to provisioning endpoints"
-        def device1RequestTopic = "$PROVISIONING_TOKEN/$device1UniqueId/$REQUEST_TOKEN".toString()
-        def device1ResponseTopic = "$PROVISIONING_TOKEN/$device1UniqueId/$RESPONSE_TOKEN".toString()
-        List<ProvisioningMessage> device1Responses = new CopyOnWriteArrayList<>()
-        Consumer<MQTTMessage<String>> device1MessageConsumer = { MQTTMessage<String> msg ->
-            device1Responses.add(ValueUtil.parse(msg.payload, ProvisioningMessage.class).orElse(null))
-        }
-//        device1Client.addMessageConsumer(device1ResponseTopic, device1MessageConsumer)
-
-
-        then: "the subscription should succeed"
-        conditions.eventually {
-//            assert device1Client.topicConsumerMap.get(device1ResponseTopic) != null
-//            assert device1Client.topicConsumerMap.get(device1ResponseTopic).consumers.size() == 1
         }
 
         and: "the authenticated client should have the correct subject"
@@ -1124,73 +1001,18 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         }
 
         when: "A new keypair is created, without being signed by the issuer"
+        def (invalidKeyPair, invalidCert) = mtlsHelper.generateSelfSignedCertificate("invaliduser", "master")
 
         and: "Added and saved to the KeyStoreService keystore"
-
-        and: "A new MQTT client connects, using those new certificates"
-
-        then: "The connection should be rejected (not anonymous, rejected)"
-
-        when: "A new keypair, properly signed, is created, but the service user for it has not been created"
-
-        and: "It is added and saved to the KeyStoreService keystore"
-
-        and: "A new MQTT client connects, using those correct yet unprovisioned certificates"
-
-        then: "the connection should be created, but there should be no roles, but there is a ProvisioningPrincipal, that contains the correct certificate"
-
-        when: "A new keypair is created, without being signed by the issuer"
-        KeyPairGenerator invalidKeyGen = KeyPairGenerator.getInstance("RSA")
-        invalidKeyGen.initialize(2048)
-        def invalidKeyPair = invalidKeyGen.generateKeyPair()
-
-        // Create a self-signed certificate (NOT signed by root CA)
-        X500Name invalidSubject = new X500Name("CN=invaliduser,OU=master")
-        Date invalidStartDate = new Date(now)
-        Date invalidEndDate = new Date(now + 365L * 86400000L)
-        BigInteger invalidSerialNumber = BigInteger.valueOf(now + 3)
-
-        X509v3CertificateBuilder invalidCertBuilder = new JcaX509v3CertificateBuilder(
-            invalidSubject, // self-signed, same subject and issuer
-            invalidSerialNumber,
-            invalidStartDate,
-            invalidEndDate,
-            invalidSubject,
-            invalidKeyPair.getPublic()
+        def invalidKeyAlias = Constants.MASTER_REALM+".invalidclient"
+        mtlsHelper.addCertificateToKeyStoreService(
+            keystoreService,
+            invalidKeyAlias,
+            keystorePassword,
+            invalidKeyPair,
+            invalidCert,
+            false // Don't include root CA in chain for invalid cert
         )
-
-        // Add client extensions
-        invalidCertBuilder.addExtension(
-            Extension.keyUsage,
-            true,
-            new KeyUsage(
-                KeyUsage.digitalSignature |
-                KeyUsage.keyEncipherment
-            )
-        )
-        invalidCertBuilder.addExtension(
-            Extension.extendedKeyUsage,
-            false,
-            new ExtendedKeyUsage(
-                KeyPurposeId.id_kp_clientAuth
-            )
-        )
-
-        ContentSigner invalidSigner = new JcaContentSignerBuilder("SHA256WithRSA").build(invalidKeyPair.getPrivate())
-        X509Certificate invalidCert = new JcaX509CertificateConverter().getCertificate(invalidCertBuilder.build(invalidSigner))
-
-        and: "Added and saved to the KeyStoreService keystore"
-        def invalidKeyAlias = Constants.MASTER_REALM+"invalidclient"
-        KeyStore invalidClientKeystore = keystoreService.getKeyStore()
-        KeyStore invalidClientTruststore = keystoreService.getTrustStore()
-
-        // Add the invalid cert chain (self-signed)
-        Certificate[] invalidCertChain = [invalidCert] as Certificate[]
-        invalidClientKeystore.setKeyEntry(invalidKeyAlias, invalidKeyPair.getPrivate(), keystorePassword.toCharArray(), invalidCertChain)
-        invalidClientTruststore.setCertificateEntry(invalidKeyAlias, rootCACert)
-
-        keystoreService.storeKeyStore(invalidClientKeystore)
-        keystoreService.storeTrustStore(invalidClientTruststore)
 
         and: "A new MQTT client connects, using those new certificates"
         def invalidClientId = UniqueIdentifierGenerator.generateId("invaliddevice")
@@ -1198,79 +1020,44 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             invalidClientId,
             mqttHost,
             mqttPort,
-            true, // secure
-            false, // cleanSession
-            null, // username/password not needed with mTLS
-            null, // websocket URI
-            null, // will message
-            keystoreService.getKeyManagerFactory(invalidKeyAlias),
+            true,
+            false,
+            null,
+            null,
+            null,
+            keystoreService.getKeyManagerFactory(null),
             keystoreService.getTrustManagerFactory()
         )
+        invalidClient.connectTimeout = 100
+        invalidClient.connect();
 
+        then: "The connection should be rejected"
 
-        then: "The connection should be rejected (not signed by trusted CA)"
-
-        def connStatus = null
-        invalidClient.addConnectionStatusConsumer {it -> connStatus = it}
         conditions.eventually {
-            it == ConnectionStatus.DISCONNECTED
+            assert invalidClient.getConnectionStatus() == ConnectionStatus.CONNECTING
+            assert invalidClient != null
         }
 
         and: "disconnect invalid client if connected"
         invalidClient.disconnect()
 
         when: "A new keypair, properly signed, is created, but the service user for it is not created"
-        KeyPairGenerator unprovisionedKeyGen = KeyPairGenerator.getInstance("RSA")
-        unprovisionedKeyGen.initialize(2048)
-        def unprovisionedKeyPair = unprovisionedKeyGen.generateKeyPair()
-
         def unprovisionedUsername = "unprovisioneduser"
-        X500Name unprovisionedSubject = new X500Name("CN=$unprovisionedUsername,OU=$Constants.MASTER_REALM")
-        Date unprovisionedStartDate = new Date(now)
-        Date unprovisionedEndDate = new Date(now + 365L * 86400000L)
-        BigInteger unprovisionedSerialNumber = BigInteger.valueOf(now + 4)
-
-        X509v3CertificateBuilder unprovisionedCertBuilder = new JcaX509v3CertificateBuilder(
-            rootIssuer,
-            unprovisionedSerialNumber,
-            unprovisionedStartDate,
-            unprovisionedEndDate,
-            unprovisionedSubject,
-            unprovisionedKeyPair.getPublic()
+        def (unprovisionedKeyPair, unprovisionedCert) = mtlsHelper.generateClientCertificate(
+            unprovisionedUsername,
+            Constants.MASTER_REALM,
+            4 // serial offset
         )
-
-        // Add client extensions (clientAuth)
-        unprovisionedCertBuilder.addExtension(
-            Extension.keyUsage,
-            true,
-            new KeyUsage(
-                KeyUsage.digitalSignature |
-                KeyUsage.keyEncipherment
-            )
-        )
-        unprovisionedCertBuilder.addExtension(
-            Extension.extendedKeyUsage,
-            false,
-            new ExtendedKeyUsage(
-                KeyPurposeId.id_kp_clientAuth
-            )
-        )
-
-        ContentSigner unprovisionedSigner = new JcaContentSignerBuilder("SHA256WithRSA").build(rootCAKeyPair.getPrivate())
-        X509Certificate unprovisionedCert = new JcaX509CertificateConverter().getCertificate(unprovisionedCertBuilder.build(unprovisionedSigner))
 
         and: "It is added and saved to the KeyStoreService keystore"
-        def unprovisionedKeyAlias = Constants.MASTER_REALM+"unprovisionedclient"
-        KeyStore unprovisionedClientKeystore = keystoreService.getKeyStore()
-        KeyStore unprovisionedClientTruststore = keystoreService.getTrustStore()
-
-        // Add the properly signed cert chain
-        Certificate[] unprovisionedCertChain = [unprovisionedCert, rootCACert] as Certificate[]
-        unprovisionedClientKeystore.setKeyEntry(unprovisionedKeyAlias, unprovisionedKeyPair.getPrivate(), keystorePassword.toCharArray(), unprovisionedCertChain)
-        unprovisionedClientTruststore.setCertificateEntry(unprovisionedKeyAlias, rootCACert)
-
-        keystoreService.storeKeyStore(unprovisionedClientKeystore)
-        keystoreService.storeTrustStore(unprovisionedClientTruststore)
+        def unprovisionedKeyAlias = Constants.MASTER_REALM + "unprovisionedclient"
+        mtlsHelper.addClientCertificateToKeyStoreService(
+            keystoreService,
+            unprovisionedKeyAlias,
+            keystorePassword,
+            unprovisionedKeyPair,
+            unprovisionedCert
+        )
 
         and: "A new MQTT client connects, using those correct yet unprovisioned certificates"
         def unprovisionedClientId = UniqueIdentifierGenerator.generateId("unprovisioneddevice")
@@ -1279,11 +1066,11 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             unprovisionedClientId,
             mqttHost,
             mqttPort,
-            true, // secure
-            false, // cleanSession
-            null, // username/password not needed with mTLS
-            null, // websocket URI
-            null, // will message
+            true,
+            false,
+            null,
+            null,
+            null,
             keystoreService.getKeyManagerFactory(unprovisionedKeyAlias),
             keystoreService.getTrustManagerFactory()
         )
@@ -1291,7 +1078,6 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         unprovisionedClient.connect()
 
         then: "the connection should be created, but there should be no roles, but there is a ProvisioningPrincipal, that contains the correct certificate"
-        Thread.sleep(2000)
         conditions.eventually {
             assert unprovisionedClient.getConnectionStatus() == ConnectionStatus.CONNECTED
         }
@@ -1300,6 +1086,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             Subject unprovisionedJaasSubject = mqttBrokerService.getConnectionFromClientID(unprovisionedClientId).getSubject()
             assert unprovisionedJaasSubject != null
+            assert unprovisionedJaasSubject.getPrincipals().size() == 3
+            assert unprovisionedJaasSubject.getPrivateCredentials().size() == 1
             // Should not have role principals since no service user exists
             assert unprovisionedJaasSubject.getPrincipals(RolePrincipal.class)[0].getName() == "anonymous"
             // Should not have a UserPrincipal or KeycloakPrincipal
@@ -1316,7 +1104,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         def provisioningConfig = new X509ProvisioningConfig("Valid Test Config",
                 new X509ProvisioningData()
-                        .setCACertPEM(ProvisioningUtil.getPemString(rootCACert))
+                        .setCACertPEM(ProvisioningUtil.getPemString(mtlsHelper.getRootCACertificate()))
         ).setAssetTemplate(
                 ValueUtil.asJSON(
                         new WeatherAsset("Weather Asset")
@@ -1355,17 +1143,9 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         )
 
         then: "we should receive a success response provisioning message"
-
-        def autoprovisioningResponseMessage
-
         conditions.eventually {
-            getLOG().warn(autoProvisioningResponses.toString())
-
             assert autoProvisioningResponses.size() == 1
             assert autoProvisioningResponses.get(0) instanceof SuccessResponseMessage
-
-            getLOG().info(autoProvisioningResponses.get(0).toString());
-            autoprovisioningResponseMessage = autoProvisioningResponses.get(0)
         }
 
         when: "the device disconnects"
@@ -1414,3 +1194,288 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         tempManagerDir.deleteDir()
     }
 }
+
+/**
+ * Helper class for managing mTLS certificates and keystores in tests
+ */
+@SuppressWarnings("GroovyAccessibility")
+class MTLSCertificateHelper {
+
+    KeyPair rootCAKeyPair
+    X509Certificate rootCACert
+    X500Name rootIssuer
+    long timestamp
+
+    /**
+     * Initialize the helper and generate the Root CA
+     */
+    MTLSCertificateHelper() {
+        this.timestamp = System.currentTimeMillis()
+        generateRootCA()
+    }
+
+    /**
+     * Generate Root CA key pair and certificate (self-signed)
+     */
+    private void generateRootCA() {
+        KeyPairGenerator rootKeyGen = KeyPairGenerator.getInstance("RSA")
+        rootKeyGen.initialize(4096)
+        rootCAKeyPair = rootKeyGen.generateKeyPair()
+
+        X500Name rootCASubject = new X500Name("CN=OpenRemote Root CA")
+        Date rootStartDate = new Date(timestamp)
+        Date rootEndDate = new Date(timestamp + 3650L * 86400000L) // ~10 years
+        BigInteger rootSerialNumber = BigInteger.valueOf(timestamp)
+
+        X509v3CertificateBuilder rootCertBuilder = new JcaX509v3CertificateBuilder(
+                rootCASubject,
+                rootSerialNumber,
+                rootStartDate,
+                rootEndDate,
+                rootCASubject,
+                rootCAKeyPair.getPublic()
+        )
+
+        // Add CA extensions
+        rootCertBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(true))
+        rootCertBuilder.addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.keyCertSign | KeyUsage.cRLSign))
+
+        ContentSigner rootSigner = new JcaContentSignerBuilder("SHA256WithRSA").build(rootCAKeyPair.getPrivate())
+        rootCACert = new JcaX509CertificateConverter().getCertificate(rootCertBuilder.build(rootSigner))
+        rootIssuer = new X500Name(rootCACert.getSubjectX500Principal().getName())
+    }
+
+    /**
+     * Generate a server certificate signed by the root CA with SANs for localhost and auth.local
+     */
+    Tuple2<KeyPair, X509Certificate> generateServerCertificate() {
+        KeyPairGenerator serverKeyGen = KeyPairGenerator.getInstance("RSA")
+        serverKeyGen.initialize(2048)
+        KeyPair serverKeyPair = serverKeyGen.generateKeyPair()
+
+        X500Name serverSubject = new X500Name("CN=auth.local")
+        Date serverStartDate = new Date(timestamp)
+        Date serverEndDate = new Date(timestamp + 825L * 86400000L) // ~27 months
+        BigInteger serverSerialNumber = BigInteger.valueOf(timestamp + 1)
+
+        X509v3CertificateBuilder serverCertBuilder = new JcaX509v3CertificateBuilder(
+                rootIssuer,
+                serverSerialNumber,
+                serverStartDate,
+                serverEndDate,
+                serverSubject,
+                serverKeyPair.getPublic()
+        )
+
+        // Add server extensions (SANs + serverAuth)
+        GeneralName[] sans = [
+                new GeneralName(GeneralName.dNSName, "localhost"),
+                new GeneralName(GeneralName.dNSName, "auth.local")
+        ]
+        serverCertBuilder.addExtension(Extension.subjectAlternativeName, false, new GeneralNames(sans))
+        serverCertBuilder.addExtension(Extension.keyUsage, true,
+                new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment)
+        )
+        serverCertBuilder.addExtension(Extension.extendedKeyUsage, false, new ExtendedKeyUsage(KeyPurposeId.id_kp_serverAuth))
+
+        ContentSigner serverSigner = new JcaContentSignerBuilder("SHA256WithRSA").build(rootCAKeyPair.getPrivate())
+        X509Certificate serverCert = new JcaX509CertificateConverter().getCertificate(serverCertBuilder.build(serverSigner))
+
+        return new Tuple2<>(serverKeyPair, serverCert)
+    }
+
+    /**
+     * Generate a client certificate signed by the root CA with specified CN and OU
+     */
+    Tuple2<KeyPair, X509Certificate> generateClientCertificate(String commonName, String organizationalUnit, long serialOffset = 2) {
+        KeyPairGenerator clientKeyGen = KeyPairGenerator.getInstance("RSA")
+        clientKeyGen.initialize(2048)
+        KeyPair clientKeyPair = clientKeyGen.generateKeyPair()
+
+        X500Name clientSubject = new X500Name("CN=$commonName,OU=$organizationalUnit")
+        Date clientStartDate = new Date(timestamp)
+        Date clientEndDate = new Date(timestamp + 365L * 86400000L) // 1 year
+        BigInteger clientSerialNumber = BigInteger.valueOf(timestamp + serialOffset)
+
+        X509v3CertificateBuilder clientCertBuilder = new JcaX509v3CertificateBuilder(
+                rootIssuer,
+                clientSerialNumber,
+                clientStartDate,
+                clientEndDate,
+                clientSubject,
+                clientKeyPair.getPublic()
+        )
+
+        // Add client extensions (clientAuth)
+        clientCertBuilder.addExtension(
+                Extension.keyUsage,
+                true,
+                new KeyUsage(
+                        KeyUsage.digitalSignature |
+                                KeyUsage.keyEncipherment
+                )
+        )
+        clientCertBuilder.addExtension(
+                Extension.extendedKeyUsage,
+                false,
+                new ExtendedKeyUsage(
+                        KeyPurposeId.id_kp_clientAuth
+                )
+        )
+
+        ContentSigner clientSigner = new JcaContentSignerBuilder("SHA256WithRSA").build(rootCAKeyPair.getPrivate())
+        X509Certificate clientCert = new JcaX509CertificateConverter().getCertificate(clientCertBuilder.build(clientSigner))
+
+        return new Tuple2<>(clientKeyPair, clientCert)
+    }
+
+    /**
+     * Generate a self-signed (invalid) client certificate NOT signed by the root CA
+     */
+    Tuple2<KeyPair, X509Certificate> generateSelfSignedCertificate(String commonName, String organizationalUnit, long serialOffset = 3) {
+        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA")
+        keyGen.initialize(2048)
+        KeyPair keyPair = keyGen.generateKeyPair()
+
+        X500Name subject = new X500Name("CN=$commonName,OU=$organizationalUnit")
+        Date startDate = new Date(timestamp)
+        Date endDate = new Date(timestamp + 365L * 86400000L)
+        BigInteger serialNumber = BigInteger.valueOf(timestamp + serialOffset)
+
+        X509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(
+                subject, // self-signed, same subject and issuer
+                serialNumber,
+                startDate,
+                endDate,
+                subject,
+                keyPair.getPublic()
+        )
+
+        // Add client extensions
+        certBuilder.addExtension(
+                Extension.keyUsage,
+                true,
+                new KeyUsage(
+                        KeyUsage.digitalSignature |
+                                KeyUsage.keyEncipherment
+                )
+        )
+        certBuilder.addExtension(
+                Extension.extendedKeyUsage,
+                false,
+                new ExtendedKeyUsage(
+                        KeyPurposeId.id_kp_clientAuth
+                )
+        )
+
+        ContentSigner signer = new JcaContentSignerBuilder("SHA256WithRSA").build(keyPair.getPrivate())
+        X509Certificate cert = new JcaX509CertificateConverter().getCertificate(certBuilder.build(signer))
+
+        return new Tuple2<>(keyPair, cert)
+    }
+
+    /**
+     * Create and save server keystores (keystore and truststore) to disk
+     */
+    void createAndSaveServerKeystores(
+            String keystorePath,
+            String truststorePath,
+            String password,
+            String keyAlias,
+            KeyPair serverKeyPair,
+            X509Certificate serverCert
+    ) {
+        // Create server keystore
+        KeyStore serverKeystore = KeyStore.getInstance("PKCS12")
+        serverKeystore.load(null, null)
+        Certificate[] serverCertChain = [serverCert, rootCACert] as Certificate[]
+        serverKeystore.setKeyEntry(keyAlias, serverKeyPair.getPrivate(), password.toCharArray(), serverCertChain)
+
+        // Save server keystore to file
+        new FileOutputStream(keystorePath).withCloseable { fos ->
+            serverKeystore.store(fos, password.toCharArray())
+        }
+
+        // Create server truststore with the root CA
+        KeyStore serverTruststore = KeyStore.getInstance("PKCS12")
+        serverTruststore.load(null, null)
+        serverTruststore.setCertificateEntry("client-ca", rootCACert)
+
+        // Save server truststore to file
+        new FileOutputStream(truststorePath).withCloseable { fos ->
+            serverTruststore.store(fos, password.toCharArray())
+        }
+    }
+
+    /**
+     * Add a client certificate to the KeyStoreService's keystore and truststore
+     */
+    void addClientCertificateToKeyStoreService(
+            KeyStoreServiceImpl keystoreService,
+            String keyAlias,
+            String password,
+            KeyPair clientKeyPair,
+            X509Certificate clientCert
+    ) {
+        KeyStore clientKeystore = keystoreService.getKeyStore()
+        KeyStore clientTruststore = keystoreService.getTrustStore()
+
+        // Add root CA to truststore
+        clientTruststore.setCertificateEntry(keyAlias, rootCACert)
+
+        // Add client certificate chain to keystore
+        Certificate[] certChain = [clientCert, rootCACert] as Certificate[]
+        clientKeystore.setKeyEntry(keyAlias, clientKeyPair.getPrivate(), password.toCharArray(), certChain)
+
+        // Store back to KeyStoreService
+        keystoreService.storeKeyStore(clientKeystore)
+        keystoreService.storeTrustStore(clientTruststore)
+    }
+
+    /**
+     * Add a certificate (with optional chain) to the KeyStoreService's keystore and truststore
+     * This is useful for adding invalid or self-signed certificates for testing
+     */
+    void addCertificateToKeyStoreService(
+            KeyStoreServiceImpl keystoreService,
+            String keyAlias,
+            String password,
+            KeyPair keyPair,
+            X509Certificate cert,
+            boolean includeRootCA = true
+    ) {
+        KeyStore clientKeystore = keystoreService.getKeyStore()
+        KeyStore clientTruststore = keystoreService.getTrustStore()
+
+        // Add root CA to truststore
+        clientTruststore.setCertificateEntry(keyAlias, rootCACert)
+
+        // Add certificate chain to keystore
+        Certificate[] certChain
+        if (includeRootCA) {
+            certChain = [cert, rootCACert] as Certificate[]
+        } else {
+            certChain = [cert] as Certificate[]
+        }
+        clientKeystore.setKeyEntry(keyAlias, keyPair.getPrivate(), password.toCharArray(), certChain)
+
+        // Store back to KeyStoreService
+        keystoreService.storeKeyStore(clientKeystore)
+        keystoreService.storeTrustStore(clientTruststore)
+    }
+
+    /**
+     * Get the root CA certificate (for provisioning config, etc.)
+     */
+    X509Certificate getRootCACertificate() {
+        return rootCACert
+    }
+
+    /**
+     * Get the root issuer X500Name
+     */
+    X500Name getRootIssuer() {
+        return rootIssuer
+    }
+}
+

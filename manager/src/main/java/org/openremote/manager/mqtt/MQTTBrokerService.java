@@ -55,6 +55,7 @@ import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.jaas.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.client.utils.URIBuilder;
+import org.jboss.logging.Logger;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.adapters.jaas.AbstractKeycloakLoginModule;
 import org.openremote.container.message.MessageBrokerService;
@@ -661,6 +662,16 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         String keystorePassword = getString(container.getConfig(), OR_MQTT_MTLS_KEYSTORE_PASSWORD, "secret");
         String truststorePath = getString(container.getConfig(), OR_MQTT_MTLS_TRUSTSTORE_PATH, persistenceService.resolvePath(keystoreDirPath.resolve("server_truststore.p12")).toString());
         String truststorePassword = getString(container.getConfig(), OR_MQTT_MTLS_TRUSTSTORE_PASSWORD, "secret");
+
+        if(
+                TextUtil.isNullOrEmpty(keystorePath)
+                || TextUtil.isNullOrEmpty(truststorePath)
+                || TextUtil.isNullOrEmpty(keystorePassword)
+                || TextUtil.isNullOrEmpty(truststorePassword)
+        ) {
+            LOG.log(INFO, "MQTT mTLS acceptor not being started, as environment variables not configured");
+            return;
+        }
 
         try {
             String mtlsServerURI = new URIBuilder()
