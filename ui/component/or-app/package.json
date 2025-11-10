@@ -2,13 +2,17 @@
   "name": "@openremote/or-app",
   "version": "1.10.0-snapshot",
   "description": "OpenRemote app template",
+  "customElements": "custom-elements.json",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    "./*": "./lib/*.js",
+    "./jsx": {
+      "types": "./custom-elements-jsx.d.ts"
+    }
   },
   "types": "lib/index.d.ts",
   "scripts": {
