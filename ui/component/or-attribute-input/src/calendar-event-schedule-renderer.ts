@@ -8,9 +8,8 @@ import {
 } from "@jsonforms/core";
 import { html } from "lit";
 import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
-import { RulePartKey, RuleParts } from "@openremote/or-calendar-event";
+import { RulePartKey } from "@openremote/or-calendar-event";
 import { CalendarEvent } from "@openremote/model";
-import "@openremote/or-calendar-event";
 
 const calendarEventTester: RankedTester = rankWith(
     6,
@@ -59,7 +58,6 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
     //     </style>
     //     ${until(loadedTemplatePromise, html`<or-mwc-input class="agent-id-picker" .type="${InputType.SELECT}"></or-mwc-input>`)}
     //     `;
-    console.log("calendar-event-schedule-renderer", props.data)
     return getTemplateWrapper(html`
         <or-calendar-event
             .calendarEvent="${props.data as CalendarEvent}"
