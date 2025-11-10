@@ -93,6 +93,16 @@ public abstract class WebService implements ContainerService {
     protected URI containerHostUri;
     protected PathHandler pathHandler = Handlers.path();
 
+   public static final Map<String, String> MIME_TYPES = Map.of(
+         "pbf", "application/x-protobuf",
+         "wsdl", "application/xml",
+         "xsl", "text/xsl");
+
+   public static final Set<String> MIME_TYPES_ALREADY_GZIPPED = Set.of(
+      "application/vnd.mapbox-vector-tile",
+      "application/x-protobuf"
+   );
+
     protected static String getLocalIpAddress() throws Exception {
         return Inet4Address.getLocalHost().getHostAddress();
     }
@@ -256,14 +266,14 @@ public abstract class WebService implements ContainerService {
             handler = new RequestDumpingHandler(handler);
         }
 
-//        // Add GZIP encoding/decoding support at the undertow level
-//        handler = new EncodingHandler(new ContentEncodingRepository()
-//            .addEncodingHandler("gzip",
-//                    new GzipEncodingProvider(), 50,
-//                    Predicates.and(
-//                            Predicates.requestLargerThan(5120),
-//                            Predicates.not(Predicates.contains(ExchangeAttributes.responseHeader(Headers.CONTENT_TYPE), "application/vnd.mapbox-vector-tile")))))
-//                .setNext(handler);
+        // Add GZIP encoding/decoding support at the undertow level
+        handler = new EncodingHandler(new ContentEncodingRepository()
+            .addEncodingHandler("gzip",
+                    new GzipEncodingProvider(), 50,
+                    Predicates.and(
+                            Predicates.requestLargerThan(5120),
+                            Predicates.not(Predicates.contains(ExchangeAttributes.responseHeader(Headers.CONTENT_TYPE), MIME_TYPES_ALREADY_GZIPPED.toArray(new String[0]))))))
+                .setNext(handler);
 
         builder.setHandler(handler);
 
@@ -357,6 +367,16 @@ public abstract class WebService implements ContainerService {
                .addServlet(Servlets.servlet("DefaultServlet", DefaultServlet.class))
                .addWelcomePages("index.html", "index.htm")
                .setClassLoader(getClass().getClassLoader());
+
+       MIME_TYPES.forEach((ext, mimeType) -> deploymentInfo.addMimeMapping(new MimeMapping(ext, mimeType)));
+
+       Filter alreadyGzippedFilter = new AlreadyGZippedFilter(MIME_TYPES_ALREADY_GZIPPED);
+       FilterInfo alreadyGzippedFilterInfo = Servlets.filter(
+               "Already GZipped Filter",
+               AlreadyGZippedFilter.class,
+               () -> new ImmediateInstanceHandle<>(alreadyGzippedFilter)).setAsyncSupported(true);
+       deploymentInfo.addFilter(alreadyGzippedFilterInfo);
+       deploymentInfo.addFilterUrlMapping(     "Already GZipped Filter","/*", DispatcherType.REQUEST);
 
        if (requiredRoles != null && requiredRoles.length > 0) {
            Filter securityFilter = new SecurityFilter(requiredRoles);
