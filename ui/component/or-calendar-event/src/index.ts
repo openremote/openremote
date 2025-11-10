@@ -28,8 +28,24 @@ import {Frequency, RRule, Weekday, WeekdayStr} from 'rrule'
 import moment from "moment";
 import { Days } from "rrule/dist/esm/rrule";
 import { BY_RULE_PARTS, EventTypes, MONTHS, NOT_APPLICABLE_BY_RULE_PARTS } from "./data";
-import { LabeledEventTypes, RulePartKey, RuleParts } from "./types";
-export type { LabeledEventTypes, RulePartKey, RuleParts } from "./types";
+import type { RulePartKey, RuleParts, LabeledEventTypes, Frequencies } from "./types";
+export { RuleParts, RulePartKey, Frequencies };
+
+function range(start: number, end: number): number[] {
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i )
+}
+
+// TODO: use es2023
+function toSpliced<T>(arr: T[], index: number, count: number): T[] {
+    arr.splice(index, count);
+    return arr;
+}
+
+const byWeekNoOptions = toSpliced(range(-53, 53), 53, 1);
+const byYearDayOptions = toSpliced(range(-366, 366), 366, 1); // TODO: optimize option rendering
+const byMonthDayOptions = toSpliced(range(-31, 31), 31, 1);
+const byHourOptions = range(1, 24);
+const byMinuteOrSecondsOptions = range(1, 60);
 
 @customElement("or-calendar-event")
 export class OrCalendarEvent extends translate(i18next)(LitElement) {
@@ -38,7 +54,13 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
     protected dialog?: OrMwcDialog;
 
     @property()
-    protected excludeRuleParts?: RulePartKey[];// observedAttributes -> make reactive
+    protected header?: string;
+
+    @property()
+    protected excludeFrequencies: Frequencies[] = [];
+
+    @property()
+    protected excludeRuleParts: RulePartKey[] = [];
 
     @property()
     protected calendarEvent?: CalendarEvent;
@@ -59,7 +81,7 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
         if (changedProps.has("_rrule")) {
           this._parts = BY_RULE_PARTS
               .filter(p => !NOT_APPLICABLE_BY_RULE_PARTS[Frequency[this._rrule?.options.freq!] as keyof typeof Frequency]?.includes(p.toUpperCase()))
-              .filter(p => !this.excludeRuleParts?.includes(p))
+              .filter(p => !this.excludeRuleParts.includes(p))
         }
 
         // if (changedProps.has("ruleset") && this.ruleset) {
@@ -119,7 +141,7 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
               break;
             case "never-ends":
               if (value) {
-                delete origOptions!.until
+                delete origOptions!.until;
               } else {
                 origOptions!.until = moment().add(1, 'year').toDate();
               }
@@ -127,8 +149,8 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
               break;
             case "until":
               if (this._rrule!.options.until) {
-                const newDate = moment(value)
-                origOptions!.until = new Date(moment(origOptions!.until).set({ year: newDate.year(), month: newDate.month(), date: newDate.date() }).format())
+                const newDate = moment(value);
+                origOptions!.until = new Date(moment(origOptions!.until).set({ year: newDate.year(), month: newDate.month(), date: newDate.date() }).format());
               }
               if (this.getEventType() === EventTypes.recurrence) this._rrule = new RRule(origOptions);
               break;
@@ -165,7 +187,7 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
         console.log("setRRuleValue", this._rrule?.toString())
     }
 
-    timeLabel() {
+    timeLabel(): string | undefined {
         if (this.getEventType() === EventTypes.default) {
             return i18next.t(EventTypes.default);
         } else if (this.calendarEvent && this._rrule) {
@@ -246,6 +268,11 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
 
                     #dialog-content {
                         overflow: visible;
+                        background-color: #f5f5f5;
+                    }
+
+                    .mdc-dialog .mdc-dialog__content {
+                        padding: 8px 16px !important;
                     }
 
                     @media only screen and (max-width: 1279px) {
@@ -258,6 +285,26 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
                             min-height: 230px;
                             overflow: auto;
                         }
+                    }
+
+                    .section {
+                        background-color: white;
+                        margin-top: 10px;
+                        padding: 8px 16px;
+                        border-radius: 4px;
+                    }
+                    .section > * {
+                        margin: 8px 0;
+                    }
+                    .section :first-child {
+                        margin-top: 0;
+                    }
+                    .section :last-child {
+                        margin-bottom: 0;
+                    }
+                    .title {
+                        display: block;
+                        font-weight: bold;
                     }
                 </style>`)
             .setActions([
@@ -298,14 +345,16 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
 
         return html`
             <div style="min-width: 635px; display:grid; flex-direction: row;">
-                <div class="layout horizontal">
-                    <or-mwc-input style="min-width: 280px;" 
-                                  .value="${eventType}" 
-                                  .type="${InputType.SELECT}" 
-                                  .options="${Object.entries(this._eventTypes)}" 
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setCalendarEventType(e.detail.value)}"></or-mwc-input>
+                <div class="section">
+                    <label class="title"><or-translate value="typeOfSchedule"></or-translate></label>
+                    <div class="layout horizontal">
+                        <or-mwc-input style="min-width: 280px;"
+                                    .value="${eventType}"
+                                    .type="${InputType.SELECT}"
+                                    .options="${Object.entries(this._eventTypes)}"
+                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setCalendarEventType(e.detail.value)}"></or-mwc-input>
+                    </div>
                 </div>
-
                 ${eventType === EventTypes.recurrence ? this.getRepeat() : ``}
                 ${calendar && (eventType === EventTypes.period || eventType === EventTypes.recurrence) ? this.getPeriod(calendar) : ``}
                 ${eventType === EventTypes.recurrence ? this.getRepetitionEnds() : ``}
@@ -327,42 +376,41 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
      * 
      * Evaluation order: BYMONTH, BYWEEKNO, BYYEARDAY, BYMONTHDAY, BYDAY, BYHOUR, BYMINUTE and BYSECOND.
      * 
-     * @returns 
+     * @returns
      */
     protected getRepeat(): TemplateResult {
-      const interval = (this._rrule && this._rrule.options && this._rrule.options.interval) ?? 1;
-      const frequency = (this._rrule && this._rrule.options && this._rrule.options.freq) ?? Frequency.DAILY;
+        const interval = (this._rrule && this._rrule.options && this._rrule.options.interval) ?? 1;
+        const frequency = (this._rrule && this._rrule.options && this._rrule.options.freq) ?? Frequency.DAILY;
 
-      return html`
-          <label style="display: block; margin-top: 20px;"><or-translate value="repeatEvery"></or-translate></label>
-          <div class="layout horizontal">
-              <or-mwc-input style="width: 10%"
-                            min="1"
-                            max="9"
-                            .value="${interval}"
-                            .type="${InputType.NUMBER}"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "interval")}"></or-mwc-input>
-              <or-mwc-input style="width: 70%"
-                            .value="${frequency.toString()}"
-                            .type="${InputType.SELECT}"
-                            .options="${Object.entries(Frequency).filter(([_, v]) => typeof v !== "number")}"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "freq")}"></or-mwc-input>
-          </div>
-
-          <div class="layout horizontal">
-              <div>${this.getByRulePart("bymonth", InputType.CHECKBOX_LIST, Object.entries(MONTHS))}</div>
-              <div>
-                  ${this.getByRulePart("byweekno", InputType.SELECT, this.range(1, 53))}
-                  ${this.getByRulePart("byyearday", InputType.SELECT, this.range(1, 366))}
-                  ${this.getByRulePart("bymonthday", InputType.SELECT, this.range(1, 31))}
-              </div>
-              <div>${this.getByRulePart("byweekday", InputType.CHECKBOX_LIST, Object.keys(Days))}</div>
-              <div>
-                  ${this.getByRulePart("byhour", InputType.SELECT, this.range(1, 24))}
-                  ${this.getByRulePart("byminute", InputType.SELECT, this.range(1, 60))}
-                  ${this.getByRulePart("bysecond", InputType.SELECT, this.range(1, 60))}
-              </div>
-          </div>`
+        return html`
+            <div class="section">
+                <label class="title"><or-translate value="repeatEvery"></or-translate></label>
+                <div class="layout horizontal" style="display: flex; gap: 8px;">
+                        <or-mwc-input style="width: 60px;"
+                                    min="1"
+                                    max="9"
+                                    .value="${interval}"
+                                    .type="${InputType.NUMBER}"
+                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "interval")}"></or-mwc-input>
+                        <or-mwc-input style="flex: 1;"
+                                    .value="${frequency.toString()}"
+                                    .type="${InputType.SELECT}"
+                                    .options="${Object.entries(Frequency).filter(([_, v]) => typeof v !== "number" && !this.excludeFrequencies.includes(v as Frequencies))}"
+                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "freq")}"></or-mwc-input>
+                </div>
+                <div>${this.getByRulePart("bymonth", InputType.CHECKBOX_LIST, Object.entries(MONTHS))}</div>
+                <div>
+                    ${this.getByRulePart("byweekno", InputType.SELECT, byWeekNoOptions)}
+                    ${this.getByRulePart("byyearday", InputType.SELECT, byYearDayOptions)}
+                    ${this.getByRulePart("bymonthday", InputType.SELECT, byMonthDayOptions)}
+                </div>
+                <div>${this.getByRulePart("byweekday", InputType.CHECKBOX_LIST, Object.keys(Days))}</div>
+                <div>
+                    ${this.getByRulePart("byhour", InputType.SELECT, byHourOptions)}
+                    ${this.getByRulePart("byminute", InputType.SELECT, byMinuteOrSecondsOptions)}
+                    ${this.getByRulePart("bysecond", InputType.SELECT, byMinuteOrSecondsOptions)}
+                </div>
+            </div>`;
     }
 
     protected getByRulePart<T>(part: RulePartKey, type: InputType, options: T[]): TemplateResult | undefined {
@@ -374,19 +422,15 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
             ? this._rrule?.options?.byweekday?.map(d => new Weekday(d).toString()) 
             : this._rrule?.options[part];
 
-        return html`<or-mwc-input style="width: 30%" .value="${value ?? []}"
+        return html`<or-mwc-input style="min-width: 30%"
+                                  .value="${value ?? []}"
                                   .type="${type}"
                                   .options="${options}"
-                                  .label="${i18next.t(part)}"
+                                  .label="${part}"
                                   multiple
-                                  comfortable
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      this.setRRuleValue(e.detail.value, part);
-                                  }}"></or-mwc-input>`
-    }
-
-    protected range(start: number, end: number): number[] { 
-        return Array.from({ length: end - start + 1 }, (_, i) => start + i )
+                this.setRRuleValue(e.detail.value, part);
+            }}"></or-mwc-input>`;
     }
 
     /**
@@ -396,21 +440,23 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
      */
     protected getPeriod(calendar: CalendarEvent): TemplateResult {
         return html`
-            <label style="display:block; margin-top: 20px;"><or-translate value="period"></or-translate></label>
-            <div style="display: flex; justify-content: space-between;" class="layout horizontal">
-                <div>
-                    <or-mwc-input value="${moment(calendar.start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-mwc-input>
-                    <or-mwc-input .disabled=${this.isAllDay()} .value="${moment(calendar.start).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "dtstart-time")}" .label="${i18next.t("from")}"></or-mwc-input>
+            <div class="section">
+                <label class="title"><or-translate value="period"></or-translate></label>
+                <div style="display: flex; justify-content: space-between; gap: 8px;" class="layout horizontal">
+                    <div>
+                        <or-mwc-input value="${moment(calendar.start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-mwc-input>
+                        <or-mwc-input .disabled=${this.isAllDay()} .value="${moment(calendar.start).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "dtstart-time")}" .label="${i18next.t("from")}"></or-mwc-input>
+                    </div>
+                    <div>
+                        <or-mwc-input .value="${moment(calendar.end).format("YYYY-MM-DD")}"  .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end")}" .label="${i18next.t("to")}"></or-mwc-input>
+                        <or-mwc-input .disabled=${this.isAllDay()} .value="${moment(calendar.end).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until-time")}" .label="${i18next.t("to")}"></or-mwc-input>
+                    </div>
                 </div>
-                <div>
-                    <or-mwc-input .value="${moment(calendar.end).format("YYYY-MM-DD")}"  .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end")}" .label="${i18next.t("to")}"></or-mwc-input>
-                    <or-mwc-input .disabled=${this.isAllDay()} .value="${moment(calendar.end).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until-time")}" .label="${i18next.t("to")}"></or-mwc-input>
-                </div>
-            </div>
 
-            <div class="layout horizontal">
-                <or-mwc-input .value=${this.isAllDay()} @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "all-day")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("allDay")}"></or-mwc-input>
-            </div>`
+                <div class="layout horizontal">
+                    <or-mwc-input .value=${this.isAllDay()} @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "all-day")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("allDay")}"></or-mwc-input>
+                </div>
+            </div>`;
     }
 
     /**
@@ -421,12 +467,14 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
      */
     protected getRepetitionEnds(): TemplateResult {
         return html`
-            <label style="display:block; margin-top: 20px;"><or-translate value="repetitionEnds"></or-translate></label>
-            <div class="layout horizontal">
-                <or-mwc-input .value="${!this._rrule!.options.until}"  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "never-ends")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("never")}"></or-mwc-input>
-            </div>
-            <div class="layout horizontal">
-                <or-mwc-input ?disabled="${!this._rrule!.options.until}" .value="${this._rrule!.options.until ? moment(this._rrule!.options.until).format("YYYY-MM-DD") : moment().add(1, 'year').format('YYYY-MM-DD')}"  .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}" .label="${i18next.t("to")}"></or-mwc-input>
-            </div>`
+            <div class="section">
+                <label class="title"><or-translate value="repeatSchedule"></or-translate></label>
+                <div class="layout horizontal">
+                    <or-mwc-input .value="${!this._rrule!.options.until}"  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "never-ends")}" .type="${InputType.CHECKBOX}" .label="${i18next.t("never")}"></or-mwc-input>
+                </div>
+                <div class="layout horizontal">
+                    <or-mwc-input ?disabled="${!this._rrule!.options.until}" .value="${this._rrule!.options.until ? moment(this._rrule!.options.until).format("YYYY-MM-DD") : moment().add(1, 'year').format('YYYY-MM-DD')}"  .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}" .label="${i18next.t("to")}"></or-mwc-input>
+                </div>
+            </div>`;
     }
 }

@@ -623,6 +623,8 @@
   "to": "to",
   "from": "from",
   "never": "Never",
+  "typeOfSchedule": "Type of schedule",
+  "repeatSchedule": "Repeat schedule",
   "repetitionEnds": "Repetition ends",
   "repeatEvery": "Repeat every",
   "daysOfTheWeek": "days of the week",

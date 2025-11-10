@@ -8,8 +8,9 @@ import {
 } from "@jsonforms/core";
 import { html } from "lit";
 import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
-import { RulePartKey } from "@openremote/or-calendar-event";
-import { CalendarEvent } from "@openremote/model";
+import { Frequencies, RulePartKey } from "@openremote/or-calendar-event";
+import { CalendarEvent, Frequency } from "@openremote/model";
+import "@openremote/or-calendar-event";
 
 const calendarEventTester: RankedTester = rankWith(
     6,
@@ -61,8 +62,20 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
     return getTemplateWrapper(html`
         <or-calendar-event
             .calendarEvent="${props.data as CalendarEvent}"
+            .excludeFrequencies="${[
+                // Disallowed as we cannot guarantee second accuracy in the SimulatorProtocol
+                "SECONDLY"
+            ] as Frequencies[]}"
             .excludeRuleParts="${[
-                'bysecond' // Disallowed as we cannot gaurentee second acurracy in the SimulatorProtocol
+                // Disabled for now, to reduce complexity
+                'bymonth',
+                'byweekno',
+                'byyearday',
+                'bymonthday',
+                'byhour',
+                'byminute',
+                // Disallowed as we cannot guarantee second accuracy in the SimulatorProtocol
+                'bysecond'
             ] as RulePartKey[]}"></or-calendar-event>
     `, undefined);
 };
