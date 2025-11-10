@@ -48,3 +48,9 @@ export enum EventTypes {
     period = "period",
     recurrence = "recurrence",
 }
+
+export enum RepeatEnds {
+    "never" = "never",
+    until = "until",
+    count = "count",
+}

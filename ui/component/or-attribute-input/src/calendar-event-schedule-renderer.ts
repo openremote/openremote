@@ -7,9 +7,10 @@ import {
     scopeEndsWith
 } from "@jsonforms/core";
 import { html } from "lit";
+import { i18next } from "@openremote/or-translate";
 import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
-import { Frequencies, RulePartKey } from "@openremote/or-calendar-event";
-import { CalendarEvent, Frequency } from "@openremote/model";
+import { Frequencies, RulePartKey, LabeledEventTypes } from "@openremote/or-calendar-event";
+import { CalendarEvent } from "@openremote/model";
 import "@openremote/or-calendar-event";
 
 const calendarEventTester: RankedTester = rankWith(
@@ -62,9 +63,15 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
     return getTemplateWrapper(html`
         <or-calendar-event
             .calendarEvent="${props.data as CalendarEvent}"
+            .header="${i18next.t("simulatorSchedule")}"
+            .eventTypes="${{
+                default: i18next.t("defaultSimulatorSchedule"),
+                period: i18next.t("planPeriod"),
+                recurrence: i18next.t("planRecurrence"),
+            } as LabeledEventTypes}"
             .excludeFrequencies="${[
                 // Disallowed as we cannot guarantee second accuracy in the SimulatorProtocol
-                "SECONDLY"
+                'SECONDLY'
             ] as Frequencies[]}"
             .excludeRuleParts="${[
                 // Disabled for now, to reduce complexity
@@ -76,7 +83,8 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
                 'byminute',
                 // Disallowed as we cannot guarantee second accuracy in the SimulatorProtocol
                 'bysecond'
-            ] as RulePartKey[]}"></or-calendar-event>
+            ] as RulePartKey[]}">
+        </or-calendar-event>
     `, undefined);
 };
 
