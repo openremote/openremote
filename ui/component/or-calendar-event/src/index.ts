@@ -27,7 +27,7 @@ import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dial
 import {Frequency, RRule, Weekday, WeekdayStr} from 'rrule'
 import moment from "moment";
 import { Days } from "rrule/dist/esm/rrule";
-import { BY_RULE_PARTS, EventTypes, MONTHS, NOT_APPLICABLE_BY_RULE_PARTS, RepeatEnds as RepetitionEnds } from "./data";
+import { BY_RULE_PARTS, EventTypes, MONTHS, NOT_APPLICABLE_BY_RULE_PARTS, recurrenceEnds } from "./data";
 import type { RulePartKey, RuleParts, LabeledEventTypes, Frequencies } from "./types";
 export { RuleParts, RulePartKey, Frequencies, LabeledEventTypes };
 
@@ -100,7 +100,7 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
             && moment(this.calendarEvent.end).hours() === 23 && moment(this.calendarEvent.end).minutes() === 59;
     }
 
-    protected setRRuleValue(value: any, key: keyof RuleParts | "all-day" | "start" | "end" | "repetition-ends" | "dtstart-time" | "until-time") {
+    protected setRRuleValue(value: any, key: keyof RuleParts | "all-day" | "start" | "end" | "recurrence-ends" | "dtstart-time" | "until-time") {
         let origOptions = this._rrule ? this._rrule.origOptions : undefined;
         const calendarEvent = this.calendarEvent!;
 
@@ -139,12 +139,12 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
                 calendarEvent.end = newEndDate.set({ hour: 23, minute: 59, second: 0, millisecond: 0 }).toDate().getTime();
               }
               break;
-            case "repetition-ends":
+            case "recurrence-ends":
               if (origOptions!.until) delete origOptions!.until
               if (origOptions!.count) delete origOptions!.count
-              if (value === RepetitionEnds.until) {
+              if (value === "until") {
                 origOptions!.until = moment().add(1, 'year').toDate();
-              } else if (value === RepetitionEnds.count) {
+              } else if (value === "count") {
                 origOptions!.count = 1;
               }
               if (this.getEventType() === EventTypes.recurrence) this._rrule = new RRule(origOptions);
@@ -195,7 +195,7 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
 
     timeLabel(): string | undefined {
         if (this.getEventType() === EventTypes.default) {
-            return i18next.t(EventTypes.default);
+            return this.eventTypes.default;
         } else if (this.calendarEvent && this._rrule) {
             const calendarEvent = this.calendarEvent;
             const diff = moment(calendarEvent.end).diff(calendarEvent.start, "days");
@@ -364,7 +364,7 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
                 </div>
                 ${eventType === EventTypes.recurrence ? this.getRepeat() : ``}
                 ${calendar && (eventType === EventTypes.period || eventType === EventTypes.recurrence) ? this.getPeriod(calendar) : ``}
-                ${eventType === EventTypes.recurrence ? this.getRepetitionEnds() : ``}
+                ${eventType === EventTypes.recurrence ? this.getRecurrenceEnds() : ``}
             </div>`;
     }
 
@@ -472,23 +472,21 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
      * - `count`
      * @returns 
      */
-    protected getRepetitionEnds(): TemplateResult {
+    protected getRecurrenceEnds(): TemplateResult {
         const when = (this._rrule?.options?.until && "until") || (this._rrule?.options?.count && "count") || "never";
         return html`
             <div class="section">
-                <label class="title"><or-translate value="repetitionEnds"></or-translate></label>
-                <div class="layout horizontal">
-                    <or-mwc-input style="width: 100%" 
+                <label class="title"><or-translate value="recurrenceEnds"></or-translate></label>
+                <div style="display: flex; justify-content: space-between; gap: 8px;" class="layout horizontal">
+                    <or-mwc-input style="flex: 1" 
                                   .label="${i18next.t(when)}"
                                   .value="${this._rrule?.options?.until ?? this._rrule?.options?.count ?? "never"}"
                                   .type="${InputType.SELECT}"
-                                  .options="${Object.entries(RepetitionEnds)}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "repetition-ends")}">
+                                  .options="${Object.entries(recurrenceEnds)}"
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "recurrence-ends")}">
                     </or-mwc-input>
-                </div>
-                <div class="layout horizontal">
-                    ${this._rrule?.options.until ? html`<or-mwc-input .value="${this._rrule!.options.until ? moment(this._rrule!.options.until).format("YYYY-MM-DD") : moment().add(1, 'year').format('YYYY-MM-DD')}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}"></or-mwc-input>`: undefined}
-                    ${this._rrule?.options.count ? html`<or-mwc-input .value="${this._rrule.options.count}" .label="${i18next.t("byCount")}" min="1" .type="${InputType.NUMBER}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "count")}"></or-mwc-input>`: undefined}
+                    ${this._rrule?.options.until ? html`<or-mwc-input style="min-width: 50%" .value="${this._rrule!.options.until ? moment(this._rrule!.options.until).format("YYYY-MM-DD") : moment().add(1, 'year').format('YYYY-MM-DD')}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}"></or-mwc-input>`: undefined}
+                    ${this._rrule?.options.count ? html`<or-mwc-input style="min-width: 50%" .value="${this._rrule.options.count}" min="1" .type="${InputType.NUMBER}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "count")}"></or-mwc-input>`: undefined}
                 </div>
             </div>`;
     }

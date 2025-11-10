@@ -49,8 +49,8 @@ export enum EventTypes {
     recurrence = "recurrence",
 }
 
-export enum RepeatEnds {
-    "never" = "never",
-    until = "until",
-    count = "count",
+export const recurrenceEnds = {
+    never: "never",
+    until: "at",
+    count: "count",
 }
