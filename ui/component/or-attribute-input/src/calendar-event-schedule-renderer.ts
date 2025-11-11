@@ -9,7 +9,7 @@ import {
 import { html } from "lit";
 import { i18next } from "@openremote/or-translate";
 import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
-import { Frequencies, RulePartKey, LabeledEventTypes } from "@openremote/or-calendar-event";
+import { Frequencies, RulePartKey, LabeledEventTypes, OrCalendarEventChangedEvent } from "@openremote/or-calendar-event";
 import { CalendarEvent } from "@openremote/model";
 import "@openremote/or-calendar-event";
 
@@ -25,41 +25,11 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
         ...mapDispatchToControlProps(state.dispatch)
     };
 
-    // const onAgentChanged = (agent: Agent | undefined) => {
-    //     if (!agents) {
-    //         return;
-    //     }
+    const onCalendarEventChanged = (event: OrCalendarEventChangedEvent | undefined) => {
+        console.log(event, props.data)
+        props.handleChange("schedule", event?.detail.value);
+    };
 
-    //     if (agent) {
-    //         const newAgentDescriptor = AssetModelUtil.getAssetDescriptor(agent.type) as AgentDescriptor;
-    //         if (newAgentDescriptor) {
-    //             props.handleChange("", {
-    //               id: agent.id,
-    //               type: newAgentDescriptor.agentLinkType
-    //             });
-    //         }
-    //     }
-    // };
-
-    // const loadedTemplatePromise = loadAgents().then(agents => {
-
-    //     const options: [string, string][] = agents.map(agent => [agent.id!, agent.name + " (" + agent.id + ")"]);
-
-    //     return html`
-    //         <or-mwc-input .label="${i18next.t("agentId")}" required class="agent-id-picker" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => onAgentChanged(agents.find((agent) => agent.id === ev.detail.value))}" type="${InputType.SELECT}" .value="${props.data}" .placeholder="${i18next.t("selectAgent")}" .options="${options}"></or-mwc-input>
-    //     `;
-    // });
-
-    // const template = html`
-    //     <style>
-    //         .agent-id-picker {
-    //             min-width: 300px;
-    //             max-width: 600px;
-    //             width: 100%;
-    //         }
-    //     </style>
-    //     ${until(loadedTemplatePromise, html`<or-mwc-input class="agent-id-picker" .type="${InputType.SELECT}"></or-mwc-input>`)}
-    //     `;
     return getTemplateWrapper(html`
         <or-calendar-event
             .calendarEvent="${props.data as CalendarEvent}"
@@ -83,7 +53,9 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
                 'byminute',
                 // Disallowed as we cannot guarantee second accuracy in the SimulatorProtocol
                 'bysecond'
-            ] as RulePartKey[]}">
+            ] as RulePartKey[]}"
+            @or-calendar-event-changed="${onCalendarEventChanged}"
+        >
         </or-calendar-event>
     `, undefined);
 };

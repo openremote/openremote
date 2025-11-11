@@ -20,17 +20,16 @@
 package org.openremote.agent.protocol.simulator;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.DateDeserializers;
-import com.fasterxml.jackson.databind.ser.std.DateSerializer;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import net.fortuna.ical4j.model.Recur;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
@@ -45,6 +44,7 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.value.AbstractNameValueHolder;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.time.*;
 import java.util.*;
@@ -317,13 +317,38 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
     public static class Schedule implements Serializable {
 
-        @JsonSchemaDescription("Set a start date, if not provided, considers 00:00 of the current date." +
-                " When the replay datapoint timestamp is 0 it will insert it at 00:00, unless the recurrence rule" +
-                " specifies any of the following rule parts: FREQ=(HOURLY/MINUTELY/SECONDLY);" +
-                " BYSECOND=...;BYMINUTE=...;BYHOUR=...;BYSETPOS=... This will cause the datapoint timestamp to be" +
-                " relative to when the first occurrence is scheduled.")
+        private static class EpochLocalDateTimeDeserializer extends JsonDeserializer<LocalDateTime> {
+
+            @Override
+            public LocalDateTime deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+                if (parser != null && parser.getCurrentToken() != null) {
+                    long value = parser.getValueAsLong(-1);
+                    if (value > -1L) {
+                        return LocalDateTime.ofInstant(Instant.ofEpochMilli(value), ZoneOffset.UTC);
+                    }
+                }
+                return null;
+            }
+        }
+
+        public static class EpochLocalDateTimeSerializer extends JsonSerializer<LocalDateTime> {
+
+            @Override
+            public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+                if (value == null) {
+                    gen.writeNull();
+                    return;
+                }
+                gen.writeNumber(value.toInstant(ZoneOffset.UTC).toEpochMilli());
+            }
+        }
+
+        @JsonSerialize(using = EpochLocalDateTimeSerializer.class)
+        @JsonDeserialize(using = EpochLocalDateTimeDeserializer.class)
         protected LocalDateTime start;
 
+        @JsonSerialize(using = EpochLocalDateTimeSerializer.class)
+        @JsonDeserialize(using = EpochLocalDateTimeDeserializer.class)
         protected LocalDateTime end;
 
         @JsonSchemaDescription("The recurrence schedule follows the RFC 5545 RRULE format.")
