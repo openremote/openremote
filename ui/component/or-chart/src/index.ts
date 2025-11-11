@@ -1297,6 +1297,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
                     // Load Predicted Data
                     dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stacked, stepped, area, faint, false , `${asset.name} | ${label} ${i18next.t("predicted")}`, options, unit);
+                    dataset.yAxisIndex = shownOnRightAxis ? 1 : 0;
                     data.push(dataset);
 
                     // If necessary, load Extended Data
