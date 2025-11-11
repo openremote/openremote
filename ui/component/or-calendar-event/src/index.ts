@@ -47,6 +47,29 @@ const byMonthDayOptions = toSpliced(range(-31, 31), 31, 1);
 const byHourOptions = range(1, 24);
 const byMinuteOrSecondsOptions = range(1, 60);
 
+export interface OrCalendarEventChangedEventDetail {
+    value?: CalendarEvent;
+}
+
+export class OrCalendarEventChangedEvent extends CustomEvent<OrCalendarEventChangedEventDetail> {
+
+    public static readonly NAME = "or-calendar-event-changed";
+
+    constructor(value?: CalendarEvent) {
+        super(OrCalendarEventChangedEvent.NAME, {
+            detail: { value },
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+declare global {
+    export interface HTMLElementEventMap {
+        [OrCalendarEventChangedEvent.NAME]: OrCalendarEventChangedEvent;
+    }
+}
+
 @customElement("or-calendar-event")
 export class OrCalendarEvent extends translate(i18next)(LitElement) {
 
@@ -84,20 +107,22 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
               .filter(p => !this.excludeRuleParts.includes(p))
         }
 
-        // if (changedProps.has("ruleset") && this.ruleset) {
-        //     this._validity = this.ruleset.meta ? this.ruleset.meta["validity"] as CalendarEvent : undefined;
-
-        //     if (this._validity && this._validity.recurrence) {
-        //         this._rrule = RRule.fromString(this._validity.recurrence);
-        //     } else {
-        //         this._rrule = undefined;
-        //     }
-        // }
+        if (changedProps.has("calendarEvent")) {
+            if (this.calendarEvent && this.calendarEvent.recurrence) {
+                this._rrule = RRule.fromString(this.calendarEvent.recurrence);
+            } else {
+                this._rrule = undefined;
+            }
+        }
     }
 
     isAllDay() {
         return this.calendarEvent && moment(this.calendarEvent.start).hours() === 0 && moment(this.calendarEvent.start).minutes() === 0
             && moment(this.calendarEvent.end).hours() === 23 && moment(this.calendarEvent.end).minutes() === 59;
+    }
+
+    getRRule(): string | undefined {
+        return this._rrule?.toString()?.split("RRULE:")?.[1];
     }
 
     protected setRRuleValue(value: any, key: keyof RuleParts | "all-day" | "start" | "end" | "recurrence-ends" | "dtstart-time" | "until-time") {
@@ -188,9 +213,10 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
               break;
           }
         }
-        this.calendarEvent = {...calendarEvent};
+
+        this.calendarEvent = { ...calendarEvent };
         this._dialog!.requestUpdate();
-        console.log("setRRuleValue", this._rrule?.toString())
+        this.calendarEvent.recurrence = this.getRRule();
     }
 
     timeLabel(): string | undefined {
@@ -207,7 +233,7 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
                 if(diff > 0) diffString = i18next.t("fromToDays", {start: moment(calendarEvent.start).format("HH:mm"), end: moment(calendarEvent.end).format("HH:mm"), days: diff })
                 if(diff === 0) diffString = i18next.t("fromTo", {start: moment(calendarEvent.start).format("HH:mm"), end: moment(calendarEvent.end).format("HH:mm") })
                 return this._rrule.toText() + " " + diffString;
-            } 
+            }
         } else if (this.calendarEvent) {
             let format = "DD-MM-YYYY";
             if(!this.isAllDay()) format = "DD-MM-YYYY HH:mm";
@@ -327,18 +353,15 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
                     default: true,
                     content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="apply"></or-mwc-input>`,
                     action: () => {
-                        // if (this.ruleset && this.ruleset.meta) {
-                        //     if (this.getcalendarEventType() === EventTypes.default) {
-                        //         delete this.ruleset.meta["calendarEvent"];
-                        //     } else {
-                        //         if (this.getcalendarEventType() === EventTypes.recurrence) {
-                        //             this._calendarEvent!.recurrence = this._rrule!.toString().split("RRULE:")[1];
-                        //         }
-                        //         this.ruleset.meta["calendarEvent"] = this._calendarEvent;
-                        //     }
-                        //     this.dispatchEvent(new OrRulesRuleChangedEvent(true));
-                        //     this._dialog = undefined;
-                        // }
+                        if (this.getEventType() === EventTypes.default) {
+                            delete this.calendarEvent;
+                        } else {
+                            if (this.getEventType() === EventTypes.recurrence) {
+                                this.calendarEvent!.recurrence = this.getRRule();
+                            }
+                        }
+                        this.dispatchEvent(new OrCalendarEventChangedEvent(this.calendarEvent));
+                        this._dialog = undefined;
                     }
                 },
             ])
@@ -380,9 +403,9 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
      * - `byyearday`
      * - `byweekno`
      * - `bymonth`
-     * 
+     *
      * Evaluation order: BYMONTH, BYWEEKNO, BYYEARDAY, BYMONTHDAY, BYDAY, BYHOUR, BYMINUTE and BYSECOND.
-     * 
+     *
      * @returns
      */
     protected getRepeat(): TemplateResult {
@@ -426,7 +449,7 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
         }
 
         const value = part === "byweekday"
-            ? this._rrule?.options?.byweekday?.map(d => new Weekday(d).toString()) 
+            ? this._rrule?.options?.byweekday?.map(d => new Weekday(d).toString())
             : this._rrule?.options[part];
 
         return html`<or-mwc-input style="min-width: 30%"
@@ -442,14 +465,14 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
 
     /**
      * @todo limit by freq length
-     * @param calendar 
-     * @returns 
+     * @param calendar
+     * @returns
      */
     protected getPeriod(calendar: CalendarEvent): TemplateResult {
         return html`
             <div class="section">
                 <label class="title"><or-translate value="period"></or-translate></label>
-                <div style="display: flex; justify-content: space-between; gap: 8px;" class="layout horizontal">
+                <div style="display: flex; gap: 8px;" class="layout horizontal">
                     <div>
                         <or-mwc-input value="${moment(calendar.start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-mwc-input>
                         <or-mwc-input .disabled=${this.isAllDay()} .value="${moment(calendar.start).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "dtstart-time")}" .label="${i18next.t("from")}"></or-mwc-input>
@@ -470,22 +493,22 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
      * Applicable rule parts
      * - `until`
      * - `count`
-     * @returns 
+     * @returns
      */
     protected getRecurrenceEnds(): TemplateResult {
         const when = (this._rrule?.options?.until && "until") || (this._rrule?.options?.count && "count") || "never";
         return html`
             <div class="section">
                 <label class="title"><or-translate value="recurrenceEnds"></or-translate></label>
-                <div style="display: flex; justify-content: space-between; gap: 8px;" class="layout horizontal">
-                    <or-mwc-input style="flex: 1" 
+                <div style="display: flex; gap: 8px;" class="layout horizontal">
+                    <or-mwc-input style="flex: 1"
                                   .label="${i18next.t(when)}"
                                   .value="${this._rrule?.options?.until ?? this._rrule?.options?.count ?? "never"}"
                                   .type="${InputType.SELECT}"
                                   .options="${Object.entries(recurrenceEnds)}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "recurrence-ends")}">
                     </or-mwc-input>
-                    ${this._rrule?.options.until ? html`<or-mwc-input style="min-width: 50%" .value="${this._rrule!.options.until ? moment(this._rrule!.options.until).format("YYYY-MM-DD") : moment().add(1, 'year').format('YYYY-MM-DD')}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}"></or-mwc-input>`: undefined}
+                    ${this._rrule?.options.until ? html`<or-mwc-input style="min-width: 50%" .value="${moment(this._rrule.options.until).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}"></or-mwc-input>`: undefined}
                     ${this._rrule?.options.count ? html`<or-mwc-input style="min-width: 50%" .value="${this._rrule.options.count}" min="1" .type="${InputType.NUMBER}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "count")}"></or-mwc-input>`: undefined}
                 </div>
             </div>`;
