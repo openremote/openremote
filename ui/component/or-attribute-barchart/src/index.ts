@@ -1235,7 +1235,7 @@ export class OrAttributeBarChart extends LitElement {
                 minInterval: this._intervalConfig!.millis,
                 min: this._startOfPeriod,
                 max: this._endOfPeriod,
-                boundaryGap: false,
+                boundaryGap: false as any,
                 splitArea: {
                     show: true,
                     areaStyle: {
