@@ -1,6 +1,6 @@
 {
   "name": "openremote",
-  "packageManager": "yarn@4.10.2",
+  "packageManager": "yarn@4.10.3",
   "private": true,
   "workspaces": [
     "ui/util",
