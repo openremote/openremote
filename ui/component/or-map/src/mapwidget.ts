@@ -33,7 +33,7 @@ import { OrMapMarker } from "./markers/or-map-marker";
 import {getLatLngBounds, getLngLat, getMarkerIconAndColorFromAssetType, OverrideConfigSettings} from "./util";
 import { Asset, AssetModelUtil } from "@openremote/model";
 import {GeoJsonConfig, MapType } from "@openremote/model";
-import { Feature, FeatureCollection } from "geojson";
+import { Feature, FeatureCollection, Geometry } from "geojson";
 import { isMapboxURL, transformMapboxUrl } from "./mapbox-url-utils";
 
 const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
@@ -687,12 +687,12 @@ export class MapWidget {
         }
     }
 
-    public getCurrentView(centre?: LngLatLike): string[] {
+    public getCurrentView(center?: LngLatLike): string[] {
         if (this._mapGl) {
             const res2 = this._mapGl.querySourceFeatures('mapPoints', { sourceLayer: 'unclustered-point' });
 
-            let viewedAsset: any = {};
-            let assetId: string[] = [];
+            const viewedAsset: any = {};
+            const assetId: string[] = [];
 
             res2.forEach((marker) => {
                 if (marker.properties && !marker.properties.cluster && !viewedAsset[marker.properties.id]) {
@@ -710,11 +710,11 @@ export class MapWidget {
     /**
      * Methods from maplibre example for Cluster with Donut Chart
      */
-    protected createDonutChart(props: any[], maxClusterCount: number = 1000): ChildNode | null {
-        const offsets: any[] = [];
-        const subOffsets: any[] = [];
-        const counts: any[] = [];
-        const subCounts: any[] = [];
+    protected createDonutChart(props: any[], maxClusterCount = 1000): HTMLElement | undefined {
+        const offsets: number[] = [];
+        const subOffsets: number[] = [];
+        const counts: number[] = [];
+        const subCounts: number[] = [];
         const subColours: string[] = [];
         props.forEach(p => {
             counts.push(p.count);
@@ -724,14 +724,14 @@ export class MapWidget {
             });
         });
 
-        let total: number = 0;
-        let subTotal: number = 0;
-        for (let i: number = 0; i < counts.length; i++) {
+        let total = 0;
+        let subTotal = 0;
+        for (let i = 0; i < counts.length; i++) {
             offsets.push(total);
             total += counts[i];
         }
 
-        for (let i: number = 0; i < subCounts.length; i++) {
+        for (let i = 0; i < subCounts.length; i++) {
             subOffsets.push(subTotal);
             subTotal += subCounts[i];
         }
@@ -761,8 +761,8 @@ export class MapWidget {
                 fontSize
             }px sans-serif; display: block">`;
 
-        //Threshold donut
-        for (let i: number = 0; i < subCounts.length; i++) {
+        // Threshold donut
+        for (let i = 0; i < subCounts.length; i++) {
             html += this.donutSegment(
                 subOffsets[i] / subTotal,
                 (subOffsets[i] + subCounts[i]) / subTotal,
@@ -772,7 +772,7 @@ export class MapWidget {
             );
         }
 
-        for (let i: number = 0; i < counts.length; i++) {
+        for (let i = 0; i < counts.length; i++) {
             html += this.donutSegment(
                 offsets[i] / total,
                 (offsets[i] + counts[i]) / total,
@@ -799,7 +799,7 @@ export class MapWidget {
 
         const el = document.createElement('div');
         el.innerHTML = html;
-        return el.firstChild;
+        return el.firstChild as HTMLElement;
     }
 
     /**
@@ -811,10 +811,10 @@ export class MapWidget {
         }
         const a0: number = 2 * Math.PI * (start - 0.25);
         const a1: number = 2 * Math.PI * (end - 0.25);
-        const x0: number = Math.cos(a0),
-            y0: number = Math.sin(a0);
-        const x1: number = Math.cos(a1),
-            y1: number = Math.sin(a1);
+        const x0: number = Math.cos(a0);
+        const y0: number = Math.sin(a0);
+        const x1: number = Math.cos(a1)
+        const y1: number = Math.sin(a1);
         const largeArc: 1 | 0 = end - start > 0.5 ? 1 : 0;
 
         return [
@@ -846,6 +846,12 @@ export class MapWidget {
             `" fill="#${color}" ${!sub ? `transform="translate(${dR}, ${dR})"` : ""} />`
         ].join(' ');
     }
+
+    /**
+     * Render a cluster for ...
+     * 
+     * @param config 
+     */
     public renderCurrentCluster(config?: MapMarkerAssetConfig): void {
         if (config) {
             this.markerConfig = config;
@@ -858,21 +864,18 @@ export class MapWidget {
                 marker.remove();
             })
 
-            let totalCount: number = 0;
+            let totalCount = 0;
+            const clusters = features.filter(({ properties }) => properties && properties.cluster);
 
-            let clusters = features.filter((feature) => {
-                return feature.properties && feature.properties.cluster;
-            });
-
-            clusters.forEach((cluster: any) => {
+            clusters.forEach((cluster) => {
                 if (this._mapGl) {
                     totalCount += cluster.properties.point_count;
                 }
             });
 
-            clusters.forEach((cluster: any) => {
+            clusters.forEach((cluster) => {
                 if (this._mapGl) {
-                    let props: any[] = [];
+                    const props: any[] = [];
                     /**
                      * {
                      *     count: 50,
@@ -889,74 +892,68 @@ export class MapWidget {
                      * }
                      */
 
-                    let sourcePoints: GeoJSONSource = (this._mapGl.getSource('mapPoints') as GeoJSONSource);
+                    const sourcePoints = this._mapGl.getSource('mapPoints') as GeoJSONSource;
                     sourcePoints.getClusterLeaves(cluster.properties.cluster_id, cluster.properties.point_count, 0)
-                        .then((aFeatures: any) => {
+                        .then((aFeatures) => {
                             if (aFeatures) {
-                                aFeatures.forEach((feature: any) => {
-                            let assetType = feature.properties?.assetType;
+                                aFeatures.forEach((feature) => {
+                                    const assetType = feature.properties?.assetType;
 
-                            if (assetType) {
-                                const assetTypeConfig = getMarkerConfigForAssetType(this.markerConfig, assetType);
-                                let iconAndColour: any = undefined;
+                                    if (assetType) {
+                                        const assetTypeConfig = getMarkerConfigForAssetType(this.markerConfig, assetType);
+                                        let iconAndColour: any;
 
-                                if(assetTypeConfig && assetTypeConfig.colours && feature.properties) {
-                                    const assetAttributeValue = feature.properties.asset.attributes[assetTypeConfig.attributeName].value;
-                                    let overrideOpts: OverrideConfigSettings = {
-                                        markerConfig: assetTypeConfig.colours,
-                                        currentValue: assetAttributeValue
-                                    };
+                                        if(assetTypeConfig && assetTypeConfig.colours && feature.properties) {
+                                          const assetAttributeValue = feature.properties.asset.attributes[assetTypeConfig.attributeName].value;
+                                          iconAndColour = getMarkerIconAndColorFromAssetType(assetType, {
+                                              markerConfig: assetTypeConfig.colours,
+                                              currentValue: assetAttributeValue
+                                          });
+                                        } else {
+                                            //console.log('no colours treshold defined on asset type ' + assetType);
+                                        }
 
-                                    iconAndColour = getMarkerIconAndColorFromAssetType(assetType, overrideOpts);
-                                } else {
-                                    //console.log('no colours treshold defined on asset type ' + assetType);
-                                }
+                                        let findIndex = props.findIndex((prop: any) => { return assetType === prop.assetType});
+                                        if (findIndex !== -1) {
+                                            props[findIndex].count++;
+                                        } else {
+                                            props.push({
+                                                assetType: assetType,
+                                                count: 1,
+                                                threshold: []
+                                            });
+                                        }
 
+                                        if (iconAndColour) {
+                                            findIndex = props.length - 1;
 
-                                let findIndex = props.findIndex((prop: any) => { return assetType === prop.assetType});
-                                if (findIndex !== -1) {
-                                    props[findIndex].count++;
-                                } else {
-                                    props.push({
-                                        assetType: assetType,
-                                        count: 1,
-                                        threshold: []
-                                    });
-                                }
-
-                                if (iconAndColour) {
-                                    findIndex = props.length - 1;
-
-                                    let thresholdIndex = props[findIndex].threshold.findIndex((t: any) => { return t.color === iconAndColour.color; });
-
-                                    if (thresholdIndex !== -1) {
-                                        props[findIndex].threshold[thresholdIndex].count++;
-                                    } else {
-                                        props[findIndex].threshold.push({
-                                            count: 1,
-                                            color: iconAndColour.color
-                                        });
+                                            const thresholdIndex = props[findIndex].threshold.findIndex((t: any) => t.color === iconAndColour.color);
+                                            if (thresholdIndex !== -1) {
+                                                props[findIndex].threshold[thresholdIndex].count++;
+                                            } else {
+                                                props[findIndex].threshold.push({
+                                                    count: 1,
+                                                    color: iconAndColour.color
+                                                });
+                                            }
+                                        }
                                     }
-                                }
-                            }
-                        });
-
-                        props.forEach((prop: any) => {
-                            if (!prop.threshold) {
-                                prop.threshold = [ {
-                                    count: prop.count,
-                                    color: this._assetTypesColors[prop.assetType]
-                                } ];
-                            }
                                 });
 
-                                let donutChart = this.createDonutChart(props, totalCount);
+                                props.forEach((prop: any) => {
+                                    if (!prop.threshold) {
+                                        prop.threshold = [ {
+                                            count: prop.count,
+                                            color: this._assetTypesColors[prop.assetType]
+                                        } ];
+                                    }
+                                });
 
-                                // @ts-ignore
-                                this._markers.push(new maplibregl.Marker({element: donutChart}).setLngLat(cluster.geometry['coordinates']).addTo(this._mapGl));
+                                const donutChart = this.createDonutChart(props, totalCount);
+                                this._markers.push(new maplibregl.Marker({ element: donutChart }).setLngLat((cluster.geometry as Geometry & { coordinates: LngLatLike }).coordinates).addTo(this._mapGl!));
                             }
                         })
-                        .catch((err: any) => {
+                        .catch((err) => {
                             console.error('Error getting cluster leaves:', err);
                         });
                 }

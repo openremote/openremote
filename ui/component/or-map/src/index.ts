@@ -496,10 +496,9 @@ export class OrMap extends LitElement {
     }
 
     public addMarker(asset: Asset): boolean {
-        let res = asset.attributes?.hasOwnProperty("location");
-        if (res && asset.attributes && asset.attributes.location.value) {
-            let coordinates = asset.attributes.location.value;
-            this._map?.addMark(asset.id ? asset.id : '', asset.name ? asset.name : '', asset.type ? asset.type : '', coordinates.coordinates[0], coordinates.coordinates[1], asset);
+        if (asset.attributes?.location && asset.attributes && asset.attributes.location.value) {
+            const coordinates = asset.attributes.location.value;
+            this._map?.addMark(asset.id ?? '', asset.name ?? '', asset.type ?? '', coordinates.coordinates[0], coordinates.coordinates[1], asset);
             return true;
         }
         return false;
@@ -513,9 +512,9 @@ export class OrMap extends LitElement {
         this._map?.loadPoints();
     }
 
-    public getCurrentView(centre?: any): string[] {
+    public getCurrentView(center?: any): string[] {
         if (this._map) {
-            return this._map.getCurrentView(centre);
+            return this._map.getCurrentView(center);
         } else {
             return [];
         }
