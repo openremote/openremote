@@ -54,6 +54,7 @@ import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.IdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.http.HTTPMethod;
 import org.openremote.model.util.Config;
 import org.openremote.model.util.TextUtil;
 import org.xnio.Options;
@@ -62,8 +63,10 @@ import java.net.Inet4Address;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.*;
+import static org.openremote.container.web.CORSConfig.DEFAULT_CORS_ALLOW_ALL;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.util.MapAccess.*;
 
@@ -80,6 +83,7 @@ public abstract class WebService implements ContainerService {
     public static final String OR_WEBSERVER_ALLOWED_ORIGINS = "OR_WEBSERVER_ALLOWED_ORIGINS";
     public static final String OR_WEBSERVER_ALLOWED_METHODS = "OR_WEBSERVER_ALLOWED_METHODS";
     public static final String OR_WEBSERVER_EXPOSED_HEADERS = "OR_WEBSERVER_EXPOSED_HEADERS";
+    public static final String OR_WEBSERVER_ALLOWED_HEADERS = "OR_WEBSERVER_ALLOWED_HEADERS";
     public static final String OR_WEBSERVER_IO_THREADS_MAX = "OR_WEBSERVER_IO_THREADS_MAX";
     public static final int OR_WEBSERVER_IO_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
     public static final String OR_WEBSERVER_WORKER_THREADS_MAX = "OR_WEBSERVER_WORKER_THREADS_MAX";
@@ -399,6 +403,13 @@ public abstract class WebService implements ContainerService {
             Integer realmIndex,
             boolean secure,
             CORSConfig corsOverride) {
+
+
+        if (corsOverride == null) {
+            // Just use default CORS config
+            corsOverride = new CORSConfig();
+        }
+
         // TODO: Remove this handler wrapper once JAX-RS RealmPathExtractorFilter can be utilised before security is applied
         if (realmIndex != null) {
             deploymentInfo.addInitialHandlerChainWrapper(handler -> {
@@ -453,17 +464,14 @@ public abstract class WebService implements ContainerService {
             identityService.secureDeployment(deploymentInfo);
         }
 
-        if (corsOverride == null) {
-            // Just use default CORS config
-            corsOverride = new CORSConfig();
-        }
-
-        CORSFilter corsFilter = new CORSFilter(getCORSConfiguration(corsOverride));
+        // Cannot set config on constructor as init method will overwrite it
+        CORSFilter corsFilter = new CORSFilter();
 
         FilterInfo corsFilterInfo = Servlets.filter(
                 "CORS Filter",
                 CORSFilter.class,
                 () -> new ImmediateInstanceHandle<>(corsFilter)).setAsyncSupported(true);
+        getCORSConfiguration(corsOverride).forEach((k,v) -> corsFilterInfo.addInitParam(k.toString(), v.toString()));
         deploymentInfo.addFilter(corsFilterInfo);
         deploymentInfo.addFilterUrlMapping(     "CORS Filter","/*", DispatcherType.REQUEST);
 
@@ -495,22 +503,27 @@ public abstract class WebService implements ContainerService {
         return externalHostnames;
     }
 
-    public static CORSConfiguration getCORSConfiguration(CORSConfig corsConfig) {
+    public static Properties getCORSConfiguration(CORSConfig corsConfig) {
         Properties props = new Properties();
 
         if (corsConfig != null) {
             props.put("cors.supportsCredentials", Boolean.toString(corsConfig.isCorsAllowCredentials()));
             props.put("cors.maxAge", corsConfig.getCorsMaxAge());
-            props.put("cors.supportedHeaders", corsConfig.getCorsExposedHeaders());
-            props.put("cors.supportedMethods", corsConfig.getCorsAllowedMethods());
+            if (corsConfig.getCorsExposedHeaders() != null) {
+               props.put("cors.exposedHeaders", corsConfig.getCorsExposedHeaders());
+            }
+            if (corsConfig.getCorsAllowedHeaders() != null) {
+               props.put("cors.supportedHeaders", corsConfig.getCorsAllowedHeaders());
+            }
+            // CORSFilter doesn't support wildcard for methods
+            String allowedMethods = corsConfig.getCorsAllowedMethods();
+            allowedMethods = allowedMethods == null || DEFAULT_CORS_ALLOW_ALL.equals(allowedMethods)
+               ? Arrays.stream(HTTPMethod.values()).map(Enum::toString).collect(Collectors.joining(","))
+               : allowedMethods;
+            props.put("cors.supportedMethods", allowedMethods);
             props.put("cors.allowOrigin", String.join(",", corsConfig.getCorsAllowedOrigins()));
         }
 
-        try {
-            return new CORSConfiguration(props);
-        } catch (CORSConfigurationException e) {
-            LOG.log(WARNING, "Failed to construct CORS Configuration: " + e.getMessage());
-        }
-        return null;
+        return props;
     }
 }

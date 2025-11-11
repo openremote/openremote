@@ -19,6 +19,7 @@ public class CORSConfig {
     public static final boolean DEFAULT_CORS_ALLOW_CREDENTIALS = true;
     protected Set<String> corsAllowedOrigins;
     protected String corsAllowedMethods;
+    protected String corsAllowedHeaders;
     protected String corsExposedHeaders;
     protected int corsMaxAge = DEFAULT_CORS_MAX_AGE;
     protected boolean corsAllowCredentials = DEFAULT_CORS_ALLOW_CREDENTIALS;
@@ -26,7 +27,8 @@ public class CORSConfig {
     public CORSConfig() {
         corsAllowedOrigins = Config.isDevMode() ? Collections.singleton(DEFAULT_CORS_ALLOW_ALL) : getCORSAllowedOrigins();
         corsAllowedMethods = Config.isDevMode() ? DEFAULT_CORS_ALLOW_ALL : Config.getString(OR_WEBSERVER_ALLOWED_METHODS, DEFAULT_CORS_ALLOW_ALL);
-        corsExposedHeaders = Config.isDevMode() ? DEFAULT_CORS_ALLOW_ALL : Config.getString(OR_WEBSERVER_EXPOSED_HEADERS, DEFAULT_CORS_ALLOW_ALL);
+        corsAllowedHeaders = Config.isDevMode() ? DEFAULT_CORS_ALLOW_ALL : Config.getString(OR_WEBSERVER_ALLOWED_HEADERS, DEFAULT_CORS_ALLOW_ALL);
+        corsExposedHeaders = Config.getString(OR_WEBSERVER_EXPOSED_HEADERS, null);
     }
 
     public Set<String> getCorsAllowedOrigins() {
@@ -52,7 +54,16 @@ public class CORSConfig {
         return this;
     }
 
-    public String getCorsExposedHeaders() {
+   public String getCorsAllowedHeaders() {
+      return corsAllowedHeaders;
+   }
+
+   public CORSConfig setCorsAllowedHeaders(String corsAllowedHeaders) {
+      this.corsAllowedHeaders = corsAllowedHeaders;
+      return this;
+   }
+
+   public String getCorsExposedHeaders() {
         return corsExposedHeaders;
     }
 

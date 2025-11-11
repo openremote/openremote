@@ -22,17 +22,21 @@ package org.openremote.container.security.keycloak;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
+import io.undertow.util.HttpString;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
+import org.jboss.resteasy.spi.CorsHeaders;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.KeycloakConfigResolver;
@@ -42,10 +46,7 @@ import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.openremote.container.security.IdentityProvider;
-import org.openremote.container.web.OAuthFilter;
-import org.openremote.container.web.WebClient;
-import org.openremote.container.web.WebService;
-import org.openremote.container.web.WebTargetBuilder;
+import org.openremote.container.web.*;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.auth.OAuthGrant;
@@ -267,6 +268,31 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         LoginConfig loginConfig = new LoginConfig(SimpleKeycloakServletExtension.AUTH_MECHANISM, "OpenRemote");
         deploymentInfo.setLoginConfig(loginConfig);
         deploymentInfo.addServletExtension(new SimpleKeycloakServletExtension(keycloakConfigResolver));
+
+       // We need to add an undertow handler wrapper to inject CORS headers on 4xx responses as keycloak adapter doesn't
+       deploymentInfo.addOuterHandlerChainWrapper(new HandlerWrapper() {
+          @Override
+          public HttpHandler wrap(HttpHandler handler) {
+             return new HttpHandler() {
+                @Override
+                public void handleRequest(HttpServerExchange exchange) throws Exception {
+
+                   if (exchange.isInIoThread()) {
+                      exchange.dispatch(this);
+                      return;
+                   }
+
+                   if (exchange.getStatusCode() >= 400 && exchange.getStatusCode() < 500) {
+                            String origin = exchange.getRequestHeaders().getFirst(CorsHeaders.ORIGIN);
+                            exchange.getResponseHeaders().add(HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_ORIGIN), origin);
+                            exchange.getResponseHeaders().add(HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS), "true");
+                   }
+                   handler.handleRequest(exchange);
+                }
+             };
+          }
+       });
+
     }
 
     public KeycloakResource getKeycloak() {
