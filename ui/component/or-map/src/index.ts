@@ -26,7 +26,7 @@ import {GeoJsonConfig, MapType } from "@openremote/model";
 import {getMarkerConfigForAssetType, MapMarkerAssetConfig} from "./markers/or-map-marker-asset";
 
 // Re-exports
-export {Util, LngLatLike};
+export {Util, LngLatLike, LngLat};
 export * from "./markers/or-map-marker";
 export * from "./markers/or-map-marker-asset";
 export {IControl} from "maplibre-gl";

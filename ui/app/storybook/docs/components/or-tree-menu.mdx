@@ -1,0 +1,7 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+import * as ComponentStory from "../../../../component/or-tree-menu/stories/or-tree-menu.stories"; // stories need relative imports
+import {ComponentDocs} from "../../util/componentdocs.mdx";
+
+<Meta title="Components/Tree Menu" />
+
+<ComponentDocs story={ComponentStory}  options={{displayName: "Tree Menu"}} elementsjson={ComponentStory.customElements} />
