@@ -1,13 +1,16 @@
 {
   "name": "@openremote/or-asset-viewer",
-  "version": "1.8.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "OpenRemote Asset Viewer",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    "./*": "./lib/*.js",
+    "./jsx": {
+      "types": "./custom-elements-jsx.d.ts"
+    }
   },
   "types": "lib/index.d.ts",
   "scripts": {
@@ -21,21 +24,19 @@
     "@material/data-table": "^9.0.0",
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
+    "@openremote/or-asset-tree": "workspace:*",
     "@openremote/or-attribute-history": "workspace:*",
     "@openremote/or-attribute-input": "workspace:*",
     "@openremote/or-chart": "workspace:*",
     "@openremote/or-components": "workspace:*",
     "@openremote/or-icon": "workspace:*",
-    "@openremote/or-json-forms": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
-    "@openremote/or-survey": "workspace:*",
-    "@openremote/or-survey-results": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "@openremote/rest": "workspace:*",
+    "i18next": "^21.5.3",
     "lit": "^3.3.1"
   },
   "devDependencies": {
-    "@openremote/util": "workspace:*"
+    "axios": "0.24.0"
   },
   "publishConfig": {
     "access": "public"

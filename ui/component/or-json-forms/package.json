@@ -1,13 +1,16 @@
 {
   "name": "@openremote/or-json-forms",
-  "version": "1.8.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "Renders a JSON schema and provides instance editing",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    "./*": "./lib/*.js",
+    "./jsx": {
+      "types": "./custom-elements-jsx.d.ts"
+    }
   },
   "types": "lib/index.d.ts",
   "scripts": {
@@ -20,14 +23,12 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@jsonforms/core": "^3.5.1",
+    "@openremote/core": "workspace:*",
     "@openremote/or-components": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
-    "@polymer/polymer": "^3.3.1",
+    "@openremote/or-translate": "workspace:*",
     "ajv": "^8.8.2",
     "lit": "^3.3.1"
-  },
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

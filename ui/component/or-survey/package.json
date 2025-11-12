@@ -1,13 +1,16 @@
 {
   "name": "@openremote/or-survey",
-  "version": "1.8.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "Displays survey",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    "./*": "./lib/*.js",
+    "./jsx": {
+      "types": "./custom-elements-jsx.d.ts"
+    }
   },
   "types": "lib/index.d.ts",
   "scripts": {
@@ -25,9 +28,6 @@
     "lit": "^3.3.1",
     "lodash-es": "^4.17.15",
     "moment": "2.29.4"
-  },
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
   },
   "publishConfig": {
     "access": "public"
