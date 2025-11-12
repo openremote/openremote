@@ -28,17 +28,17 @@ metrics:
   pg_table_bloat_ratio:
     type: gauge
     description: Bloat ratio per table (percentage of wasted space)
-    labels: [schema_name, table_name, index_name, bloat_type, pg_table_bloat_ratio]
+    labels: [schema_name, table_name, index_name, bloat_type]
     
   pg_table_bloat_bytes:
     type: gauge
     description: Estimated bloat size in bytes per table/index
-    labels: [schema_name, table_name, index_name, bloat_type, pg_table_bloat_bytes]
+    labels: [schema_name, table_name, index_name, bloat_type]
     
   pg_table_bloat_wasted_mb:
     type: gauge
     description: Estimated wasted space in MB per table/index
-    labels: [schema_name, table_name, index_name, bloat_type, pg_table_bloat_wasted_mb]
+    labels: [schema_name, table_name, index_name, bloat_type]
 
   # 2. Autovacuum workers metric
   pg_autovacuum_workers_active:
@@ -143,8 +143,8 @@ queries:
               GROUP BY 1,2,3,4,5
             ) AS foo
           ) AS rs
-          JOIN pg_class cc ON cc.relname = rs.tablename
-          JOIN pg_namespace nn ON cc.relnamespace = nn.oid AND nn.nspname = rs.schemaname
+          JOIN pg_namespace nn ON nn.nspname = rs.schemaname
+          JOIN pg_class cc ON cc.relname = rs.tablename AND cc.relnamespace = nn.oid
           LEFT JOIN pg_index i ON indrelid = cc.oid
           LEFT JOIN pg_class c2 ON c2.oid = i.indexrelid
         ) AS sml
@@ -226,8 +226,8 @@ queries:
               GROUP BY 1,2,3,4,5
             ) AS foo
           ) AS rs
-          JOIN pg_class cc ON cc.relname = rs.tablename
-          JOIN pg_namespace nn ON cc.relnamespace = nn.oid AND nn.nspname = rs.schemaname
+          JOIN pg_namespace nn ON nn.nspname = rs.schemaname
+          JOIN pg_class cc ON cc.relname = rs.tablename AND cc.relnamespace = nn.oid
           LEFT JOIN pg_index i ON indrelid = cc.oid
           LEFT JOIN pg_class c2 ON c2.oid = i.indexrelid,
           constants const
@@ -295,28 +295,25 @@ queries:
     metrics: [pg_autovacuum_running]
     sql: |
       SELECT
-        datname AS db,
+        a.datname AS db,
         COALESCE(n.nspname, 'unknown') AS table_schema,
         COALESCE(c.relname, 'unknown') AS table_name,
         CASE 
-          WHEN query LIKE '%to prevent wraparound%' THEN 'wraparound'
-          WHEN query LIKE '%to analyze%' THEN 'analyze'
+          WHEN a.query LIKE '%to prevent wraparound%' THEN 'wraparound'
+          WHEN a.query LIKE '%to analyze%' THEN 'analyze'
           ELSE 'vacuum'
         END AS phase,
         1 AS pg_autovacuum_running
       FROM pg_stat_activity a
-      LEFT JOIN pg_class c ON c.oid = (
-        SELECT oid FROM pg_class 
-        WHERE relname = split_part(split_part(a.query, '.', 2), ' ', 1)
-        LIMIT 1
-      )
+      JOIN pg_stat_progress_vacuum pv ON pv.pid = a.pid
+      LEFT JOIN pg_class c ON c.oid = pv.relid
       LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
-      WHERE query LIKE 'autovacuum:%'
-        AND state = 'active';
+      WHERE a.query LIKE 'autovacuum:%'
+        AND a.state = 'active';
 
   # Query 6: Datapoint query execution time for attribute with most data points
   datapoint_query_performance:
-    interval: 60  # Run every minute
+    interval: 300  # Run every 5 minutes because it can be very expensive
     databases: [openremote]
     metrics: [pg_datapoint_query_duration_seconds, pg_datapoint_count]
     sql: |
@@ -346,7 +343,6 @@ queries:
           WHERE entity_id = ta.entity_id
             AND attribute_name = ta.attribute_name
           ORDER BY timestamp DESC
-          LIMIT 100
         ) dp
         LIMIT 1
       )
