@@ -495,6 +495,11 @@ export class OrMap extends LitElement {
         this.addEventListener(OrMapMarkerChangedEvent.NAME, this._onMarkerChangedEvent);
     }
 
+    /**
+     * 
+     * @param asset 
+     * @returns 
+     */
     public addMarker(asset: Asset): boolean {
         if (asset.attributes?.location && asset.attributes && asset.attributes.location.value) {
             const coordinates = asset.attributes.location.value;
@@ -512,23 +517,11 @@ export class OrMap extends LitElement {
         this._map?.loadPoints();
     }
 
-    public getCurrentView(center?: any): string[] {
-        if (this._map) {
-            return this._map.getCurrentView(center);
-        } else {
-            return [];
-        }
-    }
-
     protected firstUpdated(_changedProperties: PropertyValues): void {
         super.firstUpdated(_changedProperties);
         if (manager.ready) {
             this.loadMap();
         }
-    }
-
-    public get markers(): OrMapMarker[] {
-        return this._markers;
     }
 
     public connectedCallback() {
@@ -580,7 +573,6 @@ export class OrMap extends LitElement {
     }
 
     public loadMap() {
-
         if (this._loaded) {
             return;
         }
@@ -592,17 +584,11 @@ export class OrMap extends LitElement {
                 .setControls(this.controls)
                 .setGeoJson(this.geoJson);
             this._map.load().then(() => {
-
-                // Get markers from slot
-                this._observer = new FlattenedNodesObserver(this._slotElement!, (info: any) => {
-                    this._processNewMarkers(info.addedNodes);
-                    this._processRemovedMarkers(info.removedNodes);
-                });
                 this._resizeObserver?.disconnect();
                 this._resizeObserver = new ResizeObserver(debounce(() => {
                     this.resize();
                 }, 200));
-                var container = this._mapContainer?.parentElement;
+                const container = this._mapContainer?.parentElement;
                 if (container) {
                     this._resizeObserver.observe(container);
                 }
@@ -611,7 +597,7 @@ export class OrMap extends LitElement {
 
         this._loaded = true;
     }
-    
+
     public resize() {
         if (this._map) {
             this._map.resize();
@@ -628,63 +614,5 @@ export class OrMap extends LitElement {
         if (this._map) {
             this._map.onMarkerChanged(evt.detail.marker, evt.detail.property);
         }
-    }
-
-    protected _processNewMarkers(nodes: Element[]) {
-        nodes.forEach((node) => {
-            if (!this._map) {
-                return;
-            }
-
-            if (node instanceof OrMapMarker) {
-
-                this._markers.push(node);
-
-                // Add styles of marker class to the shadow root if not already added
-                const className = node.constructor.name;
-                if (this._markerStyles.indexOf(className) < 0) {
-                    const styles = (node.constructor as any).styles;
-                    let stylesArr: CSSResult[] = [];
-
-                    if (styles) {
-                        if (!Array.isArray(styles)) {
-                            stylesArr.push(styles as CSSResult);
-                        } else {
-                            stylesArr = styles as CSSResult[];
-                        }
-
-                        stylesArr.forEach((styleItem) => {
-                            const styleElem = document.createElement("style");
-                            styleElem.textContent = String(styleItem.toString());
-                            if (this._mapContainer!.children.length > 0) {
-                                this._mapContainer!.insertBefore(styleElem, this._mapContainer!.children[0]);
-                            } else {
-                                this._mapContainer!.appendChild(styleElem);
-                            }
-                        });
-                    }
-
-                    this._markerStyles.push(className);
-                }
-
-                this._map.addMarker(node);
-            }
-        });
-    }
-
-    protected _processRemovedMarkers(nodes: Element[]) {
-        nodes.forEach((node) => {
-            if (!this._map) {
-                return;
-            }
-
-            if (node instanceof OrMapMarker) {
-                const i = this._markers.indexOf(node);
-                if (i >= 0) {
-                    this._markers.splice(i, 1);
-                }
-                this._map.removeMarker(node);
-            }
-        });
     }
 }

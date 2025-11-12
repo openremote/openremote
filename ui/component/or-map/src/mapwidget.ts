@@ -11,7 +11,6 @@ import maplibregl,{
     MapMouseEvent,
     Marker as MarkerGL,
     NavigationControl,
-    Style as StyleGL,
     Popup,
     StyleSpecification,
     GeoJSONSourceSpecification,
@@ -30,11 +29,10 @@ import {
     OrMapMarkerAsset, MapMarkerAssetConfig, OrMapMovedEvent, OrMapSourceLoadedEvent, getMarkerConfigForAssetType
 } from "./index";
 import { OrMapMarker } from "./markers/or-map-marker";
-import {getLatLngBounds, getLngLat, getMarkerIconAndColorFromAssetType, OverrideConfigSettings} from "./util";
-import { Asset, AssetModelUtil } from "@openremote/model";
-import {GeoJsonConfig, MapType } from "@openremote/model";
+import { getLatLngBounds, getLngLat, getMarkerIconAndColorFromAssetType, isWebglSupported } from "./util";
+import { Asset, GeoJsonConfig, MapType } from "@openremote/model";
 import { Feature, FeatureCollection, Geometry } from "geojson";
-import { isMapboxURL, transformMapboxUrl } from "./mapbox-url-utils";
+import { isMapboxURL, transformMapboxUrl } from "./util/mapbox-url";
 
 const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
 const maplibreGlStyles = require("maplibre-gl/dist/maplibre-gl.css");
@@ -375,7 +373,7 @@ export class MapWidget {
             }
 
             // Firefox headless mode does not support webgl, see https://bugzilla.mozilla.org/show_bug.cgi?id=1375585
-            if (!this.isWebglSupported()) {
+            if (!isWebglSupported()) {
               console.warn("WebGL is not supported in this environment. The map cannot be initialized.");
               return;
             }
@@ -687,26 +685,6 @@ export class MapWidget {
         }
     }
 
-    public getCurrentView(center?: LngLatLike): string[] {
-        if (this._mapGl) {
-            const res2 = this._mapGl.querySourceFeatures('mapPoints', { sourceLayer: 'unclustered-point' });
-
-            const viewedAsset: any = {};
-            const assetId: string[] = [];
-
-            res2.forEach((marker) => {
-                if (marker.properties && !marker.properties.cluster && !viewedAsset[marker.properties.id]) {
-                    viewedAsset[marker.properties.id] = marker.properties;
-                    assetId.push(marker.properties.id);
-                }
-            });
-
-            return assetId;
-        } else {
-            return [];
-        }
-    }
-
     /**
      * Methods from maplibre example for Cluster with Donut Chart
      */
@@ -1000,7 +978,7 @@ export class MapWidget {
                     }
                 });
 
-                this._mapGl.setLayoutProperty('unclustered-point', 'visibility', 'none');
+                // this._mapGl.setLayoutProperty('unclustered-point', 'visibility', 'none');
             }
 
             if (!this._mapGl.getLayer('clusters')) {
@@ -1031,7 +1009,7 @@ export class MapWidget {
                     }
                 });
 
-                this._mapGl.setLayoutProperty('clusters', 'visibility', 'none');
+                // this._mapGl.setLayoutProperty('clusters', 'visibility', 'none');
             }
 
             if (!this._mapGl.getLayer('cluster-count')) {
@@ -1077,10 +1055,6 @@ export class MapWidget {
             this._mapGl.on('data', (e) => {
                 this._mapContainer.dispatchEvent(new OrMapSourceLoadedEvent());
             });
-
-            if (this._mapGl) {
-                this.getCurrentView();
-            }
         }
     }
 
@@ -1448,32 +1422,12 @@ export class MapWidget {
             this._mapGl.on('gestureend', clearTimeoutFunc);
         }
     };
+
     protected _onLongPress(lngLat: LngLat) {
         this._mapContainer.dispatchEvent(new OrMapLongPressEvent(lngLat));
     }
+
     protected _onGeocodeChange(geocode:any) {
         this._mapContainer.dispatchEvent(new OrMapGeocoderChangeEvent(geocode));
-    }
-
-    // Source: maplibre.org/maplibre-gl-js/docs/examples/check-for-support/
-    protected isWebglSupported() {
-        if (window.WebGLRenderingContext) {
-            const canvas = document.createElement('canvas');
-            try {
-                // Note that { failIfMajorPerformanceCaveat: true } can be passed as a second argument
-                // to canvas.getContext(), causing the check to fail if hardware rendering is not available. See
-                // https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/getContext
-                // for more details.
-                const context = canvas.getContext('webgl2') || canvas.getContext('webgl');
-                if (context && typeof context.getParameter == 'function') {
-                    return true;
-                }
-            } catch (e) {
-                // WebGL is supported, but disabled
-            }
-            return false;
-        }
-        // WebGL not supported
-        return false;
     }
 }

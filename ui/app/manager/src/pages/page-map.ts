@@ -195,12 +195,6 @@ export class PageMap extends Page<MapStateKeyed> {
     @state()
     protected _currentAsset?: Asset;
 
-    @state()
-    protected movedDone: Date;
-
-    @state()
-    protected mapInitLoaded: boolean = false;
-
     protected _assetSelector = (state: MapStateKeyed) => state.map.assets;
     protected _paramsSelector = (state: MapStateKeyed) => state.app.params;
     protected _realmSelector = (state: MapStateKeyed) => state.app.realm || manager.displayRealm;
@@ -389,9 +383,7 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected render() {
-        const assetIdsToShow: string[] = this._map ? this._map.getCurrentView() : [];
 
-        console.log("RERENDER")
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
 
@@ -421,25 +413,7 @@ export class PageMap extends Page<MapStateKeyed> {
                 : null
             }
 
-            <or-map id="map" class="or-map" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
-
-            ${this._assets.filter((asset) => {
-                    if (!asset.attributes || assetIdsToShow.indexOf(asset.id) === -1) {
-                        return false;
-                    }
-                    const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
-                    return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
-                })
-                .filter((asset) => !this.excludedAssetTypes.includes(asset.type))
-                .sort((a,b) => {
-                    if (a.attributes[WellknownAttributes.LOCATION].value && b.attributes[WellknownAttributes.LOCATION].value){
-                        return b.attributes[WellknownAttributes.LOCATION].value.coordinates[1] - a.attributes[WellknownAttributes.LOCATION].value.coordinates[1];
-                    }
-                })
-                .map(asset => html`
-                    <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}" .config="${this.config.markers}"></or-map-marker-asset>
-                `)}
-            </or-map>
+            <or-map id="map" class="or-map" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}"></or-map>
         `;
     }
 
@@ -447,45 +421,28 @@ export class PageMap extends Page<MapStateKeyed> {
         super.connectedCallback();
         this.addEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
         this.addEventListener(OrMapClickedEvent.NAME, this.onMapClick);
-        this.addEventListener(OrMapMovedEvent.NAME, this.onMapMoved);
-        this.addEventListener(OrMapSourceLoadedEvent.NAME, this.onMapLoad);
     }
 
     public disconnectedCallback() {
         super.disconnectedCallback();
         this.removeEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
         this.removeEventListener(OrMapClickedEvent.NAME, this.onMapClick);
-        this.removeEventListener(OrMapMovedEvent.NAME, this.onMapMoved);
-        this.removeEventListener(OrMapSourceLoadedEvent.NAME, this.onMapLoad);
         this.unsubscribeAssets();
     }
 
     stateChanged(state: MapStateKeyed) {
         this._assets = this._getMapAssets(state);
         this._currentAsset = this._getCurrentAsset(state);
-
-        const currentId = state.app.params ? state.app.params.id : undefined;
-
-        this._currentAsset = this.locationAssets.find((asset) => asset.id === currentId);
-
         this.getRealmState(state);
     }
 
     protected onMapMarkerClick(e: OrMapMarkerClickedEvent) {
-        const asset: Asset = (e.detail.marker as OrMapMarkerAsset).asset;
+        const asset = (e.detail.marker as OrMapMarkerAsset).asset;
         router.navigate(getMapRoute(asset.id));
     }
 
     protected onMapClick(e: OrMapClickedEvent) {
         router.navigate(getMapRoute());
-    }
-
-    protected onMapMoved(e: OrMapMovedEvent) {
-        this.movedDone = new Date();
-    }
-
-    protected onMapLoad(e: OrMapSourceLoadedEvent) {
-        this.mapInitLoaded = !this.mapInitLoaded;
     }
 
     protected getCurrentAsset() {
