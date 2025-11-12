@@ -10,6 +10,26 @@ import {AssetModelUtil} from "@openremote/model";
 import {getMarkerIconAndColorFromAssetType} from "./util";
 import {Util} from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+
+export class OrMapLegendEvent extends CustomEvent<string[]> {
+
+    public static readonly NAME = "or-map-legend-changed";
+
+    constructor(assetTypes: string[]) {
+        super(OrMapLegendEvent.NAME, {
+            bubbles: false,
+            composed: false,
+            detail: assetTypes
+        });
+    }
+}
+
+declare global {
+    export interface HTMLElementEventMap {
+        [OrMapLegendEvent.NAME]: OrMapLegendEvent;
+    }
+}
 
 @customElement("or-map-legend")
 export class OrMapLegend extends LitElement {
@@ -18,6 +38,8 @@ export class OrMapLegend extends LitElement {
     public assetTypes: string[] = [];
 
     protected assetTypesInfo: any;
+
+    protected excluded: string[] = [];
 
     @query("#legend-content")
     protected _showLegend?: HTMLDivElement;
@@ -65,10 +87,19 @@ export class OrMapLegend extends LitElement {
                     <span>${i18next.t("mapPage.legendTitle")}</span><or-icon icon="menu"></or-icon>
                 </div>
                 <div id="legend-content">
-                    <ul>
-                        ${this.assetTypes ? this.assetTypes.map((assetType) => {
-                            return html`<li id="asset-legend"><or-icon icon="${this.assetTypesInfo[assetType].icon}" style="color: #${this.assetTypesInfo[assetType].color}"></or-icon><span id="asset-label">${this.assetTypesInfo[assetType].label}</span></li>`;
-                        }) : ''}
+                    <ul>${this.assetTypes.map((assetType) => html`
+                        <li id="asset-legend" style="display: flex;">
+                            <or-icon icon="${this.assetTypesInfo[assetType].icon}" style="color: #${this.assetTypesInfo[assetType].color}"></or-icon>
+                            <span id="asset-label" style="flex: 1">${this.assetTypesInfo[assetType].label}</span>
+                            <or-mwc-input .type="${InputType.CHECKBOX}" .value="${!this.excluded.includes(assetType)}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                if (ev.detail.value) {
+                                    this.excluded.splice(this.excluded.indexOf(assetType), 1);
+                                } else {
+                                    this.excluded.push(assetType);
+                                }
+                                this.dispatchEvent(new OrMapLegendEvent(this.excluded));
+                            }}"></or-mwc-input>
+                        </li>`)}
                     </ul>
                 </div>
             </div>

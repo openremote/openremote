@@ -758,7 +758,7 @@ export class MapWidget {
             } ${
                 w
             }" text-anchor="middle" style="font: ${
-                fontSize
+                fontSize - 4
             }px sans-serif; display: block">`;
 
         // Threshold donut
@@ -794,7 +794,7 @@ export class MapWidget {
             }, ${
                 r
             })">${
-                total.toLocaleString()
+                (total > 99 ? "+" : "") + (total > 99 ? 99 : total).toLocaleString()
             }</text></svg></div>`;
 
         const el = document.createElement('div');
@@ -1109,6 +1109,7 @@ export class MapWidget {
         };
 
         this._assetTypesColors = {};
+        this.renderCurrentCluster(); // TODO: update cluster accordingly
     }
 
     public removeMarker(marker: OrMapMarker) {

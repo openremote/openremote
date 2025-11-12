@@ -11,7 +11,8 @@ import {
     OrMapMarkerClickedEvent,
     OrMapGeocoderChangeEvent,
     MapMarkerAssetConfig,
-    OrMapMovedEvent, OrMapSourceLoadedEvent
+    OrMapMovedEvent, OrMapSourceLoadedEvent,
+    OrMapLegendEvent
 } from "@openremote/or-map";
 import manager, {Util} from "@openremote/core";
 import {createSelector} from "reselect";
@@ -209,6 +210,7 @@ export class PageMap extends Page<MapStateKeyed> {
 
     protected locationAssets: Asset[] = [];
     protected assetTypes: string[] = [];
+    protected excludedAssetTypes: string[] = [];
 
     protected getAttributesOfInterest(): (string | WellknownAttributes)[] {
         // Extract all label attributes configured in marker config
@@ -287,6 +289,7 @@ export class PageMap extends Page<MapStateKeyed> {
                     this._map.cleanUpMarker();
 
                     assets.forEach((asset: Asset) => {
+                        if (this.excludedAssetTypes.includes(asset.type)) return;
                         if (this._map.addMarker(asset)) {
                             if (!this.assetTypes.includes(asset.type)) {
                                 this.assetTypes.push(asset.type);
@@ -386,12 +389,37 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected render() {
-        let assetIdsToShow: string[] = this._map ? this._map.getCurrentView() : [];
+        const assetIdsToShow: string[] = this._map ? this._map.getCurrentView() : [];
 
+        console.log("RERENDER")
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
 
-            ${this.assetTypes.length > 1 ? html`<or-map-legend .assetTypes="${this.assetTypes}"></or-map-legend>` : null}
+            ${this.assetTypes.length > 1 
+                ? html`<or-map-legend .assetTypes="${this.assetTypes}" @or-map-legend-changed="${(e: OrMapLegendEvent) => {
+                    this.excludedAssetTypes = e.detail;
+                    this.requestUpdate();
+
+                    if (this._map) {
+                        this.locationAssets = [];
+                        this.assetTypes = [];
+                        this._map.cleanUpMarker();
+    
+                        this._assets.forEach((asset: Asset) => {
+                            if (this.excludedAssetTypes.includes(asset.type)) return;
+                            if (this._map.addMarker(asset)) {
+                                if (!this.assetTypes.includes(asset.type)) {
+                                    this.assetTypes.push(asset.type);
+                                }
+                                this.locationAssets.push(asset);
+                            }
+                        });
+    
+                        this._map.loadPoints();
+                    }
+                }}"></or-map-legend>` 
+                : null
+            }
 
             <or-map id="map" class="or-map" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
 
@@ -402,6 +430,7 @@ export class PageMap extends Page<MapStateKeyed> {
                     const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
                     return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
                 })
+                .filter((asset) => !this.excludedAssetTypes.includes(asset.type))
                 .sort((a,b) => {
                     if (a.attributes[WellknownAttributes.LOCATION].value && b.attributes[WellknownAttributes.LOCATION].value){
                         return b.attributes[WellknownAttributes.LOCATION].value.coordinates[1] - a.attributes[WellknownAttributes.LOCATION].value.coordinates[1];
