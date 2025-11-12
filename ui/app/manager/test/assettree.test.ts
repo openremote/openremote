@@ -401,7 +401,11 @@ test(`Searching for an asset and removing it keeps the tree and viewer in tact`,
 })
 
 /**
- * @given 20 assets are loaded in the "smartcity" realm
+ * @given 5 assets are loaded in the "master" realm
+ * @and the assets are visible in the tree
+ * @when the user switches to the "smartcity" realm using the realm picker
+ * @then the asset tree should show assets from the "smartcity" realm instead
+ * @and the asset viewer becomes empty, and doesn't show the old asset from the "master" realm anymore
  */
 test.describe(() => {
     test.use({ storageState: adminStatePath });
