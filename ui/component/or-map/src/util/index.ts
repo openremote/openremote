@@ -8,7 +8,7 @@ import {
     ValueHolder,
     WellknownAttributes
 } from "@openremote/model";
-import {AttributeMarkerColoursRange, MapMarkerColours} from "./markers/or-map-marker-asset";
+import {AttributeMarkerColoursRange, MapMarkerColours} from "../markers/or-map-marker-asset";
 
 export function getLngLat(lngLatLike?: LngLatLike | Asset | ValueHolder<any> | GeoJSONPoint): { lng: number, lat: number } | undefined {
     if (!lngLatLike) {
@@ -132,4 +132,26 @@ export function getMarkerIconAndColorFromAssetType(
         color: colour,
         icon: icon
     };
+}
+
+// Source: maplibre.org/maplibre-gl-js/docs/examples/check-for-support/
+export function isWebglSupported() {
+    if (window.WebGLRenderingContext) {
+        const canvas = document.createElement('canvas');
+        try {
+            // Note that { failIfMajorPerformanceCaveat: true } can be passed as a second argument
+            // to canvas.getContext(), causing the check to fail if hardware rendering is not available. See
+            // https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/getContext
+            // for more details.
+            const context = canvas.getContext('webgl2') || canvas.getContext('webgl');
+            if (context && typeof context.getParameter === 'function') {
+                return true;
+            }
+        } catch (e) {
+            // WebGL is supported, but disabled
+        }
+        return false;
+    }
+    // WebGL not supported
+    return false;
 }
