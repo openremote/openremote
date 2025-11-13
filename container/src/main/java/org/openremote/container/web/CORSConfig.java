@@ -25,7 +25,7 @@ public class CORSConfig {
     protected boolean corsAllowCredentials = DEFAULT_CORS_ALLOW_CREDENTIALS;
 
     public CORSConfig() {
-        corsAllowedOrigins = Config.isDevMode() ? Collections.singleton(DEFAULT_CORS_ALLOW_ALL) : getCORSAllowedOrigins();
+        corsAllowedOrigins = Config.isDevMode() ? Collections.singleton(DEFAULT_CORS_ALLOW_ALL) : getCorsAllowedOriginsFromConfig();
         corsAllowedMethods = Config.isDevMode() ? DEFAULT_CORS_ALLOW_ALL : Config.getString(OR_WEBSERVER_ALLOWED_METHODS, DEFAULT_CORS_ALLOW_ALL);
         corsAllowedHeaders = Config.isDevMode() ? DEFAULT_CORS_ALLOW_ALL : Config.getString(OR_WEBSERVER_ALLOWED_HEADERS, DEFAULT_CORS_ALLOW_ALL);
         corsExposedHeaders = Config.getString(OR_WEBSERVER_EXPOSED_HEADERS, null);
@@ -90,7 +90,7 @@ public class CORSConfig {
         return this;
     }
 
-    public static Set<String> getCORSAllowedOrigins() {
+    public static Set<String> getCorsAllowedOriginsFromConfig() {
         // Set allowed origins using external hostnames and WEBSERVER_ALLOWED_ORIGINS
         Set<String> allowedOrigins = new HashSet<>(
                 getExternalHostnames()

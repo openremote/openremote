@@ -1317,7 +1317,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         if (container.isDevMode()) {
             headers.computeIfPresent("contentSecurityPolicy", (hdrName, hdrValue) -> "frame-src *; frame-ancestors *; object-src 'none'");
         } else {
-            String allowedOriginsStr = String.join(" ", CORSConfig.getCORSAllowedOrigins());
+            String allowedOriginsStr = String.join(" ", CORSConfig.getCorsAllowedOriginsFromConfig());
             if (!TextUtil.isNullOrEmpty(allowedOriginsStr)) {
                 headers.compute("contentSecurityPolicy", (hdrName, hdrValue) ->
                     "frame-src 'self' " +
