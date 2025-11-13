@@ -80,7 +80,7 @@ public class TimerService implements ContainerService, RulesClock {
         },
         PSEUDO {
             protected AtomicLong offset = new AtomicLong();
-            protected Long stopTime;
+            protected volatile Long stopTime;
 
             @Override
             public void init() {
@@ -89,12 +89,12 @@ public class TimerService implements ContainerService, RulesClock {
             }
 
             @Override
-            public long getCurrentTimeMillis() {
+            public synchronized long getCurrentTimeMillis() {
                 return (stopTime != null ? stopTime : System.currentTimeMillis()) + offset.get();
             }
 
             @Override
-            public long advanceTime(long amount, TimeUnit unit) {
+            public synchronized long advanceTime(long amount, TimeUnit unit) {
                 offset.addAndGet(unit.toMillis(amount));
                 long currentMillis = getCurrentTimeMillis();
                 LOG.info("Clock advanced to: " + (currentMillis) + "/" + new Date(currentMillis));
@@ -102,7 +102,7 @@ public class TimerService implements ContainerService, RulesClock {
             }
 
             @Override
-            public void stop() {
+            public synchronized void stop() {
                 if (stopTime == null) {
                     stopTime = System.currentTimeMillis();
                     LOG.info("Clock stopped at: " + (stopTime) + "/" + new Date(stopTime));
@@ -110,19 +110,19 @@ public class TimerService implements ContainerService, RulesClock {
             }
 
             @Override
-            public void stopAtTime(long time) {
+            public synchronized void stopAtTime(long time) {
                 stopTime = time;
                 LOG.info("Clock stopped at: " + (stopTime) + "/" + new Date(stopTime));
             }
 
             @Override
-            public void start() {
+            public synchronized void start() {
                 stopTime = null;
                 LOG.info("Clock started at: " + (System.currentTimeMillis()) + "/" + new Date(System.currentTimeMillis()));
             }
 
             @Override
-            public void reset() {
+            public synchronized void reset() {
                 offset.set(0L);
                 stopTime = null;
             }

@@ -264,7 +264,7 @@ trait ContainerTrait {
                     }
 
                     long endTime = System.currentTimeMillis()
-                    LOG.info("Container reuse took: " + (startTime - endTime) + "ms")
+                    LOG.info("Container reuse took: " + (endTime - startTime) + "ms")
                 } catch (IllegalStateException e) {
                     LOG.info("Failed to clean the existing container so creating a new one", e)
                     stopContainer()

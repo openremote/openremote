@@ -268,31 +268,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         LoginConfig loginConfig = new LoginConfig(SimpleKeycloakServletExtension.AUTH_MECHANISM, "OpenRemote");
         deploymentInfo.setLoginConfig(loginConfig);
         deploymentInfo.addServletExtension(new SimpleKeycloakServletExtension(keycloakConfigResolver));
-
-       // We need to add an undertow handler wrapper to inject CORS headers on 4xx responses as keycloak adapter doesn't
-       deploymentInfo.addOuterHandlerChainWrapper(new HandlerWrapper() {
-          @Override
-          public HttpHandler wrap(HttpHandler handler) {
-             return new HttpHandler() {
-                @Override
-                public void handleRequest(HttpServerExchange exchange) throws Exception {
-
-                   if (exchange.isInIoThread()) {
-                      exchange.dispatch(this);
-                      return;
-                   }
-
-                   if (exchange.getStatusCode() >= 400 && exchange.getStatusCode() < 500) {
-                            String origin = exchange.getRequestHeaders().getFirst(CorsHeaders.ORIGIN);
-                            exchange.getResponseHeaders().add(HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_ORIGIN), origin);
-                            exchange.getResponseHeaders().add(HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS), "true");
-                   }
-                   handler.handleRequest(exchange);
-                }
-             };
-          }
-       });
-
     }
 
     public KeycloakResource getKeycloak() {
