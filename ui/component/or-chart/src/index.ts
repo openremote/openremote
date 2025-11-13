@@ -667,18 +667,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                 (this.chartOptions.dataZoom as DataZoomComponentOption[]).push({
                     start: 0,
                     end: 100,
+                    showDataShadow: false,
                     backgroundColor: bgColor,
                     fillerColor: bgColor,
-                    dataBackground: {
-                        areaStyle: {
-                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
-                        }
-                    },
-                    selectedDataBackground: {
-                        areaStyle: {
-                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
-                        }
-                    },
                     moveHandleStyle: {
                         color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
                     },
