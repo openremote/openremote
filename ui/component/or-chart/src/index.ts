@@ -632,6 +632,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 yAxis: [
                     {
                         type: "value",
+                        alignTicks: true,
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ["10%", "10%"],
                         scale: true,
@@ -641,6 +642,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     },
                     {
                         type: "value",
+                        alignTicks: true,
                         show: (this.attributeConfig?.rightAxisAttributes?.length ?? 0) > 0,
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ["10%", "10%"],
