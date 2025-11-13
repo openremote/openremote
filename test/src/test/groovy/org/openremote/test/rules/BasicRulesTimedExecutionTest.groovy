@@ -50,7 +50,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
-            globalEngine = rulesService.globalEngine
+            globalEngine = rulesService.globalEngine.get()
             assert globalEngine != null
             assert globalEngine.isRunning()
             assert globalEngine.knowledgeSession.factCount == DEMO_RULE_STATES_GLOBAL
@@ -89,7 +89,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
-            globalEngine = rulesService.globalEngine
+            globalEngine = rulesService.globalEngine.get()
             assert globalEngine != null
             assert globalEngine.isRunning()
             assert globalEngine.knowledgeSession.factCount == DEMO_RULE_STATES_GLOBAL

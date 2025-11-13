@@ -19,13 +19,22 @@ export function headerItemAssets<S extends AppStateKeyed, A extends AnyAction>(o
     };
 }
 
+export function headerItemServices<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+    return {
+        icon: "puzzle",
+        href: "services",
+        text: "services",
+        roles: ["read:services"]
+    };
+}
+
 export function headerItemRules<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "state-machine",
         href: "rules",
         text: "rule_plural",
         hideMobile: true,
-        roles: () => !manager.hasRealmRole("restricted_user")
+        roles: () => !manager.isRestrictedUser()
     };
 }
 
@@ -45,6 +54,16 @@ export function headerItemGatewayConnection<S extends AppStateKeyed, A extends A
         text: "gatewayConnection",
         roles: ["write:admin", "read:admin"]
     };
+}
+
+export function headerItemGatewayTunnel<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+    return {
+        icon: "lan-connect",
+        value: "gateway-tunnel",
+        href: "gateway-tunnel",
+        text: "gatewayTunnel",
+        roles: ["write:admin", "read:admin"]
+    }
 }
 
 export function headerItemLanguage<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
@@ -75,7 +94,8 @@ export function headerItemLogs<S extends AppStateKeyed, A extends AnyAction>(orA
         value: "logs",
         href: "logs",
         text: "logs",
-        hideMobile: true
+        hideMobile: true,
+        roles: ["write:logs", "read:logs"]
     };
 }
 export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
@@ -84,9 +104,7 @@ export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(
         value: "account",
         href: "account",
         text: "account",
-        roles: {
-            account: ["manage-account"]
-        }
+        roles: ["write:user"]
     };
 }
 export function headerItemUsers<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {

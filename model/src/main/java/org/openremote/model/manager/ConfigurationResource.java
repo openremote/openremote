@@ -19,6 +19,8 @@
  */
 package org.openremote.model.manager;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.file.FileInfo;
@@ -26,11 +28,10 @@ import org.openremote.model.http.RequestParams;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
-import java.io.IOException;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Configuration")
+@Tag(name = "Configuration", description = "Operations on configurations")
 @Path("configuration")
 public interface ConfigurationResource {
 
@@ -39,13 +40,15 @@ public interface ConfigurationResource {
     @Produces(APPLICATION_JSON)
     @Path("manager")
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    Object update(@BeanParam RequestParams requestParams, Object managerConfiguration);
+    @Operation(operationId = "updateConfiguration", summary = "Update manager configuration")
+    ManagerAppConfig update(@BeanParam RequestParams requestParams, ManagerAppConfig managerConfiguration);
 
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @Path("manager/file")
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
+    @Operation(operationId = "fileUpload", summary = "Upload a file")
     String fileUpload(
             @BeanParam RequestParams requestParams,
             @QueryParam("path")
@@ -53,5 +56,14 @@ public interface ConfigurationResource {
             FileInfo fileInfo
     );
 
+    @GET
+    @Produces(APPLICATION_JSON)
+    @Path("manager")
+    @Operation(operationId = "getManagerConfig", summary = "Retrieve the manager configuration JSON")
+    ManagerAppConfig getManagerConfig();
 
+    @GET
+    @Path("manager/image/{filename: .+}")
+    @Operation(operationId = "getManagerConfigImage", summary = "Retrieve manager configuration images")
+    Object getManagerConfigImage(@PathParam("filename")String fileName);
 }

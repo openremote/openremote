@@ -26,18 +26,23 @@ import com.fasterxml.jackson.databind.cfg.ConstructorDetector;
 import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.kjetland.jackson.jsonSchema.JsonSchemaGenerator;
+import com.github.victools.jsonschema.generator.*;
 import jakarta.persistence.Entity;
 import jakarta.validation.ConstraintValidatorContext;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.constraints.NotNull;
+import org.apache.commons.codec.binary.BinaryCodec;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.ArrayUtils;
 import org.hibernate.internal.util.SerializationHelper;
 import org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorContext;
 import org.openremote.model.*;
@@ -47,6 +52,7 @@ import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.syslog.SyslogCategory;
@@ -60,7 +66,14 @@ import java.io.Serializable;
 import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -69,6 +82,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -147,8 +162,20 @@ public class ValueUtil {
     protected static Map<String, Class<? extends AgentLink<?>>> agentTypeMap = new HashMap<>();
     protected static Map<String, MetaItemDescriptor<?>> metaItemDescriptors = new HashMap<>();
     protected static Map<String, ValueDescriptor<?>> valueDescriptors = new HashMap<>();
+    protected static Map<String, ObjectNode> valueDescriptorSchemas = new HashMap<>();
+    protected static Map<String, String> valueDescriptorSchemaHashes = new HashMap<>();
     protected static Validator validator;
-    protected static JsonSchemaGenerator generator;
+    protected static SchemaGenerator generator;
+    protected static MessageDigest md;
+
+    static {
+        try {
+            md = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            LOG.severe("MD5 algorithm not supported");
+            throw new RuntimeException(e);
+        }
+    }
 
     public static ObjectMapper configureObjectMapper(ObjectMapper objectMapper) {
         objectMapper
@@ -427,7 +454,7 @@ public class ValueUtil {
     }
 
     public static <T> T convert(Object object, Class<T> targetType) {
-        if (object == null) {
+        if (object == null || object instanceof NullNode) {
             return null;
         }
         if (targetType == object.getClass()) {
@@ -627,6 +654,10 @@ public class ValueUtil {
     public static Optional<MetaItemDescriptor<?>> getMetaItemDescriptor(String name) {
         if (TextUtil.isNullOrEmpty(name)) return Optional.empty();
         return Optional.ofNullable(metaItemDescriptors.get(name));
+    }
+
+    public static Map<String, String> getValueDescriptorSchemaHashes() {
+        return valueDescriptorSchemaHashes;
     }
 
     public static Map<String, ValueDescriptor<?>> getValueDescriptors() {
@@ -908,12 +939,40 @@ public class ValueUtil {
         JSON.registerSubtypes(agentLinkSubTypes);
 
         doSchemaInit();
+
+        // Add JSON schemas for complex meta items and generate cache keys
+        Map<String, MetaItemDescriptor<?>> metaItems = getMetaItemDescriptors();
+        valueDescriptorSchemas.putAll(metaItems.values().stream()
+                .map(AbstractNameValueDescriptorHolder::getType)
+                .filter(v -> {
+                    String jsonType = v.getJsonType();
+                    return jsonType.equals("array") || jsonType.equals("object");
+                })
+                .collect(Collectors.toMap(
+                        ValueDescriptor::getName,
+                        vd -> (ObjectNode) getSchema(vd.getType())
+                )));
+        valueDescriptorSchemaHashes.putAll(valueDescriptorSchemas.entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getKey,
+                v -> hash(v.getValue().toString())
+        )));
     }
 
     protected static void doSchemaInit() {
-        generator = new JsonSchemaGenerator(JSON, JSONSchemaUtil.getJsonSchemaConfig());
+        generator = new SchemaGenerator(JSONSchemaUtil.getJsonSchemaConfig(JSON));
     }
 
+    public static JsonNode getValueDescriptorSchema(String name) {
+        if (ValueUtil.getValueDescriptor(name).isEmpty()) {
+            return null;
+        }
+        ValueDescriptor<?> vd = ValueUtil.getValueDescriptor(name).get();
+        return valueDescriptorSchemas.computeIfAbsent(vd.getName(), key -> {
+            ObjectNode schema = (ObjectNode) ValueUtil.getSchema(vd.getType());
+            valueDescriptorSchemaHashes.put(vd.getName(), hash(schema.toString()));
+            return schema;
+        });
+    }
 
     protected static Class<?>[] getAgentLinkClasses() {
         return Arrays.stream(getAssetDescriptors(null))
@@ -923,6 +982,10 @@ public class ValueUtil {
             )
             .distinct()
             .toArray(Class<?>[]::new);
+    }
+
+    public static String hash(String v) {
+        return bytesToHexString(md.digest(v.getBytes(StandardCharsets.UTF_8)));
     }
 
     /**
@@ -951,7 +1014,7 @@ public class ValueUtil {
      * each found constraint is then evaluated against the value supplied to the function.
      * <p>
      * Unfortunately JSR-380 can't be used (even Hibernate validator's programmatic API) because validators are type
-     * centric but here the type (e.g. {@link Attribute} or {@link org.openremote.model.rules.AssetState}) is fixed
+     * centric but here the type (e.g. {@link Attribute} or {@link org.openremote.model.attribute.AttributeInfo}) is fixed
      * but the constraints to be applied are dynamic, would be nice if there was a solution to this problem but this
      * works for now.
      */
@@ -960,12 +1023,12 @@ public class ValueUtil {
         boolean valid = true;
 
         if (valueDescriptor != null && valueDescriptor.getConstraints() != null) {
-            if (Arrays.stream(valueDescriptor.getConstraints()).map(constraint -> validateValueConstraint(context, constraintBuilderProvider, now, constraint, value)).anyMatch(constraintValid -> !constraintValid)) {
+            if (validateConstraints(valueDescriptor.getArrayDimensions(), valueDescriptor.getConstraints(), context, constraintBuilderProvider, now, value)) {
                 valid = false;
             }
         }
         if (attributeDescriptor != null && attributeDescriptor.getConstraints() != null) {
-            if (Arrays.stream(attributeDescriptor.getConstraints()).map(constraint -> validateValueConstraint(context, constraintBuilderProvider, now, constraint, value)).anyMatch(constraintValid -> !constraintValid)) {
+            if (validateConstraints(valueDescriptor.getArrayDimensions(), attributeDescriptor.getConstraints(), context, constraintBuilderProvider, now, value)) {
                 valid = false;
             }
         }
@@ -984,6 +1047,15 @@ public class ValueUtil {
             }
         }
         return valid;
+    }
+
+    // TODO: as we recurse, we don't change the path, the error will always be reported on the attribute, not on a specific array index, can we live with that ?
+    private static boolean validateConstraints(Integer dimensions, ValueConstraint[] constraints, ConstraintValidatorContext context, ConstraintViolationPathProvider constraintBuilderProvider, Instant now, Object value) {
+        if (dimensions == null || dimensions == 0 || value == null) {
+            return Arrays.stream(constraints).map(constraint -> validateValueConstraint(context, constraintBuilderProvider, now, constraint, value)).anyMatch(constraintValid -> !constraintValid);
+        } else {
+            return Arrays.stream((Object[])value).anyMatch(v -> validateConstraints(dimensions - 1, constraints, context, constraintBuilderProvider, now, v));
+        }
     }
 
     public static boolean validateValueConstraint(ConstraintValidatorContext context, ConstraintViolationPathProvider constraintViolationPathProvider, Instant now, ValueConstraint valueConstraint, Object value) {
@@ -1009,7 +1081,7 @@ public class ValueUtil {
         if (generator == null) {
             return JSON.createObjectNode();
         }
-        return generator.generateJsonSchema(clazz);
+        return generator.generateSchema(clazz);
     }
 
     public static void initialiseAssetAttributes(Asset<?> asset) throws IllegalStateException {
@@ -1303,5 +1375,102 @@ public class ValueUtil {
             attributeDescriptors.toArray(new AttributeDescriptor<?>[0]),
             metaItemDescriptors.toArray(new MetaItemDescriptor<?>[0]),
             valueDescriptors.toArray(new ValueDescriptor<?>[0]));
+    }
+
+    public static String bytesToHexString(byte[] bytes) {
+        return Hex.encodeHexString(bytes).toUpperCase(Locale.ROOT);
+    }
+
+    public static byte[] bytesFromHexString(String hex) {
+        try {
+            return Hex.decodeHex(hex.toCharArray());
+        } catch (Exception e) {
+            Protocol.LOG.log(Level.WARNING, "Failed to convert hex string to bytes", e);
+            return new byte[0];
+        }
+    }
+
+    public static String bytesToBinaryString(byte[] bytes) {
+        // Need to reverse the array to get a sensible string out
+        ArrayUtils.reverse(bytes);
+        return BinaryCodec.toAsciiString(bytes);
+    }
+
+    public static byte[] bytesFromBinaryString(String binary) {
+        try {
+            return BinaryCodec.fromAscii(binary.toCharArray());
+        } catch (Exception e) {
+            Protocol.LOG.log(Level.WARNING, "Failed to convert hex string to bytes", e);
+            return new byte[0];
+        }
+    }
+
+    public static String doDynamicTimeReplace(String str, Instant instant) {
+        if (TextUtil.isNullOrEmpty(str)) {
+            return str;
+        }
+
+        Pattern pattern = Pattern.compile(Constants.DYNAMIC_TIME_PLACEHOLDER_REGEXP);
+        Matcher matcher = pattern.matcher(str);
+        StringBuilder result = new StringBuilder();
+
+        while (matcher.find()) {
+
+            String durationStr = matcher.group(1);
+            String formatStr = matcher.group(2);
+
+            // Parse the duration
+            if (durationStr != null) {
+                Duration duration = Duration.parse(durationStr);
+                instant = instant.plus(duration);
+            }
+
+            // Apply formatting
+            if (formatStr == null) formatStr = "";
+
+            String formattedDate = switch (formatStr) {
+                case "" -> instant.toString();
+                case "EPOCH_SECONDS" -> String.valueOf(instant.getEpochSecond());
+                case "EPOCH_MILLIS" -> String.valueOf(instant.toEpochMilli());
+                default -> {
+                    ZonedDateTime zonedDateTime = instant.atZone(ZoneId.systemDefault());
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
+                    yield zonedDateTime.format(formatter);
+                }
+            };
+
+            matcher.appendReplacement(result, formattedDate);
+        }
+        matcher.appendTail(result);
+
+        return result.toString();
+    }
+
+    public static String doDynamicValueReplace(String str, Object value) {
+        if (TextUtil.isNullOrEmpty(str)) {
+            return str;
+        }
+
+        Pattern pattern = Pattern.compile(Constants.DYNAMIC_VALUE_PLACEHOLDER_REGEXP);
+        Matcher matcher = pattern.matcher(str);
+
+        StringBuilder result = new StringBuilder();
+
+        while (matcher.find()) {
+
+            String formatStr = matcher.group(1);
+            String formattedValue;
+
+            // Apply formatting
+            if (TextUtil.isNullOrEmpty(formatStr)) {
+                formattedValue = value == null ? NULL_LITERAL : ValueUtil.convert(value, String.class);
+            } else {
+                formattedValue = String.format(formatStr, value);
+            }
+            matcher.appendReplacement(result, formattedValue);
+        }
+        matcher.appendTail(result);
+
+        return result.toString();
     }
 }

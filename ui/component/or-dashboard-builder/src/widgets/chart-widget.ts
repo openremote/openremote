@@ -1,64 +1,66 @@
 import {AssetDatapointLTTBQuery, AssetDatapointQueryUnion, Attribute, AttributeRef} from "@openremote/model";
 import {html, PropertyValues, TemplateResult } from "lit";
 import { when } from "lit/directives/when.js";
-import {TimePresetCallback} from "@openremote/or-chart";
 import moment from "moment";
+import {ChartAttributeConfig} from "@openremote/or-chart";
 import {OrAssetWidget} from "../util/or-asset-widget";
 import { customElement, state } from "lit/decorators.js";
-import {WidgetConfig} from "../util/widget-config";
+import {AssetWidgetConfig} from "../util/widget-config";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {ChartSettings} from "../settings/chart-settings";
 import {WidgetSettings} from "../util/widget-settings";
 import "@openremote/or-chart";
 
-export interface ChartWidgetConfig extends WidgetConfig {
-    attributeRefs: AttributeRef[];
-    rightAxisAttributes: AttributeRef[];
+export interface ChartWidgetConfig extends AssetWidgetConfig {
+    attributeColors: [AttributeRef, string][];
     datapointQuery: AssetDatapointQueryUnion;
-    chartOptions?: any; // ChartConfiguration<"line", ScatterDataPoint[]>
+    attributeConfig?: ChartAttributeConfig,
+    chartOptions?: any;
     showTimestampControls: boolean;
     defaultTimePresetKey: string;
     showLegend: boolean;
+    showZoomBar: boolean;
+    stacked: boolean;
 }
 
-function getDefaultTimePresetOptions(): Map<string, TimePresetCallback> {
-    return new Map<string, TimePresetCallback>([
-        ["lastHour", (date: Date) => [moment(date).subtract(1, 'hour').toDate(), date]],
-        ["last24Hours", (date: Date) => [moment(date).subtract(24, 'hours').toDate(), date]],
-        ["last7Days", (date: Date) => [moment(date).subtract(7, 'days').toDate(), date]],
-        ["last30Days", (date: Date) => [moment(date).subtract(30, 'days').toDate(), date]],
-        ["last90Days", (date: Date) => [moment(date).subtract(90, 'days').toDate(), date]],
-        ["last6Months", (date: Date) => [moment(date).subtract(6, 'months').toDate(), date]],
-        ["lastYear", (date: Date) => [moment(date).subtract(1, 'year').toDate(), date]],
-        ["thisHour", (date: Date) => [moment(date).startOf('hour').toDate(), moment(date).endOf('hour').toDate()]],
-        ["thisDay", (date: Date) => [moment(date).startOf('day').toDate(), moment(date).endOf('day').toDate()]],
-        ["thisWeek", (date: Date) => [moment(date).startOf('isoWeek').toDate(), moment(date).endOf('isoWeek').toDate()]],
-        ["thisMonth", (date: Date) => [moment(date).startOf('month').toDate(), moment(date).endOf('month').toDate()]],
-        ["thisYear", (date: Date) => [moment(date).startOf('year').toDate(), moment(date).endOf('year').toDate()]],
-        ["yesterday", (date: Date) => [moment(date).subtract(24, 'hours').startOf('day').toDate(), moment(date).subtract(24, 'hours').endOf('day').toDate()]],
-        ["thisDayLastWeek", (date: Date) => [moment(date).subtract(1, 'week').startOf('day').toDate(), moment(date).subtract(1, 'week').endOf('day').toDate()]],
-        ["previousWeek", (date: Date) => [moment(date).subtract(1, 'week').startOf('isoWeek').toDate(), moment(date).subtract(1, 'week').endOf('isoWeek').toDate()]],
-        ["previousMonth", (date: Date) => [moment(date).subtract(1, 'month').startOf('month').toDate(), moment(date).subtract(1, 'month').endOf('month').toDate()]],
-        ["previousYear", (date: Date) => [moment(date).subtract(1, 'year').startOf('year').toDate(), moment(date).subtract(1, 'year').endOf('year').toDate()]]
+function getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
+    return new Map<string, [moment.unitOfTime.DurationConstructor, number]>([
+        ["60Minutes", ['minutes', 60]],
+        ["Hour", ['hours', 1]],
+        ["6Hours", ['hours', 6]],
+        ["24Hours", ['hours', 24]],
+        ["Day", ['days', 1]],
+        ["7Days", ['days', 7]],
+        ["Week", ['weeks', 1]],
+        ["30Days", ['days', 30]],
+        ["Month", ['months', 1]],
+        ["90Days", ['days', 90]],
+        ["6Months", ['months', 6]],
+        ["365Days", ['days', 365]],
+        ["Year", ['years', 1]]
     ]);
 }
 
+function getDefaultTimePrefixOptions(): string[] {
+    return ["this", "last"];
+}
+
 function getDefaultSamplingOptions(): Map<string, string> {
-    return new Map<string, string>([["lttb", 'lttb'], ["withInterval", 'interval']]);
+    return new Map<string, string>([["lttb", 'lttb']]);
 }
 
 function getDefaultWidgetConfig(): ChartWidgetConfig {
-    const preset = "last24Hours"
-    const dateFunc = getDefaultTimePresetOptions().get(preset) as TimePresetCallback;
-    const dates = dateFunc(new Date());
+    const defaultPrefix = getDefaultTimePrefixOptions()[0];
+    const [defaultWindowKey, defaultWindow] = Array.from(getDefaultTimeWindowOptions().entries())[0];
+    const startDate = moment().subtract(defaultWindow[1], defaultWindow[0]).startOf(defaultWindow[0]);
+    const endDate = defaultWindow[1] === 1 ? moment().endOf(defaultWindow[0]) : moment();
     return {
         attributeRefs: [],
-        rightAxisAttributes: [],
+        attributeColors: [],
         datapointQuery: {
             type: "lttb",
-            fromTimestamp: dates[0].getTime(),
-            toTimestamp: dates[1].getTime(),
-            amountOfPoints: 100
+            fromTimestamp: startDate.toDate().getTime(),
+            toTimestamp: endDate.toDate().getTime()
         },
         chartOptions: {
             options: {
@@ -72,21 +74,26 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
                         max: undefined
                     }
                 }
-            },
+            }
         },
         showTimestampControls: false,
-        defaultTimePresetKey: preset,
-        showLegend: true
+        defaultTimePresetKey: defaultPrefix + defaultWindowKey,
+        showLegend: true,
+        showZoomBar: false,
+        stacked: false
     };
 }
 
 /* --------------------------------------------------- */
 
-@customElement('chart-widget')
+@customElement("chart-widget")
 export class ChartWidget extends OrAssetWidget {
 
     @state()
     protected datapointQuery!: AssetDatapointQueryUnion;
+
+    @state()
+    protected _loading = false;
 
     // Override of widgetConfig with extended type
     protected widgetConfig!: ChartWidgetConfig;
@@ -102,14 +109,15 @@ export class ChartWidget extends OrAssetWidget {
             },
             getSettingsHtml(config: ChartWidgetConfig): WidgetSettings {
                 const settings = new ChartSettings(config);
-                settings.setTimePresetOptions(getDefaultTimePresetOptions());
+                settings.setTimeWindowOptions(getDefaultTimeWindowOptions());
+                settings.setTimePrefixOptions(getDefaultTimePrefixOptions());
                 settings.setSamplingOptions(getDefaultSamplingOptions());
                 return settings;
             },
             getDefaultConfig(): ChartWidgetConfig {
                 return getDefaultWidgetConfig();
             }
-        }
+        };
     }
 
     // Method called on every refresh/reload of the widget
@@ -142,55 +150,72 @@ export class ChartWidget extends OrAssetWidget {
 
         if(changedProps.has('widgetConfig') && this.widgetConfig) {
             this.datapointQuery = this.widgetConfig.datapointQuery;
+
+            const attributeRefs = this.widgetConfig.attributeRefs;
+            if(attributeRefs.length === 0) {
+                this._error = "noAttributesConnected";
+            } else {
+                const missingAssets = attributeRefs?.filter((attrRef: AttributeRef) => !this.isAttributeRefLoaded(attrRef));
+                if (missingAssets.length > 0) {
+                    this.loadAssets(attributeRefs);
+                }
+            }
         }
 
         return super.willUpdate(changedProps);
     }
 
-    // WebComponent lifecycle method, that occurs AFTER every state update
-    protected updated(changedProps: Map<string, any>) {
-        super.updated(changedProps);
-
-        // If widgetConfig, and the attributeRefs of them have changed...
-        if(changedProps.has("widgetConfig") && this.widgetConfig) {
-            const attributeRefs = this.widgetConfig.attributeRefs;
-            const missingAssets = attributeRefs?.filter((attrRef: AttributeRef) => !this.isAttributeRefLoaded(attrRef));
-            if (missingAssets.length > 0) {
-
-                // Fetch the new list of assets
-                this.fetchAssets(attributeRefs).then((assets) => {
-                    this.loadedAssets = assets;
-                    this.assetAttributes = attributeRefs?.map((attrRef: AttributeRef) => {
-                        const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
-                        const foundAsset = assetIndex >= 0 ? assets[assetIndex] : undefined;
-                        return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
-                    }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
-                });
-
-            }
+    protected loadAssets(attributeRefs: AttributeRef[]): void {
+        if(attributeRefs.length === 0) {
+            this._error = "noAttributesConnected";
+            return;
         }
-        return super.updated(changedProps);
+        this._loading = true;
+        this._error = undefined;
+        this.fetchAssets(attributeRefs).then((assets) => {
+            this.loadedAssets = assets;
+            this.assetAttributes = attributeRefs?.map((attrRef: AttributeRef) => {
+                const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
+                const foundAsset = assetIndex >= 0 ? assets[assetIndex] : undefined;
+                return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
+            }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
+        }).catch(e => {
+            this._error = e.message;
+        }).finally(() => {
+            this._loading = false;
+        });
     }
 
     protected render(): TemplateResult {
         return html`
-            ${when(this.loadedAssets && this.assetAttributes && this.loadedAssets.length > 0 && this.assetAttributes.length > 0, () => {
+            ${when(this._loading, () => html`
+                <or-loading-indicator></or-loading-indicator>
+                
+            `, () => when(this._error, () => html`
+                <div style="height: 100%; display: flex; justify-content: center; align-items: center; text-align: center;">
+                    <span><or-translate .value="${this._error}"></or-translate></span>
+                </div>
+                
+            `, () => {
+                const timePrefixList = getDefaultTimePrefixOptions();
+                const timePrefix = timePrefixList.find(prefix => this.widgetConfig?.defaultTimePresetKey?.startsWith(prefix)) ?? timePrefixList[0];
+                const timeWindowList = getDefaultTimeWindowOptions();
+                let [_, timeWindow] = this.widgetConfig?.defaultTimePresetKey?.split(timePrefix);
+                if(!timeWindow || !timeWindowList.has(timeWindow)) timeWindow = Array.from(timeWindowList.keys())[0];
                 return html`
-                    <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .rightAxisAttributes="${this.widgetConfig.rightAxisAttributes}"
+                    <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
+                              .attributeColors="${this.widgetConfig?.attributeColors}" ?stacked="${this.widgetConfig?.stacked}"
+                              .attributeConfig="${this.widgetConfig?.attributeConfig != null ? this.widgetConfig.attributeConfig : {}}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
+                              .showZoomBar="${(this.widgetConfig?.showZoomBar != null) ? this.widgetConfig?.showZoomBar : true}"
                               .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
-                              .timePresetOptions="${getDefaultTimePresetOptions()}" .timePresetKey="${this.widgetConfig?.defaultTimePresetKey}"
+                              .timePrefixOptions="${timePrefixList}" .timeWindowOptions="${timeWindowList}"
+                              .timePrefixKey="${timePrefix}" .timeWindowKey="${timeWindow}"
                               .datapointQuery="${this.datapointQuery}" .chartOptions="${this.widgetConfig?.chartOptions}"
                               style="height: 100%"
                     ></or-chart>
                 `;
-            }, () => {
-                return html`
-                    <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
-                        <span><or-translate value="noAttributesConnected"></or-translate></span>
-                    </div>
-                `
-            })}
+            }))}
         `;
     }
 
@@ -198,8 +223,7 @@ export class ChartWidget extends OrAssetWidget {
         return {
             type: "lttb",
             fromTimestamp: moment().set('minute', -60).toDate().getTime(),
-            toTimestamp: moment().set('minute', 60).toDate().getTime(),
-            amountOfPoints: 100
-        }
+            toTimestamp: moment().set('minute', 60).toDate().getTime()
+        };
     }
 }

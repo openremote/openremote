@@ -7,11 +7,10 @@ import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
-import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
-import org.openremote.model.rules.TemporaryFact
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Ignore
 import spock.lang.Specification
@@ -19,7 +18,6 @@ import spock.util.concurrent.PollingConditions
 
 import static java.util.concurrent.TimeUnit.MINUTES
 import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_APARTMENT_1
-import static org.openremote.model.attribute.AttributeEvent.Source.SENSOR
 
 // Ignore this test as temporary facts (rule events) cause the rule engine to continually fire, need to decide if
 // we support rule events or should it just be something rules do internally
@@ -51,7 +49,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
             apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
-            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
+            assert apartment1Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
         }
 
         and: "the presence detected flag and timestamp should not be set"
@@ -181,7 +179,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
             apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
-            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
+            assert apartment1Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
         }
 
         and: "the presence detected flag and timestamp of the room should not be set"
@@ -220,7 +218,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
 
             // Wait for event to be processed
             conditions.eventually {
-                assert apartment1Engine.assetEvents.any() {
+                assert apartment1Engine.facts.assetEvents.any() {
                     it.fact.matches(co2LevelIncrement, SENSOR, true)
                 }
                 assert noEventProcessedIn(assetProcessingService, 500)
@@ -254,7 +252,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
 
             // Wait for event to be processed
             conditions.eventually {
-                assert apartment1Engine.assetEvents.any {
+                assert apartment1Engine.facts.assetEvents.any {
                     it.fact.matches(co2LevelIncrement, SENSOR, true)
                 }
             }

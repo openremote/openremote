@@ -27,6 +27,6 @@ public interface AssetLocationPredicateConsumer {
     /**
      * Called when one or more asset's location predicate rules change; the initialising flag indicates if the
      */
-    void accept(RulesEngine t, List<RulesEngine.AssetStateLocationPredicates> u);
+    void accept(RulesEngine t, List<RulesEngine.AssetLocationPredicates> u);
 }
 

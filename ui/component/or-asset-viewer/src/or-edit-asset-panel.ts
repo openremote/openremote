@@ -2,8 +2,8 @@ import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "
 import {until} from "lit/directives/until.js";
 import {customElement, property, state} from "lit/decorators.js";
 import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail, ValueInputProvider} from "@openremote/or-mwc-components/or-mwc-input";
-import i18next from "i18next";
-import {Asset, Attribute, NameValueHolder, AssetModelUtil} from "@openremote/model";
+import {i18next} from "@openremote/or-translate"
+import {Asset, Attribute, NameValueHolder, AssetModelUtil, WellknownMetaItems} from "@openremote/model";
 import { DefaultColor5, DefaultColor3, DefaultColor2, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {OrIcon} from "@openremote/or-icon";
@@ -96,7 +96,7 @@ const style = css`
         transition: max-height 0.25s ease-out;
     }
     .attribute-meta-row.expanded  .meta-item-container {
-        transition: max-height 1s ease-in;
+        transition: max-height 0.5s ease-in-out;
     }
     .meta-item-container or-mwc-input {
         width: 100%;
@@ -182,6 +182,8 @@ export class OrEditAssetPanel extends LitElement {
     protected attributeTemplatesAndValidators: TemplateAndValidator[] = [];
     protected changedAttributes: string[] = [];
 
+    protected expandedAll: boolean = false;
+
     public static get styles() {
         return [
             unsafeCSS(tableStyle),
@@ -202,7 +204,15 @@ export class OrEditAssetPanel extends LitElement {
 
     shouldUpdate(changedProperties: PropertyValues): boolean {
         if (changedProperties.has("asset")) {
-            this.changedAttributes = [];
+            const oldAsset = changedProperties.get("asset") as Asset;
+            if (this.asset.attributes && oldAsset?.attributes && this.asset.id === oldAsset.id) {
+                // Handles external attribute changes post saving phase.
+                this.changedAttributes = Object.values(oldAsset.attributes)
+                  .filter(({ name, timestamp: oldTimestamp }) => oldTimestamp !== this.asset.attributes?.[name!].timestamp)
+                  .map(({ name }) => name!);
+            } else {
+                this.changedAttributes = [];
+            }
         }
         return super.shouldUpdate(changedProperties);
     }
@@ -223,11 +233,7 @@ export class OrEditAssetPanel extends LitElement {
                 </div>`
         ];
 
-        const expanderToggle = (ev: MouseEvent) => {
-            const tdElem = ev.target as HTMLElement;
-            if (tdElem.className.indexOf("expander-cell") < 0 || tdElem.className.indexOf("expanding") >= 0) {
-                return;
-            }
+        const expandToggle = (tdElem: HTMLElement) => {
             const expanderIcon = tdElem.getElementsByTagName("or-icon")[0] as OrIcon;
             const headerRow = tdElem.parentElement! as HTMLTableRowElement;
             const metaRow = (headerRow.parentElement! as HTMLTableElement).rows[headerRow.rowIndex];
@@ -243,16 +249,40 @@ export class OrEditAssetPanel extends LitElement {
                 window.setTimeout(() => {
                     tdElem.classList.remove("expanding");
                     metaContainer.style.maxHeight = "unset";
-                }, 1100);
+                }, 250);
             } else {
                 expanderIcon.icon = "chevron-right";
                 metaRow.classList.remove("expanded");
-                metaContainer.style.transition = "none";
                 metaContainer.style.maxHeight = Math.max(500, metaContainer.firstElementChild!.getBoundingClientRect().height) + "px";
                 window.setTimeout(() => {
-                    metaContainer.style.transition = "";
                     metaContainer.style.maxHeight = "";
                 });
+            }
+        }
+
+        const expanderToggle = (ev: MouseEvent) => {
+            const tdElem = ev.target as HTMLElement;
+            if (tdElem.className.indexOf("expander-cell") < 0 || tdElem.className.indexOf("expanding") >= 0) {
+                return;
+            }
+            expandToggle(tdElem);
+
+        };
+
+        const expandAllToggle = (ev: MouseEvent) => {
+            const tdElem = ev.target as HTMLElement;
+            const tdElems = tdElem.closest("table")?.getElementsByClassName("expander-cell");
+
+            if (tdElems) {
+                for (var i = 0; i < tdElems.length; i++) {
+                    const expanderIcon = tdElems[i].getElementsByTagName("or-icon")[0] as OrIcon;
+
+                    if ((expanderIcon.icon === "chevron-right" && !this.expandedAll) || (expanderIcon.icon === "chevron-down" && this.expandedAll)) {
+                        expandToggle(tdElems[i] as HTMLElement);
+                    }
+                }
+                tdElem.setAttribute("label", this.expandedAll ? "expandAll" : "collapseAll");
+                this.expandedAll = !this.expandedAll;
             }
         };
 
@@ -272,7 +302,7 @@ export class OrEditAssetPanel extends LitElement {
                             <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="name"></or-translate></th>
                             <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="type"></or-translate></th>
                             <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="value"></or-translate></th>
-                            <th class="mdc-data-table__header-cell" role="columnheader" scope="col"></or-translate></th>
+                            <th class="mdc-data-table__header-cell" role="columnheader" scope="col" style="padding-right:8px;"><or-mwc-input style="float:right;" .type="${InputType.BUTTON}" .label="${i18next.t("expandAll")}" @or-mwc-input-changed="${expandAllToggle}"></or-mwc-input></th>
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
@@ -293,8 +323,7 @@ export class OrEditAssetPanel extends LitElement {
             <div id="edit-wrapper">
                 ${getPanel("0", {type: "info", title: "properties"}, html`${properties}`) || ``}
                 ${getPanel("1", {type: "info", title: "attribute_plural"}, html`${attributes}`) || ``}
-            </div>
-        `;
+            </div>`;
     }
 
     protected _getAttributeTemplate(assetType: string, attribute: Attribute<any>): TemplateAndValidator {
@@ -323,6 +352,9 @@ export class OrEditAssetPanel extends LitElement {
             };
         };
 
+        // Booleans formatted asMomentary should be read-only in modify mode
+        const formattedAsMomentary = attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.MOMENTARY) || (attribute.meta.hasOwnProperty(WellknownMetaItems.FORMAT) && attribute.meta[WellknownMetaItems.FORMAT]?.asMomentary));
+
         const template = html`
             <tr class="mdc-data-table__row">
                 <td class="padded-cell mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
@@ -330,11 +362,11 @@ export class OrEditAssetPanel extends LitElement {
                 <td class="padded-cell overflow-visible mdc-data-table__cell">
                     <or-attribute-input ${ref(attributeInputRef)} 
                                         .comfortable="${true}" .assetType="${assetType}" .label=${null} 
-                                        .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" 
+                                        .readonly="${formattedAsMomentary}" .attribute="${attribute}" .assetId="${this.asset.id!}" 
                                         disableWrite disableSubscribe disableButton compact 
                                         @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
                 </td>
-                <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}">` : ``}</td>
+                <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-mwc-input type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${deleteAttribute}">` : ``}</td>
             </tr>
             <tr class="attribute-meta-row">
                 <td colspan="4">
@@ -488,13 +520,12 @@ export class OrEditAssetPanel extends LitElement {
                     default: true,
                     actionName: "add",
                     action: () => {
-                        if (attr) {
+                        if (!isDisabled(attr)) {
                             this.asset.attributes![attr.name!] = attr;
                             this._onModified();
                         }
                     },
-                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled label="add"
-                                    @or-mwc-input-changed="${(ev: Event) => { if (isDisabled(attr)) { ev.stopPropagation(); return false; } } }"></or-mwc-input>`
+                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled label="add"></or-mwc-input>`
                 }
             ])
             .setDismissAction(null));

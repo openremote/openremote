@@ -20,13 +20,14 @@
 package org.openremote.model.asset.agent;
 
 import org.openremote.model.asset.Asset;
-import org.openremote.model.attribute.Attribute;
+import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
@@ -151,7 +152,7 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
      * Get the {@link AgentLink} for the specified linked agent
      */
     @SuppressWarnings("unchecked")
-    public V getAgentLink(Attribute<?> attribute) {
+    public <T extends MetaHolder> V getAgentLink(T attribute) {
         AgentLink<?> agentLink = attribute.getMetaValue(AGENT_LINK).orElseThrow(() -> new IllegalStateException("Failed to getAgentLink<?>despite attribute being linked to an agent"));
         return (V) agentLink;
     }
@@ -272,15 +273,14 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
      * {@link Agent#STATUS}. Agent's can override this behaviour as required.
      */
     public boolean isConfigurationAttribute(String attributeName) {
-
         // This is an event for an agent so is it for an attribute that has a descriptor which is defined in an agent class
         // and it's not the status attribute (or we'll end up in a loop)
         return !attributeName.equals(Agent.STATUS.getName())
             && ValueUtil.getAssetInfo(getType())
             .map(info -> info.getAttributeDescriptors().containsKey(attributeName))
             .orElse(false)
-            // Exclude attributes that have a descriptor from the base Asset class
-            && ValueUtil.getAssetInfo(Asset.class)
+            // Exclude attributes that have a descriptor from the base ThingAsset class
+            && ValueUtil.getAssetInfo(ThingAsset.class)
             .map(typeInfo -> !typeInfo.getAttributeDescriptors().containsKey(attributeName))
             .orElse(false);
     }

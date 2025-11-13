@@ -22,9 +22,9 @@ export function pageRulesProvider(store: Store<AppStateKeyed>, config: PageRules
         ],
         pageCreator: () => {
             const page = new PageRules(store);
-            if (config) {
-                page.config = config;
-            }
+            page.config = {
+                rules: {...PAGE_RULES_CONFIG_DEFAULT.rules, ...config.rules}
+            };
             return page;
         }
     };
@@ -41,7 +41,9 @@ export const PAGE_RULES_CONFIG_DEFAULT: PageRulesConfig = {
                     attribute: [],
                     webhook: [],
                     email: [NotificationTargetType.USER, NotificationTargetType.CUSTOM],
+                    email_localized: [NotificationTargetType.USER, NotificationTargetType.CUSTOM],
                     push: [NotificationTargetType.USER, NotificationTargetType.ASSET],
+                    push_localized: [NotificationTargetType.USER, NotificationTargetType.ASSET]
                 }
             }
         },

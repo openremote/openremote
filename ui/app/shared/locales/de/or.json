@@ -1,0 +1,637 @@
+{
+  "map": "Karte",
+  "map_plural": "Karten",
+  "rule": "Regel",
+  "rule_plural": "Regeln",
+  "rules": "Regeln",
+  "asset": "Asset",
+  "asset_plural": "Assets",
+  "assets": "Assets",
+  "attribute": "Attribut",
+  "attributes": "Attribute",
+  "attribute_plural": "Attribute",
+  "optional_attributes": "Optionale Attribute",
+  "insights": "Einsicht",
+  "scenes": "Szenen",
+  "settings": "Einstellungen",
+  "language": "Sprache",
+  "selectLanguage": "Sprache wählen",
+  "logout": "Logout",
+  "login": "Login",
+  "edit": "Bearbeiten",
+  "monday": "Montag",
+  "tuesday": "Dienstag",
+  "wednesday": "Mittwoch",
+  "thursday": "Donnerstag",
+  "friday": "Freitag",
+  "saturday": "Samstag",
+  "sunday": "Sonntag",
+  "MO": "MO",
+  "TU": "DI",
+  "WE": "MI",
+  "TH": "DO",
+  "FR": "FR",
+  "SA": "SA",
+  "SU": "SO",
+  "sceneStartTime": "Startzeit der Szene",
+  "sceneConfiguration": "Szenenkonfiguration",
+  "temperature": "Temperatur",
+  "enabled": "Ein",
+  "disabled": "Aus",
+  "scene": "Szene",
+  "user": "Anwender",
+  "empty": "Hat keinen Wert",
+  "notEmpty": "Hat einen Wert",
+  "equals": "Gleich",
+  "notEquals": "Ungleich",
+  "greaterThan": "Größer als",
+  "greaterEquals": "Größer als oder gleich",
+  "lessThan": "Kleiner als",
+  "lessEquals": "Kleiner als oder gleich",
+  "between": "Zwischen",
+  "notBetween": "Nicht dazwischen",
+  "contains": "Enthält",
+  "notContains": "Enthält nicht",
+  "startsWith": "Beginnt mit",
+  "notStartsWith": "Beginnt nicht mit",
+  "endsWith": "Endet mit",
+  "notEndsWith": "Endet nicht mit",
+  "containsKey": "Enthält Schlüssel",
+  "notContainsKey": "Enthält nicht den Schlüssel",
+  "notUpdatedFor": "Nicht aktualisiert für",
+  "true": "Wahr",
+  "false": "Falsch",
+  "radiusMin": "Radius (min. 100m)",
+  "withinRadius": "Innerhalb des Radius",
+  "outsideRadius": "Außerhalb des Radius",
+  "withinRectangle": "Innerhalb des Rechtecks",
+  "outsideRectangle": "Außerhalb des Rechtecks",
+  "indexContains": "Index enthält",
+  "notIndexContains": "Index enthält nicht",
+  "lengthEquals": "Anzahl der Elemente ist gleich",
+  "notLengthEquals": "Anzahl der Elemente ist ungleich",
+  "lengthGreaterThan": "Anzahl der Elemente is größer als",
+  "lengthLessThan": "Anzahl der Elemente is kleiner als",
+  "valueChanges": "Wertänderungen",
+  "save": "Speichern",
+  "active": "Aktiv",
+  "deleteRulesetsConfirm": "Regeln löschen?",
+  "deleteRulesetsFailed": "Fehler beim Löschen einer oder mehrerer Regeln",
+  "saveRulesetFailed": "Regel konnte nicht gespeichert werden",
+  "confirmContinueRulesetModified": "Regelsatz wurde geändert, Änderungen verwerfen?",
+  "when": "Wenn",
+  "then": "Dann",
+  "orWhen": "Oder wenn",
+  "datetime": "Datum und Zeit",
+  "rulesEditorAddCondition": "Bedingung hinzufügen",
+  "rulesEditorAddGroup": "Gruppe hinzufügen",
+  "rulesEditorAddAction": "Aktion hinzufügen",
+  "sortBy": "Sortieren nach",
+  "assetType": "Asset-Typ",
+  "creationDate": "Erstellungsdatum",
+  "lang": "Sprache",
+  "status": "Status",
+  "name": "Name",
+  "deleteAssetsConfirm": "Asset(s) und alle untergeordneten Assets löschen?",
+  "deleteAssetsFailed": "Asset(s) konnte nicht gelöscht werden",
+  "ok": "OK",
+  "cancel": "Abbrechen",
+  "discard": "Verwerfen",
+  "createdOn": "Erstellt am:",
+  "createdOnWithDate": "Erstellt am: {{-date, LLLL}}",
+  "updatedWithDate": "Aktualisiert am: {{-date, llll}}",
+  "accessPublicRead": "Alle dürfen lesen",
+  "type": "Typ",
+  "path": "Pfad",
+  "showOnMap": "Auf Karte anzeigen",
+  "noAssetSelected": "Bitte wählen Sie links ein Asset aus",
+  "multiAssetSelected": "{{assetNbr}} assets selected",
+  "changeParent": "Parent ändern",
+  "setParent": "Parent asset wählen",
+  "noAssetTypeSelected": "Bitte wählen Sie links ein Asset Type aus",
+  "loading": "Wird geladen...",
+  "noAssetsFound": "No assets found",
+  "location": "Standort",
+  "hour": "Stunde",
+  "day": "Tag",
+  "week": "Woche",
+  "month": "Monat",
+  "year": "Jahr",
+  "period": "Zeitraum",
+  "ending": "Ende",
+  "timeframe": "Zeitfenster",
+  "addAttribute": "Attribut hinzufügen",
+  "selectAttributes": "Attribute wählen",
+  "selectAttribute": "Attribut wählen",
+  "clearTable": "Leere",
+  "clear": "Leere",
+  "export": "exportieren",
+  "addAssetAttribute": "Asset Attribute hinzufügen",
+  "add": "Hinzufügen",
+  "flow": {
+    "EQUALS_COMPARATOR": "Gleich",
+    "GREATER_THAN": "Größer als",
+    "LESS_THAN": "Kleiner als",
+    "READ_ATTRIBUTE": "Attribut lesen",
+    "WRITE_ATTRIBUTE": "Attribut schreiben",
+    "BOOLEAN_INPUT": "Boolesch",
+    "NUMBER_INPUT": "Numerisch",
+    "TEXT_INPUT": "Text",
+    "ADD_OPERATOR": "Addieren",
+    "SUBTRACT_OPERATOR": "Subtrahieren",
+    "COMBINE_TEXT": "Text zusammenfügen",
+    "MULTIPLY_OPERATOR": "Multiplizieren",
+    "DIVIDE_OPERATOR": "Dividieren",
+    "AND_GATE": "Und Gatter",
+    "OR_GATE": "Oder Gatter",
+    "NOT_GATE": "Nicht Gatter",
+    "NUMBER_SWITCH": "Numerischer Schalter",
+    "TEXT_SWITCH": "Textueller Schalter",
+    "ROUND_NODE": "Runden",
+    "LOG_OUTPUT": "Write to Logs",
+    "DERIVATIVE": "Attribute derivative",
+    "INTEGRAL": "Attribute integral",
+    "HISTORIC_VALUE": "Attribute history",
+    "MAX_PROCESSOR": "Maximum",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Average",
+    "MEDIAN_PROCESSOR": "Median",
+    "SUM_OPERATOR": "Sum",
+    "max": "Max",
+    "min": "Min",
+    "avg": "Avg",
+    "med": "Med"
+  },
+  "input": "Eingabe",
+  "processors": "Prozessoren",
+  "output": "Ausgabe",
+  "selectAsset": "Asset auswählen",
+  "selectAssetOnTheLeft": "Bitte wählen Sie links ein Asset aus",
+  "selectAssetTypeOnTheLeft": "Bitte wählen Sie links ein Asset-Typ aus",
+  "noRuleStateAttributes": "Keine Attribute mit 'rule state' Konfigurationselemente gefunden",
+  "noDatapointsAttributes": "Keine Attribute mit 'store data points' oder 'agent link' Konfigurationselemente gefunden",
+  "noAttributesToShow": "Keine Attribute gefunden",
+  "noDatapointsOrRuleStateAttributes": "Keine Attribute mit 'rule state', 'store data points', oder 'agent link' Konfigurationselemente gefunden",
+  "copy": "Kopieren",
+  "paste": "Einfügen",
+  "delete": "Löschen",
+  "fitViewToSelectedNodes": "Ansicht an selektierte Knoten anpassen",
+  "resetView": "Ansicht zurücksetzen",
+  "fitView": "Ansicht anpassen",
+  "areYouSure": "Bist du sicher?",
+  "flowEditor": "Flow Editor",
+  "else": "sonst",
+  "english": "Englisch",
+  "arabic": "Arabisch",
+  "chinese": "Chinesisch",
+  "dutch": "Niederländisch",
+  "french": "Französisch",
+  "german": "Deutsch",
+  "italian": "Italienisch",
+  "portuguese": "Portugiesisch",
+  "romanian": "Rumänisch",
+  "spanish": "Spanisch",
+  "ukrainian": "Ukrainisch",
+  "noRuleSelected": "Bitte wählen Sie links eine Regel aus",
+  "anyOfThisType": "Irgendeines von diesem Typ",
+  "notification": "Benachrichtigung",
+  "matched": "Passend",
+  "matchedOfType": "Passend Typ: {{type}}",
+  "unmatched": "Nicht passend",
+  "wait": "Warte",
+  "setup": "Einrichten",
+  "selectFile": "Datei aussuchen",
+  "file": "Datei",
+  "discoverAssets": "Assets entdecken",
+  "discovering": "Entdecken",
+  "underlyingAssets": "Zugrundeliegende Assets",
+  "groupAssetName": "Assetname",
+  "history": "Historie",
+  "info": "Info",
+  "notSupported": "Nicht unterstützt",
+  "ruleName": "Regelname",
+  "value": "Wert",
+  "and": "und",
+  "number": "Zahl",
+  "string": "Text",
+  "operator": "Operator",
+  "area": "Bereich",
+  "timestamp": "Zeitstempel",
+  "level": "Level",
+  "limit": "Limit",
+  "live": "Live",
+  "categories": "Kategorien",
+  "subCategoryFilters": "Unterkategorie Filter",
+  "category": "Kategorie",
+  "subCategory": "Unterkategorie",
+  "message": "Nachricht",
+  "warn": "Warnung",
+  "error": "Fehler",
+  "always": "Immer",
+  "once": "Einmal",
+  "oncePerHour": "Einmal pro Stunde",
+  "oncePerDay": "Einmal pro Tag",
+  "oncePerWeek": "Einmal pro Woche",
+  "reset": "Zurücksetzen",
+  "noLongerMatches": "Stimmt nicht mehr überein",
+  "logs": "Protokolle",
+  "addRemoveAttributes": "Attribute hinzufügen/entfernen",
+  "email": "Email",
+  "push-notification": "Push-Benachrichtigung",
+  "subject": "Gegenstand",
+  "openWebsiteUrl": "Website zu öffnende",
+  "openInBrowser": "Im Browser öffnen (für externe Websites)",
+  "buttonTextConfirm": "Text für Aktionsschaltfläche",
+  "buttonTextDecline": "Text für Ablehnungsschaltfläche",
+  "custom": "Manuelle Eingabe",
+  "realm": "Realm",
+  "realm_plural": "Realms",
+  "displayName": "Freundlicher Name",
+  "deleteRealmConfirm": "Möchten Sie diesen Realm wirklich löschen?",
+  "user_plural": "Benutzer",
+  "regularUser_plural": "Normale Benutzer",
+  "serviceUser_plural": "Servicenutzer",
+  "regenerateSecret": "Secret regenerieren",
+  "role": "Rolle",
+  "role_plural": "Rollen",
+  "description": "Beschreibung",
+  "passwordMismatch": "Passwörter stimmen nicht überein",
+  "username": "Nutzername",
+  "firstName": "Vorname",
+  "surname": "Nachname",
+  "deleteUserConfirm": "Möchten Sie diesen Benutzer wirklich löschen?",
+  "deleteRoleConfirm": "Möchten Sie diese Rolle wirklich löschen?",
+  "realmRules": "Realm",
+  "globalRules": "Global",
+  "recipients": "Empfänger",
+  "rulesLanguages": {
+    "JSON": "When-Then",
+    "FLOW": "Flow",
+    "GROOVY": "Groovy",
+    "JAVASCRIPT": "JavaScript"
+  },
+  "gateway": {
+    "": "Manager verbindung",
+    "connectionDetails": "Verbindungsdetails"
+  },
+  "secured": "Gesichert",
+  "clientSecret": "Client secret",
+  "clientId": "Client ID",
+  "port": "Port",
+  "host": "Hostname",
+  "errorOccurred": "Ein Fehler ist aufgetreten",
+  "sendFailed": "Senden fehlgeschlagen",
+  "managerError": {
+    "MANAGER_FAILED_TO_LOAD": "Manager konnte nicht geladen werden (siehe Konsolenprotokolle)",
+    "AUTH_FAILED": "Auth konnte nicht geladen werden (siehe Konsolenprotokolle)",
+    "AUTH_TYPE_UNSUPPORTED": "Angeforderter Authentifizierungstyp wird nicht unterstützt",
+    "CONSOLE_ERROR": "Konsolenfehler (siehe Konsolenprotokolle)",
+    "EVENTS_CONNECTION_ERROR": "Ereignisbusverbindungsfehler (siehe Konsolenprotokolle)",
+    "TRANSLATION_ERROR": "Übersetzungsfehler (siehe Konsolenprotokolle)"
+  },
+  "appError": {
+    "noConfig": "Keine App-Konfiguration bereitgestellt",
+    "noReduxStore": "Kein Redux-Store bereitgestellt",
+    "noPages": "Keine Seiten bereitgestellt"
+  },
+  "couldNotRetrieveAttribute": "Attributinformationen konnten nicht abgerufen werden",
+  "pressEnterToSend": "Eingabetaste zum Senden",
+  "sending": "Senden",
+  "submit": "Einreichen",
+  "password": "Passwort",
+  "resetPassword": "Passwort zurücksetzen",
+  "resetPasswordConfirmation": "Eine E-Mail zum Zurücksetzen Ihres Passworts wurde gesendet.",
+  "repeatPassword": "Passwort wiederholen",
+  "details": "Details",
+  "permissions": "Berechtigungen",
+  "linkedAssets": "Verbunden assets",
+  "realm_role_plural": "Realm rollen",
+  "manager_role_plural": "Manager rollen",
+  "restrictAccess": "Zugriff einschränken",
+  "selectRestrictedAssets": "{{number}} Assets",
+  "restrictedAccessToAssets": "Eingeschränkter Zugriff auf",
+  "fullAccessLabel": "Administrator: Vollzugriff; Benutzer und Rollen verwalten",
+  "noChildAssets": "Keine zugrunde liegenden Assets",
+  "account": "Account",
+  "editAttribute": "Attribut ändern",
+  "editDelta": "Delta",
+  "editCurrentValue": "Dezimalstellen",
+  "decimals": "Dezimalstellen",
+  "percentage": "Prozentsatz",
+  "absolute": "Absolut",
+  "editAsset": "Asset bearbeiten",
+  "viewAsset": "Anzeigen",
+  "addAsset": "Hinzufügen",
+  "parent": "Parent",
+  "none": "Keiner",
+  "properties": "Eigenschaften",
+  "pressed": "Gedrückt",
+  "released": "Losgelassen",
+  "open": "Offen",
+  "closed": "Geschlossen",
+  "on": "An",
+  "off": "Aus",
+  "units": {
+    "per": "/",
+    "squared": "²",
+    "cubed": "³",
+    "peak": "p",
+    "mega": "M",
+    "kilo": "k",
+    "centi": "c",
+    "milli": "m",
+    "micro": "µ",
+    "percentage": "%",
+    "acre": "acre",
+    "hectare": "ha",
+    "decibel": "dB",
+    "decibel_attenuated": "dB(A)",
+    "celsius": "°C",
+    "fahrenheit": "°F",
+    "kelvin": "K",
+    "year": "Jahr",
+    "month": "Monat",
+    "week": "Woche",
+    "day": "Tag",
+    "hour": "Std",
+    "minute": "min",
+    "second": "s",
+    "metre": "m",
+    "mile": "mi",
+    "yard": "yd",
+    "foot": "ft",
+    "inch": "in",
+    "mile_scandinavian": "mil",
+    "gram": "g",
+    "ounce": "oz",
+    "pound": "lb",
+    "stone": "st",
+    "degree": "°",
+    "radian": "rad",
+    "knot": "kn",
+    "litre": "l",
+    "gallon": "gal",
+    "fluid_ounce": "fl.oz",
+    "joule": "J",
+    "btu": "BTU",
+    "watt": "W",
+    "lux": "lx",
+    "lumen": "lm",
+    "pascal": "Pa",
+    "bar": "bar",
+    "inch_mercury": "inHg",
+    "volt": "V",
+    "ohm": "Ω",
+    "amp": "A",
+    "hertz": "Hz",
+    "rpm": "rpm",
+    "carbon": "CO2",
+    "meta": {},
+    "attribute": {}
+  },
+  "format": {
+    "meta": {},
+    "attribute": {}
+  },
+  "constraints": {
+    "meta": {},
+    "attribute": {}
+  },
+  "label": {
+    "asset": {
+      "ElectricityProducerSolarAsset": "PV-Solaranlage",
+      "ElectricityProducerWindAsset": "Windturbinenanlage"
+    },
+    "meta": {},
+    "attribute": {},
+    "value": {}
+  },
+  "metaOverrides": {
+    "label": {}
+  },
+  "attributeOverrides": {
+    "label": {}
+  },
+  "addMetaItems": "Konfigurationselemente hinzufügen",
+  "loseChanges": "Änderungen verwerfen?",
+  "confirmContinueAssetModified": "Asset wurde geändert, Änderungen verwerfen?",
+  "saveAssetFailed": "Asset konnte nicht gespeichert werden",
+  "noCommand": "Kein Befehl",
+  "start": "Start",
+  "stop": "Stop",
+  "assetTypes": {
+    "noDescription": "Keine Beschreibung verfügbar",
+    "urn:openremote:protocol:knx": {
+      "description": "Protokoll zum Verbinden mit KNX"
+    }
+  },
+  "validityType": "Zeitplantyp",
+  "validityAlways": "Immer aktiv",
+  "validityPeriod": "Planen Sie einen Zeitraum",
+  "validityRecurrence": "Planen Sie eine Wiederholung",
+  "activeFromTo": "Activ von {{start}} bis {{end}}",
+  "fromTo": "Von {{start}} bis {{end}}",
+  "fromToDays": "von {{start}} bis {{days}} Tage später {{end}}",
+  "forDays": "für {{days}} Tage",
+  "scheduleRuleActivity": "Regelaktivität planen",
+  "allDay": "Den ganzen Tag",
+  "apply": "bewerben",
+  "to": "zu",
+  "from": "von",
+  "never": "Niemals",
+  "repetitionEnds": "Wiederholung endet",
+  "repeatOccurrenceEvery": "Vorkommen wiederholen alle",
+  "daysOfTheWeek": "Wochentage",
+  "dismiss": "entlassen",
+  "createAssetFailed": "Objekt konnte nicht erstellt werden",
+  "moveAssetFailed": "Failed to move asset",
+  "logCategory": {},
+  "readPermissions": "Leseberechtigungen",
+  "writePermissions": "Schreibberechtigungen",
+  "valueType": "Werttyp",
+  "dataExport": "Datenexport",
+  "dataSelection": "Datenauswahl",
+  "exportFrom": "Exportieren von",
+  "assetName": "Assetname",
+  "attributeName": "Attributname",
+  "oldestDatapoint": "Ältester Datenpunkt",
+  "latestDatapoint": "Letzter Datenpunkt",
+  "arrayDimensions": "Array-Dimensionen",
+  "addParameter": "Parameter hinzufügen",
+  "addItem": "Element hinzufügen",
+  "array": "Array",
+  "agentId": "Agenten-ID",
+  "agentNotFound": "Agent nicht gefunden",
+  "agentTypeMismatch": "Nichtübereinstimmung des Agententyps",
+  "loadFailedRoles": "Fehler beim Laden der Rollen",
+  "loadFailedUsers": "Fehler beim Laden der Benutzer",
+  "loadFailedUserInfo": "Fehler beim Laden der Benutzer Info",
+  "validation": {
+    "noSchemaMatchFound": "No schema match found",
+    "invalidAsset": "Asset is not valid",
+    "invalidAttributeValue": "Invalid attribute value for attribute '{{attrName}}'",
+    "invalidMetaItemValue": "Invalid configuration item value for `{{metaName}}` on attribute '{{attrName}}'",
+    "invalidNumber": "Ungültige Nummer",
+    "invalidJSON": "Ungültiges JSON",
+    "invalidDate": "Ungültiges Datum",
+    "keyAlreadyExists": "Schlüssel existiert bereits"
+  },
+  "autoProvisioning": "Auto provisioning",
+  "provisioningConfigs": "Provisioning configurations",
+  "loadFailedProvisioningConfigs": "Failed to load provisioning configurations",
+  "deleteProvisioningConfigConfirm": "Are you sure you want to delete this provisioning config?\nClients that use this config will no longer be able to connect.",
+  "assetTemplate": "Asset template",
+  "createAsRestrictedUser": "Create restricted user",
+  "ignoreExpiryDate": "Ignore expiry date",
+  "CACertPem": "CA Certificate (PEM)",
+  "schema": {
+    "noDescriptionAvailable": "No description is available",
+    "selectTypeMessage": "Select a type to see a description",
+    "keyInputLabel": "Key",
+    "anyOfPickerLabel": "{{label}} type",
+    "title": {
+      "indexedItem": "Item {{index}}"
+    }
+  },
+  "yes": "Ja",
+  "no": "Nein",
+  "filter": {
+    "action": "FILTER",
+    "assetTypeLabel": "Asset type",
+    "assetTypeNone": "None",
+    "assetTypeMenuNone": "None",
+    "attributeLabel": "Attribute",
+    "attributeValueLabel": "Attribute value",
+    "assetTypeDoesNotExist": "Filter : Asset type does not exist"
+  },
+  "org": {
+    "openremote": {
+      "model": {
+        "query": {
+          "filter": {
+            "ValueEmptyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RadialGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ValueAnyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "CalendarEventPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RectangularGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ArrayPredicate": {
+              "description": ""
+            },
+            "StringPredicate": {
+              "description": ""
+            },
+            "NumberPredicate": {
+              "description": ""
+            },
+            "DateTimePredicate": {
+              "description": ""
+            },
+            "BooleanPredicate": {
+              "description": ""
+            }
+          }
+        },
+        "simulator": {
+          "SimulatorReplayDatapoint": {
+            "label": ""
+          }
+        },
+        "value": {
+          "MathExpressionValueFilter": {
+            "label": ""
+          },
+          "SubStringValueFilter": {
+            "label": ""
+          },
+          "JsonPathFilter": {
+            "label": ""
+          },
+          "RegexValueFilter": {
+            "label": ""
+          },
+          "ValueConstraint": {
+            "description": "",
+            "Size": {
+              "description": ""
+            },
+            "Min": {
+              "description": ""
+            },
+            "Max": {
+              "description": ""
+            },
+            "Pattern": {
+              "description": ""
+            },
+            "AllowedValues": {
+              "description": ""
+            },
+            "Past": {
+              "description": ""
+            },
+            "PastOrPresent": {
+              "description": ""
+            },
+            "Future": {
+              "description": ""
+            },
+            "FutureOrPresent": {
+              "description": ""
+            },
+            "NotEmpty": {
+              "description": ""
+            },
+            "NotBlank": {
+              "description": ""
+            },
+            "NotNull": {
+              "description": ""
+            }
+          }
+        },
+        "asset": {
+          "agent": {
+            "AgentLink": {
+              "valueFilters": {
+                "description": ""
+              },
+              "valueConverter": {
+                "description": ""
+              },
+              "writeValueConverter": {
+                "description": ""
+              },
+              "writeValue": {
+                "description": ""
+              },
+              "messageMatchPredicate": {
+                "description": ""
+              },
+              "messageMatchFilters": {
+                "description": ""
+              },
+              "updateOnWrite": {
+                "description": ""
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

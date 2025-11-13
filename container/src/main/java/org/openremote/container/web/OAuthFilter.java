@@ -80,30 +80,30 @@ public class OAuthFilter implements ClientRequestFilter {
     }
 
     protected synchronized void updateToken() throws SocketException {
-        LOG.fine("Updating OAuth token");
+        LOG.finest("Updating OAuth token: " + oAuthGrant.getTokenEndpointUri());
         Response response = null;
 
         try {
             if (authServerResponse != null && authServerResponse.refreshToken != null) {
                 // Do a refresh
-                LOG.fine("Using Refresh grant");
+                LOG.finest("Using Refresh grant");
                 response = requestTokenUsingRefresh();
                 if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
                     // Maybe the refresh token is not valid so do full auth
-                    LOG.fine("OAuth token refresh failed, trying a full authentication");
+                    LOG.finest("OAuth token refresh failed, trying a full authentication");
                     authServerResponse = null;
                     updateToken();
                     return;
                 }
             } else {
                 // Do full auth
-                LOG.fine("Doing full authentication");
+                LOG.finest("Doing full authentication");
                 response = requestToken();
             }
 
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
                 authServerResponse = null;
-                LOG.warning("OAuth server response error: " + response.getStatus());
+                LOG.fine("OAuth server response error '" + response.getStatus() + "': " + oAuthGrant.getTokenEndpointUri());
                 throw new RuntimeException("OAuth server response error: " + response.getStatus());
             } else {
                 authServerResponse = response.readEntity(OAuthServerResponse.class);

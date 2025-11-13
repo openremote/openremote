@@ -200,7 +200,7 @@ public class Flow extends FlowObject {
 
     public Wire removeWire(Wire wire) {
         Wire removed = null;
-        ArrayList<Wire> collection = new ArrayList<>(Arrays.asList(getWires()));
+        List<Wire> collection = new ArrayList<>(Arrays.asList(getWires()));
         Iterator<Wire> it = collection.iterator();
         while (it.hasNext()) {
             if (it.next().equals(wire)) {
@@ -214,7 +214,7 @@ public class Flow extends FlowObject {
 
     public Wire removeWireBetweenSlots(Slot sourceSlot, Slot sinkSlot) {
         Wire removed = null;
-        ArrayList<Wire> collection = new ArrayList<>(Arrays.asList(getWires()));
+        List<Wire> collection = new ArrayList<>(Arrays.asList(getWires()));
         Iterator<Wire> it = collection.iterator();
         while (it.hasNext()) {
             Wire wire = it.next();

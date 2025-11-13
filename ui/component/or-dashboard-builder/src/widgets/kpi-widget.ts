@@ -1,15 +1,15 @@
-import { customElement } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
+import { when } from "lit/directives/when.js";
 import {OrAssetWidget} from "../util/or-asset-widget";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {WidgetSettings} from "../util/widget-settings";
-import {WidgetConfig} from "../util/widget-config";
+import {AssetWidgetConfig} from "../util/widget-config";
 import {Attribute, AttributeRef} from "@openremote/model";
 import {html, TemplateResult } from "lit";
 import {KpiSettings} from "../settings/kpi-settings";
 import "@openremote/or-attribute-card";
 
-export interface KpiWidgetConfig extends WidgetConfig {
-    attributeRefs: AttributeRef[];
+export interface KpiWidgetConfig extends AssetWidgetConfig {
     period?: 'year' | 'month' | 'week' | 'day' | 'hour';
     decimals: number;
     deltaFormat: "absolute" | "percentage";
@@ -30,6 +30,9 @@ function getDefaultWidgetConfig(): KpiWidgetConfig {
 export class KpiWidget extends OrAssetWidget {
 
     protected widgetConfig!: KpiWidgetConfig;
+
+    @state()
+    protected _loading = false;
 
     static getManifest(): WidgetManifest {
         return {
@@ -53,8 +56,7 @@ export class KpiWidget extends OrAssetWidget {
         this.loadAssets(this.widgetConfig.attributeRefs);
     }
 
-    protected updated(changedProps: Map<string, any>) {
-        super.updated(changedProps);
+    protected willUpdate(changedProps: Map<string, any>) {
 
         // If widgetConfig, and the attributeRefs of them have changed...
         if(changedProps.has("widgetConfig") && this.widgetConfig) {
@@ -69,10 +71,16 @@ export class KpiWidget extends OrAssetWidget {
 
             }
         }
-        return super.updated(changedProps);
+        return super.willUpdate(changedProps);
     }
 
     protected loadAssets(attributeRefs: AttributeRef[]) {
+        if(attributeRefs.length === 0) {
+            this._error = "noAttributesConnected";
+            return;
+        }
+        this._loading = true;
+        this._error = undefined;
         this.fetchAssets(attributeRefs).then((assets) => {
             this.loadedAssets = assets;
             this.assetAttributes = attributeRefs?.map((attrRef: AttributeRef) => {
@@ -80,15 +88,31 @@ export class KpiWidget extends OrAssetWidget {
                 const foundAsset = assetIndex >= 0 ? assets[assetIndex] : undefined;
                 return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
             }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
+        }).catch(e => {
+            this._error = e.message;
+        }).finally(() => {
+            this._loading = false;
         });
     }
 
     protected render(): TemplateResult {
         return html`
-            <div style="height: 100%; overflow: hidden;">
+            <div style="position: relative; height: 100%; overflow: hidden;">
+                ${when(this._loading || this._error, () => {
+                    // Have to use `position: absolute` with white background due to rendering inconsistencies in or-attribute-card
+                    return html`
+                        <div style="position: absolute; top: -5%; width: 100%; height: 105%; background: white; z-index: 1; display: flex; justify-content: center; align-items: center; text-align: center;">
+                            ${when(this._loading, () => html`
+                                <or-loading-indicator></or-loading-indicator>
+                            `, () => html`
+                                <or-translate .value="${this._error}"></or-translate>
+                            `)}
+                        </div>
+                    `;
+                })}
                 <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .period="${this.widgetConfig.period}"
                                    .deltaFormat="${this.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widgetConfig.decimals}"
-                                   showControls="${this.widgetConfig?.showTimestampControls}" showTitle="${false}" style="height: 100%;">
+                                   showControls="${this.widgetConfig?.showTimestampControls}" showTitle="${false}" hideAttributePicker="${true}" style="height: 100%;">
                 </or-attribute-card>
             </div>
         `;

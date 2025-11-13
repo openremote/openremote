@@ -41,7 +41,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
     protected ScheduledFuture<?> reconnectTask;
     protected int reconnectDelayMilliseconds = INITIAL_RECONNECT_DELAY_MILLIS;
     protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new ArrayList<>();
-    protected final ScheduledExecutorService executorService;
+    protected final ScheduledExecutorService scheduledExecutorService;
     protected final String gatewayAddress;
     private final int gatewayPort;
     private final boolean natMode;
@@ -58,7 +58,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
     
     public KNXConnection(String gatewayAddress, String bindAddress, Integer gatewayPort, String messageSourceAddress, boolean routingMode, boolean natMode) {
         this.gatewayAddress = gatewayAddress;
-        this.executorService = Container.EXECUTOR_SERVICE;
+        this.scheduledExecutorService = Container.SCHEDULED_EXECUTOR;
         this.routingMode = routingMode;
         this.bindAddress = bindAddress;
         this.gatewayPort = gatewayPort;
@@ -106,7 +106,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
                     groupAddressConsumerMap.forEach((groupAddress, datapointConsumerList) -> {
                         if (!datapointConsumerList.isEmpty()) {
                             // Take first data point for the group address and request the value
-                            Pair<StateDP, Consumer<Object>> datapointConsumer = datapointConsumerList.get(0);
+                            Pair<StateDP, Consumer<Object>> datapointConsumer = datapointConsumerList.getFirst();
                             getGroupAddressValue(datapointConsumer.key.getMainAddress(), datapointConsumer.key.getPriority());
                         }
                     });
@@ -341,7 +341,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
 
         LOG.finest("Scheduling reconnection in '" + reconnectDelayMilliseconds + "' milliseconds");
 
-        reconnectTask = executorService.schedule(() -> {
+        reconnectTask = scheduledExecutorService.schedule(() -> {
             synchronized (KNXConnection.this) {
                 reconnectTask = null;
                 // Attempt to reconnect if not disconnecting

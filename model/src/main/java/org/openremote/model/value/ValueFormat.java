@@ -406,7 +406,7 @@ public class ValueFormat implements Serializable {
         return this;
     }
 
-    public Boolean getMultiine() {
+    public Boolean getMultiline() {
         return multiline;
     }
 

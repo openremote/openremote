@@ -18,10 +18,13 @@
 # 1 - AWS_ACCOUNT_NAME where resources should be created (defaults to callers account)
 # 2 - HOST FQDN for e.g. staging.demo.openremote.app
 # 3 - INSTANCE_TYPE EC2 instance type see cloud formation template parameter
-# 4 - DISK_SIZE to use for created EBS root volume (GB)
-# 5 - ELASTIC_IP if 'true' then create an elastic public IP for this host
-# 6 - PROVISION_S3_BUCKET set to 'false' to not provision an S3 bucket for this host
-# 7 - WAIT_FOR_STACK if 'false' script will not wait until the cloud formation stack is running
+# 4 - ROOT_DISK_SIZE to use for created EBS root volume (GB)
+# 5 - DATA_DISK_SIZE to use for created EBS data volume (GB)
+# 6 - SNAPSHOT_ID to use for creating the EBS data volume based on an existing snapshot
+# 7 - ELASTIC_IP if 'true' then create an elastic public IP for this host
+# 8 - PROVISION_S3_BUCKET set to 'false' to not provision an S3 bucket for this host
+# 9 - ENABLE_METRICS set to 'false' to not enable cloudwatch metrics for this instance
+# 10 - WAIT_FOR_STACK if 'false' script will not wait until the cloud formation stack is running
 
 if [[ $BASH_SOURCE = */* ]]; then
  awsDir=${BASH_SOURCE%/*}/
@@ -32,10 +35,13 @@ fi
 AWS_ACCOUNT_NAME=${1,,}
 HOST=${2,,}
 INSTANCE_TYPE=${3,,}
-DISK_SIZE=${4,,}
-ELASTIC_IP=${5,,}
-PROVISION_S3_BUCKET=${6,,}
-WAIT_FOR_STACK=${7,,}
+ROOT_DISK_SIZE=${4,,}
+DATA_DISK_SIZE=${5,,}
+SNAPSHOT_ID=${6,,}
+ELASTIC_IP=${7,,}
+PROVISION_S3_BUCKET=${8,,}
+ENABLE_METRICS=${9,,}
+WAIT_FOR_STACK=${10,,}
 
 if [ -z "$HOST" ]; then
   echo "Host must be set"
@@ -67,7 +73,7 @@ STACK_NAME=$(tr '.' '-' <<< "$HOST")
 SMTP_STACK_NAME="$STACK_NAME-smtp"
 HEALTH_STACK_NAME="$STACK_NAME-healthcheck"
 
-# Provision SMTP user using cloud formation (if stack doesn't already exist)
+# Provision SMTP user using CloudFormation (if stack doesn't already exist)
 echo "Provisioning SMTP user"
 STATUS=$(aws cloudformation describe-stacks --stack-name $SMTP_STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null)
 
@@ -87,7 +93,7 @@ else
     exit 1
   fi
 
-  #Configure parameters
+  # Configure parameters
   PARAMS="ParameterKey=UserName,ParameterValue='$SMTP_STACK_NAME'"
 
   # Create standard stack resources in specified account
@@ -99,7 +105,7 @@ else
   fi
 
   if [ "$WAIT_FOR_STACK" != 'false' ]; then
-    # Wait for cloud formation stack status to be CREATE_*
+    # Wait for CloudFormation stack status to be CREATE_*
     echo "Waiting for stack to be created"
     STATUS=$(aws cloudformation describe-stacks --stack-name $SMTP_STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text 2>/dev/null)
 
@@ -125,6 +131,7 @@ if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
   echo "Stack already exists for this host '$HOST' current status is '$STATUS'"
   STACK_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackId" --output text $ACCOUNT_PROFILE 2>/dev/null)
 else
+
   # Configure parameters
   PARAMS="ParameterKey=Host,ParameterValue=$HOST"
 
@@ -138,6 +145,10 @@ else
 
   if [ -n "$ELASTIC_IP" ]; then
     PARAMS="$PARAMS ParameterKey=ElasticIP,ParameterValue=$ELASTIC_IP"
+  fi
+
+  if [ -n "$ENABLE_METRICS" ]; then
+    PARAMS="$PARAMS ParameterKey=Metrics,ParameterValue=$ENABLE_METRICS"
   fi
 
   # Get SMTP credentials
@@ -224,11 +235,18 @@ EOF
   # Look for EFS mount target in caller account for the same availability zone ID (no costs if within same AZ) - Don't use name as name to IDs vary between accounts
   EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name=='or-map-efs'].FileSystemId" --output text)
   EFS_DNS=$(aws efs describe-mount-targets --file-system-id $EFS_ID --query "MountTargets[?AvailabilityZoneId=='$SUBNET_AZ'].IpAddress" --output text)
+  
+  # Get role to be assumed by DLM
+  ROLE_ARN="arn:aws:iam::$AWS_ACCOUNT_ID:role/$AWS_ROLE_NAME-$AWS_REGION"
 
   PARAMS="$PARAMS ParameterKey=VpcId,ParameterValue=$VPCID"
   PARAMS="$PARAMS ParameterKey=SSHSecurityGroupId,ParameterValue=$SGID"
   PARAMS="$PARAMS ParameterKey=SubnetId,ParameterValue=$SUBNETID"
   PARAMS="$PARAMS ParameterKey=EFSDNS,ParameterValue=$EFS_DNS"
+  PARAMS="$PARAMS ParameterKey=RootDiskSize,ParameterValue=$ROOT_DISK_SIZE"
+  PARAMS="$PARAMS ParameterKey=DataDiskSize,ParameterValue=$DATA_DISK_SIZE"
+  PARAMS="$PARAMS ParameterKey=SnapshotId,ParameterValue=$SNAPSHOT_ID"
+  PARAMS="$PARAMS ParameterKey=DLMExecutionRoleArn,ParameterValue=$ROLE_ARN"
 
   # Create standard stack resources in specified account
   STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --output text $ACCOUNT_PROFILE)
@@ -241,7 +259,7 @@ EOF
 fi
 
 if [ "$WAIT_FOR_STACK" != 'false' ]; then
-  # Wait for cloud formation stack status to be CREATE_*
+  # Wait for CloudFormation stack status to be CREATE_*
   echo "Waiting for stack to be created"
   STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
@@ -256,6 +274,43 @@ if [ "$WAIT_FOR_STACK" != 'false' ]; then
     exit 1
   else
     echo "Stack creation is complete"
+  fi
+fi
+
+# Attaching/Mounting EBS data volume (if volume is not already attached)
+echo "Attaching/Mounting EBS data volume"
+STATUS=$(aws ec2 describe-volumes --filters "Name=tag:Name,Values='$HOST-data'" --query "Volumes[?Tags[?Value=='$STACK_ID']].State" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+if [ -n "$STATUS" ] && [ "$STATUS" != 'available' ]; then
+  echo "EBS data volume is already attached or not available for this host '$HOST' current status is '$STATUS'"
+else
+
+  EBS_DEVICE_NAME="/dev/sdf" # Don't change it unless you know what you are doing
+  INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values='$HOST'" --query "Reservations[].Instances[?Tags[?Value=='$STACK_ID']].InstanceId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+  VOLUME_ID=$(aws ec2 describe-volumes --filters "Name=tag:Name,Values='$HOST-data'" --query "Volumes[?Tags[?Value=='$STACK_ID']].VolumeId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+  PARAMS="InstanceId=$INSTANCE_ID,VolumeId=$VOLUME_ID,DeviceName=$EBS_DEVICE_NAME"
+
+  EXECUTION_ID=$(aws ssm start-automation-execution --document-name attach_volume --parameters $PARAMS --output text $ACCOUNT_PROFILE)
+
+  if [ $? -ne 0 ]; then
+    echo "Attaching/Mounting EBS data volume failed"
+    exit 1
+  fi
+
+  STATUS=$(aws ssm get-automation-execution --automation-execution-id $EXECUTION_ID --query "AutomationExecution.AutomationExecutionStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+  while [[ "$STATUS" == 'InProgress' ]]; do
+      echo "Attaching/Mounting EBS data volume is still in progress .. Sleeping 30 seconds"
+      sleep 30
+      STATUS=$(aws ssm get-automation-execution --automation-execution-id $EXECUTION_ID --query "AutomationExecution.AutomationExecutionStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+  done
+
+  if [ "$STATUS" != 'Success' ]; then
+    echo "Attaching/Mounting EBS data volume has failed status is '$STATUS'"
+    exit 1
+  else
+    echo "Attaching/Mounting EBS data volume is complete"
   fi
 fi
 
@@ -279,7 +334,7 @@ if [ "$PROVISION_S3_BUCKET" != 'false' ]; then
   fi
 fi
 
-# Provision Route 53 healthcheck alarm cloud formation (if stack doesn't already exist) - must be in the us-east-1 region
+# Provision Route53 Health Check Alarm CloudFormation (if stack doesn't already exist) - must be in the us-east-1 region
 echo "Provisioning Healthcheck Alarm"
 STATUS=$(aws cloudformation describe-stacks --stack-name $HEALTH_STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE --region us-east-1 2>/dev/null)
 
@@ -299,7 +354,7 @@ else
     exit 1
   fi
 
-  #Configure parameters
+  # Configure parameters
   PARAMS="ParameterKey=Host,ParameterValue='$HOST'"
 
   # Create standard stack resources in specified account in us-east-1 region
@@ -311,7 +366,7 @@ else
   fi
 
   if [ "$WAIT_FOR_STACK" != 'false' ]; then
-    # Wait for cloud formation stack status to be CREATE_*
+    # Wait for CloudFormation stack status to be CREATE_*
     echo "Waiting for stack to be created"
     STATUS=$(aws cloudformation describe-stacks --stack-name $HEALTH_STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text $ACCOUNT_PROFILE --region us-east-1 2>/dev/null)
 

@@ -2,7 +2,7 @@ import manager, {EventCallback} from "@openremote/core";
 import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
 import {CSSResult, html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {Control, IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL, GeolocateControl} from "maplibre-gl";
+import {IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL, GeolocateControl} from "maplibre-gl";
 import {MapWidget} from "./mapwidget";
 import {style} from "./style";
 import "./markers/or-map-marker";
@@ -22,10 +22,10 @@ import { debounce } from "lodash";
 import {GeoJsonConfig, MapType } from "@openremote/model";
 
 // Re-exports
-export {Util, LngLatLike};
+export {Util, LngLatLike, LngLat};
 export * from "./markers/or-map-marker";
 export * from "./markers/or-map-marker-asset";
-export {Control, IControl} from "maplibre-gl";
+export {IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
 
 export interface ViewSettings {
@@ -446,7 +446,7 @@ export class OrMap extends LitElement {
     @property({type: Array})
     public boundary: string[] = [];
 
-    public controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
+    public controls?: (IControl | [IControl, ControlPosition?])[];
 
     protected _initCallback?: EventCallback;
     protected _map?: MapWidget;

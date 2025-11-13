@@ -32,13 +32,6 @@ import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 
 import java.util.logging.Logger;
 
-import static org.openremote.container.util.MapAccess.*;
-
-/**
- * Needs to run before persistence service because if BASIC identity provider is configured then flyway must be
- * configured to manage PUBLIC schema for user data; that configuration is done by the
- * {@link org.openremote.container.security.basic.BasicIdentityProvider} and must happen before flyway initialisation.
- */
 public abstract class IdentityService implements ContainerService {
 
     public static final int PRIORITY = PersistenceService.PRIORITY + 10;
@@ -58,8 +51,7 @@ public abstract class IdentityService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
         devMode = container.isDevMode();
-        String identityProviderType = getString(container.getConfig(), OR_IDENTITY_PROVIDER, OR_IDENTITY_PROVIDER_DEFAULT);
-        identityProvider = createIdentityProvider(container, identityProviderType);
+        identityProvider = createIdentityProvider(container);
         identityProvider.init(container);
     }
 
@@ -115,5 +107,5 @@ public abstract class IdentityService implements ContainerService {
     /**
      * To configure the {@link IdentityProvider}, subclasses should override {@link #init(Container)}.
      */
-    abstract public IdentityProvider createIdentityProvider(Container container, String type);
+    abstract public IdentityProvider createIdentityProvider(Container container);
 }

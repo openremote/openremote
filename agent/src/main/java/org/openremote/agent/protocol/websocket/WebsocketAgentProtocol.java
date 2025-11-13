@@ -20,9 +20,12 @@
 package org.openremote.agent.protocol.websocket;
 
 import io.netty.channel.ChannelHandler;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.Response;
 import org.apache.http.HttpHeaders;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.util.BasicAuthHelper;
 import org.openremote.agent.protocol.io.AbstractNettyIOClientProtocol;
 import org.openremote.container.web.WebTargetBuilder;
@@ -30,7 +33,6 @@ import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
@@ -41,10 +43,6 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueType;
 
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.client.Invocation;
-import jakarta.ws.rs.core.MultivaluedHashMap;
-import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -62,7 +60,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 /**
  * This is a generic {@link org.openremote.model.asset.agent.Protocol} for communicating with a Websocket server
  * using {@link String} based messages.
- * <p>
+ *
  * <h2>Protocol Specifics</h2>
  * When the websocket connection is established it is possible to subscribe to events by specifying the
  * {@link WebsocketAgent#CONNECT_SUBSCRIPTIONS} on the {@link WebsocketAgent} or
@@ -116,19 +114,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     }
 
     @Override
-    protected String createWriteMessage(Attribute<?> attribute, WebsocketAgentLink agentLink, AttributeEvent event, Object processedValue) {
-
-        if (ValueType.EXECUTION_STATUS.equals(attribute.getType())) {
-            boolean isRequestStart = event.getValue()
-                .flatMap(v -> ValueUtil.getValue(v, AttributeExecuteStatus.class))
-                .map(status -> status == AttributeExecuteStatus.REQUEST_START)
-                .orElse(false);
-            if (!isRequestStart) {
-                LOG.fine("Unsupported execution status: " + event);
-                return null;
-            }
-        }
-
+    protected String createWriteMessage(WebsocketAgentLink agentLink, AttributeEvent event, Object processedValue) {
         return ValueUtil.convert(processedValue, String.class);
     }
 
@@ -188,7 +174,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
             Runnable task = () -> doSubscriptions(clientHeaders, websocketSubscriptions);
             addAttributeConnectedTask(attributeRef, task);
             if (client.getConnectionStatus() == ConnectionStatus.CONNECTED) {
-                executorService.schedule(task, 1000, TimeUnit.MILLISECONDS);
+                scheduledExecutorService.schedule(task, 1000, TimeUnit.MILLISECONDS);
             }
         });
 
@@ -209,7 +195,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     protected static void initClient() {
         synchronized (resteasyClient) {
             if (resteasyClient.get() == null) {
-                resteasyClient.set(createClient(org.openremote.container.Container.EXECUTOR_SERVICE));
+                resteasyClient.set(createClient(org.openremote.container.Container.SCHEDULED_EXECUTOR));
             }
         }
     }
@@ -218,12 +204,12 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
         // Look for any subscriptions that need to be processed
         if (protocolConnectedTasks != null) {
             // Execute after a delay to ensure connection is properly initialised
-            executorService.schedule(() -> protocolConnectedTasks.forEach(Runnable::run), CONNECTED_SEND_DELAY_MILLIS, TimeUnit.MILLISECONDS);
+            scheduledExecutorService.schedule(() -> protocolConnectedTasks.forEach(Runnable::run), CONNECTED_SEND_DELAY_MILLIS, TimeUnit.MILLISECONDS);
         }
 
         if (attributeConnectedTasks != null) {
             // Execute after a delay to ensure connection is properly initialised
-            executorService.schedule(() -> attributeConnectedTasks.forEach((ref, task) -> task.run()), CONNECTED_SEND_DELAY_MILLIS, TimeUnit.MILLISECONDS);
+            scheduledExecutorService.schedule(() -> attributeConnectedTasks.forEach((ref, task) -> task.run()), CONNECTED_SEND_DELAY_MILLIS, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -245,19 +231,24 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     protected void doSubscriptions(Map<String, List<String>> headers, WebsocketSubscription[] subscriptions) {
         LOG.info("Executing subscriptions for websocket: " + client.getClientUri());
 
-        // Inject OAuth header
-        if (!TextUtil.isNullOrEmpty(client.authHeaderValue)) {
-            if (headers == null) {
-                headers = new MultivaluedHashMap<>();
+        try {
+            // Inject OAuth header
+            String authHeaderValue = client.getAuthHeader();
+            if (authHeaderValue != null) {
+                if (headers == null) {
+                    headers = new MultivaluedHashMap<>();
+                }
+                headers.remove(HttpHeaders.AUTHORIZATION);
+                headers.put(HttpHeaders.AUTHORIZATION, Collections.singletonList(authHeaderValue));
             }
-            headers.remove(HttpHeaders.AUTHORIZATION);
-            headers.put(HttpHeaders.AUTHORIZATION, Collections.singletonList(client.authHeaderValue));
-        }
 
-        Map<String, List<String>> finalHeaders = headers;
-        Arrays.stream(subscriptions).forEach(
-            subscription -> doSubscription(finalHeaders, subscription)
-        );
+            Map<String, List<String>> finalHeaders = headers;
+            Arrays.stream(subscriptions).forEach(
+                subscription -> doSubscription(finalHeaders, subscription)
+            );
+        } catch (Exception e) {
+            LOG.info("An exception occurred executing subscriptions: " + e.getMessage());
+        }
     }
 
     protected void doSubscription(Map<String, List<String>> headers, WebsocketSubscription subscription) {
@@ -301,19 +292,18 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
 
             WebTargetBuilder webTargetBuilder = new WebTargetBuilder(resteasyClient.get(), uri);
 
-            if (headers != null) {
-                webTargetBuilder.setInjectHeaders(headers);
-            }
-
             LOG.fine("Creating web target client for subscription '" + uri + "'");
-            ResteasyWebTarget target = webTargetBuilder.build();
-
+            Invocation.Builder request = webTargetBuilder.build().request();
             Invocation invocation;
 
+            if (headers != null) {
+                request = WebTargetBuilder.addHeaders(request, headers);
+            }
+
             if (httpSubscription.body == null) {
-                invocation = target.request().build(httpSubscription.method.toString());
+                invocation = request.build(httpSubscription.method.toString());
             } else {
-                invocation = target.request().build(httpSubscription.method.toString(), Entity.entity(httpSubscription.body, httpSubscription.contentType));
+                invocation = request.build(httpSubscription.method.toString(), Entity.entity(httpSubscription.body, httpSubscription.contentType));
             }
             Response response = invocation.invoke();
             response.close();

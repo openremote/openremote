@@ -21,7 +21,6 @@ package org.openremote.setup.integration;
 
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
-import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
@@ -34,6 +33,7 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.security.Realm;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.impl.ColourRGB;
@@ -91,6 +91,8 @@ public class ManagerTestSetup extends ManagerSetup {
     public String smartCityServiceAgentId;
     public String area1Id;
     public String microphone1Id;
+    public String peopleCounter1AssetId;
+    public String peopleCounter2AssetId;
     public String peopleCounter3AssetId;
     public String electricityOptimisationAssetId;
     public String electricityConsumerAssetId;
@@ -321,6 +323,10 @@ public class ManagerTestSetup extends ManagerSetup {
         /* ############################ ROOMS ############################## */
 
         RoomAsset apartment1Livingroom = createDemoApartmentRoom(apartment1, "Living Room 1");
+        apartment1Livingroom.getAttribute(Asset.NOTES).ifPresent(notes -> notes.addMeta(
+                new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
+        ));
         apartment1Livingroom.getAttributes().addOrReplace(
             new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454213, 51.446884)),
             new Attribute<>("lightsCeiling", NUMBER, 0d)
@@ -355,6 +361,10 @@ public class ManagerTestSetup extends ManagerSetup {
         apartment1LivingroomId = apartment1Livingroom.getId();
 
         RoomAsset apartment1Kitchen = createDemoApartmentRoom(apartment1, "Kitchen 1");
+        apartment1Kitchen.getAttribute(Asset.NOTES).ifPresent(notes -> notes.addMeta(
+                new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
+        ));
         apartment1Kitchen.getAttributes().addOrReplace(
                     new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454122, 51.446800)),
                     new Attribute<>("lights", BOOLEAN, true)
@@ -383,20 +393,26 @@ public class ManagerTestSetup extends ManagerSetup {
         apartment1KitchenId = apartment1Kitchen.getId();
 
         RoomAsset apartment1Hallway = createDemoApartmentRoom(apartment1, "Hallway 1");
+        apartment1Hallway.getAttribute(Asset.NOTES).ifPresent(notes -> notes.addMeta(
+                new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
+        ));
         apartment1Hallway.getAttributes().addOrReplace(
                         new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454342, 51.446762)),
                         new Attribute<>("lights", BOOLEAN, true)
                                 .addMeta(new MetaItem<>(ACCESS_RESTRICTED_READ, true))
                                 .addMeta(new MetaItem<>(ACCESS_RESTRICTED_WRITE, true))
                 );
-        addDemoApartmentRoomMotionSensor(apartment1Hallway, true, () ->
-            new SimulatorAgentLink(apartment1ServiceAgentId)
-        );
+        addDemoApartmentRoomMotionSensor(apartment1Hallway, false, null);
 
         apartment1Hallway = assetStorageService.merge(apartment1Hallway);
         apartment1HallwayId = apartment1Hallway.getId();
 
         RoomAsset apartment1Bedroom1 = createDemoApartmentRoom(apartment1, "Bedroom 1");
+        apartment1Bedroom1.getAttribute(Asset.NOTES).ifPresent(notes -> notes.addMeta(
+                new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
+        ));
         apartment1Bedroom1.getAttributes().addOrReplace(
                         new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454332, 51.446830)),
                         new Attribute<>("lights", BOOLEAN, true)
@@ -417,6 +433,10 @@ public class ManagerTestSetup extends ManagerSetup {
 
         RoomAsset apartment1Bathroom = new RoomAsset("Bathroom 1");
         apartment1Bathroom.setParent(apartment1);
+        apartment1Bathroom.getAttribute(Asset.NOTES).ifPresent(notes -> notes.addMeta(
+                new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
+        ));
         apartment1Bathroom.getAttributes().addOrReplace(
                 new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454227,51.446753)),
                 new Attribute<>("lights", BOOLEAN, true)
@@ -448,9 +468,7 @@ public class ManagerTestSetup extends ManagerSetup {
                 new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454053, 51.446603)),
                 new Attribute<>("allLightsOffSwitch", BOOLEAN, true)
                         .addMeta(
-                                new MetaItem<>(LABEL, "All Lights Off Switch"),
-                                new MetaItem<>(RULE_EVENT, true),
-                                new MetaItem<>(RULE_EVENT_EXPIRES, "PT3S")
+                                new MetaItem<>(LABEL, "All Lights Off Switch")
                         )
         );
         apartment2 = assetStorageService.merge(apartment2);
@@ -470,8 +488,7 @@ public class ManagerTestSetup extends ManagerSetup {
                 new Attribute<>("motionSensor", BOOLEAN, false)
                     .addMeta(
                             new MetaItem<>(LABEL, "Motion Sensor"),
-                            new MetaItem<>(RULE_STATE, true),
-                            new MetaItem<>(RULE_EVENT, true)
+                            new MetaItem<>(RULE_STATE, true)
                     ),
                 new Attribute<>("presenceDetected", BOOLEAN, false)
                         .addMeta(
@@ -525,8 +542,7 @@ public class ManagerTestSetup extends ManagerSetup {
                 new Attribute<>("motionSensor", BOOLEAN, false)
                         .addMeta(
                                 new MetaItem<>(LABEL, "Motion Sensor"),
-                                new MetaItem<>(RULE_STATE, true),
-                                new MetaItem<>(RULE_EVENT, true)
+                                new MetaItem<>(RULE_STATE, true)
                         ),
                 new Attribute<>("presenceDetected", BOOLEAN, false)
                         .addMeta(
@@ -604,7 +620,17 @@ public class ManagerTestSetup extends ManagerSetup {
         assetStorageService.storeUserAssetLinks(List.of(
             new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
                 keycloakTestSetup.serviceUser2.getId(),
-                apartment1HallwayId)));
+                apartment1HallwayId),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
+                keycloakTestSetup.serviceUser2.getId(),
+                apartment1Bedroom1Id),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
+                keycloakTestSetup.serviceUser2.getId(),
+                apartment1KitchenId),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
+                keycloakTestSetup.serviceUser2.getId(),
+                apartment1LivingroomId)
+            ));
 
         // ################################ Realm smartcity ###################################
 
@@ -637,6 +663,7 @@ public class ManagerTestSetup extends ManagerSetup {
         PeopleCounterAsset peopleCounter1Asset = createDemoPeopleCounterAsset("PeopleCounter 1", assetArea1, new GeoJSONPoint(5.477126, 51.439137), () ->
             new SimulatorAgentLink(smartCityServiceAgentId));
         peopleCounter1Asset = assetStorageService.merge(peopleCounter1Asset);
+        peopleCounter1AssetId = peopleCounter1Asset.getId();
 
         Asset<?> microphone1Asset = createDemoMicrophoneAsset("Microphone 1", assetArea1, new GeoJSONPoint(5.478092, 51.438655), () ->
             new SimulatorAgentLink(smartCityServiceAgentId));
@@ -668,6 +695,7 @@ public class ManagerTestSetup extends ManagerSetup {
         Asset<?> peopleCounter2Asset = createDemoPeopleCounterAsset("PeopleCounter 2", assetArea2, new GeoJSONPoint(5.473686, 51.438603), () ->
             new SimulatorAgentLink(smartCityServiceAgentId));
         peopleCounter2Asset = assetStorageService.merge(peopleCounter2Asset);
+        peopleCounter2AssetId = peopleCounter2Asset.getId();
 
         Asset<?> environment2Asset = createDemoEnvironmentAsset("Environment 2", assetArea2, new GeoJSONPoint(5.473552, 51.438412), () ->
             new SimulatorAgentLink(smartCityServiceAgentId));

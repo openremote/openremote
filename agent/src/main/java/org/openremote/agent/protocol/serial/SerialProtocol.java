@@ -23,13 +23,11 @@ import io.netty.channel.ChannelHandler;
 import org.openremote.model.asset.agent.DefaultAgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
-import org.openremote.model.value.ValueType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,20 +92,7 @@ public class SerialProtocol extends AbstractSerialProtocol<SerialProtocol, Seria
     }
 
     @Override
-    protected String createWriteMessage(Attribute<?> attribute, DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
-
-        if (ValueType.EXECUTION_STATUS.equals(attribute.getType())) {
-            AttributeExecuteStatus status = event.getValue()
-                .flatMap(ValueUtil::getString)
-                .flatMap(AttributeExecuteStatus::fromString)
-                .orElse(null);
-
-            if (status != null && status != AttributeExecuteStatus.REQUEST_START) {
-                LOG.fine("Unsupported execution status: " + status);
-                return null;
-            }
-        }
-
+    protected String createWriteMessage(DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
         return ValueUtil.convert(processedValue, String.class);
     }
 }

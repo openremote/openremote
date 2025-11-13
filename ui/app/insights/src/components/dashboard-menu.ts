@@ -208,22 +208,11 @@ function getDashboardListTemplate(dashboards: Dashboard[], selectedId: string, o
                         ${when(menuItems[0] == undefined, () => html`
                             <span style="width: 100%; text-align: center;">${i18next.t('noDashboardFound')}</span>
                         `, () => html`
-                            ${when(menuItems[0].length > 0, () => html`
-                                <div>
-                                    <span style="margin-left: 16px;">${i18next.t('dashboard.myDashboards')}</span>
-                                    <or-mwc-list .listItems="${menuItems[0]}" .values="${selectedId}"
-                                                 @or-mwc-list-changed="${(ev: CustomEvent) => onSelect(ev.detail[0].value)}"
-                                    ></or-mwc-list>
-                                </div>
-                            `)}
-                            ${when(menuItems[1].length > 0, () => html`
-                                <div>
-                                    <span style="margin-left: 16px;">${i18next.t('dashboard.createdByOthers')}</span>
-                                    <or-mwc-list .listItems="${menuItems[1]}" .values="${selectedId}"
-                                                 @or-mwc-list-changed="${(ev: CustomEvent) => onSelect(ev.detail[0].value)}"
-                                    ></or-mwc-list>
-                                </div>
-                            `)}
+                            <div>
+                                <or-mwc-list .listItems="${menuItems}" .values="${selectedId}"
+                                             @or-mwc-list-changed="${(ev: CustomEvent) => onSelect(ev.detail[0].value)}"
+                                ></or-mwc-list>
+                            </div>
                         `)}
                     </div>
                 </div>
@@ -232,20 +221,12 @@ function getDashboardListTemplate(dashboards: Dashboard[], selectedId: string, o
     `
 }
 
-function getDashboardMenuItems(dashboards: Dashboard[], userId?: string): ListItem[][] {
-    const dashboardItems: ListItem[][] = [];
-    if(dashboards?.length > 0) {
-        const myDashboards: Dashboard[] = [];
-        const otherDashboards: Dashboard[] = [];
-        dashboards?.forEach((d) => {
-            (userId != null && d.ownerId == userId) ? myDashboards.push(d) : otherDashboards.push(d);
-        });
-        [myDashboards, otherDashboards].forEach((array, index) => {
-            dashboardItems[index] = [];
-            array.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName!) : 0).forEach((d) => {
-                dashboardItems[index].push({ icon: "view-dashboard", text: d.displayName, value: d.id })
-            })
-        })
-    }
-    return dashboardItems;
+function getDashboardMenuItems(dashboards: Dashboard[], userId?: string): ListItem[] {
+    return dashboards
+        .sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName!) : 0)
+        .map(d => ({
+            icon: "view-dashboard",
+            text: d.displayName,
+            value: d.id
+        }));
 }

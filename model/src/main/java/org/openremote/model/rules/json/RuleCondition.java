@@ -19,20 +19,25 @@
  */
 package org.openremote.model.rules.json;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.SunPositionTrigger;
+
+import java.util.Map;
 
 /**
  * Consists of one of the following triggers in order of precedence:
  * <ol>
- * <li>{@link #duration} - ISO8601 duration expression (e.g. 'PT1H') after which the condition becomes true - 1min precision</li>
  * <li>{@link #cron} - CRON expression (e.g. "*&#47;5 * * * *") in UTC at which time the condition becomes true - 1min precision</li>
  * <li>{@link #sun} - {@link SunPositionTrigger} at which time the condition becomes true - 1min precision</li>
- * <li>{@link #assets} - {@link AssetQuery} to be applied to the {@link org.openremote.model.rules.AssetState}s
+ * <li>{@link #assets} - {@link AssetQuery} to be applied to the {@link org.openremote.model.attribute.AttributeInfo}s
  * available within the rule engine this rule is loaded into. Evaluates to true when one or more
- * {@link org.openremote.model.rules.AssetState}s (referencing unique {@link org.openremote.model.asset.Asset}s) are
+ * {@link org.openremote.model.attribute.AttributeInfo}s (referencing unique {@link org.openremote.model.asset.Asset}s) are
  * returned after applying the query.</li>
  * </ol>
+ * <p>
+ *  The {@link #duration} map tracks attribute predicates and their required duration thresholds. A predicate with a duration
+ *  is only considered true after it has continuously remained true for its specified duration period.
  * <p>
  * The {@link #tag} is used to name the {@link org.openremote.model.asset.Asset}s that are filtered by the query and can
  * be used in the rule RHS to perform actions on these specific assets.
@@ -40,9 +45,9 @@ import org.openremote.model.rules.SunPositionTrigger;
 public class RuleCondition {
 
     /**
-     * ISO8601 duration expression (e.g. PT1H)
+     * Map of attribute and ISO8601 duration expression (e.g. PT1H)
      */
-    public String duration;
+    public Map<Integer, @Nullable String> duration;
 
     /**
      * CRON expression in UTC (e.g. *&#47;5 * * * *)

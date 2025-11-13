@@ -23,10 +23,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
-import java.util.List;
-
-import static org.openremote.agent.protocol.velbus.VelbusPacket.MAX_PACKET_SIZE;
-
 public final class VelbusPacketEncoder extends MessageToByteEncoder<VelbusPacket> {
 
     @Override

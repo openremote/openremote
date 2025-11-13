@@ -5,7 +5,7 @@ import org.openremote.agent.protocol.tradfri.device.Device;
 import org.openremote.agent.protocol.tradfri.device.Gateway;
 import org.openremote.agent.protocol.tradfri.device.event.EventHandler;
 import org.openremote.agent.protocol.tradfri.device.event.GatewayEvent;
-import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.agent.Agent;
@@ -71,7 +71,7 @@ public class TradfriProtocol extends AbstractProtocol<TradfriAgent, DefaultAgent
 
         String securityCode = agent.getSecurityCode().orElse("");
 
-        tradfriConnection = new TradfriConnection(host, securityCode, executorService);
+        tradfriConnection = new TradfriConnection(host, securityCode);
         tradfriConnection.addConnectionStatusConsumer(this::setConnectionStatus);
 
         // Connect to the gateway
@@ -132,9 +132,9 @@ public class TradfriProtocol extends AbstractProtocol<TradfriAgent, DefaultAgent
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
-        Device device = tradfriDevices.get(event.getAttributeRef().getId());
+        Device device = tradfriDevices.get(event.getRef().getId());
 
         if (device != null) {
             tradfriConnection.controlDevice(device, event);
@@ -150,7 +150,6 @@ public class TradfriProtocol extends AbstractProtocol<TradfriAgent, DefaultAgent
 
             // Find all existing child assets of this agent that have a deviceId attribute
             List<Asset<?>> childAssets = assetService.findAssets(
-                agent.getId(),
                 new AssetQuery().attributeName(TradfriAsset.DEVICE_ID.getName()));
 
             List<String> obsoleteAssetIds = childAssets.stream()

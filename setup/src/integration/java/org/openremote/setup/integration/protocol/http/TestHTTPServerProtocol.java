@@ -53,7 +53,7 @@ public class TestHTTPServerProtocol extends AbstractHTTPServerProtocol<TestHTTPS
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
     }
 

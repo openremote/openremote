@@ -1,16 +1,14 @@
 # ---------------------------------------------------------------------------------------------------------------------
-# Creates an alarm for Route53 health check - must be run in the us-east-1 region
+# Creates an alarm for Route53 Health Check - must be run in the us-east-1 region
 # ---------------------------------------------------------------------------------------------------------------------
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Route 53 Healthcheck alarm'
-
+Description: 'Route53 Health Check alarm'
 Parameters:
   Host:
     Description: FQDN for host
     Type: String
 
 Resources:
-
   HealthCheck:
     Type: AWS::Route53::HealthCheck
     Properties:
@@ -20,7 +18,11 @@ Resources:
         ResourcePath: '/api/master/info'
         FullyQualifiedDomainName: !Sub ${Host}
         RequestInterval: 30
-        FailureThreshold: 10
+        FailureThreshold: 5
+        Regions:
+          - us-east-1
+          - us-west-1
+          - eu-west-1
       HealthCheckTags:
         - Key: Name
           Value: !Sub ${Host}

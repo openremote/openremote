@@ -139,6 +139,7 @@ export class OrDashboardPreview extends LitElement {
 
         // If there is no value yet, do initial setup:
         } else if(newValue != undefined) {
+            console.debug("Creating a new Dashboard grid...");
             this._template = newValue;
             this.setupGrid(false, false);
         }
@@ -305,6 +306,7 @@ export class OrDashboardPreview extends LitElement {
         // Switching edit/view mode needs recreation of Grid
         if(changedProperties.has("editMode")) {
             if(changedProperties.get('editMode') != undefined) {
+                console.debug(`Edit mode is now ${this.editMode}. Force recreating grid...`);
                 this.setupGrid(true, true);
             }
         }
@@ -338,7 +340,7 @@ export class OrDashboardPreview extends LitElement {
     // Main setup Grid method (often used)
     async setupGrid(recreate: boolean, force: boolean = false) {
         this.isLoading = true;
-        await this.waitUntil((_: any) => this.shadowRoot?.getElementById("gridElement") != null)
+        await this.updateComplete;
         let gridElement = this.shadowRoot?.getElementById("gridElement");
         if(gridElement != null) {
             if(recreate && this.grid != null) {
@@ -429,6 +431,7 @@ export class OrDashboardPreview extends LitElement {
     /* ------------------------------- */
 
     public refreshPreview() {
+        console.debug("Refreshing dashboard preview!");
         this.setupGrid(true, true);
     }
 
@@ -644,13 +647,16 @@ export class OrDashboardPreview extends LitElement {
     }
 
     protected resizeObserverCallback: ResizeObserverCallback = (entries: ResizeObserverEntry[]) => {
-        if((this.previousObserverEntry?.contentRect.width + "px") !== (entries[0].contentRect.width + "px")) {
-            this._onGridResize();
-        }
-        this.previousObserverEntry = entries[0];
+        requestAnimationFrame(() => {
+            if((this.previousObserverEntry?.contentRect.width + "px") !== (entries[0].contentRect.width + "px")) {
+                this._onGridResize();
+            }
+            this.previousObserverEntry = entries[0];
+        });
     }
 
     protected _onGridResize() {
+        console.debug("Grid resize detected. Recreating the grid...");
         this.setupGrid(true, false);
     }
 
@@ -665,25 +671,35 @@ export class OrDashboardPreview extends LitElement {
             let gridElement = this.shadowRoot?.getElementById("gridElement");
             gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
             gridElement!.style.height = maingrid!.scrollHeight + 'px';
+            console.debug("Amount of columns has been changed! Recreating grid...");
             this.setupGrid(true, false);
         }
 
         // If multiple properties changed, just force rerender all of it.
         else if(changes.changedKeys.length > 1) {
+            console.debug("Multiple changes detected. Force recreating grid...");
             this.setupGrid(true, true);
         }
 
         // On widgets change, check whether they are programmatically added to GridStack. If not, adding them.
         else if(changes.changedKeys.includes('widgets')) {
             if(this.grid?.el != null) {
+                let amountAdded = 0;
                 this.grid.getGridItems().forEach((gridElement) => {
                     if(!gridElement.classList.contains('ui-draggable')) {
                         this.grid?.makeWidget(gridElement);
+                        amountAdded++;
                     }
-                })
+                });
+                // If a widget is added, update the grid. (for example to update dashboard height)
+                if(amountAdded > 0) {
+                    console.debug(`Created ${amountAdded} widgets. Updating the grid...`);
+                    this.setupGrid(false, false);
+                }
             }
         }
         else if(changes.changedKeys.includes('screenPresets')) {
+            console.debug("New template has a different screen preset! Force recreating grid...");
             this.setupGrid(true, true);
         }
     }

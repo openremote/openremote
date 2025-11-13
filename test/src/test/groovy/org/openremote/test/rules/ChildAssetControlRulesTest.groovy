@@ -1,13 +1,12 @@
 package org.openremote.test.rules
 
-import org.openremote.container.util.UniqueIdentifierGenerator
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.model.Constants
-import org.openremote.model.asset.impl.GroupAsset
 import org.openremote.model.asset.impl.LightAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
@@ -53,7 +52,7 @@ class ChildAssetControlRulesTest extends Specification implements ManagerContain
             lightAsset.getAttribute(LightAsset.BRIGHTNESS).ifPresentOrElse(attr -> {attr.addMeta(new MetaItem<>(MetaItemType.RULE_STATE))}, null)
             lightAsset.getAttribute(LightAsset.COLOUR_RGB).ifPresentOrElse(attr -> {attr.addMeta(new MetaItem<>(MetaItemType.RULE_STATE))}, null)
             lightAsset.getAttribute(LightAsset.COLOUR_TEMPERATURE).ifPresentOrElse(attr -> {attr.addMeta(new MetaItem<>(MetaItemType.RULE_STATE))}, null)
-            assetStorageService.merge(lightAsset)
+            lightAsset = assetStorageService.merge(lightAsset)
         }
 
         and: "the child asset control ruleset is added"
@@ -69,14 +68,14 @@ class ChildAssetControlRulesTest extends Specification implements ManagerContain
             engine = rulesService.realmEngines.get(Constants.MASTER_REALM)
             assert engine != null
             assert engine.isRunning()
-            assert engine.assetStates.count { it.id == parentAsset.id} == 4
+            assert engine.facts.assetStates.count { it.id == parentAsset.id} == 4
             assert engine.lastFireTimestamp > ruleset.createdOn.getTime()
             assert engine.deployments.get(ruleset.id) != null
         }
 
         when: "The on/off attribute of the parent asset is written to"
         assetProcessingService.sendAttributeEvent(
-            new AttributeEvent(parentAsset.id, LightAsset.ON_OFF, true)
+                new AttributeEvent(parentAsset.id, LightAsset.ON_OFF, true)
         )
 
         then: "the parent asset attribute should be updated"
@@ -108,7 +107,7 @@ class ChildAssetControlRulesTest extends Specification implements ManagerContain
 
         then: "the child asset states should be loaded into the rule engine"
         conditions.eventually {
-            assert engine.assetStates.count { it.id == lightAsset.id} == 4
+            assert engine.facts.assetStates.count { it.id == lightAsset.id} == 4
         }
 
         when: "the child asset is moved under the group parent"
@@ -117,7 +116,7 @@ class ChildAssetControlRulesTest extends Specification implements ManagerContain
 
         then: "the child asset states should be loaded into the rule engine"
         conditions.eventually {
-            assert engine.assetStates.count { it.id == lightAsset.id && it.parentId == parentAsset.id} == 4
+            assert engine.facts.assetStates.count { it.id == lightAsset.id && it.parentId == parentAsset.id} == 4
         }
 
         when: "The on/off attribute of the parent asset is written to"

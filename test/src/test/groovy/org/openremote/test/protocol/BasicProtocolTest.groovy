@@ -26,6 +26,7 @@ import org.openremote.manager.asset.AssetStorageService
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.*
+import org.openremote.model.value.MathExpressionValueFilter
 import org.openremote.model.value.RegexValueFilter
 import org.openremote.model.value.SubStringValueFilter
 import org.openremote.model.value.ValueFilter
@@ -52,7 +53,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, initialDelay: 0.3, delay: 0.2)
         Map<String, Integer> protocolExpectedLinkedAttributeCount = [:]
-        protocolExpectedLinkedAttributeCount["mockAgent1"] = 5
+        protocolExpectedLinkedAttributeCount["mockAgent1"] = 6
         protocolExpectedLinkedAttributeCount["mockAgent2"] = 2
         protocolExpectedLinkedAttributeCount["mockAgent3"] = 2
         protocolExpectedLinkedAttributeCount['mockConfig4'] = 2
@@ -179,6 +180,19 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                             )
                     )
                 ),
+                new Attribute<>("filterMath", NUMBER)
+                    .addOrReplaceMeta(
+                            new MetaItem<>(
+                                    AGENT_LINK,
+                                    new MockAgentLink(mockAgent1.id)
+                                            .setRequiredValue("true")
+                                            .setValueFilters(
+                                                    [
+                                                            new MathExpressionValueFilter("(x+500)*0.1")
+                                                    ] as ValueFilter[]
+                                            )
+                            )
+                    ),
             new Attribute<>("filterSubstring", TEXT)
                 .addOrReplaceMeta(
                     new MetaItem<>(
@@ -213,7 +227,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         then: "the mock thing to be fully deployed in the correct order"
         conditions.eventually {
             assert agentService.getProtocolInstance(mockAgent1.id) != null
-            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.size() == 7
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.size() == 8
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.get(0) == "START"
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.get(1).startsWith("LINK_ATTRIBUTE")
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.get(2).startsWith("LINK_ATTRIBUTE")
@@ -221,6 +235,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.get(4).startsWith("LINK_ATTRIBUTE")
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.get(5).startsWith("LINK_ATTRIBUTE")
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.get(6).startsWith("LINK_ATTRIBUTE")
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.get(7).startsWith("LINK_ATTRIBUTE")
             assert agentService.getProtocolInstance(mockAgent1.id).linkedAttributes.size() == protocolExpectedLinkedAttributeCount["mockAgent1"]
         }
 
@@ -228,8 +243,8 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         assert !((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).linkedAttributes.any {it.value.name == "invalidToggle1"}
 
         when: "values are sent to the linked attributes by the protocol"
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeState(mockThing.id, "lightToggle1", true))
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeState(mockThing.id, "tempTarget1", 25.5d))
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "lightToggle1"), true, null)
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "tempTarget1"), 25.5d, null)
 
         then: "the linked attributes values should have been updated by the protocol"
         conditions.eventually {
@@ -288,7 +303,6 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         and: "the protocol instance and agent should be removed"
         conditions.eventually {
             assert agentService.getProtocolInstance(mockAgent2.id) == null
-            assert (MockProtocol)agentService.getProtocolInstance(mockAgent2.id) == null
         }
 
         when: "the mock protocol tries to update the plain readonly attribute"
@@ -306,8 +320,8 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         then: "the update should reach the protocol as an attribute write request"
         conditions.eventually {
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.size() == 1
-            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.get(0).attributeName == "tempTarget1"
-            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.get(0).attributeRef.id == mockThing.id
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.get(0).name == "tempTarget1"
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.get(0).ref.id == mockThing.id
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.get(0).value.orElse(null) == 30d
         }
 
@@ -318,8 +332,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a sensor value is received that links to an attribute using a regex filter"
-        def state = new AttributeState(mockThing.id, "filterRegex", "s100 d56 g1212")
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(state)
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "filterRegex"), "s100 d56 g1212", null)
 
         then: "the linked attributes value should be updated with the filtered result"
         conditions.eventually {
@@ -328,8 +341,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the same attribute receives a sensor value that doesn't match the regex filter (match index invalid)"
-        state = new AttributeState(mockThing.id, "filterRegex", "s100")
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(state)
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "filterRegex"), "s100", null)
 
         then: "the linked attributes value should be updated to null"
         conditions.eventually {
@@ -338,8 +350,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the same attribute receives a sensor value that doesn't match the regex filter (no match)"
-        state = new AttributeState(mockThing.id, "filterRegex", "no match to be found!")
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(state)
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "filterRegex"), "no match to be found!", null)
 
         then: "the linked attributes value should be updated to null"
         conditions.eventually {
@@ -347,9 +358,27 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
             assert !mockThing.getAttribute("filterRegex").get().getValue().isPresent()
         }
 
+        when: "a sensor value is received that links to an attribute using a mathExpression filter"
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "filterMath"), "100", null)
+
+        then: "the linked attributes value should be updated with the calculated result"
+        conditions.eventually {
+            mockThing = assetStorageService.find(mockThing.id, true) as ThingAsset
+            assert mockThing.getAttribute("filterMath").get().getValue(Double.class).orElse(0d) == 60
+        }
+
+        when: "the same attribute receives a sensor value that doesn't match the filter"
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "filterMath"), "s100", null)
+
+        then: "the linked attributes value should be skipped"
+        conditions.eventually {
+            mockThing = assetStorageService.find(mockThing.id, true)
+            assert mockThing.getAttribute("filterMath").get().getValue().isEmpty()
+        }
+
+
         when: "a sensor value is received that links to an attribute using a substring filter"
-        state = new AttributeState(mockThing.id, "filterSubstring", "Substring test value")
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(state)
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "filterSubstring"), "Substring test value", null)
 
         then: "the linked attributes value should be updated with the filtered result"
         conditions.eventually {
@@ -358,8 +387,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the same attribute receives a sensor value that doesn't match the substring filter"
-        state = new AttributeState(mockThing.id, "filterSubstring", "Substring")
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(state)
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "filterSubstring"), "Substring", null)
 
         then: "the linked attributes value should be updated to null"
         conditions.eventually {
@@ -368,8 +396,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a sensor value is received that links to an attribute using a regex and substring filter"
-        state = new AttributeState(mockThing.id, "filterRegexSubstring", '{"prop1":true,"prop2":"volume is at 90%"}')
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(state)
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "filterRegexSubstring"), '{"prop1":true,"prop2":"volume is at 90%"}', null)
 
         then: "the linked attributes value should be updated with the filtered result"
         conditions.eventually {
@@ -378,8 +405,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the same attribute receives a sensor value that doesn't match the substring filter"
-        state = new AttributeState(mockThing.id, "filterRegexSubstring", '"volume is at 90%"}')
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(state)
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "filterRegexSubstring"), '"volume is at 90%"}', null)
 
         then: "the linked attributes value should be updated to null"
         conditions.eventually {

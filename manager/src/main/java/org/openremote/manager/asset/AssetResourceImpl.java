@@ -38,6 +38,7 @@ import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetResource;
+import org.openremote.model.asset.AssetTree;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.attribute.*;
 import org.openremote.model.http.RequestParams;
@@ -53,8 +54,7 @@ import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 import static jakarta.ws.rs.core.Response.Status.*;
-import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_QUEUE;
-import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_PROCESSOR;
 import static org.openremote.model.query.AssetQuery.Access;
 import static org.openremote.model.value.MetaItemType.*;
 
@@ -145,8 +145,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
 
         // Check all links are for the same user and realm
-        String realm = userAssetLinks.get(0).getId().getRealm();
-        String userId = userAssetLinks.get(0).getId().getUserId();
+        String realm = userAssetLinks.getFirst().getId().getRealm();
+        String userId = userAssetLinks.getFirst().getId().getUserId();
         String[] assetIds = new String[userAssetLinks.size()];
 
         IntStream.range(0, userAssetLinks.size()).forEach(i -> {
@@ -217,8 +217,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
 
         // Check all links are for the same user and realm
-        String realm = userAssetLinks.get(0).getId().getRealm();
-        String userId = userAssetLinks.get(0).getId().getUserId();
+        String realm = userAssetLinks.getFirst().getId().getRealm();
+        String userId = userAssetLinks.getFirst().getId().getUserId();
 
         if (userAssetLinks.stream().anyMatch(userAssetLink -> !userAssetLink.getId().getRealm().equals(realm) || !userAssetLink.getId().getUserId().equals(userId))) {
             throw new BadRequestException("All user asset links must be for the same user");
@@ -281,6 +281,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
     }
 
+    // TODO: AssetResource update should not overwrite the existing asset
     @Override
     public Asset<?> update(RequestParams requestParams, String assetId, Asset<?> asset) {
 
@@ -416,14 +417,18 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public Response writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, Object value) {
+        return writeAttributeValue(requestParams, assetId, attributeName, null, value);
+    }
 
+    @Override
+    public Response writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, Long timestamp, Object value) {
         Response.Status status = Response.Status.OK;
 
         if (value instanceof NullNode) {
             value = null;
         }
 
-        AttributeEvent event = new AttributeEvent(assetId, attributeName, value);
+        AttributeEvent event = new AttributeEvent(assetId, attributeName, value, timestamp);
 
         // Check authorisation
         if (!clientEventService.authorizeEventWrite(getRequestRealmName(), getAuthContext(), event)) {
@@ -435,10 +440,9 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
         if (result.getFailure() != null) {
             status = switch (result.getFailure()) {
-                case ILLEGAL_SOURCE, INSUFFICIENT_ACCESS, INVALID_REALM -> FORBIDDEN;
                 case ASSET_NOT_FOUND, ATTRIBUTE_NOT_FOUND -> NOT_FOUND;
-                case INVALID_AGENT_LINK, ILLEGAL_AGENT_UPDATE, INVALID_ATTRIBUTE_EXECUTE_STATUS, INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE ->
-                    NOT_ACCEPTABLE;
+                case INVALID_VALUE -> NOT_ACCEPTABLE;
+                case QUEUE_FULL -> TOO_MANY_REQUESTS;
                 default -> BAD_REQUEST;
             };
         }
@@ -448,12 +452,19 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public AttributeWriteResult[] writeAttributeValues(RequestParams requestParams, AttributeState[] attributeStates) {
+        return writeAttributeEvents(requestParams,
+                Arrays.stream(attributeStates)
+                        .map(AttributeEvent::new)
+                        .toArray(AttributeEvent[]::new)
+        );
+    }
 
+    @Override
+    public AttributeWriteResult[] writeAttributeEvents(RequestParams requestParams, AttributeEvent[] attributeEvents) {
         // Process asynchronously but block for a little while waiting for the result
-        return Arrays.stream(attributeStates).map(attributeState -> {
-            AttributeEvent event = new AttributeEvent(attributeState);
+        return Arrays.stream(attributeEvents).map(event -> {
             if (!clientEventService.authorizeEventWrite(getRequestRealmName(), getAuthContext(), event)) {
-                return new AttributeWriteResult(event.getAttributeRef(), AttributeWriteFailure.INSUFFICIENT_ACCESS);
+                return new AttributeWriteResult(event.getRef(), AttributeWriteFailure.INSUFFICIENT_ACCESS);
             }
             return doAttributeWrite(event);
         }).toArray(AttributeWriteResult[]::new);
@@ -548,19 +559,42 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         return result.toArray(new Asset[0]);
     }
 
+    @Override
+    public AssetTree queryAssetTree(RequestParams requestParams, AssetQuery query) {
+        if (query == null) {
+            query = new AssetQuery();
+        }
+
+        if (!assetStorageService.authorizeAssetQuery(query, getAuthContext(), getRequestRealmName())) {
+            throw new ForbiddenException("User not authorized to execute specified query");
+        }
+
+        AssetTree result = assetStorageService.queryAssetTree(query);
+
+        // Compress response (the request attribute enables the interceptor)
+        request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
+
+        return result;
+    }
+
     protected AttributeWriteResult doAttributeWrite(AttributeEvent event) {
         AttributeWriteFailure failure = null;
+
+        if (event.getTimestamp() <= 0) {
+            event.setTimestamp(timerService.getCurrentTimeMillis());
+        }
 
         try {
             if (LOG.isLoggable(Level.FINE)) {
                 LOG.fine("Write attribute value request: " + event);
             }
 
-            // Process synchronously
+            // Process synchronously - need to directly use the ATTRIBUTE_EVENT_QUEUE as the client inbound queue
+            // has multiple consumers and so doesn't support In/Out MEP
+            event.setSource(AssetResource.class.getSimpleName());
             Object result = messageBrokerService.getFluentProducerTemplate()
                 .withBody(event)
-                .withHeader(AttributeEvent.HEADER_SOURCE, CLIENT)
-                .to(ATTRIBUTE_EVENT_QUEUE)
+                .to(ATTRIBUTE_EVENT_PROCESSOR)
                 .request();
 
             if (result instanceof AssetProcessingException processingException) {
@@ -573,7 +607,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             failure = AttributeWriteFailure.UNKNOWN;
         }
 
-        return new AttributeWriteResult(event.getAttributeRef(), failure);
+        return new AttributeWriteResult(event.getRef(), failure);
     }
 
     @Override

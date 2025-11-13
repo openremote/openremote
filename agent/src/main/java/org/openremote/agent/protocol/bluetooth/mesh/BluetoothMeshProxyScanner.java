@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -59,7 +60,8 @@ public class BluetoothMeshProxyScanner extends BluetoothCentralManagerCallback {
 
     private final MainThreadManager bluetoothCommandSerializer;
     private final BluetoothCentralManager bluetoothCentral;
-    private final ScheduledExecutorService executorService;
+    private final ExecutorService executorService;
+    private final ScheduledExecutorService scheduledExecutorService;
     private volatile BluetoothMeshProxyScannerCallback callback;
     private volatile NetworkKey networkKey;
     private volatile String address;
@@ -72,10 +74,11 @@ public class BluetoothMeshProxyScanner extends BluetoothCentralManagerCallback {
 
     // Constructors -------------------------------------------------------------------------------
 
-    public BluetoothMeshProxyScanner(MainThreadManager bluetoothCommandSerializer, BluetoothCentralManager central, ScheduledExecutorService executorService) {
+    public BluetoothMeshProxyScanner(MainThreadManager bluetoothCommandSerializer, BluetoothCentralManager central, ExecutorService executorService, ScheduledExecutorService scheduledExecutorService) {
         this.bluetoothCommandSerializer = bluetoothCommandSerializer;
         this.bluetoothCentral = central;
         this.executorService = executorService;
+        this.scheduledExecutorService = scheduledExecutorService;
     }
 
     public synchronized void start(final NetworkKey networkKey, String address, int duration, final BluetoothMeshProxyScannerCallback callback) {
@@ -93,7 +96,7 @@ public class BluetoothMeshProxyScanner extends BluetoothCentralManagerCallback {
             bluetoothCentral.scanForPeripheralsWithServices(new UUID[] {MESH_PROXY_UUID});
         };
         bluetoothCommandSerializer.enqueue(runnable);
-        timeoutFuture = executorService.schedule(() -> {
+        timeoutFuture = scheduledExecutorService.schedule(() -> {
                 synchronized (BluetoothMeshProxyScanner.this) {
                     timeoutFuture = null;
                     executeCallbackAndStopScanner();
@@ -192,7 +195,7 @@ public class BluetoothMeshProxyScanner extends BluetoothCentralManagerCallback {
         if (address == null || (address != null && address.equalsIgnoreCase(peripheral.getAddress()))) {
             meshProxyMap.put(
                 peripheral.getAddress(),
-                new BluetoothMeshProxy(bluetoothCommandSerializer, executorService, bluetoothCentral, peripheral, scanResult)
+                new BluetoothMeshProxy(bluetoothCommandSerializer, executorService, scheduledExecutorService, bluetoothCentral, peripheral, scanResult)
             );
         }
         if (address != null && meshProxyMap.size() == 1) {

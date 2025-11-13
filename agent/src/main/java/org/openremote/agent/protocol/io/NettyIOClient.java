@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 
 /**
  * This is for IO clients that use Netty and are based on  {@link io.netty.channel.ChannelHandler}s for
- * encoding/decoding messages of type &lt;T&gt.
+ * encoding/decoding messages of type &lt;T&gt;.
  *
  * @param <T> Defines the message type that the instance will encode/decode
  */

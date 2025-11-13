@@ -21,7 +21,7 @@ package org.openremote.agent.protocol.udp;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.MessageToMessageEncoder;
@@ -31,6 +31,7 @@ import org.openremote.model.syslog.SyslogCategory;
 
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
@@ -41,7 +42,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * Users of this {@link IOClient} are responsible for adding encoders for converting messages of type &lt;T&gt; to
  * {@link io.netty.buffer.ByteBuf} (see {@link MessageToByteEncoder}) and adding decoders to convert from
  * {@link io.netty.buffer.ByteBuf} to messages of type &lt;T&gt; and ensuring these decoded messages are passed back
- * to this client via {@link AbstractNettyIOClient#onMessageReceived} (see {@link ByteToMessageDecoder and
+ * to this client via {@link AbstractNettyIOClient#onMessageReceived} (see {@link ByteToMessageDecoder} and
  * {@link MessageToMessageDecoder}).
  */
 public class UDPIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> {
@@ -70,7 +71,7 @@ public class UDPIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> 
     }
 
     @Override
-    protected void addEncodersDecoders(Channel channel) {
+    protected void addEncodersDecoders(Channel channel) throws Exception {
         channel.pipeline().addLast(new MessageToMessageEncoder<ByteBuf>() {
             @Override
             protected void encode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
@@ -89,7 +90,7 @@ public class UDPIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> 
     }
 
     @Override
-    protected ChannelFuture startChannel() {
+    protected Future<Void> startChannel() {
         return bootstrap.bind("0.0.0.0", bindPort);
     }
 
@@ -105,7 +106,7 @@ public class UDPIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> 
 
     @Override
     protected EventLoopGroup getWorkerGroup() {
-        return new NioEventLoopGroup(1);
+        return new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory());
     }
 
     @Override

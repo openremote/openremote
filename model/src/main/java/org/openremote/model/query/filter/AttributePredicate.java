@@ -30,12 +30,15 @@ import java.util.Arrays;
  * presence/absence and/or values; there is an implicit OR between meta predicates (and condition can be achieved by
  * creating multiple {@link AttributePredicate}s in an {@link LogicGroup.Operator#AND} {@link LogicGroup}. Can also
  * predicate on the previous value of the {@link Attribute} which is only relevant when applied to {@link
- * org.openremote.model.rules.AssetState}.
+ * org.openremote.model.attribute.AttributeInfo}.
  */
 public class AttributePredicate extends NameValuePredicate {
 
     public NameValuePredicate[] meta;
     public ValuePredicate previousValue;
+
+    // ISO 8601 duration expression (e.g. PT5M)
+    public String timestampOlderThan;
 
     public AttributePredicate() {
     }

@@ -19,7 +19,7 @@
  */
 package org.openremote.model.event.shared;
 
-public class RealmFilter<T extends RealmScopedEvent> extends EventFilter<T> {
+public class RealmFilter<T extends RealmScopedEvent> implements EventFilter<T> {
 
     public static final String FILTER_TYPE = "realm";
 
@@ -34,11 +34,6 @@ public class RealmFilter<T extends RealmScopedEvent> extends EventFilter<T> {
 
     public String getName() {
         return name;
-    }
-
-    @Override
-    public String getFilterType() {
-        return FILTER_TYPE;
     }
 
     @Override

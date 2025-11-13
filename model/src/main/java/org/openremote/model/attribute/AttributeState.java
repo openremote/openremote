@@ -36,7 +36,6 @@ public class AttributeState implements Serializable {
     @JsonProperty
     protected AttributeRef ref;
     protected Object value;
-    protected boolean deleted;
 
     AttributeState() {}
 
@@ -73,17 +72,12 @@ public class AttributeState implements Serializable {
         this.value = value;
     }
 
-    public boolean isDeleted() {
-        return deleted;
-    }
-
     @Override
     public String toString() {
         String valueStr = Objects.toString(value);
         return getClass().getSimpleName() + "{" +
             "ref=" + ref +
             ", value=" + (valueStr.length() > 100 ? valueStr.substring(0, 100) + "..." : valueStr) +
-            ", deleted=" + deleted +
             '}';
     }
 }

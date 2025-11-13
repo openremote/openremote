@@ -12,8 +12,6 @@
 #
 # Please see profile/deploy.yml for configuration details for each service.
 #
-version: '2.4'
-
 volumes:
   proxy-data:
   manager-data:
@@ -60,6 +58,7 @@ services:
   postgresql:
     restart: always
     image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
+    shm_size: 128mb
     volumes:
       - postgresql-data:/var/lib/postgresql/data
       - manager-data:/storage
@@ -77,6 +76,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
+      KC_LOG_CONSOLE_FORMAT: '%-5p [%c] (%t) %s%e%n'
     <<: *awslogs
 
   manager:
@@ -86,12 +86,12 @@ services:
       keycloak:
         condition: service_healthy
     ports:
-      - "127.0.0.1:8405:8404" # Localhost metrics access
+      - "127.0.0.1:8405:8405" # Localhost metrics access
     environment:
       # Set this variable `demo` to auto provision demo assets etc.
       OR_SETUP_TYPE: ${OR_SETUP_TYPE:-demo}
       OR_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
-      OR_LOGGING_CONFIG_FILE: ${OR_LOGGING_CONFIG_FILE:-}
+      OR_LOGGING_CONFIG_FILE:
       OR_SETUP_RUN_ON_RESTART:
       OR_EMAIL_HOST:
       OR_EMAIL_USER:
@@ -101,7 +101,8 @@ services:
       OR_EMAIL_ADMIN:
       OR_SSL_PORT: ${OR_SSL_PORT:--1}
       OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
-      OR_ADDITIONAL_HOSTNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
+      OR_ADDITIONAL_HOSTNAMES:
+      OR_WEBSERVER_ALLOWED_ORIGINS: ${OR_WEBSERVER_ALLOWED_ORIGINS:-}
       OR_DEV_MODE: ${OR_DEV_MODE:-false}
       # The following variables will configure the demo
       OR_FORECAST_SOLAR_API_KEY:

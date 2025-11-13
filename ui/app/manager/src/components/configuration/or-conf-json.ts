@@ -23,14 +23,17 @@ import "@openremote/or-components/or-ace-editor";
 import { DialogAction } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { createRef, Ref, ref } from "lit/directives/ref.js";
-import { OrAceEditor } from "@openremote/or-components/or-ace-editor";
-import { ManagerAppConfig } from "@openremote/model";
+import { OrAceEditor, OrAceEditorChangedEvent } from "@openremote/or-components/or-ace-editor";
+import { ManagerAppConfig, MapConfig } from "@openremote/model";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 
 @customElement("or-conf-json")
 export class OrConfJson extends LitElement {
 
     @property({attribute: false})
-    public managerConfig: ManagerAppConfig = {};
+    public config: ManagerAppConfig | MapConfig = {};
+
+    public heading: string;
 
     protected _aceEditor: Ref<OrAceEditor> = createRef();
 
@@ -46,20 +49,22 @@ export class OrConfJson extends LitElement {
         }
     }
 
-    protected _showManagerConfigDialog(){
-        const _saveConfig = ()=>{
+    protected _showConfigDialog(){
+        let dialog: OrMwcDialog;
+        const _saveConfig = () => {
             const config = this.beforeSave()
             if (config) {
-                this.managerConfig = config as ManagerAppConfig
+                this.config = config as ManagerAppConfig | MapConfig
                 this.dispatchEvent(
-                    new CustomEvent('saveLocalManagerConfig',
-                        {detail: {value: this.managerConfig}}
+                    new CustomEvent('saveLocalConfig',
+                        {detail: {value: this.config}}
                     )
                 )
                 return true
             }
             return false
         }
+
         const dialogActions: DialogAction[] = [
             {
                 actionName: "cancel",
@@ -68,14 +73,26 @@ export class OrConfJson extends LitElement {
             {
                 actionName: "ok",
                 content: "update",
-                action: _saveConfig
-            },
-
+                action: _saveConfig,
+            }
         ];
-        showDialog(new OrMwcDialog()
+
+        dialog = new OrMwcDialog()
             .setActions(dialogActions)
-            .setHeading("manager_config.json")
-            .setContent(html `<or-ace-editor ${ref(this._aceEditor)} .value="${this.managerConfig}" ></or-ace-editor>`)
+            .setHeading(this.heading)
+            .setContent(html`
+                <or-ace-editor 
+                    ${ref(this._aceEditor)} 
+                    .value="${this.config}"
+                    @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => {
+                        const okButton = dialog.actions?.find(action => action.actionName === "ok");
+                        if (okButton) {
+                            okButton.disabled = !ev.detail.valid;
+                            dialog.requestUpdate();
+                        }
+                    }}"
+                ></or-ace-editor>
+            `)
             .setStyles(html`
                 <style>
                     .mdc-dialog__surface {
@@ -94,16 +111,14 @@ export class OrConfJson extends LitElement {
                     }
                 </style>
             `)
-            .setDismissAction(null));
+            .setDismissAction(null);
 
+        showDialog(dialog);
     }
 
     render() {
         return html`
-            <or-mwc-input type="button" label="JSON" outlined icon="pencil" @click="${() => {this._showManagerConfigDialog()}}"></or-mwc-input>
+            <or-mwc-input type="${InputType.BUTTON}" label="JSON" outlined icon="pencil" @or-mwc-input-changed="${() => {this._showConfigDialog()}}"></or-mwc-input>
         `
     }
-
-
-
 }

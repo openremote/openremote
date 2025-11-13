@@ -7,7 +7,6 @@ import {AttributesSelectEvent} from "../panels/attributes-panel";
 import {Attribute} from "@openremote/model";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {ThresholdChangeEvent} from "../panels/thresholds-panel";
-import "../panels/thresholds-panel";
 
 @customElement("gauge-settings")
 export class GaugeSettings extends WidgetSettings {
@@ -72,10 +71,27 @@ export class GaugeSettings extends WidgetSettings {
 
     protected onMinMaxValueChange(type: 'min' | 'max', ev: OrInputChangedEvent) {
         switch (type) {
-            case "max":
-                this.widgetConfig.max = ev.detail.value; break;
-            case "min":
-                this.widgetConfig.min = ev.detail.value; break;
+            case "max": {
+                this.widgetConfig.max = ev.detail.value;
+
+                // Make sure every threshold value is not higher than what is allowed.
+                const sortedThresholds = this.widgetConfig.thresholds.sort((x, y) => y[0] - x[0]);
+                sortedThresholds.forEach((t, index) => {
+                    t[0] = Math.max(Math.min(t[0], (ev.detail.value - index - 1)), this.widgetConfig.min);
+                });
+                break;
+            }
+            case "min": {
+                this.widgetConfig.min = ev.detail.value;
+
+                // Update the lowest (locked) threshold value to minimum value, and make sure every threshold value is not lower than what is allowed.
+                const sortedThresholds = this.widgetConfig.thresholds.sort((x, y) => (x[0] < y[0]) ? -1 : 1);
+                sortedThresholds[0][0] = ev.detail.value;
+                sortedThresholds.forEach((t, index) => {
+                    t[0] = Math.min(Math.max(t[0], (ev.detail.value + index)), this.widgetConfig.max);
+                })
+                break;
+            }
         }
         this.notifyConfigUpdate();
     }

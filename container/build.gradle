@@ -5,22 +5,21 @@ apply plugin: "signing"
 
 dependencies {
 
-    api resolveProject(":model")
+    api project(":model")
 
-    api "org.codehaus.groovy:groovy-all:$groovyVersion"
+    api "org.apache.groovy:groovy:$groovyVersion"
+    api "org.apache.groovy:groovy-json:$groovyVersion"
+    api "org.apache.groovy:groovy-xml:$groovyVersion"
+    api "org.apache.groovy:groovy-yaml:$groovyVersion"
     api "org.craftercms:groovy-sandbox:$groovySandboxVersion"
 
     // SLF4J JUL provider
     api "org.slf4j:slf4j-jdk14:$slf4jVersion"
-    // Log4J redirect to SLF4J
-    api "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
-    api "com.devskiller.friendly-id:friendly-id:$friendlyIdVersion"
-
-    api "io.undertow:undertow-servlet:$undertowVersion"
+    api "io.undertow:undertow-core:$undertowVersion"
     api "io.undertow:undertow-websockets-jsr:$undertowVersion"
     api ("org.jboss.resteasy:resteasy-undertow:$resteasyVersion") {
-        exclude group: "io.undertow",  module: "undertow-servlet-jakarta"
+        exclude group: "jakarta.servlet",  module: "undertow-servlet-jakarta"
     }
     api "org.jboss.resteasy:resteasy-client:$resteasyVersion"
     api "org.jboss.resteasy:resteasy-jackson2-provider:$resteasyVersion"
@@ -28,11 +27,15 @@ dependencies {
     api "org.jboss.resteasy:resteasy-validator-provider:$resteasyVersion"
 
     api "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
+    // This is the generic keycloak adapter that isn't kept up to date - deprecated possibly?
+    // They now only develop keycloak-jboss-adapter-core which is wildfly specific and would need some work to integrate
     api "org.keycloak:keycloak-adapter-core:$keycloakVersion"
-    api "org.keycloak:keycloak-admin-client-jakarta:$keycloakVersion"
+    api "org.keycloak:keycloak-policy-enforcer:$keycloakVersion"
+    api "org.keycloak:keycloak-admin-client:$keycloakVersion"
 
     api "org.postgresql:postgresql:$postgresJdbcVersion"
     api "org.flywaydb:flyway-core:$flywaydbVersion"
+    implementation "org.flywaydb:flyway-database-postgresql:$flywaydbVersion"
     api "org.hibernate.orm:hibernate-core:$hibernateVersion"
     api "org.hibernate.orm:hibernate-hikaricp:$hibernateVersion"
     api "org.hibernate.validator:hibernate-validator:$hibernateValidatorVersion"
@@ -46,13 +49,11 @@ dependencies {
     api "org.apache.camel:camel-snmp:$camelVersion"
     api "org.apache.camel:camel-health:$camelVersion"
     api "org.apache.camel:camel-management:$camelVersion"
-    api "com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion"
-    api "org.apache.camel:camel-micrometer:$camelVersion"
     api "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
 }
 
-jar {
-    archivesBaseName = "openremote-${project.name}"
+base {
+    archivesName = "openremote-${project.name}"
 }
 
 javadoc {
@@ -102,8 +103,8 @@ publishing {
         maven {
             if (!version.endsWith('-LOCAL')) {
                 credentials {
-                    username findProperty("publishUsername")
-                    password findProperty("publishPassword")
+                    username = findProperty("publishUsername")
+                    password = findProperty("publishPassword")
                 }
             }
             url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
@@ -114,6 +115,8 @@ publishing {
 signing {
     def signingKey = findProperty("signingKey")
     def signingPassword = findProperty("signingPassword")
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign publishing.publications.maven
+    if (signingKey && signingPassword) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign publishing.publications.maven
+    }
 }

@@ -19,19 +19,21 @@
  */
 package org.openremote.manager.mqtt;
 
+import org.apache.activemq.artemis.core.config.WildcardConfiguration;
 import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
+import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
 import org.apache.activemq.artemis.core.security.CheckType;
 import org.apache.activemq.artemis.core.security.Role;
 import org.apache.activemq.artemis.core.server.ActiveMQServer;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.ActiveMQJAASSecurityManager;
-import org.apache.commons.lang3.tuple.Triple;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.manager.security.AuthorisationService;
 import org.openremote.manager.security.MultiTenantJaasCallbackHandler;
 import org.openremote.manager.security.RemotingConnectionPrincipal;
+import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.syslog.SyslogCategory;
 
 import javax.security.auth.Subject;
@@ -43,6 +45,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
+import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 /**
@@ -72,6 +75,10 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         this.deploymentResolver = deploymentResolver;
         this.configName = configurationName;
         this.config = configuration;
+    }
+
+    protected static Topic fromAddress(String address, WildcardConfiguration wildcardConfiguration) throws IllegalArgumentException {
+        return Topic.parse(MQTTUtil.getMqttTopicFromCoreAddress(address, wildcardConfiguration));
     }
 
     @Override
@@ -119,9 +126,8 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             Subject subject = lc.getSubject();
 
             if (subject != null) {
-                // Ensure subject is available when afterCreateConnection is fired
+                // Set subject here so any code that calls this method behaves like a normal ActiveMQ SecurityStoreImpl::authenticate call
                 remotingConnection.setSubject(subject);
-
                 subject.getPrincipals().add(new RemotingConnectionPrincipal(remotingConnection));
             }
 
@@ -146,7 +152,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             case CREATE_ADDRESS, DELETE_ADDRESS, CREATE_DURABLE_QUEUE, DELETE_DURABLE_QUEUE, CREATE_NON_DURABLE_QUEUE, DELETE_NON_DURABLE_QUEUE ->
                 // All MQTT clients must be able to create addresses and queues (every session and subscription will create a queue within the topic address)
                 true;
-            case MANAGE, BROWSE -> false;
+            case MANAGE, BROWSE, VIEW, EDIT -> false;
         };
     }
 
@@ -156,7 +162,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
 
         try {
             // Get MQTT topic from address
-            topic = Topic.fromAddress(address, brokerService.getWildcardConfiguration());
+            topic = fromAddress(address, brokerService.getWildcardConfiguration());
         } catch (IllegalArgumentException e) {
             LOG.log(Level.FINE, "Invalid topic provided by client '" + address, e);
             return false;
@@ -184,7 +190,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         // See if a custom handler wants to handle authorisation for this topic pub/sub
         for (MQTTHandler handler : brokerService.getCustomHandlers()) {
             if (handler.handlesTopic(topic)) {
-                LOG.finest("Passing topic to handler for " + (isWrite ? "pub" : "sub") + ": handler=" + handler.getName() + ", topic=" + topic + ", " + brokerService.connectionToString(connection));
+                LOG.finest("Passing topic to handler for " + (isWrite ? "pub" : "sub") + ": handler=" + handler.getName() + ", topic=" + topic + ", " + connectionToString(connection));
                 boolean result;
 
                 if (isWrite) {
@@ -193,15 +199,15 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
                     result = handler.checkCanSubscribe(connection, securityContext, topic);
                 }
                 if (result) {
-                    LOG.finest("Handler '" + handler.getName() + "' has authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
+                    LOG.finest("Handler '" + handler.getName() + "' has authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + connectionToString(connection));
                 } else {
-                    LOG.finest("Handler '" + handler.getName() + "' has not authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
+                    LOG.finest("Handler '" + handler.getName() + "' has not authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + connectionToString(connection));
                 }
                 return result;
             }
         }
 
-        LOG.info("Un-supported request " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
+        LOG.info("Un-supported request " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + connectionToString(connection));
         return false;
     }
 

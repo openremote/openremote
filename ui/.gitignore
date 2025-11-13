@@ -1,2 +1,4 @@
 dist/
 lib/
+custom-elements.json
+custom-elements-jsx.d.ts

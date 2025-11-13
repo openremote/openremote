@@ -20,11 +20,16 @@
 package org.openremote.manager.mqtt;
 
 import io.netty.buffer.ByteBuf;
-import org.apache.activemq.artemis.api.core.ActiveMQException;
+import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.api.core.QueueConfiguration;
 import org.apache.activemq.artemis.api.core.RoutingType;
 import org.apache.activemq.artemis.api.core.client.ClientConsumer;
+import org.apache.activemq.artemis.api.core.client.ClientMessage;
+import org.apache.activemq.artemis.api.core.client.ClientProducer;
+import org.apache.activemq.artemis.api.core.client.ClientSession;
+import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
+import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
 import org.apache.activemq.artemis.reader.MessageUtil;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.keycloak.KeycloakSecurityContext;
@@ -32,23 +37,26 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.UserAssetLink;
+import org.openremote.model.protocol.mqtt.Topic;
+import org.openremote.model.util.ValueUtil;
 
 import javax.security.auth.Subject;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.lang.System.Logger.Level.*;
-import static org.openremote.manager.mqtt.MQTTBrokerService.LOG;
+import static org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil.MQTT_QOS_LEVEL_KEY;
 
 /**
  * This allows custom handlers to be discovered by the {@link MQTTBrokerService} during system startup using the
@@ -63,7 +71,11 @@ public abstract class MQTTHandler {
     protected MQTTBrokerService mqttBrokerService;
     protected MessageBrokerService messageBrokerService;
     protected ManagerKeycloakIdentityProvider identityProvider;
+    protected ExecutorService executorService;
+    protected TimerService timerService;
     protected boolean isKeycloak;
+    protected ClientSession clientSession;
+    protected ClientProducer producer;
 
     /**
      * Gets the priority of this handler which is used to determine the call order; handlers with a lower priority are
@@ -83,11 +95,13 @@ public abstract class MQTTHandler {
     /**
      * Called when the system starts to allow for initialisation.
      */
-    public void init(Container container) throws Exception {
+    public void init(Container container, Configuration serverConfiguration) throws Exception {
         mqttBrokerService = container.getService(MQTTBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
+        executorService = container.getExecutor();
+        timerService = container.getService(TimerService.class);
 
         if (!identityService.isKeycloakEnabled()) {
             getLogger().warning("MQTT connections are not supported when not using Keycloak identity provider");
@@ -96,12 +110,20 @@ public abstract class MQTTHandler {
             isKeycloak = true;
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
         }
+
+        addPublishTopicServerConfiguration(container, serverConfiguration);
     }
 
     /**
      * Called when the system starts to allow for initialisation.
      */
     public void start(Container container) throws Exception {
+
+        clientSession = mqttBrokerService.createSession();
+
+        // Create producer
+        producer = clientSession.createProducer();
+
         Set<String> publishListenerTopics = getPublishListenerTopics();
         if (publishListenerTopics != null) {
             for (String publishListenerTopic : publishListenerTopics) {
@@ -110,36 +132,73 @@ public abstract class MQTTHandler {
         }
     }
 
-    protected void addPublishConsumer(String topic) throws Exception {
-        try {
-            getLogger().info("Adding publish consumer for topic '" + topic + "': handler=" + getName());
-            String coreTopic = MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, mqttBrokerService.wildcardConfiguration);
-            mqttBrokerService.internalSession.createQueue(new QueueConfiguration(coreTopic).setRoutingType(RoutingType.MULTICAST).setPurgeOnNoConsumers(true).setAutoCreateAddress(true).setAutoCreated(true));
-            ClientConsumer consumer = mqttBrokerService.internalSession.createConsumer(coreTopic);
-            consumer.setMessageHandler(message -> {
-                Topic publishTopic = Topic.parse(MQTTUtil.convertCoreAddressToMqttTopicFilter(message.getAddress(), mqttBrokerService.wildcardConfiguration));
-                String clientID = message.getStringProperty(MessageUtil.CONNECTION_ID_PROPERTY_NAME);
-                RemotingConnection connection = mqttBrokerService.getConnectionFromClientID(clientID);
-
-                if (connection == null) {
-                    LOG.log(DEBUG, "Client is no longer connected so dropping publish to topic '" + topic + "': clientID=" +  clientID);
-                    return;
-                }
-
-                getLogger().fine("Client published to '" + publishTopic + "': " + mqttBrokerService.connectionToString(connection));
-                onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
-            });
-        } catch (ActiveMQException e) {
-            getLogger().log(Level.WARNING, "Failed to create handler consumer for topic '" + topic + "': handler=" + getName(), e);
-            throw e;
-        }
-    }
-
     /**
      * Called when the system stops to allow for any cleanup.
      */
     public void stop() throws Exception {
+        if (clientSession != null) {
+            clientSession.close();
+            clientSession = null;
+        }
+    }
 
+    protected void addPublishTopicServerConfiguration(Container container, Configuration serverConfiguration) {
+        Set<String> publishListenerTopics = getPublishListenerTopics();
+        if (publishListenerTopics != null) {
+            publishListenerTopics.forEach(topic -> {
+                String coreTopic = MQTTUtil.getCoreAddressFromMqttTopic(topic, mqttBrokerService.wildcardConfiguration);
+                // Use literal address to avoid wildcard matching to other addresses
+                AddressSettings addressSettings = getPublishTopicAddressSettings(container, topic);
+                if (addressSettings != null) {
+                    serverConfiguration.addAddressSetting("(" + coreTopic + ")", addressSettings);
+                }
+            });
+        }
+    }
+
+    /**
+     * Just enable metrics on the topic by default but allow custom handlers to add more configuration as required
+     */
+    protected AddressSettings getPublishTopicAddressSettings(Container container, String publishTopic) {
+        if (container.getMeterRegistry() != null) {
+            return new AddressSettings()
+                .setEnableMetrics(true);
+        }
+
+        return null;
+    }
+
+    protected void addPublishConsumer(String topic) throws Exception {
+        try {
+            getLogger().info("Adding publish consumer for topic '" + topic + "': handler=" + getName());
+            String coreTopic = MQTTUtil.getCoreAddressFromMqttTopic(topic, mqttBrokerService.wildcardConfiguration);
+            clientSession.createQueue(QueueConfiguration.of(coreTopic).setDurable(false).setRoutingType(RoutingType.MULTICAST).setPurgeOnNoConsumers(true).setAutoCreateAddress(true).setAutoCreated(true));
+            ClientConsumer consumer = clientSession.createConsumer(coreTopic);
+            consumer.setMessageHandler(message -> {
+                Topic publishTopic = Topic.parse(MQTTUtil.getMqttTopicFromCoreAddress(message.getAddress(), mqttBrokerService.wildcardConfiguration));
+                String clientID = message.getStringProperty(MessageUtil.CONNECTION_ID_PROPERTY_NAME);
+                RemotingConnection connection = mqttBrokerService.getConnectionFromClientID(clientID);
+
+                // TODO: This is not ideal as publish has been accepted and then we drop the message if the client has disconnected before it is processed
+                // Need to be able to get connection/auth from the message somehow
+                // Cannot use connection.getTransportConnection().isOpen() check as well due to last will publishes
+                if (connection == null) {
+                    getLogger().finer(() -> "Client is no longer connected so dropping publish to topic '" + topic + "': clientID=" + clientID);
+                    return;
+                }
+
+                getLogger().finer(() -> "onPublish '" + publishTopic + "': " + MQTTBrokerService.connectionToString(connection));
+
+                try {
+                    onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
+                } catch (Exception e) {
+                    getLogger().info("An error occurred whilst handling onPublish to topic '" + topic + "': clientID=" + clientID);
+                }
+            });
+        } catch (Exception e) {
+            getLogger().log(Level.SEVERE, "Failed to create handler consumer for topic '" + topic + "': handler=" + getName(), e);
+            throw e;
+        }
     }
 
     /**
@@ -178,11 +237,9 @@ public abstract class MQTTHandler {
      */
     public boolean handlesTopic(Topic topic) {
         if (!topicTokenCountGreaterThan(topic, 2)) {
-            getLogger().finest("Topic must contain more than 2 tokens");
             return false;
         }
         if (!topicMatches(topic)) {
-            getLogger().finest("Topic failed to match this handler");
             return false;
         }
         return true;
@@ -194,11 +251,11 @@ public abstract class MQTTHandler {
      */
     public boolean checkCanSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
         if (securityContext == null) {
-            getLogger().finest("Anonymous connection subscriptions not supported by this handler, topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+            getLogger().finest("Anonymous connection subscriptions not supported by this handler, topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
             return false;
         }
         if (!topicRealmAllowed(securityContext, topic) || !topicClientIdMatches(connection, topic)) {
-            getLogger().finest("Topic realm and client ID tokens must match the connection, topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+            getLogger().finest("Topic realm and client ID tokens must match the connection, topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
             return false;
         }
         return canSubscribe(connection, securityContext, topic);
@@ -210,11 +267,11 @@ public abstract class MQTTHandler {
      */
     public boolean checkCanPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
         if (securityContext == null) {
-            getLogger().finest("Anonymous connection publishes not supported by this handler topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+            getLogger().finest("Anonymous connection publishes not supported by this handler topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
             return false;
         }
         if (!topicRealmAllowed(securityContext, topic) || !topicClientIdMatches(connection, topic)) {
-            getLogger().finest("Topic realm and client ID tokens must match the connection topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+            getLogger().finest("Topic realm and client ID tokens must match the connection topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
             return false;
         }
         return canPublish(connection, securityContext, topic);
@@ -225,6 +282,23 @@ public abstract class MQTTHandler {
      * has an active connection (subject can be accessed from the connection).
      */
     public void onUserAssetLinksChanged(RemotingConnection connection, List<PersistenceEvent<UserAssetLink>> changes) {
+    }
+
+    @SuppressWarnings("SynchronizeOnNonFinalField")
+    public void publishMessage(String topic, Object data, MqttQoS qoS) {
+        try {
+            if (clientSession != null) {
+                // Artemis' sessions are not threadsafe
+                synchronized (clientSession) {
+                    ClientMessage message = clientSession.createMessage(false);
+                    message.putIntProperty(MQTT_QOS_LEVEL_KEY, qoS.value());
+                    message.writeBodyBufferBytes(ValueUtil.asJSON(data).map(String::getBytes).orElseThrow(() -> new IllegalStateException("Failed to convert payload to JSON string: " + data)));
+                    producer.send(MQTTUtil.getCoreAddressFromMqttTopic(topic, mqttBrokerService.getWildcardConfiguration()), message);
+                }
+            }
+        } catch (Exception e) {
+            getLogger().log(Level.WARNING, "Couldn't publish to MQTT client: topic=" + topic, e);
+        }
     }
 
     /**
@@ -285,11 +359,11 @@ public abstract class MQTTHandler {
     }
 
     public static boolean topicTokenCountGreaterThan(Topic topic, int size) {
-        return topic.getTokens() != null && topic.getTokens().size() > size;
+        return topic.getTokens() != null && topic.getTokens().length > size;
     }
 
     public static String topicTokenIndexToString(Topic topic, int tokenNumber) {
-        return topicTokenCountGreaterThan(topic, tokenNumber) ? topic.getTokens().get(tokenNumber) : null;
+        return topicTokenCountGreaterThan(topic, tokenNumber) ? topic.getTokens()[tokenNumber] : null;
     }
 
     protected static Subject getSubjectFromConnection(RemotingConnection connection) {

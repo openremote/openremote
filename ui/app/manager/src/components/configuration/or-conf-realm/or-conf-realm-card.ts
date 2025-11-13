@@ -30,12 +30,15 @@ import {
     DefaultColor5,
     DefaultColor6,
     DefaultColor8,
+    manager,
     Util,
 } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
 import { FileInfo, ManagerAppRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {when} from 'lit/directives/when.js';
+import ISO6391 from 'iso-639-1';
+import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu} from "../../../index";
 
 @customElement("or-conf-realm-card")
 export class OrConfRealmCard extends LitElement {
@@ -128,30 +131,20 @@ export class OrConfRealmCard extends LitElement {
     protected logo:string = this.realm.logo;
     protected logoMobile:string = this.realm.logoMobile;
     protected favicon:string = this.realm.favicon;
+    protected headerListPrimary: string[] = Object.keys(DefaultHeaderMainMenu);
+    protected headerListSecondary: string[] = Object.keys(DefaultHeaderSecondaryMenu);
 
-    protected headerListPrimary: string[] = [
-        "map",
-        "assets",
-        "rules",
-        "insights",
-    ];
+    protected commonLanguages: string[] = Object.entries(DEFAULT_LANGUAGES).map(entry => ISO6391.getName(entry[0]));
+    protected _languages: string[][] = [];
 
+    connectedCallback() {
+        const languageNames = ISO6391.getAllNames();
+        this._languages = ISO6391.getAllCodes()
+            .map((code, index) => ([code, languageNames[index]]))
+            .sort((a, b) => a[1].localeCompare(b[1]));
 
-    protected headerListSecondary: string[] = [
-        "gateway",
-        "export",
-        "logs",
-        "realms",
-
-        "users",
-        "roles",
-
-        "account",
-        "language",
-        "appearance",
-        "logout"
-
-    ];
+        return super.connectedCallback();
+    }
 
     protected _getColors() {
         const colors: { [name: string]: string } = {
@@ -183,7 +176,8 @@ export class OrConfRealmCard extends LitElement {
         Object.entries(colors).forEach(([key, value]) => {
             css += key +":" +value + ";"
         })
-        this.realm.styles = css
+        css += "}";
+        this.realm.styles = css;
         this.notifyConfigChange(this.realm);
     }
 
@@ -201,7 +195,7 @@ export class OrConfRealmCard extends LitElement {
     protected _getImagePath(file:File, fileName: string){
         if (file.type.startsWith("image/")){
             const extension = file.name.slice(file.name.lastIndexOf('.'), file.name.length);
-            return "/images/" + this.name + "/" + fileName + extension
+            return this.name + "/" + fileName + extension
         }
         return null
     }
@@ -211,15 +205,16 @@ export class OrConfRealmCard extends LitElement {
     protected async _setImageForUpload(file: File, fileName: string) {
         const path = this._getImagePath(file, fileName)
         if (path){
-            this.files[path] = {
+            this.files[fileName] = {
+                name: fileName,
                 path: path,
                 contents: await Util.blobToBase64(file),
             } as FileInfo;
             this.realm[fileName] = path
-            this[fileName] = this.files[path].contents
+            this[fileName] = this.files[fileName].contents
             this.requestUpdate()
             this.notifyConfigChange(this.realm);
-            return this.files[path].contents;
+            return this.files[fileName].contents;
         }
     }
 
@@ -273,6 +268,15 @@ export class OrConfRealmCard extends LitElement {
     render() {
         const colors = this._getColors();
         const app = this;
+        const managerUrl = (manager.managerUrl ?? "");
+
+        // On an empty search; return the common language as set in DEFAULT_LANGUAGES
+        // If searching, compare strings using lowercase. (with no maximum)
+        const searchProvider = (search: string) => this._languages.filter(entry =>
+            (!search && this.commonLanguages.includes(entry[1])) ||
+            (!search && app.realm.notifications?.languages.includes(entry[0])) ||
+            entry[1].toLowerCase().includes(search?.toLowerCase()))
+
         return html`
             <or-collapsible-panel .expanded="${app.expanded}">
                 <div slot="header" class="header-container">
@@ -298,13 +302,13 @@ export class OrConfRealmCard extends LitElement {
                         <div class="d-inline-flex">
                             <or-file-uploader .title="${i18next.t('configuration.logo')}"
                                               @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "logo")}"
-                                              .src="${app.logo ? app.logo : app.realm.logo}"></or-file-uploader>
+                                              .src="${app.logo ? app.logo : app.realm.logo}" .managerUrl="${managerUrl}"></or-file-uploader>
                             <or-file-uploader .title="${i18next.t('configuration.logoMobile')}"
                                               @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "logoMobile")}"
-                                              .src="${app.logoMobile ? app.logoMobile : app.realm.logoMobile}"></or-file-uploader>
+                                              .src="${app.logoMobile ? app.logoMobile : app.realm.logoMobile}" .managerUrl="${managerUrl}"></or-file-uploader>
                             <or-file-uploader .title="${html`Favicon`}"
                                               @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "favicon")}"
-                                              .src="${app.favicon ? app.favicon : app.realm.favicon}"></or-file-uploader>
+                                              .src="${app.favicon ? app.favicon : app.realm.favicon}" .managerUrl="${managerUrl}"></or-file-uploader>
                         </div>
                     </div>
                     <div class="color-group">
@@ -359,11 +363,56 @@ export class OrConfRealmCard extends LitElement {
                             ></or-mwc-input>
                         </div>
                     </div>
+                    <div class="header-group">
+                        <div class="subheader">${i18next.t("configuration.notificationLanguages")}</div>
+                        <span>${i18next.t("configuration.notificationLanguagesDesc")}</span>
+                        <div>
+                            <or-mwc-input
+                                    .type="${InputType.SELECT}" multiple
+                                    class="header-item"
+                                    searchLabel="configuration.notificationLanguagesLabel"
+                                    .label="${i18next.t("configuration.notificationLanguages")}"
+                                    .value="${app.realm.notifications?.languages || []}"
+                                    .options="${this._languages}"
+                                    .searchProvider="${searchProvider}"
+                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                        const newLanguages: string[] | undefined = e.detail.value;
+                                        const currentDefault: string | undefined = app.realm.notifications?.defaultLanguage;
+                                        app.realm.notifications = {
+                                            languages: newLanguages,
+                                            defaultLanguage: newLanguages?.includes(currentDefault) ? currentDefault : newLanguages?.[0]
+                                        }
+                                        app.notifyConfigChange(app.realm);
+                                        this.requestUpdate(); // force render
+                                    }}"
+                            ></or-mwc-input>
+                            ${when(app.realm.notifications?.languages?.length > 0, () => html`
+                                <or-mwc-input
+                                        .type="${InputType.SELECT}"
+                                        class="header-item"
+                                        .label="${i18next.t("configuration.defaultLanguage")}"
+                                        .value="${app.realm.notifications?.defaultLanguage || []}"
+                                        .options="${this._languages.filter(entry => app.realm.notifications?.languages.includes(entry[0]))}"
+                                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                            app.realm.notifications.defaultLanguage = e.detail.value;
+                                            app.notifyConfigChange(app.realm);
+                                            this.requestUpdate(); // force render
+                                        }}"
+                                ></or-mwc-input>
+                            `, () => html`
+                                <or-mwc-input
+                                        .type="${InputType.SELECT}" disabled
+                                        class="header-item"
+                                        .label="${i18next.t("configuration.defaultLanguage")}"
+                                ></or-mwc-input>
+                            `)}
+                        </div>
+                    </div>
 
                     ${when(app.canRemove, () => html`
                         <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}"
                                       label="configuration.deleteRealmCustomization"
-                                      @click="${() => { app._showRemoveRealmDialog(); }}"
+                                      @or-mwc-input-changed="${() => { app._showRemoveRealmDialog(); }}"
                         ></or-mwc-input>
                     `)}
                 </div>

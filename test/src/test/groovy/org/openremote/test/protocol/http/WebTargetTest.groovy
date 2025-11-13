@@ -19,24 +19,23 @@
  */
 package org.openremote.test.protocol.http
 
+import jakarta.ws.rs.client.ClientRequestContext
+import jakarta.ws.rs.client.ClientRequestFilter
+import jakarta.ws.rs.core.*
 import org.apache.http.client.utils.URIBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyClient
 import org.jboss.resteasy.specimpl.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
+import org.openremote.container.web.DynamicValueInjectorFilter
+import org.openremote.container.web.OAuthServerResponse
+import org.openremote.container.web.WebTargetBuilder
 import org.openremote.model.auth.OAuthClientCredentialsGrant
 import org.openremote.model.auth.OAuthGrant
 import org.openremote.model.auth.OAuthPasswordGrant
 import org.openremote.model.auth.OAuthRefreshTokenGrant
-import org.openremote.container.web.OAuthServerResponse
-import org.openremote.container.web.QueryParameterInjectorFilter
-import org.openremote.container.web.WebTargetBuilder
 import org.openremote.model.util.ValueUtil
 import spock.lang.Shared
 import spock.lang.Specification
-
-import jakarta.ws.rs.client.ClientRequestContext
-import jakarta.ws.rs.client.ClientRequestFilter
-import jakarta.ws.rs.core.*
 
 class WebTargetTest extends Specification {
 
@@ -154,7 +153,7 @@ class WebTargetTest extends Specification {
                 case "https://headerserver/get":
                     if (requestContext.getHeaderString("MyHeader") == "MyHeaderValue"
                         && requestContext.getHeaderString("MyHeaderNew") == "MyHeaderNewValue"
-                        && requestContext.getHeaderString("MyMultiHeader") == "MyMultiHeaderValue3,MyMultiHeaderValue1,MyMultiHeaderValue2") {
+                        && requestContext.getHeaderString("MyMultiHeader") == "MyMultiHeaderValue1,MyMultiHeaderValue2,MyMultiHeaderValue3") {
                         requestContext.abortWith(Response.ok().build())
                         return
                     }
@@ -428,23 +427,20 @@ class WebTargetTest extends Specification {
 
         and: "a web target for a server"
         def target = new WebTargetBuilder(client, new URIBuilder("https://headerserver").build())
-            .setInjectHeaders(headers)
             .build()
 
         when: "a request is made to the server"
-        def response = target.request().get()
+        def request = target.request()
+        request = WebTargetBuilder.addHeaders(request, headers)
+        def response = request.get()
 
         then: "the response should be a 200 OK indicating the custom headers reached the server"
         assert response.getStatus() == 200
 
         when: "a request is made to the server with additional headers"
-        headers = new MultivaluedHashMap<String, String>(3)
         headers.add("MyHeaderNew", "MyHeaderNewValue")
         headers.add("MyMultiHeader", "MyMultiHeaderValue3")
-        response = target.path("get")
-            .request()
-            .headers(headers)
-            .get()
+        response = WebTargetBuilder.addHeaders(target.path("get").request(), headers).get()
 
         then: "the response should be a 200 OK indicating the custom headers reached the server"
         assert response.getStatus() == 200
@@ -474,8 +470,10 @@ class WebTargetTest extends Specification {
 
         and: "a web target for a server"
         def target = new WebTargetBuilder(client, new URIBuilder("https://paramserver").build())
-            .setInjectQueryParameters(params)
             .build()
+
+        and: "some query parameters"
+        target = WebTargetBuilder.addQueryParams(target, params)
 
         when: "a request is made to the server"
         def response = target.request().get()
@@ -483,14 +481,13 @@ class WebTargetTest extends Specification {
         then: "the response should be a 200 OK indicating the query parameters reached the server"
         assert response.getStatus() == 200
 
-        when: "a request is made to the server with additional query parameters"
-        params = target.getConfiguration().getProperty(QueryParameterInjectorFilter.QUERY_PARAMETERS_PROPERTY) as MultivaluedMap<String, String>
-        params = new MultivaluedHashMap<String, String>(params)
+        when: "a request is made to the server with a different path and additional query parameters"
+        params = new MultivaluedHashMap<String, String>()
         params.add("param1", "param1Value2")
         params.add("param3", "param3Value1")
-
-        response = target.path("get")
-            .property(QueryParameterInjectorFilter.QUERY_PARAMETERS_PROPERTY, params)
+        def newTarget = target.path("get")
+        newTarget = WebTargetBuilder.addQueryParams(newTarget, params)
+        response = newTarget
             .request()
             .get()
 
@@ -502,17 +499,19 @@ class WebTargetTest extends Specification {
 
         given: "query parameters to inject with dynamic placeholders"
         def params = new MultivaluedHashMap<String, String>(2)
-        params.add("param1", "{\$value}")
+        params.add("param1", "%VALUE%")
         params.put("param2", ["param2Value1","param2Value2"])
 
         and: "a web target for a server"
         def target = new WebTargetBuilder(client, new URIBuilder("https://dynamicparamserver").build())
-            .setInjectQueryParameters(params)
             .build()
 
-        when: "a request is made to the server"
+        and: "dynamic query params"
+        target = WebTargetBuilder.addQueryParams(target, params)
+
+        when: "a request is made to the server with a dynamic value"
         def response = target.request()
-            .property(QueryParameterInjectorFilter.DYNAMIC_VALUE_PROPERTY, "dynamicValue1")
+            .property(DynamicValueInjectorFilter.DYNAMIC_VALUE_PROPERTY, "dynamicValue1")
             .get()
 
         then: "the response should be a 200 OK indicating the query parameters reached the server"

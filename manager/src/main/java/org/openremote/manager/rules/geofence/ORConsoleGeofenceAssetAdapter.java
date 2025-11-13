@@ -67,12 +67,12 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     public static final String NAME = "ORConsole";
     public static int NOTIFY_ASSETS_DEBOUNCE_MILLIS = 60000;
     public static int NOTIFY_ASSETS_BATCH_MILLIS = 10000;
-    protected Map<String, RulesEngine.AssetStateLocationPredicates> assetLocationPredicatesMap = new HashMap<>();
+    protected Map<String, RulesEngine.AssetLocationPredicates> assetLocationPredicatesMap = new HashMap<>();
     protected NotificationService notificationService;
     protected AssetStorageService assetStorageService;
     protected GatewayService gatewayService;
     protected ManagerIdentityService identityService;
-    protected ScheduledExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected ConcurrentMap<String, String> consoleIdRealmMap = new ConcurrentHashMap<>();
     protected ScheduledFuture<?> notifyAssetsScheduledFuture;
     protected final Set<String> notifyAssets = new HashSet<>();
@@ -87,7 +87,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         this.assetStorageService = container.getService(AssetStorageService.class);
         this.notificationService = container.getService(NotificationService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
-        executorService = container.getExecutorService();
+        scheduledExecutorService = container.getScheduledExecutor();
         gatewayService = container.getService(GatewayService.class);
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
     }
@@ -132,7 +132,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     }
 
     @Override
-    public void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> modifiedAssetLocationPredicates) {
+    public void processLocationPredicates(List<RulesEngine.AssetLocationPredicates> modifiedAssetLocationPredicates) {
         AtomicBoolean notifierDebounce = new AtomicBoolean(false);
 
         synchronized (notifyAssets) {
@@ -148,7 +148,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                             !(locationPredicate instanceof RadialGeofencePredicate));
 
 
-                    RulesEngine.AssetStateLocationPredicates existingPredicates = assetLocationPredicatesMap.get(
+                    RulesEngine.AssetLocationPredicates existingPredicates = assetLocationPredicatesMap.get(
                         assetStateLocationPredicates.getAssetId());
                     if (existingPredicates == null || !existingPredicates.getLocationPredicates().equals(assetStateLocationPredicates.getLocationPredicates())) {
                         // We're not comparing before and after state as RulesService has done that although it could be
@@ -183,7 +183,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
             if (notifierDebounce.get()) {
                 if (notifyAssetsScheduledFuture == null || notifyAssetsScheduledFuture.cancel(false)) {
-                    notifyAssetsScheduledFuture = executorService.schedule(() -> {
+                    notifyAssetsScheduledFuture = scheduledExecutorService.schedule(() -> {
                             synchronized (notifyAssets) {
                                 notifyAssetGeofencesChanged(notifyAssets);
                                 notifyAssets.clear();
@@ -206,7 +206,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
             return null;
         }
 
-        RulesEngine.AssetStateLocationPredicates assetStateLocationPredicates = assetLocationPredicatesMap.get(assetId);
+        RulesEngine.AssetLocationPredicates assetStateLocationPredicates = assetLocationPredicatesMap.get(assetId);
 
         if (assetStateLocationPredicates == null) {
             // No geofences exist for this asset
@@ -259,7 +259,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                 final Notification notification = new Notification("GeofenceRefresh", new PushNotificationMessage().setData(data), null, null, null);
                 notification.setTargets(subTargets);
 
-                executorService.schedule(() -> {
+                scheduledExecutorService.schedule(() -> {
                     LOG.fine("Notifying consoles that geofences have changed: " + notification.getTargets());
                     notificationService.sendNotification(notification);
                 }, (long) i * NOTIFY_ASSETS_BATCH_MILLIS, TimeUnit.MILLISECONDS);

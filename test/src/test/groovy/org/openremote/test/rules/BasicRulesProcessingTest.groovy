@@ -72,7 +72,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         and: "the new rule engine is fully initialised"
         conditions.eventually {
-            assert smartHomeEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert smartHomeEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, ["All"])
             assertRulesFired(rulesImport.realmBuildingEngine, 1)
@@ -150,12 +150,12 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "after a few seconds the engines in scope should have facts and rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
-            assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
-            assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 1
-            assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2 + 1
-            assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
+            assert rulesService.attributeEvents.size() == DEMO_RULE_STATES_GLOBAL + 1
+            assert rulesImport.globalEngine.facts.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
+            assert rulesImport.masterEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
+            assert rulesImport.realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 1
+            assert rulesImport.apartment2Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2 + 1
+            assert rulesImport.apartment3Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, ["All"])
             assertRulesFired(rulesImport.masterEngine, 1)
@@ -196,12 +196,12 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "no rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
-            assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
-            assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 1
-            assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2 + 1
-            assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
+            assert rulesService.attributeEvents.size() == DEMO_RULE_STATES_GLOBAL + 1
+            assert rulesImport.globalEngine.facts.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
+            assert rulesImport.masterEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
+            assert rulesImport.realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 1
+            assert rulesImport.apartment2Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2 + 1
+            assert rulesImport.apartment3Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.masterEngine, 1)
             assertRulesFired(rulesImport.realmBuildingEngine, 1)
@@ -222,12 +222,12 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "the facts should be removed from the rule engines and rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
-            assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
-            assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
-            assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
-            assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
+            assert rulesService.attributeEvents.size() == DEMO_RULE_STATES_GLOBAL
+            assert rulesImport.globalEngine.facts.assetStates.size() == DEMO_RULE_STATES_GLOBAL
+            assert rulesImport.masterEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
+            assert rulesImport.realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert rulesImport.apartment2Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
+            assert rulesImport.apartment3Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, ["All"])
             assertRulesFired(rulesImport.realmBuildingEngine, 1)
@@ -253,12 +253,12 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "the facts should be added to the rule engines and rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 2
-            assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 2
-            assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 2
-            assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2 + 2
-            assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
+            assert rulesService.attributeEvents.size() == DEMO_RULE_STATES_GLOBAL + 2
+            assert rulesImport.globalEngine.facts.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 2
+            assert rulesImport.masterEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
+            assert rulesImport.realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 2
+            assert rulesImport.apartment2Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2 + 2
+            assert rulesImport.apartment3Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, ["All"])
             assertRulesFired(rulesImport.realmBuildingEngine, 1)
@@ -274,12 +274,12 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "the facts should be removed from the rule engines and rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
-            assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
-            assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
-            assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
-            assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
+            assert rulesService.attributeEvents.size() == DEMO_RULE_STATES_GLOBAL
+            assert rulesImport.globalEngine.facts.assetStates.size() == DEMO_RULE_STATES_GLOBAL
+            assert rulesImport.masterEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
+            assert rulesImport.realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert rulesImport.apartment2Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
+            assert rulesImport.apartment3Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, ["All"])
             assertRulesFired(rulesImport.realmBuildingEngine, 1)

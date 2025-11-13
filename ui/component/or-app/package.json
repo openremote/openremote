@@ -1,46 +1,45 @@
 {
   "name": "@openremote/or-app",
-  "version": "1.1.0",
+  "version": "1.10.0-snapshot",
   "description": "OpenRemote app template",
+  "customElements": "custom-elements.json",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    "./*": "./lib/*.js",
+    "./jsx": {
+      "types": "./custom-elements-jsx.d.ts"
+    }
   },
   "types": "lib/index.d.ts",
   "scripts": {
-    "clean": "npx tsc -b --clean && npx shx rm -rf dist",
+    "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
+    "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
-    "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack --mode production",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack --mode production",
+    "test": "echo \"No tests\" && exit 0",
+    "prepack": "npx tsc -b"
   },
   "dependencies": {
     "@openremote/core": "workspace:*",
-    "@openremote/or-asset-tree": "^1.1.0",
-    "@openremote/or-asset-viewer": "^1.1.0",
-    "@openremote/or-attribute-input": "^1.1.0",
-    "@openremote/or-attribute-picker": "^1.1.0",
-    "@openremote/or-chart": "^1.1.0",
-    "@openremote/or-dashboard-builder": "^1.0.0",
-    "@openremote/or-gauge": "^1.0.0",
-    "@openremote/or-map": "^1.1.0",
-    "@openremote/or-mwc-components": "^1.1.0",
-    "@openremote/or-rules": "^1.1.0",
-    "@openremote/or-smart-notify": "^1.1.0",
-    "@openremote/or-timeline": "^1.1.0",
-    "@openremote/rest": "workspace:*",
+    "@openremote/model": "workspace:*",
+    "@openremote/or-icon": "workspace:*",
+    "@openremote/or-mwc-components": "workspace:*",
+    "@openremote/or-translate": "workspace:*",
     "@reduxjs/toolkit": "^1.8.1",
     "@webcomponents/webcomponentsjs": "^2.6.0",
-    "lit": "^2.0.2",
-    "moment": "^2.29.4",
+    "lit": "^3.3.1",
     "navigo": "^8.11.1",
     "pwa-helpers": "^0.9.0"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

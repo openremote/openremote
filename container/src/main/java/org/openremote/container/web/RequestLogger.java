@@ -34,7 +34,7 @@ import java.io.IOException;
 @Provider
 public class RequestLogger implements ContainerRequestFilter {
 
-    protected static final System.Logger LOG = System.getLogger(RequestLogger.class.getName() + "." + SyslogCategory.API.name());
+    public static final System.Logger REQUEST_LOG = System.getLogger(RequestLogger.class.getName() + "." + SyslogCategory.API.name());
 
     @Context
     private HttpServletRequest request;
@@ -44,7 +44,7 @@ public class RequestLogger implements ContainerRequestFilter {
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-        LOG.log(System.Logger.Level.DEBUG, () -> {
+        REQUEST_LOG.log(System.Logger.Level.DEBUG, () -> {
             String requestPath = request.getRequestURI();
             String address = request.getRemoteAddr();
             String port = String.valueOf(request.getRemotePort());

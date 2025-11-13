@@ -83,7 +83,7 @@ public class SetupService implements ContainerService {
             }).toList());
 
         try {
-            if (tasks.size() > 0) {
+            if (!tasks.isEmpty()) {
                 LOG.info("--- EXECUTING INIT TASKS ---");
                 for (Setup setup : tasks) {
                     LOG.info("Executing setup task '" + setup.getClass().getName() + "'");
@@ -100,7 +100,7 @@ public class SetupService implements ContainerService {
     public void start(Container container) {
 
         try {
-            if (tasks.size() > 0) {
+            if (!tasks.isEmpty()) {
                 LOG.info("--- EXECUTING START TASKS ---");
                 for (Setup setup : tasks) {
                     LOG.info("Executing setup task '" + setup.getClass().getName() + "'");

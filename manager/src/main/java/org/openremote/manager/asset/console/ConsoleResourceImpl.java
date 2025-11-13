@@ -42,7 +42,7 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.Realm;
 import org.openremote.model.util.TextUtil;
 
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,7 +58,7 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
         this.assetStorageService = assetStorageService;
 
         // Subscribe for asset events
-        clientEventService.addInternalSubscription(
+        clientEventService.addSubscription(
             AssetEvent.class,
             null,
             this::onAssetChange);
@@ -67,7 +67,7 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
     protected void onAssetChange(AssetEvent event) {
         // Remove any parent console asset mapping if the asset gets deleted
         if (event.getCause() == AssetEvent.Cause.DELETE) {
-            realmConsoleParentMap.values().remove(event.getAssetId());
+            realmConsoleParentMap.values().remove(event.getId());
         }
     }
 
@@ -130,9 +130,14 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
         }
         consoleRegistration.setId(consoleAsset.getId());
 
-        // If authenticated link the console to this user
+        // If authenticated link the console to this user only
         if (isAuthenticated()) {
-            assetStorageService.storeUserAssetLinks(Collections.singletonList(new UserAssetLink(getAuthenticatedRealmName(), getUserId(), consoleAsset.getId())));
+            List<UserAssetLink> userAssetLinks = assetStorageService.findUserAssetLinks(getAuthenticatedRealmName(), null, consoleAsset.getId());
+            List<UserAssetLink> otherUserAssetLinks = userAssetLinks.stream().filter(link -> !getUserId().equals(link.getId().getUserId())).toList();
+            if (!otherUserAssetLinks.isEmpty()) {
+                assetStorageService.deleteUserAssetLinks(otherUserAssetLinks);
+            }
+            assetStorageService.storeUserAssetLinks(List.of(new UserAssetLink(getAuthenticatedRealmName(), getUserId(), consoleAsset.getId())));
         }
 
         return consoleRegistration;
@@ -142,7 +147,11 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
         return new ConsoleAsset(consoleRegistration.getName());
     }
 
-    public String getConsoleParentAssetId(String realm) {
+    /**
+     * This is synchronised to ensure only a single parent is created.
+     */
+    public synchronized String getConsoleParentAssetId(String realm) {
+
         String id = realmConsoleParentMap.get(realm);
 
         if (TextUtil.isNullOrEmpty(id)) {

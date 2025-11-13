@@ -26,6 +26,7 @@ import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.engines.AESLightEngine;
 import org.bouncycastle.crypto.macs.CMac;
 import org.bouncycastle.crypto.modes.CCMBlockCipher;
+import org.bouncycastle.crypto.modes.CCMModeCipher;
 import org.bouncycastle.crypto.params.AEADParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.openremote.agent.protocol.bluetooth.mesh.SecureNetworkBeacon;
@@ -35,6 +36,7 @@ import jakarta.validation.constraints.NotNull;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.logging.Level;
@@ -50,20 +52,20 @@ public class SecureUtils {
     /**
      * Used to calculate the confirmation key
      */
-    public static final byte[] PRCK = "prck".getBytes(Charset.forName("US-ASCII"));
+    public static final byte[] PRCK = "prck".getBytes(StandardCharsets.US_ASCII);
 
     /**
      * Used to calculate the session key
      */
-    public static final byte[] PRSK = "prsk".getBytes(Charset.forName("US-ASCII"));
+    public static final byte[] PRSK = "prsk".getBytes(StandardCharsets.US_ASCII);
     /**
      * Used to calculate the session nonce
      */
-    public static final byte[] PRSN = "prsn".getBytes(Charset.forName("US-ASCII"));
+    public static final byte[] PRSN = "prsn".getBytes(StandardCharsets.US_ASCII);
     /**
      * Used to calculate the device key
      */
-    public static final byte[] PRDK = "prdk".getBytes(Charset.forName("US-ASCII"));
+    public static final byte[] PRDK = "prdk".getBytes(StandardCharsets.US_ASCII);
 
     /**
      * K2 Master input
@@ -72,23 +74,23 @@ public class SecureUtils {
     /**
      * Salt input for K2
      */
-    public static final byte[] SMK2 = "smk2".getBytes(Charset.forName("US-ASCII"));
+    public static final byte[] SMK2 = "smk2".getBytes(StandardCharsets.US_ASCII);
     /**
      * Salt input for K3
      */
-    public static final byte[] SMK3 = "smk3".getBytes(Charset.forName("US-ASCII"));
+    public static final byte[] SMK3 = "smk3".getBytes(StandardCharsets.US_ASCII);
     /**
      * Input for K3 data
      */
-    public static final byte[] SMK3_DATA = "id64".getBytes(Charset.forName("US-ASCII"));
+    public static final byte[] SMK3_DATA = "id64".getBytes(StandardCharsets.US_ASCII);
     /**
      * Salt input for K4
      */
-    public static final byte[] SMK4 = "smk4".getBytes(Charset.forName("US-ASCII"));
+    public static final byte[] SMK4 = "smk4".getBytes(StandardCharsets.US_ASCII);
     /**
      * Input for K4 data
      */
-    public static final byte[] SMK4_DATA = "id6".getBytes(Charset.forName("US-ASCII"));
+    public static final byte[] SMK4_DATA = "id6".getBytes(StandardCharsets.US_ASCII);
     /**
      * Output mask for K4
      */
@@ -101,16 +103,16 @@ public class SecureUtils {
     /**
      * Salt input for identity key
      */
-    private static final byte[] NKIK = "nkik".getBytes(Charset.forName("US-ASCII"));
+    private static final byte[] NKIK = "nkik".getBytes(StandardCharsets.US_ASCII);
 
     /**
      * Salt input for beacon key
      */
-    private static final byte[] NKBK = "nkbk".getBytes(Charset.forName("US-ASCII"));
+    private static final byte[] NKBK = "nkbk".getBytes(StandardCharsets.US_ASCII);
     /**
      * Salt input for identity key
      */
-    private static final byte[] ID128 = "id128".getBytes(Charset.forName("US-ASCII"));
+    private static final byte[] ID128 = "id128".getBytes(StandardCharsets.US_ASCII);
     //Padding for the random nonce
     private static final byte[] HASH_PADDING = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     private static final int HASH_LENGTH = 8;
@@ -141,7 +143,7 @@ public class SecureUtils {
         final byte[] cmac = new byte[16];
 
         CipherParameters cipherParameters = new KeyParameter(key);
-        BlockCipher blockCipher = new AESEngine();
+        BlockCipher blockCipher = AESEngine.newInstance();
         CMac mac = new CMac(blockCipher);
 
         mac.init(cipherParameters);
@@ -160,7 +162,7 @@ public class SecureUtils {
 
         final byte[] ccm = new byte[data.length + micSize];
 
-        final CCMBlockCipher ccmBlockCipher = new CCMBlockCipher(new AESEngine());
+        final CCMModeCipher ccmBlockCipher = CCMBlockCipher.newInstance(AESEngine.newInstance());
         final AEADParameters aeadParameters = new AEADParameters(new KeyParameter(key), micSize * 8, nonce);
         ccmBlockCipher.init(true, aeadParameters);
         ccmBlockCipher.processBytes(data, 0, data.length, ccm, data.length);
@@ -185,7 +187,7 @@ public class SecureUtils {
 
         final byte[] ccm = new byte[data.length + micSize];
 
-        final CCMBlockCipher ccmBlockCipher = new CCMBlockCipher(new AESEngine());
+        final CCMModeCipher ccmBlockCipher = CCMBlockCipher.newInstance(AESEngine.newInstance());
         final AEADParameters aeadParameters = new AEADParameters(new KeyParameter(key), micSize * 8, nonce, additionalData);
         ccmBlockCipher.init(true, aeadParameters);
         ccmBlockCipher.processBytes(data, 0, data.length, ccm, data.length);
@@ -208,7 +210,7 @@ public class SecureUtils {
 
         final byte[] ccm = new byte[data.length - micSize];
 
-        final CCMBlockCipher ccmBlockCipher = new CCMBlockCipher(new AESEngine());
+        final CCMModeCipher ccmBlockCipher = CCMBlockCipher.newInstance(AESEngine.newInstance());
         final AEADParameters aeadParameters = new AEADParameters(new KeyParameter(key), micSize * 8, nonce);
         ccmBlockCipher.init(false, aeadParameters);
         ccmBlockCipher.processBytes(data, 0, data.length, ccm, 0);
@@ -228,7 +230,7 @@ public class SecureUtils {
 
         final byte[] ccm = new byte[data.length - micSize];
 
-        final CCMBlockCipher ccmBlockCipher = new CCMBlockCipher(new AESEngine());
+        final CCMModeCipher ccmBlockCipher = CCMBlockCipher.newInstance(AESEngine.newInstance());
         final AEADParameters aeadParameters = new AEADParameters(new KeyParameter(key), micSize * 8, nonce, additionalData);
         ccmBlockCipher.init(false, aeadParameters);
         ccmBlockCipher.processBytes(data, 0, data.length, ccm, 0);
@@ -324,7 +326,7 @@ public class SecureUtils {
 
         final byte[] result = calculateCMAC(cmacInput, t);
 
-        //Only the least siginificant 6 bytes are returned
+        //Only the least significant 6 bytes are returned
         return (byte) ((result[15]) & 0x3F);
     }
 

@@ -19,11 +19,10 @@
  */
 package org.openremote.model.query.filter;
 
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
+import org.openremote.model.util.JSONSchemaUtil.*;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 import org.geotools.referencing.GeodeticCalculator;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.util.ValueUtil;

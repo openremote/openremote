@@ -39,14 +39,11 @@ import org.openremote.model.setup.Setup;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -59,11 +56,10 @@ public class ManagerSetup implements Setup {
 
     public static final String OR_PROVISIONING_DOCROOT = "OR_PROVISIONING_DOCROOT";
     public static final String OR_PROVISIONING_DOCROOT_DEFAULT = "deployment/manager/provisioning";
-    protected static final Logger LOG = LoggerFactory.getLogger(ManagerSetup.class);
+    protected static final System.Logger LOG = System.getLogger(ManagerSetup.class.getName());
     protected Path provisionDocRoot;
 
     final protected TimerService timerService;
-    final protected ScheduledExecutorService executorService;
     final protected ManagerPersistenceService persistenceService;
     final protected ManagerIdentityService identityService;
     final protected AssetStorageService assetStorageService;
@@ -76,7 +72,6 @@ public class ManagerSetup implements Setup {
 
     public ManagerSetup(Container container) {
         this.timerService = container.getService(TimerService.class);
-        this.executorService = container.getExecutorService();
         this.persistenceService = container.getService(ManagerPersistenceService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
         this.assetStorageService = container.getService(AssetStorageService.class);
@@ -174,8 +169,7 @@ public class ManagerSetup implements Setup {
             Supplier<AgentLink<?>> agentLinker) {
         room.getAttributes().addOrReplace(new Attribute<>("co2Level", POSITIVE_INTEGER).addMeta(
                 new MetaItem<>(UNITS, Constants.units(UNITS_PART_PER_MILLION)), new MetaItem<>(LABEL, "CO2 level"),
-                new MetaItem<>(RULE_STATE, true), new MetaItem<>(RULE_EVENT, true),
-                new MetaItem<>(RULE_EVENT_EXPIRES, "PT45M"), new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                new MetaItem<>(RULE_STATE, true), new MetaItem<>(ACCESS_RESTRICTED_READ, true),
                 new MetaItem<>(READ_ONLY, true), new MetaItem<>(STORE_DATA_POINTS)));
 
         if (shouldBeLinked) {
@@ -188,8 +182,7 @@ public class ManagerSetup implements Setup {
             Supplier<AgentLink<?>> agentLinker) {
         room.getAttributes()
                 .addOrReplace(new Attribute<>("humidity", POSITIVE_INTEGER).addMeta(new MetaItem<>(LABEL, "Humidity"),
-                        new MetaItem<>(RULE_STATE, true), new MetaItem<>(RULE_EVENT, true),
-                        new MetaItem<>(RULE_EVENT_EXPIRES, "PT45M"), new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                        new MetaItem<>(RULE_STATE, true), new MetaItem<>(ACCESS_RESTRICTED_READ, true),
                         new MetaItem<>(READ_ONLY, true), new MetaItem<>(UNITS, Constants.units(UNITS_PERCENTAGE)),
                         new MetaItem<>(STORE_DATA_POINTS)));
 
@@ -243,8 +236,7 @@ public class ManagerSetup implements Setup {
                 new Attribute<>("smartSwitchMode" + switchName, TEXT).addMeta(
                         new MetaItem<>(LABEL, "Smart Switch mode " + switchName),
                         new MetaItem<>(ACCESS_RESTRICTED_READ, true), new MetaItem<>(ACCESS_RESTRICTED_WRITE, true),
-                        new MetaItem<>(RULE_STATE, true), new MetaItem<>(RULE_EVENT, true),
-                        new MetaItem<>(RULE_EVENT_EXPIRES, "PT48H")),
+                        new MetaItem<>(RULE_STATE, true)),
                 // Time
                 new Attribute<>("smartSwitchBeginEnd" + switchName, TIMESTAMP).addMeta(
                         new MetaItem<>(LABEL, "Smart Switch begin/end cycle " + switchName),
@@ -430,17 +422,16 @@ public class ManagerSetup implements Setup {
             return;
         }
 
-        LOG.info("Provisioning assets");
+        LOG.log(System.Logger.Level.INFO, "Provisioning assets");
 
         Files.list(Paths.get(provisionDocRoot.toString(), "assets")).sorted()
                 .forEach(file -> {
                     try {
                         Asset<?> asset =  ValueUtil.JSON.readValue(file.toFile(), Asset.class);
                         asset = assetStorageService.merge(asset);
-
-                        LOG.info("Asset merged: " + asset.toString());
+                        LOG.log(System.Logger.Level.INFO, "Asset merged: " + asset);
                     } catch (IOException e) {
-                        LOG.warn("Processing of file " + file.getFileName() + " went wrong", e);
+                        LOG.log(System.Logger.Level.INFO, "Processing of file " + file.getFileName() + " went wrong", e);
                     }
                 });
 

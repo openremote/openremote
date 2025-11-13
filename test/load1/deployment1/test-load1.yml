@@ -1,0 +1,100 @@
+# OpenRemote v3
+#
+# Profile that runs the stack by default on https://localhost using a self-signed SSL certificate,
+# but optionally on https://$HOST with an auto generated SSL certificate from Letsencrypt.
+#
+# It is possible to specify OR_SETUP_TYPE=demo to pre-populate the system with a set of demo assets, rules, etc. (as
+# is shown at https://demo.openremote.io)
+# with username 'admin' and password 'secret'. There is no map data available in the vanilla
+# system so the map tile server will not function. Persistent data is stored in a docker
+# volume called postgresql-data between restarts, simply delete this volume to reset the
+# system to an empty state.
+#
+# Please see profile/deploy.yml for configuration details for each service.
+#
+volumes:
+  proxy-data:
+  manager-data:
+  postgresql-data:
+
+services:
+
+  proxy:
+    image: openremote/proxy:${PROXY_VERSION:-latest}
+    restart: always
+    depends_on:
+      manager:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8883:8883"
+      - "127.0.0.1:8404:8404" # Localhost metrics access
+    volumes:
+      - proxy-data:/deployment
+    environment:
+      LE_EMAIL: ${OR_EMAIL_FROM:-}
+      DOMAINNAME: ${OR_HOSTNAME:-localhost}
+      DOMAINNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
+      MQTT_RATE_LIMIT: ${MQTT_RATE_LIMIT:-50}
+      # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
+      #HAPROXY_CONFIG: '/data/proxy/haproxy.cfg'
+
+  postgresql:
+    restart: always
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
+    shm_size: 128mb
+    environment:
+      POSTGRES_MAX_CONNECTIONS: ${POSTGRES_MAX_CONNECTIONS:-100}
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+      - manager-data:/storage
+
+  keycloak:
+    restart: always
+    image: openremote/keycloak:${KEYCLOAK_VERSION:-latest}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    environment:
+      KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
+      KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
+      KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
+      KC_DB_POOL_MAX_SIZE: ${KC_DB_POOL_MAX_SIZE:-38}
+
+  manager:
+    restart: always
+    image: openremote/manager:${MANAGER_VERSION:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080"]
+      interval: 60s
+      retries: 45
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8405:8405" # Localhost metrics access
+    environment:
+      OR_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
+      OR_DB_POOL_MAX_SIZE: ${OR_DB_POOL_MAX_SIZE:-60}
+      # OR_LOGGING_CONFIG_FILE: /deployment/manager/logging-load.properties
+      OR_SETUP_RUN_ON_RESTART:
+      OR_EMAIL_HOST:
+      OR_EMAIL_USER:
+      OR_EMAIL_PASSWORD:
+      OR_EMAIL_X_HEADERS:
+      OR_EMAIL_FROM:
+      OR_EMAIL_ADMIN:
+      OR_SSL_PORT: ${OR_SSL_PORT:--1}
+      OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
+      OR_ADDITIONAL_HOSTNAMES:
+      OR_SETUP_REGULAR_USERS: ${OR_SETUP_REGULAR_USERS:-1000}
+      OR_SETUP_SERVICE_USERS:
+      OR_SETUP_DEVICES: ${OR_SETUP_DEVICES:-10000}
+      OR_SETUP_DEVICES_SKIP_COUNT:
+      OR_METRICS_ENABLED: true
+      OR_EXECUTOR_THREADS_MAX:
+      OR_JAVA_OPTS: ${OR_JAVA_OPTS:--Xms500m -Xmx4g -XX:NativeMemoryTracking=summary -Xlog:all=warning:stdout:uptime,level,tags -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}
+    volumes:
+      - manager-data:/storage
+      - ./manager:/deployment/manager

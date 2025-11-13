@@ -83,7 +83,7 @@ public class MeshManagerApi implements MeshMngrApi{
     private byte[] mIncomingBuffer;
     private int mIncomingBufferOffset;
 
-    private final ScheduledExecutorService executorService;
+    private final ScheduledExecutorService scheduledExecutorService;
 
     private final Runnable mProxyProtocolTimeoutRunnable = new Runnable() {
         @Override
@@ -95,8 +95,8 @@ public class MeshManagerApi implements MeshMngrApi{
     /**
      * The mesh manager api constructor.
      */
-    public MeshManagerApi(ScheduledExecutorService executorService) {
-        this.executorService = executorService;
+    public MeshManagerApi(ScheduledExecutorService scheduledExecutorService) {
+        this.scheduledExecutorService = scheduledExecutorService;
         // mHandler = new Handler(Looper.getMainLooper());
         mMeshProvisioningHandler = new MeshProvisioningHandler(internalTransportCallbacks, internalMeshMgrCallbacks);
         mMeshMessageHandler = new MeshMessageHandler(internalTransportCallbacks, networkLayerCallbacks, upperTransportLayerCallbacks);
@@ -185,7 +185,7 @@ public class MeshManagerApi implements MeshMngrApi{
 
     private void scheduleTimeoutHandler() {
         cancelTimeoutHandler();
-        scheduledFuture = executorService.schedule(mProxyProtocolTimeoutRunnable, PROXY_SAR_TRANSFER_TIME_OUT, TimeUnit.MILLISECONDS);
+        scheduledFuture = scheduledExecutorService.schedule(mProxyProtocolTimeoutRunnable, PROXY_SAR_TRANSFER_TIME_OUT, TimeUnit.MILLISECONDS);
     }
 
     private void cancelTimeoutHandler() {
@@ -283,9 +283,9 @@ public class MeshManagerApi implements MeshMngrApi{
                             }
 
                             if (!mMeshNetwork.ivIndex.getIvRecoveryFlag()) {
-                                final Iterator<Map.Entry<Integer, ArrayList<Integer>>> iterator = mMeshNetwork.networkExclusions.entrySet().iterator();
+                                final Iterator<Map.Entry<Integer, List<Integer>>> iterator = mMeshNetwork.networkExclusions.entrySet().iterator();
                                 while (iterator.hasNext()) {
-                                    final Map.Entry<Integer, ArrayList<Integer>> exclusions = iterator.next();
+                                    final Map.Entry<Integer, List<Integer>> exclusions = iterator.next();
                                     final int expectedIncrement = exclusions.getKey() + 2;
                                     if (mMeshNetwork.ivIndex.getIvIndex() >= expectedIncrement) {
                                         // Clear the last known sequence number of addresses that are to be removed from the exclusion list.
@@ -461,7 +461,7 @@ public class MeshManagerApi implements MeshMngrApi{
         final AllocatedGroupRange groupRange = new AllocatedGroupRange(0xC000, 0xCC9A);
         final AllocatedSceneRange sceneRange = new AllocatedSceneRange(0x0001, 0x3333);
         final Provisioner provisioner = network.createProvisioner("nRF Mesh Provisioner", unicastRange, groupRange, sceneRange);
-        final int unicast = provisioner.getAllocatedUnicastRanges().get(0).getLowAddress();
+        final int unicast = provisioner.getAllocatedUnicastRanges().getFirst().getLowAddress();
         provisioner.assignProvisionerAddress(unicast);
         network.selectProvisioner(provisioner);
         network.addProvisioner(provisioner);
@@ -997,7 +997,7 @@ public class MeshManagerApi implements MeshMngrApi{
         meshNetwork.setLastSelected(true);
         //If there is only one provisioner we default to the zeroth
         if (meshNetwork.provisioners.size() == 1) {
-            meshNetwork.provisioners.get(0).setLastSelected(true);
+            meshNetwork.provisioners.getFirst().setLastSelected(true);
         }
         /*
         mMeshNetworkDb.insertNetwork(mMeshNetworkDao,

@@ -1,11 +1,11 @@
 package org.openremote.energy.manager;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.ws.rs.core.Response;
 import org.apache.camel.builder.RouteBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -15,14 +15,19 @@ import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.rules.RulesService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetFilter;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.datapoint.query.AssetDatapointAllQuery;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.energy.asset.*;
 
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -31,7 +36,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -74,7 +78,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
             .append(ISO_LOCAL_TIME)
             .toFormatter();
 
-    protected ScheduledExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
     protected AssetPredictedDatapointService assetPredictedDatapointService;
@@ -87,7 +91,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
     protected static final AtomicReference<ResteasyClient> resteasyClient = new AtomicReference<>();
     protected ResteasyWebTarget forecastSolarTarget;
     private String forecastSolarApiKey;
-    private final Map<String, ScheduledFuture<?>> calculationFutures = new HashMap<>();
+    private final Map<String, ElectricityProducerSolarAsset> electricityProducerSolarAssetMap = new HashMap<>();
 
     @SuppressWarnings("unchecked")
     @Override
@@ -106,7 +110,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
         gatewayService = container.getService(GatewayService.class);
         assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);
         clientEventService = container.getService(ClientEventService.class);
-        executorService = container.getExecutorService();
+        scheduledExecutorService = container.getScheduledExecutor();
         rulesService = container.getService(RulesService.class);
         timerService = container.getService(TimerService.class);
 
@@ -128,7 +132,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
 
         // Load all enabled producer solar assets
-        LOG.fine("Loading producer solar assets...");
+        LOG.fine("Loading electricity producer solar assets...");
 
         List<ElectricityProducerSolarAsset> electricityProducerSolarAssets = assetStorageService.findAll(
                         new AssetQuery()
@@ -139,167 +143,292 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
                 .filter(electricityProducerSolarAsset -> electricityProducerSolarAsset.isIncludeForecastSolarService().orElse(false))
                 .toList();
 
-        LOG.fine("Found includes producer solar asset count = " + electricityProducerSolarAssets.size());
+        LOG.fine("Number of electricity producer solar assets with forecast enabled = " + electricityProducerSolarAssets.size());
 
-        electricityProducerSolarAssets.forEach(this::startProcessing);
+        for (ElectricityProducerSolarAsset electricityProducerSolarAsset : electricityProducerSolarAssets) {
+            electricityProducerSolarAssetMap.put(electricityProducerSolarAsset.getId(), electricityProducerSolarAsset);
+            getSolarForecast(electricityProducerSolarAsset);
+            updateSolarForecastAttribute(electricityProducerSolarAsset);
+        }
 
-        clientEventService.addInternalSubscription(
+        // Start forecast solar thread
+        scheduledExecutorService.scheduleAtFixedRate(this::processSolarData, 1, 1, TimeUnit.MINUTES);
+
+        clientEventService.addSubscription(
                 AttributeEvent.class,
-                null,
-                this::processAttributeEvent);
+                new AssetFilter<AttributeEvent>().setAssetClasses(Collections.singletonList(ElectricityProducerSolarAsset.class)),
+                this::processElectricityProducerSolarAssetAttributeEvent);
     }
 
     @Override
     public void stop(Container container) throws Exception {
-        new ArrayList<>(calculationFutures.keySet()).forEach(this::stopProcessing);
+        scheduledExecutorService.shutdown();
     }
 
     protected static void initClient() {
         synchronized (resteasyClient) {
             if (resteasyClient.get() == null) {
-                resteasyClient.set(createClient(org.openremote.container.Container.EXECUTOR_SERVICE));
+                resteasyClient.set(createClient(org.openremote.container.Container.EXECUTOR));
             }
         }
-    }
-
-    protected void processAttributeEvent(AttributeEvent attributeEvent) {
-        processElectricityProducerSolarAssetAttributeEvent(attributeEvent);
     }
 
     protected synchronized void processElectricityProducerSolarAssetAttributeEvent(AttributeEvent attributeEvent) {
+        String attributeName = attributeEvent.getName();
 
-        if (ElectricityProducerSolarAsset.POWER.getName().equals(attributeEvent.getAttributeName())
-                || ElectricityProducerSolarAsset.POWER_FORECAST.getName().equals(attributeEvent.getAttributeName())) {
-            // These are updated by this service
+        // These are updated by this service
+        if (ElectricityProducerSolarAsset.POWER.getName().equals(attributeName)
+                || ElectricityProducerSolarAsset.POWER_FORECAST.getName().equals(attributeName)) {
             return;
         }
 
-        if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.INCLUDE_FORECAST_SOLAR_SERVICE.getName())) {
-            boolean enabled = attributeEvent.<Boolean>getValue().orElse(false);
-            if (enabled && calculationFutures.containsKey(attributeEvent.getAssetId())) {
-                // Nothing to do here
-                return;
-            } else if (!enabled && !calculationFutures.containsKey(attributeEvent.getAssetId())) {
-                // Nothing to do here
-                return;
-            }
-
-            LOG.fine("Processing producer solar asset attribute event: " + attributeEvent);
-            stopProcessing(attributeEvent.getAssetId());
+        // Set power attribute value with power forecast attribute value
+        if (attributeName.equals(ElectricityProducerSolarAsset.SET_ACTUAL_SOLAR_VALUE_WITH_FORECAST.getName())) {
+            boolean enabled = (Boolean) attributeEvent.getValue().orElse(false);
 
             // Get latest asset from storage
-            ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(attributeEvent.getAssetId());
+            ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(attributeEvent.getId());
 
-            if (asset != null && asset.isIncludeForecastSolarService().orElse(false)) {
-                startProcessing(asset);
+            if (asset != null && enabled) {
+                assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityProducerSolarAsset.POWER, asset.getPowerForecast().orElse(null)), getClass().getSimpleName());
+            } else if (asset != null) {
+                assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityProducerSolarAsset.POWER, null), getClass().getSimpleName());
+            }
+            return;
+        }
+
+        // Enable solar forecast
+        if (attributeName.equals(ElectricityProducerSolarAsset.INCLUDE_FORECAST_SOLAR_SERVICE.getName())) {
+            boolean enabled = (Boolean) attributeEvent.getValue().orElse(false);
+
+            if (enabled && !electricityProducerSolarAssetMap.containsKey(attributeEvent.getId())) {
+                LOG.info(String.format("Enabled solar forecast for ElectricityProducerSolarAsset: name='%s', ID='%s';", attributeEvent.getAssetName(), attributeEvent.getId()));
+
+                // Get latest asset from storage
+                ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(attributeEvent.getId());
+
+                if (asset != null) {
+                    electricityProducerSolarAssetMap.put(asset.getId(), asset);
+                    getSolarForecast(asset);
+                    updateSolarForecastAttribute(asset);
+                }
+            } else if (!enabled && electricityProducerSolarAssetMap.containsKey(attributeEvent.getId())) {
+                LOG.info(String.format("Disabled solar forecast for ElectricityProducerSolarAsset: name='%s', ID='%s';", attributeEvent.getAssetName(), attributeEvent.getId()));
+                electricityProducerSolarAssetMap.remove(attributeEvent.getId());
             }
         }
 
-        if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.SET_ACTUAL_SOLAR_VALUE_WITH_FORECAST.getName())) {
+        // Update solar forecast
+        if (attributeName.equals(ElectricityProducerSolarAsset.PANEL_AZIMUTH.getName()) ||
+                attributeName.equals(ElectricityProducerSolarAsset.PANEL_PITCH.getName()) ||
+                attributeName.equals(ElectricityProducerSolarAsset.POWER_EXPORT_MAX.getName()) ||
+                attributeName.equals(ElectricityProducerSolarAsset.LOCATION.getName())) {
             // Get latest asset from storage
-            ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(attributeEvent.getAssetId());
+            ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(attributeEvent.getId());
 
-            // Check if power is currently zero and set it if power forecast has an value
-            if (asset.getPower().orElse(0d) == 0d && asset.getPowerForecast().orElse(0d) != 0d) {
-                assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityProducerSolarAsset.POWER, asset.getPowerForecast().orElse(0d)));
+            if (asset != null && asset.isIncludeForecastSolarService().orElse(false)) {
+                ElectricityProducerSolarAsset assetPrevious = electricityProducerSolarAssetMap.get(asset.getId());
+
+                String valueStr = attributeEvent.getValue().toString();
+                String valuePreviousStr = assetPrevious.getAttributes().get(attributeEvent.getName()).flatMap(Attribute::getValue).toString();
+
+                // Only update solar forecast on attribute value change
+                if (!valueStr.equals(valuePreviousStr)) {
+                    Object value = attributeEvent.getValue().orElse(null);
+
+                    if (attributeName.equals(ElectricityProducerSolarAsset.PANEL_AZIMUTH.getName())) {
+                        asset.setPanelAzimuth((Integer) value);
+                    } else if (attributeName.equals(ElectricityProducerSolarAsset.PANEL_PITCH.getName())) {
+                        asset.setPanelPitch((Integer) value);
+                    } else if (attributeName.equals(ElectricityProducerSolarAsset.POWER_EXPORT_MAX.getName())) {
+                        asset.setPowerExportMax((Double) value);
+                    } else if (attributeName.equals(ElectricityProducerSolarAsset.LOCATION.getName())) {
+                        asset.setLocation((GeoJSONPoint) value);
+                    }
+
+                    getSolarForecast(asset);
+                    updateSolarForecastAttribute(asset);
+                }
+                electricityProducerSolarAssetMap.put(asset.getId(), asset);
             }
         }
     }
 
     protected void processAssetChange(PersistenceEvent<ElectricityProducerSolarAsset> persistenceEvent) {
         LOG.fine("Processing producer solar asset change: " + persistenceEvent);
-        stopProcessing(persistenceEvent.getEntity().getId());
 
-        if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
-            if (persistenceEvent.getEntity().isIncludeForecastSolarService().orElse(false)
-                    && persistenceEvent.getEntity().getLocation().isPresent()) {
-                startProcessing(persistenceEvent.getEntity());
-            }
+        if (persistenceEvent.getCause() == PersistenceEvent.Cause.CREATE && persistenceEvent.getEntity().isIncludeForecastSolarService().orElse(false)) {
+            electricityProducerSolarAssetMap.put(persistenceEvent.getEntity().getId(), persistenceEvent.getEntity());
+            getSolarForecast(persistenceEvent.getEntity());
+            updateSolarForecastAttribute(persistenceEvent.getEntity());
+        } else if (persistenceEvent.getCause() == PersistenceEvent.Cause.DELETE) {
+            electricityProducerSolarAssetMap.remove(persistenceEvent.getEntity().getId());
         }
     }
 
-    protected void startProcessing(ElectricityProducerSolarAsset electricityProducerSolarAsset) {
-        LOG.fine("Starting calculation for producer solar asset: " + electricityProducerSolarAsset);
-        calculationFutures.put(electricityProducerSolarAsset.getId(), executorService.scheduleAtFixedRate(() -> {
-            processSolarData(electricityProducerSolarAsset);
-        }, 0, 1, TimeUnit.HOURS));
-    }
 
-    protected void stopProcessing(String electricityProducerSolarAssetId) {
-        ScheduledFuture<?> scheduledFuture = calculationFutures.remove(electricityProducerSolarAssetId);
-        if (scheduledFuture != null) {
-            LOG.fine("Stopping calculation for producer solar asset: " + electricityProducerSolarAssetId);
-            scheduledFuture.cancel(false);
+    protected void processSolarData() {
+        // Check if there are any electricity producer solar assets to process
+        if (electricityProducerSolarAssetMap.isEmpty()) {
+            return;
+        }
+
+        int currentMinute = LocalDateTime.now().getMinute();
+
+        // Update solar forecast every hour
+        if (currentMinute == 0) {
+            electricityProducerSolarAssetMap.forEach((assetId, electricityProducerSolarAsset) -> getSolarForecast(electricityProducerSolarAsset));
+        }
+
+        // Update solar power forecast attribute every 15 minutes
+        if ((currentMinute % 15) == 0) {
+            electricityProducerSolarAssetMap.forEach((assetId, electricityProducerSolarAsset) -> updateSolarForecastAttribute(electricityProducerSolarAsset));
         }
     }
 
-    protected void processSolarData(ElectricityProducerSolarAsset electricityProducerSolarAsset) {
+    protected void getSolarForecast(ElectricityProducerSolarAsset electricityProducerSolarAsset) {
         Optional<Double> lat = electricityProducerSolarAsset.getAttribute(Asset.LOCATION).flatMap(attr -> attr.getValue().map(GeoJSONPoint::getY));
         Optional<Double> lon = electricityProducerSolarAsset.getAttribute(Asset.LOCATION).flatMap(attr -> attr.getValue().map(GeoJSONPoint::getX));
         Optional<Integer> pitch = electricityProducerSolarAsset.getPanelPitch();
         Optional<Integer> azimuth = electricityProducerSolarAsset.getPanelAzimuth();
         Optional<Double> kwp = electricityProducerSolarAsset.getPowerExportMax();
-        if (lat.isPresent() && lon.isPresent() && pitch.isPresent() && azimuth.isPresent() && kwp.isPresent()) {
-            try (Response response = forecastSolarTarget
-                    .path(String.format("%f/%f/%d/%d/%f", lat.get(), lon.get(), pitch.get(), azimuth.get(), kwp.get()))
-                    .request()
-                    .build("GET")
-                    .invoke()) {
-                if (response != null && response.getStatus() == 200) {
-                    EstimateResponse responseModel = response.readEntity(EstimateResponse.class);
-                    if (responseModel != null) {
-                        // Forecast date time is ISO8601 without 'T' so needs special formatter
-                        LocalDateTime now = LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault());
-                        LocalDateTime previousTimestamp = null;
-                        boolean setActualValuePower = electricityProducerSolarAsset.isSetActualSolarValueWithForecast().orElse(false);
-                        boolean setActualValueForecastPower = true;
 
-                        for (Map.Entry<String, Double> wattItem : responseModel.result.watts.entrySet()) {
-                            LocalDateTime timestamp = LocalDateTime.parse(wattItem.getKey(), ISO_LOCAL_DATE_TIME_WITHOUT_T);
+        if (lat.isEmpty() || lon.isEmpty() || pitch.isEmpty() || azimuth.isEmpty() || kwp.isEmpty()) {
+            LOG.warning(String.format("ElectricityProducerSolarAsset: name='%s', ID='%s' doesn't have all needed attributes filled in;" +
+                            " latitude='%s', longitude='%s', panelAzimuth='%s', panelPitch='%s', powerExportMax='%s'",
+                    electricityProducerSolarAsset.getName(), electricityProducerSolarAsset.getId(), lat, lon, azimuth, pitch, kwp));
+            return;
+        }
 
-                            assetPredictedDatapointService.updateValue(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER_FORECAST.getName(), -wattItem.getValue() / 1000, timestamp);
-                            assetPredictedDatapointService.updateValue(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER.getName(), -wattItem.getValue() / 1000, timestamp);
+        try (Response response = forecastSolarTarget
+                .path(String.format("%f/%f/%d/%d/%f", lat.get(), lon.get(), pitch.get(), azimuth.get(), kwp.get()))
+                .request()
+                .build("GET")
+                .invoke()) {
+            if (response != null && response.getStatus() == 200) {
+                EstimateResponse responseModel = response.readEntity(EstimateResponse.class);
 
-                            if (setActualValueForecastPower && timestamp.isAfter(now)) {
-                                assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER_FORECAST, -wattItem.getValue() / 1000));
-                                setActualValueForecastPower = false;
+                if (responseModel != null) {
+                    HashMap<LocalDateTime, Double> solarForecast = new HashMap<>();
+                    HashMap<LocalDateTime, Double> solarForecastPrevious = new HashMap<>();
 
-                                if (setActualValuePower) {
-                                    assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER, -wattItem.getValue() / 1000));
-                                    setActualValuePower = false;
-                                }
-                            }
-                            if (previousTimestamp != null && !previousTimestamp.toLocalDate().equals(timestamp.toLocalDate())) {
-                                while (previousTimestamp.isBefore(timestamp)) {
-                                    previousTimestamp = previousTimestamp.plusMinutes(15);
-                                    assetPredictedDatapointService.updateValue(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER_FORECAST.getName(), -wattItem.getValue() / 1000, previousTimestamp);
-                                    assetPredictedDatapointService.updateValue(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER.getName(), -wattItem.getValue() / 1000, previousTimestamp);
-                                }
-                            }
-                            previousTimestamp = timestamp;
+                    // Get previous solar forecast from database
+                    List<ValueDatapoint> solarForecastListPrevious = assetPredictedDatapointService.getDatapoints(new AttributeRef(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER_FORECAST.getName()));
+
+                    for (ValueDatapoint datapoint : solarForecastListPrevious) {
+                        LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(datapoint.getTimestamp()), ZoneId.systemDefault());
+                        Double powerKiloWatt = (Double) datapoint.getValue();
+                        solarForecastPrevious.put(dateTime, powerKiloWatt);
+                    }
+
+                    // Get start and end dateTime of solar forecast
+                    String minKey = responseModel.result.watts.keySet().stream().min(String::compareTo).orElse("");
+                    String maxKey = responseModel.result.watts.keySet().stream().max(String::compareTo).orElse("");
+                    LocalDateTime startDateTime = LocalDateTime.parse(minKey, ISO_LOCAL_DATE_TIME_WITHOUT_T).toLocalDate().atStartOfDay();
+                    LocalDateTime endDateTime = LocalDateTime.parse(maxKey, ISO_LOCAL_DATE_TIME_WITHOUT_T).toLocalDate().plusDays(1).atStartOfDay();
+
+                    // Prepopulate solar forecast map with 15-minute intervals
+                    for (LocalDateTime dateTime = startDateTime; !dateTime.isAfter(endDateTime); dateTime = dateTime.plusMinutes(15)) {
+                        solarForecast.put(dateTime, 0.0);
+                    }
+
+                    // Add solar forecast to solar forecast map
+                    for (Map.Entry<String, Double> wattItem : responseModel.result.watts.entrySet()) {
+                        LocalDateTime dateTime = LocalDateTime.parse(wattItem.getKey(), ISO_LOCAL_DATE_TIME_WITHOUT_T);
+                        Double powerKiloWatt = -wattItem.getValue() / 1000;
+                        solarForecast.put(dateTime, powerKiloWatt);
+                    }
+
+                    LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault());
+
+                    // Update solar forecast in database
+                    solarForecast.forEach((dateTime, powerKiloWatt) -> {
+                        if (dateTime.isAfter(currentDateTime) || solarForecastPrevious.get(dateTime) == null) {
+                            assetPredictedDatapointService.updateValue(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER_FORECAST.getName(), powerKiloWatt, dateTime);
+                            assetPredictedDatapointService.updateValue(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER.getName(), powerKiloWatt, dateTime);
                         }
-                        rulesService.fireDeploymentsWithPredictedDataForAsset(electricityProducerSolarAsset.getId());
-                    }
-                } else {
-                    StringBuilder message = new StringBuilder("Unknown");
-                    if (response != null) {
-                        message.setLength(0);
-                        message.append("Status ");
-                        message.append(response.getStatus());
-                        message.append(" - ");
-                        message.append(response.readEntity(String.class));
-                    }
-                    LOG.warning("Request failed: " + message);
+                    });
                 }
-            } catch (Throwable e) {
-                if (e.getCause() != null && e.getCause() instanceof IOException) {
-                    LOG.log(Level.SEVERE, "Exception when requesting forecast solar data", e.getCause());
-                } else {
-                    LOG.log(Level.SEVERE, "Exception when requesting forecast solar data", e);
+                rulesService.fireDeploymentsWithPredictedDataForAsset(electricityProducerSolarAsset.getId());
+            } else {
+                StringBuilder message = new StringBuilder("Unknown");
+                if (response != null) {
+                    message.setLength(0);
+                    message.append("Status ");
+                    message.append(response.getStatus());
+                    message.append(" - ");
+                    message.append(response.readEntity(String.class));
                 }
+                LOG.warning("Request failed: " + message);
             }
+        } catch (Throwable e) {
+            if (e.getCause() != null && e.getCause() instanceof IOException) {
+                LOG.log(Level.SEVERE, "Exception when requesting forecast solar data", e.getCause());
+            } else {
+                LOG.log(Level.SEVERE, "Exception when requesting forecast solar data", e);
+            }
+        }
+    }
+
+    protected void updateSolarForecastAttribute(ElectricityProducerSolarAsset electricityProducerSolarAsset) {
+        Optional<Double> lat = electricityProducerSolarAsset.getAttribute(Asset.LOCATION).flatMap(attr -> attr.getValue().map(GeoJSONPoint::getY));
+        Optional<Double> lon = electricityProducerSolarAsset.getAttribute(Asset.LOCATION).flatMap(attr -> attr.getValue().map(GeoJSONPoint::getX));
+        Optional<Integer> pitch = electricityProducerSolarAsset.getPanelPitch();
+        Optional<Integer> azimuth = electricityProducerSolarAsset.getPanelAzimuth();
+        Optional<Double> kwp = electricityProducerSolarAsset.getPowerExportMax();
+
+        if (lat.isEmpty() || lon.isEmpty() || pitch.isEmpty() || azimuth.isEmpty() || kwp.isEmpty()) {
+            return;
+        }
+
+        // Get solar forecast data-points for current 15 minute interval
+        long currentTimeMillis = timerService.getCurrentTimeMillis();
+        long startTimeMillis = currentTimeMillis - currentTimeMillis % (15 * 60000);
+        long endTimeMillis = startTimeMillis + 15 * 60000;
+        AssetDatapointAllQuery assetDatapointQuery = new AssetDatapointAllQuery(startTimeMillis, endTimeMillis);
+        List<ValueDatapoint<?>> solarForecastDatapoints = assetPredictedDatapointService.queryDatapoints(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER_FORECAST.getName(), assetDatapointQuery);
+
+        if (solarForecastDatapoints == null || solarForecastDatapoints.size() < 2) {
+            LOG.warning(String.format("ElectricityProducerSolarAsset: name='%s', ID='%s' doesn't have a solar forecast", electricityProducerSolarAsset.getName(), electricityProducerSolarAsset.getId()));
+            return;
+        }
+
+        ValueDatapoint<?> solarForecastDatapointMax = solarForecastDatapoints.getFirst();
+        ValueDatapoint<?> solarForecastDatapointMin = solarForecastDatapoints.getLast();
+
+        // Get current timestamp of power forecast attribute
+        ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(electricityProducerSolarAsset.getId());
+        long powerForecastAttributeTimeMillis = asset.getAttributes().get(ElectricityProducerSolarAsset.POWER_FORECAST).flatMap(Attribute::getTimestamp).orElse(0L);
+
+        // Update power forecast attribute value
+        Double powerKiloWatt;
+        long timeMillis;
+
+        if (solarForecastDatapointMin.getTimestamp() > powerForecastAttributeTimeMillis) {
+            powerKiloWatt = (Double) solarForecastDatapointMin.getValue();
+            timeMillis = solarForecastDatapointMin.getTimestamp();
         } else {
-            LOG.warning(String.format("Asset %s doesn't have all needed attributes filled in", electricityProducerSolarAsset.getId()));
+            long upperTimestamp = solarForecastDatapointMax.getTimestamp();
+            long lowerTimestamp = solarForecastDatapointMin.getTimestamp();
+            Double upperValue = (Double) solarForecastDatapointMax.getValue();
+            Double lowerValue = (Double) solarForecastDatapointMin.getValue();
+
+            if (upperValue == null || lowerValue == null) {
+                return;
+            }
+
+            // Interpolate value
+            double factor = (double) (currentTimeMillis - lowerTimestamp) / (upperTimestamp - lowerTimestamp);
+            double interpolatedValue = lowerValue + factor * (upperValue - lowerValue);
+            powerKiloWatt = Math.round(interpolatedValue * 1000.0) / 1000.0;
+            timeMillis = currentTimeMillis;
+        }
+
+        // Update attributes
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER_FORECAST.getName(), powerKiloWatt, timeMillis));
+
+        if (electricityProducerSolarAsset.isSetActualSolarValueWithForecast().orElse(false)) {
+            assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER.getName(), powerKiloWatt, timeMillis));
         }
     }
 }

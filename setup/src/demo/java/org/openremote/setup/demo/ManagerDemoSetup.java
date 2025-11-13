@@ -23,9 +23,9 @@ import org.openremote.agent.protocol.http.HTTPAgent;
 import org.openremote.agent.protocol.http.HTTPAgentLink;
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
-import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.energy.asset.*;
 import org.openremote.energy.setup.EnergyManagerSetup;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
@@ -115,7 +115,7 @@ public class ManagerDemoSetup extends EnergyManagerSetup {
                         new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));
         harvestRobotAsset.getAttributes().getOrCreate(HarvestRobotAsset.HARVESTED_TOTAL)
                 .addMeta(new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY))
-                .setValue(harvestedTotal);;
+                .setValue(harvestedTotal);
 
         return harvestRobotAsset;
     }
@@ -2285,7 +2285,7 @@ public class ManagerDemoSetup extends EnergyManagerSetup {
         // ################################ Make user restricted ###################################
         ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
         identityProvider.updateUserRealmRoles(realmManufacturer.getName(), KeycloakDemoSetup.customerUserId, identityProvider
-                .addRealmRoles(realmManufacturer.getName(), 
+                .addUserRealmRoles(realmManufacturer.getName(),
                         KeycloakDemoSetup.customerUserId, RESTRICTED_USER_REALM_ROLE));
     }
 

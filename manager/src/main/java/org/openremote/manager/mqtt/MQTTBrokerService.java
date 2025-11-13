@@ -21,19 +21,25 @@ package org.openremote.manager.mqtt;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.channel.ChannelId;
-import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.api.core.ActiveMQException;
 import org.apache.activemq.artemis.api.core.ActiveMQExceptionType;
+import org.apache.activemq.artemis.api.core.QueueConfiguration;
 import org.apache.activemq.artemis.api.core.SimpleString;
-import org.apache.activemq.artemis.api.core.client.*;
+import org.apache.activemq.artemis.api.core.client.ActiveMQClient;
+import org.apache.activemq.artemis.api.core.client.ClientSession;
+import org.apache.activemq.artemis.api.core.client.ClientSessionFactory;
+import org.apache.activemq.artemis.api.core.client.ServerLocator;
 import org.apache.activemq.artemis.api.core.management.CoreNotificationType;
 import org.apache.activemq.artemis.api.core.management.ManagementHelper;
 import org.apache.activemq.artemis.core.client.impl.ClientSessionInternal;
 import org.apache.activemq.artemis.core.config.Configuration;
+import org.apache.activemq.artemis.core.config.MetricsConfiguration;
 import org.apache.activemq.artemis.core.config.WildcardConfiguration;
 import org.apache.activemq.artemis.core.config.impl.ConfigurationImpl;
 import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
+import org.apache.activemq.artemis.core.protocol.mqtt.MQTTStateManager;
 import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
 import org.apache.activemq.artemis.core.remoting.FailureListener;
 import org.apache.activemq.artemis.core.remoting.impl.invm.InVMConnection;
@@ -42,7 +48,9 @@ import org.apache.activemq.artemis.core.server.ServerSession;
 import org.apache.activemq.artemis.core.server.embedded.EmbeddedActiveMQ;
 import org.apache.activemq.artemis.core.server.plugin.ActiveMQServerConnectionPlugin;
 import org.apache.activemq.artemis.core.server.plugin.ActiveMQServerSessionPlugin;
+import org.apache.activemq.artemis.core.settings.impl.AddressFullMessagePolicy;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
+import org.apache.activemq.artemis.core.settings.impl.PageFullMessagePolicy;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.jaas.GuestLoginModule;
 import org.apache.activemq.artemis.spi.core.security.jaas.PrincipalConversionLoginModule;
@@ -55,7 +63,6 @@ import org.keycloak.adapters.jaas.AbstractKeycloakLoginModule;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
@@ -68,10 +75,11 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.UserAssetLink;
+import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.security.User;
 import org.openremote.model.util.Debouncer;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.ValueUtil;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
@@ -79,19 +87,19 @@ import java.security.Principal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.*;
 import static java.util.stream.StreamSupport.stream;
-import static org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil.MQTT_QOS_LEVEL_KEY;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
+// TODO: Add queue size limiting in canPublish of MQTTHandlers (needs to be done at auth time to allow pub to be rejected)
 public class MQTTBrokerService extends RouteBuilder implements ContainerService, ActiveMQServerConnectionPlugin, ActiveMQServerSessionPlugin {
 
     public static final String MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS = "MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS";
@@ -100,6 +108,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
     public static final String MQTT_SERVER_LISTEN_PORT = "MQTT_SERVER_LISTEN_PORT";
     public static final String ANONYMOUS_USERNAME = "anonymous";
+    // Allow 5 min durable session but this will not enable retained topics etc. as we delete queues aggressively for now
+    public static final int DEFAULT_SESSION_EXPIRY_MILLIS = 300000;
     protected final WildcardConfiguration wildcardConfiguration = new WildcardConfiguration();
     protected static final System.Logger LOG = System.getLogger(MQTTBrokerService.class.getName() + "." + API.name());
 
@@ -108,7 +118,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected ClientEventService clientEventService;
     protected MessageBrokerService messageBrokerService;
-    protected ScheduledExecutorService executorService;
+    protected ExecutorService executorService;
     protected TimerService timerService;
     protected AssetProcessingService assetProcessingService;
     protected List<MQTTHandler> customHandlers = new ArrayList<>();
@@ -121,10 +131,11 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected boolean active;
     protected String host;
     protected int port;
+    protected Configuration serverConfiguration;
     protected EmbeddedActiveMQ server;
     protected ActiveMQORSecurityManager securityManager;
-    protected ClientProducer producer;
-    protected ClientSessionInternal internalSession;
+    protected ServerLocator serverLocator;
+    protected ClientSessionFactory sessionFactory;
 
     @Override
     public int getPriority() {
@@ -141,14 +152,15 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         clientEventService = container.getService(ClientEventService.class);
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
-        executorService = container.getExecutorService();
+        executorService = container.getExecutor();
         timerService = container.getService(TimerService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
 
-        userAssetDisconnectDebouncer = new Debouncer<>(executorService, id -> processUserAssetLinkChange(id, userAssetLinkChangeMap.remove(id)), debounceMillis);
+        userAssetDisconnectDebouncer = new Debouncer<>(container.getScheduledExecutor(), id -> processUserAssetLinkChange(id, userAssetLinkChangeMap.remove(id)), debounceMillis);
+        // This allows last will messages to be processed
         disconnectedConnectionCache = CacheBuilder.newBuilder()
                 .maximumSize(10000)
-                .expireAfterWrite(10000, TimeUnit.MILLISECONDS)
+                .expireAfterWrite(3000, TimeUnit.MILLISECONDS)
                 .build();
 
         if (!identityService.isKeycloakEnabled()) {
@@ -160,6 +172,69 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             container.getService(MessageBrokerService.class).getContext().addRoutes(this);
         }
 
+        // Create server config
+        serverConfiguration = new ConfigurationImpl();
+        serverConfiguration.setMqttSessionScanInterval(10000);
+        serverConfiguration.addAcceptorConfiguration("in-vm", "vm://0?protocols=core");
+        String serverURI = new URIBuilder().setScheme("tcp").setHost(host).setPort(port)
+            .setParameter("protocols", "MQTT")
+            .setParameter("allowLinkStealing", "false") // Preventing this ensures previous connection/session is properly cleaned up before a reconnect
+            .setParameter("defaultMqttSessionExpiryInterval", Integer.toString(DEFAULT_SESSION_EXPIRY_MILLIS))
+            .build().toString();
+        serverConfiguration.addAcceptorConfiguration("tcp", serverURI);
+        serverConfiguration.registerBrokerPlugin(this);
+        if (container.getMeterRegistry() != null) {
+            serverConfiguration.setMetricsConfiguration(new MetricsConfiguration().setJvmMemory(false).setPlugin(new org.apache.activemq.artemis.core.server.metrics.plugins.SimpleMetricsPlugin() {
+                @Override
+                public MeterRegistry getRegistry() {
+                    return container.getMeterRegistry();
+                }
+            }));
+        }
+        serverConfiguration.setWildCardConfiguration(wildcardConfiguration);
+        serverConfiguration.setLiteralMatchMarkers("()");
+
+        // Configure global address settings - aggressively cleanup queues (don't support retained messages)
+        serverConfiguration.addQueueConfiguration(QueueConfiguration.of(wildcardConfiguration.getAnyWordsString()).setDurable(false));
+        serverConfiguration.addAddressSetting(wildcardConfiguration.getAnyWordsString(),
+            new AddressSettings()
+                .setDeadLetterAddress(SimpleString.of("ActiveMQ.DLQ"))
+                .setExpiryAddress(SimpleString.of("ActiveMQ.expired"))
+                .setAutoDeleteCreatedQueues(true)
+                .setAutoDeleteAddresses(true)
+                // Auto delete MQTT addresses after 1 day as they never get flagged as used so will linger otherwise
+                .setAutoDeleteAddressesSkipUsageCheck(true)
+                .setAutoDeleteAddressesDelay(86400000)
+                .setAutoDeleteQueuesMessageCount(-1L)
+                .setAutoDeleteQueuesDelay(0)
+                // This has a negative impact on performance if set to 0
+                .setDefaultConsumerWindowSize(-1)
+                .setPageLimitMessages(0L)
+                .setAddressFullMessagePolicy(AddressFullMessagePolicy.FAIL)
+                .setPageFullMessagePolicy(PageFullMessagePolicy.FAIL)
+                // We don't want excessive metrics so only enable metrics for each custom handler address
+                .setEnableMetrics(false)
+        );
+
+        // The below is an example of rate limiting at the address level the FAIL policy will cause an exception
+        // that is handled by the MQTTProtocolHandler which will disconnect the client (MQTT doesn't have a nice
+        // way of handling rejected publishes)
+//        serverConfiguration.addAddressSetting("*.*.writeattributevalue.#",
+//            new AddressSettings()
+//                .setMaxSizeMessages(3)
+//                .setAddressFullMessagePolicy(AddressFullMessagePolicy.FAIL)
+//                .setMaxSizeBytes(1L)
+//        );
+
+        serverConfiguration.setPersistenceEnabled(false);
+
+        // TODO: Make auto provisioning clients disconnect and reconnect with credentials or pass through X.509 certificates for auth
+        // Cannot use authentication or authorisation cache as auto provisioning MQTT clients will authenticate as anonymous and this is then baked into the created ServerSession and cannot be modified
+        // so all anonymous sessions will use the same username/password for key lookups in the caches - Can possibly use caching if ActiveMQ makes changes and/or we move to using X.509 TLS with ActiveMQ
+        //config.setSecurityInvalidationInterval(600000); // Long cache as we force clear it when needed
+        serverConfiguration.setAuthenticationCacheSize(0);
+        serverConfiguration.setAuthorizationCacheSize(0);
+
         // Load custom handlers
         this.customHandlers = stream(ServiceLoader.load(MQTTHandler.class).spliterator(), false)
                 .sorted(Comparator.comparingInt(MQTTHandler::getPriority))
@@ -168,7 +243,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         // Init each custom handler
         for (MQTTHandler handler : customHandlers) {
             try {
-                handler.init(container);
+                handler.init(container, serverConfiguration);
             } catch (Exception e) {
                 LOG.log(WARNING, "MQTT custom handler threw an exception whilst initialising: handler=" + handler.getName(), e);
                 throw e;
@@ -183,44 +258,9 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             return;
         }
 
-        // Configure and start the broker
-        Configuration config = new ConfigurationImpl();
-        config.addAcceptorConfiguration("in-vm", "vm://0?protocols=core");
-        String serverURI = new URIBuilder().setScheme("tcp").setHost(host).setPort(port)
-            .setParameter("protocols", "MQTT")
-            .setParameter("allowLinkStealing", "true")
-            .setParameter("defaultMqttSessionExpiryInterval", "0") // Don't support retained sessions
-            .build().toString();
-        config.addAcceptorConfiguration("tcp", serverURI);
-
-        config.registerBrokerPlugin(this);
-        config.setWildCardConfiguration(wildcardConfiguration);
-
-        // Force all addresses to aggressively cleanup queues (don't support resumable sessions)
-        config.addAddressSetting(wildcardConfiguration.getAnyWordsString(),
-            new AddressSettings()
-                .setDeadLetterAddress(SimpleString.toSimpleString("ActiveMQ.DLQ"))
-                .setExpiryAddress(SimpleString.toSimpleString("ActiveMQ.expired"))
-                .setAutoDeleteCreatedQueues(true)
-                .setAutoDeleteAddresses(true)
-                // Auto delete MQTT addresses after 1 day as they never get flagged as used so will linger otherwise
-                .setAutoDeleteAddressesSkipUsageCheck(true)
-                .setAutoDeleteAddressesDelay(86400000)
-                .setAutoDeleteQueuesDelay(0)
-                .setAutoDeleteQueuesMessageCount(-1L)
-        );
-
-        config.setPersistenceEnabled(false);
-
-        // TODO: Make auto provisioning clients disconnect and reconnect with credentials or pass through X.509 certificates for auth
-        // Cannot use authentication or authorisation cache as auto provisioning MQTT clients will authenticate as anonymous and this is then baked into the created ServerSession and cannot be modified
-        // so all anonymous sessions will use the same username/password for key lookups in the caches - Can possibly use caching if ActiveMQ makes changes and/or we move to using X.509 TLS with ActiveMQ
-        //config.setSecurityInvalidationInterval(600000); // Long cache as we force clear it when needed
-        config.setAuthenticationCacheSize(0);
-        config.setAuthorizationCacheSize(0);
-
+        // Start the broker
         server = new EmbeddedActiveMQ();
-        server.setConfiguration(config);
+        server.setConfiguration(serverConfiguration);
 
         securityManager = new ActiveMQORSecurityManager(authorisationService, this, realm -> identityProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), "", new SecurityConfiguration() {
             @Override
@@ -248,6 +288,10 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 String topic = notification.getProperties().getSimpleStringProperty(ManagementHelper.HDR_ADDRESS).toString();
                 ServerSession session = server.getActiveMQServer().getSessionByID(sessionId);
 
+                if (session == null) {
+                    return;
+                }
+
                 // Ignore internal subscriptions
                 boolean isInternal = session.getRemotingConnection().getTransportConnection() instanceof InVMConnection;
                 if (isInternal) {
@@ -255,24 +299,16 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 }
 
                 if (isSubscribe) {
-                    onSubscribe(session.getRemotingConnection(), MQTTUtil.convertCoreAddressToMqttTopicFilter(topic, wildcardConfiguration));
+                    onSubscribe(session.getRemotingConnection(), MQTTUtil.getMqttTopicFromCoreAddress(topic, wildcardConfiguration));
                 } else {
-                    onUnsubscribe(session.getRemotingConnection(), MQTTUtil.convertCoreAddressToMqttTopicFilter(topic, wildcardConfiguration));
+                    onUnsubscribe(session.getRemotingConnection(), MQTTUtil.getMqttTopicFromCoreAddress(topic, wildcardConfiguration));
                 }
             }
         });
 
-        // Create internal producer for producing and consuming messages
-        ServerLocator serverLocator = ActiveMQClient.createServerLocator("vm://0");
-        ClientSessionFactory factory = serverLocator.createSessionFactory();
-        String internalClientID = UniqueIdentifierGenerator.generateId("Internal client");
-        internalSession = (ClientSessionInternal) factory.createSession(null, null, false, true, true, true, serverLocator.getAckBatchSize(), internalClientID);
-        ServerSession serverSession = server.getActiveMQServer().getSessionByID(internalSession.getName());
-        serverSession.disableSecurity();
-        internalSession.start();
-
-        // Create producer
-        producer = internalSession.createProducer();
+        // Don't use producer flow control
+        serverLocator = ActiveMQClient.createServerLocator("vm://0").setProducerWindowSize(-1);
+        sessionFactory = serverLocator.createSessionFactory();
 
         // Start each custom handler
         for (MQTTHandler handler : customHandlers) {
@@ -356,8 +392,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
             @Override
             public void connectionFailed(ActiveMQException exception, boolean failedOver, String scaleDownTargetNodeID) {
-                // TODO: Force delete session (don't allow retained/durable sessions)
-
                 connectionIDConnectionMap.remove(getConnectionIDString(connection));
 
                 if (connection.getClientID() != null) {
@@ -413,11 +447,10 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     public void onSubscribe(RemotingConnection connection, String topicStr) {
         Topic topic = Topic.parse(topicStr);
-
+        LOG.log(TRACE, () -> "onSubscribe '" + topicStr + "': " + connectionToString(connection));
         for (MQTTHandler handler : getCustomHandlers()) {
             if (handler.handlesTopic(topic)) {
-                String connectionStr = LOG.isLoggable(DEBUG) ? connectionToString(connection) : null;
-                LOG.log(DEBUG, "Client subscribed '" + topicStr + "': " + connectionStr);
+                LOG.log(DEBUG, () -> "Client subscribed '" + topicStr + "': " + connectionToString(connection));
                 handler.onSubscribe(connection, topic);
                 break;
             }
@@ -426,11 +459,10 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     public void onUnsubscribe(RemotingConnection connection, String topicStr) {
         Topic topic = Topic.parse(topicStr);
-
+        LOG.log(TRACE, () -> "onUnsubscribe '" + topicStr + "': " + connectionToString(connection));
         for (MQTTHandler handler : getCustomHandlers()) {
             if (handler.handlesTopic(topic)) {
-                String connectionStr = LOG.isLoggable(DEBUG) ? connectionToString(connection) : null;
-                LOG.log(DEBUG, "Client unsubscribed '" + topicStr + "': " + connectionStr);
+                LOG.log(DEBUG, () -> "Client unsubscribed '" + topicStr + "': " + connectionToString(connection));
                 handler.onUnsubscribe(connection, topic);
                 break;
             }
@@ -479,13 +511,21 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     }
 
     protected void doForceDisconnect(RemotingConnection connection) {
-        LOG.log(DEBUG, "Force disconnecting client connection: " + connectionToString(connection));
+        LOG.log(DEBUG, () -> "Force disconnecting client connection: " + connectionToString(connection));
         connection.disconnect(false);
+        // Destroy session for force disconnects
+        try {
+            if (MQTTStateManager.getInstance(server.getActiveMQServer()).removeSessionState(connection.getClientID()) != null) {
+                LOG.log(TRACE, () -> "Removed session state for client connection: " + connectionToString(connection));
+            }
+        } catch (Exception e) {
+            LOG.log(INFO, () -> "Failed to get server instance to clear session for client connection: " + connectionToString(connection));
+        }
         ((SecurityStoreImpl)server.getActiveMQServer().getSecurityStore()).invalidateAuthorizationCache();
     }
 
-    public boolean disconnectSession(String sessionID) {
-        RemotingConnection connection = connectionIDConnectionMap.get(sessionID);
+    public boolean disconnectSession(String connectionID) {
+        RemotingConnection connection = connectionIDConnectionMap.get(connectionID);
         if (connection != null) {
             LOG.log(DEBUG, "Force disconnecting client connection: " + connectionToString(connection));
             doForceDisconnect(connection);
@@ -493,22 +533,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         }
 
         return false;
-    }
-
-    public void publishMessage(String topic, Object data, MqttQoS qoS) {
-        try {
-            if (internalSession != null) {
-                // Artemis' sessions are not threadsafe
-                synchronized (internalSession) {
-                    ClientMessage message = internalSession.createMessage(false);
-                    message.putIntProperty(MQTT_QOS_LEVEL_KEY, qoS.value());
-                    message.writeBodyBufferBytes(ValueUtil.asJSON(data).map(String::getBytes).orElseThrow(() -> new IllegalStateException("Failed to convert payload to JSON string: " + data)));
-                    producer.send(MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, server.getConfiguration().getWildcardConfiguration()), message);
-                }
-            }
-        } catch (Exception e) {
-            LOG.log(WARNING, "Couldn't send AttributeEvent to MQTT client", e);
-        }
     }
 
     public WildcardConfiguration getWildcardConfiguration() {
@@ -524,7 +548,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         return ID instanceof ChannelId ? ((ChannelId) ID).asLongText() : ID.toString();
     }
 
-    public String connectionToString(RemotingConnection connection) {
+    public static String connectionToString(RemotingConnection connection) {
         if (connection == null) {
             return "";
         }
@@ -533,20 +557,13 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         Subject subject = connection.getSubject();
 
         if (subject != null) {
-            username = getSubjectNameAndRealm(subject);
+            username = getSubjectName(subject);
         }
 
         return "connection=" + connection.getRemoteAddress() + ", clientID=" + connection.getClientID() + ", subject=" + username;
     }
 
     public static String getSubjectName(Subject subject) {
-        return subject.getPrincipals().stream().filter(principal -> principal instanceof UserPrincipal)
-            .findFirst()
-            .map(Principal::getName)
-            .orElse(KeycloakIdentityProvider.getSubjectName(subject));
-    }
-
-    public static String getSubjectNameAndRealm(Subject subject) {
         return subject.getPrincipals().stream().filter(principal -> principal instanceof UserPrincipal)
             .findFirst()
             .map(Principal::getName)
@@ -580,13 +597,46 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         return connection;
     }
 
-    public void notifyConnectionAuthenticated(RemotingConnection connection) {
+    protected void notifyConnectionAuthenticated(RemotingConnection connection) {
         if (connection.getSubject() != null) {
             // Notify handlers that connection authenticated
             LOG.log(DEBUG, "Client connection authenticated: " + connectionToString(connection));
             for (MQTTHandler handler : getCustomHandlers()) {
                 handler.onConnectionAuthenticated(connection);
             }
+        }
+    }
+
+    /**
+     * Create a client session for communicating with the broker
+     */
+    protected ClientSession createSession() throws Exception {
+
+        ClientSessionInternal session = null;
+
+        try {
+            String internalClientID = UniqueIdentifierGenerator.generateId("Internal client");
+            session = (ClientSessionInternal) sessionFactory.createSession(null, null, false, true, true, true, serverLocator.getAckBatchSize(), internalClientID);
+            session.addMetaData(ClientSession.JMS_SESSION_IDENTIFIER_PROPERTY, "Internal session");
+            ServerSession serverSession = server.getActiveMQServer().getSessionByID(session.getName());
+            serverSession.disableSecurity();
+            session.start();
+        } catch (Exception e) {
+            LOG.log(WARNING, "Failed to create MQTT client session", e);
+        }
+
+        return session;
+    }
+
+    protected WildcardConfiguration getServerWildcardConfiguration() {
+        return server.getConfiguration().getWildcardConfiguration();
+    }
+
+    public void authenticateConnection(RemotingConnection connection, String realm, String username, String password) {
+        if (connection != null) {
+            connection.setSubject(null); // Clear existing subject
+            securityManager.authenticate(realm + ":" + username, password, connection, null);
+            notifyConnectionAuthenticated(connection);
         }
     }
 }

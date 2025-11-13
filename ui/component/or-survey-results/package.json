@@ -1,27 +1,29 @@
 {
   "name": "@openremote/or-survey-results",
-  "version": "1.1.0",
+  "version": "1.10.0-snapshot",
   "description": "Displays survey results",
+  "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    "./*": "./lib/*.js",
+    "./jsx": {
+      "types": "./custom-elements-jsx.d.ts"
+    }
   },
   "types": "lib/index.d.ts",
   "scripts": {
+    "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "test": "echo \"No tests\" && exit 0",
-    "prepublishOnly": "npx webpack"
+    "prepack": "npx rspack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
-    "lit": "^2.0.2"
-  },
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
+    "lit": "^3.3.1"
   },
   "publishConfig": {
     "access": "public"

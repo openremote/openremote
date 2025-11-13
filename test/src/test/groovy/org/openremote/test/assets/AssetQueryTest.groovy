@@ -1,6 +1,7 @@
 package org.openremote.test.assets
 
 import net.fortuna.ical4j.model.Recur
+import net.fortuna.ical4j.transform.recurrence.*
 import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetProcessingService
@@ -26,10 +27,11 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
-import static java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME
+import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME
 import static org.openremote.model.query.AssetQuery.*
 import static org.openremote.model.query.AssetQuery.Access.PRIVATE
 import static org.openremote.model.query.AssetQuery.Access.PROTECTED
@@ -117,7 +119,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.size() == 6
         assets.get(0).id == managerTestSetup.apartment1Id
         assets.get(1).id == managerTestSetup.apartment1LivingroomId
-        assets.get(1).getAttributes().size() == 7
+        assets.get(1).getAttributes().size() == 8
         !assets.get(1).getAttribute("motionSensor").isPresent()
         !assets.get(1).getAttribute("currentTemperature").get().getValue().isPresent()
         !assets.get(1).getAttribute("currentTemperature").get().meta.isEmpty()
@@ -359,7 +361,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.find {it.id == managerTestSetup.apartment1Id} != null
         def livingroom = assets.find {it.id == managerTestSetup.apartment1LivingroomId}
         livingroom != null
-        livingroom.getAttributes().size() == 7
+        livingroom.getAttributes().size() == 8
         !livingroom.getAttribute("currentTemperature").get().getValue().isPresent()
         !livingroom.getAttribute("currentTemperature").get().meta.isEmpty()
         !livingroom.getAttribute("targetTemperature").get().getValue().isPresent()
@@ -814,7 +816,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         def start = calendar.getTime()
         calendar.add(Calendar.HOUR, 2)
         def end = calendar.getTime()
-        def recur = new Recur(Recur.DAILY, 5)
+        def recur = new Recur(Frequency.DAILY, 5)
         recur.setInterval(2)
 
         lobby.addAttributes(
@@ -822,7 +824,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
         lobby = assetStorageService.merge(lobby)
 
-        recur = new Recur(Recur.DAILY, 3)
+        recur = new Recur(Frequency.DAILY, 3)
         recur.setInterval(2)
 
         floor.addAttributes(
@@ -922,12 +924,12 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "the lobby has an opening date and the date falls is between the filtering date"
         def lobby = assetStorageService.find(managerTestSetup.lobbyId, true)
         lobby.addAttributes(
-                new Attribute<>("openingDate", TIMESTAMP_ISO8601, ZonedDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC).format(ISO_ZONED_DATE_TIME)) // 28/01/2018 @ 2:00pm (UTC)
+                new Attribute<>("openingDate", TIMESTAMP_ISO8601, Instant.ofEpochMilli(1517151600000).atZone(ZoneId.systemDefault()).format(ISO_OFFSET_DATE_TIME)) // 28/01/2018 @ 2:00pm (UTC)
         )
         lobby = assetStorageService.merge(lobby)
 
-        def rangeStart = ZonedDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC).minusHours(2) // 28/01/2018 @ 1:00pm (UTC)
-        def rangeEnd = ZonedDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC).plusHours(3) // 28/01/2018 @ 6:00pm (UTC)
+        def rangeStart = Instant.ofEpochMilli(1517151600000).atZone(ZoneId.systemDefault()).minusHours(2) // 28/01/2018 @ 1:00pm (UTC)
+        def rangeEnd = Instant.ofEpochMilli(1517151600000).atZone(ZoneId.systemDefault()).plusHours(3) // 28/01/2018 @ 6:00pm (UTC)
 
         def assets = assetStorageService.findAll(
                 new AssetQuery()
@@ -935,7 +937,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                     .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                     .attributeValue(
                         "openingDate",
-                        new DateTimePredicate(rangeStart.format(ISO_ZONED_DATE_TIME), rangeEnd.format(ISO_ZONED_DATE_TIME))
+                        new DateTimePredicate(rangeStart.format(ISO_OFFSET_DATE_TIME), rangeEnd.format(ISO_OFFSET_DATE_TIME))
                             .operator(Operator.BETWEEN))
         )
 
@@ -951,7 +953,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                     .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                     .attributeValue(
                         "openingDate",
-                        new DateTimePredicate(Operator.GREATER_THAN, rangeStart.format(ISO_ZONED_DATE_TIME)))
+                        new DateTimePredicate(Operator.GREATER_THAN, rangeStart.format(ISO_OFFSET_DATE_TIME)))
         )
 
 
@@ -966,7 +968,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                     .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                     .attributeValue(
                     "openingDate",
-                    new DateTimePredicate(Operator.LESS_THAN, rangeEnd.format(ISO_ZONED_DATE_TIME)))
+                    new DateTimePredicate(Operator.LESS_THAN, rangeEnd.format(ISO_OFFSET_DATE_TIME)))
         )
 
 
@@ -975,7 +977,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[0].id == lobby.id
 
         when: "the lobby has an opening date and the date is equal to the filtering date"
-        rangeStart = ZonedDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC) // 28/01/2018 @ 2:00pm (UTC)
+        rangeStart = Instant.ofEpochMilli(1517151600000).atZone(ZoneId.systemDefault()) // 28/01/2018 @ 2:00pm (UTC)
 
         assets = assetStorageService.findAll(
                 new AssetQuery()
@@ -983,12 +985,119 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                     .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                     .attributeValue(
                     "openingDate",
-                    new DateTimePredicate(Operator.EQUALS, rangeStart.format(ISO_ZONED_DATE_TIME)))
+                    new DateTimePredicate(Operator.EQUALS, rangeStart.format(ISO_OFFSET_DATE_TIME)))
         )
 
 
         then: "the lobby asset should be retrieved"
         assets.size() == 1
         assets[0].id == lobby.id
+    }
+
+    def "Limit and offset queries"() {
+        when: "a non limited query is executed to get all assets"
+        // We use this query to determine whether offsets and limits are working correctly
+        def allAssets = assetStorageService.findAll(
+                new AssetQuery()
+                    .select(new Select().excludeAttributes())
+                    .ids(managerTestSetup.smartBuildingId)
+                    .recursive(true)
+                    .orderBy(new OrderBy(NAME))
+        )
+
+        then: "all assets should be returned"
+        allAssets.size() > 0
+        def allAssetsSize = allAssets.size()
+
+        when: "a query is executed with limit set to 0"
+        def zeroLimitAssets = assetStorageService.findAll(
+                new AssetQuery()
+                    .select(new Select().excludeAttributes())
+                    .ids(managerTestSetup.smartBuildingId)
+                    .recursive(true)
+                    .orderBy(new OrderBy(NAME))
+                    .limit(0)
+        )
+
+        then: "all assets should be returned"
+        zeroLimitAssets.size() == allAssetsSize
+        zeroLimitAssets.collect { it.id } == allAssets.collect { it.id }
+
+        when: "a query is executed with limit"
+        def limitedAssets = assetStorageService.findAll(
+                new AssetQuery()
+                    .select(new Select().excludeAttributes())
+                    .ids(managerTestSetup.smartBuildingId)
+                    .recursive(true)
+                    .orderBy(new OrderBy(NAME))
+                    .limit(3)
+        )
+
+        then: "only 3 assets should be returned"
+        limitedAssets.size() == 3
+        limitedAssets.collect { it.id } == allAssets.take(3).collect { it.id }
+
+        when: "a query is executed with a higher limit"
+        def higherLimitAssets = assetStorageService.findAll(
+                new AssetQuery()
+                    .select(new Select().excludeAttributes())
+                    .ids(managerTestSetup.smartBuildingId)
+                    .recursive(true)
+                    .orderBy(new OrderBy(NAME))
+                    .limit(5)
+        )
+
+        then: "then  5 assets should be returned"
+        higherLimitAssets.size() == 5
+
+        when: "a query is executed with a offset"
+        def offsetAssets = assetStorageService.findAll(
+                new AssetQuery()
+                    .select(new Select().excludeAttributes())
+                    .ids(managerTestSetup.smartBuildingId)
+                    .recursive(true)
+                    .orderBy(new OrderBy(NAME))
+                    .offset(2)
+        )
+
+        then: "all assets after the offset should be returned"
+        offsetAssets.size() == allAssetsSize - 2
+        offsetAssets.collect { it.id } == allAssets.drop(2).collect { it.id }
+
+        and: "the first 2 assets from the all assets should not be present"
+        offsetAssets.collect { it.id } != allAssets.take(2).collect { it.id }
+        
+        when: "another query is executed with a offset and limit"
+        def offsetLimitAssets = assetStorageService.findAll(
+                new AssetQuery()
+                    .select(new Select().excludeAttributes())
+                    .ids(managerTestSetup.smartBuildingId)
+                    .recursive(true)
+                    .orderBy(new OrderBy(NAME))
+                    .limit(2)
+                    .offset(3)
+        )
+
+        then: "the assets from the offset should be returned"
+        offsetLimitAssets.collect { it.id } == allAssets.drop(3).take(2).collect { it.id }
+
+        and: "the limit should be respected"
+        offsetLimitAssets.size() == 2
+
+        and: "the first 3 assets from the all assets should not be present"
+        offsetLimitAssets.collect { it.id } != allAssets.take(3).collect { it.id }
+
+        when: "a query is executed with an offset higher than the total number of assets"
+        def offsetHigherThanAssets = assetStorageService.findAll(
+                new AssetQuery()
+                    .select(new Select().excludeAttributes())
+                    .ids(managerTestSetup.smartBuildingId)
+                    .recursive(true)
+                    .orderBy(new OrderBy(NAME))
+                    .offset(allAssets.size() + 1)
+        )
+
+        then: "no assets should be returned"
+        offsetHigherThanAssets.size() == 0
     }
 }

@@ -1,18 +1,17 @@
 import {css, html, PropertyValues, TemplateResult } from "lit";
 import {OrAssetWidget} from "../util/or-asset-widget";
-import {WidgetConfig} from "../util/widget-config";
-import {Attribute, AttributeRef, WellknownMetaItems} from "@openremote/model";
+import {AssetWidgetConfig} from "../util/widget-config";
+import {AttributeRef, WellknownMetaItems} from "@openremote/model";
 import {WidgetManifest} from "../util/or-widget";
 import {WidgetSettings} from "../util/widget-settings";
-import { customElement, query, queryAll } from "lit/decorators.js";
+import { customElement, query, queryAll, state } from "lit/decorators.js";
 import {AttributeInputSettings} from "../settings/attribute-input-settings";
 import { when } from "lit/directives/when.js";
 import {throttle} from "lodash";
 import {Util} from "@openremote/core";
 import "@openremote/or-attribute-input";
 
-export interface AttributeInputWidgetConfig extends WidgetConfig {
-    attributeRefs: AttributeRef[];
+export interface AttributeInputWidgetConfig extends AssetWidgetConfig {
     readonly: boolean,
     showHelperText: boolean
 }
@@ -22,7 +21,7 @@ function getDefaultWidgetConfig() {
         attributeRefs: [],
         readonly: false,
         showHelperText: true
-    } as AttributeInputWidgetConfig
+    } as AttributeInputWidgetConfig;
 }
 
 const styling = css`
@@ -32,6 +31,14 @@ const styling = css`
     justify-content: center;
     align-items: center;
     overflow: hidden;
+  }
+    
+  #error-txt {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
   }
 
   .attr-input {
@@ -45,6 +52,9 @@ export class AttributeInputWidget extends OrAssetWidget {
 
     protected widgetConfig!: AttributeInputWidgetConfig;
 
+    @state()
+    protected _loading = false;
+
     @query("#widget-wrapper")
     protected widgetWrapperElem?: HTMLElement;
 
@@ -57,13 +67,13 @@ export class AttributeInputWidget extends OrAssetWidget {
         return {
             displayName: "Attribute",
             displayIcon: "form-textbox",
-            getContentHtml(config: WidgetConfig): OrAssetWidget {
+            getContentHtml(config: AttributeInputWidgetConfig): OrAssetWidget {
                 return new AttributeInputWidget(config);
             },
-            getDefaultConfig(): WidgetConfig {
+            getDefaultConfig(): AttributeInputWidgetConfig {
                 return getDefaultWidgetConfig();
             },
-            getSettingsHtml(config: WidgetConfig): WidgetSettings {
+            getSettingsHtml(config: AttributeInputWidgetConfig): WidgetSettings {
                 return new AttributeInputSettings(config);
             }
 
@@ -85,12 +95,14 @@ export class AttributeInputWidget extends OrAssetWidget {
         delete this.resizeObserver;
     }
 
-    protected updated(changedProps: PropertyValues) {
+    protected willUpdate(changedProps: PropertyValues) {
 
         // If widgetConfig, and the attributeRefs of them have changed...
         if(changedProps.has("widgetConfig") && this.widgetConfig) {
             const attributeRefs = this.widgetConfig.attributeRefs;
-            if(attributeRefs.length > 0 && !this.isAttributeRefLoaded(attributeRefs[0])) {
+            if(attributeRefs.length === 0) {
+                this._error = "noAttributesConnected";
+            } else if(attributeRefs.length > 0 && !this.isAttributeRefLoaded(attributeRefs[0])) {
                 this.loadAssets(attributeRefs);
             }
         }
@@ -106,12 +118,22 @@ export class AttributeInputWidget extends OrAssetWidget {
             this.resizeObserver.observe(this.widgetWrapperElem);
         }
 
-        return super.updated(changedProps);
+        return super.willUpdate(changedProps);
     }
 
     protected loadAssets(attributeRefs: AttributeRef[]) {
+        if(attributeRefs.length === 0) {
+            this._error = "noAttributesConnected";
+            return;
+        }
+        this._loading = true;
+        this._error = undefined;
         this.fetchAssets(attributeRefs).then((assets) => {
             this.loadedAssets = assets;
+        }).catch(e => {
+            this._error = e.message;
+        }).finally(() => {
+            this._loading = false;
         });
     }
 
@@ -120,7 +142,14 @@ export class AttributeInputWidget extends OrAssetWidget {
         const attribute = (config.attributeRefs.length > 0 && this.loadedAssets[0]?.attributes) ? this.loadedAssets[0].attributes[config.attributeRefs[0].name!] : undefined;
         const readOnlyMetaItem = Util.getMetaValue(WellknownMetaItems.READONLY, attribute);
         return html`
-            ${when(config.attributeRefs.length > 0 && attribute && this.loadedAssets && this.loadedAssets.length > 0, () => {
+            
+            ${when(this._loading || this._error, () => {
+                if(this._loading) {
+                    return html`<or-loading-indicator></or-loading-indicator>`;
+                } else {
+                    return html`<or-translate id="error-txt" .value="${this._error}"></or-translate>`;
+                }
+            }, () => when(config.attributeRefs.length > 0 && attribute && this.loadedAssets && this.loadedAssets.length > 0, () => {
                 return html`
                     <div id="widget-wrapper">
                         <or-attribute-input class="attr-input" fullWidth
@@ -132,12 +161,8 @@ export class AttributeInputWidget extends OrAssetWidget {
                                             .hasHelperText="${config.showHelperText}"
                         ></or-attribute-input>
                     </div>
-                `
-            }, () => html`
-                <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
-                    <span><or-translate value="noAttributesConnected"></or-translate></span>
-                </div>
-            `)}
+                `;
+            }))}
         `;
     }
 }

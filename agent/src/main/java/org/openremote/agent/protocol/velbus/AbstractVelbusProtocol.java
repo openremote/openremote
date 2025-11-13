@@ -78,7 +78,7 @@ public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,
             int timeInjectionSeconds = agent.getTimeInjectionInterval().orElse(DEFAULT_TIME_INJECTION_INTERVAL_SECONDS);
 
             LOG.fine("Creating new VELBUS network instance for protocol instance: " + agent);
-            network = new VelbusNetwork(messageProcessor, executorService, timeInjectionSeconds);
+            network = new VelbusNetwork(messageProcessor, scheduledExecutorService, timeInjectionSeconds);
             network.connect();
             network.addConnectionStatusConsumer(this::setConnectionStatus);
 
@@ -111,7 +111,7 @@ public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,
         LOG.fine("Linking attribute to device '" + deviceAddress + "' and property '" + property + "': " + attributeRef);
 
         Consumer<Object> propertyValueConsumer = propertyValue ->
-            updateLinkedAttribute(new AttributeState(attributeRef, propertyValue));
+            updateLinkedAttribute(attributeRef, propertyValue);
 
         attributePropertyValueConsumers.put(attributeRef, propertyValueConsumer);
         network.addPropertyValueConsumer(deviceAddress, property, propertyValueConsumer);
@@ -132,7 +132,7 @@ public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, VelbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(VelbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
         // Get the device that this attribute is linked to
         int deviceAddress = getOrThrowAgentLinkProperty(agentLink.getDeviceAddress(), "device address");

@@ -63,11 +63,11 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "the global rules engine should load this definition and restart successfully"
         conditions.eventually {
-            assert rulesService.globalEngine != null
-            assert rulesService.globalEngine.isRunning()
-            assert rulesService.globalEngine.deployments.size() == 2
-            assert rulesService.globalEngine.deployments.values().any({ it.name == "Some global demo rules" && it.status == DEPLOYED})
-            assert rulesService.globalEngine.deployments.values().any({ it.name == "Some more global rules" && it.status == DEPLOYED})
+            assert rulesService.globalEngine.get() != null
+            assert rulesService.globalEngine.get().isRunning()
+            assert rulesService.globalEngine.get().deployments.size() == 2
+            assert rulesService.globalEngine.get().deployments.values().any({ it.name == "Some global demo rules" && it.status == DEPLOYED})
+            assert rulesService.globalEngine.get().deployments.values().any({ it.name == "Some more global rules" && it.status == DEPLOYED})
         }
 
         when: "a new realm rule definition is added to Building"
@@ -159,13 +159,13 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "the global rules engine should still run and the rule engine status should indicate the issue"
         conditions.eventually {
-            assert rulesService.globalEngine.deployments.size() == 3
-            assert rulesService.globalEngine.running
-            assert !rulesService.globalEngine.isError()
-            assert rulesService.globalEngine.error instanceof RuntimeException
-            assert rulesService.globalEngine.deployments.values().any({ it.name == "Some global demo rules" && it.status == DEPLOYED})
-            assert rulesService.globalEngine.deployments.values().any({ it.name == "Some more global rules" && it.status == DEPLOYED})
-            assert rulesService.globalEngine.deployments.values().any({ it.name == "Some broken global rules" && it.status == COMPILATION_ERROR})
+            assert rulesService.globalEngine.get().deployments.size() == 3
+            assert rulesService.globalEngine.get().running
+            assert !rulesService.globalEngine.get().isError()
+            assert rulesService.globalEngine.get().getError() instanceof RuntimeException
+            assert rulesService.globalEngine.get().deployments.values().any({ it.name == "Some global demo rules" && it.status == DEPLOYED})
+            assert rulesService.globalEngine.get().deployments.values().any({ it.name == "Some more global rules" && it.status == DEPLOYED})
+            assert rulesService.globalEngine.get().deployments.values().any({ it.name == "Some broken global rules" && it.status == COMPILATION_ERROR})
         }
 
         when: "the broken rule definition is removed from the global engine"
@@ -173,12 +173,12 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "the global rules engine should restart"
         conditions.eventually {
-            assert rulesService.globalEngine.deployments.size() == 2
-            assert rulesService.globalEngine.running
-            assert !rulesService.globalEngine.isError()
-            assert rulesService.globalEngine.error == null
-            assert rulesService.globalEngine.deployments.values().any({ it.name == "Some global demo rules" && it.status == DEPLOYED })
-            assert rulesService.globalEngine.deployments.values().any({ it.name == "Some more global rules" && it.status == DEPLOYED })
+            assert rulesService.globalEngine.get().deployments.size() == 2
+            assert rulesService.globalEngine.get().running
+            assert !rulesService.globalEngine.get().isError()
+            assert rulesService.globalEngine.get().getError() == null
+            assert rulesService.globalEngine.get().deployments.values().any({ it.name == "Some global demo rules" && it.status == DEPLOYED })
+            assert rulesService.globalEngine.get().deployments.values().any({ it.name == "Some more global rules" && it.status == DEPLOYED })
         }
 
         when: "a realm is disabled"

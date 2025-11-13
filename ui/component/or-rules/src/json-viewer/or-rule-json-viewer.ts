@@ -26,8 +26,7 @@ import manager, {Util} from "@openremote/core";
 import "./or-rule-when";
 import "./or-rule-then-otherwise";
 import "@openremote/or-components/or-panel";
-import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate"
 
 export class OrRulesJsonRuleChangedEvent extends CustomEvent<void> {
 
@@ -141,6 +140,11 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         if (this._unsupported) {
             this.dispatchEvent(new OrRulesRuleUnsupportedEvent());
         }
+    }
+
+    disconnectedCallback() {
+        this.removeEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onJsonRuleChanged);
+        return super.disconnectedCallback();
     }
 
     public set ruleset(ruleset: RulesetUnion) {
@@ -350,6 +354,9 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                 case "notification":
                     // TODO: validate notification rule action
                     break;
+                case "alarm":
+                    // TODO: validate alarm rule action
+                    break;
                 case "webhook":
                     if(!action.webhook?.url || !action.webhook.httpMethod) {
                         return false;
@@ -415,7 +422,7 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                 if (!attribute.name || !attribute.name.match || !attribute.name.value) {
                     return false;
                 }
-                if (!attribute.value || !this._validateValuePredicate(attribute.value)) {
+                if (!attribute.timestampOlderThan && (!attribute.value || !this._validateValuePredicate(attribute.value))) {
                     return false;
                 }
             }

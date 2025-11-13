@@ -35,11 +35,12 @@ public class ManagerConfig {
     protected boolean loadDescriptors;
     protected String translationsLoadPath;
     protected boolean skipFallbackToBasicAuth;
+    protected boolean applyConfigToAdmin;
     protected Auth auth;
     protected UsernamePassword credentials;
     protected EventProviderType eventProviderType;
     protected MapType mapType;
     protected Object configureTranslationsOptions;
     protected Object basicLoginProvider;
-
+    protected String defaultLanguage;
 }

@@ -5,7 +5,6 @@ import org.openremote.agent.protocol.tradfri.device.Gateway;
 import org.openremote.agent.protocol.tradfri.device.Light;
 import org.openremote.agent.protocol.tradfri.device.Plug;
 import org.openremote.agent.protocol.tradfri.util.Credentials;
-
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.impl.LightAsset;
 import org.openremote.model.asset.impl.PlugAsset;
@@ -14,10 +13,9 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.impl.ColourRGB;
 
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Consumer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import static org.openremote.agent.protocol.tradfri.TradfriLightAsset.convertBrightness;
@@ -37,11 +35,6 @@ public class TradfriConnection {
      * The connection status consumers of the IKEA TRÅDFRI connection
      */
     protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new ArrayList<>();
-
-    /**
-     * The executor service of the IKEA TRÅDFRI connection
-     */
-    protected final ScheduledExecutorService executorService;
 
     /**
      * The IP address of the gateway
@@ -67,12 +60,10 @@ public class TradfriConnection {
      * Construct the TradfriConnection class.
      * @param gatewayIp the IP address of the gateway.
      * @param securityCode the security code to connect to the gateway.
-     * @param executorService the executor service.
      */
-    public TradfriConnection(String gatewayIp, String securityCode, ScheduledExecutorService executorService) {
+    public TradfriConnection(String gatewayIp, String securityCode) {
         this.gatewayIp = gatewayIp;
         this.securityCode = securityCode;
-        this.executorService = executorService;
     }
 
     /**
@@ -158,20 +149,20 @@ public class TradfriConnection {
                 if (device.isLight()){
                     Light light = device.toLight();
 
-                    if (event.getAttributeName().equals(LightAsset.BRIGHTNESS.getName())) {
+                    if (event.getName().equals(LightAsset.BRIGHTNESS.getName())) {
                         int value = ValueUtil.getInteger(event.getValue()).orElse(0);
                         light.setBrightness(convertBrightness(value, false));
-                    } else if (event.getAttributeName().equals(LightAsset.ON_OFF.getName())) {
+                    } else if (event.getName().equals(LightAsset.ON_OFF.getName())) {
                         light.setOn(ValueUtil.getBooleanCoerced(event.getValue()).orElse(false));
-                    } else if (event.getAttributeName().equals(LightAsset.COLOUR_RGB.getName())) {
+                    } else if (event.getName().equals(LightAsset.COLOUR_RGB.getName())) {
                         light.setColour(ValueUtil.convert(event.getValue(), ColourRGB.class));
-                    } else if (event.getAttributeName().equals(LightAsset.COLOUR_TEMPERATURE.getName())) {
+                    } else if (event.getName().equals(LightAsset.COLOUR_TEMPERATURE.getName())) {
                         light.setColourTemperature(ValueUtil.getInteger(event.getValue()).orElse(0));
                     }
                 }
                 else if (device.isPlug()) {
                     Plug plug = device.toPlug();
-                    if (event.getAttributeName().equals(PlugAsset.ON_OFF.getName())) {
+                    if (event.getName().equals(PlugAsset.ON_OFF.getName())) {
                         plug.setOn(ValueUtil.getBooleanCoerced(event.getValue()).orElse(false));
                     }
                 }

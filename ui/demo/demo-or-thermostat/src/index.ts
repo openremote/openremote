@@ -63,7 +63,6 @@ manager.addListener((event: OREvent) => {
 manager.init({
     auth: Auth.KEYCLOAK,
     autoLogin: true,
-    keycloakUrl: "https://localhost/auth",
     managerUrl: "https://localhost",
     realm: "building"
 });

@@ -4,8 +4,8 @@
 #
 # Please see profile/deploy.yml for configuration details for each service.
 #
-version: '2.4'
-
+volumes:
+  postgresql-data:
 services:
 
   keycloak:
@@ -23,6 +23,7 @@ services:
     environment:
       KC_HOSTNAME_STRICT_HTTPS: 'false'
       KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT:-8080}
+      KC_LOG_CONSOLE_FORMAT: '%-5p [%c] (%t) %s%e%n'
       # Prevent theme caching during dev
       KEYCLOAK_START_OPTS: --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
 
@@ -32,6 +33,7 @@ services:
       service: postgresql
     volumes:
       - ../tmp:/storage
+      - postgresql-data:/var/lib/postgresql/data
     # Access directly if needed on localhost
     ports:
       - "55555:5432"

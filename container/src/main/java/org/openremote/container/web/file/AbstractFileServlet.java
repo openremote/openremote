@@ -12,14 +12,13 @@
  */
 package org.openremote.container.web.file;
 
-import static java.lang.String.format;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.logging.Level.FINE;
 
 import java.io.*;
-import java.net.URLEncoder;
+import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
@@ -54,9 +53,9 @@ import jakarta.servlet.http.HttpServletResponse;
  * download, and by download accelerators to be able to request smaller parts simultaneously. This servlet is ideal when
  * you have large files like media files placed outside the web application and you can't use the default servlet.
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <p>
- * Just extend this class and override the {@link #getFile(HttpServletRequest)} method to return the desired file. If
+ * Just extend this class and override the {@link #getResource(HttpServletRequest)} method to return the desired file. If
  * you want to trigger a HTTP 400 "Bad Request" error, simply throw {@link IllegalArgumentException}. If you want to
  * trigger a HTTP 404 "Not Found" error, simply return <code>null</code>, or a non-existent file.
  * <p>
@@ -99,8 +98,8 @@ import jakarta.servlet.http.HttpServletResponse;
  * can opt to override one or more of the following protected methods:
  * <ul>
  * <li>{@link #handleFileNotFound(HttpServletRequest, HttpServletResponse)}
- * <li>{@link #getExpireTime(HttpServletRequest, File)}
- * <li>{@link #getContentType(HttpServletRequest, File)}
+ * <li>{@link #getExpireTime(HttpServletRequest, String)}
+ * <li>{@link #getContentType(HttpServletRequest, String)}
  * </ul>
  *
  * <p><strong>See also</strong>:
@@ -112,6 +111,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * @author Bauke Scholtz
  * @since 2.2
  */
+// TODO: Replace this with a standard file servlet
 public abstract class AbstractFileServlet extends HttpServlet {
 
 	// Constants ------------------------------------------------------------------------------------------------------
@@ -121,7 +121,6 @@ public abstract class AbstractFileServlet extends HttpServlet {
 
 	private static final Long DEFAULT_EXPIRE_TIME_IN_SECONDS = TimeUnit.DAYS.toSeconds(30);
 	private static final long ONE_SECOND_IN_MILLIS = SECONDS.toMillis(1);
-	private static final String ETAG = "W/\"%s-%s\"";
 	private static final Pattern RANGE_PATTERN = Pattern.compile("^bytes=[0-9]*-[0-9]*(,[0-9]*-[0-9]*)*$");
 	private static final String MULTIPART_BOUNDARY = UUID.randomUUID().toString();
 
@@ -141,7 +140,7 @@ public abstract class AbstractFileServlet extends HttpServlet {
         Resource resource;
 
         try {
-            resource = new Resource(getFile(request));
+            resource = getResource(request);
 
         } catch (RedirectException ex) {
             logger.log(FINE, "Redirecting client to: " + ex.location);
@@ -155,7 +154,7 @@ public abstract class AbstractFileServlet extends HttpServlet {
 			return;
 		}
 
-		if (resource.file == null) {
+		if (resource.getURL() == null) {
 			handleFileNotFound(request, response);
 			return;
 		}
@@ -165,7 +164,7 @@ public abstract class AbstractFileServlet extends HttpServlet {
 			return;
 		}
 
-		setCacheHeaders(response, resource, getExpireTime(request, resource.file));
+		setCacheHeaders(response, resource, getExpireTime(request, resource.getURL().getFile()));
 
 		if (notModified(request, resource)) {
 			response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
@@ -175,7 +174,7 @@ public abstract class AbstractFileServlet extends HttpServlet {
 		List<Range> ranges = getRanges(request, resource);
 
 		if (ranges == null) {
-			response.setHeader("Content-Range", "bytes */" + resource.length);
+			response.setHeader("Content-Range", "bytes */" + resource.getLength());
 			response.sendError(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
 			return;
 		}
@@ -184,7 +183,7 @@ public abstract class AbstractFileServlet extends HttpServlet {
 			response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
 		}
 		else {
-			ranges.add(new Range(0, resource.length - 1)); // Full content.
+			ranges.add(new Range(0, resource.getLength() - 1)); // Full content.
 		}
 
 		String contentType = setContentHeaders(request, response, resource, ranges);
@@ -202,11 +201,11 @@ public abstract class AbstractFileServlet extends HttpServlet {
 	 * If this method returns <code>null</code>, or if {@link File#isFile()} returns <code>false</code>, then the
 	 * servlet will invoke {@link #handleFileNotFound(HttpServletRequest, HttpServletResponse)}.
 	 * @param request The involved HTTP servlet request.
-	 * @return The file associated with the given HTTP servlet request.
+	 * @return The Resource associated with the given HTTP servlet request.
 	 * @throws IllegalArgumentException When the request is mangled in such way that it's not recognizable as a valid
 	 * file request. The servlet will then return a HTTP 400 error.
 	 */
-	protected abstract File getFile(HttpServletRequest request) throws IllegalArgumentException, RedirectException;
+	protected abstract Resource getResource(HttpServletRequest request) throws IllegalArgumentException, RedirectException;
 
 	/**
 	 * Handles the case when the file is not found.
@@ -226,10 +225,10 @@ public abstract class AbstractFileServlet extends HttpServlet {
 	 * <p>
 	 * The default implementation returns 30 days in seconds.
 	 * @param request The involved HTTP servlet request.
-	 * @param file The involved file.
+	 * @param fileName The involved file name.
 	 * @return The client cache expire time in seconds (not milliseconds!).
 	 */
-	protected long getExpireTime(HttpServletRequest request, File file) {
+	protected long getExpireTime(HttpServletRequest request, String fileName) {
 		return DEFAULT_EXPIRE_TIME_IN_SECONDS;
 	}
 
@@ -239,11 +238,11 @@ public abstract class AbstractFileServlet extends HttpServlet {
 	 * The default implementation delegates {@link File#getName()} to {@link ServletContext#getMimeType(String)} with a
 	 * fallback default value of <code>application/octet-stream</code>.
 	 * @param request The involved HTTP servlet request.
-	 * @param file The involved file.
+	 * @param fileName The involved file name.
 	 * @return The content type associated with the given HTTP servlet request and file.
 	 */
-	protected String getContentType(HttpServletRequest request, File file) {
-		return coalesce(request.getServletContext().getMimeType(file.getName()), "application/octet-stream");
+	protected String getContentType(HttpServletRequest request, String fileName) {
+		return coalesce(request.getServletContext().getMimeType(fileName), "application/octet-stream");
 	}
 
 	// Sub-actions ----------------------------------------------------------------------------------------------------
@@ -254,7 +253,7 @@ public abstract class AbstractFileServlet extends HttpServlet {
 	private boolean preconditionFailed(HttpServletRequest request, Resource resource) {
 		String match = request.getHeader("If-Match");
 		long unmodified = request.getDateHeader("If-Unmodified-Since");
-		return (match != null) ? !matches(match, resource.eTag) : (unmodified != -1 && modified(unmodified, resource.lastModified));
+		return (match != null) ? !matches(match, resource.getETag()) : (unmodified != -1 && modified(unmodified, resource.getLastModified()));
 	}
 
 	/**
@@ -262,8 +261,8 @@ public abstract class AbstractFileServlet extends HttpServlet {
 	 */
 	private void setCacheHeaders(HttpServletResponse response, Resource resource, long expires) {
 		setCacheHeaders(response, expires);
-		response.setHeader("ETag", resource.eTag);
-		response.setDateHeader("Last-Modified", resource.lastModified);
+		response.setHeader("ETag", resource.getETag());
+		response.setDateHeader("Last-Modified", resource.getLastModified());
 	}
 
 	/**
@@ -272,7 +271,7 @@ public abstract class AbstractFileServlet extends HttpServlet {
 	private boolean notModified(HttpServletRequest request, Resource resource) {
 		String noMatch = request.getHeader("If-None-Match");
 		long modified = request.getDateHeader("If-Modified-Since");
-		return (noMatch != null) ? matches(noMatch, resource.eTag) : (modified != -1 && !modified(modified, resource.lastModified));
+		return (noMatch != null) ? matches(noMatch, resource.getETag()) : (modified != -1 && !modified(modified, resource.getLastModified()));
 	}
 
 	/**
@@ -291,11 +290,11 @@ public abstract class AbstractFileServlet extends HttpServlet {
 
 		String ifRange = request.getHeader("If-Range");
 
-		if (ifRange != null && !ifRange.equals(resource.eTag)) {
+		if (ifRange != null && !ifRange.equals(resource.getETag())) {
 			try {
 				long ifRangeTime = request.getDateHeader("If-Range");
 
-				if (ifRangeTime != -1 && modified(ifRangeTime, resource.lastModified)) {
+				if (ifRangeTime != -1 && modified(ifRangeTime, resource.getLastModified())) {
 					return ranges;
 				}
 			}
@@ -306,7 +305,7 @@ public abstract class AbstractFileServlet extends HttpServlet {
 		}
 
 		for (String rangeHeaderPart : rangeHeader.split("=")[1].split(",")) {
-			Range range = parseRange(rangeHeaderPart, resource.length);
+			Range range = parseRange(rangeHeaderPart, resource.getLength());
 
 			if (range == null) {
 				return null; // Logic error.
@@ -344,16 +343,16 @@ public abstract class AbstractFileServlet extends HttpServlet {
 	 * Set content headers.
 	 */
 	protected String setContentHeaders(HttpServletRequest request, HttpServletResponse response, Resource resource, List<Range> ranges) {
-		String contentType = getContentType(request, resource.file);
+		String contentType = getContentType(request, resource.getURL().getFile());
 		response.setHeader("Accept-Ranges", "bytes");
 
 		if (ranges.size() == 1) {
-			Range range = ranges.get(0);
+			Range range = ranges.getFirst();
 			response.setContentType(contentType);
 			response.setHeader("Content-Length", String.valueOf(range.length));
 
 			if (response.getStatus() == HttpServletResponse.SC_PARTIAL_CONTENT) {
-				response.setHeader("Content-Range", "bytes " + range.start + "-" + range.end + "/" + resource.length);
+				response.setHeader("Content-Range", "bytes " + range.start + "-" + range.end + "/" + resource.getLength());
 			}
 		}
 		else {
@@ -370,16 +369,16 @@ public abstract class AbstractFileServlet extends HttpServlet {
 		ServletOutputStream output = response.getOutputStream();
 
 		if (ranges.size() == 1) {
-			Range range = ranges.get(0);
-			stream(resource.file, output, range.start, range.length);
+			Range range = ranges.getFirst();
+			stream(resource, output, range.start, range.length);
 		}
 		else {
 			for (Range range : ranges) {
 				output.println();
 				output.println("--" + MULTIPART_BOUNDARY);
 				output.println("Content-Type: " + contentType);
-				output.println("Content-Range: bytes " + range.start + "-" + range.end + "/" + resource.length);
-				stream(resource.file, output, range.start, range.length);
+				output.println("Content-Range: bytes " + range.start + "-" + range.end + "/" + resource.getLength());
+				stream(resource, output, range.start, range.length);
 			}
 
 			output.println();
@@ -429,32 +428,6 @@ public abstract class AbstractFileServlet extends HttpServlet {
 	// Nested classes -------------------------------------------------------------------------------------------------
 
 	/**
-	 * Convenience class for a file resource.
-	 */
-	public static class Resource {
-		private final File file;
-		private final long length;
-		private final long lastModified;
-		private final String eTag;
-
-		public Resource(File file) {
-			if (file != null && file.isFile()) {
-				this.file = file;
-				length = file.length();
-				lastModified = file.lastModified();
-				eTag = format(ETAG, encodeURL(file.getName()), lastModified);
-			}
-			else {
-				this.file = null;
-				length = 0;
-				lastModified = 0;
-				eTag = null;
-			}
-		}
-
-	}
-
-	/**
 	 * Convenience class for a byte range.
 	 */
 	public static class Range {
@@ -480,54 +453,6 @@ public abstract class AbstractFileServlet extends HttpServlet {
 
 	/* ############################################################################ */
 
-    private static final String CONTENT_DISPOSITION_HEADER = "%s;filename=\"%2$s\"; filename*=UTF-8''%2$s";
-
-    /**
-     * URI-encode the given string using UTF-8. URIs (paths and filenames) have different encoding rules as compared to
-     * URL query string parameters. {@link URLEncoder} is actually only for www (HTML) form based query string parameter
-     * values (as used when a webbrowser submits a HTML form). URI encoding has a lot in common with URL encoding, but
-     * the space has to be %20 and some chars doesn't necessarily need to be encoded.
-     * @param string The string to be URI-encoded using UTF-8.
-     * @return The given string, URI-encoded using UTF-8, or <code>null</code> if <code>null</code> was given.
-     * @throws UnsupportedOperationException When this platform does not support UTF-8.
-     * @since 2.4
-     */
-    public static String encodeURI(String string) {
-        if (string == null) {
-            return null;
-        }
-
-        return encodeURL(string)
-            .replace("+", "%20")
-            .replace("%21", "!")
-            .replace("%27", "'")
-            .replace("%28", "(")
-            .replace("%29", ")")
-            .replace("%7E", "~");
-    }
-
-    private static final String ERROR_UNSUPPORTED_ENCODING = "UTF-8 is apparently not supported on this platform.";
-
-    /**
-     * URL-encode the given string using UTF-8.
-     * @param string The string to be URL-encoded using UTF-8.
-     * @return The given string, URL-encoded using UTF-8, or <code>null</code> if <code>null</code> was given.
-     * @throws UnsupportedOperationException When this platform does not support UTF-8.
-     * @since 1.4
-     */
-    public static String encodeURL(String string) {
-        if (string == null) {
-            return null;
-        }
-
-        try {
-            return URLEncoder.encode(string, UTF_8.name());
-        }
-        catch (UnsupportedEncodingException e) {
-            throw new UnsupportedOperationException(ERROR_UNSUPPORTED_ENCODING, e);
-        }
-    }
-
     /**
      * Returns the first non-<code>null</code> object of the argument list, or <code>null</code> if there is no such
      * element.
@@ -545,23 +470,6 @@ public abstract class AbstractFileServlet extends HttpServlet {
         }
 
         return null;
-    }
-
-    /**
-     * Returns <code>true</code> if the given string starts with one of the given prefixes.
-     * @param string The object to be checked if it starts with one of the given prefixes.
-     * @param prefixes The argument list of prefixes to be checked
-     * @return <code>true</code> if the given string starts with one of the given prefixes.
-     * @since 1.4
-     */
-    public static boolean startsWithOneOf(String string, String... prefixes) {
-        for (String prefix : prefixes) {
-            if (string.startsWith(prefix)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private static final int DEFAULT_STREAM_BUFFER_SIZE = 10240;
@@ -596,7 +504,7 @@ public abstract class AbstractFileServlet extends HttpServlet {
      * Stream a specified range of the given file to the given output via NIO {@link Channels} and a directly allocated
      * NIO {@link ByteBuffer}. The output stream will only implicitly be closed after streaming when the specified range
      * represents the whole file, regardless of whether an exception is been thrown or not.
-     * @param file The file.
+     * @param resource The resource.
      * @param output The output stream.
      * @param start The start position (offset).
      * @param length The (intented) length of written bytes.
@@ -604,12 +512,12 @@ public abstract class AbstractFileServlet extends HttpServlet {
      * @throws IOException When an I/O error occurs.
      * @since 2.2
      */
-    public static long stream(File file, OutputStream output, long start, long length) throws IOException {
-        if (start == 0 && length >= file.length()) {
-            return stream(new FileInputStream(file), output);
+    public static long stream(Resource resource, OutputStream output, long start, long length) throws IOException {
+        if (start == 0 && length >= resource.getLength()) {
+            return stream(resource.getURL().openStream(), output);
         }
 
-        try (FileChannel fileChannel = (FileChannel) Files.newByteChannel(file.toPath(), StandardOpenOption.READ)) {
+        try (FileChannel fileChannel = (FileChannel) Files.newByteChannel(resource.getFile().toPath(), StandardOpenOption.READ)) {
             WritableByteChannel outputChannel = Channels.newChannel(output);
             ByteBuffer buffer = ByteBuffer.allocateDirect(DEFAULT_STREAM_BUFFER_SIZE);
             long size = 0;

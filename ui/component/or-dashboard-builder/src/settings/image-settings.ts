@@ -53,7 +53,7 @@ export class ImageSettings extends AssetWidgetSettings {
         return html`
             <div>
                 <!-- Attributes selector -->
-                <settings-panel displayName="'attributes" expanded="${true}">
+                <settings-panel displayName="attributes" expanded="${true}">
                     <attributes-panel .attributeRefs="${this.widgetConfig.attributeRefs}" onlyDataAttrs="${false}" multi="${true}"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
                     ></attributes-panel>

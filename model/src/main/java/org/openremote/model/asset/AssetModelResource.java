@@ -19,11 +19,15 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.system.StatusResource;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
+import org.jboss.resteasy.annotations.cache.Cache;
 import jakarta.ws.rs.*;
 
 import java.util.Map;
@@ -34,7 +38,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
  * Resource for handling model requests and also providing server side validation of {@link Asset}s
  */
 // TODO: Implement generic Asset<?> validation for assets and agents
-@Tag(name = "Asset Model")
+@Tag(name = "Asset Model", description = "Operations on asset model resources")
 @Path("model")
 public interface AssetModelResource {
 
@@ -47,6 +51,7 @@ public interface AssetModelResource {
     @GET
     @Path("assetInfos")
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getAssetInfos", summary = "Retrieve the asset type information of each available asset type")
     AssetTypeInfo[] getAssetInfos(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId, @QueryParam("parentType") String parentType);
 
     /**
@@ -59,6 +64,7 @@ public interface AssetModelResource {
     @GET
     @Path("assetInfo/{assetType}")
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getAssetInfo", summary = "Retrieve the asset type information of an asset type")
     AssetTypeInfo getAssetInfo(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId, @PathParam("assetType") String assetType);
 
     /**
@@ -70,6 +76,7 @@ public interface AssetModelResource {
     @GET
     @Path("assetDescriptors")
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getAssetDescriptors", summary = "Retrieve the available asset descriptors")
     AssetDescriptor<?>[] getAssetDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId, @QueryParam("parentType") String parentType);
 
     /**
@@ -81,6 +88,7 @@ public interface AssetModelResource {
     @GET
     @Path("valueDescriptors")
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getValueDescriptors", summary = "Retrieve the available value descriptors")
     Map<String, ValueDescriptor<?>> getValueDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
 
     /**
@@ -92,5 +100,18 @@ public interface AssetModelResource {
     @GET
     @Path("metaItemDescriptors")
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getMetaItemDescriptors", summary = "Retrieve the available meta item descriptors")
     Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
+
+    /**
+     * Retrieve the JSON Schema for a {@link ValueDescriptor} available in this system. A value descriptor schema is only meant to be retrieved
+     * once per client. Either when a new {@code hash} or {@code name} are requested. The HTTP client should cache the response based on the
+     * {@code Cache-Control} header. The {@code hash} for actively cached descriptors can be found by requesting the {@link StatusResource#getInfo()} endpoint.
+     */
+    @GET
+    @Path("getValueDescriptorSchema")
+    @Produces(APPLICATION_JSON)
+    @Cache(maxAge = 31536000) // A 1-year cache, the supplied hash parameter serves as cache key on the client
+    @Operation(operationId = "getValueDescriptorSchema", summary = "Retrieve the valueDescriptor JSON Schema.")
+    JsonNode getValueDescriptorSchema(@BeanParam RequestParams requestParams, @QueryParam("name") String name, @QueryParam("hash") String hash);
 }

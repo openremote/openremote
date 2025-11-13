@@ -46,7 +46,7 @@ public final class ConfigModelSubscriptionOverwrite extends ConfigMessage {
      * Constructs ConfigModelSubscriptionDelete message.
      *
      * @param elementAddress      Address of the element to which the model belongs to.
-     * @param subscriptionAddress Address to whic the element should subscribe.
+     * @param subscriptionAddress Address to which the element should subscribe.
      * @param modelIdentifier     identifier of the model, 16-bit for Sig model and 32-bit model id for vendor models.
      * @throws IllegalArgumentException if any illegal arguments are passed
      */

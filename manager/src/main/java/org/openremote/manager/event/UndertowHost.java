@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.event;
 
-import com.google.api.Http;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.servlet.Servlets;
@@ -92,7 +91,7 @@ public class UndertowHost implements org.apache.camel.component.undertow.Underto
         websocketHttpHandler = pathStartsWithHandler(deploymentName, path, deploymentHandler);
 
         // Give web socket handler higher priority than any other handlers already added
-        container.getService(WebService.class).getRequestHandlers().add(0, websocketHttpHandler);
+        container.getService(WebService.class).getRequestHandlers().addFirst(websocketHttpHandler);
 
         // Caller expects a CamelWebSocketHandler instance
         camelHandler = handler;

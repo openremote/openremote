@@ -51,10 +51,14 @@ public abstract class AbstractKeycloakSetup implements Setup {
         ClientRole.READ_USERS,
         ClientRole.READ_RULES,
         ClientRole.READ_INSIGHTS,
+        ClientRole.READ_ALARMS,
+        ClientRole.READ_SERVICES,
         ClientRole.WRITE_ASSETS,
         ClientRole.WRITE_ATTRIBUTES,
         ClientRole.WRITE_RULES,
-        ClientRole.WRITE_INSIGHTS
+        ClientRole.WRITE_INSIGHTS,
+        ClientRole.WRITE_ALARMS,
+        ClientRole.WRITE_SERVICES
     };
 
     final protected Container container;
@@ -73,7 +77,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
         return keycloakProvider;
     }
 
-    protected Realm createRealm(String realmName, String displayName, boolean rememberMe) {
+    public Realm createRealm(String realmName, String displayName, boolean rememberMe) {
         Realm realm = new Realm();
         realm.setName(realmName);
         realm.setDisplayName(displayName);
@@ -84,11 +88,11 @@ public abstract class AbstractKeycloakSetup implements Setup {
         return realm;
     }
 
-    protected User createUser(String realm, String username, String password, String firstName, String lastName, String email, boolean enabled, ClientRole[] roles) {
+    public User createUser(String realm, String username, String password, String firstName, String lastName, String email, boolean enabled, ClientRole[] roles) {
         return  createUser(realm, username, password, firstName, lastName, email, enabled, false, false, roles);
     }
 
-    protected User createUser(String realm, String username, String password, String firstName, String lastName, String email, boolean enabled, boolean emailNotificationsDisabled, boolean pushNotificationsDisabled, ClientRole[] roles) {
+    public User createUser(String realm, String username, String password, String firstName, String lastName, String email, boolean enabled, boolean emailNotificationsDisabled, boolean pushNotificationsDisabled, ClientRole[] roles) {
         User user = new User();
         user.setUsername(username);
         user.setFirstName(firstName);
@@ -106,7 +110,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
             return null;
         }
         if (roles != null && roles.length > 0) {
-            keycloakProvider.updateUserRoles(realm, user.getId(), KEYCLOAK_CLIENT_ID, Arrays.stream(roles).map(ClientRole::getValue).toArray(String[]::new));
+            keycloakProvider.updateUserClientRoles(realm, user.getId(), KEYCLOAK_CLIENT_ID, Arrays.stream(roles).map(ClientRole::getValue).toArray(String[]::new));
         }
         return user;
     }
@@ -115,7 +119,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
      * Default realm roles will assign manage-account role to account client so we have to remove this role from the composite default roles
      * This is a temporary thing and when/if we move to groups we should look at explicit default roles on realm creation
      */
-    protected void removeManageAccount(String realm) {
+    public void removeManageAccount(String realm) {
         keycloakProvider.<Void>getRealms(
             realmsResource -> {
                 RealmResource realmResource = realmsResource.realm(realm);

@@ -9,7 +9,9 @@ import {
     headerItemConfiguration,
     headerItemExport,
     headerItemGatewayConnection,
+    headerItemGatewayTunnel,
     headerItemInsights,
+    headerItemServices,
     headerItemLanguage,
     headerItemLogout,
     headerItemLogs,
@@ -28,6 +30,8 @@ import "./pages/page-gateway";
 import {pageGatewayProvider} from "./pages/page-gateway";
 import "./pages/page-insights";
 import {PageInsightsConfig, pageInsightsProvider} from "./pages/page-insights";
+import "./pages/page-services";
+import {pageServicesProvider} from "./pages/page-services";
 import "./pages/page-rules";
 import {PageRulesConfig, pageRulesProvider} from "./pages/page-rules";
 import "./pages/page-logs";
@@ -42,9 +46,11 @@ import "./pages/page-realms";
 import {pageRealmsProvider} from "./pages/page-realms";
 import {pageExportProvider} from "./pages/page-export";
 import { pageConfigurationProvider } from "./pages/page-configuration";
+import {pageAlarmsProvider} from "./pages/page-alarms";
 import { ManagerAppConfig } from "@openremote/model";
+import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
 
-declare var CONFIG_URL_PREFIX: string;
+declare var MANAGER_URL: string | undefined;
 
 const rootReducer = combineReducers({
     app: appReducer,
@@ -64,8 +70,10 @@ export const DefaultPagesConfig: PageProvider<any>[] = [
     pageMapProvider(store),
     pageAssetsProvider(store),
     pageGatewayProvider(store),
+    pageGatewayTunnelProvider(store),
     pageLogsProvider(store),
     pageInsightsProvider(store),
+    pageServicesProvider(store),
     pageRulesProvider(store),
     pageAccountProvider(store),
     pageRolesProvider(store),
@@ -73,18 +81,21 @@ export const DefaultPagesConfig: PageProvider<any>[] = [
     pageRealmsProvider(store),
     pageExportProvider(store),
     pageProvisioningProvider(store),
-    pageConfigurationProvider(store)
+    pageConfigurationProvider(store),
+    pageAlarmsProvider(store)
 ];
 
 export const DefaultHeaderMainMenu: {[name: string]: HeaderItem} = {
     map: headerItemMap(orApp),
     assets: headerItemAssets(orApp),
     rules: headerItemRules(orApp),
-    insights: headerItemInsights(orApp)
+    services: headerItemServices(orApp),
+    insights: headerItemInsights(orApp),
 };
 
 export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
-    gateway: headerItemGatewayConnection(orApp),
+    gatewayConnection: headerItemGatewayConnection(orApp),
+    gatewayTunnel: headerItemGatewayTunnel(orApp),
     language: headerItemLanguage(orApp),
     logs: headerItemLogs(orApp),
     account: headerItemAccount(orApp),
@@ -93,7 +104,7 @@ export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
     realms: headerItemRealms(orApp),
     export: headerItemExport(orApp),
     provisioning: headerItemProvisioning(orApp),
-    configuration: headerItemConfiguration(orApp),
+    appearance: headerItemConfiguration(orApp),
     logout: headerItemLogout(orApp)
 };
 
@@ -107,24 +118,19 @@ export const DefaultRealmConfig: RealmAppConfig = {
     header: DefaultHeaderConfig
 };
 
-export const DefaultAppConfig: AppConfig<RootState> = {
-    pages: DefaultPagesConfig,
-    superUserHeader: DefaultHeaderConfig,
-    realms: {
-        default: DefaultRealmConfig
-    }
-};
-
 // Try and load the app config from JSON and if anything is found amalgamate it with default
-const configURL = (CONFIG_URL_PREFIX || "") + "/manager_config.json";
+const managerURL = MANAGER_URL || window.location.protocol + "//" + window.location.hostname + (window.location.port ? ":" + window.location.port : "")
+    + window.location.pathname.replace(/\/[^/]+\/?$/, '');
+const configURL = managerURL + "/api/master/configuration/manager";
 
-fetch(configURL).then(async (result) => {
-    if (!result.ok) {
-        return DefaultAppConfig;
+fetch(configURL).then<ManagerAppConfig>(async (result) => {
+    let appConfig: ManagerAppConfig;
+
+    if (result.status === 200) {
+        appConfig = await result.json() as ManagerAppConfig;
     }
 
-    return await result.json() as ManagerAppConfig;
-
+    return {...appConfig};
 }).then((appConfig: ManagerAppConfig) => {
 
     // Set locales and load path
@@ -140,25 +146,20 @@ fetch(configURL).then(async (result) => {
         }
     }
 
-    // Add config prefix if defined (used in dev)
-    if (CONFIG_URL_PREFIX) {
-        if (appConfig.manager.translationsLoadPath) {
-            appConfig.manager.translationsLoadPath = CONFIG_URL_PREFIX + appConfig.manager.translationsLoadPath;
-        }
-    }
-
     orApp.managerConfig = appConfig.manager;
 
     orApp.appConfigProvider = (manager) => {
 
         // Build pages
         let pages: PageProvider<any>[] = [...DefaultPagesConfig];
+        const isAdmin = manager.isSuperUser() && manager.username === "admin";
+        const applyConfigToAdmin = appConfig.manager.applyConfigToAdmin !== undefined ? appConfig.manager.applyConfigToAdmin : true;
 
-        if (!(manager.isSuperUser() && manager.username === "admin") && appConfig.pages) {
+        if ((!isAdmin || applyConfigToAdmin) && appConfig.pages) {
 
             // Replace any supplied page configs
             pages = pages.map(pageProvider => {
-                const config = appConfig.pages[pageProvider.name];
+                const config: {[p: string]: any} | undefined = appConfig.pages[pageProvider.name];
 
                 switch (pageProvider.name) {
                     case "map": {
@@ -170,7 +171,15 @@ fetch(configURL).then(async (result) => {
                         break;
                     }
                     case "rules": {
-                        pageProvider = config ? pageRulesProvider(store, config as PageRulesConfig) : pageProvider;
+                        const newConfig = (config || {
+                            rules: {}
+                        }) as PageRulesConfig;
+                        if(!newConfig.rules?.notifications) {
+                            newConfig.rules.notifications = Object.fromEntries(
+                                Object.entries(appConfig.realms).map(entry => [entry[0], entry[1].notifications])
+                            );
+                        }
+                        pageProvider = pageRulesProvider(store, newConfig);
                         break;
                     }
                     case "insights": {
@@ -227,30 +236,36 @@ fetch(configURL).then(async (result) => {
             });
         }
 
+        // When the page is not present in the header, move the PageProvider to the end of the array.
+        // This is to prevent the landing page for the user not being visible in the header
+        const realmAppConfig = orAppConfig.realms[manager.displayRealm] || orAppConfig.realms.default;
+        if(realmAppConfig) {
+            const headerPaths = [...realmAppConfig.header.mainMenu, ...realmAppConfig.header.secondaryMenu].map(item => item.href);
+            orAppConfig.pages = pages
+                .filter(pageProvider => headerPaths.includes(pageProvider.name))
+                .concat(pages.filter(pageProvider => !headerPaths.includes(pageProvider.name)));
+        }
+
+        // If the user does not have a preferred language configured (in Keycloak),
+        // we need to update it with their preferred language from other sources. (consoles, realm configuration etc.)
         // Check local storage for set language, otherwise use language set in config
-        manager.console.retrieveData("LANGUAGE").then((value: string | undefined) => {
-            manager.language = (value ? value : orAppConfig.realms[manager.displayRealm].language);
-        }).catch(() => {
-            if (orAppConfig.realms[manager.displayRealm]){
-                manager.language = orAppConfig.realms[manager.displayRealm].language
-            } else if (orAppConfig.realms['default']){
-                manager.language = orAppConfig.realms['default'].language
-            } else {
-                manager.language = 'en'
+        manager.getUserPreferredLanguage().then((userLang: string | undefined) => {
+            if(!userLang) {
+                manager.getConsolePreferredLanguage().then((consoleLang: string | undefined) => {
+                    if (consoleLang) {
+                        manager.language = consoleLang;
+                    } else if (orAppConfig.realms[manager.displayRealm]) {
+                        manager.language = orAppConfig.realms[manager.displayRealm].language
+                    } else if (orAppConfig.realms['default']) {
+                        manager.language = orAppConfig.realms['default'].language
+                    } else {
+                        manager.language = 'en'
+                    }
+                }).catch(reason => {
+                    console.error("Failed to initialise app: " + reason);
+                })
             }
         })
-
-        // Add config prefix if defined (used in dev)
-        if (CONFIG_URL_PREFIX) {
-            Object.values(orAppConfig.realms).forEach((realmConfig) => {
-                if (typeof (realmConfig.logo) === "string") {
-                    realmConfig.logo = CONFIG_URL_PREFIX + realmConfig.logo;
-                }
-                if (typeof (realmConfig.logoMobile) === "string") {
-                    realmConfig.logoMobile = CONFIG_URL_PREFIX + realmConfig.logoMobile;
-                }
-            });
-        }
 
         return orAppConfig;
     };

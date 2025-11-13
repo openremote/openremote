@@ -4,7 +4,6 @@ import org.openremote.manager.rules.RulesBuilder
 import org.openremote.model.asset.impl.WeatherAsset
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.query.AssetQuery
-import org.openremote.model.rules.AssetState
 import org.openremote.model.rules.Assets
 import org.openremote.model.rules.Notifications
 import org.openremote.model.rules.Users
@@ -27,37 +26,52 @@ rules.add()
         .when(
                 { facts ->
 
-                    List<AttributeEvent> updates = []
+                    //LOG.info("Calculations start")
+
+                    Map<String, Double> lastValues = facts.get("lastValues") as Map<String, Double>
+                    if (lastValues == null) {
+                        lastValues = new HashMap<>()
+                    }
 
                     // Get weather asset rainfall and/or temperature states that have changed value
-                    facts.matchAssetState(
+                    List<AttributeEvent> updates = facts.matchAssetState(
                             new AssetQuery()
                                     .types(WeatherAsset)
                                     .attributeNames(WeatherAsset.TEMPERATURE.name, WeatherAsset.RAINFALL.name)
-                    ).collect(Collectors.groupingBy{AssetState<?> state -> state.id})
-                    .forEach{id, states ->
-                        // See if either attribute has changed for this asset
-                        if (states.any {state -> !Objects.equals(state.value.orElse(null), state.oldValue.orElse(null))}) {
-                            def value1 = states[0].value.orElse(0) as float
-                            def value2 = states[1].value.orElse(0) as float
-                            def calculated = value1+value2
-                            LOG.fine("Calculated new value for '$id': $calculated")
-                            updates.add(new AttributeEvent(id, "calculated", calculated))
+                    ).collect(Collectors.groupingBy{state -> state.id})
+                            .entrySet().parallelStream().map {entry ->
+                        if (entry.value.size() != 2) {
+                            return null
                         }
-                    }
+                        def value1 = entry.value[0].value.orElse(0) as double
+                        def value2 = entry.value[1].value.orElse(0) as double
+                        def calc = Double.valueOf(value1+value2)
+                        def lastValue = lastValues.get(entry.key)
+                        return !Objects.equals(lastValue, calc) ? new AttributeEvent(entry.key, "calculated", calc) : null
+                    }.filter {it != null}
+                            .toList()
 
                     if (!updates.isEmpty()) {
+                        LOG.info("New values calculated for ${updates.size()} assets")
                         facts.bind("updates", updates)
+                        facts.bind("lastValues", lastValues)
+                        updates.forEach {lastValues.put(it.id, it.value.orElseThrow() as Double)}
+                        return true
                     }
 
+                    //LOG.info("Calculations end")
                     // Trigger the rule action if we have one or more changes to process
-                    return !updates.isEmpty()
+                    return false
                 })
         .then(
                 { facts ->
                     def updates = facts.bound("updates") as List<AttributeEvent>
-
+                    def lastValues = facts.bound("lastValues")
+                    facts.put("lastValues", lastValues)
+                    LOG.info("Update start")
+                    assets.dispatch(updates.get(0))
                     updates.forEach {
                         assets.dispatch(it)
                     }
+                    LOG.info("Update end")
                 })

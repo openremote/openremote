@@ -33,7 +33,6 @@ manager.addListener(event => {
 
 manager.init({
     managerUrl: "http://localhost:8080",
-    keycloakUrl: "http://localhost:8080/auth",
     auth: Auth.KEYCLOAK,
     autoLogin: true,
     realm: "smartcity"

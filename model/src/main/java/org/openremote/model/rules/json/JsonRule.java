@@ -28,11 +28,11 @@ import org.openremote.model.query.LogicGroup;
  * <h2>LHS</li>
  * <p>
  * {@link #when} - A series of grouped {@link RuleCondition}s to which bitwise operations can be performed based on the
- * {@link LogicGroup#operator} of each group. These are used to filter {@link org.openremote.model.rules.AssetState}s
+ * {@link LogicGroup#operator} of each group. These are used to filter {@link org.openremote.model.attribute.AttributeInfo}s
  * in the RuleEngine that this rule is loaded into to determine which {@link org.openremote.model.asset.Asset}s match;
  * if one or more assets match then the RHS {@link #then} will be triggered. Once a rule is triggered the
- * {@link org.openremote.model.rules.AssetState}s that triggered the rule cannot trigger the rule again until it no longer
- * matches (within the context of the {@link RuleCondition} i.e. an {@link org.openremote.model.rules.AssetState} can
+ * {@link org.openremote.model.attribute.AttributeInfo}s that triggered the rule cannot trigger the rule again until it no longer
+ * matches (within the context of the {@link RuleCondition} i.e. an {@link org.openremote.model.attribute.AttributeInfo} can
  * re-trigger a rule if it is matched by a different {@link RuleCondition})
  * <p>
  * The {@link #otherwise} {@link RuleAction}s are applied to the {@link org.openremote.model.asset.Asset}s filtered by

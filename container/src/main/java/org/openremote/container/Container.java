@@ -24,17 +24,16 @@ import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.prometheus.client.CollectorRegistry;
+import io.micrometer.prometheusmetrics.PrometheusConfig;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
-import org.openremote.container.concurrent.ContainerThreads;
-import org.openremote.container.util.LogUtil;
+import org.openremote.container.concurrent.ContainerThreadFactory;
 import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.*;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -53,23 +52,31 @@ import static org.openremote.container.util.MapAccess.getInteger;
  * Access environment configuration through {@link #getConfig()} and the helper methods
  * in {@link org.openremote.container.util.MapAccess}. Consider using {@link org.openremote.model.Container#OR_DEV_MODE}
  * to distinguish between development and production environments.
+ * To execute tasks in a standard way two {@link ExecutorService}s are provided:
+ * <ul>
+ * <li>{@link #EXECUTOR} - A dynamic {@link ThreadPoolExecutor} with {@link #OR_EXECUTOR_THREADS_MIN} core
+ * threads and max pool size of {@link #OR_EXECUTOR_THREADS_MAX} for general task execution/li>
+ * <li>{@link #SCHEDULED_EXECUTOR} - A {@link ScheduledThreadPoolExecutor} which is a fixed thread pool of size
+ * {@link #OR_SCHEDULED_EXECUTOR_THREADS} for scheduled task execution</li>
+ * </ul>
  */
 public class Container implements org.openremote.model.Container {
 
     public static final System.Logger LOG = System.getLogger(Container.class.getName());
-    public static ScheduledExecutorService EXECUTOR_SERVICE;
-    public static final String OR_SCHEDULED_TASKS_THREADS_MAX = "OR_SCHEDULED_TASKS_THREADS_MAX";
-    public static final int OR_SCHEDULED_TASKS_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
+    public static ScheduledExecutorService SCHEDULED_EXECUTOR;
+    public static ExecutorService EXECUTOR;
+    public static final String OR_SCHEDULED_EXECUTOR_THREADS = "OR_SCHEDULED_EXECUTOR_THREADS";
+    public static final int OR_SCHEDULED_EXECUTOR_THREADS_DEFAULT = Math.min(Runtime.getRuntime().availableProcessors(), 4);
+    public static final String OR_EXECUTOR_THREADS_MIN = "OR_EXECUTOR_THREADS_MIN";
+    public static final String OR_EXECUTOR_THREADS_MAX = "OR_EXECUTOR_THREADS_MAX";
+    public static final int OR_EXECUTOR_THREADS_MIN_DEFAULT = Math.min(Runtime.getRuntime().availableProcessors(), 8);
+    public static final int OR_EXECUTOR_THREADS_MAX_DEFAULT = Runtime.getRuntime().availableProcessors()*10;
     protected final Map<String, String> config = new HashMap<>();
     protected final boolean devMode;
     protected MeterRegistry meterRegistry;
 
     protected Thread waitingThread;
     protected final Map<Class<? extends ContainerService>, ContainerService> services = new LinkedHashMap<>();
-
-    static {
-        LogUtil.initialiseJUL();
-    }
 
     /**
      * Discover {@link ContainerService}s using {@link ServiceLoader}; services are then ordered by
@@ -103,18 +110,23 @@ public class Container implements org.openremote.model.Container {
 
         if (metricsEnabled) {
             // TODO: Add a meter registry provider SPI to make this pluggable
-            meterRegistry = new io.micrometer.prometheus.PrometheusMeterRegistry(PrometheusConfig.DEFAULT, io.prometheus.client.CollectorRegistry.defaultRegistry, Clock.SYSTEM);
+            meterRegistry = new io.micrometer.prometheusmetrics.PrometheusMeterRegistry(PrometheusConfig.DEFAULT, PrometheusRegistry.defaultRegistry, Clock.SYSTEM);
         }
 
-        int scheduledTasksThreadsMax = getInteger(
+        int scheduledExecutorThreads = getInteger(
             getConfig(),
-            OR_SCHEDULED_TASKS_THREADS_MAX,
-            OR_SCHEDULED_TASKS_THREADS_MAX_DEFAULT);
+            OR_SCHEDULED_EXECUTOR_THREADS,
+            OR_SCHEDULED_EXECUTOR_THREADS_DEFAULT);
 
-        EXECUTOR_SERVICE = new ContainerScheduledExecutor("Scheduled task", scheduledTasksThreadsMax);
+        int executorThreadsMin = getInteger(getConfig(), OR_EXECUTOR_THREADS_MIN, OR_EXECUTOR_THREADS_MIN_DEFAULT);
+        int executorThreadsMax = getInteger(getConfig(), OR_EXECUTOR_THREADS_MAX, OR_EXECUTOR_THREADS_MAX_DEFAULT);
+
+        SCHEDULED_EXECUTOR = new ContainerScheduledExecutor("ContainerScheduledExecutor", scheduledExecutorThreads);
+        EXECUTOR = new ThreadPoolExecutor(executorThreadsMin, executorThreadsMax, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), new ContainerThreadFactory("ContainerExecutor"), new ThreadPoolExecutor.CallerRunsPolicy());
 
         if (meterRegistry != null) {
-            EXECUTOR_SERVICE = ExecutorServiceMetrics.monitor(meterRegistry, EXECUTOR_SERVICE, "ContainerExecutorService");
+            SCHEDULED_EXECUTOR = ExecutorServiceMetrics.monitor(meterRegistry, SCHEDULED_EXECUTOR, "ContainerScheduledExecutor");
+            EXECUTOR = ExecutorServiceMetrics.monitor(meterRegistry, EXECUTOR, "ContainerExecutor");
         }
 
         // Any log handlers of the root logger that are container services must be registered
@@ -191,13 +203,13 @@ public class Container implements org.openremote.model.Container {
 
         try {
             LOG.log(INFO, "Cancelling scheduled tasks");
-            EXECUTOR_SERVICE.shutdown();
+            SCHEDULED_EXECUTOR.shutdown();
         } catch (Exception e) {
             LOG.log(WARNING, "Exception thrown whilst trying to stop scheduled tasks", e);
         }
 
         Metrics.globalRegistry.remove(meterRegistry);
-        CollectorRegistry.defaultRegistry.clear();
+        PrometheusRegistry.defaultRegistry.clear();
         meterRegistry = null;
         waitingThread.interrupt();
         waitingThread = null;
@@ -209,7 +221,23 @@ public class Container implements org.openremote.model.Container {
      */
     public void startBackground() throws Exception {
         start();
-        waitingThread = ContainerThreads.startWaitingThread();
+        waitingThread = startWaitingThread();
+    }
+
+    static Thread startWaitingThread() {
+        Thread thread = new Thread("Container Waiting") {
+            @Override
+            public void run() {
+                try {
+                    new CountDownLatch(1).await();
+                } catch (InterruptedException ex) {
+                    // Ignore, thrown on shutdown
+                }
+            }
+        };
+        thread.setDaemon(false);
+        thread.start();
+        return thread;
     }
 
     @Override
@@ -267,7 +295,12 @@ public class Container implements org.openremote.model.Container {
     }
 
     @Override
-    public ScheduledExecutorService getExecutorService() {
-        return EXECUTOR_SERVICE;
+    public ScheduledExecutorService getScheduledExecutor() {
+        return SCHEDULED_EXECUTOR;
+    }
+
+    @Override
+    public ExecutorService getExecutor() {
+        return EXECUTOR;
     }
 }

@@ -32,7 +32,8 @@ public class ErrorResponseMessage extends ProvisioningMessage {
         CONFIG_DISABLED,
         USER_DISABLED,
         SERVER_ERROR,
-        ASSET_ERROR
+        ASSET_ERROR,
+        SERVER_BUSY
     }
 
     protected Error error;

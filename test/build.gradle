@@ -1,89 +1,57 @@
-import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.gradle.api.tasks.testing.logging.TestLogEvent
-
 plugins {
-    id 'com.adarshr.test-logger' version '3.1.0'
+    id 'com.adarshr.test-logger' version '4.0.0'
 }
 
 apply plugin: "java-library"
-apply plugin: "java-test-fixtures"
 apply plugin: "groovy"
 apply plugin: "maven-publish"
 apply plugin: "signing"
 
 dependencies {
 
-    // SLF4J facade
-    testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
+    testImplementation project(":setup").sourceSets.integration.output
+    api project(":manager")
 
-    testImplementation resolveProject(":setup").sourceSets.integration.output
-    testFixturesApi resolveProject(":manager")
-
-    testFixturesImplementation "org.codehaus.groovy:groovy:$groovyVersion"
-    testFixturesApi platform("org.spockframework:spock-bom:$spockVersion")
-    testFixturesApi 'org.spockframework:spock-core'
+    implementation "org.apache.groovy:groovy-all:$groovyVersion"
+    implementation "org.apache.groovy:groovy-test:$groovyVersion"
+    api platform("org.spockframework:spock-bom:$spockVersion")
+    api 'org.spockframework:spock-core'
 
     // optional dependencies for using Spock
-    testFixturesRuntimeOnly "net.bytebuddy:byte-buddy:$byteBuddyVersion" // allows mocking of classes (in addition to interfaces)
-    testFixturesRuntimeOnly "org.objenesis:objenesis:$objenesisVersion"      // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
+    testRuntimeOnly "net.bytebuddy:byte-buddy:$byteBuddyVersion" // allows mocking of classes (in addition to interfaces)
+    testRuntimeOnly "org.objenesis:objenesis:$objenesisVersion" // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
 
-    testImplementation "com.github.calimero:calimero-server:$calimeroVersion"
+    testImplementation("com.github.calimero:calimero-server:$calimeroVersion") {
+        // Has a dependency on the SLF4J simple provider
+        exclude group: "org.slf4j"
+    }
 
     testImplementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
     testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
     testImplementation "com.icegreen:greenmail:$greenmailVersion"
+
+    testImplementation "net.solarnetwork.common:nifty-modbus-tcp:$niftyModbusVersion"
+    testImplementation "net.solarnetwork.common:nifty-modbus-rtu-jsc:$niftyModbusVersion"
+    testImplementation "net.solarnetwork.common:nifty-modbus-api:$niftyModbusVersion"
+    testImplementation "net.solarnetwork.common:nifty-modbus-core:$niftyModbusVersion"
+
+    testImplementation "com.github.moquette-io:moquette:$moquetteVersion"
+    testImplementation "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
 }
 
 tasks.withType(Test) {
-    environment("OR_LOGGING_CONFIG_FILE", "test/src/logging-test.properties")
+    environment("OR_LOGGING_CONFIG_FILE", "logging-dev.properties")
 }
 
-test {
-    outputs.upToDateWhen { false }
-    workingDir = findProject(":openremote") != null ? resolveProject("").projectDir : rootProject.projectDir
-    useJUnitPlatform()
-
-    testLogging {
-
-        // set options for log level LIFECYCLE
-        events TestLogEvent.FAILED,
-                TestLogEvent.PASSED,
-                TestLogEvent.SKIPPED
-        exceptionFormat TestExceptionFormat.FULL
-        showExceptions true
-        showCauses true
-        showStackTraces true
-
-        // set options for log level DEBUG and INFO
-        debug {
-            events TestLogEvent.STARTED,
-                    TestLogEvent.FAILED,
-                    TestLogEvent.PASSED,
-                    TestLogEvent.SKIPPED,
-                    TestLogEvent.STANDARD_OUT,
-                    TestLogEvent.STANDARD_ERROR
-            exceptionFormat TestExceptionFormat.FULL
-        }
-        info.events = debug.events
-        info.exceptionFormat = debug.exceptionFormat
-
-        afterTest { desc, result ->
-            logger.lifecycle "${desc.className} > ${desc.name} took: ${(result.endTime - result.startTime)}ms"
-        }
-
-        afterSuite { desc, result ->
-            if (!desc.parent) { // will match the outermost suite
-                def output = "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
-                def startItem = '|  ', endItem = '  |'
-                def repeatLength = startItem.length() + output.length() + endItem.length()
-                println('\n' + ('-' * repeatLength) + '\n' + startItem + output + endItem + '\n' + ('-' * repeatLength))
-            }
-        }
-    }
-}
+test {}
 
 javadoc {
     failOnError = false
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
 
 publishing {
@@ -124,8 +92,8 @@ publishing {
         maven {
             if (!version.endsWith('-LOCAL')) {
                 credentials {
-                    username findProperty("publishUsername")
-                    password findProperty("publishPassword")
+                    username = findProperty("publishUsername")
+                    password = findProperty("publishPassword")
                 }
             }
             url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
@@ -136,6 +104,8 @@ publishing {
 signing {
     def signingKey = findProperty("signingKey")
     def signingPassword = findProperty("signingPassword")
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign publishing.publications.maven
+    if (signingKey && signingPassword) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign publishing.publications.maven
+    }
 }

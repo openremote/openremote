@@ -43,7 +43,6 @@ class App extends LitElement {
 manager.init({
     auth: Auth.KEYCLOAK,
     autoLogin: true,
-    keycloakUrl: "http://localhost:8080/auth",
     managerUrl: "http://localhost:8080",
     realm: "smartcity"
 }).then(() => {

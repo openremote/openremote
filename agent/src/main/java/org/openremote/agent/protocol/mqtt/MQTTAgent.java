@@ -24,17 +24,29 @@ import org.openremote.agent.protocol.io.IOAgent;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.ValueConstraint;
+import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 
+import java.util.Arrays;
 import java.util.Optional;
+
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 @Entity
 public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
+
+    public static final ValueDescriptor<Integer> VALUE_MQTT_QOS = new ValueDescriptor<>("MQTTQos", Integer.class,
+        new ValueConstraint.AllowedValues(0,1,2)
+    );
 
     public static final AttributeDescriptor<String> HOST = Agent.HOST.withOptional(false);
     public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
     public static final AttributeDescriptor<String> CLIENT_ID = new AttributeDescriptor<>("clientId", ValueType.TEXT);
     public static final AttributeDescriptor<Boolean> SECURE_MODE = new AttributeDescriptor<>("secureMode", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<Integer> PUBLISH_QOS = new AttributeDescriptor<>("publishQos", VALUE_MQTT_QOS);
+    public static final AttributeDescriptor<Integer> SUBSCRIBE_QOS = new AttributeDescriptor<>("subscribeQos", VALUE_MQTT_QOS);
+    public static final AttributeDescriptor<String> CLIENT_CERTIFICATE_ALIAS = new AttributeDescriptor<>("certificateAlias", ValueType.TEXT);
     public static final AttributeDescriptor<Boolean> RESUME_SESSION = new AttributeDescriptor<>("resumeSession", ValueType.BOOLEAN);
     public static final AttributeDescriptor<Boolean> WEBSOCKET_MODE = new AttributeDescriptor<>("websocketMode", ValueType.BOOLEAN);
     public static final AttributeDescriptor<String> WEBSOCKET_PATH = new AttributeDescriptor<>("websocketPath", ValueType.TEXT);
@@ -42,6 +54,7 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     public static final AttributeDescriptor<String> LAST_WILL_TOPIC = new AttributeDescriptor<>("lastWillTopic", ValueType.TEXT);
     public static final AttributeDescriptor<String> LAST_WILL_PAYLOAD = new AttributeDescriptor<>("lastWillPayload", ValueType.TEXT);
     public static final AttributeDescriptor<Boolean> LAST_WILL_RETAIN = new AttributeDescriptor<>("lastWillRetain", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<String[]> WILDCARD_SUBSCRIPTION_TOPICS = new AttributeDescriptor<>("wildcardSubscriptionTopics", ValueType.TEXT.asArray());
 
     public static final AgentDescriptor<MQTTAgent, MQTTProtocol, MQTTAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         MQTTAgent.class, MQTTProtocol.class, MQTTAgentLink.class
@@ -77,6 +90,15 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
 
     public MQTTAgent setSecureMode(boolean secureMode) {
         getAttributes().getOrCreate(SECURE_MODE).setValue(secureMode);
+        return this;
+    }
+
+    public Optional<String> getCertificateAlias() {
+        return getAttributes().getValue(CLIENT_CERTIFICATE_ALIAS);
+    }
+
+    public MQTTAgent setCertificateAlias(String certificateAlias) {
+        getAttributes().getOrCreate(CLIENT_CERTIFICATE_ALIAS).setValue(certificateAlias);
         return this;
     }
 
@@ -140,6 +162,39 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
 
     public MQTTAgent setLastWillRetain(boolean lastWillRetain) {
         getAttributes().getOrCreate(LAST_WILL_RETAIN).setValue(lastWillRetain);
+        return this;
+    }
+
+    public Optional<Integer> getPublishQoS() {
+        return getAttributes().getValue(PUBLISH_QOS);
+    }
+
+    public MQTTAgent setPublishQos(int publishQos) {
+        getAttributes().getOrCreate(PUBLISH_QOS).setValue(publishQos);
+        return this;
+    }
+
+    public Optional<Integer> getSubscribeQoS() {
+        return getAttributes().getValue(SUBSCRIBE_QOS);
+    }
+
+    public MQTTAgent setSubscribeQos(int subscribeQos) {
+        getAttributes().getOrCreate(SUBSCRIBE_QOS).setValue(subscribeQos);
+        return this;
+    }
+
+    public Optional<String[]> getWildcardSubscriptionTopics() {
+        return getAttributes().getValue(WILDCARD_SUBSCRIPTION_TOPICS).map(array ->
+            Arrays.stream(array)
+                .filter(s -> !isNullOrEmpty(s))
+                .map(String::trim)
+                .distinct()
+                .toArray(String[]::new)
+        );
+    }
+
+    public MQTTAgent setWildcardSubscriptionTopics(String[] wildcards) {
+        getAttributes().getOrCreate(WILDCARD_SUBSCRIPTION_TOPICS).setValue(wildcards);
         return this;
     }
 }

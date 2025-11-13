@@ -4,7 +4,7 @@ import { ConnectionLine } from "../flow-viewer";
 import { NodeType } from "@openremote/model";
 import { ContextMenuButton, ContextMenuSeparator } from "../models/context-menu-button";
 import { integration, project, copyPasteManager, input, exporter, modal } from "./flow-editor";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate"
 import { Utilities } from "../utils";
 import { CopyMachine } from "../node-structure";
 import { ContextMenu } from "./context-menu";
@@ -25,7 +25,7 @@ export const createContextMenuButtons = (workspace: EditorWorkspace, e: MouseEve
         nB = nB.concat(integration.nodes.filter((n) => n.type === type).map((node) => {
             const b: ContextMenuButton = {
                 type: "button",
-                label: i18next.t(node.name!, Utilities.humanLike(node.name!)),
+                label: i18next.t("flow."+node.name!, Utilities.humanLike(node.name!)),
                 action: () => {
                     const copy = CopyMachine.copy(node);
                     copy.position = workspace.offsetToWorld({ x: e.offsetX - workspace.offsetLeft, y: e.offsetY - workspace.offsetTop });
@@ -53,7 +53,7 @@ export const createContextMenuButtons = (workspace: EditorWorkspace, e: MouseEve
         },
         {
             type: "button",
-            label: i18next.t("output", "Ouput"),
+            label: i18next.t("output", "Output"),
             icon: "arrow-expand-right",
             action: () => { ContextMenu.open(e.pageX, e.pageY, workspace, createNodeButtons(NodeType.OUTPUT)); }
         },

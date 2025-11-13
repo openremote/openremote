@@ -2,15 +2,17 @@ apply plugin: "java-library"
 apply plugin: "maven-publish"
 apply plugin: "signing"
 
-dependencies {
+base {
+    archivesName = "openremote-${project.name}"
+}
 
+dependencies {
     api resolveProject(":manager")
     api resolveProject(":model")
 }
 
 jar {
     from sourceSets.main.allJava
-    archivesBaseName = "openremote-${project.name}"
 }
 
 javadoc {

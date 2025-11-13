@@ -2,16 +2,18 @@ package org.openremote.manager.datapoint;
 
 import org.openremote.agent.protocol.ProtocolDatapointService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.manager.asset.OutdatedAttributeEvent;
+import org.openremote.model.datapoint.DatapointQueryTooLargeException;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.asset.AssetUpdateProcessor;
+import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent.Source;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeWriteFailure;
 import org.openremote.model.datapoint.AssetDatapoint;
@@ -19,17 +21,14 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.util.Pair;
+import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
 
-import jakarta.persistence.EntityManager;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Date;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -51,13 +50,16 @@ import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
  * and {@link #OR_DATA_POINTS_MAX_AGE_DAYS} setting; storage duration defaults to {@value #OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT}
  * days.
  */
-public class AssetDatapointService extends AbstractDatapointService<AssetDatapoint> implements AssetUpdateProcessor, ProtocolDatapointService {
+public class AssetDatapointService extends AbstractDatapointService<AssetDatapoint> implements ProtocolDatapointService {
 
     public static final String OR_DATA_POINTS_MAX_AGE_DAYS = "OR_DATA_POINTS_MAX_AGE_DAYS";
     public static final int OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT = 31;
+    public static final String OR_DATA_POINTS_EXPORT_LIMIT = "OR_DATA_POINTS_EXPORT_LIMIT";
+    public static final int OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT = 1000000;
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
     protected static final String EXPORT_STORAGE_DIR_NAME = "datapoint";
     protected int maxDatapointAgeDays;
+    protected int datapointExportLimit;
     protected Path exportPath;
 
     @Override
@@ -77,6 +79,16 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
         if (maxDatapointAgeDays <= 0) {
             LOG.warning(OR_DATA_POINTS_MAX_AGE_DAYS + " value is not a valid value so data points won't be auto purged");
+        } else {
+            LOG.log(Level.INFO, "Data point purge interval days = " + maxDatapointAgeDays);
+        }
+
+        datapointExportLimit = getInteger(container.getConfig(), OR_DATA_POINTS_EXPORT_LIMIT, OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT);
+
+        if (datapointExportLimit <= 0) {
+            LOG.warning(OR_DATA_POINTS_EXPORT_LIMIT + " value is not a valid value so the export data points won't be limited");
+        } else {
+            LOG.log(Level.INFO, "Data point export limit = " + datapointExportLimit);
         }
 
         Path storageDir = persistenceService.getStorageDir();
@@ -91,32 +103,35 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     @Override
     public void start(Container container) throws Exception {
         if (maxDatapointAgeDays > 0) {
-            dataPointsPurgeScheduledFuture = executorService.scheduleAtFixedRate(
+            dataPointsPurgeScheduledFuture = scheduledExecutorService.scheduleAtFixedRate(
                 this::purgeDataPoints,
                 getFirstPurgeMillis(timerService.getNow()),
                 Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS
             );
         }
+
+        ClientEventService clientEventService = container.getService(ClientEventService.class);
+        clientEventService.addSubscription(AttributeEvent.class, null, this::onAttributeEvent);
+        clientEventService.addSubscription(OutdatedAttributeEvent.class, null, this::onOutdatedAttributeEvent);
     }
 
-    public static boolean attributeIsStoreDatapoint(Attribute<?> attribute) {
-        return attribute.getMetaValue(STORE_DATA_POINTS).orElse(attribute.hasMeta(MetaItemType.AGENT_LINK));
+    public static boolean attributeIsStoreDatapoint(MetaHolder attributeInfo) {
+        return attributeInfo.getMetaValue(STORE_DATA_POINTS).orElse(attributeInfo.hasMeta(MetaItemType.AGENT_LINK));
     }
 
-    @Override
-    public boolean processAssetUpdate(EntityManager em,
-                                      Asset<?> asset,
-                                      Attribute<?> attribute,
-                                      Source source) throws AssetProcessingException {
-
-        if (attributeIsStoreDatapoint(attribute) && attribute.getValue().isPresent()) { // Don't store datapoints with null value
+    public void onAttributeEvent(AttributeEvent attributeEvent) {
+        if (attributeIsStoreDatapoint(attributeEvent) && attributeEvent.getValue().isPresent()) { // Don't store datapoints with null value
             try {
-                upsertValue(asset.getId(), attribute.getName(), attribute.getValue().orElse(null), LocalDateTime.ofInstant(Instant.ofEpochMilli(attribute.getTimestamp().orElseGet(timerService::getCurrentTimeMillis)), ZoneId.systemDefault()));
+                upsertValue(attributeEvent.getId(), attributeEvent.getName(), attributeEvent.getValue().orElse(null), Instant.ofEpochMilli(attributeEvent.getTimestamp()).atZone(ZoneId.systemDefault()).toLocalDateTime());
             } catch (Exception e) {
-                throw new AssetProcessingException(AttributeWriteFailure.STATE_STORAGE_FAILED, "Failed to insert or update asset data point for attribute: " + attribute, e);
+                throw new AssetProcessingException(AttributeWriteFailure.STATE_STORAGE_FAILED, "Failed to insert or update asset data point for attribute: " + attributeEvent, e);
             }
         }
-        return false;
+    }
+
+    public void onOutdatedAttributeEvent(OutdatedAttributeEvent outdatedAttributeEvent) {
+        // Store the outdated event for historical analysis
+        onAttributeEvent(outdatedAttributeEvent.getEvent());
     }
 
     @Override
@@ -237,20 +252,51 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs,
                                                   long fromTimestamp,
                                                   long toTimestamp) {
-        return executorService.schedule(() -> {
+        try {
+            String query = getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp);
+
+            // Verify the query is 'legal' and can be executed
+            if(canQueryDatapoints(query, null, datapointExportLimit)) {
+                return doExportDatapoints(attributeRefs, fromTimestamp, toTimestamp);
+            }
+            throw new RuntimeException("Could not export datapoints.");
+
+        } catch (DatapointQueryTooLargeException dqex) {
+            String msg = "Could not export data points. It exceeds the data limit of " + datapointExportLimit + " data points.";
+            getLogger().log(Level.WARNING, msg, dqex);
+            throw dqex;
+        }
+    }
+
+    protected ScheduledFuture<File> doExportDatapoints(AttributeRef[] attributeRefs,
+                                                       long fromTimestamp,
+                                                       long toTimestamp) {
+
+        return scheduledExecutorService.schedule(() -> {
             String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
-            StringBuilder sb = new StringBuilder(String.format("copy (select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (", fromTimestamp / 1000, toTimestamp / 1000))
-                .append(Arrays.stream(attributeRefs).map(attributeRef -> String.format("(ad.entity_id = '%s' and ad.attribute_name = '%s')", attributeRef.getId(), attributeRef.getName())).collect(Collectors.joining(" or ")))
-                .append(")) to '/storage/")
-                .append(EXPORT_STORAGE_DIR_NAME)
-                .append("/")
-                .append(fileName)
-                .append("' delimiter ',' CSV HEADER;");
+            StringBuilder sb = new StringBuilder("copy (")
+                    .append(getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp))
+                    .append(") to '/storage/")
+                    .append(EXPORT_STORAGE_DIR_NAME)
+                    .append("/")
+                    .append(fileName)
+                    .append("' delimiter ',' CSV HEADER;");
 
             persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
 
             // The same path must resolve in both the postgresql container and the manager container
             return exportPath.resolve(fileName).toFile();
         }, 0, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Function for building an SQL query that SELECTs the content for the data export.
+     * Currently, it includes timestamp, asset name, attribute name, and the data point value.
+     * Be aware: this SQL query does NOT contain any CSV-related statements.
+     */
+    protected String getSelectExportQuery(AttributeRef[] attributeRefs, long fromTimestamp, long toTimestamp) {
+        return new StringBuilder(String.format("select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (", fromTimestamp / 1000, toTimestamp / 1000))
+                .append(Arrays.stream(attributeRefs).map(attributeRef -> String.format("(ad.entity_id = '%s' and ad.attribute_name = '%s')", attributeRef.getId(), attributeRef.getName())).collect(Collectors.joining(" or ")))
+                .append(")").toString();
     }
 }

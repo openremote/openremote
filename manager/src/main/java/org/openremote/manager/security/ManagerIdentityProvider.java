@@ -33,6 +33,7 @@ import org.openremote.model.util.TextUtil;
 import jakarta.persistence.Tuple;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -40,6 +41,7 @@ import static org.openremote.model.query.filter.StringPredicate.toSQLParameter;
 import static org.openremote.model.Constants.MASTER_REALM;
 
 // TODO: Normalise interface for Basic and Keycloak providers and add client CRUD
+
 /**
  * SPI for implementations used by {@link ManagerIdentityService}, provides CRUD of
  * {@link User} and {@link Realm}.
@@ -56,21 +58,23 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     void deleteUser(String realm, String userId);
 
+    void requestPasswordReset(String realm, String userId);
+
     void resetPassword(String realm, String userId, Credential credential);
 
     String resetSecret(String realm, String userId, String secret);
 
-    Role[] getRoles(String realm, String client);
+    Role[] getClientRoles(String realm, String client);
 
     void updateClientRoles(String realm, String client, Role[] roles);
 
-    Role[] getUserRoles(String realm, String userId, String client);
+    String[] getUserClientRoles(String realm, String userId, String client);
 
-    Role[] getUserRealmRoles(String realm, String userId);
+    String[] getUserRealmRoles(String realm, String userId);
 
-    void updateUserRoles(String realm, String userId, String client, String...roles);
+    void updateUserClientRoles(String realm, String userId, String client, String... roles);
 
-    void updateUserRealmRoles(String realm, String userId, String...roles);
+    void updateUserRealmRoles(String realm, String userId, String... roles);
 
     boolean isMasterRealmAdmin(String userId);
 
@@ -105,16 +109,16 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     /**
      * Returns the frontend URL to be used for frontend apps to authenticate
      */
-    String getFrontendUrl();
+    String getFrontendURI();
 
     /*
      * BELOW ARE STATIC HELPER METHODS
      */
 
-    default String[] addRealmRoles(String realm, String userId, String...roles) {
-        Set<String> realmRoles = Arrays.stream(getUserRealmRoles(realm, userId)).filter(role -> role.isAssigned() || Arrays.stream(roles).anyMatch(r -> role.getName().equals(r))).map(Role::getName).collect(Collectors.toCollection(LinkedHashSet::new));
-        realmRoles.addAll(Arrays.asList(roles));
-        return realmRoles.toArray(new String[0]);
+    default String[] addUserRealmRoles(String realm, String userId, String... roles) {
+        List<String> existingRoles = new ArrayList<>(Arrays.asList(getUserRealmRoles(realm, userId)));
+        existingRoles.addAll(Arrays.asList(roles));
+        return existingRoles.toArray(new String[0]);
     }
 
     @SuppressWarnings("unchecked")
@@ -130,8 +134,8 @@ public interface ManagerIdentityProvider extends IdentityProvider {
                 userQuery.usernames = new StringPredicate[1];
                 userQuery.usernames(new StringPredicate(AssetQuery.Match.BEGIN, User.SERVICE_ACCOUNT_PREFIX).negate(!userQuery.serviceUsers));
             } else {
-                userQuery.usernames = Arrays.copyOf(userQuery.usernames, userQuery.usernames.length+1);
-                userQuery.usernames[userQuery.usernames.length-1] = new StringPredicate(AssetQuery.Match.BEGIN, User.SERVICE_ACCOUNT_PREFIX).negate(!userQuery.serviceUsers);
+                userQuery.usernames = Arrays.copyOf(userQuery.usernames, userQuery.usernames.length + 1);
+                userQuery.usernames[userQuery.usernames.length - 1] = new StringPredicate(AssetQuery.Match.BEGIN, User.SERVICE_ACCOUNT_PREFIX).negate(!userQuery.serviceUsers);
             }
         }
 
@@ -175,24 +179,39 @@ public interface ManagerIdentityProvider extends IdentityProvider {
             }
             sb.append(")");
         }
-        if (userQuery.realmRoles != null && userQuery.realmRoles.length > 0) {
+
+        boolean hasClientRoles = userQuery.clientRoles != null && userQuery.clientRoles.length > 0;
+        boolean hasRealmRoles = userQuery.realmRoles != null && userQuery.realmRoles.length > 0;
+        if (hasClientRoles || hasRealmRoles) {
             sb.append(" and (FALSE");
 
-            Arrays.stream(userQuery.realmRoles).forEach(realmPredicate -> {
-                sb.append(" OR ");
-                if (realmPredicate.negate) {
-                    // Negation implies does not contain this match so use a sub query in the where clause with not
-                    // exists otherwise it will just match any other row
-                    sb.append("NOT ");
-                }
-                sb.append("EXISTS (SELECT urm.user_id from public.user_role_mapping urm join public.keycloak_role kr on urm.role_id = kr.id where urm.user_id = u.id and not kr.client_role and");
+            BiConsumer<StringPredicate[], Boolean> appendRolePredicates = (rolePredicates, clientRolePredicates) -> {
+                Arrays.stream(rolePredicates).forEach(rolePredicate -> {
+                    sb.append(" OR ");
+                    if (rolePredicate.negate) {
+                        // Negation implies does not contain this match so use a sub query in the where clause with not
+                        // exists otherwise it will just match any other row
+                        sb.append("NOT ");
+                    }
+                    sb.append("EXISTS (SELECT urm.user_id from public.user_role_mapping urm join public.keycloak_role kr on urm.role_id = kr.id where urm.user_id = u.id and ");
+                    if (!clientRolePredicates) {
+                        sb.append("not ");
+                    }
+                    sb.append("kr.client_role and");
+                    sb.append(rolePredicate.caseSensitive ? " kr.name" : " upper(kr.name)");
+                    sb.append(StringPredicate.toSQLParameter(rolePredicate, parameters.size() + 1, rolePredicate.negate));
+                    parameters.add(rolePredicate.prepareValue());
 
-                sb.append(realmPredicate.caseSensitive ? " kr.name" : " upper(kr.name)");
-                sb.append(StringPredicate.toSQLParameter(realmPredicate, parameters.size() + 1, realmPredicate.negate));
-                parameters.add(realmPredicate.prepareValue());
+                    sb.append(")");
+                });
+            };
 
-                sb.append(")");
-            });
+            if (hasClientRoles) {
+                appendRolePredicates.accept(userQuery.clientRoles, true);
+            }
+            if (hasRealmRoles) {
+                appendRolePredicates.accept(userQuery.realmRoles, false);
+            }
 
             sb.append(")");
         }
@@ -229,7 +248,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
         if (userQuery.orderBy != null) {
             if (userQuery.orderBy.property != null) {
                 sb.append(" ORDER BY");
-                switch(userQuery.orderBy.property) {
+                switch (userQuery.orderBy.property) {
                     case CREATED_ON:
                         sb.append(" u.created_on");
                         break;
@@ -257,7 +276,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
         List<User> users = persistenceService.doReturningTransaction(entityManager -> {
             Query sqlQuery = entityManager.createNativeQuery(sb.toString(), User.class);
-            IntStream.rangeClosed(1, parameters.size()).forEach(i -> sqlQuery.setParameter(i, parameters.get(i-1)));
+            IntStream.rangeClosed(1, parameters.size()).forEach(i -> sqlQuery.setParameter(i, parameters.get(i - 1)));
 
             if (userQuery.limit != null && userQuery.limit > 0) {
                 sqlQuery.setMaxResults(userQuery.limit);
@@ -290,7 +309,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
                     .setParameter("realm", realm)
                     .setParameter("username", username)
                     .getResultList();
-            return result.size() > 0 ? result.get(0) : null;
+            return result.size() > 0 ? result.getFirst() : null;
         });
     }
 
@@ -300,7 +319,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
                 em.createQuery("select u from User u where u.id = :userId", User.class)
                     .setParameter("userId", userId)
                     .getResultList();
-            return result.size() > 0 ? result.get(0) : null;
+            return result.size() > 0 ? result.getFirst() : null;
         });
     }
 
@@ -309,17 +328,17 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
         return persistenceService.doReturningTransaction(em -> {
             Map<String, String> usernameIdMap = em.createQuery(
-                "select u.username, u.id from User u join Realm r on r.id = u.realmId where u.username in :usernames and r.name = :realm", Tuple.class)
-                    .setParameter("usernames", CIUsernames)
-                    .setParameter("realm", realm)
-                    .getResultList()
-                    .stream()
-                    .collect(
-                        Collectors.toMap(
-                            tuple -> (String) tuple.get(0),
-                            tuple -> (String) tuple.get(1)
-                        )
-                    );
+                    "select u.username, u.id from User u join Realm r on r.id = u.realmId where u.username in :usernames and r.name = :realm", Tuple.class)
+                .setParameter("usernames", CIUsernames)
+                .setParameter("realm", realm)
+                .getResultList()
+                .stream()
+                .collect(
+                    Collectors.toMap(
+                        tuple -> (String) tuple.get(0),
+                        tuple -> (String) tuple.get(1)
+                    )
+                );
 
             return CIUsernames.stream().map(usernameIdMap::get).collect(Collectors.toList());
         });
@@ -328,8 +347,10 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     @SuppressWarnings("unchecked")
     static Realm[] getRealmsFromDb(PersistenceService persistenceService) {
         return persistenceService.doReturningTransaction(entityManager -> {
-            List<Realm> realms = (List<Realm>)entityManager.createNativeQuery(
-                "select *, (select ra.VALUE from PUBLIC.REALM_ATTRIBUTE ra where ra.REALM_ID = r.ID and ra.name = 'displayName') as displayName from public.realm r  where r.not_before is null or r.not_before = 0 or r.not_before <= extract('epoch' from now())"
+            List<Realm> realms = (List<Realm>) entityManager.createNativeQuery(
+                "select *, " +
+                    "(select ra.VALUE from PUBLIC.REALM_ATTRIBUTE ra where ra.REALM_ID = r.ID and ra.name = 'displayName') as displayName " +
+                    "from public.realm r where r.not_before is null or r.not_before = 0 or r.not_before <= extract('epoch' from now())"
                 , Realm.class).getResultList();
 
             // Make sure the master realm is always on top
@@ -341,30 +362,22 @@ public interface ManagerIdentityProvider extends IdentityProvider {
                 return o1.getName().compareTo(o2.getName());
             });
 
-            // TODO: Remove this once migrated to hibernate 6.2.x+
-            realms.forEach(r -> r.getRealmRoles().size());
-
-            return realms.toArray(new Realm[realms.size()]);
+            return realms.toArray(new Realm[0]);
         });
     }
 
-    static Realm getRealmFromDb(PersistenceService persistenceService, String realm) {
-        return persistenceService.doReturningTransaction(em -> {
-                List<Realm> realms = em.createQuery("select r from Realm r where r.name = :realm", Realm.class)
-                    .setParameter("realm", realm).getResultList();
-
-                // TODO: Remove this once migrated to hibernate 6.2.x+
-                realms.forEach(r -> r.getRealmRoles().size());
-
-                return realms.size() == 1 ? realms.get(0) : null;
-            }
+    static Realm getRealmFromDb(PersistenceService persistenceService, String name) {
+        return persistenceService.doReturningTransaction(em -> em
+            .createQuery("select r from Realm r where r.name = :realm", Realm.class)
+            .setParameter("realm", name)
+            .getSingleResult()
         );
     }
 
     static boolean realmExistsFromDb(PersistenceService persistenceService, String realm) {
         return persistenceService.doReturningTransaction(em -> {
 
-            long count = (long)em.createNativeQuery(
+            long count = (long) em.createNativeQuery(
                 "select count(*) from public.realm r where r.name = :realm and r.enabled = true and (r.not_before is null or r.not_before = 0 or r.not_before <= extract('epoch' from now()))",
                 Long.class).setParameter("realm", realm).getSingleResult();
 

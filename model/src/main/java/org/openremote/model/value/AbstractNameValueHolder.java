@@ -80,12 +80,6 @@ public abstract class AbstractNameValueHolder<T> implements NameValueHolder<T>, 
     @SuppressWarnings("unchecked")
     @Override
     public <U> Optional<U> getValue(@Nonnull Class<U> valueType) {
-        if (value == null) {
-            return Optional.empty();
-        }
-        if (valueType.isAssignableFrom(value.getClass())) {
-            return Optional.of((U)value);
-        }
         return ValueUtil.getValueCoerced(value, valueType);
     }
 

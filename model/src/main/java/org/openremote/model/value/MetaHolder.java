@@ -20,10 +20,29 @@
 package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaMap;
+
+import java.util.Optional;
 
 public interface MetaHolder {
 
     @JsonProperty
     MetaMap getMeta();
+
+    default <U> Optional<U> getMetaValue(MetaItemDescriptor<U> metaItemDescriptor) {
+        return getMeta() != null ? getMeta().getValue(metaItemDescriptor) : Optional.empty();
+    }
+
+    default boolean hasMeta(MetaItemDescriptor<?> metaItemDescriptor) {
+        return getMeta() != null && getMeta().has(metaItemDescriptor);
+    }
+
+    default boolean hasMeta(String metaItemName) {
+        return getMeta() != null && getMeta().has(metaItemName);
+    }
+
+    default <U> Optional<MetaItem<U>> getMetaItem(MetaItemDescriptor<U> metaItemDescriptor) {
+        return getMeta() != null ? getMeta().get(metaItemDescriptor) : Optional.empty();
+    }
 }

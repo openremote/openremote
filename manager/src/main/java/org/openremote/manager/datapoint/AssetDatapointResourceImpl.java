@@ -39,6 +39,7 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.AssetDatapointResource;
 import org.openremote.model.datapoint.DatapointPeriod;
+import org.openremote.model.datapoint.DatapointQueryTooLargeException;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
@@ -48,8 +49,6 @@ import org.openremote.model.value.MetaItemType;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -63,7 +62,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
 
     private static final Logger LOG = Logger.getLogger(AssetDatapointResourceImpl.class.getName());
     private static final Logger DATA_EXPORT_LOG = SyslogCategory.getLogger(DATA, AssetDatapointResourceImpl.class);
-    private static final BlockingQueue<AsyncResponse> suspended = new ArrayBlockingQueue<>(5);
+
     protected final AssetStorageService assetStorageService;
     protected final AssetDatapointService assetDatapointService;
 
@@ -135,8 +134,10 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             }
 
             return assetDatapointService.getDatapoints(new AttributeRef(assetId, attributeName)).toArray(ValueDatapoint[]::new);
-        } catch (IllegalStateException ex) {
+        } catch (IllegalStateException | IllegalArgumentException ex) {
             throw new BadRequestException(ex);
+        } catch (DatapointQueryTooLargeException dqex) {
+            throw new WebApplicationException(dqex, Response.Status.REQUEST_ENTITY_TOO_LARGE);
         } catch (UnsupportedOperationException ex) {
             throw new NotSupportedException(ex);
         }
@@ -173,9 +174,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
     }
 
     @Override
-    public void getDatapointExport(String attributeRefsString, long fromTimestamp, long toTimestamp) throws InterruptedException {
-        final AsyncResponse asyncResponse = suspended.take();
-
+    public void getDatapointExport(AsyncResponse asyncResponse, String attributeRefsString, long fromTimestamp, long toTimestamp) {
         try {
             AttributeRef[] attributeRefs = JSON.readValue(attributeRefsString, AttributeRef[].class);
 
@@ -241,6 +240,8 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             }
         } catch (JsonProcessingException ex) {
             asyncResponse.resume(new BadRequestException(ex));
+        } catch (DatapointQueryTooLargeException dqex) {
+            asyncResponse.resume(new WebApplicationException(dqex, Response.Status.REQUEST_ENTITY_TOO_LARGE));
         }
     }
 }

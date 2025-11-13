@@ -52,10 +52,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -102,7 +99,8 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
     protected MessageBrokerService messageBrokerService;
     protected ClientEventService clientEventService;
     protected GatewayService gatewayService;
-    protected ScheduledExecutorService executorService;
+    protected ExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected final Map<String, OptimisationInstance> assetOptimisationInstanceMap = new HashMap<>();
     protected List<String> forceChargeAssetIds = new ArrayList<>();
 
@@ -115,7 +113,8 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         messageBrokerService = container.getService(MessageBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
-        executorService = container.getExecutorService();
+        executorService = container.getExecutor();
+        scheduledExecutorService = container.getScheduledExecutor();
     }
 
     @Override
@@ -138,7 +137,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
         energyOptimisationAssets.forEach(this::startOptimisation);
 
-        clientEventService.addInternalSubscription(
+        clientEventService.addSubscription(
             AttributeEvent.class,
             null,
             this::processAttributeEvent);
@@ -172,42 +171,42 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
     }
 
     protected void processAttributeEvent(AttributeEvent attributeEvent) {
-        OptimisationInstance optimisationInstance = assetOptimisationInstanceMap.get(attributeEvent.getAssetId());
+        OptimisationInstance optimisationInstance = assetOptimisationInstanceMap.get(attributeEvent.getId());
 
         if (optimisationInstance != null) {
             processOptimisationAssetAttributeEvent(optimisationInstance, attributeEvent);
             return;
         }
 
-        String attributeName = attributeEvent.getAttributeName();
+        String attributeName = attributeEvent.getName();
 
         if ((attributeName.equals(ElectricityChargerAsset.VEHICLE_CONNECTED.getName()) || attributeName.equals(ElectricVehicleAsset.CHARGER_CONNECTED.getName()))
-            && attributeEvent.<Boolean>getValue().orElse(false)) {
+            && (Boolean)attributeEvent.getValue().orElse(false)) {
             // Look for forced charge asset
-            if (forceChargeAssetIds.remove(attributeEvent.getAssetId())) {
-                LOG.fine("Previously force charged asset has now been disconnected so clearing force charge flag: " + attributeEvent.getAssetId());
+            if (forceChargeAssetIds.remove(attributeEvent.getId())) {
+                LOG.fine("Previously force charged asset has now been disconnected so clearing force charge flag: " + attributeEvent.getId());
             }
             return;
         }
 
         // Check for request to force charge
         if (attributeName.equals(ElectricityStorageAsset.FORCE_CHARGE.getName())) {
-            Asset<?> asset = assetStorageService.find(attributeEvent.getAssetId());
+            Asset<?> asset = assetStorageService.find(attributeEvent.getId());
             if (!(asset instanceof ElectricityStorageAsset)) {
-                LOG.fine("Request to force charge asset will be ignored as asset not found or is not of type '" + ElectricityStorageAsset.class.getSimpleName() + "': " + attributeEvent.getAssetId());
+                LOG.fine("Request to force charge asset will be ignored as asset not found or is not of type '" + ElectricityStorageAsset.class.getSimpleName() + "': " + attributeEvent.getId());
                 return;
             }
 
             ElectricityStorageAsset storageAsset = (ElectricityStorageAsset) asset;
 
-            if (attributeEvent.<AttributeExecuteStatus>getValue().orElse(null) == AttributeExecuteStatus.REQUEST_START) {
+            if (attributeEvent.getValue().orElse(null) == AttributeExecuteStatus.REQUEST_START) {
 
                 double powerImportMax = storageAsset.getPowerImportMax().orElse(Double.MAX_VALUE);
                 double maxEnergyLevel = getElectricityStorageAssetEnergyLevelMax(storageAsset);
                 double currentEnergyLevel = storageAsset.getEnergyLevel().orElse(0d);
-                LOG.fine("Request to force charge asset '" + attributeEvent.getAssetId() + "': attempting to set powerSetpoint=" + powerImportMax);
+                LOG.fine("Request to force charge asset '" + attributeEvent.getId() + "': attempting to set powerSetpoint=" + powerImportMax);
 
-                if (forceChargeAssetIds.contains(attributeEvent.getAssetId())) {
+                if (forceChargeAssetIds.contains(attributeEvent.getId())) {
                     LOG.fine("Request to force charge asset will be ignored as force charge already requested for asset: " + storageAsset);
                     return;
                 }
@@ -217,16 +216,16 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                     return;
                 }
 
-                forceChargeAssetIds.add(attributeEvent.getAssetId());
-                assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, powerImportMax));
-                assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.RUNNING));
+                forceChargeAssetIds.add(attributeEvent.getId());
+                assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, powerImportMax), getClass().getSimpleName());
+                assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.RUNNING), getClass().getSimpleName());
 
             } else if (attributeEvent.<AttributeExecuteStatus>getValue().orElse(null) == AttributeExecuteStatus.REQUEST_CANCEL) {
 
-                if (forceChargeAssetIds.remove(attributeEvent.getAssetId())) {
+                if (forceChargeAssetIds.remove(attributeEvent.getId())) {
                     LOG.info("Request to cancel force charge asset: " + storageAsset.getId());
-                    assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, 0d));
-                    assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.CANCELLED));
+                    assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, 0d), getClass().getSimpleName());
+                    assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.CANCELLED), getClass().getSimpleName());
                 }
             }
         }
@@ -240,15 +239,15 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
     protected synchronized void processOptimisationAssetAttributeEvent(OptimisationInstance optimisationInstance, AttributeEvent attributeEvent) {
 
-        if (EnergyOptimisationAsset.FINANCIAL_SAVING.getName().equals(attributeEvent.getAttributeName())
-            || EnergyOptimisationAsset.CARBON_SAVING.getName().equals(attributeEvent.getAttributeName())) {
+        if (EnergyOptimisationAsset.FINANCIAL_SAVING.getName().equals(attributeEvent.getName())
+            || EnergyOptimisationAsset.CARBON_SAVING.getName().equals(attributeEvent.getName())) {
             // These are updated by this service
             return;
         }
 
 
-        if (attributeEvent.getAttributeName().equals(EnergyOptimisationAsset.OPTIMISATION_DISABLED.getName())) {
-            boolean disabled = attributeEvent.<Boolean>getValue().orElse(false);
+        if (attributeEvent.getName().equals(EnergyOptimisationAsset.OPTIMISATION_DISABLED.getName())) {
+            boolean disabled = (Boolean)attributeEvent.getValue().orElse(false);
             if (!disabled && assetOptimisationInstanceMap.containsKey(optimisationInstance.optimisationAsset.getId())) {
                 // Nothing to do here
                 return;
@@ -259,10 +258,10 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         }
 
         LOG.info("Processing optimisation asset attribute event: " + attributeEvent);
-        stopOptimisation(attributeEvent.getAssetId());
+        stopOptimisation(attributeEvent.getId());
 
         // Get latest asset from storage
-        EnergyOptimisationAsset asset = (EnergyOptimisationAsset) assetStorageService.find(attributeEvent.getAssetId());
+        EnergyOptimisationAsset asset = (EnergyOptimisationAsset) assetStorageService.find(attributeEvent.getId());
 
         if (asset != null && !asset.isOptimisationDisabled().orElse(false)) {
             startOptimisation(asset);
@@ -333,7 +332,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             throw new IllegalStateException("Optimiser instance not found for asset: " + optimisationAssetId);
         }
 
-        return executorService.scheduleAtFixedRate(() -> {
+        return scheduledExecutorService.scheduleAtFixedRate(() -> {
                 try {
                     runOptimisation(optimisationAssetId, Instant.ofEpochMilli(timerService.getCurrentTimeMillis()).truncatedTo(ChronoUnit.MINUTES));
                 } catch (Exception e) {
@@ -410,7 +409,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         }
 
         double[] powerNets = new double[intervalCount];
-        ElectricitySupplierAsset supplierAsset = supplierAssets.get(0);
+        ElectricitySupplierAsset supplierAsset = supplierAssets.getFirst();
 
         if (LOG.isLoggable(Level.FINEST)) {
             LOG.finest(getLogPrefix(optimisationAssetId) + "Found child asset of type '" + ElectricitySupplierAsset.class.getSimpleName() + "': " + supplierAsset);
@@ -464,9 +463,9 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                         LOG.info("Force charged asset has reached maxEnergyLevelPercentage so stopping charging: " + asset.getId());
                         forceChargeAssetIds.remove(asset.getId());
                         assetProcessingService.sendAttributeEvent(
-                            new AttributeEvent(asset.getId(), ElectricityStorageAsset.POWER_SETPOINT, 0d)
-                        );
-                        assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.COMPLETED));
+                            new AttributeEvent(asset.getId(), ElectricityStorageAsset.POWER_SETPOINT, 0d),
+                            getClass().getSimpleName());
+                        assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.COMPLETED), getClass().getSimpleName());
                     }
                     return false;
                 }
@@ -684,7 +683,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
             if (energySchedule != null) {
                 LOG.finest(getLogPrefix(optimisationAssetId) + "Applying energy schedule for storage asset: " + storageAsset.getId());
-                optimiser.applyEnergySchedule(energyLevelMins, energyLevelMaxs, energyCapacity, energySchedule, LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault()));
+                optimiser.applyEnergySchedule(energyLevelMins, energyLevelMaxs, energyCapacity, energySchedule, Instant.ofEpochMilli(timerService.getCurrentTimeMillis()).atZone(ZoneId.systemDefault()).toLocalDateTime());
             }
 
             double maxEnergyLevelMin = Arrays.stream(energyLevelMins).max().orElse(0);
@@ -736,7 +735,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                 assetPredictedDatapointService.updateValues(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT.getName(), valuesAndTimestamps);
             }
 
-            assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, setpoints != null ? setpoints[0] : null));
+            assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, setpoints != null ? setpoints[0] : null), getClass().getSimpleName());
 
             // Update unoptimised power for this asset
             obsoleteUnoptimisedAssetIds.remove(storageAsset.getId());
@@ -768,8 +767,8 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         optimisationInstance.optimisationAsset.setCarbonSaving(carbonSaving);
 
         // Push new values into the DB
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(optimisationAssetId, EnergyOptimisationAsset.FINANCIAL_SAVING, financialSaving));
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(optimisationAssetId, EnergyOptimisationAsset.CARBON_SAVING, carbonSaving));
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(optimisationAssetId, EnergyOptimisationAsset.FINANCIAL_SAVING, financialSaving), getClass().getSimpleName());
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(optimisationAssetId, EnergyOptimisationAsset.CARBON_SAVING, carbonSaving), getClass().getSimpleName());
     }
 
     protected boolean isElectricityGroupAsset(Asset<?> asset) {
@@ -797,7 +796,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         AttributeRef ref = new AttributeRef(assetId, attribute.getName());
 
         if (attribute.hasMeta(MetaItemType.HAS_PREDICTED_DATA_POINTS)) {
-            LocalDateTime timestamp = LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault());
+            LocalDateTime timestamp = optimisationTime.atZone(ZoneId.systemDefault()).toLocalDateTime();
             List<ValueDatapoint<?>> predictedData = assetPredictedDatapointService.queryDatapoints(
                     ref.getId(),
                     ref.getName(),

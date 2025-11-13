@@ -21,6 +21,7 @@ package org.openremote.manager.webhook;
 
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -31,7 +32,6 @@ import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.http.HTTPMethod;
 import org.openremote.model.webhook.Webhook;
 
 import java.net.URI;
@@ -81,7 +81,7 @@ public class WebhookService extends RouteBuilder implements ContainerService {
 
     public boolean sendHttpRequest(Webhook webhook, MediaType mediaType, WebTarget target) {
 
-        try (Response response = this.buildRequest(target, webhook.getHttpMethod(), mediaType, webhook.getPayload())) {
+        try (Response response = this.buildRequest(webhook, target, mediaType)) {
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
                 LOG.warning("Webhook request responded with error " + response.getStatus() + ": " + response.getStatusInfo().getReasonPhrase());
             } else {
@@ -105,13 +105,16 @@ public class WebhookService extends RouteBuilder implements ContainerService {
         } else if (webhook.getOAuthGrant() != null) {
             builder.setOAuthAuthentication(webhook.getOAuthGrant());
         }
-        if (webhook.getHeaders() != null && !webhook.getHeaders().isEmpty()) {
-            builder.setInjectHeaders(webhook.getHeaders());
-        }
         return builder.build();
     }
 
-    private Response buildRequest(WebTarget target, HTTPMethod method, MediaType mediaType, String payload) throws ProcessingException {
-        return target.request().method(method.name(), (payload != null ? Entity.entity(payload, mediaType) : null));
+    private Response buildRequest(Webhook webhook, WebTarget target, MediaType mediaType) throws ProcessingException {
+        Invocation.Builder request = target.request();
+        if (webhook.getHeaders() != null) {
+            request = WebTargetBuilder.addHeaders(request, webhook.getHeaders());
+        }
+        Object payload = webhook.getPayload();
+
+        return request.method(webhook.getHttpMethod().name(), (payload != null ? Entity.entity(payload, mediaType) : null));
     }
 }

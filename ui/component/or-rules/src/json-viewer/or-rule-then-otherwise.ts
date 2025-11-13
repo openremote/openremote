@@ -5,46 +5,65 @@ import "./or-rule-asset-query";
 import {ActionType, getAssetTypeFromQuery, RulesConfig} from "../index";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {
+    AbstractNotificationMessageUnion,
+    AlarmSeverity,
+    AlarmStatus,
     Asset,
     AssetModelUtil,
-    AssetTypeInfo,
+    AssetTypeInfo, EmailNotificationMessage,
     HTTPMethod,
-    JsonRule,
+    JsonRule, LocalizedNotificationMessage, PushNotificationMessage,
+    RuleActionAlarm,
     RuleActionNotification,
     RuleActionUnion,
     RuleActionWebhook,
     RuleRecurrence,
     WellknownAssets
 } from "@openremote/model";
-import i18next from "i18next";
+import {i18next, translate} from "@openremote/or-translate"
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
-import {Util} from "@openremote/core";
+import {manager, Util} from "@openremote/core";
 import "./or-rule-action-attribute";
 import "./or-rule-action-notification";
 import "./or-rule-action-webhook";
-import {translate} from "@openremote/or-translate";
+import "./or-rule-action-alarm";
 
 const NOTIFICATION_COLOR = "4B87EA";
 const WAIT_COLOR = "EACC54";
+const ALARM_COLOR = "FC2D2D";
 
 function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): (ListItem | null)[] {
 
     let addAssetTypes = true;
     let addWait = true;
-    let addNotification = true;
+    let addAlarm = true;
+    let addEmailNotification = true;
+    let addEmailLocalizedNotification = true;
     let addPushNotification = true;
+    let addPushLocalizedNotification = true;
     let addWebhook = true;
+
+    let multiLanguage = false;
 
     if (config && config.controls && config.controls.allowedActionTypes) {
         addAssetTypes = config.controls.allowedActionTypes.indexOf(ActionType.ATTRIBUTE) >= 0;
         addWait = config.controls.allowedActionTypes.indexOf(ActionType.WAIT) >= 0;
-        addNotification = config.controls.allowedActionTypes.indexOf(ActionType.EMAIL) >= 0;
+        addAlarm = config.controls.allowedActionTypes.indexOf(ActionType.ALARM) >= 0;
+        addEmailNotification = config.controls.allowedActionTypes.indexOf(ActionType.EMAIL) >= 0;
+        addEmailLocalizedNotification = config.controls.allowedActionTypes.indexOf(ActionType.EMAIL_LOCALIZED) >= 0;
         addPushNotification = config.controls.allowedActionTypes.indexOf(ActionType.PUSH_NOTIFICATION) >= 0;
+        addPushLocalizedNotification = config.controls.allowedActionTypes.indexOf(ActionType.PUSH_LOCALIZED) >= 0;
         addWebhook = config.controls.allowedActionTypes.indexOf(ActionType.WEBHOOK) >= 0;
     }
 
+    // If the RulesConfig has an entry for notifications, check if there are languages configured.
+    // When there are, new notifications will be a "multi-language notification", with a different modal form.
+    if (config?.notifications) {
+        multiLanguage = Object.entries(config.notifications).filter(x =>
+            (x[0] === manager.displayRealm || x[0] === "default") && x[1] !== undefined).length > 0;
+    }
 
     const menu: (ListItem | null)[] = [];
 
@@ -67,11 +86,11 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
     menu.sort(Util.sortByString((listItem) => listItem?.value!));
     menu.push(null); // divider
 
-    if (addNotification) {
+    if (addEmailNotification) {
         menu.push({
             text: i18next.t("email"),
             icon: "email",
-            value: ActionType.EMAIL,
+            value: multiLanguage && addEmailLocalizedNotification ? ActionType.EMAIL_LOCALIZED : ActionType.EMAIL,
             styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
         } as ListItem);
     }
@@ -80,7 +99,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
         menu.push({
             text: i18next.t("push-notification"),
             icon: "cellphone-message",
-            value: ActionType.PUSH_NOTIFICATION,
+            value: multiLanguage && addPushLocalizedNotification ? ActionType.PUSH_LOCALIZED : ActionType.PUSH_NOTIFICATION,
             styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
         } as ListItem);
     }
@@ -94,13 +113,22 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
         } as ListItem);
     }
 
+    if (addAlarm) {
+        menu.push({
+            text: i18next.t("alarm."),
+            icon: "bell-outline",
+            value: ActionType.ALARM,
+            styleMap: {"--or-icon-fill": "#" + ALARM_COLOR}
+        } as ListItem);
+    }
+
     if (addWebhook) {
         menu.push({
             text: i18next.t("webhook"),
             icon: "webhook",
             value: ActionType.WEBHOOK,
             styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
-        })
+        });
     }
 
     return menu;
@@ -307,13 +335,17 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                         break;
                     case "notification":
                         action = action as RuleActionNotification
-                        if (type === "push") {
+                        if (type === ActionType.PUSH_NOTIFICATION || type === ActionType.PUSH_LOCALIZED) {
                             buttonIcon = "cellphone-message";
                             buttonColor = NOTIFICATION_COLOR;
                         } else {
                             buttonIcon = "email";
                             buttonColor = NOTIFICATION_COLOR;
                         }
+                        break;
+                    case ActionType.ALARM:
+                        buttonIcon = "bell-outline";
+                        buttonColor = ALARM_COLOR;
                         break;
                     default:
                         const ad = AssetModelUtil.getAssetDescriptor(type);
@@ -348,13 +380,17 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                     template = html`<span>WAIT NOT IMPLEMENTED</span>`;
                     break;
                 case ActionType.PUSH_NOTIFICATION:
-                    template = html`<or-rule-action-notification id="push-notification" .rule="${this.rule}" .action="${action}" .actionType="${ActionType.PUSH_NOTIFICATION}" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-notification>`;
-                    break;
+                case ActionType.PUSH_LOCALIZED:
                 case ActionType.EMAIL:
-                    template = html`<or-rule-action-notification id="email-notification" .rule="${this.rule}" .action="${action}" .actionType="${ActionType.EMAIL}" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-notification>`;
+                case ActionType.EMAIL_LOCALIZED:
+                    const id = type + "-notification";
+                    template = html`<or-rule-action-notification id="${id}" .rule="${this.rule}" .action="${action}" .actionType="${type}" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-notification>`;
                     break;
                 case ActionType.WEBHOOK:
                     template = html`<or-rule-action-webhook .rule="${this.rule}" .action="${action}" .actionType="${ActionType.WEBHOOK}"></or-rule-action-webhook>`;
+                    break;
+                case ActionType.ALARM:
+                    template = html`<or-rule-action-alarm .rule="${this.rule}" .action="${action}" .actionType="${ActionType.ALARM}"></or-rule-action-alarm>`;
                     break;
                 default:
                     template = html`<or-rule-action-attribute .action="${action}" .targetTypeMap="${this.targetTypeMap}" .config="${this.config}" .assetInfos="${this.assetInfos}" .assetProvider="${this.assetProvider}" .readonly="${this.readonly}"></or-rule-action-attribute>`;
@@ -408,7 +444,16 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 break;
             case "notification":
                 const type = action.notification && action.notification.message && action.notification.message.type ? action.notification.message.type : action.action;
+                if(type === "localized") {
+                    const messages = Object.values((action.notification!.message as LocalizedNotificationMessage).languages!);
+                    if(messages && messages.length > 0) {
+                        return messages[0].type + "_localized";
+                    }
+                }
                 return type;
+                break;
+            case "alarm":
+                return action.action;
                 break;
             case "write-attribute":
             case "update-attribute":
@@ -466,6 +511,10 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             case "notification":
                 action.notification =  undefined;
                 break;
+            case "alarm":
+                action.alarm = undefined;
+                action.assigneeId = undefined;
+                break;
             case "update-attribute":
                 action.value = undefined;
                 action.attributeName = undefined;
@@ -477,6 +526,16 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
         if (value === ActionType.WAIT) {
             action.action = "wait";
+        } else if (value == ActionType.ALARM){
+            action = action as RuleActionAlarm;
+            action.action = "alarm";
+            action.alarm = {
+                title: "%RULESET_NAME%",
+                content: "%TRIGGER_ASSETS%",
+                severity: AlarmSeverity.LOW,
+                status: AlarmStatus.OPEN
+            };
+            action.assigneeId = undefined;
         } else if (value == ActionType.WEBHOOK) {
             action = action as RuleActionWebhook;
             action.action = "webhook";
@@ -491,22 +550,57 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             action = action as RuleActionNotification;
             action.action = "notification";
             action.notification = {
+                name: this.rule.name,
                 message: {
                     type: "email",
                     subject: "%RULESET_NAME%",
                     html: "%TRIGGER_ASSETS%"
-                }
+                } as EmailNotificationMessage
             };
-        }  else if (value === ActionType.PUSH_NOTIFICATION) {
+        } else if (value === ActionType.PUSH_NOTIFICATION) {
             action = action as RuleActionNotification;
             action.action = "notification";
             action.notification = {
+                name: this.rule.name,
                 message: {
                     type: "push",
                     title: "%RULESET_NAME%",
-                    body: "%TRIGGER_ASSETS%"
-                }
+                    body: "%TRIGGER_ASSETS%",
+                    action: {
+                        openInBrowser: false
+                    }
+                } as PushNotificationMessage
             };
+        } else if (value === ActionType.EMAIL_LOCALIZED || value === ActionType.PUSH_LOCALIZED) {
+            action = action as RuleActionNotification;
+            action.action = "notification";
+            const locale = this.config?.notifications?.[manager.displayRealm]?.defaultLanguage || this.config?.notifications?.["default"]?.defaultLanguage || manager.config.defaultLanguage || "en";
+            const languages: { [p: string]: AbstractNotificationMessageUnion } = {};
+            if(value === ActionType.EMAIL_LOCALIZED) {
+                languages[locale] = {
+                    type: "email",
+                    subject: "%RULESET_NAME%",
+                    html: "%TRIGGER_ASSETS%"
+                } as EmailNotificationMessage;
+            } else {
+                languages[locale] = {
+                    type: "push",
+                    title: "%RULESET_NAME%",
+                    body: "%TRIGGER_ASSETS%",
+                    action: {
+                        openInBrowser: false
+                    }
+                } as PushNotificationMessage;
+            }
+            action.notification = {
+                name: this.rule.name,
+                message: {
+                    type: "localized",
+                    defaultLanguage: locale,
+                    languages: languages
+                } as LocalizedNotificationMessage
+            };
+
         } else {
             action.action = "write-attribute";
             action.target = {

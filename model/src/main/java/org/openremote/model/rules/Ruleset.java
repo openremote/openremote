@@ -81,6 +81,7 @@ public abstract class Ruleset {
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "LAST_MODIFIED", nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
+    @org.hibernate.annotations.UpdateTimestamp
     protected Date lastModified;
 
     @NotNull(message = "{Ruleset.name.NotNull}")
@@ -269,5 +270,21 @@ public abstract class Ruleset {
     public Ruleset setShowOnList(boolean showOn) {
         getMeta().put(SHOW_ON_LIST, showOn);
         return this;
+    }
+
+    @Override
+    public String toString() {
+        return Ruleset.class.getSimpleName() + "{" +
+            "id=" + id +
+            ", version=" + version +
+            ", createdOn=" + createdOn +
+            ", lastModified=" + lastModified +
+            ", name='" + name + '\'' +
+            ", enabled=" + enabled +
+            ", rules='" + rules + '\'' +
+            ", lang=" + lang +
+            ", status=" + status +
+            ", error='" + error + '\'' +
+            '}';
     }
 }

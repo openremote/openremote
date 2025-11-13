@@ -5,8 +5,6 @@
 #
 # It is configured to use the AWS logging driver.
 #
-version: '2.4'
-
 volumes:
   proxy-data:
   manager-data:
@@ -24,7 +22,9 @@ services:
       - "80:80" # Needed for SSL generation using letsencrypt
       - "${OR_SSL_PORT:-443}:443"
       - "8883:8883"
-      #- "127.0.0.1:8404:8404" # Localhost metrics access
+      - "127.0.0.1:8404:8404" # Localhost metrics access
+      - "${PRIVATE_IP:-127.0.0.1}:8404:8404" # Allows to also expose metrics on a given IP address,
+                                             # intended to be IP of the interface of the private subnet of the EC2 VM
     volumes:
       - proxy-data:/deployment
     environment:
@@ -37,6 +37,7 @@ services:
   postgresql:
     restart: always
     image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
+    shm_size: 128mb
     volumes:
       - postgresql-data:/var/lib/postgresql/data
       - manager-data:/storage
@@ -62,8 +63,10 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
-    #ports:
-    #  - "127.0.0.1:8405:8404" # Localhost metrics access
+    ports:
+      - "127.0.0.1:8405:8405" # Localhost metrics access
+      - "${PRIVATE_IP:-127.0.0.1}:8405:8405" # Allows to also expose metrics on a given IP address,
+                                             # intended to be IP of the interface of the private subnet of the EC2 VM
     environment:
       OR_SETUP_TYPE:
       OR_ADMIN_PASSWORD:
@@ -74,8 +77,9 @@ services:
       OR_EMAIL_X_HEADERS:
       OR_EMAIL_FROM:
       OR_EMAIL_ADMIN:
+      OR_METRICS_ENABLED: ${OR_METRICS_ENABLED:-true}
       OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
-      OR_ADDITIONAL_HOSTNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
+      OR_ADDITIONAL_HOSTNAMES:
       OR_SSL_PORT: ${OR_SSL_PORT:--1}
       OR_DEV_MODE: ${OR_DEV_MODE:-false}
 

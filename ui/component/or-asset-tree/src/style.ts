@@ -98,6 +98,7 @@ export const style = css`
         margin: 0;
         color: var(--internal-or-asset-tree-text-color);
         padding: 0;
+        height: 100%;
     }
     
     #list, ol {
@@ -106,6 +107,10 @@ export const style = css`
         
     li ol {
         padding: 0;
+    }
+    
+    #list li {
+        width: 100%;
     }
     
     #list li:not([data-expanded]) > ol {
@@ -125,11 +130,20 @@ export const style = css`
     }
     
     .in-between-element {
-        height: 3px;
+        position: relative;
+        height: 2px;
     }
-
-    .end-element {
-        height: 15px;
+    .in-between-element.over {
+        padding: 5px 0;
+        margin: -5px 0;
+    }
+    .end-element, .loadmore-element {
+        height: 44px;
+    }
+    .loadmore-element {
+        display: flex;
+        padding-left: 15px;
+        align-items: center;
     }
     
     .node-container {
@@ -302,7 +316,7 @@ export const style = css`
         cursor: pointer;
     }
     
-    .draggable:active {
+    .draggable:active[draggable="true"] {
         cursor: grabbing;
     }
 `;

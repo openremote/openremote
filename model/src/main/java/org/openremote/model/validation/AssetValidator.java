@@ -12,6 +12,8 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.MetaHolder;
+import org.openremote.model.value.NameValueHolder;
 
 import java.time.Instant;
 import java.util.Map;
@@ -72,7 +74,7 @@ public class AssetValidator implements HibernateConstraintValidator<AssetValid, 
 
         // Check attribute types match descriptors and value constraints are met
         asset.getAttributes().values().forEach(attribute -> {
-            if (!validateAttribute(assetModelInfo, attribute, context, clockProvider.getClock().instant())) {
+            if (!validateNameValueMetaHolder(assetModelInfo, attribute, context, clockProvider.getClock().instant())) {
                 valid.set(false);
             }
         });
@@ -81,7 +83,7 @@ public class AssetValidator implements HibernateConstraintValidator<AssetValid, 
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
-    public static boolean validateAttribute(AssetTypeInfo assetModelInfo, Attribute<?> attribute, ConstraintValidatorContext context, Instant now) {
+    public static <U, T extends NameValueHolder<U> & MetaHolder> boolean validateNameValueMetaHolder(AssetTypeInfo assetModelInfo, T attribute, ConstraintValidatorContext context, Instant now) {
         boolean valid = true;
         AttributeDescriptor<?> descriptor = assetModelInfo == null ? null : assetModelInfo.getAttributeDescriptors().get(attribute.getName());
 

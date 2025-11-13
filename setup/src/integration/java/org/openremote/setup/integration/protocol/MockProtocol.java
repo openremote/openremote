@@ -26,19 +26,22 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.protocol.ProtocolAssetDiscovery;
+import org.openremote.model.protocol.ProtocolAssetImport;
 import org.openremote.model.value.ValueType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 /**
  * A mock protocol for testing purposes that records the various method calls and supports protocol discovery
  */
-public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> implements ProtocolAssetDiscovery {
+public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> implements ProtocolAssetDiscovery, ProtocolAssetImport {
 
     public static final String PROTOCOl_NAME = "Mock protocol";
     public List<AttributeEvent> protocolWriteAttributeEvents = new ArrayList<>();
@@ -83,11 +86,11 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> imp
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, MockAgentLink agentLink, AttributeEvent event, Object processedValue) {
-        protocolMethodCalls.add("WRITE_ATTRIBUTE:" + event.getAssetId() + ":" + attribute.getName());
+    protected void doLinkedAttributeWrite(MockAgentLink agentLink, AttributeEvent event, Object processedValue) {
+        protocolMethodCalls.add("WRITE_ATTRIBUTE:" + event.getId() + ":" + event.getName());
         protocolWriteAttributeEvents.add(event);
         if (updateSensor) {
-            updateReceived(event.getAttributeState());
+            updateReceived(event.getRef(), event.getValue(), event.getTimestamp());
         }
     }
 
@@ -101,11 +104,15 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> imp
         return "mock://" + getAgent().getId();
     }
 
-    public void updateReceived(AttributeState state) {
+    public void updateReceived(final AttributeRef attributeRef, final Object value, Long timestamp) {
         // Assume we've pushed the update to the actual device and it responded with OK
         // so now we want to cause a sensor update that will go through the processing
         // chain.
-        updateLinkedAttribute(state);
+        if (timestamp != null) {
+            updateLinkedAttribute(attributeRef, value, timestamp);
+        } else {
+            updateLinkedAttribute(attributeRef, value);
+        }
     }
 
     protected void updateAttribute(AttributeState state) {
@@ -114,7 +121,7 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> imp
 
     @Override
     public Future<Void> startAssetDiscovery(Consumer<AssetTreeNode[]> assetConsumer) {
-        return container.getExecutorService().submit(() -> {
+        return container.getExecutor().submit(() -> {
 
             // Simulate discovery init delay
             Thread.sleep(2000);
@@ -156,5 +163,10 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> imp
 
            return null;
         });
+    }
+
+    @Override
+    public Future<Void> startAssetImport(byte[] fileData, Consumer<AssetTreeNode[]> assetConsumer) {
+        return CompletableFuture.completedFuture(null);
     }
 }

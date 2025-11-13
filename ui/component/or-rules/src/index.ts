@@ -1,5 +1,24 @@
-import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
+import {customElement, property, query, state} from "lit/decorators.js";
 import manager, {
     DefaultBoxShadow,
     DefaultColor1,
@@ -10,7 +29,7 @@ import manager, {
     DefaultColor6,
     Util
 } from "@openremote/core";
-import i18next from "i18next";
+import {i18next, translate} from "@openremote/or-translate"
 import "@openremote/or-icon";
 import {
     AssetModelUtil,
@@ -33,15 +52,18 @@ import {
 } from "@openremote/model";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-drawer";
-import {translate} from "@openremote/or-translate";
-import "./or-rule-list";
 import "./or-rule-viewer";
+import "./or-rule-group-viewer";
+import "./or-rule-tree";
 import "./flow-viewer/flow-viewer";
-import {OrRuleList} from "./or-rule-list";
 import {OrRuleViewer} from "./or-rule-viewer";
 import {RecurrenceOption} from "./json-viewer/or-rule-then-otherwise";
 import {ValueInputProviderGenerator} from "@openremote/or-mwc-components/or-mwc-input";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import {OrRuleTree, RuleTreeNode} from "./or-rule-tree";
+import {OrTreeDragEvent} from "@openremote/or-tree-menu";
+import {when} from "lit/directives/when.js";
 
 export {buttonStyle} from "./style";
 
@@ -53,8 +75,11 @@ export const enum ConditionType {
 
 export const enum ActionType {
     WAIT = "wait",
+    ALARM = "alarm",
     EMAIL = "email",
+    EMAIL_LOCALIZED = "email_localized",
     PUSH_NOTIFICATION = "push",
+    PUSH_LOCALIZED = "push_localized",
     ATTRIBUTE = "attribute",
     WEBHOOK = "webhook"
 }
@@ -91,7 +116,8 @@ export enum AssetQueryOperator {
     WITHIN_RADIUS = "withinRadius",
     OUTSIDE_RADIUS = "outsideRadius",
     WITHIN_RECTANGLE = "withinRectangle",
-    OUTSIDE_RECTANGLE = "outsideRectangle"
+    OUTSIDE_RECTANGLE = "outsideRectangle",
+    NOT_UPDATED_FOR = "notUpdatedFor"
 }
 
 export interface AllowedActionTargetTypes {
@@ -136,6 +162,12 @@ export interface RulesConfig {
         then?: RuleActionUnion;
         otherwise?: RuleActionUnion;
     };
+    notifications?: {
+        [realm: string]: {
+            defaultLanguage?: string;
+            languages?: string[];
+        }
+    }
 }
 
 export interface RulesDescriptorSection {
@@ -160,9 +192,19 @@ export interface RulesConfigAsset {
 export interface RulesConfigAttribute extends AttributeDescriptor {
 }
 
+export interface RulesetBaseNode {
+    type: "rule" | "group";
+}
+
 export interface RulesetNode {
+    type: "rule",
     ruleset: RulesetUnion;
     selected: boolean;
+}
+
+export interface RulesetGroupNode extends RulesetBaseNode {
+    type: "group",
+    groupId: string;
 }
 
 export interface RequestEventDetail<T> {
@@ -198,7 +240,7 @@ export const RuleViewInfoMap: {[key in RulesetLang]: RuleViewInfo} = {
             "\n" +
             "import org.openremote.manager.rules.RulesBuilder\n" +
             "import org.openremote.model.notification.*\n" +
-            "import org.openremote.model.rules.AssetState\n" +
+            "import org.openremote.model.attribute.AttributeInfo\n" +
             "import org.openremote.model.asset.Asset\n" +
             "import org.openremote.model.asset.impl.*\n" +
             "import org.openremote.model.query.*\n" +
@@ -292,7 +334,7 @@ export const RuleViewInfoMap: {[key in RulesetLang]: RuleViewInfo} = {
             "    facts ->\n" +
             "\n" +
             "        // Extract any binded facts\n" +
-            "        AssetState assetState = facts.bound(\"assetState\")\n" +
+            "        AttributeInfo assetState = facts.bound(\"assetState\")\n" +
             "\n" +
             "        // Insert the custom fact to prevent rule loop\n" +
             "        facts.put(\"someAttribute\", assetState.getTimestamp())\n" +
@@ -551,11 +593,11 @@ export class OrRulesRuleUnsupportedEvent extends CustomEvent<void> {
 }
 
 export interface NodeSelectEventDetail {
-    oldNodes: RulesetNode[];
-    newNodes: RulesetNode[];
+    oldNodes: RulesetBaseNode[];
+    newNodes: RulesetBaseNode[];
 }
 
-export class OrRulesRequestSelectionEvent extends CustomEvent<RequestEventDetail<NodeSelectEventDetail>> {
+export class OrRulesRequestSelectionEvent extends CustomEvent<NodeSelectEventDetail> {
 
     public static readonly NAME = "or-rules-request-selection";
 
@@ -563,10 +605,8 @@ export class OrRulesRequestSelectionEvent extends CustomEvent<RequestEventDetail
         super(OrRulesRequestSelectionEvent.NAME, {
             bubbles: true,
             composed: true,
-            detail: {
-                detail: request,
-                allow: true
-            }
+            cancelable: true,
+            detail: request
         });
     }
 }
@@ -604,6 +644,22 @@ export class OrRulesRequestAddEvent extends CustomEvent<RequestEventDetail<AddEv
         });
     }
 }
+
+export class OrRulesRequestGroupEvent extends CustomEvent<{ value: string }> {
+
+    public static readonly NAME = "or-rules-request-group";
+
+    constructor(name: string) {
+        super(OrRulesRequestGroupEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: {
+                value: name,
+            }
+        });
+    }
+}
+
 
 export class OrRulesAddEvent extends CustomEvent<AddEventDetail> {
 
@@ -682,6 +738,22 @@ export class OrRulesDeleteEvent extends CustomEvent<RulesetUnion[]> {
     }
 }
 
+export class OrRulesGroupNameChangeEvent extends CustomEvent<{ value: string }> {
+
+    public static readonly NAME = "or-rules-group-name-change";
+
+    constructor(name: string) {
+        super(OrRulesGroupNameChangeEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            cancelable: true,
+            detail: {
+                value: name
+            }
+        });
+    }
+}
+
 declare global {
     export interface HTMLElementEventMap {
         [OrRulesRuleUnsupportedEvent.NAME]: OrRulesRuleUnsupportedEvent;
@@ -694,6 +766,9 @@ declare global {
         [OrRulesRequestSaveEvent.NAME]: OrRulesRequestSaveEvent;
         [OrRulesSaveEvent.NAME]: OrRulesSaveEvent;
         [OrRulesDeleteEvent.NAME]: OrRulesDeleteEvent;
+        [OrTreeDragEvent.NAME]: OrTreeDragEvent;
+        [OrRulesRequestGroupEvent.NAME]: OrRulesRequestGroupEvent;
+        [OrRulesGroupNameChangeEvent.NAME]: OrRulesGroupNameChangeEvent;
     }
 }
 
@@ -728,7 +803,7 @@ export const style = css`
         --or-panel-background-color: var(--internal-or-rules-panel-color);
     }
 
-    or-rule-list {
+    or-rule-tree {
         min-width: 300px;
         width: 300px;
         z-index: 2;
@@ -739,7 +814,7 @@ export const style = css`
         box-shadow: ${unsafeCSS(DefaultBoxShadow)};
     }
     
-    or-rule-viewer {
+    or-rule-viewer, or-rule-group-viewer {
         z-index: 1;    
     }
 `;
@@ -767,17 +842,21 @@ export class OrRules extends translate(i18next)(LitElement) {
     @property({type: String})
     public language?: RulesetLang;
 
-    @property({type: Array})
-    public selectedIds?: number[];
-
     @property({attribute: false})
     private _isValidRule?: boolean;
 
-    @query("#rule-list")
-    private _rulesList!: OrRuleList;
+    /**
+     * Represents the selected group name. (groupId in rules meta)
+     * Will be undefined once something else is selected
+     */
+    @state()
+    protected _selectedGroup?: string;
+
+    @query("#rule-tree")
+    private _rulesTree?: OrRuleTree;
 
     @query("#rule-viewer")
-    private _viewer!: OrRuleViewer;
+    private _viewer?: OrRuleViewer;
 
     constructor() {
         super();
@@ -786,75 +865,331 @@ export class OrRules extends translate(i18next)(LitElement) {
         this.addEventListener(OrRulesSelectionEvent.NAME, this._onRuleSelectionChanged);
         this.addEventListener(OrRulesAddEvent.NAME, this._onRuleAdd);
         this.addEventListener(OrRulesSaveEvent.NAME, this._onRuleSave);
+        this.addEventListener(OrTreeDragEvent.NAME, this._onRuleDrag);
+        this.addEventListener(OrRulesRequestGroupEvent.NAME, this._onGroupAddRequest);
+        this.addEventListener(OrRulesGroupNameChangeEvent.NAME, this._onGroupNameChange);
     }
 
     protected render() {
-
         return html`
-            <or-rule-list id="rule-list" .config="${this.config}" .language="${this.language}" .selectedIds="${this.selectedIds}"></or-rule-list>
-            <or-rule-viewer id="rule-viewer" .config="${this.config}" .readonly="${this.isReadonly()}"></or-rule-viewer>
+            <or-rule-tree id="rule-tree" ?readonly=${this._isReadonly()} .config=${this.config}></or-rule-tree>
+            ${when(this._selectedGroup, () => html`
+                <or-rule-group-viewer .group="${this._selectedGroup}" .readonly="${this._isReadonly()}"></or-rule-group-viewer>
+            `, () => html`
+                <or-rule-viewer id="rule-viewer" .config="${this.config}" .readonly="${this._isReadonly()}"></or-rule-viewer>
+            `)}
         `;
     }
 
     public refresh() {
-        this._viewer.ruleset = undefined;
-        this._rulesList.refresh();
+        console.debug("Refreshing the rules content...")
+        if(this._viewer) {
+            this._viewer.ruleset = undefined;
+        }
+        this._rulesTree?.refresh();
     }
 
-    protected isReadonly(): boolean {
+    protected _isReadonly(): boolean {
         return this.readonly || !manager.hasRole(ClientRole.WRITE_RULES);
     }
 
-    protected _confirmContinue(action: () => void) {
-        if (this._viewer.modified) {
+    protected _confirmContinue(action: (ok: boolean) => void) {
+        if (this._viewer?.modified) {
             showOkCancelDialog(i18next.t("loseChanges"), i18next.t("confirmContinueRulesetModified"), i18next.t("discard"))
-                .then((ok) => {
-                    if (ok) {
-                        action();
-                    }
-                });
+                .then((ok) => action(ok));
         } else {
-            action();
+            action(true);
         }
     }
 
+    /**
+     * HTML event callback on when a "rule (or group) selection is requested".
+     * It is a cancellable event that can prompt a user "to discard changes" if they have been made.
+     * @param event - The cancellable selection event
+     */
     protected _onRuleSelectionRequested(event: OrRulesRequestSelectionEvent) {
-        const isModified = this._viewer.modified;
+        const isModified = this._viewer?.modified;
 
         if (!isModified) {
             return;
         }
 
-        // Prevent the request and check if user wants to lose changes
-        event.detail.allow = false;
+        // Prevent the initial request
+        event.preventDefault();
+        console.debug("Prevented new rule selection; prompting user changes have been made.");
 
-        this._confirmContinue(() => {
-            const nodes = event.detail.detail.newNodes;
-            if (Util.objectsEqual(nodes, event.detail.detail.oldNodes)) {
-                // User has clicked the same node so let's force reload it
-                this._viewer.ruleset =  {...nodes[0].ruleset};
+        // Prompt user to "discard changes", and continue the selection afterwards
+        this._confirmContinue((ok) => {
+            if(ok) {
+                this._onNodeSelectionChanged(event.detail);
+                event.detail.newNodes.filter(n => n.type === "rule")
+                    .forEach(n => this._rulesTree?.selectRuleset((n as RulesetNode).ruleset, true));
             } else {
-                this.selectedIds = nodes.map((node) => node.ruleset.id!);
-                this._viewer.ruleset = nodes.length === 1 ? nodes[0].ruleset : undefined;
+                event.detail.oldNodes.filter(n => n.type === "rule")
+                    .forEach(n => this._rulesTree?.selectRuleset((n as RulesetNode).ruleset, true));
             }
         });
     }
 
+    /**
+     * HTML event callback on when a new rule (or group) has been selected.
+     * @param event - The selection event
+     */
     protected _onRuleSelectionChanged(event: OrRulesSelectionEvent) {
-        const nodes = event.detail.newNodes;
-        this.selectedIds = nodes.map((node) => node.ruleset.id!);
-        this._viewer.ruleset = nodes.length === 1 ? {...nodes[0].ruleset} : undefined;
+        this._onNodeSelectionChanged(event.detail);
     }
 
-    protected _onRuleAdd(event: OrRulesAddEvent) {
-        // Load the ruleset into the viewer
-        this._viewer.ruleset = event.detail.ruleset;
-    }
+    /**
+     * Utility event callback function called by {@link _onRuleSelectionRequested} and {@link _onRuleSelectionChanged},
+     * when a new node in the {@link OrRuleTree} element is selected. It processes the event, and updates the {@link OrRuleViewer} with the new rule.
+     * Alternatively, if a group is selected, it updates {@link _selectedGroup} instead.
+     * @param payload - Event payload of the {@link RulesetBaseNode} selection
+     */
+    protected _onNodeSelectionChanged(payload: NodeSelectEventDetail) {
+        const selectedNodes = payload.newNodes;
+        const groupNodes = selectedNodes.filter(n => n.type === "group") as RulesetGroupNode[]; // list of selected group nodes
 
-    protected async _onRuleSave(event: OrRulesSaveEvent) {
-        await this._rulesList.refresh();
-        if (event.detail.success && event.detail.isNew) {
-            this.selectedIds = [event.detail.ruleset.id!];
+        // If any group has been selected
+        if(groupNodes.length === 1) {
+            if(this._viewer) this._viewer.ruleset = undefined; // clear viewer, since a group is selected instead
+            this._selectedGroup = groupNodes[0].groupId;
+            return;
+        }
+
+        // If the user has clicked the same node so let's force reload it
+        else if (Util.objectsEqual(selectedNodes, payload.oldNodes)) {
+            console.debug("Force reloading rule viewer...");
+            const node = (selectedNodes[0] as any)?.ruleset as RulesetNode | undefined;
+            this._viewer!.ruleset = node ? {...node.ruleset} : undefined;
+
+        // Otherwise, select the new rule or group.
+        } else {
+            const groupNodes = selectedNodes.filter(n => n.type === "group") as RulesetGroupNode[]; // list of selected group nodes
+            const rulesetNodes = selectedNodes.filter(n => n.type === "rule") as RulesetNode[]; // list of selected rule nodes
+            const selectedIds = rulesetNodes.map((node) => node.ruleset.id!);
+            console.debug(`Selecting rule IDs ${selectedIds}`);
+
+            // Deselect the group, and select either a new rule or group after that.
+            this._deselectGroup().then(() => {
+                if(rulesetNodes.length === 1) {
+                    this.getUpdateComplete().then(() => {
+                        console.debug("Ruleset viewer is now showing", rulesetNodes[0].ruleset.name)
+                        this._viewer!.ruleset = {...rulesetNodes[0].ruleset};
+                    })
+                } else {
+                    this._viewer!.ruleset = undefined; // clear viewer, since a group is selected instead
+                    if(groupNodes.length === 1) {
+                        this._selectedGroup = groupNodes[0].groupId;
+                    }
+                }
+            })
         }
     }
+
+    /**
+     * HTML callback event for when a new rule is added.
+     * @param event - A {@link CustomEvent} with the new ruleset as payload.
+     */
+    protected _onRuleAdd(event: OrRulesAddEvent) {
+        // Load the ruleset into the viewer
+        this._deselectGroup().then(() => {
+            this._viewer!.ruleset = event.detail.ruleset;
+        })
+    }
+
+    /**
+     * HTML callback event for when a rule has been saved by the user.
+     * @param event - A {@link CustomEvent} with a {@link SaveResult} payload.
+     */
+    protected async _onRuleSave(event: OrRulesSaveEvent) {
+        if(event.detail.success) {
+
+            // Reset the modified state, which disables the "save" button
+            if(this._viewer) this._viewer.modified = false;
+
+            // Fetch the updated rules, and change the viewer to the latest version
+            const newRulesets = await this._rulesTree?.refresh();
+            this._checkForViewerUpdate(undefined, newRulesets);
+
+            // After the tree has refreshed, check if the saved rule belongs to a group.
+            const savedRuleset = event.detail.ruleset;
+            const groupId = savedRuleset.meta?.groupId as string;
+
+            // If it has a group ID, expand tree component to show that group and rules that are inside.
+            if (groupId && this._rulesTree) {
+                this._rulesTree.expandGroup(groupId);
+            }
+
+            // Select the ruleset if it's new
+            if (event.detail.isNew) {
+                const ruleset = newRulesets?.find(r => r.id && r.id === event.detail.ruleset.id);
+                if(ruleset) {
+                    this._rulesTree?.deselectAllNodes();
+                    this._rulesTree?.selectRuleset(ruleset);
+                } else {
+                    console.warn("Could not select the new ruleset.")
+                }
+            }
+        }
+    }
+
+    /**
+     * Utility function that updates the viewer with the latest changes.
+     * @param viewer - The or-rule-viewer HTML element
+     * @param updatedRulesets - List of new rulesets that have been changed
+     */
+    protected _checkForViewerUpdate(viewer = this._viewer, updatedRulesets?: RulesetUnion[]) {
+        const current = viewer?.ruleset;
+        if(current) {
+            const found = updatedRulesets?.find(r => r.id === viewer?.ruleset?.id);
+            if(found) viewer!.ruleset = found;
+        }
+    }
+
+    /**
+     * HTML callback for {@link OrTreeDragEvent}, for when a rule is dragged into (or outside) a group.
+     * It handles updating of the 'meta groupId' in a rule, and persists the changes with the HTTP API.
+     * @param ev - Tree drag event with a payload of the moved nodes
+     */
+    protected _onRuleDrag(ev: OrTreeDragEvent) {
+        const isModified = this._viewer?.modified;
+        const groupId = ev.detail.groupNode?.label;
+
+        const moveAndSave = (ruleset: RulesetUnion, groupId?: string) => {
+            move(ruleset, groupId);
+            return this._saveRuleset(ruleset);
+        };
+        const move = (ruleset: RulesetUnion, groupId?: string) => {
+            if (!ruleset.meta) ruleset.meta = {};
+            (ruleset.meta as any).groupId = groupId;
+            if(Object.keys(ruleset.meta).length === 0) {
+                delete ruleset.meta;
+            }
+        };
+
+        // If the ruleset viewer has no changes, continue dragging the node, and apply changes.
+        if (!isModified) {
+            const promises = (ev.detail.nodes as RuleTreeNode[]).map(node => {
+                if(node.ruleset) {
+                    return moveAndSave(node.ruleset, groupId);
+                }
+            });
+            Promise.all(promises)
+                .then(() => showSnackbar(undefined, "ruleDragSuccess"))
+                .catch(() => showSnackbar(undefined, "ruleDragFailed"))
+                .finally(() => this._rulesTree?.refresh().then(rulesets => this._checkForViewerUpdate(undefined, rulesets)));
+
+            return;
+        }
+
+        console.debug("Prevented the default tree drag behavior.")
+        ev.preventDefault(); // prevent the initial rule dragging
+
+        // Prompt the user to "discard changes"
+        this._confirmContinue((ok) => {
+            if(ok) {
+                (ev.detail.nodes as RuleTreeNode[]).forEach(node => {
+                    if (node.ruleset) {
+                        moveAndSave(node.ruleset, groupId)?.then(() => {
+                            this._rulesTree?.moveNodesToGroup([node], ev.detail.groupNode); // move the nodes again, as the initial event got cancelled.
+                            showSnackbar(undefined, "ruleDragSuccess!");
+                        }).catch(() => {
+                            showSnackbar(undefined, "ruleDragFailed");
+                        });
+                    } else if (node.ruleset) {
+                        console.warn("Could not add rule to group; could not find ruleset.");
+                    } else if (groupId) {
+                        console.warn("Could not add rule to group; could not find group ID.");
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * Utility function that deselects the group by clearing {@link _selectedGroup}.
+     */
+    protected _deselectGroup(): Promise<boolean> {
+        this._selectedGroup = undefined;
+        return this.getUpdateComplete();
+    }
+
+    /**
+     * HTML callback for when a new group is added to the {@link OrRuleTree}.
+     * @param ev - Callback event
+     */
+    protected _onGroupAddRequest(ev: OrRulesRequestGroupEvent) {
+        this._selectedGroup = ev.detail.value;
+    }
+
+    /**
+     * HTML callback for when the selected group name has changed.
+     * This function handles renaming the groupId of the rules within that group,
+     * together with persisting the changes using the HTTP API.
+     * @param ev - Callback event
+     */
+    protected _onGroupNameChange(ev: OrRulesGroupNameChangeEvent) {
+        const oldValue = this._selectedGroup;
+        const newValue = ev.detail.value;
+
+        // If the group name already exists, we should prevent the event from happening
+        if(this._rulesTree?.nodes.find(n => n.label === newValue)) {
+            console.warn(`The group '${newValue}' already exists. Please try again.`);
+            ev.preventDefault();
+            return;
+        }
+
+        console.debug(`Renaming group '${oldValue}' to '${newValue}'`)
+
+        // Change the groupId for each child rule, and prepare an HTTP API update
+        const promises: Promise<any>[] = [];
+        const groupRules = this._rulesTree?.rules?.filter(r => r.meta?.groupId === oldValue);
+        groupRules?.forEach((r) => {
+            r.meta!.groupId = newValue;
+            promises.push(this._saveRuleset(r));
+        });
+
+        // If a rule has changed, execute the HTTP requests.
+        // After that, we fetch the list of rules again using .refresh();
+        if(promises.length > 0) {
+            Promise.all(promises)
+                .then(() => showSnackbar(undefined, "Saved!"))
+                .catch(() => showSnackbar(undefined, "Failed!"))
+                .finally(() => this._rulesTree?.refresh());
+
+        // Otherwise, only update the group name in the tree.
+        } else {
+            if(this._rulesTree) {
+                const nodes = [...this._rulesTree.nodes];
+                const node = nodes.find(n => n.label === oldValue);
+                if(node) {
+                    node.label = newValue;
+                    this._rulesTree.nodes = nodes;
+                } else {
+                    this._rulesTree.nodes = [...nodes, {id: newValue, label: newValue, children: []}];
+                }
+            }
+        }
+        this._selectedGroup = newValue;
+    }
+
+    /**
+     * Utility function that returns a promise for saving the ruleset, based on its type.
+     * @param ruleset - The ruleset to be saved
+     */
+    protected async _saveRuleset(ruleset: RulesetUnion){
+        let promise;
+        switch (ruleset.type) {
+            case "asset": {
+                promise = manager.rest.api.RulesResource.updateAssetRuleset(ruleset.id!, ruleset); break;
+            } case "global": {
+                promise = manager.rest.api.RulesResource.updateGlobalRuleset(ruleset.id!, ruleset); break;
+            } case "realm": {
+                promise = manager.rest.api.RulesResource.updateRealmRuleset(ruleset.id!, ruleset); break;
+            } default: {
+                break;
+            }
+        }
+        return promise;
+    };
 }

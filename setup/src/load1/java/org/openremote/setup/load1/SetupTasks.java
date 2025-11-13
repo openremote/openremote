@@ -24,14 +24,26 @@ import org.openremote.model.setup.Setup;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class SetupTasks implements org.openremote.model.setup.SetupTasks {
 
     @Override
     public List<Setup> createTasks(Container container, String setupType, boolean keycloakEnabled) {
+
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+
         return Arrays.asList(
-            new KeycloakSetup(container),
-            new ManagerSetup(container)
+            new KeycloakSetup(container, executor),
+            new ManagerSetup(container, executor),
+            // A hack to allow shutdown of the setup executor
+            new Setup() {
+                @Override
+                public void onStart() throws Exception {
+                    executor.shutdown();
+                }
+            }
         );
     }
 }

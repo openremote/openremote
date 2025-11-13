@@ -128,7 +128,7 @@ public class ConsoleAsset extends Asset<ConsoleAsset> {
 //            valid = false;
 //        }
 //
-//        Value providerValue = asset.getAttribute(Asset.CONSOLE_PROVIDERS.getAttributeName()).flatMap(AbstractValueHolder::getValue).orElse(null);
+//        Value providerValue = asset.getAttribute(Asset.CONSOLE_PROVIDERS.getName()).flatMap(AbstractValueHolder::getValue).orElse(null);
 //
 //        if (providerValue != null && !getConsoleProviders(asset).isPresent()) {
 //            if (validationFailures != null) {

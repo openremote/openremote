@@ -20,7 +20,6 @@
 package org.openremote.manager.agent;
 
 import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.system.HealthStatusProvider;

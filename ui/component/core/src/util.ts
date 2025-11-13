@@ -29,6 +29,7 @@ import Qs from "qs";
 import {AssetModelUtil} from "@openremote/model";
 import moment from "moment";
 import DateTimeFormatOptions = Intl.DateTimeFormatOptions;
+import {transform} from "lodash";
 
 export class Deferred<T> {
 
@@ -62,12 +63,27 @@ export interface GeoNotification {
     notification?: PushNotificationMessage;
 }
 
+export function getBrowserLanguage(): string {
+    return navigator.language.split("-")[0] || "en";
+}
+
 export function getQueryParameters(queryStr: string): any {
     return Qs.parse(queryStr, {ignoreQueryPrefix: true});
 }
 
-export function getQueryParameter(queryStr: string, parameter: string): any | undefined {
-    const parsed = getQueryParameters(queryStr);
+export function getQueryParameter(parameter: string): any | undefined {
+    let parsed;
+
+    if (location.search && location.search !== "") {
+        parsed = getQueryParameters(location.search);
+    }
+
+    if (location.hash) {
+        const index = location.hash.indexOf("?");
+        if (index > -1) {
+            parsed = getQueryParameters(location.hash.substring(index + 1));
+        }
+    }
     return parsed ? parsed[parameter] : undefined;
 }
 
@@ -258,6 +274,20 @@ export function objectsEqual(obj1?: any, obj2?: any, deep: boolean = true): bool
     }
 
     return false;
+}
+/**
+ * Deep diff between two object, using lodash
+ * @param  {Object} object Object compared
+ * @param  {Object} base   Object to compare with
+ * @return {Object}        Return a new object who represent the diff
+ */
+export function difference(object?: any, base?: any): any {
+    const changes = (object: any, base: any) => transform(object, function(result: any, value, key: string | number | symbol) {
+        if (!objectsEqual(value, base?.[key])) {
+            result[key] = (isObject(value) && isObject(base?.[key])) ? changes(value, base?.[key]) : value;
+        }
+    });
+    return changes(object, base);
 }
 
 export function arrayRemove<T>(arr: T[], item: T) {
@@ -938,15 +968,15 @@ function doStandardTranslationLookup(lookup: WellknownMetaItems.LABEL | Wellknow
  */
 export function updateAsset(asset: Asset, event: AttributeEvent): Asset {
 
-    const attributeName = event.attributeState!.ref!.name!;
+    const attributeName = event.ref!.name!;
 
     if (asset.attributes) {
-        if (event.attributeState!.deleted) {
+        if (event.deleted) {
             delete asset.attributes![attributeName];
         } else {
             const attribute = asset.attributes[attributeName];
             if (attribute) {
-                attribute.value = event.attributeState!.value;
+                attribute.value = event.value;
                 attribute.timestamp = event.timestamp;
             }
         }
@@ -1017,49 +1047,6 @@ export function dispatchCancellableEvent<T>(target: EventTarget, event: CustomEv
     return deferred.promise;
 }
 
-// left: 37, up: 38, right: 39, down: 40,
-// spacebar: 32, pageup: 33, pagedown: 34, end: 35, home: 36
-const keys = {37: 1, 38: 1, 39: 1, 40: 1};
-function preventDefault(e: Event) {
-    e.preventDefault();
-}
-function preventDefaultForScrollKeys(e: KeyboardEvent) {
-    if ((keys as any)[e.keyCode]) {
-        preventDefault(e);
-        return false;
-    }
-}
-
-// modern Chrome requires { passive: false } when adding event
-let supportsPassive = false;
-try {
-    // @ts-ignore
-    window.addEventListener("test", null, Object.defineProperty({}, 'passive', {
-        get: () => { supportsPassive = true; }
-    }));
-} catch(e) {}
-
-const wheelOpt = supportsPassive ? { passive: false } : false;
-const wheelEvent = "onwheel" in document.createElement("div") ? "wheel" : "mousewheel";
-
-// call this to Disable
-export function disableScroll() {
-    window.addEventListener('DOMMouseScroll', preventDefault, false); // older FF
-    window.addEventListener(wheelEvent, preventDefault, wheelOpt); // modern desktop
-    window.addEventListener('touchmove', preventDefault, wheelOpt); // mobile
-    window.addEventListener('keydown', preventDefaultForScrollKeys, false);
-}
-
-// call this to Enable
-export function enableScroll() {
-    window.removeEventListener('DOMMouseScroll', preventDefault, false);
-    // @ts-ignore
-    window.removeEventListener(wheelEvent, preventDefault, wheelOpt);
-    // @ts-ignore
-    window.removeEventListener('touchmove', preventDefault, wheelOpt);
-    window.removeEventListener('keydown', preventDefaultForScrollKeys, false);
-}
-
 export function blobToBase64(blob:Blob) {
     return new Promise((resolve, reject) => {
         const fileReader = new FileReader();
@@ -1073,8 +1060,4 @@ export function blobToBase64(blob:Blob) {
             reject(error);
         };
     });
-}
-
-export function realmRoleFilter(role: Role) {
-    return role.name === "admin" || (!role.composite && !["uma_authorization", "offline_access", "create-realm"].includes(role.name!) && !role.name!.startsWith("default-roles"));
 }

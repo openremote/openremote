@@ -3,7 +3,7 @@ import {Asset, AssetQuery, Attribute, AttributeRef} from "@openremote/model";
 import { state } from "lit/decorators.js";
 import manager from "@openremote/core";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {WidgetConfig} from "./widget-config";
+import {isAxiosError} from "@openremote/rest";
 import {WidgetSettings} from "./widget-settings";
 import { CSSResult } from "lit";
 
@@ -21,6 +21,9 @@ export abstract class OrAssetWidget extends OrWidget {
 
     @state() // cached attribute list; [asset index of the loadedAssets array, attribute]
     protected assetAttributes: [number, Attribute<any>][] = [];
+
+    @state()
+    protected _error?: string;
 
     static get styles(): CSSResult[] {
         return [...super.styles];
@@ -83,8 +86,6 @@ export abstract class AssetWidgetSettings extends WidgetSettings {
 
 // Simple async function for fetching assets by attributeRefs
 async function fetchAssetsByAttributeRef(attributeRefs: AttributeRef[] = []) {
-    const assetIds = attributeRefs.map(ar => ar.id!);
-    const attributeNames = attributeRefs.map(ar => ar.name!);
     return fetchAssets({
         ids: attributeRefs?.map((x: AttributeRef) => x.id) as string[],
         select: {
@@ -93,14 +94,26 @@ async function fetchAssetsByAttributeRef(attributeRefs: AttributeRef[] = []) {
     });
 }
 
+/**
+ * Function that will fetch an array of assets based on {@link assetQuery}.
+ * On failure, by default, it will only log to the web browser console.
+ * In some cases it will throw a custom error, that holds a custom message.
+ */
 async function fetchAssets(assetQuery: AssetQuery) {
     let assets: Asset[] = [];
     assetQuery.realm = { name: manager.displayRealm };
     await manager.rest.api.AssetResource.queryAssets(assetQuery).then(response => {
         assets = response.data;
-    }).catch((reason) => {
-        console.error(reason);
+    }).catch((e) => {
+        console.error(e);
         showSnackbar(undefined, "errorOccurred");
+        if(isAxiosError(e)) {
+            if(e.message === "Network Error") {
+                throw new Error("youAreOffline")
+            } else if(e.code === "ECONNABORTED") {
+                throw new Error("noAttributeDataTimeout")
+            }
+        }
     });
     return assets;
 }

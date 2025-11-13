@@ -13,7 +13,7 @@ import org.openremote.manager.rules.RulesBuilder
 import org.openremote.model.asset.impl.BuildingAsset
 import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.query.AssetQuery
-import org.openremote.model.rules.AssetState
+import org.openremote.model.attribute.AttributeInfo
 import org.openremote.model.util.Pair
 
 import java.time.temporal.ChronoUnit
@@ -135,7 +135,7 @@ rules.add()
                         !it.value.isPresent() || it.value.timestamp
                     }).map { outdatedLastPresenceDetected ->
                         // keep the room and the new timestamp
-                        new Pair<AssetState, Double>(outdatedLastPresenceDetected, roomWithMotionSensorTriggered.timestamp)
+                        new Pair<AttributeInfo, Double>(outdatedLastPresenceDetected, roomWithMotionSensorTriggered.timestamp)
                     }
                 }
             }.findFirst().map { pair ->

@@ -21,6 +21,7 @@ package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueFilter;
 
 import java.io.Serializable;
@@ -33,8 +34,44 @@ import static java.util.Objects.requireNonNull;
 /**
  * A link from one attribute to another with a definition of how to map the value from the source attribute
  * to the linked attribute.
+ * <p>
+ * By default the exact value of the attribute is forwarded unless a key exists in the converter JSON Object that
+ * matches the value as a string (note matches are case sensitive so booleans should be lower case i.e. true or false);
+ * in that case the value of the key is forwarded instead. There are several special conversions available by using
+ * the value of a {@link AttributeLink.ConverterType} as the value. This allows for example a button press to toggle a
+ * boolean attribute or for a particular value to be ignored.
+ * <p>
+ * The {@link #getFilters()} can be used to filter the source value before it is applied to the converter.
+ * <p>
+ * To convert null values the converter key of {@link org.openremote.model.util.ValueUtil#NULL_LITERAL} can be used.
+ * <p>
+ * Example {@link MetaItemType#ATTRIBUTE_LINKS} meta items:
+ * <blockquote><pre>{@code
+ * [
+ * "name": "urn:openremote:asset:meta:attributeLink",
+ * "value": {
+ * "ref": ["0oI7Gf_kTh6WyRJFUTr8Lg", "light1"],
+ * "converter": {
+ * "PRESSED": "@TOGGLE",
+ * "LONG_PRESSED": "@IGNORE",
+ * "RELEASED": "@IGNORE"
+ * }
+ * }
+ * ],
+ * [
+ * "name": "urn:openremote:asset:meta:attributeLink",
+ * "value": {
+ * "ref": ["0oI7Gf_kTh6WyRJFUTr8Lg", "light2"],
+ * "converter": {
+ * "0": true,
+ * "1": false
+ * "NULL": "@IGNORE"
+ * }
+ * }
+ * ]
+ * }</pre></blockquote>
  */
-// TODO: Somehow combine this with flow rules
+//TODO: Somehow combine this with rules
 public class AttributeLink implements Serializable {
 
     public enum ConverterType {

@@ -92,7 +92,7 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
             return this;
 
         // Check if the asset ID of every event can be found with the default security of this facade
-        String[] ids = Arrays.stream(events).map(AttributeEvent::getAssetId).toArray(String[]::new);
+        String[] ids = Arrays.stream(events).map(AttributeEvent::getId).toArray(String[]::new);
 
         AssetQuery query = new AssetQuery().ids(ids);
         long count = this.getResults(query).count();
@@ -113,6 +113,6 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
     }
 
     public AssetsFacade<T> dispatch(String assetId, String attributeName) {
-        return dispatch(new AttributeEvent(assetId, attributeName));
+        return dispatch(new AttributeEvent(assetId, attributeName, null));
     }
 }

@@ -24,8 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
-import io.swagger.v3.oas.annotations.media.Schema;
+import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.Optional;

@@ -256,24 +256,16 @@ export const style = css`
         display: none;
         cursor: pointer;
     }
-    
-    #fileupload {
+
+    #fileupload, #discovery {
         display: flex;
         align-items: center;
         width: 100%;
-    }
-    
-    .hidden {
-        display: none;
-    }
-    
-    .multipleAssetsView {
-        display: flex;
-        flex-direction: column;
+        margin-bottom: 10px;
     }
 
-    .multipleAssetsView > *:first-child {
-        margin: 30px;
+    .hidden {
+        display: none;
     }
 
     @media screen and (max-width: 767px) {

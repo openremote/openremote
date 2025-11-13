@@ -21,10 +21,9 @@ package org.openremote.model.query.filter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
+import org.openremote.model.util.JSONSchemaUtil.*;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.util.ValueUtil;
 

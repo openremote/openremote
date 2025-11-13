@@ -11,15 +11,20 @@ dependencies {
     api "org.hibernate.orm:hibernate-core:$hibernateVersion"
     api "org.hibernate.validator:hibernate-validator:$hibernateValidatorVersion"
     api "jakarta.el:jakarta.el-api:$javaxELAPIVersion"
-    api "org.jboss.logging:jboss-logging-annotations:$jbossLoggingAnnotationsVersion"
-
     api "jakarta.annotation:jakarta.annotation-api:$javaxAnnotationsVersion"
     api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxrsSpecVersion"
+    api "org.jboss.resteasy:resteasy-cache-core:4.7.10.Final"
 
     api "org.keycloak:keycloak-core:$keycloakVersion"
 
     api "org.geotools:gt-main:$geotoolsVersion"
     api "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
+
+    // The transitive dependency from com.jayway.jsonpath:json-path contains a vulnerability
+    // https://github.com/advisories/GHSA-pq2g-wx69-c263
+    // Version 2.5.2 fixes it.
+    api "net.minidev:json-smart:2.5.2"
+
     api "org.jeasy:easy-rules-core:$easyRulesVersion"
     api "org.mnode.ical4j:ical4j:$ical4jVersion"
     api "org.reflections:reflections:$reflectionsVersion"
@@ -27,17 +32,40 @@ dependencies {
 
     api "io.swagger.core.v3:swagger-annotations:$swaggerVersion"
 
-    // Custom build until PR is merged from https://github.com/richturner/mbknor-jackson-jsonSchema
-    api "com.github.richturner:mbknor-jackson-jsonschema:1.0.40-JAKARTA"
-    //api "com.kjetland:mbknor-jackson-jsonschema_2.12:1.0.39"
-    api "org.scala-lang:scala-library:2.12.10"
+    api "com.github.victools:jsonschema-generator:$victoolsJsonSchemaGeneratorVersion"
+    api "com.github.victools:jsonschema-module-jackson:$victoolsJsonSchemaGeneratorVersion"
+    api "com.github.victools:jsonschema-module-jakarta-validation:$victoolsJsonSchemaGeneratorVersion"
+
     api "io.github.classgraph:classgraph:$classgraphVersion"
     api "io.micrometer:micrometer-core:$micrometerVersion"
+    api "com.devskiller.friendly-id:friendly-id:$friendlyIdVersion"
+    api "com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion"
+
+    api "fr.neolegal:exp4j:$exp4jVersion"
+
+    dependencies {
+        testImplementation 'org.skyscreamer:jsonassert:1.5.3'
+        testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.0'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testImplementation 'org.mockito:mockito-core:5.20.0'
+        testRuntimeOnly 'org.glassfish:jakarta.el:4.0.2'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+        testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+    }
+}
+
+tasks.withType(Test) {
+    environment("OR_LOGGING_CONFIG_FILE", "logging-dev.properties")
+}
+
+test {}
+
+base {
+    archivesName = "openremote-${project.name}"
 }
 
 jar {
     from sourceSets.main.allJava
-    archivesBaseName = "openremote-${project.name}"
 }
 
 javadoc {
@@ -87,8 +115,8 @@ publishing {
         maven {
             if (!version.endsWith('-LOCAL')) {
                 credentials {
-                    username findProperty("publishUsername")
-                    password findProperty("publishPassword")
+                    username = findProperty("publishUsername")
+                    password = findProperty("publishPassword")
                 }
             }
             url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
@@ -99,6 +127,8 @@ publishing {
 signing {
     def signingKey = findProperty("signingKey")
     def signingPassword = findProperty("signingPassword")
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign publishing.publications.maven
+    if (signingKey && signingPassword) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign publishing.publications.maven
+    }
 }

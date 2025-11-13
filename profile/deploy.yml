@@ -19,8 +19,6 @@
 # OR_EMAIL_ADMIN
 # OR_IDENTITY_PROVIDER
 #
-version: '2.4'
-
 volumes:
 #  postgresql-data: # Needed if you want to persist postgres data outside of container
   manager-data: # A storage volume for file persistence in the manager (can be used by services and protocols)
@@ -50,7 +48,7 @@ services:
 
       # Customize proxy log, defaults to 'notice', requests are logged at 'info'.
       # Available levels are: emerg, alert, crit, err, warning, notice, info, debug
-      PROXY_LOGLEVEL: ${PROXY_LOGLEVEL:-info}
+      PROXY_LOGLEVEL: ${PROXY_LOGLEVEL:-notice}
 
       # IANA TLD subdomain for which an SSL certificate should be requested (leave blank for private/externally
       # generated certificates).
@@ -70,6 +68,14 @@ services:
       # when testing (this is important, you are limited to 5 duplicate certificates per week!)
       # e.g. '--staging'
       LE_EXTRA_ARGS: ${PROXY_EXTRA_ARGS:-}
+
+      # Provide this value if requesting wildcard certs with Route53 DNS zone; this should be the role to assume to
+      # perform route53 operations if calling across AWS accounts
+      AWS_ROUTE53_ROLE:
+
+      # Enable SISH HTTP tunnel forwarding
+      #SISH_HOST: sish
+      #SISH_PORT: 8090
 
       # The proxy supports up to 10 custom redirects from hostname to any path on the
       # manager service.
@@ -96,12 +102,18 @@ services:
       PROXY_HOST_REDIRECT_10_NAME:
       PROXY_HOST_REDIRECT_10_TARGET:
 
+      # The proxy removes path prefixes when configured before sending the request to the manager or keycloak.
+      #MANAGER_PATH_PREFIX: /openremote
+      #KEYCLOAK_PATH_PREFIX: /keycloak
+
     # Expose public services (web server, MQTT broker)
     ports:
       - "80:80" # HTTP for letsencrypt cert generation and in general it redirects to 443 for HTTPS
       - "${OR_SSL_PORT:-443}:443" # HTTPS /auth directs to keycloak and other paths direct to manager
       - "8883:8883" # MQTTS
       - "127.0.0.1:8404:8404" # Localhost metrics access
+      - "${PRIVATE_IP:-127.0.0.1}:8404:8404" # Allows to also expose metrics on a given IP address,
+                                             # intended to be IP of the interface of the private subnet of the EC2 VM
 
   # The OpenRemote Manager
   manager:
@@ -126,7 +138,9 @@ services:
     #  - "8080:8080" # Web server port
     #  - "8000:8000" # Remote debugging port - NOT FOR PRODUCTION USE!!!
     #  - "8085:8085" # JMX port - FOR DIAGNOSTICS ONLY!!!
-    #  - "127.0.0.1:8405:8404" # Localhost metrics access
+    #  - "127.0.0.1:8405:8405" # Localhost metrics access
+    #  - "${PRIVATE_IP:-127.0.0.1}:8405:8405" # Allows to also expose metrics on a given IP address,
+                                              # intended to be IP of the interface of the private subnet of the EC2 VM
     logging:
       options:
         # Use very little logging for container STDOUT, this is
@@ -150,32 +164,47 @@ services:
       # This value is passed to SetupTasks can be used to determine what assets etc. should be setup for this deployment
       # the available values and general use of this is dependent on the actual SetupTasks available in the instance
       # being deployed some basic recommendations are 'production', 'staging'
-      OR_SETUP_TYPE: ${OR_SETUP_TYPE}
+      OR_SETUP_TYPE:
 
       # The public HOSTNAME and SSL PORT of this manager
       OR_SSL_PORT: ${OR_SSL_PORT:--1}
       OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
 
       # Additional hostnames that should be allowed to access the auth server
-      OR_ADDITIONAL_HOSTNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
+      OR_ADDITIONAL_HOSTNAMES:
 
       # Configure Email, SMTP server to send password reset emails etc.
       OR_EMAIL_HOST:
       OR_EMAIL_USER:
       OR_EMAIL_PASSWORD:
-      OR_EMAIL_PORT: ${OR_EMAIL_PORT}
-      OR_EMAIL_TLS: ${OR_EMAIL_TLS}
-      OR_EMAIL_X_HEADERS: ${OR_EMAIL_X_HEADERS:-} # Headers to set on all outbound emails
-      OR_EMAIL_PROTOCOL: ${OR_EMAIL_PROTOCOL} # smtp or smtps for SSL (if TLS not set or is true then smtp is assumed)
+      OR_EMAIL_PORT:
+      OR_EMAIL_TLS:
+      OR_EMAIL_X_HEADERS: # Headers to set on all outbound emails
+      OR_EMAIL_PROTOCOL: # smtp or smtps for SSL (if TLS not set or is true then smtp is assumed)
+
+      # Optional oAuth2 configuration to use instead of username/password
+      OR_EMAIL_OAUTH2_URL: # url to request an access token
+      OR_EMAIL_OAUTH2_CLIENT_ID:
+      OR_EMAIL_OAUTH2_CLIENT_SECRET:
 
       # Where to send admin emails to
-      OR_EMAIL_ADMIN: ${OR_EMAIL_ADMIN}
+      OR_EMAIL_ADMIN:
 
       # From address for emails sent by the system
-      OR_EMAIL_FROM: ${OR_EMAIL_FROM}
+      OR_EMAIL_FROM:
 
       # Console applications can register for push notifications through FCM.
       OR_FIREBASE_CONFIG_FILE: ${OR_FIREBASE_CONFIG_FILE:-/deployment/manager/fcm.json}
+
+      # Configure the central instance for Gateway SSH tunnelling (if these are set then gateway tunnelling support is enabled on the central instance)
+      OR_GATEWAY_TUNNEL_SSH_HOSTNAME:
+      OR_GATEWAY_TUNNEL_SSH_PORT:
+      # Use a different hostname to the central manager instance
+      OR_GATEWAY_TUNNEL_HOSTNAME:
+      OR_GATEWAY_TUNNEL_TCP_START: # First TCP port that can be allocated for raw TCP connections (should be start of an assigned contiguous block e.g. 9000-10000 = 9000)
+      # Configure the edge instance for Gateway SSH tunnelling (if SSH_KEY_FILE is set ten gateway tunnelling support is enabled on te edge instance)
+      OR_GATEWAY_TUNNEL_SSH_KEY_FILE: # SSH key file in RSA (not openSSH) format (use ssh-keygen -p -f ~/.ssh/id_rsa -m pem) to convert from openSSH
+      OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE: # Override default rewriting of localhost tunnelling to work within Docker
 
       # Developer mode (see code for usages of OR_DEV_MODE flag)
       OR_DEV_MODE: ${OR_DEV_MODE:-false}
@@ -193,16 +222,16 @@ services:
 
       # Comma separated list of manager web server CORS allowed origins (can be a prefix, exact match or wildcard *)
       # These are in addition to the OR_HOSTNAME and OR_ADDITIONAL_HOSTNAMES which are implicitly allowed
-      OR_WEBSERVER_ALLOWED_ORIGINS: ${OR_WEBSERVER_ALLOWED_ORIGINS:-}
+      OR_WEBSERVER_ALLOWED_ORIGINS:
 
       # Dump web server requests to logs; default: false
-      OR_WEBSERVER_DUMP_REQUESTS: ${OR_WEBSERVER_DUMP_REQUESTS:-}
+      OR_WEBSERVER_DUMP_REQUESTS:
 
       # Manager web server maximum worker thread count; default: Processor core count or 10
-      OR_WEBSERVER_WORKER_THREADS_MAX: ${OR_WEBSERVER_WORKER_THREADS_MAX:-}
+      OR_WEBSERVER_WORKER_THREADS_MAX:
 
       # Manager web server maximum IO thread count; default: Processor core count or 2
-      OR_WEBSERVER_IO_THREADS_MAX: ${OR_WEBSERVER_IO_THREADS_MAX:-}
+      OR_WEBSERVER_IO_THREADS_MAX:
 
       # Database settings
       OR_DB_VENDOR: ${OR_DB_VENDOR:-postgres}
@@ -212,20 +241,19 @@ services:
       OR_DB_SCHEMA: ${OR_DB_SCHEMA:-openremote}
       OR_DB_USER: ${OR_DB_USER:-postgres}
       OR_DB_PASSWORD: ${OR_DB_PASSWORD:-postgres}
-      OR_DB_MIN_POOL_SIZE: ${OR_DB_MIN_POOL_SIZE:-5}
-      OR_DB_MAX_POOL_SIZE: ${OR_DB_MAX_POOL_SIZE:-20}
+      OR_DB_POOL_MIN_SIZE: ${OR_DB_POOL_MIN_SIZE:-5}
+      OR_DB_POOL_MAX_SIZE: ${OR_DB_POOL_MAX_SIZE:-20}
       OR_DB_CONNECTION_TIMEOUT_SECONDS: ${OR_DB_CONNECTION_TIMEOUT_SECONDS:-300}
       # Allow migration scripts to be applied out of order (see flyway DB docs)
-      OR_DB_FLYWAY_OUT_OF_ORDER: ${OR_DB_FLYWAY_OUT_OF_ORDER}
+      OR_DB_FLYWAY_OUT_OF_ORDER:
 
       # The service-internal host name and port of the keycloak identity provider; defaults:
       OR_KEYCLOAK_HOST: ${OR_KEYCLOAK_HOST:-keycloak}
       OR_KEYCLOAK_PORT: ${OR_KEYCLOAK_PORT:-8080}
+      OR_KEYCLOAK_PATH: ${OR_KEYCLOAK_PATH:-auth}
 
-      # Keycloak frontend host name, port and path (defaults: to OR_HOSTNAME:OR_SSL_PORT/auth)
-      KC_HOSTNAME:
-      KC_HOSTNAME_PORT:
-      KC_HOSTNAME_PATH:
+      # Keycloak public URI (only set this if keycloak is not on the same base URI as the manager i.e. not accessible at /auth)
+      OR_KEYCLOAK_PUBLIC_URI:
 
       # Location of built in web content.
       OR_APP_DOCROOT: ${OR_APP_DOCROOT:-/opt/web}
@@ -247,6 +275,9 @@ services:
       # manager's map, as well as other style details and colours.
       OR_MAP_SETTINGS_PATH: ${OR_MAP_SETTINGS_PATH:-/deployment/map/mapsettings.json}
 
+      # Override the maximum allowed custom map tiles database file size in bytes.
+      OR_CUSTOM_MAP_SIZE_LIMIT: ${OR_CUSTOM_MAP_SIZE_LIMIT:-30000000}
+
       # Set the tileserver host name and port; the manager will reverse proxy to this server
       # to provide raster map tiles to frontend apps
       OR_MAP_TILESERVER_HOST:
@@ -257,17 +288,19 @@ services:
       # to embedded logging.properties or logging-dev.properties (if OR_DEV_MODE=true)
       OR_LOGGING_CONFIG_FILE:
 
-      # The number of threads and therefore background tasks that can be executed at the same
-      # time. Used by scheduled, usually short-lived and non-blocking tasks, such as protocols
-      # polling a remote service at regular interval, or the internal checks for expired client
-      # subscriptions on the event bus (default depends on detected CPU cores). Also used by
-      # the rules engine.
-      OR_SCHEDULED_TASKS_THREADS_MAX: ${OR_SCHEDULED_TASKS_THREADS_MAX:-4}
+      # The number of threads to be used for the scheduled executor service which can be used for scheduling
+      # non-blocking, short-lived tasks in a standard way; defaults to number of CPU cores.
+      OR_SCHEDULED_EXECUTOR_THREADS:
 
-      # When asset attributes are enabled for rule events, each value update will be a temporary
-      # fact in rules. You can set the global default expiration time span used when no other
-      # attribute-level configuration exists. Default is 1 hour.
-      OR_RULE_EVENT_EXPIRES: ${OR_RULE_EVENT_EXPIRES:-PT1H}
+      # The number of threads (min and max) to be used for the executor service which can be used for executing
+      # tasks in a standard way; defaults to number of CPU cores and number of CPU cores x 10 respectively.
+      OR_EXECUTOR_THREADS_MIN:
+      OR_EXECUTOR_THREADS_MAX:
+
+      # The minimum number of threads that will be used to process incoming auto provisioning messages
+      OR_AUTO_PROVISIONING_THREADS_MIN:
+      # The maximum number of threads that will be used to process incoming auto provisioning messages
+      OR_AUTO_PROVISIONING_THREADS_MAX:
 
       # The identity provider implementation to use for managing user identities, roles, and
       # access authorization. The default is 'keycloak' which requires a separate service but
@@ -291,17 +324,38 @@ services:
       # Enable/disable Prometheus metrics collection
       OR_METRICS_ENABLED: ${OR_METRICS_ENABLED:-true}
       # Web server port used to host metrics endpoint
-      OR_METRICS_PORT: ${OR_METRICS_PORT:-8404}
+      OR_METRICS_PORT: ${OR_METRICS_PORT:-8405}
+
+      # Set the number of concurrent attribute event processors (defaults to number of CPU cores)
+      OR_ATTRIBUTE_EVENT_THREADS:
+
+      # Set the persistence storage dir (must also be volume mapped)
+      OR_STORAGE_DIR:
+
+      # Set the path to the keycloak credentials grant file generated at setup to allow the manager to communicate with
+      # the Keycloak admin API; this means OR_ADMIN_PASSWORD can be changed without breaking connection to Keycloak
+      # relative paths are resolved relative to OR_STORAGE_DIR
+      OR_KEYCLOAK_GRANT_FILE:
 
       # Configure the default max age for data points stored in the database (individual attributes can use a custom
       # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).
-      # OR_DATA_POINTS_MAX_AGE_DAYS = 30
+      # OR_DATA_POINTS_MAX_AGE_DAYS: 30
+
+      # Configure the limit of data points that can be queried.
+      # Defaults to 100.000. When set to 0, it disables the limit.
+      # OR_DATA_POINTS_QUERY_LIMIT: 100000
+
+      # Configure the limit of data points that can be exported to CSV. Defaults to 1 million data points.
+      # OR_DATA_POINTS_EXPORT_LIMIT: 10000000
 
       # App id for the API of OpenWeather: https://openweathermap.org
       # OR_OPEN_WEATHER_API_APP_ID
 
       # API key for the API of ForecastSolar: https://forecast.solar
       # OR_FORECAST_SOLAR_API_KEY
+
+      # When using path based proxying this prefix is added to the URLs returned via the REST API.
+      # OR_PATH_PREFIX: /openremote
 
       # Custom JVM options (override default manager options)
   #OR_JAVA_OPTS: ${OR_JAVA_OPTS:--Xms500m -Xmx2g
@@ -312,13 +366,8 @@ services:
   # THE FOLLOWING OPTIONS CAN BE USED TO ENABLE JMX; PORT MUST ALSO BE EXPOSED
   # ACCESS SHOULD BE RESTRICTED BY FIREWALL TO SPECIFIC IPs FOR DIAGNOSTIC PURPOSES
   #
-  #  -Dcom.sun.management.jmxremote=true
-  #  -Dcom.sun.management.jmxremote.ssl=false
-  #  -Dcom.sun.management.jmxremote.authenticate=false
-  #  -Dcom.sun.management.jmxremote.port=8085
-  #  -Dcom.sun.management.jmxremote.rmi.port=8085
-  #  -Djava.rmi.server.hostname=${OR_HOSTNAME:-localhost}
-
+  #JAVA_TOOL_OPTIONS: -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.port=8085 -Dcom.sun.management.jmxremote.rmi.port=8085 -Djava.rmi.server.hostname=${OR_HOSTNAME:-localhost}
+  #
   # Custom JVM tool options (for remote debugging)
   #JAVA_TOOL_OPTIONS: '-agentlib:jdwp=transport=dt_socket,address=0.0.0.0:8000,server=y,suspend=n'
 
@@ -335,8 +384,8 @@ services:
     #  - "8081:8080" # Web server port
     environment:
 
-      # It is important that all services have the same timezone and are time synchronized.
-      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts
+      # It is important that all services are time synchronized. Bearer tokens are
+      # only valid for minutes, and authentication fails if Keycloak drifts
       TZ: ${TZ:-Europe/Amsterdam}
 
       # Switch to debug to diagnose Keycloak problems; default:
@@ -349,23 +398,35 @@ services:
       KC_DB_SCHEMA: ${KC_DB_SCHEMA:-public}
       KC_DB_USERNAME: ${KC_DB_USERNAME:-postgres}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:-postgres}
+      KC_DB_POOL_INITIAL_SIZE:
+      KC_DB_POOL_MIN_SIZE:
+      KC_DB_POOL_MAX_SIZE: ${KC_DB_POOL_MAX_SIZE:-20}
+
       # Configure web server
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
-      KC_HOSTNAME_PATH: ${KC_HOSTNAME_PATH:-auth}
-      KC_HOSTNAME_ADMIN: ${KC_HOSTNAME_ADMIN:-}
-      KC_PROXY: ${KC_PROXY:-edge}
-
+      #KC_HOSTNAME_PATH: ${KC_HOSTNAME_PATH:-auth}
+      #KC_HOSTNAME_ADMIN: ${KC_HOSTNAME_ADMIN:-}
+      #KC_HTTP_ENABLED: ${KC_HTTP_ENABLED:-true}
+      #KC_PROXY_HEADERS: ${KC_PROXY_HEADERS:-xforwarded}
+      #KC_PROXY: ${KC_PROXY:-edge}
       # Configure main user credentials (only on first startup)
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-secret}
+      KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
       # Custom startup options (see keycloak documentation)
-      KEYCLOAK_START_COMMAND: ${KEYCLOAK_START_COMMAND:-start}
-      KEYCLOAK_START_OPTS: ${KEYCLOAK_START_OPTS:-}
+      KEYCLOAK_START_COMMAND:
+      KEYCLOAK_START_OPTS:
       # Default themes to use
       KEYCLOAK_DEFAULT_THEME: ${KEYCLOAK_DEFAULT_THEME:-openremote}
       KEYCLOAK_ACCOUNT_THEME: ${KEYCLOAK_ACCOUNT_THEME:-openremote}
       KEYCLOAK_WELCOME_THEME: ${KEYCLOAK_WELCOME_THEME:-keycloak}
+      # Use the following to set the issuer to a fixed value (useful when accessing a private instance via a tunnel)
+      # Should also set KC_HOSTNAME to blank, KC_HOSTNAME_STRICT to false and if the keycloak instance is publicly
+      # exposed then the proxy should be configured to validate the host header to prevent abuse
+      #KEYCLOAK_ISSUER_BASE_URI: 'https://192.168.1.2/auth'
+
+      # Configuration for roles to be assigned to self-registered users (when the listener is enabled)
+      # Example is "{\"realmRoles\":[\"restricted_user\"],\"clientRoles\":[{\"client\":\"openremote\",\"roles\":[\"read:assets\",\"write:attributes\"]}]}"
+      KEYCLOAK_SELF_REGISTERED_USER_ROLES: "{ }"
 
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: ${KEYCLOAK_JAVA_OPTS:-}
@@ -374,6 +435,8 @@ services:
   postgresql:
     image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
     restart: always
+    # Shared memory should be increased for any reasonable DB size this should be increased further
+    shm_size: 128mb
     # Docker volume for persistent storage of DB; can alternatively map to host
     volumes:
       # Needs to be available on the same path as the manager for data exports to work
@@ -392,6 +455,9 @@ services:
       POSTGRES_DB: ${OR_DB_NAME:-openremote}
       POSTGRES_USER: ${OR_DB_USER:-postgres}
       POSTGRES_PASSWORD: ${OR_DB_PASSWORD:-postgres}
+      # This setting may still be overridden depending on your kernel settings so tune this and other
+      # service DB values so the actual max connections are not exhausted
+      POSTGRES_MAX_CONNECTIONS: ${POSTGRES_MAX_CONNECTIONS:-50}
 
       # When a newer POSTGRESQL image is used with a higher OR_REINDEX_COUNTER and PGDATA is
       # preserved then the container will REINDEX the DB automatically unless the following
@@ -404,3 +470,33 @@ services:
     restart: always
     #ports:
     #  - "8082:80" # Web server port
+
+
+  sish:
+    image: antoniomika/sish:latest
+    depends_on:
+      - proxy
+    healthcheck:
+      test: ["CMD", "/app/app", "-v"]
+    ports:
+      - "2222:2222"
+      - "9000-10000:9000-10000"
+    volumes:
+      - proxy-data:/etc/letsencrypt
+      - deployment-data:/deployment
+      #--https-request-port-override=8443
+      #--https-certificate-directory=
+    command: |
+      --ssh-address=:2222
+      --http-address=:8090
+      --https=false
+      --verify-ssl=false
+      --idle-connection=false
+      --authentication-keys-directory=/deployment/sish/pubkeys
+      --private-keys-directory=/deployment/sish/keys
+      --port-bind-range="9000-10000"
+      --bind-random-ports=false
+      --bind-random-subdomains=false
+      --domain=${OR_HOSTNAME}
+      --force-requested-subdomains=true
+    restart: always

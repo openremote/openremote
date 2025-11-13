@@ -1,5 +1,5 @@
 /*
- * Copyright 2019, OpenRemote Inc.
+ * Copyright 2023, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -21,11 +21,10 @@ package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.event.shared.EventFilter;
-import org.openremote.model.event.shared.AssetInfo;
 import org.openremote.model.event.shared.SharedEvent;
 
 import java.util.Arrays;
+import java.util.Date;
 
 /**
  * This event is used when an {@link Asset} is created, read, updated or deleted (updates are only fired when one or more top
@@ -53,12 +52,27 @@ public class AssetEvent extends SharedEvent implements AssetInfo {
         this.updatedProperties = updatedProperties;
     }
 
-    public String getAssetId() {
+    public String getId() {
         return asset.id;
     }
 
     public String getAssetName() {
         return asset.name;
+    }
+
+    @Override
+    public String getAssetType() {
+        return asset.type;
+    }
+
+    @Override
+    public Class<? extends Asset> getAssetClass() {
+        return asset.getAssetClass();
+    }
+
+    @Override
+    public Date getCreatedOn() {
+        return asset.createdOn;
     }
 
     @Override

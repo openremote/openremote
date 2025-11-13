@@ -42,6 +42,7 @@ public abstract class AbstractMailAgent<T extends AbstractMailAgent<T, U, V>, U 
     public static final AttributeDescriptor<Boolean> DELETE_PROCESSED_MAIL = new AttributeDescriptor<>("deleteProcessedMail", ValueType.BOOLEAN).withOptional(true);
     public static final AttributeDescriptor<Boolean> PREFER_HTML = new AttributeDescriptor<>("preferHTML", ValueType.BOOLEAN).withOptional(true);
     public static final AttributeDescriptor<String> MAIL_FOLDER_NAME = new AttributeDescriptor<>("mailFolderName", ValueType.TEXT).withOptional(true);
+    public static final AttributeDescriptor<Boolean> START_TLS = new AttributeDescriptor<>("startTLS", ValueType.BOOLEAN).withOptional(true);
 
     protected AbstractMailAgent() {
     }
@@ -87,6 +88,14 @@ public abstract class AbstractMailAgent<T extends AbstractMailAgent<T, U, V>, U 
     @SuppressWarnings("unchecked")
     public T setPreferHTML(Boolean value) {
         getAttributes().getOrCreate(PREFER_HTML).setValue(value);
+        return (T) this;
+    }
+
+    public Optional<Boolean> getStartTLS() { return getAttributes().getValue(START_TLS); }
+
+    @SuppressWarnings("unchecked")
+    public T setStartTLS(Boolean value) {
+        getAttributes().getOrCreate(START_TLS).setValue(value);
         return (T) this;
     }
 

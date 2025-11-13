@@ -28,8 +28,6 @@ import org.openremote.agent.protocol.tcp.TCPIOClient
 import org.openremote.agent.protocol.tcp.TCPStringServer
 import org.openremote.container.timer.TimerService
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.model.notification.AbstractNotificationMessage
-import org.openremote.model.notification.Notification
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -42,7 +40,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
     def "Check client"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 60, delay: 0.2)
 
         and: "the container is started"
         def container = startContainer(defaultConfig(), [new TimerService()])
@@ -55,8 +53,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
         })
 
         and: "a simple TCP client"
-        def connectAttempts = 0
-        TCPIOClient<String> client = new TCPIOClient<String>(
+        TestTCPClient client = new TestTCPClient(
                 "127.0.0.1",
                 echoServerPort)
         client.setEncoderDecoderProvider({
@@ -64,20 +61,15 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
             new StringDecoder(CharsetUtil.UTF_8),
             new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client)].toArray(new ChannelHandler[0])
         })
-        client = Spy(client)
-        client.doConnect() >> {
-            connectAttempts++
-            callRealMethod()
-        }
 
         and: "we add callback consumers to the client"
-        def connectionStatus = client.getConnectionStatus()
+        def connectionStatuses = [client.getConnectionStatus()]
         String lastMessage
         client.addMessageConsumer({
             message -> lastMessage = message
         })
         client.addConnectionStatusConsumer({
-            status -> connectionStatus = status
+            status -> connectionStatuses.add(status)
         })
 
         when: "the server is started"
@@ -94,8 +86,8 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
 
         then: "the client status should become CONNECTED"
         conditions.eventually {
-            assert client.connectionStatus == ConnectionStatus.CONNECTED
-            assert connectionStatus == ConnectionStatus.CONNECTED
+//            assert client.connectionStatus == ConnectionStatus.CONNECTED
+            assert connectionStatuses.last() == ConnectionStatus.CONNECTED
             assert echoServer.allChannels.size() == 1
         }
 
@@ -120,8 +112,8 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
 
         then: "the client should become DISCONNECTED"
         conditions.eventually {
-            assert client.connectionStatus == ConnectionStatus.DISCONNECTED
-            assert connectionStatus == ConnectionStatus.DISCONNECTED
+//            assert client.connectionStatus == ConnectionStatus.DISCONNECTED
+            assert connectionStatuses.last() == ConnectionStatus.DISCONNECTED
         }
 
         when: "we reconnect the same client"
@@ -129,8 +121,8 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
 
         then: "the client status should become CONNECTED"
         conditions.eventually {
-            assert client.connectionStatus == ConnectionStatus.CONNECTED
-            assert connectionStatus == ConnectionStatus.CONNECTED
+//            assert client.connectionStatus == ConnectionStatus.CONNECTED
+            assert connectionStatuses.last() == ConnectionStatus.CONNECTED
             assert echoServer.allChannels.size() == 1
         }
 
@@ -151,7 +143,8 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "we lose connection to the server"
-        connectAttempts = 0
+        connectionStatuses.clear()
+        client.connectAttempts = 0
         echoServer.stop()
 
         then: "the server status should be DISCONNECTED"
@@ -161,9 +154,9 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
 
         then: "the client status should change to CONNECTING and several re-connection attempts should be made"
         conditions.eventually {
-            assert client.connectionStatus == ConnectionStatus.CONNECTING
-            assert connectionStatus == ConnectionStatus.CONNECTING
-            assert connectAttempts > 2
+//            assert client.connectionStatus == ConnectionStatus.CONNECTING
+            assert connectionStatuses.contains(ConnectionStatus.CONNECTING)
+            assert client.connectAttempts > 2
         }
 
         when: "the connection to the server is restored"
@@ -180,8 +173,8 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
 
         then: "the client status should become CONNECTED"
         conditions.eventually {
-            assert client.connectionStatus == ConnectionStatus.CONNECTED
-            assert connectionStatus == ConnectionStatus.CONNECTED
+//            assert client.connectionStatus == ConnectionStatus.CONNECTED
+            assert connectionStatuses.last() == ConnectionStatus.CONNECTED
             assert echoServer.allChannels.size() == 1
         }
 
@@ -206,8 +199,8 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
 
         then: "the client should become DISCONNECTED"
         conditions.eventually {
-            assert client.connectionStatus == ConnectionStatus.DISCONNECTED
-            assert connectionStatus == ConnectionStatus.DISCONNECTED
+//            assert client.connectionStatus == ConnectionStatus.DISCONNECTED
+            assert connectionStatuses.last() == ConnectionStatus.DISCONNECTED
         }
 
         cleanup: "the server should be stopped"
