@@ -401,10 +401,11 @@ test(`Searching for an asset and removing it keeps the tree and viewer in tact`,
 })
 
 /**
- * @given 5 assets are loaded in the "master" realm
- * @and the assets are visible in the tree
+ * @given 4 assets are created in the "master" realm
+ * @and 2 assets are created in the "smartcity" realm
+ * @and the assets are visible in the tree (a total of 5)
  * @when the user switches to the "smartcity" realm using the realm picker
- * @then the asset tree should show assets from the "smartcity" realm instead
+ * @then the asset tree should show assets from the "smartcity" realm instead, (a total of 3)
  * @and the asset viewer becomes empty, and doesn't show the old asset from the "master" realm anymore
  */
 test.describe(() => {
@@ -419,7 +420,7 @@ test.describe(() => {
         await expect(assetTree.getAssetNodes()).toHaveCount(5); // 2 battery assets + 2 electricity assets + 1 console group
 
         // Select asset
-        await page.click(`text=${electricityAssets[0].name}`); // Clicking "Electricity asset 1" within the 1st city
+        await page.click(`text=${electricityAssets[0].name}`); // Clicking "Electricity asset 1"
         await expect(assetTree.getSelectedNodes()).toHaveCount(1);
         await expect(assetViewer.getHeaderLocator(electricityAssets[0].name!)).toBeVisible();
 
