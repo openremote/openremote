@@ -72,7 +72,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
         byte[] tile = mapService.getMapTile(zoom, column, row);
         if (tile != null) {
             return Response.ok(tile)
-                    // Tell the browser the content is alrady GZIPPED
+                    // Tell the browser the content is already GZIPPED
                     .header(HttpHeaders.CONTENT_ENCODING, "gzip")
                     .build();
         } else {
