@@ -431,6 +431,7 @@ test.describe(() => {
         // Switch realms and expect assets to be visible
         await manager.switchToRealmByRealmPicker("smartcity");
         await expect(assetTree.getAssetNodes()).toHaveCount(3); // 2 battery assets + 1 console group
+        await expect(assetViewer.getHeaderLocator(electricityAssets[0].name!)).not.toBeVisible();
     });
 });
 
