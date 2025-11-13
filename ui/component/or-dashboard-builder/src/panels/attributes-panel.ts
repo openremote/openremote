@@ -206,7 +206,7 @@ export class AttributesPanel extends LitElement {
     }
 
     protected getLoadedAsset(attrRef: AttributeRef): Asset | undefined {
-        return this.loadedAssets?.find(asset => asset.id === attrRef.id);
+        return this.loadedAssets?.find(asset => asset.id === attrRef.id && attrRef.name && Object.keys(asset.attributes ?? {}).includes(attrRef.name));
     }
 
     protected removeWidgetAttribute(attributeRef: AttributeRef) {
