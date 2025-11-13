@@ -57,7 +57,7 @@ public class Config {
             }
             return result;
         }
-        return null;
+        return defaultValue;
     }
 
     public static boolean containsKey(String key) {
