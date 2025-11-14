@@ -24,11 +24,9 @@ import {
     OrMapLoadedEvent,
     OrMapLongPressEvent,
     ViewSettings,
-    MapMarkerAssetConfig,
     OrMapMarkersChangedEvent,
 } from "./index";
 import { OrMapMarker } from "./markers/or-map-marker";
-import { LegendControl } from "./controls/legend";
 import { getLatLngBounds, getLngLat, getMarkerIconAndColorFromAssetType, isWebglSupported } from "./util";
 import { Asset, GeoJsonConfig, MapType } from "@openremote/model";
 import { Feature, FeatureCollection, Geometry } from "geojson";
@@ -37,6 +35,13 @@ import { isMapboxURL, transformMapboxUrl } from "./util/mapbox-url";
 const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
 const maplibreGlStyles = require("maplibre-gl/dist/maplibre-gl.css");
 const maplibreGeoCoderStyles = require("@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css");
+
+export interface ClusterConfig {
+    cluster: boolean,
+    clusterRadius: number,
+    /** Max zoom to cluster points on */
+    clusterMaxZoom: number
+}
 
 // TODO: fix any type
 const metersToPixelsAtMaxZoom = (meters: number, latitude: number) =>
@@ -68,8 +73,8 @@ export class MapWidget {
     protected _geocoder?: any;
     protected popup: Popup | undefined = undefined;
     protected popupClusterId: string | undefined = undefined;
-    protected markerConfig: MapMarkerAssetConfig | undefined;
     protected currentMarkers: MarkerGL[] = [];
+    protected clusterConfig?: ClusterConfig;
 
     protected _pointsMap: any = {
         type: "FeatureCollection",
@@ -80,7 +85,7 @@ export class MapWidget {
     protected _assetTypesColors: any = {};
     protected _markers: maplibregl.Marker[] = [];
 
-    constructor(type: MapType, styleParent: Node, mapContainer: HTMLElement, showGeoCodingControl: boolean = false, showBoundaryBox = false, useZoomControls = true, showGeoJson = true) {
+    constructor(type: MapType, styleParent: Node, mapContainer: HTMLElement, showGeoCodingControl: boolean = false, showBoundaryBox = false, useZoomControls = true, showGeoJson = true, clusterConfig?: ClusterConfig) {
         this._type = type;
         this._styleParent = styleParent;
         this._mapContainer = mapContainer;
@@ -88,6 +93,7 @@ export class MapWidget {
         this._showBoundaryBox = showBoundaryBox;
         this._useZoomControls = useZoomControls;
         this._showGeoJson = showGeoJson;
+        this.clusterConfig = clusterConfig;
     }
 
     public setCenter(center?: LngLatLike): this {
@@ -482,7 +488,6 @@ export class MapWidget {
                     showAccuracyCircle: true,
                     showUserLocation: true
                 }));
-                this._mapGl.addControl(new LegendControl(), 'top-left')
             }
 
             // Unload all GeoJSON that is present, and load new layers if present
@@ -520,9 +525,9 @@ export class MapWidget {
 
         this._mapGl.addSource('mapPoints', {
             'type': 'geojson',
-            'cluster': true,
-            'clusterMaxZoom': 40, // Max zoom to cluster points on
-            'clusterRadius': 80,
+            'cluster': this.clusterConfig?.cluster ?? false,
+            'clusterRadius': this.clusterConfig?.clusterRadius ?? 50,
+            'clusterMaxZoom': this.clusterConfig?.clusterMaxZoom ?? 40,
             'data': this._pointsMap,
             'clusterProperties': Object.fromEntries([...this._assetTypes].map(t => [t,["+", ["case", ["==", ["get", "assetType"], t], 1, 0]]]))
         });
