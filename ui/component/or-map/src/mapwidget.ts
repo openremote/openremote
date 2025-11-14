@@ -40,7 +40,7 @@ const maplibreGeoCoderStyles = require("@maplibre/maplibre-gl-geocoder/dist/mapl
 export interface ClusterConfig {
     cluster: boolean,
     clusterRadius: number,
-    /** Max zoom to cluster points on */
+    /** Until what zoom level cluster markers are shown */
     clusterMaxZoom: number
 }
 
@@ -526,8 +526,8 @@ export class MapWidget {
         this._mapGl.addSource('mapPoints', {
             'type': 'geojson',
             'cluster': this.clusterConfig?.cluster ?? false,
-            'clusterRadius': this.clusterConfig?.clusterRadius ?? 50,
-            'clusterMaxZoom': this.clusterConfig?.clusterMaxZoom ?? 40,
+            'clusterRadius': this.clusterConfig?.clusterRadius ?? 180,
+            'clusterMaxZoom': this.clusterConfig?.clusterMaxZoom ?? 17,
             'data': this._pointsMap,
             'clusterProperties': Object.fromEntries([...this._assetTypes].map(t => [t,["+", ["case", ["==", ["get", "assetType"], t], 1, 0]]]))
         });
