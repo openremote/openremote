@@ -2351,6 +2351,7 @@ __metadata:
     "@storybook/addon-a11y": "npm:~9.1.10"
     "@storybook/addon-docs": "npm:~9.1.10"
     "@storybook/web-components": "npm:~9.1.10"
+    "@types/react": "npm:^18.3.12"
     "@wc-toolkit/storybook-helpers": "npm:^9.0.1"
     lit: "npm:^3.3.1"
     storybook: "npm:~9.1.10"
@@ -2390,6 +2391,7 @@ __metadata:
     "@types/react": "npm:^18"
     "@typescript-eslint/eslint-plugin": "npm:^5.9.0"
     "@typescript-eslint/parser": "npm:^5.9.0"
+    "@wc-toolkit/jsx-types": "npm:^1.4.2"
     "@wc-toolkit/storybook-helpers": "npm:^9.0.1"
     "@webcomponents/webcomponentsjs": "npm:^2.6.0"
     cross-env: "npm:^7.0.3"
@@ -3512,7 +3514,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:^18":
+"@types/react@npm:^18, @types/react@npm:^18.3.12":
   version: 18.3.26
   resolution: "@types/react@npm:18.3.26"
   dependencies:
@@ -3804,6 +3806,13 @@ __metadata:
     loupe: "npm:^3.1.4"
     tinyrainbow: "npm:^2.0.0"
   checksum: 10c0/024a9b8c8bcc12cf40183c246c244b52ecff861c6deb3477cbf487ac8781ad44c68a9c5fd69f8c1361878e55b97c10d99d511f2597f1f7244b5e5101d028ba64
+  languageName: node
+  linkType: hard
+
+"@wc-toolkit/jsx-types@npm:^1.4.2":
+  version: 1.4.3
+  resolution: "@wc-toolkit/jsx-types@npm:1.4.3"
+  checksum: 10c0/54971ff6666858e26ae7156f0d38588c6ee2a914c2085880459767186575f36bf0a8e1e0d1e781e2ed29fa43d69d5ef562f8cf625e009ecf6954e0911d3eca46
   languageName: node
   linkType: hard
 
