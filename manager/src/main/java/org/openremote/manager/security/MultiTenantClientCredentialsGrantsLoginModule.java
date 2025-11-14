@@ -20,6 +20,8 @@
 package org.openremote.manager.security;
 
 import com.google.common.collect.Sets;
+import io.undertow.security.idm.X509CertificateCredential;
+import org.apache.activemq.artemis.spi.core.security.jaas.CertificateCallback;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -47,6 +49,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URI;
+import java.security.cert.X509Certificate;
 import java.util.*;
 
 /**
@@ -97,6 +100,9 @@ public class MultiTenantClientCredentialsGrantsLoginModule extends AbstractKeycl
             callbackHandler.handle(callbacks);
             String username = ((NameCallback) callbacks[0]).getName();
             char[] tmpPassword = ((PasswordCallback) callbacks[1]).getPassword();
+            if (tmpPassword == null) {
+                return false;
+            }
             String password = new String(tmpPassword);
             ((PasswordCallback) callbacks[1]).clearPassword();
 
@@ -140,6 +146,20 @@ public class MultiTenantClientCredentialsGrantsLoginModule extends AbstractKeycl
     @Override
     public boolean commit() throws LoginException {
         boolean superCommit = super.commit();
+
+        CertificateCallback certCb = new CertificateCallback();
+        try {
+            callbackHandler.handle(new Callback[]{certCb});
+        } catch (IOException | UnsupportedCallbackException e) {
+            throw new LoginException(e.toString());
+        }
+        X509Certificate[] certificates = certCb.getCertificates();
+        if (certificates != null && certificates.length > 0) {
+            // Certificate(s) present, add to private credentials
+            // This is used by the Autoprovisioning handler to identify that a RemotingConnection is authenticated
+            // using clientAuth, and can provide the client certificate.
+            subject.getPrivateCredentials().add(new X509CertificateCredential(certificates[0]));
+        }
 
         // refreshToken will be saved to privateCreds of Subject for now
         if (refreshToken != null) {

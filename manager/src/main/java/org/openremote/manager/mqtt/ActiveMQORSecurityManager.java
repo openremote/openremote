@@ -30,23 +30,29 @@ import org.apache.activemq.artemis.spi.core.security.ActiveMQJAASSecurityManager
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
-import org.openremote.manager.security.AuthorisationService;
+import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.manager.security.MultiTenantJaasCallbackHandler;
 import org.openremote.manager.security.RemotingConnectionPrincipal;
 import org.openremote.model.protocol.mqtt.Topic;
+import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
 
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
+import java.security.cert.X509Certificate;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
-import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
+import static org.openremote.model.security.User.SERVICE_ACCOUNT_PREFIX;
 import static org.openremote.model.syslog.SyslogCategory.API;
+import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 
 /**
  * A security manager that uses the {@link org.openremote.manager.security.MultiTenantJaasCallbackHandler} with a
@@ -57,7 +63,7 @@ import static org.openremote.model.syslog.SyslogCategory.API;
 public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
 
     private static final Logger LOG = SyslogCategory.getLogger(API, ActiveMQORSecurityManager.class);
-    protected AuthorisationService authorisationService;
+    protected ManagerIdentityProvider identityProvider;
     protected MQTTBrokerService brokerService;
     protected Function<String, KeycloakDeployment> deploymentResolver;
 
@@ -68,9 +74,9 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
     protected SecurityConfiguration certificateConfig;
     protected ActiveMQServer server;
 
-    public ActiveMQORSecurityManager(AuthorisationService authorisationService, MQTTBrokerService brokerService, Function<String, KeycloakDeployment> deploymentResolver, String configurationName, SecurityConfiguration configuration) {
+    public ActiveMQORSecurityManager(ManagerIdentityProvider identityProvider, MQTTBrokerService brokerService, Function<String, KeycloakDeployment> deploymentResolver, String configurationName, SecurityConfiguration configuration) {
         super(configurationName, configuration);
-        this.authorisationService = authorisationService;
+        this.identityProvider = identityProvider;
         this.brokerService = brokerService;
         this.deploymentResolver = deploymentResolver;
         this.configName = configurationName;
@@ -98,12 +104,57 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         String realm = null;
         ClassLoader currentLoader = Thread.currentThread().getContextClassLoader();
         ClassLoader thisLoader = this.getClass().getClassLoader();
-
+        X509Certificate[] certs = getCertsFromConnection(remotingConnection);
         if (user != null) {
             String[] realmAndUsername = user.split(":");
             if (realmAndUsername.length == 2) {
                 realm = realmAndUsername[0];
                 user = realmAndUsername[1];
+            }
+        }else if (certs != null && certs.length > 0) {
+
+            X509Certificate leaf = certs[0];
+            String dn = leaf.getSubjectX500Principal().getName();
+            try {
+                // Check for Client Authentication EKU (This denotes that this is the actual client certificate to enforce)
+                if(!leaf.getExtendedKeyUsage().contains("1.3.6.1.5.5.7.3.2")) {
+                    // TODO: Not sure about what extent to which we would like to enforce this.
+                    // I have seen codebases use this EKU key to ensure that the certificate they are examining for client
+                    // auth is the correct one to inspect.I will have to perform some more research about it, but I think
+                    // that the client certificate is always going to be the leaf. For now, log a warning about it.
+                    LOG.log(Level.WARNING, "Presented certificate DOES NOT have Client Authentication Extended Key Usage. " +
+                            "Attempting to use, but please fix this for subsequent requests.");
+                }
+                LdapName ldapName = new LdapName(dn);
+                for (Rdn rdn : ldapName.getRdns()) {
+                    String type = rdn.getType();
+                    String value = rdn.getValue().toString();
+                    if ("OU".equalsIgnoreCase(type) && realm == null) {
+                        realm = value;
+                    } else if ("CN".equalsIgnoreCase(type) && (user == null || user.isEmpty())) {
+                        user = value;
+                    }
+                }
+            } catch (InvalidNameException e) {
+                LOG.log(Level.FINE, "Failed to parse subject DN from client certificate: " + dn, e);
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Failed to process given client certificate");
+            }
+
+            if(!(user == null || user.isEmpty())) {
+                User dbUser = identityProvider.getUserByUsername(
+                        realm,
+                        SERVICE_ACCOUNT_PREFIX + user
+                );
+                if (dbUser != null) {
+                    password = dbUser.getSecret();
+                } else {
+                    LOG.log(Level.WARNING, "Client certificate was provided, but no service user found. " +
+                            "Allowing anonymous login for autoprovisioning. username=" + user);
+                }
+            } else {
+                LOG.log(Level.WARNING, "Client certificate was provided, but no username found in certificate subject. " +
+                        "Allowing anonymous login for autoprovisioning. Subject DN=" + dn);
             }
         }
 
@@ -121,9 +172,12 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             try {
                 lc.login();
             } catch (LoginException e) {
+                LOG.log(Level.WARNING, "Failed to authenticate user: " + user, e);
                 throw e;
             }
             Subject subject = lc.getSubject();
+
+            LOG.warning(subject.toString());
 
             if (subject != null) {
                 // Set subject here so any code that calls this method behaves like a normal ActiveMQ SecurityStoreImpl::authenticate call
