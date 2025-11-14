@@ -632,6 +632,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 yAxis: [
                     {
                         type: "value",
+                        alignTicks: true,
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ["10%", "10%"],
                         scale: true,
@@ -641,6 +642,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     },
                     {
                         type: "value",
+                        alignTicks: true,
                         show: (this.attributeConfig?.rightAxisAttributes?.length ?? 0) > 0,
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ["10%", "10%"],
@@ -665,18 +667,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                 (this.chartOptions.dataZoom as DataZoomComponentOption[]).push({
                     start: 0,
                     end: 100,
+                    showDataShadow: false,
                     backgroundColor: bgColor,
                     fillerColor: bgColor,
-                    dataBackground: {
-                        areaStyle: {
-                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
-                        }
-                    },
-                    selectedDataBackground: {
-                        areaStyle: {
-                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
-                        }
-                    },
                     moveHandleStyle: {
                         color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
                     },
@@ -1297,6 +1290,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
                     // Load Predicted Data
                     dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stacked, stepped, area, faint, false , `${asset.name} | ${label} ${i18next.t("predicted")}`, options, unit);
+                    dataset.yAxisIndex = shownOnRightAxis ? 1 : 0;
                     data.push(dataset);
 
                     // If necessary, load Extended Data
@@ -1382,14 +1376,14 @@ export class OrChart extends translate(i18next)(LitElement) {
 
             if(query.type === "lttb") {
                 // If number of data points is set, only allow a maximum of 1 point per pixel in width
-                // Otherwise, dynamically set number of data points based on chart width (1000px = 100 data points)
+                // Otherwise, dynamically set number of data points based on chart width (1000px = 200 data points)
                 if(query.amountOfPoints) {
                     if(this._chartElem?.clientWidth > 0) {
                         query.amountOfPoints = Math.min(query.amountOfPoints, this._chartElem?.clientWidth);
                     }
                 } else {
                     if(this._chartElem?.clientWidth > 0) {
-                        query.amountOfPoints = Math.round(this._chartElem.clientWidth / 10);
+                        query.amountOfPoints = Math.round(this._chartElem.clientWidth / 5);
                     } else {
                         console.warn("Could not grab width of the Chart for estimating amount of data points. Using 100 points instead.");
                         query.amountOfPoints = 100;
