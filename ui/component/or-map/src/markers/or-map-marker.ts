@@ -374,4 +374,12 @@ export class OrMapMarker extends LitElement {
             && this.lat >= -90 && this.lat < 90
             && this.lng >= -180 && this.lng < 180;
     }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        // Safely cleanup markers once removed from the DOM
+        if (this._actualMarkerElement?.parentElement) {
+            this._actualMarkerElement.parentElement.removeChild(this._actualMarkerElement);
+        }
+    }
 }

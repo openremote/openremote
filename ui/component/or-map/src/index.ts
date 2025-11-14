@@ -1,9 +1,8 @@
 import manager, {EventCallback} from "@openremote/core";
-import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
-import {CSSResult, html, LitElement, PropertyValues} from "lit";
+import {html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL, GeolocateControl} from "maplibre-gl";
-import {MapWidget} from "./mapwidget";
+import {IControl, LngLat, LngLatBoundsLike, LngLatLike, GeolocateControl} from "maplibre-gl";
+import {ClusterConfig, MapWidget} from "./mapwidget";
 import {style} from "./style";
 import "./markers/or-map-marker";
 import "./markers/or-map-marker-asset";
@@ -11,7 +10,6 @@ import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
 import * as Util from "./util";
 import {
     InputType,
-    OrMwcInput,
     ValueInputProviderGenerator,
     ValueInputTemplateFunction
 } from "@openremote/or-mwc-components/or-mwc-input";
@@ -19,7 +17,9 @@ import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dial
 import {getMarkerIconAndColorFromAssetType} from "./util";
 import {i18next} from "@openremote/or-translate";
 import { debounce } from "lodash";
-import {GeoJsonConfig, MapType } from "@openremote/model";
+import { Asset, GeoJsonConfig, MapType } from "@openremote/model";
+import { CoordinatesControl, CoordinatesRegexPattern, getCoordinatesInputKeyHandler } from "./controls/coordinates";
+import { CenterControl } from "./controls/center";
 
 // Re-exports
 export {Util, LngLatLike, LngLat};
@@ -27,6 +27,7 @@ export * from "./markers/or-map-marker";
 export * from "./markers/or-map-marker-asset";
 export {IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
+export * from "./or-map-legend";
 
 export interface ViewSettings {
     center: LngLatLike;
@@ -35,7 +36,7 @@ export interface ViewSettings {
     maxZoom: number;
     minZoom: number;
     boxZoom: boolean;
-    geocodeUrl: String;
+    geocodeUrl: string;
     geoJson?: GeoJsonConfig
 }
 
@@ -62,7 +63,7 @@ export class OrMapClickedEvent extends CustomEvent<MapEventDetail> {
 
     public static readonly NAME = "or-map-clicked";
 
-    constructor(lngLat: LngLat, doubleClick: boolean = false) {
+    constructor(lngLat: LngLat, doubleClick = false) {
         super(OrMapClickedEvent.NAME, {
             detail: {
                 doubleClick: doubleClick,
@@ -105,124 +106,30 @@ export class OrMapGeocoderChangeEvent extends CustomEvent<MapGeocoderEventDetail
     }
 }
 
+export class OrMapMarkersChangedEvent extends CustomEvent<string[]> {
+
+    public static readonly NAME = "or-map-markers-changed";
+
+    constructor(assets: string[]) {
+        super(OrMapMarkersChangedEvent.NAME, {
+            detail: assets,
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
 declare global {
     export interface HTMLElementEventMap {
         [OrMapClickedEvent.NAME]: OrMapClickedEvent;
         [OrMapLoadedEvent.NAME]: OrMapLoadedEvent;
         [OrMapLongPressEvent.NAME]: OrMapLongPressEvent;
         [OrMapGeocoderChangeEvent.NAME]: OrMapGeocoderChangeEvent;
+        [OrMapMarkersChangedEvent.NAME]: OrMapMarkersChangedEvent;
     }
 }
 
 export type ControlPosition = "top-right" | "top-left" | "bottom-right" | "bottom-left";
-
-export class CenterControl {
-    protected map?: MapGL;
-    protected elem?: HTMLElement;
-    public pos?: LngLatLike;
-
-    onAdd(map: MapGL): HTMLElement {
-        this.map = map;
-        const control = document.createElement("div");
-        control.classList.add("maplibregl-ctrl");
-        control.classList.add("maplibregl-ctrl-group");
-        const button = document.createElement("button");
-        button.className = "maplibregl-ctrl-compass";
-        button.addEventListener("click", (ev) => map.flyTo({
-            center: this.pos,
-            zoom: map.getZoom()
-        }));
-        const buttonIcon = document.createElement("span");
-        buttonIcon.className = "maplibregl-ctrl-icon";
-        button.appendChild(buttonIcon);
-        control.appendChild(button);
-        this.elem = control;
-        return control;
-    }
-
-    onRemove(map: MapGL) {
-        this.map = undefined;
-        this.elem = undefined;
-    }
-}
-
-const CoordinatesRegexPattern = "^[ ]*(?:Lat: )?(-?\\d+\\.?\\d*)[, ]+(?:Lng: )?(-?\\d+\\.?\\d*)[ ]*$";
-
-function getCoordinatesInputKeyHandler(valueChangedHandler: (value: LngLat | undefined) => void) {
-    return (e: KeyboardEvent) => {
-        if (e.code === "Enter" || e.code === "NumpadEnter") {
-            const valStr = (e.target as OrMwcInput).value as string;
-            let value: LngLat | undefined = !valStr ? undefined : {} as LngLat;
-
-            if (valStr) {
-                const lngLatArr = valStr.split(/[ ,]/).filter(v => !!v);
-                if (lngLatArr.length === 2) {
-                    value = new LngLat(
-                        Number.parseFloat(lngLatArr[0]),
-                        Number.parseFloat(lngLatArr[1])
-                    );
-                }
-            }
-            valueChangedHandler(value);
-        }
-    };
-}
-
-export class CoordinatesControl {
-
-    protected map?: MapGL;
-    protected elem?: HTMLElement;
-    protected input!: OrMwcInput;
-    protected _readonly = false;
-    protected _value: any;
-    protected _valueChangedHandler: (value: LngLat | undefined) => void;
-
-    constructor(disabled: boolean = false, valueChangedHandler: (value: LngLat | undefined) => void) {
-        this._readonly = disabled;
-        this._valueChangedHandler = valueChangedHandler;
-    }
-
-    onAdd(map: MapGL): HTMLElement {
-        this.map = map;
-        const control = document.createElement("div");
-        control.classList.add("maplibregl-ctrl");
-        control.classList.add("maplibregl-ctrl-group");
-
-        const input = new OrMwcInput();
-        input.type = InputType.TEXT;
-        input.outlined = true;
-        input.compact = true;
-        input.readonly = this._readonly;
-        input.icon = "crosshairs-gps";
-        input.value = this._value;
-        input.pattern = CoordinatesRegexPattern;
-        input.onkeyup = getCoordinatesInputKeyHandler(this._valueChangedHandler);
-
-        control.appendChild(input);
-        this.elem = control;
-        this.input = input;
-        return control;
-    }
-
-    onRemove(map: MapGL) {
-        this.map = undefined;
-        this.elem = undefined;
-    }
-
-    public set readonly(readonly: boolean) {
-        this._readonly = readonly;
-        if (this.input) {
-            this.input.readonly = readonly;
-        }
-    }
-
-    public set value(value: any) {
-        this._value = value;
-        if (this.input) {
-            this.input.value = value;
-        }
-    }
-}
 
 export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
 
@@ -388,7 +295,6 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
     };
 }
 
-
 @customElement("or-map")
 export class OrMap extends LitElement {
 
@@ -396,6 +302,9 @@ export class OrMap extends LitElement {
 
     @property({type: String})
     public type: MapType = manager.mapType;
+
+    @property({type: String})
+    public cluster?: ClusterConfig;
 
     protected _markerStyles: string[] = [];
     @property({type: String, converter: {
@@ -451,7 +360,6 @@ export class OrMap extends LitElement {
     protected _initCallback?: EventCallback;
     protected _map?: MapWidget;
     protected _loaded: boolean = false;
-    protected _observer?: FlattenedNodesObserver;
     protected _markers: OrMapMarker[] = [];
 
     protected _resizeObserver?: ResizeObserver;
@@ -467,15 +375,30 @@ export class OrMap extends LitElement {
         this.addEventListener(OrMapMarkerChangedEvent.NAME, this._onMarkerChangedEvent);
     }
 
+    /**
+     * Assuming location asset
+     * @param asset 
+     * @returns 
+     */
+    public addMarker(asset: Asset) {
+        const coordinates = asset?.attributes?.location.value;
+        if (!coordinates) return;
+        this._map?.addMark(asset.id ?? '', asset.name ?? '', asset.type ?? '', coordinates.coordinates[0], coordinates.coordinates[1], asset);
+    }
+
+    public cleanUpMarker(): void {
+        this._map?.cleanupMark();
+    }
+
+    public reload(): void {
+        this._map?.load();
+    }
+
     protected firstUpdated(_changedProperties: PropertyValues): void {
         super.firstUpdated(_changedProperties);
         if (manager.ready) {
             this.loadMap();
         }
-    }
-
-    public get markers(): OrMapMarker[] {
-        return this._markers;
     }
 
     public connectedCallback() {
@@ -484,9 +407,6 @@ export class OrMap extends LitElement {
 
     public disconnectedCallback() {
         super.disconnectedCallback();
-        if (this._observer) {
-            this._observer.disconnect();
-        }
         if(this._resizeObserver) {
             this._resizeObserver.disconnect();
         }
@@ -527,28 +447,23 @@ export class OrMap extends LitElement {
     }
 
     public loadMap() {
-
         if (this._loaded) {
             return;
         }
 
-        if (this._mapContainer && this._slotElement) {
-            this._map = new MapWidget(this.type, this.shadowRoot!, this._mapContainer, this.showGeoCodingControl, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson)
+        if (this._mapContainer) {
+            this._map = new MapWidget(this.type, this.shadowRoot!, this._mapContainer, this.showGeoCodingControl, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson, this.cluster)
                 .setCenter(this.center)
                 .setZoom(this.zoom)
                 .setControls(this.controls)
                 .setGeoJson(this.geoJson);
-            this._map.load().then(() => {
-                // Get markers from slot
-                this._observer = new FlattenedNodesObserver(this._slotElement!, (info: any) => {
-                    this._processNewMarkers(info.addedNodes);
-                    this._processRemovedMarkers(info.removedNodes);
-                });
+
+            this._map.build().then(() => {
                 this._resizeObserver?.disconnect();
                 this._resizeObserver = new ResizeObserver(debounce(() => {
                     this.resize();
                 }, 200));
-                var container = this._mapContainer?.parentElement;
+                const container = this._mapContainer?.parentElement;
                 if (container) {
                     this._resizeObserver.observe(container);
                 }
@@ -557,7 +472,7 @@ export class OrMap extends LitElement {
 
         this._loaded = true;
     }
-    
+
     public resize() {
         if (this._map) {
             this._map.resize();
@@ -574,63 +489,5 @@ export class OrMap extends LitElement {
         if (this._map) {
             this._map.onMarkerChanged(evt.detail.marker, evt.detail.property);
         }
-    }
-
-    protected _processNewMarkers(nodes: Element[]) {
-        nodes.forEach((node) => {
-            if (!this._map) {
-                return;
-            }
-
-            if (node instanceof OrMapMarker) {
-
-                this._markers.push(node);
-
-                // Add styles of marker class to the shadow root if not already added
-                const className = node.constructor.name;
-                if (this._markerStyles.indexOf(className) < 0) {
-                    const styles = (node.constructor as any).styles;
-                    let stylesArr: CSSResult[] = [];
-
-                    if (styles) {
-                        if (!Array.isArray(styles)) {
-                            stylesArr.push(styles as CSSResult);
-                        } else {
-                            stylesArr = styles as CSSResult[];
-                        }
-
-                        stylesArr.forEach((styleItem) => {
-                            const styleElem = document.createElement("style");
-                            styleElem.textContent = String(styleItem.toString());
-                            if (this._mapContainer!.children.length > 0) {
-                                this._mapContainer!.insertBefore(styleElem, this._mapContainer!.children[0]);
-                            } else {
-                                this._mapContainer!.appendChild(styleElem);
-                            }
-                        });
-                    }
-
-                    this._markerStyles.push(className);
-                }
-
-                this._map.addMarker(node);
-            }
-        });
-    }
-
-    protected _processRemovedMarkers(nodes: Element[]) {
-        nodes.forEach((node) => {
-            if (!this._map) {
-                return;
-            }
-
-            if (node instanceof OrMapMarker) {
-                const i = this._markers.indexOf(node);
-                if (i >= 0) {
-                    this._markers.splice(i, 1);
-                }
-                this._map.removeMarker(node);
-            }
-        });
     }
 }

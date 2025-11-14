@@ -10,6 +10,7 @@ import maplibregl,{
     MapMouseEvent,
     Marker as MarkerGL,
     NavigationControl,
+    Popup,
     StyleSpecification,
     GeoJSONSourceSpecification,
 } from "maplibre-gl";
@@ -23,16 +24,25 @@ import {
     OrMapLoadedEvent,
     OrMapLongPressEvent,
     ViewSettings,
+    OrMapMarkersChangedEvent,
 } from "./index";
 import { OrMapMarker } from "./markers/or-map-marker";
-import { getLatLngBounds, getLngLat } from "./util";
-import {GeoJsonConfig, MapType } from "@openremote/model";
-import { Feature, FeatureCollection } from "geojson";
-import { isMapboxURL, transformMapboxUrl } from "./mapbox-url-utils";
+import { getLatLngBounds, getLngLat, getMarkerIconAndColorFromAssetType, isWebglSupported } from "./util";
+import { Asset, GeoJsonConfig, MapType } from "@openremote/model";
+import { Feature, FeatureCollection, Geometry } from "geojson";
+import { isMapboxURL, transformMapboxUrl } from "./util/mapbox-url";
+import { OrClusterMarker } from "./markers/or-cluster-marker";
 
 const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
 const maplibreGlStyles = require("maplibre-gl/dist/maplibre-gl.css");
 const maplibreGeoCoderStyles = require("@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css");
+
+export interface ClusterConfig {
+    cluster: boolean,
+    clusterRadius: number,
+    /** Until what zoom level cluster markers are shown */
+    clusterMaxZoom: number
+}
 
 // TODO: fix any type
 const metersToPixelsAtMaxZoom = (meters: number, latitude: number) =>
@@ -62,8 +72,20 @@ export class MapWidget {
     protected _controls?: (IControl | [IControl, ControlPosition?])[];
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
     protected _geocoder?: any;
+    protected popup: Popup | undefined = undefined;
+    protected popupClusterId: string | undefined = undefined;
+    protected currentMarkers: MarkerGL[] = [];
+    protected clusterConfig?: ClusterConfig;
+    protected _pointsMap: any = {
+        type: "FeatureCollection",
+        features: []
+    };
 
-    constructor(type: MapType, styleParent: Node, mapContainer: HTMLElement, showGeoCodingControl: boolean = false, showBoundaryBox = false, useZoomControls = true, showGeoJson = true) {
+    protected _assetTypes = new Set<string>([]);
+    protected _assetTypesColors: any = {};
+    protected _markers: maplibregl.Marker[] = [];
+
+    constructor(type: MapType, styleParent: Node, mapContainer: HTMLElement, showGeoCodingControl: boolean = false, showBoundaryBox = false, useZoomControls = true, showGeoJson = true, clusterConfig?: ClusterConfig) {
         this._type = type;
         this._styleParent = styleParent;
         this._mapContainer = mapContainer;
@@ -71,6 +93,7 @@ export class MapWidget {
         this._showBoundaryBox = showBoundaryBox;
         this._useZoomControls = useZoomControls;
         this._showGeoJson = showGeoJson;
+        this.clusterConfig = clusterConfig;
     }
 
     public setCenter(center?: LngLatLike): this {
@@ -243,7 +266,7 @@ export class MapWidget {
         return settings;
     }
 
-    public async load(): Promise<void> {
+    public async build(): Promise<void> {
         if (this._loaded) {
             return;
         }
@@ -357,7 +380,7 @@ export class MapWidget {
             }
 
             // Firefox headless mode does not support webgl, see https://bugzilla.mozilla.org/show_bug.cgi?id=1375585
-            if (!this.isWebglSupported()) {
+            if (!isWebglSupported()) {
               console.warn("WebGL is not supported in this environment. The map cannot be initialized.");
               return;
             }
@@ -428,6 +451,14 @@ export class MapWidget {
                 }, 300);
                 this._mapGl!.addControl(this._geocoder, 'top-left');
 
+                this._mapGl!.addSource('mapPoints', {
+                    type: 'geojson',
+                    data: {
+                        type: 'FeatureCollection',
+                        features: []
+                    }
+                });
+
                 // There's no callback parameter in the options of the MaplibreGeocoder,
                 // so this is how we get the selected result.
                 this._geocoder._inputEl.addEventListener("change", () => {
@@ -467,6 +498,8 @@ export class MapWidget {
             }
 
             this._initLongPressEvent();
+
+            this._mapGl.on("load", () => this.load())
         }
 
         this._mapContainer.dispatchEvent(new OrMapLoadedEvent());
@@ -474,13 +507,68 @@ export class MapWidget {
         this.createBoundaryBox()
     }
 
+    public load() {
+        if (!this._mapGl) return;
+
+        if (this._mapGl.getSource('mapPoints')) {
+            if (this._mapGl.getLayer('unclustered-point')) {
+                this._mapGl.removeLayer('unclustered-point');
+            }
+            if (this._mapGl.getLayer('clusters')) {
+                this._mapGl.removeLayer('clusters');
+            }
+            if (this._mapGl.getLayer('cluster-count')) {
+                this._mapGl.removeLayer('cluster-count');
+            }
+            this._mapGl.removeSource('mapPoints');
+        }
+
+        this._mapGl.addSource('mapPoints', {
+            'type': 'geojson',
+            'cluster': this.clusterConfig?.cluster ?? false,
+            'clusterRadius': this.clusterConfig?.clusterRadius ?? 180,
+            'clusterMaxZoom': this.clusterConfig?.clusterMaxZoom ?? 17,
+            'data': this._pointsMap,
+            'clusterProperties': Object.fromEntries([...this._assetTypes].map(t => [t,["+", ["case", ["==", ["get", "assetType"], t], 1, 0]]]))
+        });
+
+        if (!this._mapGl.getLayer('unclustered-point')) {
+            this._mapGl.addLayer({
+                id: 'unclustered-point',
+                type: 'circle',
+                source: 'mapPoints',
+                filter: ['!', ['has', 'point_count']],
+                paint: {
+                    'circle-radius': 0,
+                    // 'circle-color': '#11b4da',
+                    // 'circle-radius': 4,
+                    // 'circle-stroke-width': 1,
+                    // 'circle-stroke-color': '#fff'
+                }
+            });
+        }
+
+        this._mapGl.on('zoom', () => {
+            if (this.popup && this.popup.isOpen()) {
+                this.popup.remove();
+                this.popupClusterId = undefined;
+            }
+        });
+
+        this._mapGl.on("data", (e: any) => {
+            if (!this._mapGl) return;
+            if (e.sourceId !== 'mapPoints' || !e.isSourceLoaded) return;
+
+            this._mapGl.on('move', () => this.updateMarkers());
+            this._mapGl.on('moveend', () => this.updateMarkers());
+            this.updateMarkers()
+        })
+    }
+
     protected styleLoaded(): Promise<void> {
         return new Promise(resolve => {
             if (this._mapGl) {
-
-                this._mapGl.once('style.load', () => {
-                    resolve();
-                });
+                this._mapGl.once('style.load', resolve);
             }
         });
     }
@@ -654,6 +742,101 @@ export class MapWidget {
         if (marker.hasPosition()) {
             this._updateMarkerElement(marker, true);
         }
+    }
+
+    protected cachedMarkers: Record<string, maplibregl.Marker>  = {}
+    protected markersOnScreen: Record<string, maplibregl.Marker> = {}
+
+    public get assetsOnScreen(): string[] {
+        return this._mapGl?.querySourceFeatures('mapPoints').map(({ properties }) => properties.id).filter(Boolean) ?? []
+    }
+
+    protected updateMarkers() {
+        if (!this._mapGl) return;
+
+        const newMarkers: Record<string, maplibregl.Marker>  = {}
+        const features = this._mapGl.querySourceFeatures('mapPoints');
+
+        // Asset markers
+        for (const { properties, geometry } of features) {
+            if (!properties.id) continue;
+            const id: string = properties.id;
+            const coords = (geometry as Geometry & { coordinates: LngLatLike }).coordinates
+
+            let marker = this.cachedMarkers[id]
+            if (!marker) { 
+              const placeholder = document.createElement("div")
+              marker = this.cachedMarkers[id] = new maplibregl.Marker({ element: placeholder }).setLngLat(coords)
+            }
+            newMarkers[id] = marker
+
+            if (!this.markersOnScreen[id]) marker.addTo(this._mapGl);
+        }
+
+        // Cluster markers
+        for (const { properties, geometry } of features) {
+            if (!properties.cluster) continue;
+
+            const id = properties.cluster_id;
+            const coords = (geometry as Geometry & { coordinates: LngLatLike }).coordinates
+
+            let marker = this.cachedMarkers[id];
+            if (!marker) {
+                const slices: [string,string,number][] = Object.entries(properties)
+                    .filter(([k]) => this._assetTypes.has(k))
+                    .map(([type, count]) => [type, this._assetTypesColors[type], count]);
+
+                marker = this.cachedMarkers[id] = new maplibregl.Marker({
+                    element: new OrClusterMarker(slices)
+                }).setLngLat(coords);
+            }
+            newMarkers[id] = marker;
+
+            if (!this.markersOnScreen[id]) marker.addTo(this._mapGl);
+        }
+
+        for (const id in this.markersOnScreen) {
+            if (!newMarkers[id]) this.markersOnScreen[id].remove()
+        }
+        this.markersOnScreen = newMarkers;
+        this._mapContainer.dispatchEvent(new OrMapMarkersChangedEvent(this.assetsOnScreen));
+    }
+
+    /**
+     * @todo This is not generic so either rename or make it generic for any marker {@link addMarker}
+     * @param assetId 
+     * @param assetName 
+     * @param assetType 
+     * @param long 
+     * @param lat 
+     * @param asset 
+     */
+    public addMark(assetId: string, assetName: string, assetType: string, long: number, lat: number, asset: Asset) {
+        this._assetTypes.add(assetType);
+        this._assetTypesColors[assetType] = getMarkerIconAndColorFromAssetType(assetType)?.color;
+
+        this._pointsMap.features.push({
+            type: 'Feature',
+            properties: {
+                name: assetName,
+                id: assetId,
+                assetType: assetType,
+                asset: asset
+            },
+            geometry: {
+                type: "Point",
+                coordinates: [ long, lat ]
+            }
+        });
+    }
+
+    public cleanupMark(): void {
+        this._pointsMap = {
+            type: "FeatureCollection",
+            features: []
+        };
+
+        this._assetTypesColors = {};
     }
 
     public removeMarker(marker: OrMapMarker) {
@@ -992,32 +1175,12 @@ export class MapWidget {
             this._mapGl.on('gestureend', clearTimeoutFunc);
         }
     };
+
     protected _onLongPress(lngLat: LngLat) {
         this._mapContainer.dispatchEvent(new OrMapLongPressEvent(lngLat));
     }
+
     protected _onGeocodeChange(geocode:any) {
         this._mapContainer.dispatchEvent(new OrMapGeocoderChangeEvent(geocode));
-    }
-
-    // Source: maplibre.org/maplibre-gl-js/docs/examples/check-for-support/
-    protected isWebglSupported() {
-        if (window.WebGLRenderingContext) {
-            const canvas = document.createElement('canvas');
-            try {
-                // Note that { failIfMajorPerformanceCaveat: true } can be passed as a second argument
-                // to canvas.getContext(), causing the check to fail if hardware rendering is not available. See
-                // https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/getContext
-                // for more details.
-                const context = canvas.getContext('webgl2') || canvas.getContext('webgl');
-                if (context && typeof context.getParameter == 'function') {
-                    return true;
-                }
-            } catch (e) {
-                // WebGL is supported, but disabled
-            }
-            return false;
-        }
-        // WebGL not supported
-        return false;
     }
 }
