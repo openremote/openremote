@@ -1973,6 +1973,7 @@ __metadata:
     "@jsonforms/core": "npm:^3.5.1"
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
+    "@openremote/or-calendar-event": "workspace:*"
     "@openremote/or-components": "workspace:*"
     "@openremote/or-json-forms": "workspace:*"
     "@openremote/or-map": "workspace:*"
@@ -2001,6 +2002,19 @@ __metadata:
   dependencies:
     "@polymer/polymer": "npm:^3.3.1"
     lit: "npm:^3.3.1"
+  languageName: unknown
+  linkType: soft
+
+"@openremote/or-calendar-event@workspace:*, @openremote/or-calendar-event@workspace:ui/component/or-calendar-event":
+  version: 0.0.0-use.local
+  resolution: "@openremote/or-calendar-event@workspace:ui/component/or-calendar-event"
+  dependencies:
+    "@openremote/model": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
+    lit: "npm:^3.3.1"
+    moment: "npm:^2.29.4"
+    rrule: "npm:^2.6.4"
   languageName: unknown
   linkType: soft
 
@@ -2374,6 +2388,7 @@ __metadata:
     "@custom-elements-manifest/analyzer": "npm:^0.10.4"
     "@rspack/cli": "npm:^1.4.4"
     "@rspack/core": "npm:^1.4.4"
+    "@types/react": "npm:^18"
     "@typescript-eslint/eslint-plugin": "npm:^5.9.0"
     "@typescript-eslint/parser": "npm:^5.9.0"
     "@wc-toolkit/jsx-types": "npm:^1.4.2"
@@ -3499,7 +3514,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:^18.3.12":
+"@types/react@npm:^18, @types/react@npm:^18.3.12":
   version: 18.3.26
   resolution: "@types/react@npm:18.3.26"
   dependencies:

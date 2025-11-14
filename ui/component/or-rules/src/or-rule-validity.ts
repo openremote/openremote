@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
+import {html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {CalendarEvent, RulesetUnion, WellknownRulesetMetaItems} from "@openremote/model";
+import {CalendarEvent, RulesetUnion} from "@openremote/model";
 import {OrRulesRuleChangedEvent} from "./index";
-import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next, translate} from "@openremote/or-translate"
 
@@ -40,13 +39,11 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
 
     @property()
     protected _validity?: CalendarEvent;
+
     @property()
     protected _rrule?: RRule;
-    protected _dialog?: OrMwcDialog;
 
-    constructor() {
-        super();
-    }
+    protected _dialog?: OrMwcDialog;
 
     protected updated(changedProps: PropertyValues) {
         super.updated(changedProps);
@@ -333,12 +330,12 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                             <or-mwc-input .disabled=${this.isAllDay()} .value="${moment(validity.end).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until-time")}" .label="${i18next.t("to")}"></or-mwc-input>
                         </div>
                     </div>  
-                    
+
                     <div class="layout horizontal">
-                        <or-mwc-input .value=${this.isAllDay()} @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "all-day")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("allDay")}"></or-mwc-input>
+                        <or-mwc-input .value=${this.isAllDay()} @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "all-day")}" .type="${InputType.CHECKBOX}" .label="${i18next.t("allDay")}"></or-mwc-input>
                     </div>
                 ` : ``}
-             
+
                 ${validityType  === "validityRecurrence" ? html`
                     <label style="display: block; margin-top: 20px;"><or-translate value="repeatOccurrenceEvery"></or-translate></label>
                     <div class="layout horizontal">
@@ -352,13 +349,13 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                     </div>
 
                     <label style="display:block; margin-top: 20px;"><or-translate value="repetitionEnds"></or-translate></label>
-                    <div class="layout horizontal">                        
+                    <div class="layout horizontal">
                         <or-mwc-input .value="${!this._rrule!.options.until}"  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "never-ends")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("never")}"></or-mwc-input>
                     </div>
                     <div class="layout horizontal">
                         <or-mwc-input ?disabled="${!this._rrule!.options.until}" .value="${this._rrule!.options.until ? moment(this._rrule!.options.until).format("YYYY-MM-DD") : moment().add(1, 'year').format('YYYY-MM-DD')}"  .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}" .label="${i18next.t("to")}"></or-mwc-input>
                     </div>
-                ` : ``}                
+                ` : ``}
             </div>`;
     }
 }
