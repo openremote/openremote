@@ -376,21 +376,22 @@ export class OrMap extends LitElement {
     }
 
     /**
-     * 
+     * Assuming location asset
      * @param asset 
      * @returns 
      */
-    public addMarker(asset: Asset): boolean {
-        if (asset.attributes?.location && asset.attributes && asset.attributes.location.value) {
-            const coordinates = asset.attributes.location.value;
-            this._map?.addMark(asset.id ?? '', asset.name ?? '', asset.type ?? '', coordinates.coordinates[0], coordinates.coordinates[1], asset);
-            return true;
-        }
-        return false;
+    public addMarker(asset: Asset) {
+        const coordinates = asset?.attributes?.location.value;
+        if (!coordinates) return;
+        this._map?.addMark(asset.id ?? '', asset.name ?? '', asset.type ?? '', coordinates.coordinates[0], coordinates.coordinates[1], asset);
     }
 
     public cleanUpMarker(): void {
         this._map?.cleanupMark();
+    }
+
+    public reload(): void {
+        this._map?.load();
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {

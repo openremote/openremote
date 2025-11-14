@@ -213,7 +213,7 @@ export class PageMap extends Page<MapStateKeyed> {
 
     protected locationAssets: Asset[] = [];
     protected assetTypes: string[] = [];
-    protected excludedAssetTypes: string[] = [];
+    protected exclude: string[] = [];
 
     protected getAttributesOfInterest(): (string | WellknownAttributes)[] {
         // Extract all label attributes configured in marker config
@@ -287,19 +287,7 @@ export class PageMap extends Page<MapStateKeyed> {
                 this._store.dispatch(setAssets(assets));
 
                 if (this._map) {
-                    this.locationAssets = [];
-                    this.assetTypes = [];
-                    this._map.cleanUpMarker();
-
-                    assets.forEach((asset: Asset) => {
-                        if (this.excludedAssetTypes.includes(asset.type)) return;
-                        if (this._map.addMarker(asset)) {
-                            if (!this.assetTypes.includes(asset.type)) {
-                                this.assetTypes.push(asset.type);
-                            }
-                            this.locationAssets.push(asset);
-                        }
-                    });
+                    this.updateMarkers();
                 }
 
                 const assetSubscriptionId = await manager.events.subscribeAssetEvents(undefined, false, (event) => {
@@ -394,38 +382,21 @@ export class PageMap extends Page<MapStateKeyed> {
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
 
             ${this.config?.legend?.show && this.assetTypes.length > 1 ? html`<or-map-legend .assetTypes="${this.assetTypes}" @or-map-legend-changed="${(e: OrMapLegendEvent) => {
-                this.excludedAssetTypes = e.detail;
-                this.requestUpdate();
-
                 if (this._map) {
-                    this.locationAssets = [];
-                    this.assetTypes = [];
-                    this._map.cleanUpMarker();
-
-                    this._assets.forEach((asset: Asset) => {
-                        if (this.excludedAssetTypes.includes(asset.type)) return;
-                        if (this._map.addMarker(asset)) {
-                            if (!this.assetTypes.includes(asset.type)) {
-                                this.assetTypes.push(asset.type);
-                            }
-                            this.locationAssets.push(asset);
-                        }
-                    });
+                    this.exclude = e.detail;
+                    this.updateMarkers();
+                    this._map.reload();
                 }
             }}"></or-map-legend>` : null}
 
             <or-map id="map" class="or-map" .cluster="${this.config.clustering}" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
                 ${this._assets
-                    .filter((asset) => {
-                        if (!asset.attributes || this.assetsOnScreen.indexOf(asset.id) === -1) {
-                            return false;
-                        }
-                        const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
-                        return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
-                    })
-                    .sort((a,b) => {
-                        if (a.attributes[WellknownAttributes.LOCATION].value && b.attributes[WellknownAttributes.LOCATION].value){
-                            return b.attributes[WellknownAttributes.LOCATION].value.coordinates[1] - a.attributes[WellknownAttributes.LOCATION].value.coordinates[1];
+                    .filter((asset) => this.assetsOnScreen.indexOf(asset.id) !== -1 && this.isLocationAsset(asset))
+                    .sort((a,b) => {;
+                        const pointA = a.attributes[WellknownAttributes.LOCATION].value as GeoJSONPoint;
+                        const pointB = b.attributes[WellknownAttributes.LOCATION].value as GeoJSONPoint;
+                        if (pointA && pointB){
+                            return pointB.coordinates[1] - pointA.coordinates[1];
                         }
                     })
                     .map(asset => html`
@@ -475,5 +446,28 @@ export class PageMap extends Page<MapStateKeyed> {
 
     protected onLoadAssetEvent(loadAssetEvent: OrMapAssetCardLoadAssetEvent) {
         router.navigate(getAssetsRoute(false, loadAssetEvent.detail));
+    }
+
+    protected updateMarkers() {
+        this.locationAssets = [];
+        this.assetTypes = [];
+        this._map.cleanUpMarker();
+        this._assets.forEach((asset: Asset) => {
+            if (this.isLocationAsset(asset)) {
+                if (!this.exclude.includes(asset.type)) {
+                    this._map.addMarker(asset)
+                }
+                if (!this.assetTypes.includes(asset.type)) {
+                    this.assetTypes.push(asset.type);
+                }
+                this.locationAssets.push(asset);
+            }
+        });
+    }
+
+    protected isLocationAsset(asset: Asset) {
+        if (!asset.attributes) return false;
+        const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
+        return attr.value && (!attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr));
     }
 }
