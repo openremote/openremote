@@ -40,38 +40,24 @@ public class StatusResourceImpl implements StatusResource {
     private static final Logger LOG = Logger.getLogger(StatusResourceImpl.class.getName());
     protected List<HealthStatusProvider> healthStatusProviderList;
     protected Map<String, Object> serverInfo;
+    public static final String VERSION = loadVersion();
 
     public StatusResourceImpl(Container container, List<HealthStatusProvider> healthStatusProviderList) {
         this.healthStatusProviderList = healthStatusProviderList;
-        Properties versionProps = new Properties();
         String authServerUrl = "";
-        String version = null;
 
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         if (identityService != null && identityService.getIdentityProvider().getFrontendURI() != null) {
             authServerUrl = identityService.getIdentityProvider().getFrontendURI();
         }
 
-        try (InputStream resourceStream = StatusResourceImpl.class.getClassLoader().getResourceAsStream("version.properties")) {
-            if (resourceStream != null) {
-                versionProps.load(resourceStream);
-                version = versionProps.getProperty("version");
-            }
-        } catch (IOException ignored) {
-        }
-
-        if (version == null) {
-            LOG.log(Level.WARNING, "Failed to load manager version properties file: version.properties");
-            version = "0.0.0";
-        }
-
         serverInfo = Map.of(
-            "version", version,
+            "version", VERSION,
             "authServerUrl", authServerUrl,
             "valueDescriptorSchemaHashes", ValueUtil.getValueDescriptorSchemaHashes()
         );
 
-        LOG.info("Starting OpenRemote version: v"+version);
+        LOG.info("Starting OpenRemote version: v"+VERSION);
     }
 
     @Override
@@ -91,5 +77,23 @@ public class StatusResourceImpl implements StatusResource {
     @Override
     public Map<String, Object> getInfo() {
         return serverInfo;
+    }
+
+    public static String getManagerVersion() {
+        return VERSION;
+    }
+
+    protected static String loadVersion() {
+        try (InputStream resourceStream = StatusResourceImpl.class.getClassLoader().getResourceAsStream("version.properties")) {
+            if (resourceStream != null) {
+                Properties versionProps = new Properties();
+                versionProps.load(resourceStream);
+                return versionProps.getProperty("version");
+            }else {
+                throw new RuntimeException("Could not load version.properties");
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
