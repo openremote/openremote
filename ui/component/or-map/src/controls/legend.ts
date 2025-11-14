@@ -5,12 +5,26 @@ import {
     PropertyValues
 } from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {mapAssetLegendStyle} from "./style";
+import {mapAssetLegendStyle} from "../style";
 import {AssetModelUtil} from "@openremote/model";
-import {getMarkerIconAndColorFromAssetType} from "./util";
+import {getMarkerIconAndColorFromAssetType} from "../util";
 import {Util} from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { IControl, Map as MapGL } from "maplibre-gl";
+
+export class LegendControl implements IControl {
+    protected elem?: HTMLElement;
+
+    onAdd(map: MapGL): HTMLElement {
+        const legend = document.createElement("or-map-legend");
+        return legend;
+    }
+
+    onRemove(map: MapGL) {
+        this.elem = undefined;
+    }
+}
 
 export class OrMapLegendEvent extends CustomEvent<string[]> {
 
