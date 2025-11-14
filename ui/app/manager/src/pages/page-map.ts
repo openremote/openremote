@@ -11,7 +11,8 @@ import {
     OrMapMarkerClickedEvent,
     OrMapGeocoderChangeEvent,
     MapMarkerAssetConfig,
-    OrMapMarkersChangedEvent
+    OrMapMarkersChangedEvent,
+    OrMapLegendEvent
 } from "@openremote/or-map";
 import manager, {Util} from "@openremote/core";
 import {createSelector} from "reselect";
@@ -29,6 +30,7 @@ import {
 import {getAssetsRoute, getMapRoute} from "../routes";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {GenericAxiosResponse} from "@openremote/rest";
+import { ClusterConfig } from "@openremote/or-map/src/mapwidget";
 
 export interface MapState {
     assets: Asset[];
@@ -106,6 +108,10 @@ const {assetEventReceived, attributeEventReceived, setAssets} = pageMapSlice.act
 export const pageMapReducer = pageMapSlice.reducer;
 
 export interface PageMapConfig {
+    legend?: {
+      show: boolean
+    },
+    clustering?: ClusterConfig,
     card?: MapAssetCardConfig,
     assetQuery?: AssetQuery,
     markers?: MapMarkerAssetConfig
@@ -144,10 +150,11 @@ export class PageMap extends Page<MapStateKeyed> {
 
            or-map-legend {
                position: absolute;
-               bottom: 0;
-               left: 0;
-               width: 100vw;
-               z-index: 3;
+               top: 60px;
+               left: 10px;
+               width: 254px;
+               margin: 10px 0;
+               z-index: 1;
            }
         
             or-map {
@@ -172,8 +179,8 @@ export class PageMap extends Page<MapStateKeyed> {
                     position: absolute;
                     top: 60px;
                     left: 10px;
-                    width: calc(100% - 20px);
-                    max-width: 240px;
+                    width: calc(100%);
+                    max-width: 254px;
                     margin: 0;
                     height: max-content;
                     max-height: calc(100vh - 150px);
@@ -386,7 +393,28 @@ export class PageMap extends Page<MapStateKeyed> {
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
 
-            <or-map id="map" class="or-map" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
+            ${this.config?.legend?.show && this.assetTypes.length > 1 ? html`<or-map-legend .assetTypes="${this.assetTypes}" @or-map-legend-changed="${(e: OrMapLegendEvent) => {
+                this.excludedAssetTypes = e.detail;
+                this.requestUpdate();
+
+                if (this._map) {
+                    this.locationAssets = [];
+                    this.assetTypes = [];
+                    this._map.cleanUpMarker();
+
+                    this._assets.forEach((asset: Asset) => {
+                        if (this.excludedAssetTypes.includes(asset.type)) return;
+                        if (this._map.addMarker(asset)) {
+                            if (!this.assetTypes.includes(asset.type)) {
+                                this.assetTypes.push(asset.type);
+                            }
+                            this.locationAssets.push(asset);
+                        }
+                    });
+                }
+            }}"></or-map-legend>` : null}
+
+            <or-map id="map" class="or-map" .cluster="${this.config.clustering}" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
                 ${this._assets
                     .filter((asset) => {
                         if (!asset.attributes || this.assetsOnScreen.indexOf(asset.id) === -1) {

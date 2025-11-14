@@ -2,7 +2,7 @@ import manager, {EventCallback} from "@openremote/core";
 import {html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {IControl, LngLat, LngLatBoundsLike, LngLatLike, GeolocateControl} from "maplibre-gl";
-import {MapWidget} from "./mapwidget";
+import {ClusterConfig, MapWidget} from "./mapwidget";
 import {style} from "./style";
 import "./markers/or-map-marker";
 import "./markers/or-map-marker-asset";
@@ -27,6 +27,7 @@ export * from "./markers/or-map-marker";
 export * from "./markers/or-map-marker-asset";
 export {IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
+export * from "./or-map-legend";
 
 export interface ViewSettings {
     center: LngLatLike;
@@ -302,6 +303,9 @@ export class OrMap extends LitElement {
     @property({type: String})
     public type: MapType = manager.mapType;
 
+    @property({type: String})
+    public cluster?: ClusterConfig;
+
     protected _markerStyles: string[] = [];
     @property({type: String, converter: {
             fromAttribute(value: string | null, type?: String): LngLatLike | undefined {
@@ -447,7 +451,7 @@ export class OrMap extends LitElement {
         }
 
         if (this._mapContainer) {
-            this._map = new MapWidget(this.type, this.shadowRoot!, this._mapContainer, this.showGeoCodingControl, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson)
+            this._map = new MapWidget(this.type, this.shadowRoot!, this._mapContainer, this.showGeoCodingControl, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson, this.cluster)
                 .setCenter(this.center)
                 .setZoom(this.zoom)
                 .setControls(this.controls)
