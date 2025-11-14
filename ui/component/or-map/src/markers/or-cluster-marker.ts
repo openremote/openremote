@@ -20,21 +20,20 @@ export class OrClusterMarker extends LitElement {
     /**
      * Methods from maplibre example for Cluster with Donut Chart
      */
-    protected createDonutChart(slices: Slice[], maxClusterCount = 1000): HTMLElement | undefined {
+    protected createDonutChart(slices: Slice[]): HTMLElement | undefined {
         let total = 0;
         for (const slice of slices) {
             slice.push(total);
             total += slice[2];
         }
 
-        const highTreshold: number = maxClusterCount - (maxClusterCount * 20 / 100);
+        const highTreshold = 100;
         const midTreshold: number = highTreshold / 10;
         const lowTreshold: number = midTreshold / 10;
 
-        const fontSize =
-            total >= highTreshold ? 22 : total >= midTreshold ? 20 : total >= lowTreshold ? 18 : 16;
-        const r = total >= highTreshold ? 50 : total >= midTreshold ? 32 : total >= lowTreshold ? 24 : 18;
-        const r2 = total >= highTreshold ? 32 : total >= midTreshold ? 26 : total >= lowTreshold ? 20 : 15;
+        const fontSize = total >= highTreshold ? 18 : total >= midTreshold ? 16 : total >= lowTreshold ? 14 : 12;
+        const r = total >= highTreshold ? 32 : total >= midTreshold ? 26 : total >= lowTreshold ? 16 : 12;
+        const r2 = total >= highTreshold ? 28 : total >= midTreshold ? 24 : total >= lowTreshold ? 16 : 8;
         const dR = r - r2;
         const r0: number = Math.round(r * 0.6);
         const w: number = r * 2;
@@ -49,8 +48,8 @@ export class OrClusterMarker extends LitElement {
             } ${
                 w
             }" text-anchor="middle" style="font: ${
-                fontSize - 4
-            }px sans-serif; display: block">`;
+                fontSize
+            }px Helvetica Neue,Arial,Helvetica,sans-serif; display: block">`;
 
         for (const [,color,count,offset] of slices as [] as [name: string, color: string, count: number, offset: number][]) {
             html += this.donutSegment(
