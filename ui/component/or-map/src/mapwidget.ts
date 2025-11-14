@@ -76,7 +76,6 @@ export class MapWidget {
     protected popupClusterId: string | undefined = undefined;
     protected currentMarkers: MarkerGL[] = [];
     protected clusterConfig?: ClusterConfig;
-
     protected _pointsMap: any = {
         type: "FeatureCollection",
         features: []
@@ -508,7 +507,7 @@ export class MapWidget {
         this.createBoundaryBox()
     }
 
-    protected load() {
+    public load() {
         if (!this._mapGl) return;
 
         if (this._mapGl.getSource('mapPoints')) {
@@ -840,6 +839,7 @@ export class MapWidget {
         };
 
         this._assetTypesColors = {};
+        this.load()
     }
 
     public removeMarker(marker: OrMapMarker) {
