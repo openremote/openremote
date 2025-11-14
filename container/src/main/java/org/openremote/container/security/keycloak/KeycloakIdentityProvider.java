@@ -22,17 +22,21 @@ package org.openremote.container.security.keycloak;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
+import io.undertow.util.HttpString;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
+import org.jboss.resteasy.spi.CorsHeaders;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.KeycloakConfigResolver;
@@ -42,10 +46,7 @@ import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.openremote.container.security.IdentityProvider;
-import org.openremote.container.web.OAuthFilter;
-import org.openremote.container.web.WebClient;
-import org.openremote.container.web.WebService;
-import org.openremote.container.web.WebTargetBuilder;
+import org.openremote.container.web.*;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.auth.OAuthGrant;
@@ -67,10 +68,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getInteger;
+import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.container.web.WebClient.getTarget;
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
 import static org.openremote.model.Constants.*;
 
 public abstract class KeycloakIdentityProvider implements IdentityProvider {
@@ -92,7 +92,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final String OR_KEYCLOAK_PORT = "OR_KEYCLOAK_PORT";
     public static final int OR_KEYCLOAK_PORT_DEFAULT = 8081;
     public static final String OR_KEYCLOAK_PATH = "OR_KEYCLOAK_PATH";
-    public static final String OR_KEYCLOAK_PATH_DEFAULT = "auth";
+    public static final String OR_KEYCLOAK_PATH_DEFAULT = "/auth";
     public static final String KEYCLOAK_CONNECT_TIMEOUT = "KEYCLOAK_CONNECT_TIMEOUT";
     public static final int KEYCLOAK_CONNECT_TIMEOUT_DEFAULT = 2000;
     public static final String KEYCLOAK_REQUEST_TIMEOUT = "KEYCLOAK_REQUEST_TIMEOUT";
@@ -195,7 +195,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         keycloakConfigResolver = request -> {
             // The realm we authenticate against must be available as a request header
             String realm = request.getHeader(REALM_PARAM_NAME);
-            if (realm == null || realm.length() == 0) {
+            if (realm == null || realm.isEmpty()) {
                 LOG.finest("No realm in request, no authentication will be attempted: " + request.getURI());
                 return notAuthenticatedKeycloakDeployment;
             }
@@ -209,7 +209,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
         if (container.isDevMode()) {
             authProxyHandler = ProxyHandler.builder()
-                .setProxyClient(new LoadBalancingProxyClient().addHost(keycloakServiceUri.clone().replacePath("").build()))
+                .setProxyClient(new LoadBalancingProxyClient().addHost(keycloakServiceUri.build()))
                 .setMaxRequestTime(getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT))
                 .setNext(ResponseCodeHandler.HANDLE_404)
                 .setReuseXForwarded(true)
@@ -424,12 +424,8 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         if (authProxyHandler == null)
             throw new IllegalStateException("Initialize this service first");
 
-
         LOG.info("Enabling auth reverse proxy (passing requests through to Keycloak) on web context: /" + keycloakPath);
-        webService.getRequestHandlers().addFirst(pathStartsWithHandler(
-            "Keycloak auth proxy",
-            "/" + keycloakPath,
-            authProxyHandler));
+        webService.deploy(keycloakPath, authProxyHandler);
     }
 
     /**

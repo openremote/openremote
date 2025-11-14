@@ -56,7 +56,7 @@ import jakarta.ws.rs.core.HttpHeaders
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 
-import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID

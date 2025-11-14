@@ -19,9 +19,6 @@
  */
 package org.openremote.manager.apps;
 
-import io.undertow.server.HttpHandler;
-import io.undertow.server.handlers.PathHandler;
-import io.undertow.server.handlers.resource.PathResourceManager;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -32,14 +29,8 @@ import org.openremote.model.ContainerService;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
-
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
-import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT;
-import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT_DEFAULT;
 
 public class ConsoleAppService implements ContainerService {
 
@@ -62,19 +53,6 @@ public class ConsoleAppService implements ContainerService {
         container.getService(ManagerWebService.class).addApiSingleton(
             new AppResourceImpl(this)
         );
-
-        consoleAppDocRoot = Paths.get(getString(container.getConfig(), OR_CUSTOM_APP_DOCROOT, OR_CUSTOM_APP_DOCROOT_DEFAULT));
-
-        // Serve console app config files
-        if (Files.isDirectory(consoleAppDocRoot)) {
-            HttpHandler customBaseFileHandler = ManagerWebService.createFileHandler(container, new PathResourceManager(consoleAppDocRoot), null);
-
-            HttpHandler pathHandler = new PathHandler().addPrefixPath("info", customBaseFileHandler);
-            managerWebService.getRequestHandlers().addFirst(pathStartsWithHandler(
-                "Console app info files",
-                "info",
-                pathHandler));
-        }
     }
 
     @Override

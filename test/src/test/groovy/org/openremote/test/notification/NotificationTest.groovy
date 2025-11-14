@@ -23,10 +23,7 @@ import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
 import org.openremote.model.console.ConsoleResource
 import org.openremote.model.notification.*
-import org.openremote.model.query.UserQuery
-import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.model.security.User
-import org.openremote.model.util.TextUtil
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
@@ -37,7 +34,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
-import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
