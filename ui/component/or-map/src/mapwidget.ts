@@ -568,9 +568,7 @@ export class MapWidget {
     protected styleLoaded(): Promise<void> {
         return new Promise(resolve => {
             if (this._mapGl) {
-                this._mapGl.once('style.load', () => {
-                    resolve();
-                });
+                this._mapGl.once('style.load', resolve);
             }
         });
     }
@@ -839,7 +837,6 @@ export class MapWidget {
         };
 
         this._assetTypesColors = {};
-        this.load()
     }
 
     public removeMarker(marker: OrMapMarker) {
