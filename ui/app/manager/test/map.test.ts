@@ -23,6 +23,8 @@ test("Verify that asset markers appear on the map and navigate correctly", async
 
   const asset = assets[0].name;
 
+  await page.waitForTimeout(10000)
+  
   await expect(page.locator(".marker-icon")).toHaveCount(2);
 
   await page.click(".marker-container");
