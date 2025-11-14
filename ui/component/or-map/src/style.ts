@@ -12,7 +12,7 @@ export const style = css`
         --internal-or-map-marker-transform: var(--or-map-marker-transform, translate(-16px, -29px));
         --internal-or-map-marker-width: var(--or-map-marker-width, 32px);
         --internal-or-map-marker-height: var(--or-map-marker-height, 32px);
-        --internal-or-map-marker-color: var(--or-map-marker-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
+        --internal-or-map-marker-color: var(--or-map-marker-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
         --internal-or-map-marker-stroke: var(--or-map-marker-stroke, none);
         --internal-or-map-marker-icon-color: var(--or-map-marker-icon-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
         --internal-or-map-marker-icon-stroke: var(--or-map-marker-icon-stroke, none);
@@ -22,7 +22,7 @@ export const style = css`
         --internal-or-map-marker-active-transform: var(--or-map-marker-active-transform, translate(-24px, -44px));
         --internal-or-map-marker-active-width: var(--or-map-marker-active-width, 48px);
         --internal-or-map-marker-active-height: var(--or-map-marker-active-height, 48px);
-        --internal-or-map-marker-active-color: var(--or-map-marker-active-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
+        --internal-or-map-marker-active-color: var(--or-map-marker-active-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
         --internal-or-map-marker-active-stroke: var(--or-map-marker-active-stroke, 2px);
         --internal-or-map-marker-icon-active-color: var(--or-map-marker-icon-active-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
         --internal-or-map-marker-icon-active-stroke: var(--or-map-marker-icon-active-stroke, none);
@@ -153,7 +153,7 @@ export const style = css`
 
 export const mapAssetCardStyle = css`
             :host {
-                --internal-or-map-asset-card-header-color: var(--or-map-asset-card-header-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
+                --internal-or-map-asset-card-header-color: var(--or-map-asset-card-header-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
                 --internal-or-map-asset-card-header-text-color: var(--or-map-asset-card-header-text-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
                 --internal-or-map-asset-card-header-height: var(--or-map-asset-card-header-height, calc(${unsafeCSS(DefaultHeaderHeight)} - 10px));
                 --internal-or-map-asset-card-background-color: var(--or-map-asset-card-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
