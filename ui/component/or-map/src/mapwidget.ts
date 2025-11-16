@@ -559,8 +559,11 @@ export class MapWidget {
             if (!this._mapGl) return;
             if (e.sourceId !== 'mapPoints' || !e.isSourceLoaded) return;
 
-            this._mapGl.on('move', () => this.updateMarkers());
-            this._mapGl.on('moveend', () => this.updateMarkers());
+            this._mapGl.off('move', () => this.updateMarkers());
+            this._mapGl.off('moveend', () => this.updateMarkers());
+
+            this._mapGl.on('move', debounce(() => this.updateMarkers()));
+            this._mapGl.on('moveend', debounce(() => this.updateMarkers()));
             this.updateMarkers()
         })
     }
@@ -748,7 +751,8 @@ export class MapWidget {
     protected markersOnScreen: Record<string, maplibregl.Marker> = {}
 
     public get assetsOnScreen(): string[] {
-        return this._mapGl?.querySourceFeatures('mapPoints').map(({ properties }) => properties.id).filter(Boolean) ?? []
+        // Assuming all strings are asset ids the performance impact is minimal compared to querySourceFeatures
+        return Object.keys(this.markersOnScreen).filter(v => typeof v === 'string');
     }
 
     protected updateMarkers() {
@@ -758,10 +762,11 @@ export class MapWidget {
         const features = this._mapGl.querySourceFeatures('mapPoints');
 
         // Asset markers
-        for (const { properties, geometry } of features) {
-            if (!properties.id) continue;
-            const id: string = properties.id;
-            const coords = (geometry as Geometry & { coordinates: LngLatLike }).coordinates
+        for (const feature of features) {
+            if (!feature.properties.id) continue;
+            const id: string = feature.properties.id;
+            const geometry = feature.geometry as Geometry & { coordinates: LngLatLike };
+            const coords = geometry.coordinates;
 
             let marker = this.cachedMarkers[id]
             if (!marker) { 
@@ -774,15 +779,15 @@ export class MapWidget {
         }
 
         // Cluster markers
-        for (const { properties, geometry } of features) {
-            if (!properties.cluster) continue;
-
-            const id = properties.cluster_id;
-            const coords = (geometry as Geometry & { coordinates: LngLatLike }).coordinates
+        for (const feature of features) {
+            if (!feature.properties.cluster) continue;
+            const id: number = feature.properties.cluster_id;
+            const geometry = feature.geometry as Geometry & { coordinates: LngLatLike };
+            const coords = geometry.coordinates;
 
             let marker = this.cachedMarkers[id];
             if (!marker) {
-                const slices: [string,string,number][] = Object.entries(properties)
+                const slices: [string,string,number][] = Object.entries(feature.properties)
                     .filter(([k]) => this._assetTypes.has(k))
                     .map(([type, count]) => [type, this._assetTypesColors[type], count]);
 

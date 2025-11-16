@@ -391,7 +391,7 @@ export class PageMap extends Page<MapStateKeyed> {
 
             <or-map id="map" class="or-map" .cluster="${this.config.clustering}" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
                 ${this._assets
-                    .filter((asset) => this.assetsOnScreen.indexOf(asset.id) !== -1 && this.isLocationAsset(asset))
+                    .filter((asset) => this.assetsOnScreen.indexOf(asset.id) !== -1 /* indexOf check has a ~10% cpu impact when rendering markers */ && this.isLocationAsset(asset))
                     .sort((a,b) => {;
                         const pointA = a.attributes[WellknownAttributes.LOCATION].value as GeoJSONPoint;
                         const pointB = b.attributes[WellknownAttributes.LOCATION].value as GeoJSONPoint;
