@@ -21,7 +21,6 @@ package org.openremote.manager.security;
 
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.jaas.CertificateCallback;
-import org.apache.activemq.artemis.spi.core.security.jaas.ClientIDCallback;
 import org.apache.activemq.artemis.spi.core.security.jaas.JaasCallbackHandler;
 import org.apache.activemq.artemis.spi.core.security.jaas.PrincipalsCallback;
 import org.keycloak.adapters.KeycloakDeployment;

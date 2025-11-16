@@ -62,8 +62,9 @@ import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
  */
 public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
 
-    private static final Logger LOG = SyslogCategory.getLogger(API, ActiveMQORSecurityManager.class);
-    protected ManagerIdentityProvider identityProvider;
+   private static final Logger LOG = SyslogCategory.getLogger(API, ActiveMQORSecurityManager.class);
+   public static final String CLIENT_AUTH_EKU_OID = "1.3.6.1.5.5.7.3.2";
+   protected ManagerIdentityProvider identityProvider;
     protected MQTTBrokerService brokerService;
     protected Function<String, KeycloakDeployment> deploymentResolver;
 
@@ -111,16 +112,15 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
                 realm = realmAndUsername[0];
                 user = realmAndUsername[1];
             }
-        }else if (certs != null && certs.length > 0) {
-
+        } else if (certs != null && certs.length > 0) {
             X509Certificate leaf = certs[0];
             String dn = leaf.getSubjectX500Principal().getName();
             try {
                 // Check for Client Authentication EKU (This denotes that this is the actual client certificate to enforce)
-                if(!leaf.getExtendedKeyUsage().contains("1.3.6.1.5.5.7.3.2")) {
+                if (!leaf.getExtendedKeyUsage().contains(CLIENT_AUTH_EKU_OID)) {
                     // TODO: Not sure about what extent to which we would like to enforce this.
                     // I have seen codebases use this EKU key to ensure that the certificate they are examining for client
-                    // auth is the correct one to inspect.I will have to perform some more research about it, but I think
+                    // auth is the correct one to inspect. I will have to perform some more research about it, but I think
                     // that the client certificate is always going to be the leaf. For now, log a warning about it.
                     LOG.log(Level.WARNING, "Presented certificate DOES NOT have Client Authentication Extended Key Usage. " +
                             "Attempting to use, but please fix this for subsequent requests.");
@@ -164,7 +164,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             }
             if (securityDomain != null) {
                 lc = new LoginContext(securityDomain, null, new MultiTenantJaasCallbackHandler(deploymentResolver, realm, user, password, remotingConnection), null);
-            } else if (certificateConfigName != null && certificateConfigName.length() > 0 && getCertsFromConnection(remotingConnection) != null) {
+            } else if (certificateConfigName != null && !certificateConfigName.isEmpty() && getCertsFromConnection(remotingConnection) != null) {
                 lc = new LoginContext(certificateConfigName, null, new MultiTenantJaasCallbackHandler(deploymentResolver, realm, user, password, remotingConnection), certificateConfig);
             } else {
                 lc = new LoginContext(configName, null, new MultiTenantJaasCallbackHandler(deploymentResolver, realm, user, password, remotingConnection), config);
@@ -176,8 +176,6 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
                 throw e;
             }
             Subject subject = lc.getSubject();
-
-            LOG.warning(subject.toString());
 
             if (subject != null) {
                 // Set subject here so any code that calls this method behaves like a normal ActiveMQ SecurityStoreImpl::authenticate call

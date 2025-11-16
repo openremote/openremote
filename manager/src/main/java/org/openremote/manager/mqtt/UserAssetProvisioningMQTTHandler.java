@@ -355,7 +355,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
                 .findFirst()
                 .map(X509CertificateCredential::getCertificate)
                 .orElse(null);
-            if(clientCertificate == null){
+            if (clientCertificate == null) {
                 LOG.info("No client certificate found in MTLS provisioning message: " + MQTTBrokerService.connectionToString(connection));
                 publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
                 return;
@@ -443,7 +443,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         try {
             LOG.finest("Checking service user: " + uniqueId);
-            serviceUser =  getCreateClientServiceUser(realm, identityProvider, uniqueId, isMTLS ? "" : null, matchingConfig);
+            serviceUser = getCreateClientServiceUser(realm, identityProvider, uniqueId, isMTLS ? "" : null, matchingConfig);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to retrieve/create service user: " + MQTTBrokerService.connectionToString(connection), e);
             publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
@@ -531,7 +531,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             .orElse(null);
     }
 
-    public static User  getCreateClientServiceUser(String realm, ManagerKeycloakIdentityProvider identityProvider, String uniqueId, String userPrefix, ProvisioningConfig<?, ?> provisioningConfig) throws RuntimeException {
+    public static User getCreateClientServiceUser(String realm, ManagerKeycloakIdentityProvider identityProvider, String uniqueId, String userPrefix, ProvisioningConfig<?, ?> provisioningConfig) throws RuntimeException {
         String prefix = userPrefix != null ? userPrefix : PROVISIONING_USER_PREFIX;
         String username = (prefix + uniqueId);
         User serviceUser = identityProvider.getUserByUsername(realm, User.SERVICE_ACCOUNT_PREFIX + username);
