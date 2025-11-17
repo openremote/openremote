@@ -381,14 +381,9 @@ export class OrMap extends LitElement {
         this.addEventListener(OrMapMarkerChangedEvent.NAME, this._onMarkerChangedEvent);
     }
 
-    /**
-     * Assuming location asset
-     * @param asset 
-     * @returns 
-     */
-    public addMarker(asset: Asset) {
+    public addMarker(asset: LocationAsset) {
         const coordinates = asset?.attributes?.location.value;
-        if (!coordinates) return;
+        if (!coordinates?.coordinates) return;
         this._map?.addAssetMarker(asset.id ?? '', asset.name ?? '', asset.type ?? '', coordinates.coordinates[0], coordinates.coordinates[1], asset);
     }
 
