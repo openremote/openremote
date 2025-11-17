@@ -167,6 +167,7 @@
   "intervalBy1minute": "Per minuut",
   "intervalBy5minutes": "Per 5 minuten",
   "intervalBy5minutes-auto": "Auto (5min)",
+  "intervalBy15minutes": "Per 15 minuten",
   "intervalBy30minutes": "Per 30 minuten",
   "intervalBy30minutes-auto": "Auto (30min)",
   "intervalByhour": "Per uur",

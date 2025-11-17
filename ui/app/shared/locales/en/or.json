@@ -167,6 +167,7 @@
   "intervalBy1minute": "Per minute",
   "intervalBy5minutes": "Per 5 minutes",
   "intervalBy5minutes-auto": "Auto (5min)",
+  "intervalBy15minutes": "Per 15 minutes",
   "intervalBy30minutes": "Per 30 minutes",
   "intervalBy30minutes-auto": "Auto (30min)",
   "intervalByhour": "Per hour",
@@ -693,6 +694,7 @@
   "invalidEmail": "Invalid email address",
   "yes": "Yes",
   "no": "No",
+  "tag": "Tag",
   "linked": "Linked",
   "filter": {
     "close": "Close filter",

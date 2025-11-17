@@ -1,13 +1,16 @@
 {
   "name": "@openremote/or-attribute-picker",
-  "version": "1.8.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "OpenRemote attribute picker dialog",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    "./*": "./lib/*.js",
+    "./jsx": {
+      "types": "./custom-elements-jsx.d.ts"
+    }
   },
   "types": "lib/index.d.ts",
   "scripts": {
@@ -19,13 +22,11 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
     "@openremote/or-asset-tree": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "lit": "^3.3.1"
-  },
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
   },
   "publishConfig": {
     "access": "public"
