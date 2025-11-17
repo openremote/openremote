@@ -15,7 +15,7 @@ The setup creates:
 - OR_SETUP_USERS standard user account
 - In each account, 1 Building asset
 - As child of each Building asset, OR_SETUP_ASSETS Light assets
-- OR_SETUP_USERS restrictred service users, linked to the corresponding Building asset,
+- OR_SETUP_USERS restricted service users, linked to the corresponding Building asset,
 with appropriate permission to push attribute values
 
 You build and push the custom manager image in a similar way than for load1, by running
@@ -28,7 +28,7 @@ docker buildx build --push --platform linux/amd64,linux/arm64 -t $AWS_DEVELOPERS
 ```
 
 Once deployed, running the load tests can be done using the same clients as for load testing a VM,
-but using the scenarios present in under `scenarios` in this folder instead.  
+but using the scenarios present under `scenarios` in this folder instead.  
 See `load1` folder for the tools, scripts and documentation.
 
 Two scenarios are provided:
@@ -41,7 +41,7 @@ The parameters are:
 MANAGER_HOSTNAME: Hostname of the manager to be tested  
 THREAD_COUNT: Number of parallel accounts that will connect and publish in parallel  
 ASSETS_COUNT: Number of Light assets for which to publish an attribute during each iteration  
-RAMP_RATE: Number of thead to add per second during ramp-up  
+RAMP_RATE: Number of thread to add per second during ramp-up  
 DURATION: Total duration to run the test for  
 MILLIS_BETWEEN_PUBLISHES: Delay between each publishing iteration  
 
@@ -54,5 +54,5 @@ Goal is to measure the time it takes for the system to allow that many connectio
 The parameters are:  
 MANAGER_HOSTNAME: Hostname of the manager to be tested  
 THREAD_COUNT: Number of parallel accounts that will connect publish in parallel  
-RAMP_RATE: Number of thead to add per second during ramp-up  
+RAMP_RATE: Number of thread to add per second during ramp-up  
 MILLIS_BETWEEN_PUBLISHES: Delay between each publishing iteration  
