@@ -25,6 +25,7 @@ import {
     OrMapLongPressEvent,
     ViewSettings,
     OrMapMarkersChangedEvent,
+    LocationAsset,
 } from "./index";
 import { OrMapMarker } from "./markers/or-map-marker";
 import { getLatLngBounds, getLngLat, getMarkerIconAndColorFromAssetType, isWebglSupported } from "./util";
@@ -81,9 +82,10 @@ export class MapWidget {
         features: []
     };
 
-    protected _assetTypes = new Set<string>([]);
     protected _assetTypesColors: any = {};
-    protected _markers: maplibregl.Marker[] = [];
+    protected cachedMarkers: Record<string, maplibregl.Marker> = {};
+    protected markersOnScreen: Record<string, maplibregl.Marker> = {};
+    protected assetsOnScreen: Record<string, LocationAsset> = {};
 
     constructor(type: MapType, styleParent: Node, mapContainer: HTMLElement, showGeoCodingControl: boolean = false, showBoundaryBox = false, useZoomControls = true, showGeoJson = true, clusterConfig?: ClusterConfig) {
         this._type = type;
@@ -529,7 +531,7 @@ export class MapWidget {
             'clusterRadius': this.clusterConfig?.clusterRadius ?? 180,
             'clusterMaxZoom': this.clusterConfig?.clusterMaxZoom ?? 17,
             'data': this._pointsMap,
-            'clusterProperties': Object.fromEntries([...this._assetTypes].map(t => [t,["+", ["case", ["==", ["get", "assetType"], t], 1, 0]]]))
+            'clusterProperties': Object.fromEntries(Object.keys(this._assetTypesColors).map(t => [t,["+", ["case", ["==", ["get", "assetType"], t], 1, 0]]]))
         });
 
         if (!this._mapGl.getLayer('unclustered-point')) {
@@ -747,18 +749,10 @@ export class MapWidget {
         }
     }
 
-    protected cachedMarkers: Record<string, maplibregl.Marker>  = {}
-    protected markersOnScreen: Record<string, maplibregl.Marker> = {}
-
-    public get assetsOnScreen(): string[] {
-        // Assuming all strings are asset ids the performance impact is minimal compared to querySourceFeatures
-        return Object.keys(this.markersOnScreen).filter(v => typeof v === 'string');
-    }
-
     protected updateMarkers() {
         if (!this._mapGl) return;
 
-        const newMarkers: Record<string, maplibregl.Marker>  = {}
+        const newMarkers: Record<string, maplibregl.Marker> = {};
         const features = this._mapGl.querySourceFeatures('mapPoints');
 
         // Asset markers
@@ -770,12 +764,15 @@ export class MapWidget {
 
             let marker = this.cachedMarkers[id]
             if (!marker) { 
-              const placeholder = document.createElement("div")
-              marker = this.cachedMarkers[id] = new maplibregl.Marker({ element: placeholder }).setLngLat(coords)
+                const placeholder = document.createElement("div");
+                marker = this.cachedMarkers[id] = new maplibregl.Marker({ element: placeholder }).setLngLat(coords);
             }
-            newMarkers[id] = marker
+            newMarkers[id] = marker;
 
-            if (!this.markersOnScreen[id]) marker.addTo(this._mapGl);
+            if (!this.markersOnScreen[id]) {
+                marker.addTo(this._mapGl);
+                this.assetsOnScreen[id] = JSON.parse(feature.properties.asset);
+            };
         }
 
         // Cluster markers
@@ -787,8 +784,8 @@ export class MapWidget {
 
             let marker = this.cachedMarkers[id];
             if (!marker) {
-                const slices: [string,string,number][] = Object.entries(feature.properties)
-                    .filter(([k]) => this._assetTypes.has(k))
+                const slices: [string, string, number][] = Object.entries(feature.properties)
+                    .filter(([k]) => this._assetTypesColors[k])
                     .map(([type, count]) => [type, this._assetTypesColors[type], count]);
 
                 marker = this.cachedMarkers[id] = new maplibregl.Marker({
@@ -801,25 +798,17 @@ export class MapWidget {
         }
 
         for (const id in this.markersOnScreen) {
-            if (!newMarkers[id]) this.markersOnScreen[id].remove()
+            if (!newMarkers[id]) { 
+                this.markersOnScreen[id].remove();
+                delete this.assetsOnScreen[id];
+            }
         }
         this.markersOnScreen = newMarkers;
-        this._mapContainer.dispatchEvent(new OrMapMarkersChangedEvent(this.assetsOnScreen));
+        this._mapContainer.dispatchEvent(new OrMapMarkersChangedEvent(Object.values(this.assetsOnScreen)));
     }
 
-    /**
-     * @todo This is not generic so either rename or make it generic for any marker {@link addMarker}
-     * @param assetId 
-     * @param assetName 
-     * @param assetType 
-     * @param long 
-     * @param lat 
-     * @param asset 
-     */
-    public addMark(assetId: string, assetName: string, assetType: string, long: number, lat: number, asset: Asset) {
-        this._assetTypes.add(assetType);
+    public addAssetMarker(assetId: string, assetName: string, assetType: string, long: number, lat: number, asset: Asset) {
         this._assetTypesColors[assetType] = getMarkerIconAndColorFromAssetType(assetType)?.color;
-
         this._pointsMap.features.push({
             type: 'Feature',
             properties: {

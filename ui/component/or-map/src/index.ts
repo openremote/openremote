@@ -17,17 +17,23 @@ import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dial
 import {getMarkerIconAndColorFromAssetType} from "./util";
 import {i18next} from "@openremote/or-translate";
 import { debounce } from "lodash";
-import { Asset, GeoJsonConfig, MapType } from "@openremote/model";
+import { Asset, Attribute, GeoJsonConfig, GeoJSONPoint, MapType, WellknownAttributes } from "@openremote/model";
 import { CoordinatesControl, CoordinatesRegexPattern, getCoordinatesInputKeyHandler } from "./controls/coordinates";
 import { CenterControl } from "./controls/center";
 
 // Re-exports
-export {Util, LngLatLike, LngLat};
+export {Util, LngLatLike, LngLat, ClusterConfig};
 export * from "./markers/or-map-marker";
 export * from "./markers/or-map-marker-asset";
 export {IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
 export * from "./or-map-legend";
+
+export interface LocationAsset extends Asset {
+    attributes: { [index: string]: Attribute<any> } & {
+        [WellknownAttributes.LOCATION]: Attribute<GeoJSONPoint>
+    };
+}
 
 export interface ViewSettings {
     center: LngLatLike;
@@ -106,11 +112,11 @@ export class OrMapGeocoderChangeEvent extends CustomEvent<MapGeocoderEventDetail
     }
 }
 
-export class OrMapMarkersChangedEvent extends CustomEvent<string[]> {
+export class OrMapMarkersChangedEvent extends CustomEvent<LocationAsset[]> {
 
     public static readonly NAME = "or-map-markers-changed";
 
-    constructor(assets: string[]) {
+    constructor(assets: LocationAsset[]) {
         super(OrMapMarkersChangedEvent.NAME, {
             detail: assets,
             bubbles: true,
@@ -383,7 +389,7 @@ export class OrMap extends LitElement {
     public addMarker(asset: Asset) {
         const coordinates = asset?.attributes?.location.value;
         if (!coordinates) return;
-        this._map?.addMark(asset.id ?? '', asset.name ?? '', asset.type ?? '', coordinates.coordinates[0], coordinates.coordinates[1], asset);
+        this._map?.addAssetMarker(asset.id ?? '', asset.name ?? '', asset.type ?? '', coordinates.coordinates[0], coordinates.coordinates[1], asset);
     }
 
     public cleanUpMarker(): void {
@@ -484,6 +490,16 @@ export class OrMap extends LitElement {
             this._map.flyTo(coordinates, zoom);
         }
     }
+
+    // protected _onSlotChange(e: Event) {
+    //     const els = (e.target as HTMLSlotElement).assignedElements({ flatten: true });
+    //     for (const el of els) {
+    //         console.log(el)
+    //         if (el instanceof OrMapMarkerAsset && el.asset) {
+    //              el.asset = null as any as Asset;
+    //         }
+    //     }
+    // }
 
     protected _onMarkerChangedEvent(evt: OrMapMarkerChangedEvent) {
         if (this._map) {
