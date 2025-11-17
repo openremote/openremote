@@ -73,10 +73,7 @@ export class MapWidget {
     protected _controls?: (IControl | [IControl, ControlPosition?])[];
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
     protected _geocoder?: any;
-    protected popup: Popup | undefined = undefined;
-    protected popupClusterId: string | undefined = undefined;
-    protected currentMarkers: MarkerGL[] = [];
-    protected clusterConfig?: ClusterConfig;
+    protected _clusterConfig?: ClusterConfig;
     protected _pointsMap: any = {
         type: "FeatureCollection",
         features: []
@@ -95,7 +92,7 @@ export class MapWidget {
         this._showBoundaryBox = showBoundaryBox;
         this._useZoomControls = useZoomControls;
         this._showGeoJson = showGeoJson;
-        this.clusterConfig = clusterConfig;
+        this._clusterConfig = clusterConfig;
     }
 
     public setCenter(center?: LngLatLike): this {
@@ -527,9 +524,9 @@ export class MapWidget {
 
         this._mapGl.addSource('mapPoints', {
             'type': 'geojson',
-            'cluster': this.clusterConfig?.cluster ?? false,
-            'clusterRadius': this.clusterConfig?.clusterRadius ?? 180,
-            'clusterMaxZoom': this.clusterConfig?.clusterMaxZoom ?? 17,
+            'cluster': this._clusterConfig?.cluster ?? false,
+            'clusterRadius': this._clusterConfig?.clusterRadius ?? 180,
+            'clusterMaxZoom': this._clusterConfig?.clusterMaxZoom ?? 17,
             'data': this._pointsMap,
             'clusterProperties': Object.fromEntries(Object.keys(this._assetTypesColors).map(t => [t,["+", ["case", ["==", ["get", "assetType"], t], 1, 0]]]))
         });
@@ -549,13 +546,6 @@ export class MapWidget {
                 }
             });
         }
-
-        this._mapGl.on('zoom', () => {
-            if (this.popup && this.popup.isOpen()) {
-                this.popup.remove();
-                this.popupClusterId = undefined;
-            }
-        });
 
         this._mapGl.on("data", (e: any) => {
             if (!this._mapGl) return;
