@@ -373,7 +373,6 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected render() {
-        console.log(this.assetsOnScreen)
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
 
