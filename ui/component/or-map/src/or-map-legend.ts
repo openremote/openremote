@@ -55,10 +55,6 @@ export class OrMapLegend extends LitElement {
             });
         }
 
-        if (this._showLegend) {
-            this._showLegend.hidden = true;
-        }
-
         return super.shouldUpdate(_changedProperties);
     }
 
