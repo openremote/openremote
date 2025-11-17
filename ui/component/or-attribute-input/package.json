@@ -1,13 +1,16 @@
 {
   "name": "@openremote/or-attribute-input",
-  "version": "1.8.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "OpenRemote attribute input",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    "./*": "./lib/*.js",
+    "./jsx": {
+      "types": "./custom-elements-jsx.d.ts"
+    }
   },
   "types": "lib/index.d.ts",
   "scripts": {
@@ -18,16 +21,15 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "@jsonforms/core": "^3.5.1",
     "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
     "@openremote/or-components": "workspace:*",
     "@openremote/or-json-forms": "workspace:*",
     "@openremote/or-map": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "lit": "^3.3.1"
-  },
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
   },
   "publishConfig": {
     "access": "public"
