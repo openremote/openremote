@@ -785,7 +785,7 @@ export class MapWidget {
             let marker = this.cachedMarkers[id];
             if (!marker) {
                 const slices: [string, string, number][] = Object.entries(feature.properties)
-                    .filter(([k]) => this._assetTypesColors[k])
+                    .filter(([k]) => this._assetTypesColors.hasOwnProperty(k))
                     .map(([type, count]) => [type, this._assetTypesColors[type], count]);
 
                 marker = this.cachedMarkers[id] = new maplibregl.Marker({
