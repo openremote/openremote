@@ -491,16 +491,6 @@ export class OrMap extends LitElement {
         }
     }
 
-    // protected _onSlotChange(e: Event) {
-    //     const els = (e.target as HTMLSlotElement).assignedElements({ flatten: true });
-    //     for (const el of els) {
-    //         console.log(el)
-    //         if (el instanceof OrMapMarkerAsset && el.asset) {
-    //              el.asset = null as any as Asset;
-    //         }
-    //     }
-    // }
-
     protected _onMarkerChangedEvent(evt: OrMapMarkerChangedEvent) {
         if (this._map) {
             this._map.onMarkerChanged(evt.detail.marker, evt.detail.property);
