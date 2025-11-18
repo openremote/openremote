@@ -2,8 +2,7 @@
   "extends": "../../tsconfig",
   "compilerOptions": {
     "outDir": "./lib",
-    "rootDir": "src",
-    "skipLibCheck": true
+    "rootDir": "src"
   },
   "include": [
     "./src"
