@@ -24,7 +24,7 @@ import {
     OrMapLongPressEvent,
     ViewSettings,
     OrMapMarkersChangedEvent,
-    LocationAsset,
+    AssetWithLocation,
 } from "./index";
 import { OrMapMarker } from "./markers/or-map-marker";
 import { getLatLngBounds, getLngLat, getMarkerIconAndColorFromAssetType, isWebglSupported } from "./util";
@@ -81,7 +81,7 @@ export class MapWidget {
     protected _assetTypesColors: any = {};
     protected _cachedMarkers: Record<string, maplibregl.Marker> = {};
     protected _markersOnScreen: Record<string, maplibregl.Marker> = {};
-    protected _assetsOnScreen: Record<string, LocationAsset> = {};
+    protected _assetsOnScreen: Record<string, AssetWithLocation> = {};
 
     constructor(type: MapType, styleParent: Node, mapContainer: HTMLElement, showGeoCodingControl: boolean = false, showBoundaryBox = false, useZoomControls = true, showGeoJson = true, clusterConfig?: ClusterConfig) {
         this._type = type;

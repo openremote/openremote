@@ -29,7 +29,7 @@ export {IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
 export * from "./or-map-legend";
 
-export interface LocationAsset extends Asset {
+export interface AssetWithLocation extends Asset {
     attributes: { [index: string]: Attribute<any> } & {
         [WellknownAttributes.LOCATION]: Attribute<GeoJSONPoint>
     };
@@ -112,11 +112,11 @@ export class OrMapGeocoderChangeEvent extends CustomEvent<MapGeocoderEventDetail
     }
 }
 
-export class OrMapMarkersChangedEvent extends CustomEvent<LocationAsset[]> {
+export class OrMapMarkersChangedEvent extends CustomEvent<AssetWithLocation[]> {
 
     public static readonly NAME = "or-map-markers-changed";
 
-    constructor(assets: LocationAsset[]) {
+    constructor(assets: AssetWithLocation[]) {
         super(OrMapMarkersChangedEvent.NAME, {
             detail: assets,
             bubbles: true,
@@ -381,7 +381,7 @@ export class OrMap extends LitElement {
         this.addEventListener(OrMapMarkerChangedEvent.NAME, this._onMarkerChangedEvent);
     }
 
-    public addMarker(asset: LocationAsset) {
+    public addMarker(asset: AssetWithLocation) {
         const coordinates = asset?.attributes?.location.value;
         if (!coordinates?.coordinates) return;
         this._map?.addAssetMarker(asset.id ?? '', asset.name ?? '', asset.type ?? '', coordinates.coordinates[0], coordinates.coordinates[1], asset);

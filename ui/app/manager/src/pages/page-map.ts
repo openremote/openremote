@@ -29,7 +29,7 @@ import {
 import {getAssetsRoute, getMapRoute} from "../routes";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {GenericAxiosResponse} from "@openremote/rest";
-import { ClusterConfig, Util as MapUtil, LocationAsset } from "@openremote/or-map";
+import { ClusterConfig, Util as MapUtil, AssetWithLocation } from "@openremote/or-map";
 
 export interface MapState {
     assets: Asset[];
@@ -55,7 +55,7 @@ const pageMapSlice = createSlice({
                 // Update and delete handled by attribute handler
 
                 const asset = action.payload.asset;
-                if (MapUtil.isLocationAsset(asset)) {
+                if (MapUtil.isAssetWithLocation(asset)) {
                     return {
                         ...state,
                         assets: [...state.assets, action.payload.asset]
@@ -200,7 +200,7 @@ export class PageMap extends Page<MapStateKeyed> {
     protected _currentAsset?: Asset;
 
     @state()
-    protected _assetsOnScreen: LocationAsset[] = [];
+    protected _assetsOnScreen: AssetWithLocation[] = [];
 
     protected _assetSelector = (state: MapStateKeyed) => state.map.assets;
     protected _paramsSelector = (state: MapStateKeyed) => state.app.params;
@@ -442,7 +442,7 @@ export class PageMap extends Page<MapStateKeyed> {
         this._assetTypes = [];
         this._map.cleanUpMarker();
         this._assets.forEach((asset: Asset) => {
-            if (MapUtil.isLocationAsset(asset)) {
+            if (MapUtil.isAssetWithLocation(asset)) {
                 if (!this._exclude.includes(asset.type)) {
                     this._map.addMarker(asset)
                 }
