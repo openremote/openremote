@@ -397,11 +397,11 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         }
 
         cleanup: "the agent and assets are deleted"
-        if (agent != null) {
-            assetStorageService.delete([agent.id])
-        }
         if (asset != null) {
             assetStorageService.delete([asset.id])
+        }
+        if (agent != null) {
+            assetStorageService.delete([agent.id])
         }
         conditions.eventually {
             assert brokerService.getUserConnections(keycloakTestSetup.serviceUser.id).isEmpty()
@@ -532,14 +532,14 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
 
 
         cleanup: "the agent and assets are deleted"
-        if (agent != null) {
-            assetStorageService.delete([agent.id])
-        }
         if (asset != null) {
             assetStorageService.delete([asset.id])
         }
         if (testThing != null) {
             assetStorageService.delete([testThing.id])
+        }
+        if (agent != null) {
+            assetStorageService.delete([agent.id])
         }
         conditions.eventually {
             assert brokerService.getUserConnections(keycloakTestSetup.serviceUser.id).isEmpty()
@@ -739,9 +739,6 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         }
 
         cleanup: "the agent and assets are deleted"
-        if (agent != null) {
-            assetStorageService.delete([agent.id])
-        }
         if (testThing1 != null) {
             assetStorageService.delete([testThing1.id])
         }
@@ -753,6 +750,9 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         }
         if (asset != null) {
             assetStorageService.delete([asset.id])
+        }
+        if (agent != null) {
+            assetStorageService.delete([agent.id])
         }
         conditions.eventually {
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).isEmpty()
