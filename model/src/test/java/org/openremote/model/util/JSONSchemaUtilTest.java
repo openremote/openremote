@@ -1,12 +1,8 @@
 package org.openremote.model.util;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.json.JSONException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -348,21 +344,14 @@ public class JSONSchemaUtilTest {
 
     @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY)
     @JsonSubTypes({
-            @JsonSubTypes.Type(TestAgentLinkAnnotationResolving.class),
-            @JsonSubTypes.Type(TestAgentLinkSuperclassAnnotationResolving.class),
+            @JsonSubTypes.Type(SubType.class),
+            @JsonSubTypes.Type(SubTypeSuperclass.class),
     })
-    abstract static class TestAgentLink<T extends TestAgentLink<?>> implements Serializable {
-
-        @JsonSchemaFormat("or-agent-id")
-        protected String id;
-
-        @JsonSerialize
-        protected String getType() {
-            return getClass().getSimpleName();
-        }
-    }
-    static class TestAgentLinkAnnotationResolving extends TestAgentLink<TestAgentLinkAnnotationResolving> { }
-    static class TestAgentLinkSuperclassAnnotationResolving extends TestAgentLinkAnnotationResolving { }
+    abstract static class PolymorphicType<T extends PolymorphicType<?>> implements Serializable {}
+    @JsonTypeName("SubType")
+    static class SubType extends PolymorphicType<SubType> {}
+    @JsonTypeName("SubTypeSuperclass")
+    static class SubTypeSuperclass extends SubType { }
 
     @Test
     public void shouldHaveSubtypesWithDefaultTypeProperty() throws JsonProcessingException, JSONException {
@@ -370,28 +359,28 @@ public class JSONSchemaUtilTest {
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "definitions": {
-                    "TestAgentLinkAnnotationResolving": {
-                        "title": "Test Agent Link Annotation Resolving",
+                    "SubType": {
+                        "title": "Sub Type",
                         "type": "object",
                         "additionalProperties": true,
                         "properties": {
                             "type": {
-                                "const": "JSONSchemaUtilTest$TestAgentLinkAnnotationResolving",
-                                "default": "JSONSchemaUtilTest$TestAgentLinkAnnotationResolving"
+                                "const": "SubType",
+                                "default": "SubType"
                             }
                         },
                         "required": [
                             "type"
                         ]
                     },
-                    "TestAgentLinkSuperclassAnnotationResolving": {
-                        "title": "Test Agent Link Superclass Annotation Resolving",
+                    "SubTypeSuperclass": {
+                        "title": "Sub Type Superclass",
                         "type": "object",
                         "additionalProperties": true,
                         "properties": {
                             "type": {
-                                "const": "JSONSchemaUtilTest$TestAgentLinkSuperclassAnnotationResolving",
-                                "default": "JSONSchemaUtilTest$TestAgentLinkSuperclassAnnotationResolving"
+                                "const": "SubTypeSuperclass",
+                                "default": "SubTypeSuperclass"
                             }
                         },
                         "required": [
@@ -400,46 +389,56 @@ public class JSONSchemaUtilTest {
                     }
                 },
                 "oneOf": [
-                    { "$ref": "#/definitions/TestAgentLinkAnnotationResolving" },
-                    { "$ref": "#/definitions/TestAgentLinkSuperclassAnnotationResolving" }
+                    { "$ref": "#/definitions/SubType" },
+                    { "$ref": "#/definitions/SubTypeSuperclass" }
                 ],
                 "type": "object",
                 "additionalProperties": true,
-                "title": "Test Agent Link"
+                "title": "Polymorphic Type"
             }"""
         );
 
-        JsonNode actual = ValueUtil.getSchema(TestAgentLink.class);
+        JsonNode actual = ValueUtil.getSchema(PolymorphicType.class);
         assertEquals(expected.toString(), actual.toString(), true);
     }
 
-    @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY)
-    abstract static class TestAgentLinkReflections<T extends TestAgentLinkReflections<?>> implements Serializable {
-
-        @JsonSchemaFormat("or-agent-id")
-        protected String id;
-
-        @JsonSerialize
-        protected String getType() {
-            return getClass().getSimpleName();
-        }
-    }
-    static class TestAgentLinkReflectionResolving extends TestAgentLinkReflections<TestAgentLinkReflectionResolving> { }
+    @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY)
+    @JsonSubTypes({
+            @JsonSubTypes.Type(ExternalSubType.class),
+            @JsonSubTypes.Type(ExternalSubTypeSuperclass.class),
+    })
+    abstract static class ExternalPolymorphicType<T extends ExternalPolymorphicType<?>> implements Serializable {}
+    static class ExternalSubType extends ExternalPolymorphicType<ExternalSubType> { }
+    static class ExternalSubTypeSuperclass extends ExternalSubType { }
 
     @Test
-    public void shouldResolveSubtypesReflections() throws JsonProcessingException, JSONException {
+    public void shouldSetEnumTypeForExternalProperty() throws JsonProcessingException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "definitions": {
-                    "TestAgentLinkReflectionResolving": {
-                        "title": "Test Agent Link Reflection Resolving",
+                    "ExternalSubType": {
+                        "title": "External Sub Type",
                         "type": "object",
                         "additionalProperties": true,
                         "properties": {
                             "type": {
-                                "const": "JSONSchemaUtilTest$TestAgentLinkReflectionResolving",
-                                "default": "JSONSchemaUtilTest$TestAgentLinkReflectionResolving"
+                                "const": "ExternalSubType",
+                                "default": "ExternalSubType"
+                            }
+                        },
+                        "required": [
+                            "type"
+                        ]
+                    },
+                    "ExternalSubTypeSuperclass": {
+                        "title": "External Sub Type Superclass",
+                        "type": "object",
+                        "additionalProperties": true,
+                        "properties": {
+                            "type": {
+                                "const": "ExternalSubTypeSuperclass",
+                                "default": "ExternalSubTypeSuperclass"
                             }
                         },
                         "required": [
@@ -447,15 +446,64 @@ public class JSONSchemaUtilTest {
                         ]
                     }
                 },
-                "title": "Test Agent Link Reflections",
                 "oneOf": [
-                    { "$ref": "#/definitions/TestAgentLinkReflectionResolving" }
+                    { "$ref": "#/definitions/ExternalSubType" },
+                    { "$ref": "#/definitions/ExternalSubTypeSuperclass" }
+                ],
+                "properties": {
+                    "type": {
+                        "enum": [
+                            "ExternalSubType",
+                            "ExternalSubTypeSuperclass"
+                        ]
+                    }
+                },
+                "type": "object",
+                "additionalProperties": true,
+                "title": "External Polymorphic Type"
+            }"""
+        );
+
+        JsonNode actual = ValueUtil.getSchema(ExternalPolymorphicType.class);
+        assertEquals(expected.toString(), actual.toString(), true);
+    }
+
+    @JsonTypeName("ReflectedPolymorphicType")
+    @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY)
+    abstract static class ReflectedPolymorphicType<T extends ReflectedPolymorphicType<?>> implements Serializable {}
+    @JsonTypeName("ResolvedSubType")
+    static class ResolvedSubType extends ReflectedPolymorphicType<ResolvedSubType> { }
+
+    @Test
+    public void shouldResolveSubtypesThroughReflections() throws JsonProcessingException, JSONException {
+        JsonNode expected = ValueUtil.JSON.readTree("""
+            {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "definitions": {
+                    "ResolvedSubType": {
+                        "title": "Resolved Sub Type",
+                        "type": "object",
+                        "additionalProperties": true,
+                        "properties": {
+                            "type": {
+                                "const": "ResolvedSubType",
+                                "default": "ResolvedSubType"
+                            }
+                        },
+                        "required": [
+                            "type"
+                        ]
+                    }
+                },
+                "title": "Reflected Polymorphic Type",
+                "oneOf": [
+                    { "$ref": "#/definitions/ResolvedSubType" }
                 ],
                 "type": "object",
                 "additionalProperties": true,
                 "properties": {
                     "type": {
-                        "const": "JSONSchemaUtilTest$TestAgentLinkReflections"
+                        "const": "ReflectedPolymorphicType"
                     }
                 },
                 "required": [
@@ -464,7 +512,7 @@ public class JSONSchemaUtilTest {
             }"""
         );
 
-        JsonNode actual = ValueUtil.getSchema(TestAgentLinkReflections.class);
+        JsonNode actual = ValueUtil.getSchema(ReflectedPolymorphicType.class);
         assertEquals(expected.toString(), actual.toString(), true);
     }
 
