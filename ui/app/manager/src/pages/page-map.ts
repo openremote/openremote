@@ -283,9 +283,7 @@ export class PageMap extends Page<MapStateKeyed> {
 
                 this._store.dispatch(setAssets(assets));
 
-                if (this._map) {
-                    this._updateMarkers();
-                }
+                this._updateMarkers();
 
                 const assetSubscriptionId = await manager.events.subscribeAssetEvents(undefined, false, (event) => {
                     this._store.dispatch(assetEventReceived(event));
@@ -439,17 +437,19 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected _updateMarkers() {
-        this._assetTypes = [];
-        this._map.cleanUpMarker();
-        this._assets.forEach((asset: Asset) => {
-            if (MapUtil.isAssetWithLocation(asset)) {
-                if (!this._exclude.includes(asset.type)) {
-                    this._map.addMarker(asset)
+        if (this._map) {
+            this._assetTypes = [];
+            this._map.cleanUpMarker();
+            this._assets.forEach((asset: Asset) => {
+                if (MapUtil.isAssetWithLocation(asset)) {
+                    if (!this._exclude.includes(asset.type)) {
+                        this._map.addMarker(asset)
+                    }
+                    if (!this._assetTypes.includes(asset.type)) {
+                        this._assetTypes.push(asset.type);
+                    }
                 }
-                if (!this._assetTypes.includes(asset.type)) {
-                    this._assetTypes.push(asset.type);
-                }
-            }
-        });
+            });
+        }
     }
 }
