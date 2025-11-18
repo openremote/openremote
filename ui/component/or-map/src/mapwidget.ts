@@ -506,7 +506,10 @@ export class MapWidget {
     }
 
     public load() {
-        if (!this._mapGl) return;
+        if (!this._mapGl) {
+            console.warn("MapLibre Map not initialized!");
+            return;
+        }
 
         if (this._mapGl.getSource('mapPoints')) {
             if (this._mapGl.getLayer('unclustered-point')) {
