@@ -387,8 +387,8 @@ export class OrMap extends LitElement {
         this._map?.addAssetMarker(asset.id ?? '', asset.name ?? '', asset.type ?? '', coordinates.coordinates[0], coordinates.coordinates[1], asset);
     }
 
-    public cleanUpMarker(): void {
-        this._map?.cleanupMark();
+    public cleanUpAssetMarkers(): void {
+        this._map?.cleanUpAssetMarkers();
     }
 
     public reload(): void {

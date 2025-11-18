@@ -822,13 +822,12 @@ export class MapWidget {
         });
     }
 
-    public cleanupMark(): void {
+    public cleanUpAssetMarkers(): void {
+        this._assetTypesColors = {};
         this._pointsMap = {
             type: "FeatureCollection",
             features: []
         };
-
-        this._assetTypesColors = {};
     }
 
     public removeMarker(marker: OrMapMarker) {

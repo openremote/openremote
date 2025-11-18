@@ -212,6 +212,8 @@ export class PageMap extends Page<MapStateKeyed> {
     protected _assetTypes: string[] = [];
     protected _exclude: string[] = [];
 
+    protected _prevRealm?: string;
+
     protected getAttributesOfInterest(): (string | WellknownAttributes)[] {
         // Extract all label attributes configured in marker config
         let markerLabelAttributes = [];
@@ -333,11 +335,14 @@ export class PageMap extends Page<MapStateKeyed> {
               this._assets = [];
           }
           this.unsubscribeAssets();
-          this.subscribeAssets(realm);
-
-          if (this._map) {
-              this._map.refresh();
-          }
+          this.subscribeAssets(realm).then(() => {
+              console.log(realm)
+              if (this._prevRealm && this._prevRealm !== realm) {
+                  this._map?.reload();
+              }
+              this._prevRealm = realm;
+          });
+          this._map?.refresh();
       }
     )
 
@@ -442,7 +447,7 @@ export class PageMap extends Page<MapStateKeyed> {
     protected _updateMarkers() {
         if (this._map) {
             this._assetTypes = [];
-            this._map.cleanUpMarker();
+            this._map.cleanUpAssetMarkers();
             this._assets.forEach((asset: Asset) => {
                 if (MapUtil.isAssetWithLocation(asset)) {
                     if (!this._exclude.includes(asset.type)) {
