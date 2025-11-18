@@ -31,7 +31,7 @@ import { getLatLngBounds, getLngLat, getMarkerIconAndColorFromAssetType, isWebgl
 import { Asset, GeoJsonConfig, MapType } from "@openremote/model";
 import { Feature, FeatureCollection, Geometry } from "geojson";
 import { isMapboxURL, transformMapboxUrl } from "./util/mapbox-url";
-import { OrClusterMarker } from "./markers/or-cluster-marker";
+import { OrClusterMarker, Slice } from "./markers/or-cluster-marker";
 
 const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
 const maplibreGlStyles = require("maplibre-gl/dist/maplibre-gl.css");
@@ -773,7 +773,7 @@ export class MapWidget {
 
             let marker = this._cachedMarkers[id];
             if (!marker) {
-                const slices: [string, string, number][] = Object.entries(feature.properties)
+                const slices: Slice[] = Object.entries(feature.properties)
                     .filter(([k]) => this._assetTypesColors.hasOwnProperty(k))
                     .map(([type, count]) => [type, this._assetTypesColors[type], count]);
 
