@@ -64,7 +64,7 @@ export class OrMapLegend extends LitElement {
 
     protected _onHeaderClick(evt: MouseEvent | null) {
         if (this._showLegend) {
-            this._showLegend.hidden = !this._showLegend?.hidden;
+            this._showLegend.hidden = !this._showLegend.hidden;
         }
     }
 
