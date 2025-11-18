@@ -378,8 +378,6 @@ export class OrMapMarker extends LitElement {
     disconnectedCallback(): void {
         super.disconnectedCallback();
         // Safely cleanup markers once removed from the DOM
-        if (this._actualMarkerElement?.parentElement) {
-            this._actualMarkerElement.parentElement.removeChild(this._actualMarkerElement);
-        }
+        this._actualMarkerElement?.parentElement?.removeChild(this._actualMarkerElement);
     }
 }
