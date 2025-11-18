@@ -72,7 +72,7 @@ export class OrMapLegend extends LitElement {
         return html`
             <div id="legend">
                 <div id="legend-title" @click="${(evt: MouseEvent) => this._onHeaderClick(evt)}">
-                    <span>${i18next.t("mapPage.legendTitle")}</span><or-icon style="cursor: pointer" icon="menu"></or-icon>
+                    <or-translate value="mapPage.legendTitle"></or-translate><or-icon style="cursor: pointer" icon="menu"></or-icon>
                 </div>
                 <div id="legend-content" hidden>
                     <ul>
