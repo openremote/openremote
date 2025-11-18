@@ -10,7 +10,6 @@ import maplibregl,{
     MapMouseEvent,
     Marker as MarkerGL,
     NavigationControl,
-    Popup,
     StyleSpecification,
     GeoJSONSourceSpecification,
 } from "maplibre-gl";
