@@ -387,7 +387,7 @@ export class PageMap extends Page<MapStateKeyed> {
             }}"></or-map-legend>` : null}
 
             <or-map id="map" class="or-map" .cluster="${this.config.clustering}" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
-                ${this._assetsOnScreen.sort((a,b) => {;
+                ${this._assetsOnScreen.sort((a,b) => {
                     const pointA = a.attributes[WellknownAttributes.LOCATION].value as GeoJSONPoint;
                     const pointB = b.attributes[WellknownAttributes.LOCATION].value as GeoJSONPoint;
                     if (pointA && pointB){
