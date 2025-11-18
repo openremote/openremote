@@ -378,7 +378,7 @@ export class PageMap extends Page<MapStateKeyed> {
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
 
-            ${this.config?.legend?.show && this._assetTypes.length > 1 ? html`<or-map-legend .assetTypes="${this._assetTypes}" @or-map-legend-changed="${(e: OrMapLegendEvent) => {
+            ${this.config?.legend?.show !== false && this._assetTypes.length > 1 ? html`<or-map-legend .assetTypes="${this._assetTypes}" @or-map-legend-changed="${(e: OrMapLegendEvent) => {
                 if (this._map) {
                     this._exclude = e.detail;
                     this._updateMarkers();

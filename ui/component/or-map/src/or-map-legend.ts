@@ -74,7 +74,7 @@ export class OrMapLegend extends LitElement {
                 <div id="legend-title" @click="${(evt: MouseEvent) => this._onHeaderClick(evt)}">
                     <span>${i18next.t("mapPage.legendTitle")}</span><or-icon style="cursor: pointer" icon="menu"></or-icon>
                 </div>
-                <div id="legend-content">
+                <div id="legend-content" hidden>
                     <ul>
                         ${this.assetTypes.map(
                             (assetType) => html` <li id="asset-legend" style="display: flex;">
