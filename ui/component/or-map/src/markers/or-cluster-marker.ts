@@ -14,13 +14,13 @@ export class OrClusterMarker extends LitElement {
     }
 
     protected render() {
-        return html`${this.createDonutChart(this.slices)}`;
+        return html`${this._createDonutChart(this.slices)}`;
     }
 
     /**
      * Methods from maplibre example for Cluster with Donut Chart
      */
-    protected createDonutChart(slices: Slice[]): HTMLElement | undefined {
+    protected _createDonutChart(slices: Slice[]): HTMLElement | undefined {
         let total = 0;
         for (const slice of slices) {
             slice.push(total);
@@ -52,7 +52,7 @@ export class OrClusterMarker extends LitElement {
             }px Helvetica Neue,Arial,Helvetica,sans-serif; display: block">`;
 
         for (const [,color,count,offset] of slices as [] as [name: string, color: string, count: number, offset: number][]) {
-            html += this.donutSegment(
+            html += this._donutSegment(
                 offset / total,
                 (offset + count) / total,
                 r2,
@@ -84,7 +84,7 @@ export class OrClusterMarker extends LitElement {
     /**
      * Methods from maplibre example for Cluster with Donut Chart
      */
-    protected donutSegment(start: number, end: number, r: number, r0: number, color: string, sub: boolean, dR: number): string {
+    protected _donutSegment(start: number, end: number, r: number, r0: number, color: string, sub: boolean, dR: number): string {
         if (end - start === 1) {
             end -= 0.00001;
         }

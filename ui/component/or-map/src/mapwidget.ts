@@ -80,9 +80,9 @@ export class MapWidget {
     };
 
     protected _assetTypesColors: any = {};
-    protected cachedMarkers: Record<string, maplibregl.Marker> = {};
-    protected markersOnScreen: Record<string, maplibregl.Marker> = {};
-    protected assetsOnScreen: Record<string, LocationAsset> = {};
+    protected _cachedMarkers: Record<string, maplibregl.Marker> = {};
+    protected _markersOnScreen: Record<string, maplibregl.Marker> = {};
+    protected _assetsOnScreen: Record<string, LocationAsset> = {};
 
     constructor(type: MapType, styleParent: Node, mapContainer: HTMLElement, showGeoCodingControl: boolean = false, showBoundaryBox = false, useZoomControls = true, showGeoJson = true, clusterConfig?: ClusterConfig) {
         this._type = type;
@@ -213,9 +213,9 @@ export class MapWidget {
         this._geoJsonConfig = geoJsonConfig;
         if(this._mapGl) {
             if(this._geoJsonConfig) {
-                this.loadGeoJSON(this._geoJsonConfig);
+                this._loadGeoJSON(this._geoJsonConfig);
             } else {
-                this.loadGeoJSON(this._viewSettings?.geoJson);
+                this._loadGeoJSON(this._viewSettings?.geoJson);
             }
         }
         return this;
@@ -250,9 +250,9 @@ export class MapWidget {
                 }
                 // Unload all GeoJSON that is present, and load new layers if present
                 if(this._geoJsonConfig) {
-                    await this.loadGeoJSON(this._geoJsonConfig);
+                    await this._loadGeoJSON(this._geoJsonConfig);
                 } else {
-                    await this.loadGeoJSON(this._viewSettings?.geoJson);
+                    await this._loadGeoJSON(this._viewSettings?.geoJson);
                 }
             }
             if (!this._center) {
@@ -386,7 +386,7 @@ export class MapWidget {
 
             this._mapGl = new map.Map(options);
 
-            await this.styleLoaded();
+            await this._styleLoaded();
 
             this._mapGl.on("click", (e: MapMouseEvent) => {
                 this._onMapClick(e.lngLat);
@@ -491,9 +491,9 @@ export class MapWidget {
 
             // Unload all GeoJSON that is present, and load new layers if present
             if(this._geoJsonConfig) {
-                await this.loadGeoJSON(this._geoJsonConfig);
+                await this._loadGeoJSON(this._geoJsonConfig);
             } else {
-                await this.loadGeoJSON(this._viewSettings?.geoJson);
+                await this._loadGeoJSON(this._viewSettings?.geoJson);
             }
 
             this._initLongPressEvent();
@@ -551,16 +551,16 @@ export class MapWidget {
             if (!this._mapGl) return;
             if (e.sourceId !== 'mapPoints' || !e.isSourceLoaded) return;
 
-            this._mapGl.off('move', () => this.updateMarkers());
-            this._mapGl.off('moveend', () => this.updateMarkers());
+            this._mapGl.off('move', () => this._updateMarkers());
+            this._mapGl.off('moveend', () => this._updateMarkers());
 
-            this._mapGl.on('move', debounce(() => this.updateMarkers()));
-            this._mapGl.on('moveend', debounce(() => this.updateMarkers()));
-            this.updateMarkers()
+            this._mapGl.on('move', debounce(() => this._updateMarkers()));
+            this._mapGl.on('moveend', debounce(() => this._updateMarkers()));
+            this._updateMarkers()
         })
     }
 
-    protected styleLoaded(): Promise<void> {
+    protected _styleLoaded(): Promise<void> {
         return new Promise(resolve => {
             if (this._mapGl) {
                 this._mapGl.once('style.load', resolve);
@@ -585,7 +585,7 @@ export class MapWidget {
         this._mapContainer.dispatchEvent(new OrMapClickedEvent(lngLat, doubleClicked));
     }
 
-    protected async loadGeoJSON(geoJsonConfig?: GeoJsonConfig) {
+    protected async _loadGeoJSON(geoJsonConfig?: GeoJsonConfig) {
 
         // Remove old layers
         if(this._geoJsonLayers.size > 0) {
@@ -739,7 +739,7 @@ export class MapWidget {
         }
     }
 
-    protected updateMarkers() {
+    protected _updateMarkers() {
         if (!this._mapGl) return;
 
         const newMarkers: Record<string, maplibregl.Marker> = {};
@@ -752,16 +752,16 @@ export class MapWidget {
             const geometry = feature.geometry as Geometry & { coordinates: LngLatLike };
             const coords = geometry.coordinates;
 
-            let marker = this.cachedMarkers[id]
+            let marker = this._cachedMarkers[id]
             if (!marker) { 
                 const placeholder = document.createElement("div");
-                marker = this.cachedMarkers[id] = new maplibregl.Marker({ element: placeholder }).setLngLat(coords);
+                marker = this._cachedMarkers[id] = new maplibregl.Marker({ element: placeholder }).setLngLat(coords);
             }
             newMarkers[id] = marker;
 
-            if (!this.markersOnScreen[id]) {
+            if (!this._markersOnScreen[id]) {
                 marker.addTo(this._mapGl);
-                this.assetsOnScreen[id] = JSON.parse(feature.properties.asset);
+                this._assetsOnScreen[id] = JSON.parse(feature.properties.asset);
             };
         }
 
@@ -772,29 +772,29 @@ export class MapWidget {
             const geometry = feature.geometry as Geometry & { coordinates: LngLatLike };
             const coords = geometry.coordinates;
 
-            let marker = this.cachedMarkers[id];
+            let marker = this._cachedMarkers[id];
             if (!marker) {
                 const slices: [string, string, number][] = Object.entries(feature.properties)
                     .filter(([k]) => this._assetTypesColors.hasOwnProperty(k))
                     .map(([type, count]) => [type, this._assetTypesColors[type], count]);
 
-                marker = this.cachedMarkers[id] = new maplibregl.Marker({
+                marker = this._cachedMarkers[id] = new maplibregl.Marker({
                     element: new OrClusterMarker(slices)
                 }).setLngLat(coords);
             }
             newMarkers[id] = marker;
 
-            if (!this.markersOnScreen[id]) marker.addTo(this._mapGl);
+            if (!this._markersOnScreen[id]) marker.addTo(this._mapGl);
         }
 
-        for (const id in this.markersOnScreen) {
+        for (const id in this._markersOnScreen) {
             if (!newMarkers[id]) { 
-                this.markersOnScreen[id].remove();
-                delete this.assetsOnScreen[id];
+                this._markersOnScreen[id].remove();
+                delete this._assetsOnScreen[id];
             }
         }
-        this.markersOnScreen = newMarkers;
-        this._mapContainer.dispatchEvent(new OrMapMarkersChangedEvent(Object.values(this.assetsOnScreen)));
+        this._markersOnScreen = newMarkers;
+        this._mapContainer.dispatchEvent(new OrMapMarkersChangedEvent(Object.values(this._assetsOnScreen)));
     }
 
     public addAssetMarker(assetId: string, assetName: string, assetType: string, long: number, lat: number, asset: Asset) {

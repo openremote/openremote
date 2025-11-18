@@ -200,18 +200,17 @@ export class PageMap extends Page<MapStateKeyed> {
     protected _currentAsset?: Asset;
 
     @state()
-    protected assetsOnScreen: LocationAsset[] = [];
+    protected _assetsOnScreen: LocationAsset[] = [];
 
     protected _assetSelector = (state: MapStateKeyed) => state.map.assets;
     protected _paramsSelector = (state: MapStateKeyed) => state.app.params;
     protected _realmSelector = (state: MapStateKeyed) => state.app.realm || manager.displayRealm;
 
-    protected assetSubscriptionId: string;
-    protected attributeSubscriptionId: string;
+    protected _assetSubscriptionId: string;
+    protected _attributeSubscriptionId: string;
 
-    protected assetsOnScreen: LocationAsset[] = [];
-    protected assetTypes: string[] = [];
-    protected exclude: string[] = [];
+    protected _assetTypes: string[] = [];
+    protected _exclude: string[] = [];
 
     protected getAttributesOfInterest(): (string | WellknownAttributes)[] {
         // Extract all label attributes configured in marker config
@@ -285,7 +284,7 @@ export class PageMap extends Page<MapStateKeyed> {
                 this._store.dispatch(setAssets(assets));
 
                 if (this._map) {
-                    this.updateMarkers();
+                    this._updateMarkers();
                 }
 
                 const assetSubscriptionId = await manager.events.subscribeAssetEvents(undefined, false, (event) => {
@@ -297,20 +296,20 @@ export class PageMap extends Page<MapStateKeyed> {
                     return;
                 }
 
-                this.assetSubscriptionId = assetSubscriptionId;
+                this._assetSubscriptionId = assetSubscriptionId;
 
                 const attributeSubscriptionId = await manager.events.subscribeAttributeEvents(undefined, false, (event) => {
                     this._store.dispatch(attributeEventReceived([attrsOfInterest, event]));
                 });
 
                 if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
-                    this.assetSubscriptionId = undefined;
+                    this._assetSubscriptionId = undefined;
                     manager.events.unsubscribe(assetSubscriptionId);
                     manager.events.unsubscribe(attributeSubscriptionId);
                     return;
                 }
 
-                this.attributeSubscriptionId = attributeSubscriptionId;
+                this._attributeSubscriptionId = attributeSubscriptionId;
             }
         } catch (e) {
             console.error("Failed to subscribe to assets", e);
@@ -318,13 +317,13 @@ export class PageMap extends Page<MapStateKeyed> {
     };
 
     protected unsubscribeAssets = () => {
-        if (this.assetSubscriptionId) {
-            manager.events.unsubscribe(this.assetSubscriptionId);
-            this.assetSubscriptionId = undefined;
+        if (this._assetSubscriptionId) {
+            manager.events.unsubscribe(this._assetSubscriptionId);
+            this._assetSubscriptionId = undefined;
         }
-        if (this.attributeSubscriptionId) {
-            manager.events.unsubscribe(this.attributeSubscriptionId);
-            this.attributeSubscriptionId = undefined;
+        if (this._attributeSubscriptionId) {
+            manager.events.unsubscribe(this._attributeSubscriptionId);
+            this._attributeSubscriptionId = undefined;
         }
     };
 
@@ -379,16 +378,16 @@ export class PageMap extends Page<MapStateKeyed> {
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
 
-            ${this.config?.legend?.show && this.assetTypes.length > 1 ? html`<or-map-legend .assetTypes="${this.assetTypes}" @or-map-legend-changed="${(e: OrMapLegendEvent) => {
+            ${this.config?.legend?.show && this._assetTypes.length > 1 ? html`<or-map-legend .assetTypes="${this._assetTypes}" @or-map-legend-changed="${(e: OrMapLegendEvent) => {
                 if (this._map) {
-                    this.exclude = e.detail;
-                    this.updateMarkers();
+                    this._exclude = e.detail;
+                    this._updateMarkers();
                     this._map.reload();
                 }
             }}"></or-map-legend>` : null}
 
             <or-map id="map" class="or-map" .cluster="${this.config.clustering}" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
-                ${this.assetsOnScreen.sort((a,b) => {;
+                ${this._assetsOnScreen.sort((a,b) => {;
                     const pointA = a.attributes[WellknownAttributes.LOCATION].value as GeoJSONPoint;
                     const pointB = b.attributes[WellknownAttributes.LOCATION].value as GeoJSONPoint;
                     if (pointA && pointB){
@@ -432,7 +431,7 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected onMapMarkersChanged(e: OrMapMarkersChangedEvent) {
-        this.assetsOnScreen = e.detail;
+        this._assetsOnScreen = e.detail;
     }
 
     protected getCurrentAsset() {
@@ -443,16 +442,16 @@ export class PageMap extends Page<MapStateKeyed> {
         router.navigate(getAssetsRoute(false, loadAssetEvent.detail));
     }
 
-    protected updateMarkers() {
-        this.assetTypes = [];
+    protected _updateMarkers() {
+        this._assetTypes = [];
         this._map.cleanUpMarker();
         this._assets.forEach((asset: Asset) => {
             if (MapUtil.isLocationAsset(asset)) {
-                if (!this.exclude.includes(asset.type)) {
+                if (!this._exclude.includes(asset.type)) {
                     this._map.addMarker(asset)
                 }
-                if (!this.assetTypes.includes(asset.type)) {
-                    this.assetTypes.push(asset.type);
+                if (!this._assetTypes.includes(asset.type)) {
+                    this._assetTypes.push(asset.type);
                 }
             }
         });

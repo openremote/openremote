@@ -30,16 +30,16 @@ export class OrMapLegend extends LitElement {
     @property({ type: Array })
     public assetTypes: string[] = [];
 
-    protected assetTypesInfo: any;
+    protected _assetTypesInfo: any;
 
-    protected excluded: string[] = [];
+    protected _excluded: string[] = [];
 
     @query("#legend-content")
     protected _showLegend?: HTMLDivElement;
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
         if (_changedProperties.has("assetTypes")) {
-            this.assetTypesInfo = {};
+            this._assetTypesInfo = {};
 
             this.assetTypes.forEach((assetType: string) => {
                 const descriptor = AssetModelUtil.getAssetDescriptor(assetType);
@@ -47,7 +47,7 @@ export class OrMapLegend extends LitElement {
                 const color = getMarkerIconAndColorFromAssetType(descriptor)?.color;
                 const label = Util.getAssetTypeLabel(descriptor);
 
-                this.assetTypesInfo[assetType] = {
+                this._assetTypesInfo[assetType] = {
                     icon: icon,
                     color: color,
                     label: label,
@@ -79,20 +79,20 @@ export class OrMapLegend extends LitElement {
                         ${this.assetTypes.map(
                             (assetType) => html` <li id="asset-legend" style="display: flex;">
                                 <or-icon
-                                    icon="${this.assetTypesInfo[assetType].icon}"
-                                    style="color: #${this.assetTypesInfo[assetType].color}"
+                                    icon="${this._assetTypesInfo[assetType].icon}"
+                                    style="color: #${this._assetTypesInfo[assetType].color}"
                                 ></or-icon>
-                                <span id="asset-label" style="flex: 1">${this.assetTypesInfo[assetType].label}</span>
+                                <span id="asset-label" style="flex: 1">${this._assetTypesInfo[assetType].label}</span>
                                 <or-mwc-input
                                     .type="${InputType.CHECKBOX}"
-                                    .value="${!this.excluded.includes(assetType)}"
+                                    .value="${!this._excluded.includes(assetType)}"
                                     @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                         if (ev.detail.value) {
-                                            this.excluded.splice(this.excluded.indexOf(assetType), 1);
+                                            this._excluded.splice(this._excluded.indexOf(assetType), 1);
                                         } else {
-                                            this.excluded.push(assetType);
+                                            this._excluded.push(assetType);
                                         }
-                                        this.dispatchEvent(new OrMapLegendEvent(this.excluded));
+                                        this.dispatchEvent(new OrMapLegendEvent(this._excluded));
                                     }}"
                                 ></or-mwc-input>
                             </li>`
