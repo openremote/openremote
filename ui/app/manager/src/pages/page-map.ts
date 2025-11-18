@@ -373,16 +373,11 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected render() {
+        const showLegend = this.config?.legend?.show !== false && this._assetTypes.length > 1;
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
 
-            ${this.config?.legend?.show !== false && this._assetTypes.length > 1 ? html`<or-map-legend .assetTypes="${this._assetTypes}" @or-map-legend-changed="${(e: OrMapLegendEvent) => {
-                if (this._map) {
-                    this._exclude = e.detail;
-                    this._updateMarkers();
-                    this._map.reload();
-                }
-            }}"></or-map-legend>` : null}
+            ${showLegend ? html`<or-map-legend .assetTypes="${this._assetTypes}" @or-map-legend-changed="${this._onMapLegendChanged}"></or-map-legend>` : null}
 
             <or-map id="map" class="or-map" .cluster="${this.config.clustering}" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
                 ${this._assetsOnScreen.sort((a,b) => {
@@ -434,6 +429,14 @@ export class PageMap extends Page<MapStateKeyed> {
 
     protected _onLoadAssetEvent(loadAssetEvent: OrMapAssetCardLoadAssetEvent) {
         router.navigate(getAssetsRoute(false, loadAssetEvent.detail));
+    }
+
+    protected _onMapLegendChanged(e: OrMapLegendEvent) {
+        if (this._map) {
+            this._exclude = e.detail;
+            this._updateMarkers();
+            this._map.reload();
+        }
     }
 
     protected _updateMarkers() {
