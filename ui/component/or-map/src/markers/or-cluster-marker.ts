@@ -18,7 +18,7 @@ export class OrClusterMarker extends LitElement {
     }
 
     /**
-     * Methods from maplibre example for Cluster with Donut Chart
+     * Based on https://github.com/maplibre/maplibre-gl-js/blob/3aa2de2e3a365c07ac2792847c242a7c36e625ea/test/examples/display-html-clusters-with-custom-properties.html#L147
      */
     protected _createDonutChart(slices: Slice[]): HTMLElement | undefined {
         let total = 0;
@@ -39,17 +39,12 @@ export class OrClusterMarker extends LitElement {
         const w: number = r * 2;
 
         let html =
-            `<div><svg width="${
-                w
-            }" height="${
-                w
-            }" viewbox="0 0 ${
-                w
-            } ${
-                w
-            }" text-anchor="middle" style="font: ${
-                fontSize
-            }px Helvetica Neue,Arial,Helvetica,sans-serif; display: block">`;
+            `<div><svg 
+                width="${w}"
+                height="${w}"
+                viewbox="0 0 ${w} ${w}"
+                text-anchor="middle"
+                style="font: ${fontSize}px Helvetica Neue,Arial,Helvetica,sans-serif; display: block">`;
 
         for (const [,color,count,offset] of slices as [] as [name: string, color: string, count: number, offset: number][]) {
             html += this._donutSegment(
@@ -62,18 +57,14 @@ export class OrClusterMarker extends LitElement {
         }
 
         html +=
-            `<circle cx="${
-                r
-            }" cy="${
-                r
-            }" r="${
-                r0
-            }" fill="white" /><text dominant-baseline="central" transform="translate(${
-                r
-            }, ${
-                r
-            })">${
-                (total > 99 ? 99 : total).toLocaleString() + (total > 99 ? "+" : "")
+            `<circle 
+                cx="${r}" 
+                cy="${r}" 
+                r="${r0}" 
+                fill="white" />
+                <text dominant-baseline="central"
+                      transform="translate(${r}, ${r})">
+                      ${(total > 99 ? 99 : total).toLocaleString() + (total > 99 ? "+" : "")
             }</text></svg></div>`;
 
         const el = document.createElement('div');
@@ -82,7 +73,7 @@ export class OrClusterMarker extends LitElement {
     }
 
     /**
-     * Methods from maplibre example for Cluster with Donut Chart
+     * Based on https://github.com/maplibre/maplibre-gl-js/blob/3aa2de2e3a365c07ac2792847c242a7c36e625ea/test/examples/display-html-clusters-with-custom-properties.html#L209
      */
     protected _donutSegment(start: number, end: number, r: number, r0: number, color: string, sub: boolean, dR: number): string {
         if (end - start === 1) {
@@ -125,5 +116,4 @@ export class OrClusterMarker extends LitElement {
             `" fill="#${color}" ${!sub ? `transform="translate(${dR}, ${dR})"` : ""} />`
         ].join(' ');
     }
-
 }
