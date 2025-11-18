@@ -199,6 +199,9 @@ export class PageMap extends Page<MapStateKeyed> {
     @state()
     protected _currentAsset?: Asset;
 
+    @state()
+    protected assetsOnScreen: LocationAsset[] = [];
+
     protected _assetSelector = (state: MapStateKeyed) => state.map.assets;
     protected _paramsSelector = (state: MapStateKeyed) => state.app.params;
     protected _realmSelector = (state: MapStateKeyed) => state.app.realm || manager.displayRealm;
@@ -430,7 +433,6 @@ export class PageMap extends Page<MapStateKeyed> {
 
     protected onMapMarkersChanged(e: OrMapMarkersChangedEvent) {
         this.assetsOnScreen = e.detail;
-        this.requestUpdate();
     }
 
     protected getCurrentAsset() {
