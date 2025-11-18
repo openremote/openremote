@@ -309,7 +309,7 @@ export class OrMap extends LitElement {
     @property({type: String})
     public type: MapType = manager.mapType;
 
-    @property({type: String})
+    @property({type: Object})
     public cluster?: ClusterConfig;
 
     protected _markerStyles: string[] = [];
