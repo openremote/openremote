@@ -37,8 +37,8 @@ export class OrMapLegend extends LitElement {
     @query("#legend-content")
     protected _showLegend?: HTMLDivElement;
 
-    protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (_changedProperties.has("assetTypes")) {
+    protected shouldUpdate(changedProperties: PropertyValues): boolean {
+        if (changedProperties.has("assetTypes")) {
             this._assetTypesInfo = {};
 
             this.assetTypes.forEach((assetType: string) => {
@@ -55,7 +55,7 @@ export class OrMapLegend extends LitElement {
             });
         }
 
-        return super.shouldUpdate(_changedProperties);
+        return super.shouldUpdate(changedProperties);
     }
 
     static get styles(): CSSResultGroup {

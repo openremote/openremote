@@ -371,7 +371,7 @@ export class PageMap extends Page<MapStateKeyed> {
 
     constructor(store: Store<MapStateKeyed>) {
         super(store);
-        this.addEventListener(OrMapAssetCardLoadAssetEvent.NAME, this.onLoadAssetEvent);
+        this.addEventListener(OrMapAssetCardLoadAssetEvent.NAME, this._onLoadAssetEvent);
     }
 
     protected render() {
@@ -402,16 +402,16 @@ export class PageMap extends Page<MapStateKeyed> {
 
     public connectedCallback() {
         super.connectedCallback();
-        this.addEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
-        this.addEventListener(OrMapClickedEvent.NAME, this.onMapClick);
-        this.addEventListener(OrMapMarkersChangedEvent.NAME, this.onMapMarkersChanged);
+        this.addEventListener(OrMapMarkerClickedEvent.NAME, this._onMapMarkerClick);
+        this.addEventListener(OrMapClickedEvent.NAME, this._onMapClick);
+        this.addEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
     }
 
     public disconnectedCallback() {
         super.disconnectedCallback();
-        this.removeEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
-        this.removeEventListener(OrMapClickedEvent.NAME, this.onMapClick);
-        this.removeEventListener(OrMapMarkersChangedEvent.NAME, this.onMapMarkersChanged);
+        this.removeEventListener(OrMapMarkerClickedEvent.NAME, this._onMapMarkerClick);
+        this.removeEventListener(OrMapClickedEvent.NAME, this._onMapClick);
+        this.removeEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
         this.unsubscribeAssets();
     }
 
@@ -421,24 +421,20 @@ export class PageMap extends Page<MapStateKeyed> {
         this.getRealmState(state);
     }
 
-    protected onMapMarkerClick(e: OrMapMarkerClickedEvent) {
+    protected _onMapMarkerClick(e: OrMapMarkerClickedEvent) {
         const asset = (e.detail.marker as OrMapMarkerAsset).asset;
         router.navigate(getMapRoute(asset.id));
     }
 
-    protected onMapClick(e: OrMapClickedEvent) {
+    protected _onMapClick(e: OrMapClickedEvent) {
         router.navigate(getMapRoute());
     }
 
-    protected onMapMarkersChanged(e: OrMapMarkersChangedEvent) {
+    protected _onMapMarkersChanged(e: OrMapMarkersChangedEvent) {
         this._assetsOnScreen = e.detail;
     }
 
-    protected getCurrentAsset() {
-        this._getCurrentAsset(this.getState());
-    }
-
-    protected onLoadAssetEvent(loadAssetEvent: OrMapAssetCardLoadAssetEvent) {
+    protected _onLoadAssetEvent(loadAssetEvent: OrMapAssetCardLoadAssetEvent) {
         router.navigate(getAssetsRoute(false, loadAssetEvent.detail));
     }
 
