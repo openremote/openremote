@@ -280,7 +280,7 @@ export const mapAssetLegendStyle = css`
                 background-color: var(--internal-or-map-asset-legend-background-color);
                 margin-top: 10px;
                 border-radius: 3px;
-                padding: 10px;
+                padding: 5px 0 5px 10px;
             }
             
             #title {
