@@ -32,7 +32,7 @@ export class OrMapLegend extends LitElement {
 
     protected _assetTypesInfo: any;
 
-    protected _excluded: string[] = [];
+    protected _excludedTypes: string[] = [];
 
     @query("#legend-content")
     protected _showLegend?: HTMLDivElement;
@@ -85,14 +85,14 @@ export class OrMapLegend extends LitElement {
                                 <span id="asset-label" style="flex: 1">${this._assetTypesInfo[assetType].label}</span>
                                 <or-mwc-input
                                     .type="${InputType.CHECKBOX}"
-                                    .value="${!this._excluded.includes(assetType)}"
+                                    .value="${!this._excludedTypes.includes(assetType)}"
                                     @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                         if (ev.detail.value) {
-                                            this._excluded.splice(this._excluded.indexOf(assetType), 1);
+                                            this._excludedTypes.splice(this._excludedTypes.indexOf(assetType), 1);
                                         } else {
-                                            this._excluded.push(assetType);
+                                            this._excludedTypes.push(assetType);
                                         }
-                                        this.dispatchEvent(new OrMapLegendEvent(this._excluded));
+                                        this.dispatchEvent(new OrMapLegendEvent(this._excludedTypes));
                                     }}"
                                 ></or-mwc-input>
                             </li>`
