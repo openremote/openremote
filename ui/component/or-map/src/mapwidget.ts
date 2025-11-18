@@ -264,6 +264,9 @@ export class MapWidget {
         return settings;
     }
 
+    /**
+     * Build the map based on the map config.
+     */
     public async build(): Promise<void> {
         if (this._loaded) {
             return;
@@ -505,6 +508,9 @@ export class MapWidget {
         this.createBoundaryBox()
     }
 
+    /**
+     * Load map sources, layers and events
+     */
     public load() {
         if (!this._mapGl) {
             console.warn("MapLibre Map not initialized!");
