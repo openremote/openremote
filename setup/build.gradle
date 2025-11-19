@@ -10,6 +10,7 @@ sourceSets {
     integration
     demo
     load1
+    load2
 }
 
 // dependencies declaration
@@ -17,6 +18,7 @@ configurations {
     integrationImplementation.extendsFrom(implementation)
     demoImplementation.extendsFrom(implementation)
     load1Implementation.extendsFrom(implementation)
+    load2Implementation.extendsFrom(implementation)
 }
 
 dependencies {
@@ -27,6 +29,13 @@ dependencies {
 tasks.register('load1Jar', Jar) {
     archiveBaseName.set("openremote-load1-${project.name}")
     from sourceSets.load1.output
+}
+
+tasks.register('load2Jar', Jar) {
+    base {
+        archivesName = "openremote-load2-${project.name}"
+    }
+    from sourceSets.load2.output
 }
 
 tasks.register('demoJar', Jar) {
