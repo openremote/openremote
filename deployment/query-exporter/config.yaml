@@ -94,66 +94,54 @@ queries:
       - table_bloat_threshold: !env TABLE_BLOAT_THRESHOLD
         index_bloat_threshold: !env INDEX_BLOAT_THRESHOLD
     sql: |
-      WITH bloat_info AS (
+      WITH constants AS (
+        SELECT current_setting('block_size')::numeric AS bs,
+          23 AS hdr,
+          4 AS ma
+      ),
+      bloat_info AS (
         SELECT
-          current_database(), 
-          schemaname, 
-          tablename, 
-          iname,
-          ROUND((CASE WHEN otta=0 THEN 0.0 ELSE sml.relpages::float/otta END)::numeric,1) AS table_bloat,
-          CASE WHEN sml.relpages < otta THEN 0 ELSE bs*(sml.relpages-otta)::BIGINT END AS wastedbytes,
-          ROUND((CASE WHEN iotta=0 OR ipages=0 THEN 0.0 ELSE ipages::float/iotta END)::numeric,1) AS index_bloat,
-          CASE WHEN ipages < iotta THEN 0 ELSE bs*(ipages-iotta) END AS wastedibytes
+          sml.schemaname,
+          sml.tablename,
+          ROUND((CASE WHEN sml.otta=0 THEN 0.0 ELSE sml.table_relpages::float/sml.otta END)::numeric,1) AS table_bloat,
+          ROUND((CASE WHEN sml.iotta=0 OR sml.ipages=0 THEN 0.0 ELSE sml.ipages::float/sml.iotta END)::numeric,1) AS index_bloat
         FROM (
           SELECT
-            schemaname, tablename, cc.reltuples, cc.relpages, bs,
-            -- Optimal table pages: +4 for item pointer, bs-20 for page header overhead
-            CEIL((cc.reltuples*((datahdr+ma-
-              (CASE WHEN datahdr%ma=0 THEN ma ELSE datahdr%ma END))+nullhdr2+4))/(bs-20::float)) AS otta,
-            COALESCE(c2.relname,'?') AS iname, 
-            COALESCE(c2.reltuples,0) AS ituples, 
+            rs.schemaname, 
+            rs.tablename, 
+            cc.relpages AS table_relpages,
+            CEIL((cc.reltuples*((rs.datahdr+const.ma-
+              (CASE WHEN rs.datahdr%const.ma=0 THEN const.ma ELSE rs.datahdr%const.ma END))+rs.nullhdr2+4))/(const.bs-20::float)) AS otta,
             COALESCE(c2.relpages,0) AS ipages,
-            -- Optimal index pages: datahdr-12 for index header, bs-20 for page header
-            COALESCE(CEIL((c2.reltuples*(datahdr-12))/(bs-20::float)),0) AS iotta
+            COALESCE(CEIL((c2.reltuples*(rs.datahdr-12))/(const.bs-20::float)),0) AS iotta
           FROM (
             SELECT
-              ma,bs,schemaname,tablename,
-              (datawidth+(hdr+ma-(case when hdr%ma=0 THEN ma ELSE hdr%ma END)))::numeric AS datahdr,
-              (maxfracsum*(nullhdr+ma-(case when nullhdr%ma=0 THEN ma ELSE nullhdr%ma END))) AS nullhdr2
+              foo.ma, foo.bs, foo.schemaname, foo.tablename,
+              (foo.datawidth+(foo.hdr+foo.ma-(CASE WHEN foo.hdr%foo.ma=0 THEN foo.ma ELSE foo.hdr%foo.ma END)))::numeric AS datahdr,
+              (foo.maxfracsum*(foo.nullhdr+foo.ma-(CASE WHEN foo.nullhdr%foo.ma=0 THEN foo.ma ELSE foo.nullhdr%foo.ma END))) AS nullhdr2
             FROM (
               SELECT
-                schemaname, tablename, hdr, ma, bs,
-                SUM((1-null_frac)*avg_width) AS datawidth,
-                MAX(null_frac) AS maxfracsum,
-                hdr+(
-                  -- Null bitmap size: count/8 converts bits to bytes, +1 for bitmap header
-                  SELECT 1+count(*)/8
-                  FROM pg_stats s2
-                  WHERE null_frac<>0 AND s2.schemaname = s.schemaname AND s2.tablename = s.tablename
-                ) AS nullhdr
-              FROM pg_stats s, (
-                SELECT
-                  (SELECT current_setting('block_size')::numeric) AS bs,
-                  -- Tuple header size in bytes (23 bytes for PostgreSQL 14+)
-                  23 AS hdr,
-                  -- Memory alignment in bytes, we only run on Linux containers, so this is always 4
-                  4 AS ma
-                FROM (SELECT version() AS v) AS foo
-              ) AS constants
+                s.schemaname, s.tablename, const.hdr, const.ma, const.bs,
+                SUM((1-s.null_frac)*s.avg_width) AS datawidth,
+                MAX(s.null_frac) AS maxfracsum,
+                const.hdr+(SELECT 1+count(*)/8 FROM pg_stats s2 WHERE s2.null_frac<>0 AND s2.schemaname = s.schemaname AND s2.tablename = s.tablename) AS nullhdr
+              FROM pg_stats s, constants const
               GROUP BY 1,2,3,4,5
             ) AS foo
           ) AS rs
           JOIN pg_namespace nn ON nn.nspname = rs.schemaname
           JOIN pg_class cc ON cc.relname = rs.tablename AND cc.relnamespace = nn.oid
           LEFT JOIN pg_index i ON indrelid = cc.oid
-          LEFT JOIN pg_class c2 ON c2.oid = i.indexrelid
-        ) AS sml
-        WHERE schemaname NOT LIKE 'pg_%' AND schemaname != 'information_schema'
+          LEFT JOIN pg_class c2 ON c2.oid = i.indexrelid,
+          constants const
+          WHERE rs.schemaname NOT LIKE 'pg_%' AND rs.schemaname != 'information_schema'
+        ) AS sml, constants const
       )
-      SELECT COUNT(*) AS pg_table_bloat_count
+      SELECT COUNT(DISTINCT (schemaname, tablename)) AS pg_table_bloat_count
       FROM bloat_info
       WHERE table_bloat > :table_bloat_threshold OR index_bloat > :index_bloat_threshold;
 
+  # Query 1: Count of tables with bloat (simplified - just counts distinct tables from bloat_details)
   # Query 2: Detailed table and index bloat information
   table_bloat_details:
     interval: 300  # Run every 5 minutes

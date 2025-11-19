@@ -433,7 +433,7 @@ services:
 
   # PostgreSQL DBMS
   postgresql:
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-pg17}
     restart: always
     # Shared memory should be increased for any reasonable DB size this should be increased further
     shm_size: 128mb
@@ -478,7 +478,7 @@ services:
 #    volumes:
 #      # Mount deployment-data volume containing config.yaml for query-exporter configuration
 #      # Config file should be at: /deployment/query-exporter/config.yaml
-#      - deployment-data/query-exporter:/config
+#        - deployment-data:/deployment
 #    ports:
 #      - "9560:9560" # Metrics endpoint
 #      # Uncomment to expose on private network:
@@ -495,8 +495,7 @@ services:
 #      # Bloat detection thresholds
 #      TABLE_BLOAT_THRESHOLD: ${TABLE_BLOAT_THRESHOLD:-1.2}  # 1.2 = 20% table bloat
 #      INDEX_BLOAT_THRESHOLD: ${INDEX_BLOAT_THRESHOLD:-1.5}  # 1.5 = 50% index bloat
-#      # Point to config file in deployment volume
-#      CONFIG_DIR: /config
+#      QE_CONFIG: /deployment/query-exporter/config.yaml
 
   # Map tile server
   tileserver:
