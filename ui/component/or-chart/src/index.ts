@@ -1312,10 +1312,11 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._zoomChanged = false;
 
         } catch (ex) {
-            console.error(ex);
             if((ex as Error)?.message === "canceled") {
+                console.debug("Cancelled chart data request. (probably because another request is taking place)");
                 return; // If request has been canceled (using AbortController); return, and prevent _loading is set to false.
             }
+            console.warn(ex);
             this._loading = false;
             this._zoomChanged = false;
 
