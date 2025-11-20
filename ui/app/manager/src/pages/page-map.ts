@@ -210,9 +210,7 @@ export class PageMap extends Page<MapStateKeyed> {
     protected _attributeSubscriptionId: string;
 
     protected _assetTypes: string[] = [];
-    protected _exclude: string[] = [];
-
-    protected _prevRealm?: string;
+    protected _excludedTypes: string[] = [];
 
     protected getAttributesOfInterest(): (string | WellknownAttributes)[] {
         // Extract all label attributes configured in marker config
@@ -334,13 +332,13 @@ export class PageMap extends Page<MapStateKeyed> {
               // Clear existing assets
               this._assets = [];
           }
+          if (this._excludedTypes.length > 0) {
+              this._excludedTypes = [];
+          }
+
           this.unsubscribeAssets();
-          this.subscribeAssets(realm).then(() => {
-              console.log(realm)
-              if (this._prevRealm && this._prevRealm !== realm) {
-                  this._map?.reload();
-              }
-              this._prevRealm = realm;
+          this.subscribeAssets(realm).then(async () => {
+              await this._map?.reload();
           });
           this._map?.refresh();
       }
@@ -417,6 +415,8 @@ export class PageMap extends Page<MapStateKeyed> {
         this._assets = this._getMapAssets(state);
         this._currentAsset = this._getCurrentAsset(state);
         this.getRealmState(state);
+        this._updateMarkers();
+        this._map?.reload();
     }
 
     protected _onMapMarkerClick(e: OrMapMarkerClickedEvent) {
@@ -438,7 +438,7 @@ export class PageMap extends Page<MapStateKeyed> {
 
     protected _onMapLegendChanged(e: OrMapLegendEvent) {
         if (this._map) {
-            this._exclude = e.detail;
+            this._excludedTypes = e.detail;
             this._updateMarkers();
             this._map.reload();
         }
@@ -450,8 +450,8 @@ export class PageMap extends Page<MapStateKeyed> {
             this._map.cleanUpAssetMarkers();
             this._assets.forEach((asset: Asset) => {
                 if (MapUtil.isAssetWithLocation(asset)) {
-                    if (!this._exclude.includes(asset.type)) {
-                        this._map.addMarker(asset)
+                    if (!this._excludedTypes.includes(asset.type)) {
+                        this._map.addAssetMarker(asset)
                     }
                     if (!this._assetTypes.includes(asset.type)) {
                         this._assetTypes.push(asset.type);

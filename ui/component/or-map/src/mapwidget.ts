@@ -78,7 +78,7 @@ export class MapWidget {
         features: []
     };
 
-    protected _assetTypesColors: any = {};
+    protected _assetTypeColors: any = {};
     protected _cachedMarkers: Record<string, maplibregl.Marker> = {};
     protected _markersOnScreen: Record<string, maplibregl.Marker> = {};
     protected _assetsOnScreen: Record<string, AssetWithLocation> = {};
@@ -452,20 +452,12 @@ export class MapWidget {
                 }, 300);
                 this._mapGl!.addControl(this._geocoder, 'top-left');
 
-                this._mapGl!.addSource('mapPoints', {
-                    type: 'geojson',
-                    data: {
-                        type: 'FeatureCollection',
-                        features: []
-                    }
-                });
-
                 // There's no callback parameter in the options of the MaplibreGeocoder,
                 // so this is how we get the selected result.
                 this._geocoder._inputEl.addEventListener("change", () => {
                     var selected = this._geocoder._typeahead.selected;
                     this._onGeocodeChange(selected);
-                });                
+                });
             }
 
             // Add custom controls
@@ -499,8 +491,7 @@ export class MapWidget {
             }
 
             this._initLongPressEvent();
-
-            this._mapGl.on("load", () => this.load())
+            this._mapGl.on("load", async () => await this.load());
         }
 
         this._mapContainer.dispatchEvent(new OrMapLoadedEvent());
@@ -508,11 +499,19 @@ export class MapWidget {
         this.createBoundaryBox()
     }
 
+    protected _styleLoaded(): Promise<void> {
+        return new Promise(resolve => {
+            if (this._mapGl) {
+                this._mapGl.once('style.load', resolve);
+            }
+        });
+    }
+
     /**
      * Load map sources, layers and events
      */
-    public load() {
-        if (!this._mapGl) {
+    public async load() {
+        if (!this._mapGl || !this._loaded) {
             console.warn("MapLibre Map not initialized!");
             return;
         }
@@ -532,11 +531,11 @@ export class MapWidget {
 
         this._mapGl.addSource('mapPoints', {
             'type': 'geojson',
-            'cluster': this._clusterConfig?.cluster ?? false,
+            'cluster': this._clusterConfig?.cluster ?? true,
             'clusterRadius': this._clusterConfig?.clusterRadius ?? 180,
             'clusterMaxZoom': this._clusterConfig?.clusterMaxZoom ?? 17,
             'data': this._pointsMap,
-            'clusterProperties': Object.fromEntries(Object.keys(this._assetTypesColors).map(t => [t,["+", ["case", ["==", ["get", "assetType"], t], 1, 0]]]))
+            'clusterProperties': Object.fromEntries(Object.keys(this._assetTypeColors).map(t => [t,["+", ["case", ["==", ["get", "assetType"], t], 1, 0]]]))
         });
 
         if (!this._mapGl.getLayer('unclustered-point')) {
@@ -545,17 +544,11 @@ export class MapWidget {
                 type: 'circle',
                 source: 'mapPoints',
                 filter: ['!', ['has', 'point_count']],
-                paint: {
-                    'circle-radius': 0,
-                    // 'circle-color': '#11b4da',
-                    // 'circle-radius': 4,
-                    // 'circle-stroke-width': 1,
-                    // 'circle-stroke-color': '#fff'
-                }
+                paint: { 'circle-radius': 0 }
             });
         }
 
-        this._mapGl.on("data", (e: any) => {
+        this._mapGl.on("data", async (e: any) => {
             if (!this._mapGl) return;
             if (e.sourceId !== 'mapPoints' || !e.isSourceLoaded) return;
 
@@ -563,17 +556,9 @@ export class MapWidget {
             this._mapGl.off('moveend', () => this._updateMarkers());
 
             this._mapGl.on('move', debounce(() => this._updateMarkers()));
-            this._mapGl.on('moveend', debounce(() => this._updateMarkers()));
+            this._mapGl.on('moveend', () => this._updateMarkers());
             this._updateMarkers()
         })
-    }
-
-    protected _styleLoaded(): Promise<void> {
-        return new Promise(resolve => {
-            if (this._mapGl) {
-                this._mapGl.once('style.load', resolve);
-            }
-        });
     }
 
     // Clean up of internal resources associated with the map.
@@ -777,18 +762,18 @@ export class MapWidget {
         for (const feature of features) {
             if (!feature.properties.cluster) continue;
             const id: number = feature.properties.cluster_id;
-            const geometry = feature.geometry as Geometry & { coordinates: LngLatLike };
-            const coords = geometry.coordinates;
+            const geometry = feature.geometry as Geometry & { coordinates: [number, number] };
+            const [lng, lat] = geometry.coordinates;
 
             let marker = this._cachedMarkers[id];
             if (!marker) {
                 const slices: Slice[] = Object.entries(feature.properties)
-                    .filter(([k]) => this._assetTypesColors.hasOwnProperty(k))
-                    .map(([type, count]) => [type, this._assetTypesColors[type], count]);
+                    .filter(([k]) => this._assetTypeColors.hasOwnProperty(k))
+                    .map(([type, count]) => [type, this._assetTypeColors[type], count]);
 
                 marker = this._cachedMarkers[id] = new maplibregl.Marker({
-                    element: new OrClusterMarker(slices)
-                }).setLngLat(coords);
+                    element: new OrClusterMarker(slices, id, lng, lat, this._mapGl),
+                }).setLngLat([lng, lat]);
             }
             newMarkers[id] = marker;
 
@@ -796,7 +781,10 @@ export class MapWidget {
         }
 
         for (const id in this._markersOnScreen) {
-            if (!newMarkers[id]) {
+            const marker = newMarkers[id];
+            if (!marker
+              || marker._element instanceof OrClusterMarker && !marker._element.hasTypes(Object.keys(this._assetTypeColors))
+            ) {
                 this._markersOnScreen[id].remove();
                 delete this._assetsOnScreen[id];
             }
@@ -806,7 +794,7 @@ export class MapWidget {
     }
 
     public addAssetMarker(assetId: string, assetName: string, assetType: string, long: number, lat: number, asset: Asset) {
-        this._assetTypesColors[assetType] = getMarkerIconAndColorFromAssetType(assetType)?.color;
+        this._assetTypeColors[assetType] = getMarkerIconAndColorFromAssetType(assetType)?.color;
         this._pointsMap.features.push({
             type: 'Feature',
             properties: {
@@ -823,8 +811,7 @@ export class MapWidget {
     }
 
     public cleanUpAssetMarkers(): void {
-        this._assetTypesColors = {};
-        this._cachedMarkers = {};
+        this._assetTypeColors = {};
         this._pointsMap = {
             type: "FeatureCollection",
             features: []

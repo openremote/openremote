@@ -25,6 +25,7 @@ import { CenterControl } from "./controls/center";
 export {Util, LngLatLike, LngLat, ClusterConfig};
 export * from "./markers/or-map-marker";
 export * from "./markers/or-map-marker-asset";
+export * from "./markers/or-cluster-marker";
 export {IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
 export * from "./or-map-legend";
@@ -312,7 +313,6 @@ export class OrMap extends LitElement {
     @property({type: Object})
     public cluster?: ClusterConfig;
 
-    protected _markerStyles: string[] = [];
     @property({type: String, converter: {
             fromAttribute(value: string | null, type?: String): LngLatLike | undefined {
                 if (!value) {
@@ -366,7 +366,6 @@ export class OrMap extends LitElement {
     protected _initCallback?: EventCallback;
     protected _map?: MapWidget;
     protected _loaded: boolean = false;
-    protected _markers: OrMapMarker[] = [];
 
     protected _resizeObserver?: ResizeObserver;
 
@@ -381,7 +380,7 @@ export class OrMap extends LitElement {
         this.addEventListener(OrMapMarkerChangedEvent.NAME, this._onMarkerChangedEvent);
     }
 
-    public addMarker(asset: AssetWithLocation) {
+    public addAssetMarker(asset: AssetWithLocation) {
         const coordinates = asset?.attributes?.location.value;
         if (!coordinates?.coordinates) return;
         this._map?.addAssetMarker(asset.id ?? '', asset.name ?? '', asset.type ?? '', coordinates.coordinates[0], coordinates.coordinates[1], asset);
@@ -391,8 +390,8 @@ export class OrMap extends LitElement {
         this._map?.cleanUpAssetMarkers();
     }
 
-    public reload(): void {
-        this._map?.load();
+    public async reload() {
+        await this._map?.load();
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
