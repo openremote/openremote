@@ -60,7 +60,7 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     private Integer registersAmount;
 
     public Integer getUnitId() {
-        return unitId;
+        return unitId != null ? unitId : 1;
     }
 
     public void setUnitId(Integer unitId) {

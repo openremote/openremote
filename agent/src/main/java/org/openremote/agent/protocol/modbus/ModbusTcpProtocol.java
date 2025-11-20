@@ -69,10 +69,9 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
     protected void doStartProtocol(Container container) throws Exception {
         setConnectionStatus(ConnectionStatus.CONNECTING);
 
-        // Use default unit-identifier of 1 for connection (can be overridden per-tag in requests)
+        // Unit-identifier is specified per-tag, not at connection level
         connectionString = "modbus-tcp://" + agent.getHost().orElseThrow()
-                + ":" + agent.getPort().orElseThrow()
-                + "?unit-identifier=1";
+                + ":" + agent.getPort().orElseThrow();
 
         // Retry logic with exponential backoff
         int maxRetries = 3;
@@ -148,8 +147,8 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
 
     @Override
     protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
-        // For TCP, unitId defaults to 1 if not specified (common convention)
-        int unitId = Optional.ofNullable(agentLink.getUnitId()).orElse(1);
+        // Unit ID defaults to 1 in ModbusAgentLink if not specified
+        int unitId = agentLink.getUnitId();
         LOG.finest("DEBUG doLinkedAttributeWrite triggered: " + agentLink + ", event: " + event + ", processedValue: " + processedValue);
         int writeAddress = getOrThrowAgentLinkProperty(Optional.ofNullable(agentLink.getWriteAddress()), "write address");
         int registersCount = Optional.ofNullable(agentLink.getRegistersAmount()).orElse(1);
@@ -159,10 +158,10 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
 
         String amountString = registersCount <= 1 ? "" : "[" + registersCount + "]";
 
-        // PLC4X Modbus TCP format: type:unitId:address
+        // PLC4X Modbus TCP format: type:address{unit-id: unitId}
         switch (agentLink.getWriteMemoryArea()){
-            case COIL -> builder.addTagAddress("coil", "coil:" + unitId + ":" + writeAddress + amountString, processedValue);
-            case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + unitId + ":" + writeAddress + amountString, processedValue);
+            case COIL -> builder.addTagAddress("coil", "coil:" + writeAddress + amountString + "{unit-id: " + unitId + "}", processedValue);
+            case HOLDING -> builder.addTagAddress("holdingRegisters", "holding-register:" + writeAddress + amountString + "{unit-id: " + unitId + "}", processedValue);
             default -> throw new IllegalStateException("Only COIL and HOLDING memory areas are supported for writing");
         }
 
@@ -203,7 +202,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
 
     @Override
     protected void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group, Integer unitId) {
-        // For TCP, unitId defaults to 1 if not specified
+        // Unit ID defaults to 1 if not specified (handled by ModbusAgentLink.getUnitId())
         int effectiveUnitId = unitId != null ? unitId : 1;
         String messageId = "tcp_batch_" + effectiveUnitId + "_" + memoryArea + "_" + batch.startAddress + "_" + batch.quantity;
         try {
@@ -217,11 +216,12 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                 case INPUT -> "input-register";
             };
 
-            // PLC4X Modbus TCP format: type:unitId:address
-            String tagAddress = memoryAreaTag + ":" + effectiveUnitId + ":" + batch.startAddress;
+            // PLC4X Modbus TCP format: type:address{unit-id: unitId}
+            String tagAddress = memoryAreaTag + ":" + batch.startAddress;
             if (batch.quantity > 1) {
                 tagAddress += "[" + batch.quantity + "]";
             }
+            tagAddress += "{unit-id: " + effectiveUnitId + "}";
 
             builder.addTagAddress("batchRead", tagAddress);
             PlcReadRequest readRequest = builder.build();
