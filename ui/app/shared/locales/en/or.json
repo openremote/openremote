@@ -1016,6 +1016,10 @@
             },
             "BooleanPredicate": {
               "description": "Predicate for boolean values; will evaluate the value as a boolean and match against this predicates value, any value that is not a boolean will not match"
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "GeoJSON Geofence",
+              "description": "Predicate for GeoJSON point values; will return true if the point is within the specified GeoJSON geometry (Polygon, MultiPolygon, or Feature/FeatureCollection containing such geometries) unless negated."
             }
           }
         },

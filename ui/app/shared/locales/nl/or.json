@@ -1014,6 +1014,10 @@
             },
             "BooleanPredicate": {
               "description": "Predicaat voor boolean waarden; evalueert de waarde als een boolean en vergelijkt deze met de waarde van dit predicaat. Elke waarde die geen boolean is, komt niet overeen."
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "",
+              "description": ""
             }
           }
         },
