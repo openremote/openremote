@@ -796,7 +796,7 @@ export class MapWidget {
         }
 
         for (const id in this._markersOnScreen) {
-            if (!newMarkers[id]) { 
+            if (!newMarkers[id]) {
                 this._markersOnScreen[id].remove();
                 delete this._assetsOnScreen[id];
             }
@@ -824,6 +824,7 @@ export class MapWidget {
 
     public cleanUpAssetMarkers(): void {
         this._assetTypesColors = {};
+        this._cachedMarkers = {};
         this._pointsMap = {
             type: "FeatureCollection",
             features: []
