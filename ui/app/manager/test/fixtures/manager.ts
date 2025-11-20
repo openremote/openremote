@@ -6,7 +6,7 @@ import type { DefaultAssets } from "./data/assets";
 const { admin, smartcity } = users;
 
 import { UserModel } from "../../src/pages/page-users";
-import { Asset, Role } from "@openremote/model";
+import { Asset, ManagerAppConfig, ManagerConfig, Role } from "@openremote/model";
 import { test as base, expect, type Page, type ComponentTestFixtures, type Shared, withPage } from "@openremote/test";
 import { AssetsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
 import { AssetViewer } from "../../../../component/or-asset-viewer/test/fixtures";
@@ -33,6 +33,22 @@ export class Manager {
     this.managerHost = process.env.managerUrl || "http://localhost:8080";
     rest.initialise(`${this.managerHost}/api/master/`);
     this.axios = rest.axiosInstance;
+  }
+
+  /**
+   * Fulfill the `manager_config.json` response with a custom app config.
+   * @param config The manager app config to merge with the default.
+   */
+  async configureAppConfig(config: ManagerAppConfig) {
+    const realms = {
+      default: {
+        appTitle: "OpenRemote Manager Test",
+        language: "en"
+      }
+    }
+    await this.page.route("/api/master/configuration/manager",
+      async (route) => await route.fulfill({ json: { realms, ...config } })
+    );
   }
 
   async goToRealmStartPage(realm: string) {
