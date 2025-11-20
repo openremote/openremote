@@ -553,6 +553,7 @@ export async function getAssetsByType(type: string, customQuery?: AssetQuery, lo
             }
         };
         const response = await manager.rest.api.AssetResource.queryAssets({...customQuery, ...assetQuery});
+        console.debug(response.data);
         loadedAssets.set(type, response.data);
         return {
             assets: response.data,

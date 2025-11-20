@@ -31,7 +31,7 @@ import "./modals/or-rule-radial-modal";
 import { ifDefined } from "lit/directives/if-defined.js";
 import {when} from 'lit/directives/when.js';
 import moment from "moment";
-import {debounce, DebouncedFunc} from "lodash";
+import {debounce} from "lodash";
 
 // language=CSS
 const style = css`
@@ -352,6 +352,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     }
 
     public shouldUpdate(changedProps: PropertyValues): boolean {
+        console.log(changedProps);
 
         if (changedProps.has("condition")) {
             this._cache = undefined;
@@ -428,7 +429,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             <div class="attribute-group">
             
                 <!-- Show SELECT input with 'loading' until the assets are retrieved -->
-                ${when((!this._cache), () => html`
+                ${when((!this._cache || this._loading), () => html`
                     <or-mwc-input id="idSelect" class="min-width" type="${InputType.SELECT}" .readonly="${true}" .label="${i18next.t('loading')}"></or-mwc-input>
                 `, () => {
 
@@ -437,19 +438,18 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                     // If between 25 and 100 assets: display everything with search functionality 
                     // If >= 100 assets: only display if in line with search input
                     if(this._cache!.assets.length <= 25) {
-                        idOptions.push(...this._cache!.assets.map((asset) => [asset.id!, asset.name!] as [string, string]));
+                        idOptions.push(...this._cache!.assets.map(a => [a.id!, a.name!] as [string, string]));
                     } else {
                         searchProvider = async (search?: string) => {
-                            const type = getAssetTypeFromQuery(this.query);
-                            if(type) await this.loadAssets(type, search);
-                            if(search) {
-                                return this._cache!.assets.filter((asset) => asset.name?.toLowerCase().includes(search.toLowerCase())).map((asset) => [asset.id!, asset.name!] as [string, string]);
+                            await this.loadAssets(assetType, search);
+                            if (search) {
+                                return this._cache!.assets.filter(a => a.name?.toLowerCase().includes(search.toLowerCase())).map(a => [a.id!, a.name!] as [string, string]);
                             } else if (this._cache!.assets.length <= 99) {
-                                idOptions.push(...this._cache!.assets.map((asset) => [asset.id!, asset.name!] as [string, string]));
+                                idOptions.push(...this._cache!.assets.map(a => [a.id!, a.name!] as [string, string]));
                                 return idOptions;
                             } else {
-                                const asset = this._cache?.assets.find((asset) => asset.id == idValue);
-                                if(asset && idOptions.find(([id, _value]) => id == asset.id) == undefined) {
+                                const asset = this._cache?.assets.find(a => a.id === idValue);
+                                if (asset && idOptions.find(([id, _value]) => id == asset.id) == undefined) {
                                     idOptions.push([asset.id!, asset.name!]); // add selected asset if there is one.
                                 }
                                 return idOptions;
@@ -473,7 +473,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                     return html`
                         <or-mwc-input id="idSelect" class="min-width filledSelect" type="${InputType.SELECT}" .readonly="${this.readonly || false}" .label="${i18next.t("asset")}" 
                                       .options="${idOptions}" .value="${idValue}" .searchProvider="${searchProvider}"
-                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); this.refresh(); }}"
+                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); }}"
                         ></or-mwc-input>
                         <div class="attributes">
                             ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate, index) => {
@@ -933,15 +933,12 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
                 // Only update the state when we retrieve new assets
                 const cachedIds = this._cache?.assets.map(asset => asset.id) ?? [];
-                if(assets?.find(a => !cachedIds.includes(a.id))) {
-                    this._cache = {
-                        query: query,
-                        assets: [...(this._cache?.assets ?? []), ...(assets?.filter(a => !cachedIds.includes(a.id)) ?? [])]
-                    };
-                }
-            }).finally(() => {
-                this._loading = false;
+                this._cache = {
+                    query: query,
+                    assets: [...(this._cache?.assets ?? []), ...(assets?.filter(a => !cachedIds.includes(a.id)) ?? [])]
+                };
             });
+            promise.finally(() => this._loading = false);
             return promise;
         }
         return this._cache?.assets;
