@@ -31,7 +31,6 @@ import "./modals/or-rule-radial-modal";
 import { ifDefined } from "lit/directives/if-defined.js";
 import {when} from 'lit/directives/when.js';
 import moment from "moment";
-import {debounce} from "lodash";
 
 // language=CSS
 const style = css`
@@ -352,12 +351,9 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     }
 
     public shouldUpdate(changedProps: PropertyValues): boolean {
-        console.log(changedProps);
-
         if (changedProps.has("condition")) {
             this._cache = undefined;
         }
-
         return super.shouldUpdate(changedProps);
     }
 
@@ -441,7 +437,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                         idOptions.push(...this._cache!.assets.map(a => [a.id!, a.name!] as [string, string]));
                     } else {
                         searchProvider = async (search?: string) => {
-                            await this.loadAssets(assetType, search);
+                            await this.loadAssets(assetType, search); // Wait for asset retrieval based on search
                             if (search) {
                                 return this._cache!.assets.filter(a => a.name?.toLowerCase().includes(search.toLowerCase())).map(a => [a.id!, a.name!] as [string, string]);
                             } else if (this._cache!.assets.length <= 99) {
@@ -916,6 +912,13 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         this.requestUpdate();
     }
 
+    /**
+     * Fetches assets using the {@link assetProvider} from the parent component.
+     * This is often linked to the OpenRemote HTTP API to request assets from using an {@link AssetQuery} object.
+     * @param type - The asset type name to filter by
+     * @param search - The asset name to filter by (acts as a search)
+     * @protected
+     */
     protected async loadAssets(type: string, search?: string): Promise<Asset[] | undefined> {
         const query: AssetQuery = { limit: 100 };
         if(search) {
