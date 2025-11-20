@@ -452,7 +452,7 @@ export class OrMap extends LitElement {
             return;
         }
 
-        if (this._mapContainer) {
+        if (this._mapContainer && this._slotElement) {
             this._map = new MapWidget(this.type, this.shadowRoot!, this._mapContainer, this.showGeoCodingControl, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson, this.cluster)
                 .setCenter(this.center)
                 .setZoom(this.zoom)
@@ -468,6 +468,12 @@ export class OrMap extends LitElement {
                 if (container) {
                     this._resizeObserver.observe(container);
                 }
+                this._slotElement!.assignedNodes({ flatten: true }).forEach((node) => {
+                    if (node instanceof OrMapMarker) {
+                      const marker = node;
+                      this._map!.addMarker(marker)
+                    }
+                })
             });
         }
 
