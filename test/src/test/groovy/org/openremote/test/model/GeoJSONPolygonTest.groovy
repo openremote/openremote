@@ -31,8 +31,9 @@ class GeoJSONPolygonTest extends Specification {
 
         then: "JSON should be properly formatted"
         assert json != null
-        assert json.contains('"type":"Polygon"')
-        assert json.contains('"coordinates"')
+        def node = ValueUtil.JSON.readTree(json)
+        assert node.get("type").asText() == "Polygon"
+        assert node.has("coordinates")
 
         when: "Deserializing from JSON"
         def deserialized = ValueUtil.parse(json, GeoJSONPolygon.class).orElse(null)
@@ -205,8 +206,9 @@ class GeoJSONMultiPolygonTest extends Specification {
 
         then: "JSON should be properly formatted"
         assert json != null
-        assert json.contains('"type":"MultiPolygon"')
-        assert json.contains('"coordinates"')
+        def node = ValueUtil.JSON.readTree(json)
+        assert node.get("type").asText() == "MultiPolygon"
+        assert node.has("coordinates")
 
         when: "Deserializing"
         def deserialized = ValueUtil.parse(json, GeoJSONMultiPolygon.class).orElse(null)
