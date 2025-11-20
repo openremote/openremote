@@ -12,7 +12,7 @@ import {
     Asset,
     AssetQuery,
     AssetQueryOperator as AQO,
-    AssetTypeInfo,
+    AssetTypeInfo, GeoJSONFeatureCollection, GeoJSONGeometry,
     JsonRule,
     JsonRulesetDefinition,
     LogicGroup,
@@ -444,6 +444,8 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                 return valuePredicate.radius !== undefined && valuePredicate.lat !== undefined && valuePredicate.lng !== undefined;
             case "rect":
                 return valuePredicate.lngMax !== undefined && valuePredicate.latMax !== undefined && valuePredicate.lngMin !== undefined && valuePredicate.latMin !== undefined;
+            case "geojson":
+                return valuePredicate.geoJSON !== undefined && this._validateGeoJSON(JSON.parse(valuePredicate.geoJSON) as GeoJSONFeatureCollection);
             case "array":
                 return (valuePredicate.index && !valuePredicate.value) || valuePredicate.value || valuePredicate.lengthEquals || valuePredicate.lengthLessThan || valuePredicate.lengthGreaterThan;
             case "value-empty":
@@ -451,5 +453,16 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
             default:
                 return false;
         }
+    }
+    protected _validateGeoJSON(geoJSON: GeoJSONFeatureCollection): boolean {
+
+        if (!geoJSON.features) return false;
+        // Validate each feature
+        for (const feature of geoJSON.features) {
+            const geometryType = feature.geometry?.type || "";
+            if (!["Polygon", "MultiPolygon"].includes(geometryType)) { return false; }
+        }
+
+        return true;
     }
 }
