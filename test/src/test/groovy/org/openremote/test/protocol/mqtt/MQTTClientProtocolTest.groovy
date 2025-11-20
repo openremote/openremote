@@ -291,7 +291,6 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "the container starts"
-
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
@@ -395,6 +394,17 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             def connection = brokerService.getConnectionFromClientID(clientId)
             assert connection != null
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+        }
+
+        cleanup: "the agent and assets are deleted"
+        if (asset != null) {
+            assetStorageService.delete([asset.id])
+        }
+        if (agent != null) {
+            assetStorageService.delete([agent.id])
+        }
+        conditions.eventually {
+            assert brokerService.getUserConnections(keycloakTestSetup.serviceUser.id).isEmpty()
         }
     }
 
@@ -519,22 +529,38 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert asset.getAttribute("temperature").flatMap { it.value }.map { it == 21.5 }.orElse(false)
             assert asset.getAttribute("switchStatus").flatMap { it.value }.map { it == false }.orElse(false)
         }
+
+
+        cleanup: "the agent and assets are deleted"
+        if (asset != null) {
+            assetStorageService.delete([asset.id])
+        }
+        if (testThing != null) {
+            assetStorageService.delete([testThing.id])
+        }
+        if (agent != null) {
+            assetStorageService.delete([agent.id])
+        }
+        conditions.eventually {
+            assert brokerService.getUserConnections(keycloakTestSetup.serviceUser.id).isEmpty()
+        }
     }
 
     def "Check MQTT client protocol wildcard subscriptions"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
 
         when: "the container starts"
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
-        def brokerService = container.getService(MQTTBrokerService.class)
+        def mqttBrokerService = container.getService(MQTTBrokerService.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
-        def mqttHost = brokerService.host
-        def mqttPort = brokerService.port
+        def mqttHost = mqttBrokerService.host
+        def mqttPort = mqttBrokerService.port
         def mqttAgentClientId = UniqueIdentifierGenerator.generateId()
+        def defaultMQTTHandler = mqttBrokerService.getCustomHandlers().find {it instanceof DefaultMQTTHandler} as DefaultMQTTHandler
 
         and: "test assets are created"
         def testThing1 = new ThingAsset("Test thing 1")
@@ -643,6 +669,8 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).size() == 1
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).containsKey(pressureTopic)
             assert protocol.wildcardTopicConsumerMap.get(wildcardTopic2).get(pressureTopic).size() == 1
+            def connection = mqttBrokerService.getConnectionFromClientID(mqttAgentClientId)
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 3
         }
 
         when: "mqtt data is published"
@@ -708,6 +736,26 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert asset.getAttribute("humidity").flatMap { it.value }.map { it == 90 }.orElse(false)
             assert asset.getAttribute("pressure").flatMap { it.value }.map { it == 1000 }.orElse(false)
             assert asset.getAttribute("uvIndex").flatMap { it.value }.map { it == 4.0 }.orElse(false)
+        }
+
+        cleanup: "the agent and assets are deleted"
+        if (testThing1 != null) {
+            assetStorageService.delete([testThing1.id])
+        }
+        if (testThing2 != null) {
+            assetStorageService.delete([testThing2.id])
+        }
+        if (testThing3 != null) {
+            assetStorageService.delete([testThing3.id])
+        }
+        if (asset != null) {
+            assetStorageService.delete([asset.id])
+        }
+        if (agent != null) {
+            assetStorageService.delete([agent.id])
+        }
+        conditions.eventually {
+            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).isEmpty()
         }
     }
 
@@ -804,6 +852,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                 .setSecureMode(true)
                 .setCertificateAlias(aliasName)
 //                .setUsernamePassword(new UsernamePassword(keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser.username, keycloakTestSetup.serviceUser.secret))
+
         and: "the agent is added to the asset service"
         agent = assetStorageService.merge(agent)
 

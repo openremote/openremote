@@ -1,9 +1,16 @@
 apply plugin: "java-library"
 
+var setupJar = project.hasProperty("SETUP_JAR") ? "${project.getProperties().get("SETUP_JAR")}" : "demo"
+
+base {
+    archivesName = "openremote-${setupJar}-${project.name}"
+}
+
 sourceSets {
     integration
     demo
     load1
+    load2
 }
 
 // dependencies declaration
@@ -11,31 +18,34 @@ configurations {
     integrationImplementation.extendsFrom(implementation)
     demoImplementation.extendsFrom(implementation)
     load1Implementation.extendsFrom(implementation)
+    load2Implementation.extendsFrom(implementation)
 }
 
 dependencies {
     implementation project(":manager")
 }
 
+
 tasks.register('load1Jar', Jar) {
-    base {
-        archivesName = "openremote-load1-${project.name}"
-    }
+    archiveBaseName.set("openremote-load1-${project.name}")
     from sourceSets.load1.output
 }
 
-// Order of JAR tasks affects the name of the final jar but not the contents which is odd
-// So putting demo last
-tasks.register('demoJar', Jar) {
+tasks.register('load2Jar', Jar) {
     base {
-        archivesName = "openremote-demo-${project.name}"
+        archivesName = "openremote-load2-${project.name}"
     }
+    from sourceSets.load2.output
+}
+
+tasks.register('demoJar', Jar) {
+    archiveBaseName.set("openremote-demo-${project.name}")
     from sourceSets.demo.output
 }
 
 // Use demo setup sourceset by default for jar
 tasks.register('installDist', Copy) {
-    def setupTask = getTasksByName(project.hasProperty("SETUP_JAR") ? "${project.getProperties().get("SETUP_JAR")}Jar" : "demoJar", false)[0] as org.gradle.jvm.tasks.Jar
+    def setupTask = getTasksByName("${setupJar}Jar", false)[0] as org.gradle.jvm.tasks.Jar
     System.out.println(setupTask.name)
     dependsOn setupTask
     dependsOn resolveTask(":manager:installDist")

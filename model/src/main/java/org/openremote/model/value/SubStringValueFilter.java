@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
+import org.openremote.model.util.JSONSchemaUtil.JsonSchemaTitle;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.Optional;

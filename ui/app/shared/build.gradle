@@ -1,4 +1,6 @@
 import java.security.MessageDigest
+import javax.annotation.processing.Processor
+import javax.tools.ToolProvider
 
 apply plugin: 'java'
 apply plugin: "maven-publish"
@@ -166,6 +168,24 @@ tasks.register('installDist', Copy) {
     mustRunAfter resolveTask(":manager:installDist")
     from layout.buildDirectory.dir("classes/main/org/openremote/web/${project.name}")
     into project(':manager').layout.buildDirectory.dir("install/manager/web/${project.name}")
+}
+
+tasks.register('processTranslations', JavaCompile) {
+    dependsOn(":model:classes")
+    outputs.upToDateWhen { false } // Always invalidate
+
+    def modelSourceSet = project(":model").sourceSets.main
+
+    source = modelSourceSet.allJava
+    classpath = modelSourceSet.compileClasspath
+    destinationDirectory = layout.buildDirectory.dir("generated/i18n") // unused
+    options.compilerArgs += [
+        "-proc:only", // Only run the processor
+        "-processor", "org.openremote.model.util.I18nAnnotationProcessor",
+        "-Ashared=${project.getProjectDir()}".toString()
+    ]
+    // Pass classpath to compiler
+    options.annotationProcessorPath = modelSourceSet.output + modelSourceSet.compileClasspath
 }
 
 jar.dependsOn(generateSources)

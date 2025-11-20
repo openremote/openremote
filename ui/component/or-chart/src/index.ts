@@ -1,7 +1,6 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state, query} from "lit/decorators.js";
-import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate"
 import {
     Asset,
     AssetDatapointQueryUnion,
@@ -576,7 +575,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 animation: false,
                 grid: {
                     show: true,
-                    backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
+                    backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color") || '#FFFFFF',
                     borderColor: this._style.getPropertyValue("--internal-or-chart-border-color"),
                     left: 10,
                     right: 10,
@@ -584,7 +583,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     bottom: this.showZoomBar ? 68 : 10,
                     containLabel: true
                 },
-                backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
+                backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color") || '#FFFFFF',
                 tooltip: {
                     trigger: "axis",
                     confine: true,
@@ -619,8 +618,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                         hideOverlap: true,
                         fontSize: 10,
                          formatter: {
-                             year: "{yyyy}-{MMM}",
-                             month: "{yy}-{MMM}",
+                             year: "1-{MMM}-{yyyy}",
+                             month: "1-{MMM}-'{yy}",
                              day: "{d}-{MMM}",
                              hour: "{HH}:{mm}",
                              minute: "{HH}:{mm}",
@@ -633,6 +632,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 yAxis: [
                     {
                         type: "value",
+                        alignTicks: true,
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ["10%", "10%"],
                         scale: true,
@@ -642,6 +642,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     },
                     {
                         type: "value",
+                        alignTicks: true,
                         show: (this.attributeConfig?.rightAxisAttributes?.length ?? 0) > 0,
                         axisLine: { lineStyle: {color: this._style.getPropertyValue("--internal-or-chart-text-color")}},
                         boundaryGap: ["10%", "10%"],
@@ -666,18 +667,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                 (this.chartOptions.dataZoom as DataZoomComponentOption[]).push({
                     start: 0,
                     end: 100,
+                    showDataShadow: false,
                     backgroundColor: bgColor,
                     fillerColor: bgColor,
-                    dataBackground: {
-                        areaStyle: {
-                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
-                        }
-                    },
-                    selectedDataBackground: {
-                        areaStyle: {
-                            color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
-                        }
-                    },
                     moveHandleStyle: {
                         color: this._style.getPropertyValue("--internal-or-chart-graph-fill-color")
                     },
@@ -1237,7 +1229,8 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
-        if ((this._data && !this._zoomChanged) || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
+        if (!this.dataProvider && ((this._data && !this._zoomChanged) || !this.assetAttributes || !this.assets || this.assets.length === 0 || this.assetAttributes.length === 0 || !this.datapointQuery)) {
+            console.debug("Aborting or-chart data load, not all HTML attributes are provided correctly.");
             return;
         }
 
@@ -1264,12 +1257,13 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         try {
             if(this.dataProvider && !this._zoomChanged) {
-                await this.dataProvider(this._startOfPeriod, this._endOfPeriod).then(dataset => {
+                console.debug("Loading data using the data provider...", typeof this.dataProvider);
+                promises = [this.dataProvider(this._startOfPeriod, this._endOfPeriod).then(dataset => {
                     dataset.forEach(set => data.push(set));
-                });
+                })];
             } else {
                 this._dataAbortController = new AbortController();
-                promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
+                promises = this.assetAttributes?.map(async ([assetIndex, attribute], index) => {
 
                     const asset = this.assets[assetIndex];
                     const shownOnRightAxis = !!this.attributeConfig?.rightAxisAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
@@ -1296,6 +1290,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
                     // Load Predicted Data
                     dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stacked, stepped, area, faint, false , `${asset.name} | ${label} ${i18next.t("predicted")}`, options, unit);
+                    dataset.yAxisIndex = shownOnRightAxis ? 1 : 0;
                     data.push(dataset);
 
                     // If necessary, load Extended Data
@@ -1317,10 +1312,11 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._zoomChanged = false;
 
         } catch (ex) {
-            console.error(ex);
             if((ex as Error)?.message === "canceled") {
+                console.debug("Cancelled chart data request. (probably because another request is taking place)");
                 return; // If request has been canceled (using AbortController); return, and prevent _loading is set to false.
             }
+            console.warn(ex);
             this._loading = false;
             this._zoomChanged = false;
 
@@ -1381,14 +1377,14 @@ export class OrChart extends translate(i18next)(LitElement) {
 
             if(query.type === "lttb") {
                 // If number of data points is set, only allow a maximum of 1 point per pixel in width
-                // Otherwise, dynamically set number of data points based on chart width (1000px = 100 data points)
+                // Otherwise, dynamically set number of data points based on chart width (1000px = 200 data points)
                 if(query.amountOfPoints) {
                     if(this._chartElem?.clientWidth > 0) {
                         query.amountOfPoints = Math.min(query.amountOfPoints, this._chartElem?.clientWidth);
                     }
                 } else {
                     if(this._chartElem?.clientWidth > 0) {
-                        query.amountOfPoints = Math.round(this._chartElem.clientWidth / 10);
+                        query.amountOfPoints = Math.round(this._chartElem.clientWidth / 5);
                     } else {
                         console.warn("Could not grab width of the Chart for estimating amount of data points. Using 100 points instead.");
                         query.amountOfPoints = 100;

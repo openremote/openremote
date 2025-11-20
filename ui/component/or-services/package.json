@@ -1,0 +1,35 @@
+{
+  "name": "@openremote/or-services",
+  "version": "1.10.0-snapshot",
+  "description": "OpenRemote services related UI components",
+  "customElements": "custom-elements.json",
+  "main": "dist/umd/index.bundle.js",
+  "module": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./*": "./lib/*.js",
+    "./jsx": {
+      "types": "./custom-elements-jsx.d.ts"
+    }
+  },
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
+    "test": "echo \"No tests\" && exit 0",
+    "prepack": "npx rspack"
+  },
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
+    "@openremote/or-components": "workspace:*",
+    "@openremote/or-icon": "workspace:*",
+    "@openremote/or-translate": "workspace:*",
+    "@openremote/or-tree-menu": "workspace:*",
+    "lit": "^3.3.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

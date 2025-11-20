@@ -721,7 +721,7 @@ export class OrDashboardBuilder extends LitElement {
                                             <div style="border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};">
                                                 <or-mwc-tabs .items="${this.tabItems}" noScroll @activated="${(event: CustomEvent) => { this.sidebarMenuIndex = event.detail.index; }}" style="pointer-events: ${this.selectedDashboard ? undefined : 'none'}"></or-mwc-tabs>
                                             </div>
-                                            <div id="content" class="hidescroll" style="flex: 1; overflow: hidden auto;">
+                                            <div id="content" style="flex: 1; overflow: auto;">
                                                 <div style="position: relative;">
                                                     <or-dashboard-browser id="browser" style="position: absolute; ${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
                                                     <or-dashboard-boardsettings style="position: absolute; ${this.sidebarMenuIndex != 1 ? css`display: none` : null}" 

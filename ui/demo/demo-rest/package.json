@@ -1,6 +1,6 @@
 {
   "name": "@openremote/demo-rest",
-  "version": "1.8.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "Demo",
   "private": true,
   "scripts": {
@@ -14,8 +14,9 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/rest": "workspace:*",
-    "lit": "^3.3.1"
+    "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
+    "lit-html": "^3.3.1"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",
