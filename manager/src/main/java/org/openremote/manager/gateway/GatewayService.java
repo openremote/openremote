@@ -546,7 +546,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                 scheduledExecutorService.schedule(() -> autoCloseTunnel(tunnelInfo.getId()), delay.toMillis(), TimeUnit.MILLISECONDS);
                 LOG.fine("Scheduled job to automatically close tunnel '" + tunnelInfo.getId() + "' at " + tunnelInfo.getAutoCloseTime());
             }
-            if(connector.isTunnelTimeoutManagementSupported()) {
+            if (connector.isTunnelTimeoutManagementSupported()) {
                 LOG.info("Gateway supports tunnel timeout management, not scheduling auto-close from central instance for tunnel: id=" + tunnelInfo.getId());
             }
             return tunnelInfo;

@@ -6,7 +6,6 @@ import org.apache.http.client.utils.URIBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyClient
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
-import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl
 import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.io.AbstractNettyIOClient
@@ -47,15 +46,12 @@ import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.net.ssl.*
+import javax.net.ssl.SSLSession
 import java.nio.file.Paths
-import java.security.SecureRandom
-import java.security.cert.X509Certificate
 import java.time.Duration
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
-import java.util.function.UnaryOperator
 import java.util.stream.Collectors
 import java.util.stream.IntStream
 
@@ -1414,7 +1410,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         String basePath = "/api/master"
         String baseUrl  = "${scheme}://$centralManagerTunnelInfo.id.$centralManagerTunnelInfo.hostname$basePath"
 
-        ResteasyClient client = ResteasyClientBuilder.newBuilder().hostnameVerifier { String h, SSLSession s -> true}.build()
+        ResteasyClient client = ResteasyClientBuilder.newBuilder().hostnameVerifier { String h, SSLSession s -> true }.build()
         ResteasyWebTarget target = (ResteasyWebTarget) client.target(baseUrl)
 
         then: "The request should be successful"

@@ -26,13 +26,9 @@ import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.system.StatusResource;
 import org.openremote.model.util.ValueUtil;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class StatusResourceImpl implements StatusResource {
@@ -40,11 +36,11 @@ public class StatusResourceImpl implements StatusResource {
     private static final Logger LOG = Logger.getLogger(StatusResourceImpl.class.getName());
     protected List<HealthStatusProvider> healthStatusProviderList;
     protected Map<String, Object> serverInfo;
-    public static final String VERSION = loadVersion();
 
     public StatusResourceImpl(Container container, List<HealthStatusProvider> healthStatusProviderList) {
         this.healthStatusProviderList = healthStatusProviderList;
         String authServerUrl = "";
+        String version = VersionInfo.getManagerVersion();
 
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         if (identityService != null && identityService.getIdentityProvider().getFrontendURI() != null) {
@@ -52,12 +48,12 @@ public class StatusResourceImpl implements StatusResource {
         }
 
         serverInfo = Map.of(
-            "version", VERSION,
+            "version", version,
             "authServerUrl", authServerUrl,
             "valueDescriptorSchemaHashes", ValueUtil.getValueDescriptorSchemaHashes()
         );
 
-        LOG.info("Starting OpenRemote version: v"+VERSION);
+        LOG.info("Starting OpenRemote version: v"+version);
     }
 
     @Override
@@ -77,23 +73,5 @@ public class StatusResourceImpl implements StatusResource {
     @Override
     public Map<String, Object> getInfo() {
         return serverInfo;
-    }
-
-    public static String getManagerVersion() {
-        return VERSION;
-    }
-
-    protected static String loadVersion() {
-        try (InputStream resourceStream = StatusResourceImpl.class.getClassLoader().getResourceAsStream("version.properties")) {
-            if (resourceStream != null) {
-                Properties versionProps = new Properties();
-                versionProps.load(resourceStream);
-                return versionProps.getProperty("version");
-            }else {
-                throw new RuntimeException("Could not load version.properties");
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

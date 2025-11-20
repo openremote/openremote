@@ -19,7 +19,7 @@
  */
 package org.openremote.test
 
-import groovy.json.JsonSlurper
+
 import jakarta.persistence.TypedQuery
 import jakarta.ws.rs.core.UriBuilder
 import org.apache.camel.ProducerTemplate
@@ -40,7 +40,6 @@ import org.openremote.container.timer.TimerService
 import org.openremote.container.util.LogUtil
 import org.openremote.container.util.MapAccess
 import org.openremote.container.web.WebClient
-import org.openremote.container.web.WebTargetBuilder
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -55,7 +54,6 @@ import org.openremote.model.asset.Asset
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.Protocol
-import org.openremote.model.auth.OAuthClientCredentialsGrant
 import org.openremote.model.gateway.GatewayConnection
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.RulesetQuery
@@ -77,7 +75,6 @@ import java.util.stream.IntStream
 
 import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.container.web.WebService.OR_WEBSERVER_LISTEN_PORT
-import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 
@@ -559,13 +556,7 @@ trait ContainerTrait {
         String basePath = "/auth"
         String baseUrl  = "${scheme}://${host}${basePath}"
 
-        UnaryOperator<ResteasyClientBuilderImpl> builderConfigurator =
-                { ResteasyClientBuilderImpl b ->
-                    b.hostnameVerifier({ String h, SSLSession s -> true } as HostnameVerifier)
-                    b
-                } as UnaryOperator<ResteasyClientBuilderImpl>
-
-        ResteasyClient client = ResteasyClientBuilder.newBuilder().hostnameVerifier {String h, SSLSession s -> true}.build()
+        ResteasyClient client = ResteasyClientBuilder.newBuilder().hostnameVerifier {String h, SSLSession s -> true }.build()
         ResteasyWebTarget target = (ResteasyWebTarget) client.target(baseUrl)
 
         KeycloakResource keycloak = target.proxy(KeycloakResource)

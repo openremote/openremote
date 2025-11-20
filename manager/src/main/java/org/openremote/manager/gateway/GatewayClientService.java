@@ -31,7 +31,7 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.rules.AssetQueryPredicate;
 import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.system.StatusResourceImpl;
+import org.openremote.manager.system.VersionInfo;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
@@ -447,7 +447,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             } else if (event instanceof GatewayCapabilitiesRequestEvent) {
                 LOG.fine("Central manager requested specifications / capabilities of the gateway.");
                 GatewayCapabilitiesResponseEvent responseEvent = new GatewayCapabilitiesResponseEvent(
-                    gatewayTunnelFactory != null, StatusResourceImpl.getManagerVersion()
+                    gatewayTunnelFactory != null, VersionInfo.getManagerVersion()
                 );
                 responseEvent.setMessageID(event.getMessageID());
                 sendCentralManagerMessage(
