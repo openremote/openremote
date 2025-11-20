@@ -16,7 +16,7 @@ import {
     ValuePredicateUnion,
     WellknownMetaItems,
     WellknownValueTypes,
-    AssetModelUtil
+    AssetModelUtil, AssetQuery
 } from "@openremote/model";
 import {AssetQueryOperator, getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig} from "../index";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -31,6 +31,7 @@ import "./modals/or-rule-radial-modal";
 import { ifDefined } from "lit/directives/if-defined.js";
 import {when} from 'lit/directives/when.js';
 import moment from "moment";
+import {debounce, DebouncedFunc} from "lodash";
 
 // language=CSS
 const style = css`
@@ -122,10 +123,12 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     public assetInfos?: AssetTypeInfo[];
 
     @property({type: Object})
-    public assetProvider!: (type: string) => Promise<Asset[] | undefined>
+    public assetProvider!: (type: string, query?: AssetQuery) => Promise<Asset[] | undefined>
 
     @state()
-    protected _assets?: Asset[];
+    protected _cache?: {query: AssetQuery, assets: Asset[]};
+
+    protected _loading = false;
 
     // Value predicates for specific value descriptors
     protected _queryOperatorsMap: {[type: string]: AssetQueryOperator[]} = {};
@@ -201,7 +204,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
     public refresh() {
         // Clear assets
-        this._assets = undefined;
+        this._cache = undefined;
     }
 
     protected attributePredicateEditorTemplate(assetTypeInfo: AssetTypeInfo, asset: Asset | undefined, attributePredicate: AttributePredicate) {
@@ -348,13 +351,13 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         return style;
     }
 
-    public shouldUpdate(_changedProperties: PropertyValues): boolean {
+    public shouldUpdate(changedProps: PropertyValues): boolean {
 
-        if (_changedProperties.has("condition")) {
-            this._assets = undefined;
+        if (changedProps.has("condition")) {
+            this._cache = undefined;
         }
 
-        return super.shouldUpdate(_changedProperties);
+        return super.shouldUpdate(changedProps);
     }
 
     protected get query() {
@@ -399,7 +402,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             return html`<span class="invalidLabel">${i18next.t('errorOccurred')}</span>`;
         }
 
-        if (!this._assets) {
+        if (!this._cache && !this._loading) {
             this.loadAssets(assetType);
         }
 
@@ -425,31 +428,33 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             <div class="attribute-group">
             
                 <!-- Show SELECT input with 'loading' until the assets are retrieved -->
-                ${when((!this._assets), () => html`
+                ${when((!this._cache), () => html`
                     <or-mwc-input id="idSelect" class="min-width" type="${InputType.SELECT}" .readonly="${true}" .label="${i18next.t('loading')}"></or-mwc-input>
                 `, () => {
 
                     // Set list of displayed assets, and filtering assets out if needed.
                     // If <= 25 assets: display everything
                     // If between 25 and 100 assets: display everything with search functionality 
-                    // If > 100 assets: only display if in line with search input
-                    if(this._assets!.length <= 25) {
-                        idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
+                    // If >= 100 assets: only display if in line with search input
+                    if(this._cache!.assets.length <= 25) {
+                        idOptions.push(...this._cache!.assets.map((asset) => [asset.id!, asset.name!] as [string, string]));
                     } else {
                         searchProvider = async (search?: string) => {
+                            const type = getAssetTypeFromQuery(this.query);
+                            if(type) await this.loadAssets(type, search);
                             if(search) {
-                                return this._assets!.filter((asset) => asset.name?.toLowerCase().includes(search.toLowerCase())).map((asset) => [asset.id!, asset.name!] as [string, string]);
-                            } else if (this._assets!.length <= 100) {
-                                idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
+                                return this._cache!.assets.filter((asset) => asset.name?.toLowerCase().includes(search.toLowerCase())).map((asset) => [asset.id!, asset.name!] as [string, string]);
+                            } else if (this._cache!.assets.length <= 99) {
+                                idOptions.push(...this._cache!.assets.map((asset) => [asset.id!, asset.name!] as [string, string]));
                                 return idOptions;
                             } else {
-                                const asset = this._assets?.find((asset) => asset.id == idValue);
+                                const asset = this._cache?.assets.find((asset) => asset.id == idValue);
                                 if(asset && idOptions.find(([id, _value]) => id == asset.id) == undefined) {
                                     idOptions.push([asset.id!, asset.name!]); // add selected asset if there is one.
                                 }
                                 return idOptions;
                             }
-                        }
+                        };
                     }
 
                     const showAddAttribute = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddAttribute !== true);
@@ -476,7 +481,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                                     ${index > 0 ? html`<or-icon class="small" icon="ampersand"></or-icon>` : ``}
                                     <div class="attribute">
                                         <div>
-                                            ${this.attributePredicateEditorTemplate(assetTypeInfo, idValue !== "*" ? this._assets!.find((asset) => asset.id === idValue) : undefined, attributePredicate)}
+                                            ${this.attributePredicateEditorTemplate(assetTypeInfo, idValue !== "*" ? this._cache!.assets.find((asset) => asset.id === idValue) : undefined, attributePredicate)}
                                             ${this.attributeDurationTemplate(this.duration, index, onDurationAdd, onDurationChange)}
                                         </div>
                                     ${showRemoveAttribute ? html`
@@ -911,9 +916,34 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         this.requestUpdate();
     }
 
-    protected loadAssets(type: string) {
-        this.assetProvider(type).then(assets => {
-            this._assets = assets;
-        })
+    protected async loadAssets(type: string, search?: string): Promise<Asset[] | undefined> {
+        const query: AssetQuery = { limit: 100 };
+        if(search) {
+            query.names ??= [];
+            query.names.push({ predicateType: "string", value: search });
+        }
+        // If the cache contains assets from the same query, don't send HTTP request again
+        const isQueryCached = this._cache?.query && JSON.stringify(this._cache.query) === JSON.stringify(query);
+        if(!this._loading && !isQueryCached) {
+
+            // Use assetProvider from the parent component to retrieve assets using HTTP
+            this._loading = true;
+            const promise = this.assetProvider(type, {...query});
+            promise.then(assets => {
+
+                // Only update the state when we retrieve new assets
+                const cachedIds = this._cache?.assets.map(asset => asset.id) ?? [];
+                if(assets?.find(a => !cachedIds.includes(a.id))) {
+                    this._cache = {
+                        query: query,
+                        assets: [...(this._cache?.assets ?? []), ...(assets?.filter(a => !cachedIds.includes(a.id)) ?? [])]
+                    };
+                }
+            }).finally(() => {
+                this._loading = false;
+            });
+            return promise;
+        }
+        return this._cache?.assets;
     }
 }
