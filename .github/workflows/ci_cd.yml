@@ -647,6 +647,11 @@ jobs:
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
         # Ignore the failure of a step and avoid terminating the job.
         continue-on-error: true
+        # Override cache key because default generated key contains a slash (CI/CD) with is not allowed
+        with:
+          key: docker-layer-caching-CI-CD-{hash}
+          restore-keys: |
+            docker-layer-caching-CI-CD-        
 
       - name: Update version in package.json files
         id: update-package-json-files
